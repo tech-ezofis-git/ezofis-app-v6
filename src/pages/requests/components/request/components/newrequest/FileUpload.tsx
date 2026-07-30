@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
+import { useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import workflowsApiV6 from '@/api/v6/workflows'
 import useTheme from '@/hooks/useTheme'
@@ -78,109 +79,6 @@ const TAG_COLOR_STYLES: Record<
   },
 }
 
-const SAMPLE_DOCUMENTS: SampleDocument[] = [
-  {
-    description: 'Perfect PO validation.',
-    fileName: 'INV-2026-6001',
-    icon: 'tabler:file-invoice',
-    label: 'invoice1',
-    tag: 'PO Verified',
-    tagColor: 'green',
-    thumbnail: sample1Img,
-    url: sample1,
-  },
-  {
-    description: 'Complete document match.',
-    fileName: 'INV-2026-3101',
-    icon: 'tabler:file-invoice',
-    label: 'invoice2',
-    tag: 'Fully Matched',
-    tagColor: 'green',
-    thumbnail: sample2Img,
-    url: sample2,
-  },
-  {
-    description: 'Supplier details differ.',
-    fileName: 'INV-2026-3005',
-    icon: 'tabler:file-invoice',
-    label: 'invoice3',
-    tag: 'Supplier Conflict',
-    tagColor: 'orange',
-    thumbnail: sample3Img,
-    url: sample3,
-  },
-  {
-    description: 'Scanned handwritten bill.',
-    fileName: 'Handwritten Invoice',
-    icon: 'tabler:file-invoice',
-    label: 'invoice4',
-    tag: 'Handwritten',
-    tagColor: 'blue',
-    thumbnail: sample4Img,
-    url: sample4,
-  },
-  {
-    description: 'Pending delivery items.',
-    fileName: 'INV-2026-1001',
-    icon: 'tabler:file-invoice',
-    label: 'invoice5',
-    tag: 'Backorder',
-    tagColor: 'orange',
-    thumbnail: sample5Img,
-    url: sample5,
-  },
-  {
-    description: 'Vendor identity mismatch.',
-    fileName: 'INV-2026-3001',
-    icon: 'tabler:file-invoice',
-    label: 'invoice6',
-    tag: 'Vendor Check',
-    tagColor: 'orange',
-    thumbnail: sample6Img,
-    url: sample6,
-  },
-  {
-    description: 'Invoice value reduced.',
-    fileName: 'INV-2026-5001',
-    icon: 'tabler:file-invoice',
-    label: 'invoice7',
-    tag: 'Undercharged',
-    tagColor: 'red',
-    thumbnail: sample7Img,
-    url: sample7,
-  },
-  {
-    description: 'Multiple pricing differences.',
-    fileName: 'INV-2026-5004',
-    icon: 'tabler:file-invoice',
-    label: 'invoice8',
-    tag: 'Price Variance',
-    tagColor: 'red',
-    thumbnail: sample8Img,
-    url: sample8,
-  },
-  {
-    description: 'Quantity line discrepancy.',
-    fileName: 'INV-2026-1004',
-    icon: 'tabler:file-invoice',
-    label: 'invoice9',
-    tag: 'Line Variance',
-    tagColor: 'orange',
-    thumbnail: sample9Img,
-    url: sample9,
-  },
-  {
-    description: 'Invoice exceeds PO value.',
-    fileName: 'INV-2026-5003',
-    icon: 'tabler:file-invoice',
-    label: 'invoice10',
-    tag: 'Overcharged',
-    tagColor: 'red',
-    thumbnail: sample10Img,
-    url: sample10,
-  },
-]
-
 const SampleThumbnailPreview = ({
   doc,
   variant,
@@ -188,13 +86,14 @@ const SampleThumbnailPreview = ({
   doc: SampleDocument
   variant: 'compact' | 'expanded'
 }) => {
+  const { t } = useLingui()
   const colors = TAG_COLOR_STYLES[doc.tagColor]
   const isExpanded = variant === 'expanded'
 
   if (doc.thumbnail) {
     return (
       <img
-        alt={isExpanded ? `${doc.label} preview` : doc.label}
+        alt={isExpanded ? t`${doc.fileName} preview` : doc.fileName}
         className='size-full bg-surface object-contain object-center'
         src={doc.thumbnail}
         style={{ imageRendering: 'auto' }}
@@ -216,7 +115,7 @@ const SampleThumbnailPreview = ({
           <div
             className={`font-poppins leading-none font-black text-[var(--gray-12)] ${isExpanded ? 'text-[11px]' : 'text-[7px]'}`}
           >
-            INVOICE
+            {t`INVOICE`}
           </div>
           <div
             className={`font-mono leading-none text-[var(--gray-9)] ${isExpanded ? 'text-[7px]' : 'text-[5px]'}`}
@@ -428,17 +327,152 @@ const SampleThumbnail = ({
   )
 }
 
-const getUploadErrorMessage = (files: File[]): string => {
-  const tooLarge = files.some((f) => f.size > MAX_SIZE)
-  if (tooLarge) return 'File is too large. Max size is 4MB.'
-  const invalidType = files.some((f) => !isPdf(f) && !isImage(f))
-  if (invalidType) return 'Invalid file type. Please upload a PDF or Image.'
-  return 'No valid files selected.'
-}
-
 const FileUpload = ({ onClose }: { onClose?: () => void }) => {
+  const { t } = useLingui()
   const rawWorkflow = requestStore((state) => state.rawWorkflowData)
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
+
+  const sampleDocuments = useMemo<SampleDocument[]>(
+    () => [
+      {
+        description: t`Perfect PO validation.`,
+        fileName: 'INV-2026-6001',
+        icon: 'tabler:file-invoice',
+        label: 'invoice1',
+        tag: t`PO Verified`,
+        tagColor: 'green',
+        thumbnail: sample1Img,
+        url: sample1,
+      },
+      {
+        description: t`Complete document match.`,
+        fileName: 'INV-2026-3101',
+        icon: 'tabler:file-invoice',
+        label: 'invoice2',
+        tag: t`Fully Matched`,
+        tagColor: 'green',
+        thumbnail: sample2Img,
+        url: sample2,
+      },
+      {
+        description: t`Supplier details differ.`,
+        fileName: 'INV-2026-3005',
+        icon: 'tabler:file-invoice',
+        label: 'invoice3',
+        tag: t`Supplier Conflict`,
+        tagColor: 'orange',
+        thumbnail: sample3Img,
+        url: sample3,
+      },
+      {
+        description: t`Scanned handwritten bill.`,
+        fileName: t`Handwritten Invoice`,
+        icon: 'tabler:file-invoice',
+        label: 'invoice4',
+        tag: t`Handwritten`,
+        tagColor: 'blue',
+        thumbnail: sample4Img,
+        url: sample4,
+      },
+      {
+        description: t`Pending delivery items.`,
+        fileName: 'INV-2026-1001',
+        icon: 'tabler:file-invoice',
+        label: 'invoice5',
+        tag: t`Backorder`,
+        tagColor: 'orange',
+        thumbnail: sample5Img,
+        url: sample5,
+      },
+      {
+        description: t`Vendor identity mismatch.`,
+        fileName: 'INV-2026-3001',
+        icon: 'tabler:file-invoice',
+        label: 'invoice6',
+        tag: t`Vendor Check`,
+        tagColor: 'orange',
+        thumbnail: sample6Img,
+        url: sample6,
+      },
+      {
+        description: t`Invoice value reduced.`,
+        fileName: 'INV-2026-5001',
+        icon: 'tabler:file-invoice',
+        label: 'invoice7',
+        tag: t`Undercharged`,
+        tagColor: 'red',
+        thumbnail: sample7Img,
+        url: sample7,
+      },
+      {
+        description: t`Multiple pricing differences.`,
+        fileName: 'INV-2026-5004',
+        icon: 'tabler:file-invoice',
+        label: 'invoice8',
+        tag: t`Price Variance`,
+        tagColor: 'red',
+        thumbnail: sample8Img,
+        url: sample8,
+      },
+      {
+        description: t`Quantity line discrepancy.`,
+        fileName: 'INV-2026-1004',
+        icon: 'tabler:file-invoice',
+        label: 'invoice9',
+        tag: t`Line Variance`,
+        tagColor: 'orange',
+        thumbnail: sample9Img,
+        url: sample9,
+      },
+      {
+        description: t`Invoice exceeds PO value.`,
+        fileName: 'INV-2026-5003',
+        icon: 'tabler:file-invoice',
+        label: 'invoice10',
+        tag: t`Overcharged`,
+        tagColor: 'red',
+        thumbnail: sample10Img,
+        url: sample10,
+      },
+    ],
+    [t],
+  )
+
+  const capabilityCards = useMemo(
+    () => [
+      {
+        color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
+        icon: 'tabler:bolt',
+        label: t`AI EXTRACTION`,
+        sub: t`AI-powered extraction in seconds`,
+        title: t`Instant Processing`,
+      },
+      {
+        color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
+        icon: 'tabler:sparkles',
+        label: t`INTELLIGENCE`,
+        sub: t`Link invoices to POs with precision.`,
+        title: t`Smart PO Matching`,
+      },
+      {
+        color: 'text-[var(--green-11)] bg-[var(--green-2)]',
+        icon: 'tabler:clock',
+        label: t`ANALYTICS`,
+        sub: t`Insights into your liabilities.`,
+        title: t`Payables Overview`,
+      },
+    ],
+    [t],
+  )
+
+  const getUploadErrorMessage = (files: File[]): string => {
+    const tooLarge = files.some((f) => f.size > MAX_SIZE)
+    if (tooLarge) return t`File is too large. Max size is 4MB.`
+    const invalidType = files.some((f) => !isPdf(f) && !isImage(f))
+    if (invalidType)
+      return t`Invalid file type. Please upload a PDF or Image.`
+    return t`No valid files selected.`
+  }
 
   const invoiceInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
@@ -480,7 +514,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     }
 
     if (!data) {
-      throw new Error('Workflow started but did not return any data.')
+      throw new Error(t`Workflow started but did not return any data.`)
     }
 
     const parsedData = typeof data === 'string' ? JSON.parse(data) : data
@@ -490,7 +524,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
 
     if (!processId && !apAgentJobId) {
       throw new Error(
-        'Workflow started but did not return a valid instanceId or apAgentJobId.',
+        t`Workflow started but did not return a valid instanceId or apAgentJobId.`,
       )
     }
 
@@ -529,8 +563,8 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
             foundItem.referenceNumber ||
             `REQ-${processId.substring(0, 8).toUpperCase()}` ||
             foundItem.requestNo ||
-            'New Request',
-          stage: foundItem.stage || 'Start',
+            t`New Request`,
+          stage: foundItem.stage || t`Start`,
         }
       }
     } catch (err) {
@@ -538,7 +572,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     }
     return {
       requestNo: `REQ-${processId.substring(0, 8).toUpperCase()}`,
-      stage: 'Start',
+      stage: t`Start`,
     }
   }
 
@@ -572,7 +606,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     if (!rawWorkflow?.id) {
       console.error('Missing workflow ID in rawWorkflow:', rawWorkflow)
       showToast({
-        message: 'Workflow ID is missing. Cannot start workflow.',
+        message: t`Workflow ID is missing. Cannot start workflow.`,
         variant: 'error',
       })
       return
@@ -585,8 +619,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
     let filesToProcess = validFiles
     if (validFiles.length > 5) {
       showToast({
-        message:
-          'A maximum of 5 files can be processed at once. Only the first 5 will be processed.',
+        message: t`A maximum of 5 files can be processed at once. Only the first 5 will be processed.`,
         variant: 'warning',
       })
       filesToProcess = validFiles.slice(0, 5)
@@ -633,8 +666,8 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         const resolvedProcessId = processId || `job-${apAgentJobId}`
         const resolvedTransactionId = transactionId || null
 
-        let requestNo = 'New Request'
-        let stage = isJobBased ? 'Initiating...' : 'Start'
+        let requestNo = t`New Request`
+        let stage = isJobBased ? t`Initiating...` : t`Start`
 
         if (transactionId && processId) {
           const details = await fetchWorkflowStageDetails(
@@ -680,7 +713,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
           name:
             rawWorkflow?.name ??
             rawWorkflow?.settings?.general?.name ??
-            'Workflow',
+            t`Workflow`,
           wFormId: wFormId || '',
         }
 
@@ -688,7 +721,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
           _localFileUrl: localUrl,
           apAgentJobId: apAgentJobId || null,
           createdAt: startTime,
-          documentNumber: 'Analyzing Invoice...',
+          documentNumber: t`Analyzing Invoice...`,
           id: resolvedProcessId,
           isProcessing: true,
           processId: resolvedProcessId,
@@ -697,7 +730,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
           stage: stage,
           stageType: 'AP_AGENT',
           transactionId: resolvedTransactionId,
-          vendor: 'Analyzing Supplier...',
+          vendor: t`Analyzing Supplier...`,
         }
       }
 
@@ -723,7 +756,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       setUploadProgressText(null)
       setSelectedSampleName(null)
       showToast({
-        message: err.message || 'Error starting workflow',
+        message: err.message || t`Error starting workflow`,
         variant: 'error',
       })
     }
@@ -745,7 +778,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
       setSelectedSampleName(null)
       setUploadStatus('idle')
       showToast({
-        message: 'Failed to load sample document.',
+        message: t`Failed to load sample document.`,
         variant: 'error',
       })
     }
@@ -758,12 +791,11 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         {/* Header Section */}
         <AnimateSlideUp className='space-y-1 text-center'>
           <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
-            Intelligent{' '}
-            <span className='text-[var(--primary-9)]'>AP Agent</span>
+            {t`Intelligent`}{' '}
+            <span className='text-[var(--primary-9)]'>{t`AP Agent`}</span>
           </h1>
           <p className='mx-auto max-w-xl text-sm font-medium text-[var(--gray-10)]'>
-            Streamline your Accounts Payable. Automatically process invoices,
-            match Purchase Orders, and gain complete visibility.
+            {t`Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility.`}
           </p>
         </AnimateSlideUp>
 
@@ -775,7 +807,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
             </div>
 
             <button
-              aria-label='Upload invoice'
+              aria-label={t`Upload invoice`}
               type='button'
               className={[
                 'relative z-10 flex min-h-[140px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--primary-4)] px-8 py-6 text-center transition-all duration-500 ease-out sm:min-h-[128px]',
@@ -809,16 +841,16 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                   <div className='text-center'>
                     <h2 className='text-base font-bold text-[var(--gray-13)]'>
                       {uploadProgressText
-                        ? `Uploading & Processing (${uploadProgressText.current}/${uploadProgressText.total})...`
-                        : 'Uploading & Processing...'}
+                        ? t`Uploading & Processing (${uploadProgressText.current}/${uploadProgressText.total})...`
+                        : t`Uploading & Processing...`}
                     </h2>
                     <p
                       className='mt-1 max-w-[280px] truncate text-xs font-semibold text-[var(--gray-10)]'
                       title={uploadProgressText?.fileName}
                     >
                       {uploadProgressText
-                        ? `Processing "${uploadProgressText.fileName}"`
-                        : 'Please wait while we process your document'}
+                        ? t`Processing "${uploadProgressText.fileName}"`
+                        : t`Please wait while we process your document`}
                     </p>
                   </div>
                 </div>
@@ -832,11 +864,11 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                   </div>
                   <div className='text-center'>
                     <h2 className='text-base font-medium tracking-tight text-[var(--gray-13)]'>
-                      Drop your file here, or{' '}
-                      <span className='text-[var(--primary-9)]'>browse</span>
+                      {t`Drop your file here, or`}{' '}
+                      <span className='text-[var(--primary-9)]'>{t`browse`}</span>
                     </h2>
                     <p className='text-xs font-medium text-[var(--gray-9)]'>
-                      Supports PDF and Images · Max 4 MB
+                      {t`Supports PDF and Images · Max 4 MB`}
                     </p>
                   </div>
                 </AnimateStagger>
@@ -860,17 +892,17 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
             <div className='flex items-center gap-3 px-2'>
               <div className='flex-1 border-t border-dashed border-[var(--gray-5)]' />
               <p className='shrink-0 text-center text-[10px] tracking-wide text-[var(--gray-9)]'>
-                <span className='font-bold uppercase'>Quick Try</span>
+                <span className='font-bold uppercase'>{t`Quick Try`}</span>
                 <span className='mx-1.5 text-[var(--gray-6)]'>·</span>
                 <span className='font-medium text-[var(--gray-10)]'>
-                  Click any preview to process
+                  {t`Click any preview to process`}
                 </span>
               </p>
               <div className='flex-1 border-t border-dashed border-[var(--gray-5)]' />
             </div>
 
             <div className='custom-scrollbar flex flex-wrap justify-center gap-2.5 overflow-visible pt-4 pb-1'>
-              {SAMPLE_DOCUMENTS.map((doc) => {
+              {sampleDocuments.map((doc) => {
                 const colors = TAG_COLOR_STYLES[doc.tagColor]
                 const displayLabel =
                   doc.label.replace('invoice', 'inv-') + '.pdf'
@@ -920,29 +952,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
 
         {/* Bottom Capabilities - Kept from original but repositioned */}
         <div className='mx-auto grid w-full max-w-[900px] grid-cols-1 gap-4 md:grid-cols-3'>
-          {[
-            {
-              color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
-              icon: 'tabler:bolt',
-              label: 'AI EXTRACTION',
-              sub: 'AI-powered extraction in seconds',
-              title: 'Instant Processing',
-            },
-            {
-              color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
-              icon: 'tabler:sparkles',
-              label: 'INTELLIGENCE',
-              sub: 'Link invoices to POs with precision.',
-              title: 'Smart PO Matching',
-            },
-            {
-              color: 'text-[var(--green-11)] bg-[var(--green-2)]',
-              icon: 'tabler:clock',
-              label: 'ANALYTICS',
-              sub: 'Insights into your liabilities.',
-              title: 'Payables Overview',
-            },
-          ].map((item, idx) => (
+          {capabilityCards.map((item, idx) => (
             <AnimateEntrancePop delay={0.4 + idx * 0.1} key={item.title}>
               <div className='group flex h-full flex-col gap-2 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
                 <span className='truncate text-[9px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>

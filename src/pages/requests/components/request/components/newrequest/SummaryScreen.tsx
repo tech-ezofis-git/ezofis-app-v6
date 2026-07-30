@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import type { InvoiceData } from './types'
 
@@ -6,6 +7,7 @@ interface SummaryScreenProps {
 }
 
 const SummaryScreen = ({ data }: SummaryScreenProps) => {
+  const { t } = useLingui()
   return (
     <div className='flex h-[calc(100vh-150px)] flex-col overflow-hidden bg-[var(--surface-muted)]'>
       <main className='mx-auto flex w-full max-w-[1600px] flex-1 flex-col space-y-6 overflow-hidden p-6'>
@@ -20,7 +22,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
             </div>
             <div>
               <h3 className='text-lg font-bold text-[var(--green-11)]'>
-                Ready for Approval
+                {t`Ready for Approval`}
               </h3>
               <div className='flex items-center gap-2'>
                 <div className='h-2 w-24 overflow-hidden rounded-full bg-[var(--gray-3)]'>
@@ -40,10 +42,10 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                 name='material-symbols:auto-awesome'
               />
               <span className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                Analysis
+                {t`Analysis`}
               </span>
               <span className='rounded-full bg-[var(--primary-3)] px-2 py-0.5 text-[10px] font-bold text-[var(--primary-9)]'>
-                AUTO-VERIFIED
+                {t`AUTO-VERIFIED`}
               </span>
             </div>
             <p className='text-sm leading-relaxed text-[var(--gray-11)]'>
@@ -58,10 +60,10 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
           <div className='flex min-w-[240px] items-center gap-4'>
             <div className='flex-1 text-right'>
               <span className='mb-1 block text-[10px] font-bold text-[var(--gray-9)] uppercase'>
-                Next Action
+                {t`Next Action`}
               </span>
               <span className='font-bold text-[var(--gray-13)]'>
-                Schedule Payment
+                {t`Schedule Payment`}
               </span>
             </div>
             <div className='flex items-center gap-3 rounded-lg border border-[var(--gray-3)] bg-surface p-3'>
@@ -75,7 +77,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                   <span className='ml-1 text-[var(--orange-9)]'>●</span>
                 </span>
                 <span className='flex items-center gap-1 text-[10px] text-[var(--gray-10)]'>
-                  Net 30 Days
+                  {t`Net 30 Days`}
                 </span>
               </div>
             </div>
@@ -189,7 +191,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
             {/* Summary Cards */}
             <section>
               <h2 className='mb-4 text-xs font-bold tracking-widest text-[var(--gray-10)] uppercase'>
-                Invoice Summary
+                {t`Invoice Summary`}
               </h2>
               <div className='grid grid-cols-2 gap-x-6 gap-y-8 rounded-xl border border-[var(--gray-3)] bg-surface p-6'>
                 <div className='flex items-center gap-4'>
@@ -198,7 +200,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                   </div>
                   <div>
                     <span className='block text-[10px] font-bold text-[var(--gray-9)] uppercase'>
-                      Supplier
+                      {t`Supplier`}
                     </span>
                     <span className='font-bold text-[var(--gray-13)]'>
                       {data.supplier.name}
@@ -211,7 +213,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                   </div>
                   <div>
                     <span className='block text-[10px] font-bold text-[var(--gray-9)] uppercase'>
-                      PO Number
+                      {t`PO Number`}
                     </span>
                     <span className='font-bold text-[var(--gray-13)]'>
                       {data.poNumber}
@@ -224,7 +226,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                   </div>
                   <div>
                     <span className='block text-[10px] font-bold text-[var(--gray-9)] uppercase'>
-                      Currency
+                      {t`Currency`}
                     </span>
                     <span className='font-bold text-[var(--gray-13)]'>
                       {data.currency}
@@ -237,7 +239,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                   </div>
                   <div>
                     <span className='block text-[10px] font-bold text-[var(--gray-9)] uppercase'>
-                      Total Due
+                      {t`Total Due`}
                     </span>
                     <span className='font-bold text-[var(--green-11)]'>
                       {data.total.toFixed(2)}
@@ -250,14 +252,14 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
             {/* Field Matching */}
             <section>
               <h2 className='mb-4 text-xs font-bold tracking-widest text-[var(--gray-10)] uppercase'>
-                Field Matching
+                {t`Field Matching`}
               </h2>
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                 {[
-                  { label: 'Supplier Name', val: data.supplier.name },
-                  { label: 'PO Number', val: data.poNumber },
-                  { label: 'Currency', val: data.currency },
-                  { label: 'Total Due', val: data.total.toFixed(2) },
+                  { label: t`Supplier Name`, val: data.supplier.name },
+                  { label: t`PO Number`, val: data.poNumber },
+                  { label: t`Currency`, val: data.currency },
+                  { label: t`Total Due`, val: data.total.toFixed(2) },
                 ].map((field, i) => (
                   <div
                     className='rounded-xl border border-[var(--gray-3)] bg-surface p-5'
@@ -278,7 +280,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                     <div className='grid grid-cols-2 gap-4'>
                       <div className='rounded-lg border border-[var(--gray-3)] bg-[var(--gray-2)] p-3'>
                         <span className='mb-1 block text-[9px] font-bold text-[var(--gray-9)] uppercase'>
-                          Extracted
+                          {t`Extracted`}
                         </span>
                         <span className='text-xs font-semibold text-[var(--gray-12)]'>
                           {field.val}
@@ -286,7 +288,7 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                       </div>
                       <div className='rounded-lg border border-[var(--gray-3)] bg-[var(--gray-2)] p-3'>
                         <span className='mb-1 block text-[9px] font-bold text-[var(--gray-9)] uppercase'>
-                          PO Value
+                          {t`PO Value`}
                         </span>
                         <span className='text-xs font-semibold text-[var(--gray-12)]'>
                           {field.val}
@@ -302,20 +304,20 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
             <section>
               <div className='mb-4 flex items-center justify-between'>
                 <h2 className='text-xs font-bold tracking-widest text-[var(--gray-10)] uppercase'>
-                  Line Item Matching
+                  {t`Line Item Matching`}
                 </h2>
                 <span className='text-[10px] font-medium text-[var(--gray-9)] italic'>
-                  {data.lineItems.length} of {data.lineItems.length} matched
+                  {t`${data.lineItems.length} of ${data.lineItems.length} matched`}
                 </span>
               </div>
               <div className='overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface'>
                 <table className='w-full text-xs'>
                   <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-2)]'>
                     <tr className='text-left text-[var(--gray-11)]'>
-                      <th className='p-3'>ITEM DESCRIPTION</th>
-                      <th className='p-3'>EXTRACTED</th>
-                      <th className='p-3'>PO VALUE</th>
-                      <th className='p-3'>STATUS</th>
+                      <th className='p-3'>{t`ITEM DESCRIPTION`}</th>
+                      <th className='p-3'>{t`EXTRACTED`}</th>
+                      <th className='p-3'>{t`PO VALUE`}</th>
+                      <th className='p-3'>{t`STATUS`}</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-[var(--gray-2)]'>

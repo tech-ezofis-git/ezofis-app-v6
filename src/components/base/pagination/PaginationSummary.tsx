@@ -1,3 +1,5 @@
+import { useLingui } from '@lingui/react/macro'
+
 interface Props {
   currentPage: number
   pageSize: number
@@ -11,6 +13,7 @@ const PaginationSummary = ({
   pageSize,
   totalItems,
 }: Props) => {
+  const { t } = useLingui()
   const isAll = pageSize === 0
   let from = 0
   if (isAll) {
@@ -19,10 +22,11 @@ const PaginationSummary = ({
     from = (currentPage - 1) * pageSize + 1
   }
   const to = isAll ? totalItems : Math.min(from + pageSize - 1, totalItems)
+  const label = itemLabel || t`Items`
 
   return (
     <div className='hidden text-13 font-medium text-gray-11 select-none sm:block'>
-      Showing {from} - {to} of {totalItems} {itemLabel}
+      {t`Showing ${from} - ${to} of ${totalItems} ${label}`}
     </div>
   )
 }

@@ -1,20 +1,17 @@
 import type { ReactNode } from 'react'
-import cn from '@/utils/cn'
 
 type SettingsSetupContentProps = {
   children: ReactNode
+  /** @deprecated Content always uses the full available width. */
   fullWidth?: boolean
 }
 
 export default function SettingsSetupContent({
   children,
-  fullWidth = false,
 }: SettingsSetupContentProps) {
   return (
-    <section className='flex h-full min-h-0 flex-1 flex-col justify-between overflow-hidden px-6 py-6 md:px-8'>
-      <div className={cn('w-full', !fullWidth && 'max-w-[860px]')}>
-        {children}
-      </div>
+    <section className='ez-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-6 py-6 md:px-8'>
+      <div className='w-full min-w-0'>{children}</div>
     </section>
   )
 }

@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
@@ -84,6 +85,7 @@ export default function EditFieldMappings({
   onChangeMapping,
   onSave,
 }: EditFieldMappingsProps) {
+  const { t } = useLingui()
   const [openFieldDropdown, setOpenFieldDropdown] = useState<string | null>(
     null,
   )
@@ -104,7 +106,7 @@ export default function EditFieldMappings({
   const handleResetToSuggested = () => {
     onChangeMapping({ ...suggestedMappingRef.current })
     showToast({
-      message: 'Reset to initial auto-mapped suggestions.',
+      message: t`Reset to initial auto-mapped suggestions.`,
       variant: 'default',
     })
   }
@@ -141,7 +143,7 @@ export default function EditFieldMappings({
           SYSTEM_TEMPLATE_COLUMNS.find((c) => c.key === existingFieldKey)
             ?.label || existingFieldKey
         showToast({
-          message: `Warning: Column "${column}" is already mapped to "${colLabel}".`,
+          message: t`Warning: Column "${column}" is already mapped to "${colLabel}".`,
           variant: 'warning',
         })
       }
@@ -178,7 +180,7 @@ export default function EditFieldMappings({
             className='size-4 transition-transform group-hover:-translate-x-0.5'
             name='tabler:arrow-left'
           />
-          <span>Back to PO Setup</span>
+          <span>{t`Back to PO Setup`}</span>
         </button>
       </div>
 
@@ -190,12 +192,10 @@ export default function EditFieldMappings({
             {/* Section Header */}
             <div className='space-y-1'>
               <h1 className='text-xl font-bold tracking-tight text-gray-13 xl:text-2xl'>
-                Edit Field Mappings
+                {t`Edit Field Mappings`}
               </h1>
               <p className='max-w-3xl text-xs leading-relaxed font-medium text-gray-10 xl:text-sm'>
-                Your PO Master Data source has been parsed. Below, manually
-                align the columns from your uploaded CSV/XLSX file to the
-                required system fields for accurate processing.
+                {t`Your PO Master Data source has been parsed. Below, manually align the columns from your uploaded CSV/XLSX file to the required system fields for accurate processing.`}
               </p>
             </div>
 
@@ -204,8 +204,8 @@ export default function EditFieldMappings({
               {/* Table Header */}
               <div className='flex shrink-0 items-center justify-between border-b border-border-default bg-surface-secondary/40 px-6 py-2.5 text-[11px] font-bold tracking-wider text-gray-8 uppercase'>
                 <div className='grid flex-1 grid-cols-2'>
-                  <div>System Field</div>
-                  <div>File Column</div>
+                  <div>{t`System Field`}</div>
+                  <div>{t`File Column`}</div>
                 </div>
                 <button
                   className='flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border-0 bg-transparent px-2.5 py-1 text-[11px] font-bold text-primary-9 transition-colors hover:bg-primary-9/5 hover:text-primary-10 active:scale-95'
@@ -213,7 +213,7 @@ export default function EditFieldMappings({
                   onClick={handleResetToSuggested}
                 >
                   <Icon className='size-3.5' name='tabler:rotate' />
-                  <span>Reset to Suggested</span>
+                  <span>{t`Reset to Suggested`}</span>
                 </button>
               </div>
 
@@ -247,13 +247,13 @@ export default function EditFieldMappings({
                           <Icon
                             className='mt-1 size-3 shrink-0 animate-pulse text-red-11'
                             name='tabler:asterisk'
-                            title='Required Field'
+                            title={t`Required Field`}
                           />
                         ) : (
                           <Icon
                             className='mt-1 size-3 shrink-0 text-gray-7'
                             name='tabler:circle'
-                            title='Optional Field'
+                            title={t`Optional Field`}
                           />
                         )}
                         <div className='space-y-0.5'>
@@ -263,7 +263,7 @@ export default function EditFieldMappings({
                             </span>
                             {col.required && (
                               <span className='text-[10px] font-bold tracking-wider text-red-11/70 uppercase'>
-                                (Required)
+                                ({t`Required`})
                               </span>
                             )}
                           </div>
@@ -297,7 +297,7 @@ export default function EditFieldMappings({
                               />
                             )}
                             <span>
-                              {selectedVal || 'Select matching column...'}
+                              {selectedVal || t`Select matching column...`}
                             </span>
                           </span>
                           <div className='flex items-center gap-2'>
@@ -331,7 +331,7 @@ export default function EditFieldMappings({
                                 className='size-3.5 text-gray-8'
                                 name='tabler:ban'
                               />
-                              <span>Skipped (Will not be imported)</span>
+                              <span>{t`Skipped (Will not be imported)`}</span>
                             </span>
                           ) : col.required && !selectedVal ? (
                             <span className='animate-in slide-in-from-top-1 flex items-center gap-1 text-[11px] font-bold text-red-11'>
@@ -339,24 +339,24 @@ export default function EditFieldMappings({
                                 className='size-3.5'
                                 name='tabler:exclamation-circle'
                               />
-                              <span>Required field must be mapped.</span>
+                              <span>{t`Required field must be mapped.`}</span>
                             </span>
                           ) : (
                             <p className='text-[11px] font-medium text-gray-8'>
                               {selectedVal ? (
                                 <>
-                                  Preview:{' '}
+                                  {t`Preview:`}{' '}
                                   <span className='font-semibold text-gray-12'>
                                     "
                                     {String(
-                                      previewRows[0]?.[selectedVal] ?? 'empty',
+                                      previewRows[0]?.[selectedVal] ?? t`empty`,
                                     )}
                                     "
                                   </span>
                                 </>
                               ) : (
                                 <span className='text-gray-7 italic'>
-                                  No column mapped
+                                  {t`No column mapped`}
                                 </span>
                               )}
                             </p>
@@ -374,7 +374,7 @@ export default function EditFieldMappings({
                               />
                               <input
                                 className='w-full rounded-lg border border-border-default bg-surface-secondary py-2 pr-3 pl-9 text-xs font-semibold text-gray-12 outline-hidden focus:border-primary-9 focus:ring-1 focus:ring-primary-9'
-                                placeholder='Search columns...'
+                                placeholder={t`Search columns...`}
                                 type='text'
                                 value={searchText}
                                 onChange={(e) => setSearchText(e.target.value)}
@@ -383,7 +383,7 @@ export default function EditFieldMappings({
                             </div>
 
                             <div className='border-b border-border-default/45 px-3 py-1.5 text-[9px] font-extrabold tracking-wider text-gray-8 uppercase'>
-                              Select File Column
+                              {t`Select File Column`}
                             </div>
 
                             <div className='custom-scrollbar max-h-40 overflow-y-auto py-1'>
@@ -406,7 +406,7 @@ export default function EditFieldMappings({
                                     className='size-4 text-gray-8'
                                     name='tabler:ban'
                                   />
-                                  <span>Skip to Import</span>
+                                  <span>{t`Skip to Import`}</span>
                                 </span>
                                 {selectedVal === 'Skip to Import' && (
                                   <Icon
@@ -444,8 +444,8 @@ export default function EditFieldMappings({
                               {filteredColumns.length === 0 && (
                                 <div className='px-3 py-4 text-center text-xs font-semibold text-gray-8'>
                                   {uploadedColumns.length === 0
-                                    ? 'No columns detected'
-                                    : 'No columns match search'}
+                                    ? t`No columns detected`
+                                    : t`No columns match search`}
                                 </div>
                               )}
                             </div>
@@ -459,7 +459,7 @@ export default function EditFieldMappings({
                                   setOpenFieldDropdown(null)
                                 }}
                               >
-                                Clear mapping
+                                {t`Clear mapping`}
                               </button>
                             )}
                           </div>
@@ -474,7 +474,7 @@ export default function EditFieldMappings({
             {/* Data Preview Section */}
             <div className='space-y-2'>
               <div className='flex items-center justify-between'>
-                <h2 className='text-lg font-bold text-gray-13'>Data Preview</h2>
+                <h2 className='text-lg font-bold text-gray-13'>{t`Data Preview`}</h2>
               </div>
 
               <div className='overflow-hidden rounded-2xl border border-border-default bg-surface-primary shadow-2xs'>
@@ -496,7 +496,7 @@ export default function EditFieldMappings({
                         ))}
                         {mappedPreviewColumns.length === 0 && (
                           <th className='px-4 py-5 text-center text-[12px] font-semibold text-gray-8'>
-                            Map columns to preview data
+                            {t`Map columns to preview data`}
                           </th>
                         )}
                       </tr>
@@ -548,12 +548,12 @@ export default function EditFieldMappings({
                                       className='animate-in fade-in size-3.5 text-gray-8'
                                       name='tabler:ban'
                                     />
-                                    <span>skipped</span>
+                                    <span>{t`skipped`}</span>
                                   </span>
                                 ) : (
                                   displayVal || (
                                     <span className='text-gray-7 italic'>
-                                      empty
+                                      {t`empty`}
                                     </span>
                                   )
                                 )}
@@ -570,7 +570,7 @@ export default function EditFieldMappings({
                               className='px-4 py-8 text-center text-xs font-semibold text-gray-8'
                               colSpan={mappedPreviewColumns.length}
                             >
-                              No preview rows available in this file.
+                              {t`No preview rows available in this file.`}
                             </td>
                           </tr>
                         )}
@@ -587,11 +587,10 @@ export default function EditFieldMappings({
             <div className='flex flex-col gap-5 rounded-2xl border border-border-default bg-surface-primary p-5 shadow-sm'>
               <div className='space-y-2'>
                 <span className='block text-[9px] font-semibold tracking-wider text-gray-8 uppercase'>
-                  Mapping Status
+                  {t`Mapping Status`}
                 </span>
                 <span className='block w-full rounded-xl bg-accent-soft px-3 py-2 text-center text-xs font-bold text-primary-9'>
-                  {mappedRequiredCount} of {requiredFields.length} required
-                  fields mapped
+                  {t`${mappedRequiredCount} of ${requiredFields.length} required fields mapped`}
                 </span>
 
                 {/* Mini progress bar */}
@@ -614,7 +613,7 @@ export default function EditFieldMappings({
                 </div>
                 <div className='min-w-0 flex-1'>
                   <span className='block text-[9px] font-semibold tracking-wider text-gray-8 uppercase'>
-                    Source File
+                    {t`Source File`}
                   </span>
                   <div
                     className='truncate text-[12px] font-bold text-gray-12'
@@ -644,12 +643,12 @@ export default function EditFieldMappings({
                   onClick={onSave}
                 >
                   <Icon className='size-4.5' name='tabler:circle-check' />
-                  <span>Save Mappings</span>
+                  <span>{t`Save Mappings`}</span>
                 </button>
 
                 {isSaveDisabled && (
                   <p className='animate-pulse text-[11px] leading-normal font-semibold text-red-11'>
-                    * Map all required fields to save.
+                    {t`* Map all required fields to save.`}
                   </p>
                 )}
 
@@ -658,7 +657,7 @@ export default function EditFieldMappings({
                   type='button'
                   onClick={onCancel}
                 >
-                  Cancel
+                  {t`Cancel`}
                 </button>
               </div>
             </div>

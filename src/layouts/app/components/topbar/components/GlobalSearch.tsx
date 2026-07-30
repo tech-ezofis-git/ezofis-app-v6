@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion } from 'motion/react'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { useEffect, useRef, useState } from 'react'
@@ -16,6 +17,7 @@ import {
 } from './globalSearchApi'
 
 const GlobalSearch = () => {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const pageContext = useAskAiActionStore((state) => state.pageContext)
   const setPending = useAskAiActionStore((state) => state.setPending)
@@ -89,7 +91,7 @@ const GlobalSearch = () => {
         if (requestId !== requestIdRef.current) return
         setResults([])
         setError(
-          err instanceof Error ? err.message : 'Could not complete search.',
+          err instanceof Error ? err.message : t`Could not complete search.`,
         )
       })
       .finally(() => {
@@ -166,7 +168,7 @@ const GlobalSearch = () => {
           >
             <input
               className='min-w-0 flex-1 bg-transparent text-[13.5px] text-gray-13 outline-none placeholder:text-gray-9'
-              placeholder='Search...'
+              placeholder={t`Search...`}
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -183,7 +185,7 @@ const GlobalSearch = () => {
               }}
             />
             <button
-              aria-label='Search'
+              aria-label={t`Search`}
               className='grid size-7 shrink-0 place-items-center rounded-md text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-13'
               type='button'
               onClick={(e) => {
@@ -201,11 +203,11 @@ const GlobalSearch = () => {
           </div>
         ) : (
           <IconButton
-            ariaLabel='Search'
+            ariaLabel={t`Search`}
             className='text-gray-11 hover:text-gray-13'
             color='gray'
             icon='lucide:search'
-            tooltip='Search'
+            tooltip={t`Search`}
             variant='ghost'
           />
         )
@@ -238,16 +240,15 @@ const GlobalSearch = () => {
                 key='idle'
               >
                 <AiBrandIcon
-                  alt='Search AI'
+                  alt={t`Search AI`}
                   className='size-[22px] opacity-80'
                   variant='curved-purple'
                 />
                 <p className='text-sm font-medium text-gray-12'>
-                  Start typing to search
+                  {t`Start typing to search`}
                 </p>
                 <p className='max-w-[280px] text-xs leading-5 text-gray-10'>
-                  Search documents, folders, requests, and more across your
-                  workspace.
+                  {t`Search documents, folders, requests, and more across your workspace.`}
                 </p>
               </motion.div>
             )}
@@ -274,12 +275,12 @@ const GlobalSearch = () => {
                   }}
                 >
                   <AiBrandIcon
-                    alt='Searching AI'
+                    alt={t`Searching AI`}
                     className='size-[24px]'
                     variant='curved-purple'
                   />
                 </motion.div>
-                <p className='text-xs font-medium text-gray-11'>Searching…</p>
+                <p className='text-xs font-medium text-gray-11'>{t`Searching…`}</p>
                 <div className='h-1 w-44 overflow-hidden rounded-full bg-primary-3'>
                   <div className='global-search-bar h-full w-1/2 rounded-full bg-primary-9' />
                 </div>
@@ -306,7 +307,7 @@ const GlobalSearch = () => {
                 initial={{ opacity: 0 }}
                 key='empty'
               >
-                No results for “{debouncedQuery}”.
+                {t`No results for “${debouncedQuery}”.`}
               </motion.div>
             )}
 
@@ -359,13 +360,13 @@ const GlobalSearch = () => {
                               {title}
                             </span>
                             <span className='mt-0.5 block truncate text-[12px] text-gray-10'>
-                              {date || hit.type || 'Result'}
+                              {date || hit.type || t`Result`}
                             </span>
                           </span>
 
                           {isLatest ? (
                             <span className='shrink-0 rounded-full bg-primary-3 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary-10 lowercase'>
-                              latest
+                              {t`latest`}
                             </span>
                           ) : null}
 
@@ -389,10 +390,10 @@ const GlobalSearch = () => {
                     name='lucide:search'
                   />
                   <span className='min-w-0 flex-1 truncate text-[13px] text-gray-12'>
-                    All search results for “{searchLabel}”
+                    {t`All search results for “${searchLabel}”`}
                   </span>
                   <span className='shrink-0 text-[12px] text-gray-9'>
-                    Press <span>ENTER</span>
+                    {t`Press`} <span>ENTER</span>
                   </span>
                 </button>
               </motion.div>

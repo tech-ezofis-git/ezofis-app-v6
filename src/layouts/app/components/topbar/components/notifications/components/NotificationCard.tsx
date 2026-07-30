@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import type { NotificationItem, NotificationType } from '../types'
 
@@ -16,6 +17,7 @@ const typeStyles: Record<NotificationType, { icon: string; style: string }> = {
 }
 
 const NotificationCard = ({ notification, onMarkAsRead, onItemClick }: Props) => {
+  const { t } = useLingui()
   const { icon, style } = typeStyles[notification.type] || typeStyles.info
 
   return (
@@ -44,7 +46,7 @@ const NotificationCard = ({ notification, onMarkAsRead, onItemClick }: Props) =>
       {!notification.isRead && (
         <button
           className='h-2 w-2 rounded-full bg-primary-9 shrink-0 self-center hover:scale-125 transition-transform'
-          title='Mark as read'
+          title={t`Mark as read`}
           onClick={(e) => {
             e.stopPropagation()
             onMarkAsRead?.(notification.id)

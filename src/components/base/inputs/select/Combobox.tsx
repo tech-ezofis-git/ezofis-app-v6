@@ -27,7 +27,9 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
     {
       autoOpen,
       creatable,
+      createOptionLabel,
       dropdownFooter,
+      isCreatableSearch,
       options,
       position = 'bottom-start',
       rightSectionIcon,
@@ -71,20 +73,38 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
       event: React.KeyboardEvent<HTMLInputElement>,
     ) => {
       if (event.key === 'Enter' && creatable && search.trim()) {
+        const trimmed = search.trim()
+        if (isCreatableSearch && !isCreatableSearch(trimmed)) return
+
         // If there's an exact match in current options, let Mantine handle it naturally
         const hasExactMatch = options.some(
-          (o) => o.name.toLowerCase() === search.toLowerCase(),
+          (o) =>
+            o.name.toLowerCase() === trimmed.toLowerCase() ||
+            String(o.value || '').toLowerCase() === trimmed.toLowerCase(),
         )
         if (hasExactMatch) return
 
+        event.preventDefault()
         const id = Date.now()
-        const newOption = { description: '', disabled: false, id, name: search }
+        const newOption = {
+          description: '',
+          disabled: false,
+          id,
+          name: trimmed,
+          value: trimmed,
+        }
 
         if (variant === 'single') {
           onChange([newOption])
         } else {
-          onChange([...value, newOption])
+          const alreadySelected = value.some(
+            (item) =>
+              String(item.value || item.name).toLowerCase() ===
+              trimmed.toLowerCase(),
+          )
+          if (!alreadySelected) onChange([...value, newOption])
         }
+        onSearch('')
         comboboxStore.closeDropdown()
       }
     }
@@ -124,6 +144,8 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
           <ComboboxOptions
             comboboxStore={comboboxStore}
             creatable={creatable}
+            createOptionLabel={createOptionLabel}
+            isCreatableSearch={isCreatableSearch}
             options={options}
             search={search}
             value={value}

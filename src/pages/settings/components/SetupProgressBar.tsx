@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import cn from '@/utils/cn'
 import { getSetupProgressStyle } from '../helpers/settingsSetupProgress'
 
@@ -6,6 +7,7 @@ type SetupProgressBarProps = {
 }
 
 export default function SetupProgressBar({ progress }: SetupProgressBarProps) {
+  const { t } = useLingui()
   const { barClassName, textClassName } = getSetupProgressStyle(progress)
 
   return (
@@ -16,7 +18,7 @@ export default function SetupProgressBar({ progress }: SetupProgressBarProps) {
           textClassName,
         )}
       >
-        {progress}% Complete
+        {t`${progress}% Complete`}
       </div>
       <div className='h-1.5 overflow-hidden rounded-full bg-[var(--gray-3)]'>
         <div

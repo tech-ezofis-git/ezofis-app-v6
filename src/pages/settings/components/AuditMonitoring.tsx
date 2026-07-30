@@ -1,4 +1,5 @@
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { useLingui } from '@lingui/react/macro'
 import { Database, LogIn, Settings, Shield, UserCog } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -31,6 +32,7 @@ type Severity = 'info' | 'warning' | 'critical' | string
 const AUDIT_LOGS_PAGE_SIZE = 100
 
 export default function AuditMonitoring({ onBack }: AuditUserProps) {
+  const { t } = useLingui()
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [eventsData, setEventsData] = useState<EventLog[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -109,22 +111,22 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
 
   const categoryOptions = useMemo(
     () => [
-      { label: 'Authentication', value: 'Authentication' },
-      { label: 'User Management', value: 'User Management' },
-      { label: 'Security', value: 'Security' },
-      { label: 'Configuration', value: 'Configuration' },
-      { label: 'Data Access', value: 'Data Access' },
+      { label: t`Authentication`, value: 'Authentication' },
+      { label: t`User Management`, value: 'User Management' },
+      { label: t`Security`, value: 'Security' },
+      { label: t`Configuration`, value: 'Configuration' },
+      { label: t`Data Access`, value: 'Data Access' },
     ],
-    [],
+    [t],
   )
 
   const severityOptions = useMemo(
     () => [
-      { label: 'Info', value: 'info' },
-      { label: 'Warning', value: 'warning' },
-      { label: 'Critical', value: 'critical' },
+      { label: t`Info`, value: 'info' },
+      { label: t`Warning`, value: 'warning' },
+      { label: t`Critical`, value: 'critical' },
     ],
-    [],
+    [t],
   )
 
   const userEmailOptions = useMemo(() => {
@@ -146,14 +148,14 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
   }
 
   return (
-    <main className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      <section className='flex min-h-0 flex-1 flex-col'>
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
+      <section className='flex min-h-0 flex-1 flex-col overflow-hidden'>
         <SettingsPageHeader
-          description='Track user activity, configuration changes, and security events across the platform.'
-          title='Audit & Monitoring'
+          description={t`Track user activity, configuration changes, and security events across the platform.`}
+          title={t`Audit & Monitoring`}
           onBack={onBack}
         />
-        <div className='flex flex-1 flex-col overflow-hidden p-4'>
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
           <CustomFilter
             activeFilters={activeFilters}
             trailingActions={<TableExport table={eventsTable.table as any} />}
@@ -164,7 +166,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
                 icon: 'tabler:refresh',
                 id: 'refresh',
                 isIconButton: true,
-                tooltip: 'Refresh',
+                tooltip: t`Refresh`,
                 variant: 'outline',
                 onClick: () => loadData(),
               },
@@ -173,17 +175,17 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
               <TableSearch table={eventsTable.table as any} />
             }
             filters={[
-              { id: 'category', label: 'Category', options: categoryOptions },
-              { id: 'severity', label: 'Severity', options: severityOptions },
+              { id: 'category', label: t`Category`, options: categoryOptions },
+              { id: 'severity', label: t`Severity`, options: severityOptions },
             ]}
             moreFilters={[
               {
                 id: 'userEmail',
-                label: 'User Email',
+                label: t`User Email`,
                 options: userEmailOptions,
               },
-              { dataType: 'date', id: 'dateFrom', label: 'Date From' },
-              { dataType: 'date', id: 'dateTo', label: 'Date To' },
+              { dataType: 'date', id: 'dateFrom', label: t`Date From` },
+              { dataType: 'date', id: 'dateTo', label: t`Date To` },
             ]}
             showReset={
               Object.keys(activeFilters).some((k) => activeFilters[k]) ||
@@ -196,9 +198,9 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
           <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
-                emptyDescription='No audit events or monitoring logs available.'
+                emptyDescription={t`No audit events or monitoring logs available.`}
                 emptyIcon='lucide:shield'
-                emptyTitle='No logs found'
+                emptyTitle={t`No logs found`}
                 isLoading={isLoading}
                 isReLoading={isReLoading}
                 pageSize={pageSize}
@@ -214,7 +216,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
 
             <Pagination
               className='mt-4 shrink-0'
-              itemLabel='Logs'
+              itemLabel={t`Logs`}
               page={page}
               pageSize={pageSize}
               showPageNumbers={false}
@@ -254,12 +256,19 @@ function cn(...values: Array<string | false | null | undefined>) {
 }
 
 function SeverityBadge({ severity }: { severity: Severity }) {
+  const { t } = useLingui()
   const normalizedSeverity = (severity || 'info').toLowerCase()
+  const label =
+    normalizedSeverity === 'warning'
+      ? t`Warning`
+      : normalizedSeverity === 'critical'
+        ? t`Critical`
+        : t`Info`
 
   return (
     <span
       className={cn(
-        'inline-flex rounded-[8px] border px-3 py-1 text-xs font-medium capitalize shadow-sm',
+        'inline-flex rounded-[8px] border px-3 py-1 text-xs font-medium shadow-sm',
         normalizedSeverity === 'info' && 'border-blue-5 bg-blue-2 text-blue-11',
         normalizedSeverity === 'warning' &&
           'border-orange-5 bg-orange-2 text-orange-11',
@@ -267,12 +276,13 @@ function SeverityBadge({ severity }: { severity: Severity }) {
           'border-red-5 bg-red-2 text-red-11',
       )}
     >
-      {normalizedSeverity}
+      {label}
     </span>
   )
 }
 
 function useAuditEventsTable(rows: EventLog[]) {
+  const { t } = useLingui()
   const columnHelper = createColumnHelper<EventLog>()
   const tableSearchOptions = useSettingsTableSearch()
 
@@ -280,8 +290,8 @@ function useAuditEventsTable(rows: EventLog[]) {
     () => [
       columnHelper.accessor('eventTitle', {
         enableSorting: false,
-        header: 'Event Title',
-        meta: { ...settingsHeaderMeta.start, label: 'Event Title' },
+        header: t`Event Title`,
+        meta: { ...settingsHeaderMeta.start, label: t`Event Title` },
         minSize: 200,
         size: 240,
         cell: ({ row }) => (
@@ -292,8 +302,8 @@ function useAuditEventsTable(rows: EventLog[]) {
       }),
       columnHelper.accessor('userEmail', {
         enableSorting: false,
-        header: 'User',
-        meta: { ...settingsHeaderMeta.start, label: 'User' },
+        header: t`User`,
+        meta: { ...settingsHeaderMeta.start, label: t`User` },
         minSize: 200,
         size: 240,
         cell: ({ row }) => (
@@ -304,16 +314,16 @@ function useAuditEventsTable(rows: EventLog[]) {
       }),
       columnHelper.accessor('category', {
         enableSorting: false,
-        header: 'Category',
-        meta: { ...settingsHeaderMeta.start, label: 'Category' },
+        header: t`Category`,
+        meta: { ...settingsHeaderMeta.start, label: t`Category` },
         minSize: 140,
         size: 160,
         cell: (info) => <CategoryCell category={info.getValue()} />,
       }),
       columnHelper.accessor('severity', {
         enableSorting: false,
-        header: 'Severity',
-        meta: { ...settingsHeaderMeta.start, label: 'Severity' },
+        header: t`Severity`,
+        meta: { ...settingsHeaderMeta.start, label: t`Severity` },
         minSize: 110,
         size: 120,
         cell: (info) => (
@@ -322,7 +332,7 @@ function useAuditEventsTable(rows: EventLog[]) {
       }),
       columnHelper.accessor('createdAtUtc', {
         enableSorting: false,
-        header: 'Created Date',
+        header: t`Created Date`,
         meta: settingsHeaderMeta.start,
         minSize: 150,
         size: 170,
@@ -335,7 +345,7 @@ function useAuditEventsTable(rows: EventLog[]) {
         ),
       }),
     ],
-    [columnHelper],
+    [columnHelper, t],
   )
 
   const table = useReactTable({

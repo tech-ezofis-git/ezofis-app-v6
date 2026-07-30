@@ -478,6 +478,7 @@ export type SharedWithMeItem = {
   recipientEmail?: string
   shareId?: string
   shareToken?: string
+  shareUrl?: string
   sharedAtUtc?: string
   sourceItemId?: string
   sourceOrganizationName?: string
@@ -492,6 +493,16 @@ const getFolderTenantHeaders = (tenantId?: string) => {
     authUserStore.getState().identity?.tenantId ||
     ''
   return resolved ? { 'X-Tenant-Id': resolved } : undefined
+}
+
+const normalizeShareList = (payload: unknown): SharedWithMeItem[] => {
+  if (Array.isArray(payload)) return payload as SharedWithMeItem[]
+  if (!payload || typeof payload !== 'object') return []
+  const record = payload as Record<string, unknown>
+  if (Array.isArray(record.items)) return record.items as SharedWithMeItem[]
+  if (Array.isArray(record.data)) return record.data as SharedWithMeItem[]
+  if (Array.isArray(record.shares)) return record.shares as SharedWithMeItem[]
+  return []
 }
 
 export const shareRepositoryItem = async (payload: {
@@ -532,6 +543,52 @@ export const shareRepositoryItem = async (payload: {
   return response
 }
 
+/** People this file was shared with (sharer-side list). */
+export const getRepositoryItemShares = async (payload: {
+  itemId: string
+  repositoryId: string
+  tenantId?: string
+}) => {
+  const response: { data: SharedWithMeItem[] | null; error: string } = {
+    data: null,
+    error: '',
+  }
+
+  const headers = getFolderTenantHeaders(payload.tenantId)
+  const urls = [
+    `/repositories/${payload.repositoryId}/items/${payload.itemId}/shares`,
+    `/repositories/${payload.repositoryId}/items/${payload.itemId}/share`,
+  ]
+
+  let lastError = ''
+  for (const url of urls) {
+    try {
+      const { data, status } = await axiosV6({
+        headers,
+        method: 'GET',
+        url,
+      })
+      if (status === 200) {
+        response.data = normalizeShareList(unwrap(data) ?? data)
+        return response
+      }
+    } catch (e: any) {
+      const status = e?.response?.status
+      lastError =
+        e?.response?.data?.message ||
+        e?.response?.data ||
+        'error fetching item shares'
+      if (status && status !== 404) {
+        response.error = lastError
+        return response
+      }
+    }
+  }
+
+  response.error = lastError || 'error fetching item shares'
+  return response
+}
+
 export const getSharedWithMe = async (tenantId?: string) => {
   const response: { data: SharedWithMeItem[] | null; error: string } = {
     data: null,
@@ -546,14 +603,7 @@ export const getSharedWithMe = async (tenantId?: string) => {
     })
 
     if (status !== 200) throw 'invalid status code'
-    const payload = unwrap(data) ?? data
-    response.data = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.items)
-        ? payload.items
-        : Array.isArray(payload?.data)
-          ? payload.data
-          : []
+    response.data = normalizeShareList(unwrap(data) ?? data)
   } catch (e: any) {
     console.error(e)
     response.error =
@@ -598,6 +648,7 @@ export const revokeRepositoryShare = async (payload: {
 ;(authApiV6 as any).getRepositoryItems = getRepositoryItems
 ;(authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
 ;(authApiV6 as any).shareRepositoryItem = shareRepositoryItem
+;(authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
 ;(authApiV6 as any).getSharedWithMe = getSharedWithMe
 ;(authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
 
@@ -774,8 +825,114 @@ export const UploadFiles = async (repositoryId: string, formData: FormData) => {
 
   return response
 }
+
+export interface AiSummaryApiResponse {
+  creditConsumed?: boolean
+  output?: string
+}
+
+type AiSummaryResult = {
+  cancelled?: boolean
+  data: AiSummaryApiResponse | null
+  error: string
+  status?: number
+}
+
+const inflightAiSummaryRequests = new Map<string, Promise<AiSummaryResult>>()
+
+const fetchRepositoryItemAiSummary = async (payload: {
+  itemId: string
+  repositoryId: string
+}): Promise<AiSummaryResult> => {
+  const response: AiSummaryResult = { data: null, error: '' }
+
+  try {
+    const { data, status } = await axiosV6({
+      method: 'POST',
+      // AI generation can take a while on cache miss.
+      timeout: 180_000,
+      // Long-running; do not abort when React Strict Mode remounts.
+      skipCancellation: true,
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/ai-summary`,
+    } as any)
+
+    if (status < 200 || status >= 300) throw 'invalid status code'
+
+    const payloadData = (data?.data ?? data) as AiSummaryApiResponse
+    response.data = {
+      creditConsumed: Boolean(
+        (payloadData as any)?.creditConsumed ??
+          (payloadData as any)?.CreditConsumed,
+      ),
+      output:
+        (payloadData as any)?.output ??
+        (payloadData as any)?.Output ??
+        (typeof payloadData === 'string' ? payloadData : undefined),
+    }
+    response.status = status
+  } catch (e: any) {
+    const isCancelled =
+      axios.isCancel(e) ||
+      e?.code === 'ERR_CANCELED' ||
+      e?.name === 'CanceledError' ||
+      /cancel/i.test(String(e?.message || ''))
+
+    if (isCancelled) {
+      response.cancelled = true
+      response.error = ''
+      return response
+    }
+
+    console.error(e)
+    const status = e?.response?.status as number | undefined
+    response.status = status
+    const body = e?.response?.data
+    const message =
+      (typeof body === 'string' && body) ||
+      body?.error ||
+      body?.message ||
+      (e?.code === 'ECONNABORTED'
+        ? 'AI summary service timed out.'
+        : status === 400
+          ? 'Repository item does not have a file path.'
+          : status === 404
+            ? 'Repository item not found.'
+            : status === 502
+              ? 'AI summary service timed out.'
+              : 'error fetching AI summary')
+    response.error = String(message)
+  }
+
+  return response
+}
+
+export const getRepositoryItemAiSummary = async (payload: {
+  force?: boolean
+  itemId: string
+  repositoryId: string
+}) => {
+  const key = `${payload.repositoryId}:${payload.itemId}`
+
+  if (!payload.force) {
+    const inflight = inflightAiSummaryRequests.get(key)
+    if (inflight) return inflight
+  } else {
+    inflightAiSummaryRequests.delete(key)
+  }
+
+  const request = fetchRepositoryItemAiSummary(payload).finally(() => {
+    // Only clear if this promise is still the active one for the key.
+    if (inflightAiSummaryRequests.get(key) === request) {
+      inflightAiSummaryRequests.delete(key)
+    }
+  })
+
+  inflightAiSummaryRequests.set(key, request)
+  return request
+}
 ;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
 ;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
 ;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
+;(authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
 ;(authApiV6 as any).uploadForOcr = uploadForOcr
 ;(authApiV6 as any).UploadFiles = UploadFiles

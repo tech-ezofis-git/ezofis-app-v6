@@ -1,6 +1,4 @@
 import {
-  ArrowDown,
-  ArrowUp,
   // Search,
   ChevronDown,
   ChevronUp,
@@ -10,6 +8,7 @@ import {
   X,
 } from 'lucide-react'
 import React from 'react'
+import { useLingui } from '@lingui/react/macro'
 import {
   Area,
   AreaChart,
@@ -59,15 +58,9 @@ const BulletIcon = () => (
     <circle cx='12' cy='12' fill='currentColor' r='3' />
   </svg>
 )
-const getDynamicColor = (index: number, total: number, isSecondary = false) => {
-  const totalCount = Math.max(total, 1)
-  const baseHue = isSecondary ? 180 : 270
-  const hue = (baseHue + (index * (360 / totalCount))) % 360
-  const lightness = 48 + (index % 3) * 5
-  return `hsl(${Math.round(hue)}, 70%, ${lightness}%)`
-}
 
 export default function DashboardCharts() {
+  const { t } = useLingui()
   const {
     currency,
     drillAgingBucket,
@@ -410,40 +403,40 @@ export default function DashboardCharts() {
       {
         dataType: 'date',
         id: 'timeframe',
-        label: 'Timeframe',
+        label: t`Timeframe`,
         options: [
-          { label: 'Today', value: 'today' },
-          { label: 'This week', value: 'week' },
-          { label: 'This month', value: 'month' },
-          { label: 'Last month', value: 'lastmonth' },
-          { label: 'Quarter', value: 'quarter' },
-          { label: 'Financial Year', value: 'fy' },
-          { label: 'Custom Range', value: 'custom' },
+          { label: t`Today`, value: 'today' },
+          { label: t`This week`, value: 'week' },
+          { label: t`This month`, value: 'month' },
+          { label: t`Last month`, value: 'lastmonth' },
+          { label: t`Quarter`, value: 'quarter' },
+          { label: t`Financial Year`, value: 'fy' },
+          { label: t`Custom Range`, value: 'custom' },
         ],
       },
       {
         id: 'department',
-        label: 'Department',
+        label: t`Department`,
         options: (filterOptions.departments || []).map((dept: string) => ({
           label: dept,
           value: dept,
         })),
         searchable: true,
-        searchPlaceholder: 'Search department...',
+        searchPlaceholder: t`Search department...`,
       },
       {
         id: 'supplierCategory',
-        label: 'Suppliers',
+        label: t`Suppliers`,
         options: (filterOptions.suppliers || []).map((sup: string) => ({
           label: sup,
           value: sup,
         })),
         searchable: true,
-        searchPlaceholder: 'Search supplier...',
+        searchPlaceholder: t`Search supplier...`,
       },
       {
         id: 'invoiceStatus',
-        label: 'Statuses',
+        label: t`Statuses`,
         options: (filterOptions.approvalStatuses || [])
           .filter((opt: any) => opt.key !== 'all')
           .map((opt: any) => ({
@@ -451,20 +444,20 @@ export default function DashboardCharts() {
             value: opt.key,
           })),
         searchable: true,
-        searchPlaceholder: 'Search status...',
+        searchPlaceholder: t`Search status...`,
       },
       {
         id: 'currency',
-        label: 'Currencies',
+        label: t`Currencies`,
         options: (filterOptions.currencies || []).map((cur: string) => ({
           label: cur,
           value: cur,
         })),
         searchable: true,
-        searchPlaceholder: 'Search currency...',
+        searchPlaceholder: t`Search currency...`,
       },
     ],
-    [filterOptions],
+    [filterOptions, t],
   )
 
   const moreFiltersProp = React.useMemo(
@@ -472,7 +465,7 @@ export default function DashboardCharts() {
       {
         icon: ClipboardList,
         id: 'status',
-        label: 'Request Status',
+        label: t`Request Status`,
         options: (filterOptions.requestStatuses || [])
           .filter((opt: any) => opt.key !== 'all')
           .map((opt: any) => ({
@@ -483,7 +476,7 @@ export default function DashboardCharts() {
       {
         icon: DollarSign,
         id: 'amount',
-        label: 'PO Amount',
+        label: t`PO Amount`,
         options: (filterOptions.poAmountTiers || [])
           .filter((opt: any) => opt.key !== 'all')
           .map((opt: any) => ({
@@ -492,7 +485,7 @@ export default function DashboardCharts() {
           })),
       },
     ],
-    [filterOptions],
+    [filterOptions, t],
   )
 
   const radarData = React.useMemo(() => {
@@ -609,7 +602,7 @@ export default function DashboardCharts() {
       <CustomFilter
         filters={filtersProp}
         moreFilters={moreFiltersProp}
-        searchPlaceholder='Search invoice, supplier, PO...'
+        searchPlaceholder={t`Search invoice, supplier, PO...`}
         searchQuery={searchQuery}
         activeFilters={{
           amount: serverActiveFilters.poAmountTier || '',
@@ -653,16 +646,16 @@ export default function DashboardCharts() {
       >
         <div className='relative z-10'>
           <h2 className='font-poppins text-14 font-semibold'>
-            AP Command Center
+            {t`AP Command Center`}
           </h2>
           <div className='mt-1 font-inter text-11 text-text-muted'>
-            {dashboardData?.header?.contextLabel || 'Loading...'}
+            {dashboardData?.header?.contextLabel || t`Loading...`}
           </div>
         </div>
         <div className='relative z-10 flex flex-wrap items-center gap-6'>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
             <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-              Total AP
+              {t`Total AP`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
               {dashboardData?.header?.totalApDisplay ||
@@ -671,7 +664,7 @@ export default function DashboardCharts() {
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
             <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-              Overdue
+              {t`Overdue`}
             </span>
             <span
               className={cn(
@@ -685,7 +678,7 @@ export default function DashboardCharts() {
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
             <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-              Open Invoices
+              {t`Open Invoices`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
               {dashboardData?.header?.openInvoices ?? metrics.openInvoices}
@@ -693,7 +686,7 @@ export default function DashboardCharts() {
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
             <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-              DPO
+              {t`DPO`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
               {dashboardData?.header?.dpoDisplay || `${metrics.dpo}d`}
@@ -715,23 +708,12 @@ export default function DashboardCharts() {
         <div className='animate-in fade-in grid grid-cols-1 gap-4 duration-300 sm:grid-cols-2 md:grid-cols-6'>
           {(dashboardData?.kpis || []).map((kpi: any) => {
             const config = getKpiConfig(kpi.key)
-            const changePercent = kpi.changePercent
-            const hasPercent = changePercent !== null && changePercent !== undefined
-            const absPercent = hasPercent ? Math.abs(changePercent) : 0
-            const trend = String(kpi.changeDirection || kpi.trend || '').toLowerCase()
-
-            const isUp = trend === 'up' || (hasPercent && changePercent > 0)
-            const isDown = trend === 'down' || (hasPercent && changePercent < 0)
-            const isFlat = trend === 'flat' || (hasPercent && changePercent === 0)
-
-            const isTrendPositive = isUp ? config.isGood : !config.isGood
-            const isTrendNeutral = isFlat || (!isUp && !isDown)
-
-            const trendVal = hasPercent
-              ? `${absPercent}%`
-              : kpi.trend === 'flat'
-                ? 'Flat'
-                : kpi.trend || ''
+            const trendVal =
+              kpi.changePercent !== null && kpi.changePercent !== undefined
+                ? `${kpi.changePercent > 0 ? '+' : ''}${kpi.changePercent}%`
+                : kpi.trend === 'flat'
+                  ? t`Flat`
+                  : kpi.trend
 
             return (
               <div
@@ -747,35 +729,22 @@ export default function DashboardCharts() {
                 <div className='text-8 font-poppins font-semibold uppercase'>
                   {kpi.label}
                 </div>
-                <div
-                  className={cn(
-                    'mt-1.5 font-poppins text-18 font-semibold',
-                    isTrendNeutral
-                      ? 'text-text-primary'
-                      : isTrendPositive
-                        ? 'text-success'
-                        : 'text-red-9',
-                  )}
-                >
+                <div className='mt-1.5 font-poppins text-18 font-semibold text-text-primary'>
                   {kpi.displayValue}
                 </div>
                 <div className='mt-2 flex items-center gap-1.5 text-11 font-semibold'>
                   <span
                     className={cn(
-                      'flex items-center gap-0.5 rounded px-1.5 py-0.5',
-                      isTrendNeutral
-                        ? 'bg-gray-2 text-gray-10'
-                        : isTrendPositive
-                          ? 'bg-success-light text-success'
-                          : 'bg-red-2 text-red-11',
+                      'rounded px-1.5 py-0.5',
+                      config.isGood
+                        ? 'bg-success-light text-success'
+                        : 'bg-red-2 text-red-11',
                     )}
                   >
-                    {isUp && <ArrowUp className='h-3 w-3 shrink-0' />}
-                    {isDown && <ArrowDown className='h-3 w-3 shrink-0' />}
                     {trendVal}
                   </span>
                   <span className='font-inter font-normal text-text-muted'>
-                    {kpi.comparisonPeriodLabel || 'vs last month'}
+                    vs last month
                   </span>
                 </div>
               </div>
@@ -1236,7 +1205,10 @@ export default function DashboardCharts() {
               <div className='grid grid-cols-12 gap-4'>
                 <div
                   className={cn(
-                    'rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300 col-span-12 lg:col-span-4',
+                    'rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300',
+                    isCommandCenterExpanded
+                      ? 'col-span-12 lg:col-span-4'
+                      : 'col-span-12 lg:col-span-4',
                   )}
                 >
                   <h3 className='font-poppins text-14 font-semibold text-text-primary'>
@@ -1245,42 +1217,29 @@ export default function DashboardCharts() {
                   <div className='mb-4 font-inter text-11 text-text-muted'>
                     Concentration of invoice liabilities
                   </div>
-                  <div className='h-40'>
+                  <div className='h-60'>
                     <ResponsiveContainer height='100%' width='100%'>
-                      <PieChart>
-                        <Pie
-                          cx='50%'
-                          cy='50%'
-                          data={topSuppliersData}
+                      <BarChart
+                        data={topSuppliersData}
+                        layout='vertical'
+                        margin={{ left: -10, right: 10 }}
+                      >
+                        <XAxis tick={{ fontSize: 10 }} type='number' />
+                        <YAxis
+                          dataKey='name'
+                          tick={{ fontSize: 10 }}
+                          type='category'
+                          width={90}
+                        />
+                        <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
+                        <Bar
+                          barSize={12}
                           dataKey='value'
-                          innerRadius={28}
-                          outerRadius={50}
-                          paddingAngle={2}
-                        >
-                          {topSuppliersData.map((_entry: any, idx: number) => (
-                            <Cell
-                              fill={getDynamicColor(idx, topSuppliersData.length, false)}
-                              key={idx}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value: any, name: any) => [fmtMoney(value), name]} />
-                      </PieChart>
+                          fill='#8300e6'
+                          radius={[0, 4, 4, 0]}
+                        />
+                      </BarChart>
                     </ResponsiveContainer>
-                  </div>
-                  <div className='scrollbar mt-4 max-h-[140px] overflow-y-auto pr-1 text-11 flex flex-col gap-1.5'>
-                    {topSuppliersData.map((item: any, idx: number) => {
-                      const color = getDynamicColor(idx, topSuppliersData.length, false)
-                      return (
-                        <div key={item.name} className='flex items-center justify-between gap-2 py-0.5 border-b border-dashed border-border-default/40 last:border-b-0'>
-                          <div className='flex items-center gap-1.5 truncate'>
-                            <span className='h-2 w-2 shrink-0 rounded-full' style={{ backgroundColor: color }} />
-                            <span className='truncate font-medium text-text-primary'>{item.name}</span>
-                          </div>
-                          <span className='font-mono font-semibold text-text-secondary'>{fmtMoney(item.value)}</span>
-                        </div>
-                      )
-                    })}
                   </div>
                 </div>
 
@@ -1290,56 +1249,36 @@ export default function DashboardCharts() {
                       Outstanding payables by supplier
                     </h3>
                     <div className='mb-4 font-inter text-11 text-text-muted'>
-                      Click a supplier segment to drill down
+                      Click a supplier's bar to drill down
                     </div>
-                    <div className='h-40'>
+                    <div className='h-60'>
                       <ResponsiveContainer height='100%' width='100%'>
-                        <PieChart>
-                          <Pie
-                            cx='50%'
-                            cy='50%'
-                            data={outstandingSuppliersData}
+                        <BarChart
+                          data={outstandingSuppliersData}
+                          layout='vertical'
+                          margin={{ left: -10, right: 10 }}
+                        >
+                          <XAxis tick={{ fontSize: 10 }} type='number' />
+                          <YAxis
+                            dataKey='name'
+                            tick={{ fontSize: 10 }}
+                            type='category'
+                            width={90}
+                          />
+                          <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
+                          <Bar
+                            barSize={12}
+                            className='cursor-pointer'
                             dataKey='value'
-                            innerRadius={28}
-                            outerRadius={50}
-                            paddingAngle={2}
-                          >
-                            {outstandingSuppliersData.map((entry: any, idx: number) => (
-                              <Cell
-                                fill={getDynamicColor(idx, outstandingSuppliersData.length, true)}
-                                key={idx}
-                                className='cursor-pointer transition-all hover:opacity-80'
-                                onClick={() => {
-                                  setDrillSupplier(entry.name ?? null)
-                                  setActiveDrill('Outstanding Payables')
-                                }}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value: any, name: any) => [fmtMoney(value), name]} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className='scrollbar mt-4 max-h-[140px] overflow-y-auto pr-1 text-11 flex flex-col gap-1.5'>
-                      {outstandingSuppliersData.map((item: any, idx: number) => {
-                        const color = getDynamicColor(idx, outstandingSuppliersData.length, true)
-                        return (
-                          <div
-                            key={item.name}
-                            className='flex cursor-pointer items-center justify-between gap-2 py-0.5 border-b border-dashed border-border-default/40 last:border-b-0 hover:bg-gray-2/40 px-1 rounded transition-colors'
-                            onClick={() => {
-                              setDrillSupplier(item.name ?? null)
+                            fill='#5c21e6'
+                            radius={[0, 4, 4, 0]}
+                            onClick={(data: any) => {
+                              setDrillSupplier(data?.name ?? null)
                               setActiveDrill('Outstanding Payables')
                             }}
-                          >
-                            <div className='flex items-center gap-1.5 truncate'>
-                              <span className='h-2 w-2 shrink-0 rounded-full' style={{ backgroundColor: color }} />
-                              <span className='truncate font-medium text-text-primary'>{item.name}</span>
-                            </div>
-                            <span className='font-mono font-semibold text-text-secondary'>{fmtMoney(item.value)}</span>
-                          </div>
-                        )
-                      })}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
                 )}

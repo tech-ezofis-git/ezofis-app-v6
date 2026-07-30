@@ -5,6 +5,7 @@ export default function useLanguage() {
     { code: 'en', name: 'English' },
     { code: 'fr', name: 'French' },
     { code: 'ar', name: 'Arabic' },
+    { code: 'ms', name: 'Malaysian Malay' },
   ]
 
   const [language, setLanguage] = useLocalStorage({

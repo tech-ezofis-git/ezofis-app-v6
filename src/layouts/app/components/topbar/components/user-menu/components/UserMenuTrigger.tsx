@@ -1,8 +1,10 @@
+import { useLingui } from '@lingui/react/macro'
 import Avatar from '@/components/base/Avatar'
 import Tooltip from '@/components/base/Tooltip'
 import authUserStore from '@/stores/authUserStore'
 
 const UserMenuTrigger = () => {
+  const { t } = useLingui()
   const API_URI = import.meta.env?.VITE_BASE_URL
   const session = authUserStore((state) => state.session)
 
@@ -27,7 +29,7 @@ const UserMenuTrigger = () => {
   }
 
   return (
-    <Tooltip content='User Profile' openDelay={500}>
+    <Tooltip content={t`User Profile`} openDelay={500}>
       <Avatar
         className='ml-2 cursor-pointer'
         image={imageUrl}

@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Button from '@/components/base/button/Button'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -5,14 +6,15 @@ import Title from '@/components/base/Title'
 import useLanguage from '@/hooks/useLanguage'
 
 const ChangeLanguage = () => {
+  const { t } = useLingui()
   const { language, languages, selectedLanguage, setLanguage } = useLanguage()
 
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
       <Title
-        description='Select your preferred language'
+        description={t`Select your preferred language`}
         level={4}
-        title='Change Language'
+        title={t`Change Language`}
       />
 
       <div className='flex items-center justify-end'>

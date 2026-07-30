@@ -1,4 +1,5 @@
 import { Select } from '@mantine/core'
+import { useLingui } from '@lingui/react/macro'
 import { useEffect } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { AnimateFadeIn } from '@/components/common/animations'
@@ -22,6 +23,8 @@ export default function Step2ColumnMapping({
   uploadedColumns,
   setMapping,
 }: Props) {
+  const { t } = useLingui()
+
   // 1. Automatically run auto-map on mount
   useEffect(() => {
     const next: Record<string, string> = { ...mapping }
@@ -56,7 +59,6 @@ export default function Step2ColumnMapping({
   const requiredMapped = systemColumns.filter(
     (c) => c.required && !!mapping[c.key],
   ).length
-  // const isReady = requiredMapped === requiredTotal;
 
   const options = uploadedColumns.map((c) => ({ label: c, value: c }))
 
@@ -64,24 +66,23 @@ export default function Step2ColumnMapping({
     <AnimateFadeIn className='flex flex-col gap-4'>
       <div className='flex items-start justify-between gap-4'>
         <div className='min-w-0'>
-          <h2 className='text-xl font-bold text-gray-13'>Column Mapping</h2>
+          <h2 className='text-xl font-bold text-gray-13'>{t`Column Mapping`}</h2>
           <p className='mt-0.5 text-xs font-medium text-gray-11'>
-            Align your file columns with Master Fields to ensure accurate data
-            processing.
+            {t`Align your file columns with Master Fields to ensure accurate data processing.`}
           </p>
         </div>
 
         <div className='flex items-center gap-2 rounded-full border border-gray-3 bg-surface-secondary px-3 py-1.5 shadow-sm'>
           <span className='text-xs font-bold text-gray-11'>
-            {requiredMapped} / {requiredTotal} Required Mapped
+            {t`${requiredMapped} / ${requiredTotal} Required Mapped`}
           </span>
         </div>
       </div>
 
       <div className='grid grid-cols-[1fr_40px_1fr] px-4 text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
-        <div>Master Field</div>
+        <div>{t`Master Field`}</div>
         <div />
-        <div>Source Field</div>
+        <div>{t`Source Field`}</div>
       </div>
 
       <div className='space-y-2'>
@@ -117,7 +118,7 @@ export default function Step2ColumnMapping({
                     </span>
                     {col.required && (
                       <span className='bg-error-subtle inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider text-error-main uppercase'>
-                        Required
+                        {t`Required`}
                       </span>
                     )}
                   </div>
@@ -133,8 +134,8 @@ export default function Step2ColumnMapping({
               <div className='flex items-center'>
                 <Select
                   data={options}
-                  nothingFoundMessage='No columns found'
-                  placeholder='Select a column…'
+                  nothingFoundMessage={t`No columns found`}
+                  placeholder={t`Select a column…`}
                   value={selected || null}
                   variant='unstyled'
                   clearable

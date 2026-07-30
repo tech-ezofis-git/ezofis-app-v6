@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useParams } from '@tanstack/react-router'
 import { useNavigate } from '@tanstack/react-router'
 import Tab from '@/components/base/tabs/Tab'
@@ -7,6 +8,7 @@ import Profile from './components/profile/Profile'
 import Security from './components/security/Security'
 
 const MyAccountPage = () => {
+  const { t } = useLingui()
   const { slug } = useParams({ strict: false })
 
   const navigate = useNavigate()
@@ -22,9 +24,9 @@ const MyAccountPage = () => {
     <>
       <div className='border-b border-gray-3 px-6'>
         <Tabs color='primary' value={slug || 'profile'} onChange={goto}>
-          <Tab label='Profile' value='profile' />
-          <Tab label='Security' value='security' />
-          <Tab label='Preferences' value='preferences' />
+          <Tab label={t`Profile`} value='profile' />
+          <Tab label={t`Security`} value='security' />
+          <Tab label={t`Preferences`} value='preferences' />
         </Tabs>
       </div>
 

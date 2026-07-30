@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { useMemo } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
@@ -45,9 +46,10 @@ export default function SettingsPageHeader({
   toolbar,
   onBack,
 }: SettingsPageHeaderProps) {
+  const { i18n, t } = useLingui()
   const breadcrumbConfig = useMemo(
-    () => createSettingsListBreadcrumbs(title, onBack),
-    [onBack, title],
+    () => createSettingsListBreadcrumbs(title, onBack, t`Settings`),
+    [i18n.locale, onBack, t, title],
   )
 
   useSettingsTopbar(breadcrumbConfig)

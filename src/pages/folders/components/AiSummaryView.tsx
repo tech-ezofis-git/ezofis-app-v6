@@ -1,32 +1,113 @@
+import { useLingui } from '@lingui/react/macro'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { useEffect, useRef, useState } from 'react'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
+import showToast from '@/components/base/toast/showToast'
 import type { AiSummaryData } from '../types/folderTypes'
 import { folderApi } from '../api/folderApi'
 import { DynamicIcon } from './icons'
 import { Button, Card } from './Ui'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 
-export function AiSummaryView({ onBack }: { onBack: () => void }) {
+type AiSummaryViewProps = {
+  itemId: string
+  repositoryId: string
+  onBack: () => void
+}
+
+export function AiSummaryView({
+  itemId,
+  repositoryId,
+  onBack,
+}: AiSummaryViewProps) {
+  const { t } = useLingui()
   const [data, setData] = useState<AiSummaryData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [regenerating, setRegenerating] = useState(false)
+  const [error, setError] = useState('')
   const ref = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
-  useEffect(() => {
-    let mounted = true
-    Promise.all([
-      folderApi.getAiSummary(),
-      new Promise((resolve) => window.setTimeout(resolve, 1100)),
-    ]).then(([summary]) => {
-      if (!mounted) return
-      setData(summary as AiSummaryData)
-      setLoading(false)
-    })
+  const requestIdRef = useRef(0)
 
-    return () => {
-      mounted = false
+  const loadSummary = async (options?: { regenerate?: boolean }) => {
+    if (!repositoryId || !itemId) {
+      // Keep the loading shell until ids are ready.
+      setLoading(true)
+      setError('')
+      setData(null)
+      return
     }
-  }, [])
+
+    const isRegenerate = Boolean(options?.regenerate)
+    const requestId = ++requestIdRef.current
+
+    if (isRegenerate) setRegenerating(true)
+    else setLoading(true)
+    setError('')
+
+    try {
+      const summary = await folderApi.getAiSummary(repositoryId, itemId, {
+        force: isRegenerate,
+      })
+      if (requestId !== requestIdRef.current) return
+
+      setData(summary)
+      setError('')
+      if (isRegenerate) {
+        showToast({
+          message: summary.creditConsumed
+            ? t`AI summary regenerated.`
+            : t`Showing cached AI summary.`,
+          variant: 'success',
+        })
+      }
+    } catch (err: any) {
+      if (requestId !== requestIdRef.current) return
+
+      const message = String(err?.message || t`Failed to load AI summary.`)
+      // Cancelled/superseded requests should not surface as hard failures.
+      if (/cancel/i.test(message) || err?.code === 'ERR_CANCELED') {
+        return
+      }
+
+      setError(message)
+      if (isRegenerate || data) {
+        showToast({ message, variant: 'error' })
+      } else {
+        setData(null)
+      }
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setLoading(false)
+        setRegenerating(false)
+      }
+    }
+  }
+
+  useEffect(() => {
+    void loadSummary()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemId, repositoryId])
+
+  const copySummary = async () => {
+    if (!data) return
+    const text = [
+      data.summary,
+      '',
+      ...data.facts.map((fact) => `${fact.label}: ${fact.value}`),
+      '',
+      data.insight,
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    try {
+      await navigator.clipboard.writeText(text || data.rawOutput || '')
+      showToast({ message: t`Copied to clipboard`, variant: 'success' })
+    } catch {
+      showToast({ message: t`Unable to copy summary`, variant: 'error' })
+    }
+  }
 
   const exportPdf = async () => {
     const element = ref.current
@@ -69,6 +150,8 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
     }
   }
 
+  const showLoading = loading || regenerating || (!data && !error)
+
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[14px] text-gray-11'>
       <div className='no-print flex h-[60px] shrink-0 items-center gap-3 border-b border-gray-3 bg-surface-primary px-5'>
@@ -76,19 +159,30 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
           className='h-9 border-gray-3 px-4 text-[14px] shadow-sm'
           onClick={onBack}
         >
-          ← Back
-        </Button>
-        <Button className='h-9 px-4 text-[14px]'>
-          <DynamicIcon className='h-4 w-4' name='refresh' />
-          Regenerate
-        </Button>
-        <Button className='h-9 px-4 text-[14px]'>
-          <DynamicIcon className='h-4 w-4' name='copy' />
-          Copy
+          ← {t`Back`}
         </Button>
         <Button
           className='h-9 px-4 text-[14px]'
-          disabled={exporting}
+          disabled={loading || regenerating || !repositoryId || !itemId}
+          onClick={() => void loadSummary({ regenerate: true })}
+        >
+          <DynamicIcon
+            className={regenerating ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+            name={regenerating ? 'loader' : 'refresh'}
+          />
+          {regenerating ? t`Regenerating...` : t`Regenerate`}
+        </Button>
+        <Button
+          className='h-9 px-4 text-[14px]'
+          disabled={!data || loading || regenerating}
+          onClick={() => void copySummary()}
+        >
+          <DynamicIcon className='h-4 w-4' name='copy' />
+          {t`Copy`}
+        </Button>
+        <Button
+          className='h-9 px-4 text-[14px]'
+          disabled={exporting || !data || loading || regenerating}
           onClick={exportPdf}
         >
           {exporting ? (
@@ -96,12 +190,19 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
           ) : (
             <DynamicIcon className='h-4 w-4' name='download' />
           )}
-          {exporting ? 'Exporting...' : 'Export PDF'}
-        </Button>{' '}
+          {exporting ? t`Exporting...` : t`Export PDF`}
+        </Button>
       </div>
-      {loading || !data ? (
+
+      {showLoading ? (
         <AiSummaryLoading />
-      ) : (
+      ) : error && !data ? (
+        <AiSummaryLoading
+          error={error}
+          onBack={onBack}
+          onRetry={() => void loadSummary()}
+        />
+      ) : data ? (
         <div
           className='ez-ai-scroll min-h-0 flex-1 overflow-y-auto px-6 py-7'
           ref={ref}
@@ -114,10 +215,7 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
                 </span>
                 <div>
                   <h2 className='text-[17px] leading-6 font-semibold text-gray-13'>
-                    {data.engineTitle}
-                    <span className='ml-2 inline-flex w-fit items-center rounded-md border border-violet-5 bg-surface-primary px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-violet-11'>
-
-                    </span>
+                    {data.engineTitle || t`EZOFIS AI Engine`}
                   </h2>
                   <p className='text-[13px] leading-5 text-gray-10'>
                     {data.engineSubtitle}
@@ -125,7 +223,7 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
                 </div>
               </div>
               <div className='text-right'>
-                <p className='text-[13px] text-gray-10'>Confidence</p>
+                <p className='text-[13px] text-gray-10'>{t`Confidence`}</p>
                 <b className='text-[28px] leading-8 text-green-9'>
                   {data.confidence}%
                 </b>
@@ -134,38 +232,50 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
 
             <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
               <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
-                <AiBrandIcon className='size-5' variant='curved-purple' />
-                Document Summary
+                <AiBrandIcon className='size-5 text-violet-9' />
+                {t`Document Summary`}
               </h3>
-              <TypewriterText text={data.summary} />
+              {data.summary ? (
+                <TypewriterText text={data.summary} />
+              ) : (
+                <p className='text-[14px] text-gray-10'>
+                  {t`No document summary available.`}
+                </p>
+              )}
             </Card>
 
             <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
               <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
                 <DynamicIcon className='h-5 w-5 text-blue-11' name='zap' />
-                Key Facts Extracted
+                {t`Key Facts Extracted`}
               </h3>
-              <div className='grid grid-cols-2 gap-3'>
-                {data.facts.map((fact) => (
-                  <div
-                    className='flex gap-3 rounded-xl border border-gray-3 px-4 py-3 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-[0.99]'
-                    key={fact.label}
-                  >
-                    <DynamicIcon
-                      className='mt-0.5 h-5 w-5 shrink-0 text-green-9'
-                      name='check'
-                    />
-                    <div>
-                      <p className='text-[13px] leading-5 text-gray-10'>
-                        {fact.label}
-                      </p>
-                      <b className='text-[14px] leading-5 text-gray-13'>
-                        {fact.value}
-                      </b>
+              {data.facts.length > 0 ? (
+                <div className='grid grid-cols-2 gap-3'>
+                  {data.facts.map((fact) => (
+                    <div
+                      className='flex gap-3 rounded-xl border border-gray-3 px-4 py-3 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-[0.99]'
+                      key={`${fact.label}-${fact.value}`}
+                    >
+                      <DynamicIcon
+                        className='mt-0.5 h-5 w-5 shrink-0 text-green-9'
+                        name='check'
+                      />
+                      <div>
+                        <p className='text-[13px] leading-5 text-gray-10'>
+                          {fact.label}
+                        </p>
+                        <b className='text-[14px] leading-5 text-gray-13'>
+                          {fact.value}
+                        </b>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className='text-[14px] text-gray-10'>
+                  {t`No key facts extracted.`}
+                </p>
+              )}
             </Card>
 
             <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
@@ -175,60 +285,86 @@ export function AiSummaryView({ onBack }: { onBack: () => void }) {
                     className='h-5 w-5 text-green-11'
                     name='shield'
                   />
-                  Compliance & Risk Assessment
+                  {t`Compliance & Risk Assessment`}
                 </h3>
-                {/* <span className="inline-flex w-fit items-center whitespace-nowrap rounded-lg border border-green-6 bg-green-3 px-3 py-1 text-[12px] font-semibold text-green-11">
-                  All Clear
-                </span> */}
               </div>
-              <div className='grid grid-cols-4 gap-3'>
-                {data.checks.map((check) => (
-                  <div
-                    className='flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-green-5 bg-green-3 p-4 text-center text-green-11 transition-all hover:bg-green-4 active:scale-[0.99]'
-                    key={check.label}
-                  >
-                    <DynamicIcon
-                      className='mb-2 h-6 w-6'
-                      name={check.iconKey}
-                    />
-                    <b className='text-[13px] leading-5'>{check.label}</b>
-                    <span className='mt-2 inline-flex w-fit items-center rounded-full bg-green-9 px-2 py-1 text-[11px] leading-none font-bold whitespace-nowrap text-white'>
-                      {check.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {data.checks.length > 0 ? (
+                <div className='grid grid-cols-4 gap-3'>
+                  {data.checks.map((check) => (
+                    <div
+                      className='flex min-h-[100px] flex-col items-center justify-center rounded-xl border border-green-5 bg-green-3 p-4 text-center text-green-11 transition-all hover:bg-green-4 active:scale-[0.99]'
+                      key={`${check.label}-${check.status}`}
+                    >
+                      <DynamicIcon
+                        className='mb-2 h-6 w-6'
+                        name={check.iconKey}
+                      />
+                      <b className='text-[13px] leading-5'>{check.label}</b>
+                      <span className='mt-2 inline-flex w-fit items-center rounded-full bg-green-9 px-2 py-1 text-[11px] leading-none font-bold whitespace-nowrap text-white'>
+                        {check.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : data.complianceText ? (
+                <p className='text-[14px] leading-6 text-gray-13'>
+                  {data.complianceText}
+                </p>
+              ) : (
+                <p className='text-[14px] text-gray-10'>
+                  {t`No compliance assessment available.`}
+                </p>
+              )}
             </Card>
 
             <Card className='animate-in fade-in slide-in-from-bottom-2 p-5 duration-500'>
               <h3 className='mb-4 flex items-center gap-2 text-[17px] font-semibold text-gray-13'>
-                <AiBrandIcon className='size-5' variant='curved-purple' />
-                AI Recommendations
+                <AiBrandIcon className='size-5 text-orange-9' />
+                {t`AI Recommendations`}
               </h3>
-              <div className='space-y-3'>
-                {data.recommendations.map((recommendation) => (
-                  <div
-                    className='rounded-xl border border-orange-5 bg-orange-3 px-4 py-3 text-[14px] text-gray-13 transition-all hover:bg-orange-4'
-                    key={recommendation}
-                  >
-                    › {recommendation}
-                  </div>
-                ))}
-              </div>
+              {data.recommendations.length > 0 ? (
+                <div className='space-y-3'>
+                  {data.recommendations.map((recommendation) => (
+                    <div
+                      className='rounded-xl border border-orange-5 bg-orange-3 px-4 py-3 text-[14px] text-gray-13 transition-all hover:bg-orange-4'
+                      key={recommendation}
+                    >
+                      › {recommendation}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className='text-[14px] text-gray-10'>
+                  {t`No recommendations available.`}
+                </p>
+              )}
             </Card>
 
             <div className='animate-in fade-in slide-in-from-bottom-2 rounded-xl border border-blue-5 bg-blue-3 p-4 text-[14px] text-blue-11 duration-500'>
-              <b>Supplier Trend Insight</b>
-              <p className='mt-1 text-gray-10'>{data.insight}</p>
+              <b>{t`Supplier Trend Insight`}</b>
+              <p className='mt-1 text-gray-10'>
+                {data.insight || t`No supplier trend insight available.`}
+              </p>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
 
-function AiSummaryLoading() {
+function AiSummaryLoading({
+  error,
+  onBack,
+  onRetry,
+}: {
+  error?: string
+  onBack?: () => void
+  onRetry?: () => void
+} = {}) {
+  const { t } = useLingui()
+  const hasError = Boolean(error)
+
   return (
     <div className='ez-ai-scroll min-h-0 flex-1 overflow-y-auto bg-surface-secondary px-6 py-7 text-[14px] text-gray-11'>
       <div className='mx-auto w-full max-w-[1060px] space-y-5'>
@@ -243,20 +379,51 @@ function AiSummaryLoading() {
             </div>
           </div>
           <div className='h-1.5 overflow-hidden rounded-full bg-surface-primary'>
-            <div className='ez-ai-progress h-full rounded-full bg-violet-9' />
+            <div
+              className={
+                hasError
+                  ? 'h-full w-1/3 rounded-full bg-violet-6'
+                  : 'ez-ai-progress h-full rounded-full bg-violet-9'
+              }
+            />
           </div>
         </div>
 
-        <Card className='flex h-[168px] flex-col items-center justify-center gap-3 p-5'>
-          <div className='h-10 w-10 animate-spin rounded-full border-4 border-violet-3 border-t-violet-9' />
-          <div className='text-center'>
-            <p className='text-[14px] font-semibold text-gray-13'>
-              AI is analysing the document...
-            </p>
-            <p className='mt-1 text-[13px] text-gray-10'>
-              Extracting metadata, checking duplicates, validating compliance
-            </p>
-          </div>
+        <Card className='flex min-h-[168px] flex-col items-center justify-center gap-3 p-5'>
+          {hasError ? (
+            <>
+              <div className='text-center'>
+                <p className='text-[14px] font-semibold text-gray-13'>
+                  {t`Unable to load AI summary`}
+                </p>
+                <p className='mt-1 text-[13px] text-gray-10'>{error}</p>
+              </div>
+              <div className='mt-2 flex items-center gap-2'>
+                {onBack ? (
+                  <Button className='h-9 px-4' onClick={onBack}>
+                    {t`Back`}
+                  </Button>
+                ) : null}
+                {onRetry ? (
+                  <Button className='h-9 px-4' onClick={onRetry}>
+                    {t`Retry`}
+                  </Button>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className='h-10 w-10 animate-spin rounded-full border-4 border-violet-3 border-t-violet-9' />
+              <div className='text-center'>
+                <p className='text-[14px] font-semibold text-gray-13'>
+                  {t`AI is analysing the document...`}
+                </p>
+                <p className='mt-1 text-[13px] text-gray-10'>
+                  {t`Extracting metadata, checking duplicates, validating compliance`}
+                </p>
+              </div>
+            </>
+          )}
         </Card>
       </div>
     </div>

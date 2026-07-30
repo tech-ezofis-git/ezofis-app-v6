@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import workflowsApiV6, {
@@ -34,10 +35,11 @@ function flattenRows(groups: any[]): any[] {
 }
 
 const RequestsPage = () => {
+  const { t } = useLingui()
   const [activeTab, setActiveTab] = useState<string>('Inbox')
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid')
 
-  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const [workflowLoadStatus, setWorkflowLoadStatus] =
     useState<WorkflowLoadStatus>('loading')
   const [allWorkflow, setAllWorkflow] = useState<Option[] | null>(null)
@@ -46,8 +48,6 @@ const RequestsPage = () => {
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowOption | null>(null)
   const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>([])
-  const workflowListRequestIdRef = useRef(0)
-  const workflowDetailRequestIdRef = useRef(0)
 
   const {
     closeRequest,
@@ -95,62 +95,39 @@ const RequestsPage = () => {
 
   // --- 3. HANDLERS ---
   const loadWorkflowList = useCallback(async () => {
-    const requestId = ++workflowListRequestIdRef.current
     setWorkflowLoadStatus('loading')
-    setIsLoading(true)
-    setAllWorkflow(null)
+    try {
+      const { data, error } = await workflowsApiV6.getWorkflows()
+      if (error) throw new Error(error)
 
-    const applyListResult = (options: Option[]) => {
-      if (requestId !== workflowListRequestIdRef.current) return
+      const options = mapPublishedWorkflowListToOptions(data)
       if (options.length > 0) {
         setAllWorkflow(options)
         setWorkflow(options[0])
-        // Stay on "loading" until selected workflow details finish loading
-        return
+      } else {
+        setAllWorkflow([])
+        setWorkflow(null)
+        setSelectedWorkflow(null)
+        setWorkflowLoadStatus('empty')
       }
+      setIsLoading(false)
+    } catch {
       setAllWorkflow([])
       setWorkflow(null)
       setSelectedWorkflow(null)
       setWorkflowLoadStatus('empty')
       setIsLoading(false)
     }
-
-    try {
-      const { data, error } = await workflowsApiV6.getWorkflows()
-      if (requestId !== workflowListRequestIdRef.current) return
-      if (error) throw new Error(error)
-      applyListResult(mapPublishedWorkflowListToOptions(data))
-    } catch {
-      // Auth/network race after sign-in — retry once, never flash empty from a failed call
-      try {
-        const { data, error } = await workflowsApiV6.getWorkflows()
-        if (requestId !== workflowListRequestIdRef.current) return
-        if (error) throw new Error(error)
-        applyListResult(mapPublishedWorkflowListToOptions(data))
-      } catch {
-        if (requestId !== workflowListRequestIdRef.current) return
-        // Keep trying UI briefly, but don't leave the page stuck forever
-        setAllWorkflow([])
-        setWorkflow(null)
-        setSelectedWorkflow(null)
-        setWorkflowLoadStatus('empty')
-        setIsLoading(false)
-      }
-    }
   }, [])
 
   const loadSelectedWorkflow = useCallback(
     async (workflowId: string, workflowName?: string) => {
-      const requestId = ++workflowDetailRequestIdRef.current
       setWorkflowLoadStatus('loading')
-      setIsLoading(true)
       try {
         const [workflowRes, countRes] = await Promise.all([
           workflowsApiV6.getWorkflowById(workflowId),
           workflowsApiV6.getInstanceCount(workflowId),
         ])
-
-        if (requestId !== workflowDetailRequestIdRef.current) return
 
         if (workflowRes.error || !workflowRes.data) {
           throw new Error(workflowRes.error || 'Failed to load workflow')
@@ -181,13 +158,10 @@ const RequestsPage = () => {
         let formJson = wf.formJson
         if (wFormId) {
           const formRes = await formApi.getFormDataById(String(wFormId))
-          if (requestId !== workflowDetailRequestIdRef.current) return
           if (formRes?.data) {
             formJson = formRes.data.formJson ?? formRes.data
           }
         }
-
-        if (requestId !== workflowDetailRequestIdRef.current) return
 
         setRawWorflow({ ...wf, formJson, id: workflowId })
 
@@ -209,51 +183,40 @@ const RequestsPage = () => {
         setWorkflowLoadStatus('ready')
         setIsLoading(false)
       } catch {
-        if (requestId !== workflowDetailRequestIdRef.current) return
-        // Detail fetch failed — still allow inbox to load with list metadata
-        setSelectedWorkflow({
-          flowJson: '',
-          formJson: '',
-          id: workflowId,
-          name: workflowName || 'Workflow',
-          wFormId: '',
-        })
-        setWorkflowLoadStatus('ready')
+        setSelectedWorkflow(null)
+        setWorkflowLoadStatus('empty')
         setIsLoading(false)
       }
     },
-    [setRawWorflow],
+    [formApi, setRawWorflow],
   )
 
   // Initial Load
   useEffect(() => {
-    void loadWorkflowList()
+    setIsLoading(true)
+    loadWorkflowList()
   }, [loadWorkflowList])
 
-  // Load details when the selected list workflow changes (avoid selectedWorkflow deps loop)
-  const loadedWorkflowIdRef = useRef<string | null>(null)
-
+  // Workflow Change Listener
   useEffect(() => {
-    if (!workflow?.id) return
-
-    const workflowId = String(workflow.id)
-    if (reloadMeta) {
-      stopRefresh()
-      loadedWorkflowIdRef.current = workflowId
-      void loadSelectedWorkflow(workflowId, workflow.name)
-      void refetch()
-      return
+    if (workflow?.id) {
+      const isNewWorkflow =
+        !selectedWorkflow || String(workflow.id) !== String(selectedWorkflow.id)
+      if (isNewWorkflow) {
+        requestStore.getState().clearQuickFilters()
+      }
+      if (isNewWorkflow && !reloadMeta) {
+        loadSelectedWorkflow(String(workflow.id), workflow.name)
+      } else if (reloadMeta) {
+        loadSelectedWorkflow(String(workflow.id), workflow.name)
+        stopRefresh()
+        refetch()
+      }
     }
-
-    if (loadedWorkflowIdRef.current === workflowId) return
-
-    loadedWorkflowIdRef.current = workflowId
-    requestStore.getState().clearQuickFilters()
-    void loadSelectedWorkflow(workflowId, workflow.name)
   }, [
-    workflow?.id,
-    workflow?.name,
+    workflow,
     reloadMeta,
+    selectedWorkflow,
     loadSelectedWorkflow,
     stopRefresh,
     refetch,
@@ -339,19 +302,10 @@ const RequestsPage = () => {
 
   const isWorkflowReady =
     workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
-  // Empty only after a successful list response with zero published workflows
-  const showWorkflowEmpty =
-    workflowLoadStatus === 'empty' &&
-    allWorkflow !== null &&
-    allWorkflow.length === 0
-  // Full-page loading only for the first inbox fetch — not background refetches
+  const showWorkflowEmpty = workflowLoadStatus === 'empty'
   const inboxIsLoading =
-    !showWorkflowEmpty &&
-    (workflowLoadStatus === 'loading' ||
-      allWorkflow === null ||
-      (isWorkflowReady && isPending))
-  const inboxIsRefetching =
-    isWorkflowReady && isFetching && !isPending && !!inboxResult
+    workflowLoadStatus === 'loading' ||
+    (isWorkflowReady && (isPending || isFetching))
 
   return (
     <>
@@ -376,7 +330,7 @@ const RequestsPage = () => {
                   color: 'primary',
                   icon: 'tabler:plus',
                   id: 'new-request',
-                  label: 'New Request',
+                  label: t`New Request`,
                   variant: 'solid',
                   onClick: () => {
                     console.log('am running')
@@ -407,7 +361,7 @@ const RequestsPage = () => {
                 activeTab={activeTab}
                 data={inboxResult?.data || []}
                 isLoading={inboxIsLoading}
-                isRefetching={inboxIsRefetching}
+                isRefetching={isWorkflowReady && isFetching}
                 page={page}
                 pageSize={pageSize}
                 selectedItem={selectedItem}

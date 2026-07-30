@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Button from '@/components/base/button/Button'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -5,6 +6,7 @@ import Title from '@/components/base/Title'
 import useTheme from '@/hooks/useTheme'
 
 const ChangeTheme = () => {
+  const { t } = useLingui()
   const {
     colorScheme,
     ColorSchemeOptions,
@@ -12,12 +14,18 @@ const ChangeTheme = () => {
     selectedColorScheme,
   } = useTheme()
 
+  const labels: Record<string, string> = {
+    auto: t`System`,
+    dark: t`Dark`,
+    light: t`Light`,
+  }
+
   return (
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-2'>
       <Title
-        description='Select or customize your interface color scheme'
+        description={t`Select or customize your interface color scheme`}
         level={4}
-        title='Change Theme'
+        title={t`Change Theme`}
       />
 
       <div className='flex items-center justify-end'>
@@ -28,7 +36,7 @@ const ChangeTheme = () => {
             <Button
               color='gray'
               icon={selectedColorScheme.icon}
-              label={selectedColorScheme.label}
+              label={labels[selectedColorScheme.value] ?? selectedColorScheme.label}
               suffixIcon='lucide:chevron-down'
               variant='outline'
             />
@@ -38,7 +46,7 @@ const ChangeTheme = () => {
             <MenuItem
               icon={option.icon}
               key={option.value}
-              label={option.label}
+              label={labels[option.value] ?? option.label}
               iconClass={
                 option.value === colorScheme ? 'text-primary-11' : 'text-gray-9'
               }

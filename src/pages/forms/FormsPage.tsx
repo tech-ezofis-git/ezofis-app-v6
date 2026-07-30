@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import type { Column } from '@/components/base/data-table/types'
 import type { Form } from '@/types/form'
 import formApi from '@/api/form/form'
@@ -59,6 +60,7 @@ const findDeepData = (obj: any): any[] | null => {
 }
 
 const FormsPage = () => {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
@@ -132,7 +134,7 @@ const FormsPage = () => {
     () => [
       {
         id: 'name',
-        label: 'Name',
+        label: t`Name`,
         size: 200,
         renderCell: (row: any) => (
           <span
@@ -145,14 +147,16 @@ const FormsPage = () => {
             }
           >
             {String(
-              row._json?.settings?.general?.name || row.name || 'Untitled Form',
+              row._json?.settings?.general?.name ||
+                row.name ||
+                t`Untitled Form`,
             )}
           </span>
         ),
       },
       {
         id: 'status',
-        label: 'Status',
+        label: t`Status`,
         size: 140,
         renderCell: (row: any) => (
           <FormStatusBadge
@@ -165,7 +169,7 @@ const FormsPage = () => {
       },
       {
         id: 'description',
-        label: 'Description',
+        label: t`Description`,
         size: 240,
         renderCell: (row: any) => (
           <span className='text-gray-10'>
@@ -178,7 +182,7 @@ const FormsPage = () => {
       {
         enableGrouping: true,
         id: 'type',
-        label: 'Type',
+        label: t`Type`,
         size: 140,
         renderCell: (row: any) => (
           <FormTypeBadge
@@ -190,27 +194,27 @@ const FormsPage = () => {
       },
       {
         id: 'createdBy',
-        label: 'Created By',
+        label: t`Created By`,
         size: 240,
         renderCell: (row: any) => String(row.createdByName || '-'),
       },
       {
         id: 'createdAt',
-        label: 'Created At',
+        label: t`Created At`,
         size: 200,
         renderCell: (row: any) =>
           formatDatetime(row.createdAt as string, 'datetime'),
       },
       {
         id: 'modifiedBy',
-        label: 'Modified By',
+        label: t`Modified By`,
         size: 240,
         renderCell: (row: any) =>
           String(row.modifiedByName || row.createdByName || '-'),
       },
       {
         id: 'modifiedAt',
-        label: 'Modified At',
+        label: t`Modified At`,
         size: 200,
         renderCell: (row: any) =>
           formatDatetime(
@@ -224,7 +228,7 @@ const FormsPage = () => {
         hideHeader: true,
         id: 'actions',
         isDisplayColumn: true,
-        label: 'Actions',
+        label: t`Actions`,
         showMenu: false,
         size: 40,
         renderCell: (row: any) => (
@@ -242,7 +246,7 @@ const FormsPage = () => {
             >
               <MenuItem
                 icon='lucide:edit'
-                label='Edit'
+                label={t`Edit`}
                 onClick={() =>
                   navigate({
                     params: { formId: row.uid || row.id },
@@ -253,7 +257,7 @@ const FormsPage = () => {
               <MenuItem
                 icon='lucide:trash-2'
                 iconClass='text-red-11'
-                label='Delete'
+                label={t`Delete`}
                 onClick={() => setDeletingForm(row)}
               />
             </Menu>
@@ -261,7 +265,7 @@ const FormsPage = () => {
         ),
       },
     ],
-    [navigate, queryClient, setDeletingForm],
+    [navigate, queryClient, setDeletingForm, t],
   )
 
   const forms = useMemo(() => {
@@ -446,17 +450,17 @@ const FormsPage = () => {
               />
             </div>
             <div>
-              <h4 className='text-sm font-semibold text-red-12'>Delete Form</h4>
+              <h4 className='text-sm font-semibold text-red-12'>{t`Delete Form`}</h4>
               <p className='mt-0.5 text-xs text-red-11'>
-                Are you sure you want to delete{' '}
+                {t`Are you sure you want to delete`}{' '}
                 <span className='font-bold text-red-12'>
                   "
                   {deletingForm._json?.settings?.general?.name ||
                     deletingForm.name ||
-                    'Untitled Form'}
+                    t`Untitled Form`}
                   "
                 </span>
-                ? This action is permanent and cannot be undone.
+                ? {t`This action is permanent and cannot be undone.`}
               </p>
             </div>
           </div>
@@ -468,7 +472,7 @@ const FormsPage = () => {
               variant='subtle'
               onClick={() => setDeletingForm(null)}
             >
-              Cancel
+              {t`Cancel`}
             </Button>
             <Button
               color='red'
@@ -481,7 +485,7 @@ const FormsPage = () => {
                 setIsDeleting(true)
                 const targetForm = deletingForm
                 showToast({
-                  message: 'Deleting form...',
+                  message: t`Deleting form...`,
                 })
                 const { error } = await formApi.deleteForm(
                   targetForm.uid || targetForm.id,
@@ -490,19 +494,19 @@ const FormsPage = () => {
                 setDeletingForm(null)
                 if (error) {
                   showToast({
-                    message: error || 'Failed to delete form',
+                    message: error || t`Failed to delete form`,
                     variant: 'error',
                   })
                 } else {
                   showToast({
-                    message: 'Form deleted successfully',
+                    message: t`Form deleted successfully`,
                     variant: 'success',
                   })
                   queryClient.invalidateQueries({ queryKey: ['forms'] })
                 }
               }}
             >
-              Yes, Delete
+              {t`Yes, Delete`}
             </Button>
           </div>
         </div>
@@ -512,7 +516,7 @@ const FormsPage = () => {
         <CustomFilter
           activeFilters={activeFilters}
           customSearchComponent={<TableSearch table={table as any} />}
-          searchPlaceholder='Search forms...'
+          searchPlaceholder={t`Search forms...`}
           searchQuery=''
           trailingActions={<TableExport table={table as any} />}
           actionButtons={[
@@ -522,53 +526,53 @@ const FormsPage = () => {
               icon: 'tabler:refresh',
               id: 'refresh',
               isIconButton: true,
-              tooltip: 'Refresh',
+              tooltip: t`Refresh`,
               variant: 'outline',
               onClick: () => refetch(),
             },
           ]}
           addButton={{
             icon: 'lucide:plus',
-            tooltip: 'New Form',
+            tooltip: t`New Form`,
             onClick: openFormBuilder,
           }}
           filters={[
             {
               id: 'name',
-              label: 'Name',
+              label: t`Name`,
               options: nameOptions,
               searchable: true,
-              searchPlaceholder: 'Search name...',
+              searchPlaceholder: t`Search name...`,
             },
             {
               id: 'status',
-              label: 'Status',
+              label: t`Status`,
               options: [
-                { label: 'Published', value: 'PUBLISHED' },
-                { label: 'Draft', value: 'DRAFT' },
+                { label: t`Published`, value: 'PUBLISHED' },
+                { label: t`Draft`, value: 'DRAFT' },
               ],
             },
           ]}
           moreFilters={[
             {
               id: 'createdBy',
-              label: 'Created By',
+              label: t`Created By`,
               options: createdByOptions,
             },
             {
               id: 'modifiedBy',
-              label: 'Modified By',
+              label: t`Modified By`,
               options: modifiedByOptions,
             },
             {
               dataType: 'date',
               id: 'createdAt',
-              label: 'Created Date',
+              label: t`Created Date`,
             },
             {
               dataType: 'date',
               id: 'modifiedAt',
-              label: 'Modified Date',
+              label: t`Modified Date`,
             },
           ]}
           showReset={

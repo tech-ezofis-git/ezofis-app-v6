@@ -110,6 +110,8 @@ export interface CustomFilterProps {
   searchPlaceholder?: string
   searchQuery?: string
   showReset?: boolean
+  /** Rendered immediately after the search control (before view mode / actions). */
+  afterSearchActions?: React.ReactNode
   trailingActions?: React.ReactNode
   viewMode?: 'grid' | 'table'
   onFilterChange: (id: string, value: string) => void
@@ -167,6 +169,7 @@ export default function CustomFilter({
   searchPlaceholder = 'Search...',
   searchQuery = '',
   showReset,
+  afterSearchActions,
   trailingActions,
   viewMode,
   onFilterChange,
@@ -942,6 +945,12 @@ export default function CustomFilter({
             </div>
           </div>
         )}
+
+        {afterSearchActions ? (
+          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
+            {afterSearchActions}
+          </div>
+        ) : null}
 
         {viewMode && onViewModeChange && (
           <div className='ml-1 flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
