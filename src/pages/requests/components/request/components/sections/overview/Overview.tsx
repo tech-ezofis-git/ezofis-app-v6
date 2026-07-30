@@ -1180,7 +1180,6 @@ const FormCard = ({
               >
                 <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
                   <AiBrandIcon className='size-[14px] shrink-0' variant='curved-purple' />
-                  <span>AI suggestion</span>
                   <span className='font-normal text-[var(--primary-9)]/70'>
                     {isUsingPo ? 'from Invoice' : 'from PO Master'}
                   </span>
@@ -4438,7 +4437,7 @@ const Overview = (props: any) => {
                                 <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
                                     <AiBrandIcon className='size-[16px] shrink-0' variant='curved-purple' />
-                                    <span><strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> — Check for related purchase orders or invoices for this supplier.</span>
+                                    <span>Check for related purchase orders or invoices for this supplier.</span>
                                   </div>
                                   <button
                                     className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:animate-none hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
@@ -4469,7 +4468,6 @@ const Overview = (props: any) => {
                                     />
                                     <div className='min-w-0'>
                                       <div>
-                                        {/* <strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> */}
                                         <span className='text-[var(--gray-11)]'>
                                           {' '}
                                           Related purchase orders or invoices for this supplier.

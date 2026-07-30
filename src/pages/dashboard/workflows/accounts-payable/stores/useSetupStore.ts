@@ -130,8 +130,8 @@ const useSetupStore = create<Store>()((set, get) => ({
   isActivatingAutomation: false,
   isApSetUpCompleted: false,
   isSetupCalloutDismissed: false,
-  isSetupOpen: true,
-  isSetupStarted: true,
+  isSetupOpen: false,
+  isSetupStarted: false,
   restrictNavigationUntilApSetup:
     typeof window !== 'undefined'
       ? localStorage.getItem('restrictNavigationUntilApSetup') === 'true'

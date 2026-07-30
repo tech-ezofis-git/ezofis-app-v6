@@ -1,6 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import type { Menu } from '@/layouts/app/types'
 import Icon from '@/components/base/icon/Icon'
+import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import cn from '@/utils/cn'
 
@@ -13,7 +14,8 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
   const pathname = useLocation({
     select: (location) => location.pathname,
   })
-  const isActive = pathname === route
+  const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
+  const isActive = !isDemoFormOpen && pathname === route
   const isNavigationLocked = useSetupStore(
     (state) =>
       state.restrictNavigationUntilApSetup && !state.isApSetUpCompleted,

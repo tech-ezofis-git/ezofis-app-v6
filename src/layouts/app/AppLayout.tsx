@@ -24,6 +24,7 @@ const AppLayout = ({ children }: Props) => {
   const closeNewRequest = requestStore((state) => state.closeNewRequest)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
+  const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
@@ -36,24 +37,31 @@ const AppLayout = ({ children }: Props) => {
     if (isNewRequestOpen) {
       closeNewRequest()
     }
-  }, [pathname, closeNewRequest])
+    if (isDemoFormOpen) {
+      closeDemoForm()
+    }
+  }, [pathname, closeNewRequest, closeDemoForm])
 
   useEffect(() => {
     const fetchSession = async () => {
       try {
         const res = await authApi.getSession()
+        // Incomplete AP setup → keep user on dashboard setup flow.
+        // Do not redirect completed users to /requests on refresh — stay on current page.
         if (res?.data?.configuration === 0) {
           useSetupStore.getState().setIsSetupStarted(true)
           useSetupStore.getState().setisApSetUpCompleted(false)
-          navigate({ to: '/' })
-        } else if (res?.data?.configuration === 1) {
-          navigate({ to: '/requests' })
+          if (pathname !== '/') {
+            navigate({ replace: true, to: '/' })
+          }
         }
       } catch (err) {
         console.error('Failed to fetch session on app layout mount:', err)
       }
     }
     fetchSession()
+    // Intentionally mount-only; pathname is read for incomplete-setup redirect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
