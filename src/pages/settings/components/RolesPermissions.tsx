@@ -41,6 +41,7 @@ import Menu from '@/components/base/menu/Menu'
 import DropdownMenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
@@ -128,19 +129,19 @@ const tabs: { key: TabKey; label: string }[] = [
 const roleSteps: CreateStep[] = [
   {
     caption: 'Step 1',
-    description: 'Define the role name, assign users, and describe its scope.',
+    description: 'Role name & user assignments',
     key: 'details',
     title: 'Role Details',
   },
   {
     caption: 'Step 2',
-    description: 'Enable or disable access for each module in this role.',
+    description: 'Module access & privilege matrix',
     key: 'permissions',
     title: 'Permissions',
   },
   {
     caption: 'Step 3',
-    description: 'Validate the role configuration before saving.',
+    description: 'Review & save role configuration',
     key: 'review',
     title: 'Review',
   },
@@ -839,180 +840,112 @@ function CreateRolePage({
 
   const activeStepConfig = roleSteps[activeStep]
 
+  const wizardSteps = useMemo(() => {
+    return roleSteps.map((s, idx) => ({
+      id: idx,
+      label: s.title,
+      description: s.description,
+      icon: s.key === 'details' ? 'tabler:shield' : s.key === 'permissions' ? 'tabler:shield-check' : 'tabler:check',
+    }))
+  }, [])
+
   return (
-    <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <SettingsSetupHeader
-        moduleTitle='Roles & Permissions'
-        progress={progress}
-        stepDescription={activeStepConfig.description}
-        stepTitle={activeStepConfig.title}
-        setupTitle={editingRoleId ? 'Edit Role' : 'Create Role'}
-        onBackToSettings={onBackToSettings}
-        onCancelSetup={onCancel}
-      />
+    <SettingsWizardLayout
+      activeStep={activeStep}
+      steps={wizardSteps}
+      onStepChange={handleStepChange}
+      onBack={handleBack}
+      onNext={handleNext}
+      onSave={handleSave}
+      onCancel={onCancel}
+      isSaving={isSaving}
+      saveLabel={submitLabel}
+      moduleTitle='Roles & Permissions'
+      setupTitle={editingRoleId ? 'Edit Role' : 'Create Role'}
+      headerTitle={editingRoleId ? 'Edit Role Setup' : 'New Role Setup'}
+      headerDescription='Define role details, access scopes, and permission privilege matrices'
+    >
+      {activeStep === 0 ? (
+        <SettingsFormSection>
+          <InputText
+            error={getFieldRequiredError('Role Name', showErrors, roleName)}
+            label='Role Name *'
+            placeholder='e.g. AP Supervisor'
+            value={roleName}
+            onChange={onRoleNameChange}
+          />
 
-      <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-        <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
-          <div className='space-y-5'>
-            {roleSteps.map((step, index) => {
-              const isActive = index === activeStep
-              const isCompleted = index < activeStep
-
-              return (
-                <button
-                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
-                  key={step.key}
-                  type='button'
-                  onClick={() => handleStepChange(index)}
-                >
-                  <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
-                    {index < roleSteps.length - 1 ? (
-                      <span className='absolute top-8 left-1/2 h-12 w-[2px] -translate-x-1/2 bg-[var(--gray-3)]' />
-                    ) : null}
-                    <span
-                      className={[
-                        'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
-                        isCompleted
-                          ? 'text-[var(--primary-9)]'
-                          : isActive
-                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)] ring-1 ring-[var(--primary-8)]'
-                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
-                      ].join(' ')}
-                    >
-                      {isCompleted ? (
-                        <Check size={14} />
-                      ) : (
-                        <RoleStepIcon step={step.key} />
-                      )}
-                    </span>
-                  </div>
-                  <div>
-                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
-                      {step.title}
-                    </div>
-                  </div>
-                </button>
+          <InputSelectMultiple
+            className='bg-surface'
+            label='Select Users *'
+            options={userOptions}
+            placeholder='Select users...'
+            value={selectedUsers}
+            clearable
+            searchable
+            error={
+              showErrors && !selectedUsers.length
+                ? 'Please fill the required field: Select Users'
+                : undefined
+            }
+            onChange={(value) =>
+              onSelectedUsersChange((value || []) as Option[])
+            }
+          />
+          <SettingsSelectedChips
+            items={selectedUsers}
+            onRemove={(id) =>
+              onSelectedUsersChange(
+                selectedUsers.filter((user) => user.id !== id),
               )
-            })}
-          </div>
-        </aside>
+            }
+          />
 
-        <SettingsSetupContent>
-          {activeStep === 0 ? (
-            <SettingsFormSection>
-              <InputText
-                error={getFieldRequiredError('Role Name', showErrors, roleName)}
-                label='Role Name *'
-                placeholder='e.g. AP Supervisor'
-                value={roleName}
-                onChange={onRoleNameChange}
+          <InputTextarea
+            label='Description'
+            minRows={5}
+            placeholder="Describe this role's responsibilities and scope..."
+            value={description}
+            onChange={onDescriptionChange}
+          />
+        </SettingsFormSection>
+      ) : null}
+
+      {activeStep === 1 ? (
+        <SettingsFormSection>
+          <CreatePermissionMatrix
+            rows={permissionRows}
+            onToggle={onTogglePermission}
+          />
+        </SettingsFormSection>
+      ) : null}
+
+      {activeStep === 2 ? (
+        <SettingsFormSection>
+          <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+            <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+              Role Summary
+            </h3>
+            <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+              <SummaryItem label='Role Name' value={roleName || '—'} />
+              <SummaryItem
+                label='Permissions'
+                value={`${enabledCount} enabled`}
               />
-
-              <InputSelectMultiple
-                className='bg-surface'
-                label='Select Users *'
-                options={userOptions}
-                placeholder='Select users...'
-                value={selectedUsers}
-                clearable
-                searchable
-                error={
-                  showErrors && !selectedUsers.length
-                    ? 'Please fill the required field: Select Users'
-                    : undefined
+              <SummaryItem label='Description' value={description || '—'} />
+              <SummaryItem
+                label='Users'
+                value={
+                  selectedUsers.length
+                    ? selectedUsers.map((user) => user.name).join(', ')
+                    : '—'
                 }
-                onChange={(value) =>
-                  onSelectedUsersChange((value || []) as Option[])
-                }
               />
-              <SettingsSelectedChips
-                items={selectedUsers}
-                onRemove={(id) =>
-                  onSelectedUsersChange(
-                    selectedUsers.filter((user) => user.id !== id),
-                  )
-                }
-              />
-
-              <InputTextarea
-                label='Description'
-                minRows={5}
-                placeholder="Describe this role's responsibilities and scope..."
-                value={description}
-                onChange={onDescriptionChange}
-              />
-            </SettingsFormSection>
-          ) : null}
-
-          {activeStep === 1 ? (
-            <SettingsFormSection>
-              <CreatePermissionMatrix
-                rows={permissionRows}
-                onToggle={onTogglePermission}
-              />
-            </SettingsFormSection>
-          ) : null}
-
-          {activeStep === 2 ? (
-            <SettingsFormSection>
-              <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
-                <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-                  Role Summary
-                </h3>
-                <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-                  <SummaryItem label='Role Name' value={roleName || '—'} />
-                  <SummaryItem
-                    label='Permissions'
-                    value={`${enabledCount} enabled`}
-                  />
-                  <SummaryItem label='Description' value={description || '—'} />
-                  <SummaryItem
-                    label='Users'
-                    value={
-                      selectedUsers.length
-                        ? selectedUsers.map((user) => user.name).join(', ')
-                        : '—'
-                    }
-                  />
-                </div>
-              </div>
-            </SettingsFormSection>
-          ) : null}
-
-          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-            <button
-              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-              disabled={activeStep === 0}
-              type='button'
-              onClick={handleBack}
-            >
-              Back
-            </button>
-
-            <div className='flex items-center gap-3'>
-              {isLastStep ? (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
-                  disabled={isSaving}
-                  type='button'
-                  onClick={handleSave}
-                >
-                  {isSaving ? 'Saving...' : submitLabel}
-                </button>
-              ) : (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                  type='button'
-                  onClick={handleNext}
-                >
-                  Next
-                </button>
-              )}
             </div>
           </div>
-        </SettingsSetupContent>
-      </div>
-    </main>
+        </SettingsFormSection>
+      ) : null}
+    </SettingsWizardLayout>
   )
 }
 

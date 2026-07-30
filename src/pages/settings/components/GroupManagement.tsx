@@ -45,6 +45,7 @@ import SettingsSelectedChips from './SettingsSelectedChips'
 import SettingsSelectField from './SettingsSelectField'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
+import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type GroupStep = {
@@ -59,19 +60,19 @@ type GroupStepKey = 'details' | 'members' | 'review'
 const groupSteps: GroupStep[] = [
   {
     caption: 'Step 1',
-    description: 'Provide a name and details for this group.',
+    description: 'Group name & description',
     key: 'details',
     title: 'Group Details',
   },
   {
     caption: 'Step 2',
-    description: 'Select users to be members of this group.',
+    description: 'Assign group members',
     key: 'members',
     title: 'Members',
   },
   {
     caption: 'Step 3',
-    description: 'Validate the group configuration before saving.',
+    description: 'Review & save group settings',
     key: 'review',
     title: 'Review',
   },
@@ -682,201 +683,133 @@ function GroupSetup({
 
   const activeStepConfig = groupSteps[activeStep]
 
+  const wizardSteps = useMemo(() => {
+    return groupSteps.map((s, idx) => ({
+      id: idx,
+      label: s.title,
+      description: s.description,
+      icon: s.key === 'details' ? 'tabler:users' : s.key === 'members' ? 'tabler:user-plus' : 'tabler:check',
+    }))
+  }, [])
+
   return (
-    <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <SettingsSetupHeader
-        moduleTitle='Group Management'
-        progress={progress}
-        stepDescription={activeStepConfig.description}
-        stepTitle={activeStepConfig.title}
-        setupTitle={editingGroupId ? 'Edit Group' : 'Create Group'}
-        onBackToSettings={onBackToSettings}
-        onCancelSetup={onCancel}
-      />
+    <SettingsWizardLayout
+      activeStep={activeStep}
+      steps={wizardSteps}
+      onStepChange={handleStepChange}
+      onBack={handleBack}
+      onNext={handleNext}
+      onSave={handleSave}
+      onCancel={onCancel}
+      isSaving={isSaving}
+      saveLabel={editingGroupId ? 'Update Group' : 'Save Group'}
+      moduleTitle='Group Management'
+      setupTitle={editingGroupId ? 'Edit Group' : 'Create Group'}
+      headerTitle={editingGroupId ? 'Edit Group Setup' : 'New Group Setup'}
+      headerDescription='Create and manage user group memberships for shared access control'
+    >
+      {activeStep === 0 ? (
+        <SettingsFormSection>
+          <InputText
+            label='Group Name *'
+            placeholder='e.g. Finance Team'
+            value={draftGroup.name}
+            error={getFieldRequiredError(
+              'Group Name',
+              showErrors,
+              draftGroup.name,
+            )}
+            onChange={(value) => onChange({ ...draftGroup, name: value })}
+          />
+          <InputTextarea
+            label='Description *'
+            minRows={4}
+            placeholder='Describe the purpose of this group...'
+            value={draftGroup.description}
+            error={getFieldRequiredError(
+              'Description',
+              showErrors,
+              draftGroup.description,
+            )}
+            onChange={(value) =>
+              onChange({ ...draftGroup, description: value })
+            }
+          />
+          <SettingsSelectField
+            label='Status'
+            options={['Active', 'Inactive']}
+            value={draftGroup.status === 'inactive' ? 'Inactive' : 'Active'}
+            onChange={(value) =>
+              onChange({
+                ...draftGroup,
+                status: value.toLowerCase() as SettingsGroup['status'],
+              })
+            }
+          />
+        </SettingsFormSection>
+      ) : null}
 
-      <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-        <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
-          <div className='space-y-5'>
-            {groupSteps.map((step, index) => {
-              const isActive = index === activeStep
-              const isCompleted = index < activeStep
-
-              return (
-                <button
-                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
-                  key={step.key}
-                  type='button'
-                  onClick={() => handleStepChange(index)}
-                >
-                  <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
-                    {index < groupSteps.length - 1 ? (
-                      <span className='absolute top-8 left-1/2 h-12 w-[2px] -translate-x-1/2 bg-[var(--gray-3)]' />
-                    ) : null}
-                    <span
-                      className={[
-                        'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
-                        isCompleted
-                          ? 'text-[var(--primary-9)]'
-                          : isActive
-                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)] ring-1 ring-[var(--primary-8)]'
-                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
-                      ].join(' ')}
-                    >
-                      {isCompleted ? (
-                        <Check size={14} />
-                      ) : (
-                        <GroupStepIcon step={step.key} />
-                      )}
-                    </span>
-                  </div>
-                  <div>
-                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
-                      {step.title}
-                    </div>
-                  </div>
-                </button>
+      {activeStep === 1 ? (
+        <SettingsFormSection>
+          <InputSelectMultiple
+            className='bg-surface'
+            label='Group Members'
+            options={userOptions}
+            placeholder='Search and select users...'
+            value={selectedMembers}
+            clearable
+            searchable
+            onChange={(value) =>
+              onMembersChange((value || []) as SettingsOption[])
+            }
+          />
+          <SettingsSelectedChips
+            items={selectedMembers}
+            onRemove={(id) =>
+              onMembersChange(
+                selectedMembers.filter((member) => member.id !== id),
               )
-            })}
-          </div>
-        </aside>
+            }
+          />
+        </SettingsFormSection>
+      ) : null}
 
-        <SettingsSetupContent>
-          {activeStep === 0 ? (
-            <SettingsFormSection>
-              <InputText
-                label='Group Name *'
-                placeholder='e.g. Finance Team'
-                value={draftGroup.name}
-                error={getFieldRequiredError(
-                  'Group Name',
-                  showErrors,
-                  draftGroup.name,
-                )}
-                onChange={(value) => onChange({ ...draftGroup, name: value })}
+      {activeStep === 2 ? (
+        <SettingsFormSection>
+          <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+            <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+              Group Summary
+            </h3>
+            <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+              <SummaryItem
+                label='Group Name'
+                value={draftGroup.name || '—'}
               />
-              <InputTextarea
-                label='Description *'
-                minRows={4}
-                placeholder='Describe the purpose of this group...'
-                value={draftGroup.description}
-                error={getFieldRequiredError(
-                  'Description',
-                  showErrors,
-                  draftGroup.description,
-                )}
-                onChange={(value) =>
-                  onChange({ ...draftGroup, description: value })
-                }
-              />
-              <SettingsSelectField
+              <SummaryItem
                 label='Status'
-                options={['Active', 'Inactive']}
-                value={draftGroup.status === 'inactive' ? 'Inactive' : 'Active'}
-                onChange={(value) =>
-                  onChange({
-                    ...draftGroup,
-                    status: value.toLowerCase() as SettingsGroup['status'],
-                  })
+                value={
+                  draftGroup.status === 'inactive' ? 'Inactive' : 'Active'
                 }
               />
-            </SettingsFormSection>
-          ) : null}
-
-          {activeStep === 1 ? (
-            <SettingsFormSection>
-              <InputSelectMultiple
-                className='bg-surface'
-                label='Group Members'
-                options={userOptions}
-                placeholder='Search and select users...'
-                value={selectedMembers}
-                clearable
-                searchable
-                onChange={(value) =>
-                  onMembersChange((value || []) as SettingsOption[])
+              <SummaryItem
+                label='Description'
+                value={draftGroup.description || '—'}
+              />
+              <SummaryItem
+                label='Members'
+                value={
+                  selectedMembers.length
+                    ? selectedMembers
+                        .map((member) => member.name)
+                        .join(', ')
+                    : '—'
                 }
               />
-              <SettingsSelectedChips
-                items={selectedMembers}
-                onRemove={(id) =>
-                  onMembersChange(
-                    selectedMembers.filter((member) => member.id !== id),
-                  )
-                }
-              />
-            </SettingsFormSection>
-          ) : null}
-
-          {activeStep === 2 ? (
-            <SettingsFormSection>
-              <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
-                <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-                  Group Summary
-                </h3>
-                <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-                  <SummaryItem
-                    label='Group Name'
-                    value={draftGroup.name || '—'}
-                  />
-                  <SummaryItem
-                    label='Status'
-                    value={
-                      draftGroup.status === 'inactive' ? 'Inactive' : 'Active'
-                    }
-                  />
-                  <SummaryItem
-                    label='Description'
-                    value={draftGroup.description || '—'}
-                  />
-                  <SummaryItem
-                    label='Members'
-                    value={
-                      selectedMembers.length
-                        ? selectedMembers
-                            .map((member) => member.name)
-                            .join(', ')
-                        : '—'
-                    }
-                  />
-                </div>
-              </div>
-            </SettingsFormSection>
-          ) : null}
-
-          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-            <button
-              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-              disabled={activeStep === 0}
-              type='button'
-              onClick={handleBack}
-            >
-              Back
-            </button>
-
-            <div className='flex items-center gap-3'>
-              {isLastStep ? (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
-                  disabled={isSaving}
-                  type='button'
-                  onClick={handleSave}
-                >
-                  {isSaving ? 'Saving...' : 'Save Group'}
-                </button>
-              ) : (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                  type='button'
-                  onClick={handleNext}
-                >
-                  Next
-                </button>
-              )}
             </div>
           </div>
-        </SettingsSetupContent>
-      </div>
-    </main>
+        </SettingsFormSection>
+      ) : null}
+    </SettingsWizardLayout>
   )
 }
 

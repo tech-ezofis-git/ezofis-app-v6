@@ -54,6 +54,7 @@ import SettingsPageHeader, {
 } from '../SettingsPageHeader'
 import SettingsSetupContent from '../SettingsSetupContent'
 import SettingsSetupHeader from '../SettingsSetupHeader'
+import SettingsWizardLayout from '../SettingsWizardLayout'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
@@ -271,12 +272,12 @@ const defaultFields: FieldRow[] = [
 ]
 
 const wizardSteps: WizardStepItem[] = [
-  { description: 'Name, owner and category', id: 1, title: 'Folder Details' },
-  { description: 'Select storage provider', id: 2, title: 'Storage' },
-  { description: 'Configure metadata fields', id: 3, title: 'Fields' },
-  { description: 'File version strategy', id: 4, title: 'Versioning' },
-  { description: 'ERP and sync mapping', id: 5, title: 'Integrations' },
-  { description: 'Folder & document security policies', id: 6, title: 'Security' },
+  { description: 'Name, owner & category', id: 1, title: 'Folder Details' },
+  { description: 'Storage provider', id: 2, title: 'Storage' },
+  { description: 'Metadata fields', id: 3, title: 'Fields' },
+  { description: 'Version strategy', id: 4, title: 'Versioning' },
+  { description: 'ERP & sync mapping', id: 5, title: 'Integrations' },
+  { description: 'Security policies', id: 6, title: 'Security' },
 ]
 
 type StorageOption = {
@@ -1019,27 +1020,32 @@ export default function DmsFolderConfiguration({
           </div>
         </div>
       ) : (
-        <>
-          <SettingsSetupHeader
-            moduleTitle='Folder Configuration'
-            progress={(step / wizardSteps.length) * 100}
-            stepDescription={
-              wizardSteps.find((item) => item.id === step)?.description || ''
-            }
-            stepTitle={
-              wizardSteps.find((item) => item.id === step)?.title || ''
-            }
-            setupTitle='New Folder'
-            onBackToSettings={onBack}
-            onCancelSetup={closeWizard}
-          />
+        (() => {
+          const currentStepInfo = wizardSteps.find((item) => item.id === step)
+          const formattedWizardSteps = wizardSteps.map((item) => ({
+            id: item.id - 1,
+            label: item.title,
+            description: item.description,
+            icon: item.id === 1 ? 'tabler:folder' : item.id === 2 ? 'tabler:database' : item.id === 3 ? 'tabler:list-details' : item.id === 4 ? 'tabler:git-branch' : item.id === 5 ? 'tabler:api' : 'tabler:shield-lock',
+          }))
 
-          <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-            <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
-              <StepNav step={step} setStep={setStep} />
-            </aside>
-
-            <SettingsSetupContent fullWidth>
+          return (
+            <SettingsWizardLayout
+              activeStep={step - 1}
+              steps={formattedWizardSteps}
+              onStepChange={(stepIdx) => setStep((stepIdx + 1) as WizardStep)}
+              onBack={goBack}
+              onNext={step === 5 ? () => { void handleCreateRepository() } : goNext}
+              onSave={closeWizard}
+              onCancel={closeWizard}
+              isSaving={isSavingRepository}
+              nextLabel={step === 5 ? 'Save & Next' : 'Continue'}
+              saveLabel='Done'
+              moduleTitle='Folder Configuration'
+              setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
+              headerTitle={editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'}
+              headerDescription='Configure repository storage, metadata fields, versioning, and security'
+            >
               <WizardContent
                 description={description}
                 displayMode={displayMode}
@@ -1065,51 +1071,9 @@ export default function DmsFolderConfiguration({
                 setVersioning={setVersioning}
                 onStorageConnectorChange={handleStorageConnectorChange}
               />
-
-              <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-                <button
-                  className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-                  disabled={step === 1}
-                  type='button'
-                  onClick={goBack}
-                >
-                  Back
-                </button>
-
-                <div className='flex items-center gap-3'>
-                  {step === 6 ? (
-                    <button
-                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                      type='button'
-                      onClick={closeWizard}
-                    >
-                      Done
-                    </button>
-                  ) : step === 5 ? (
-                    <button
-                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
-                      disabled={isSavingRepository}
-                      type='button'
-                      onClick={() => {
-                        void handleCreateRepository()
-                      }}
-                    >
-                      {isSavingRepository ? 'Saving...' : 'Save & Next'}
-                    </button>
-                  ) : (
-                    <button
-                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                      type='button'
-                      onClick={goNext}
-                    >
-                      Next
-                    </button>
-                  )}
-                </div>
-              </div>
-            </SettingsSetupContent>
-          </div>
-        </>
+            </SettingsWizardLayout>
+          )
+        })()
       )}
     </div>
   )
@@ -2059,9 +2023,9 @@ function WizardContent({
   if (step === 1) {
     return (
       <SettingsFormSection>
-        <p className='text-sm text-gray-11'>
+        {/* <p className='text-sm text-gray-11'>
           Define the basic information for your folder.
-        </p>
+        </p> */}
 
         <InputText
           label='Folder Name *'

@@ -32,12 +32,14 @@ interface AiBrandIconProps {
   className?: string
   alt?: string
   variant?: AiBrandIconVariant
+  style?: React.CSSProperties
 }
 
 export default function AiBrandIcon({
   className,
   alt = 'AI Brand',
   variant = 'curved-purple',
+  style,
 }: AiBrandIconProps) {
   const { resolvedColorScheme } = useTheme()
 
@@ -82,6 +84,7 @@ export default function AiBrandIcon({
     <img
       src={iconSrc}
       alt={alt}
+      style={style}
       className={cn('object-contain', className)}
     />
   )
