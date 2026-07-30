@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
-import { useMemo, useState } from 'react'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Area,
   AreaChart,
@@ -47,28 +49,32 @@ import useSettingsTableToolbar from '../useSettingsTableToolbar'
 
 type UsagePeriod = 'today' | 'yesterday' | 'monthly' | 'quarterly' | 'yearly'
 
-const PERIOD_FILTERS: { label: string; value: UsagePeriod }[] = [
-  { label: 'Today', value: 'today' },
-  { label: 'Yesterday', value: 'yesterday' },
-  { label: 'Monthly', value: 'monthly' },
-  { label: 'Quarterly', value: 'quarterly' },
-  { label: 'Yearly', value: 'yearly' },
+const PERIOD_FILTER_DEFS: {
+  label: ReturnType<typeof msg>
+  value: UsagePeriod
+}[] = [
+  { label: msg`Today`, value: 'today' },
+  { label: msg`Yesterday`, value: 'yesterday' },
+  { label: msg`Monthly`, value: 'monthly' },
+  { label: msg`Quarterly`, value: 'quarterly' },
+  { label: msg`Yearly`, value: 'yearly' },
 ]
 
-const MONTH_OPTIONS: Option[] = [
-  { id: '1', name: 'January', value: '1' },
-  { id: '2', name: 'February', value: '2' },
-  { id: '3', name: 'March', value: '3' },
-  { id: '4', name: 'April', value: '4' },
-  { id: '5', name: 'May', value: '5' },
-  { id: '6', name: 'June', value: '6' },
-  { id: '7', name: 'July', value: '7' },
-  { id: '8', name: 'August', value: '8' },
-  { id: '9', name: 'September', value: '9' },
-  { id: '10', name: 'October', value: '10' },
-  { id: '11', name: 'November', value: '11' },
-  { id: '12', name: 'December', value: '12' },
-]
+const MONTH_OPTION_DEFS: { id: string; name: ReturnType<typeof msg>; value: string }[] =
+  [
+    { id: '1', name: msg`January`, value: '1' },
+    { id: '2', name: msg`February`, value: '2' },
+    { id: '3', name: msg`March`, value: '3' },
+    { id: '4', name: msg`April`, value: '4' },
+    { id: '5', name: msg`May`, value: '5' },
+    { id: '6', name: msg`June`, value: '6' },
+    { id: '7', name: msg`July`, value: '7' },
+    { id: '8', name: msg`August`, value: '8' },
+    { id: '9', name: msg`September`, value: '9' },
+    { id: '10', name: msg`October`, value: '10' },
+    { id: '11', name: msg`November`, value: '11' },
+    { id: '12', name: msg`December`, value: '12' },
+  ]
 
 const CHART_COLORS = [
   'var(--primary-9)',
@@ -120,17 +126,48 @@ const MAX_TABLE_ROWS = 200
 const MAX_CHART_ITEMS = 10
 
 export default function Credits({ onBack }: { onBack?: () => void }) {
+  const { i18n, t } = useLingui()
   const currentYear = new Date().getFullYear()
   const currentMonthIndex = new Date().getMonth()
-  const [period, setPeriod] = useState<UsagePeriod>('monthly')
-  const [month, setMonth] = useState<Option>(
-    MONTH_OPTIONS[currentMonthIndex] ?? MONTH_OPTIONS[0],
+
+  const MONTH_OPTIONS = useMemo<Option[]>(
+    () =>
+      MONTH_OPTION_DEFS.map((month) => ({
+        id: month.id,
+        name: i18n._(month.name),
+        value: month.value,
+      })),
+    [i18n.locale],
   )
+
+  const PERIOD_FILTERS = useMemo(
+    () =>
+      PERIOD_FILTER_DEFS.map((filter) => ({
+        label: i18n._(filter.label),
+        value: filter.value,
+      })),
+    [i18n.locale],
+  )
+
+  const [period, setPeriod] = useState<UsagePeriod>('monthly')
+  const [month, setMonth] = useState<Option>(() => ({
+    id: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
+    name: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
+    value: MONTH_OPTION_DEFS[currentMonthIndex]?.value ?? '1',
+  }))
   const [year, setYear] = useState<Option>({
     id: String(currentYear),
     name: String(currentYear),
     value: String(currentYear),
   })
+
+  // Keep month label in sync with locale
+  useEffect(() => {
+    const matched = MONTH_OPTIONS.find((option) => option.value === month.value)
+    if (matched && matched.name !== month.name) {
+      setMonth(matched)
+    }
+  }, [MONTH_OPTIONS, month.name, month.value])
 
   const yearOptions = useMemo<Option[]>(
     () =>
@@ -425,7 +462,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
         },
       }),
     ],
-    [columnHelper],
+    [columnHelper, t],
   )
 
   const {
@@ -467,10 +504,10 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
   )
 
   return (
-    <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      <SettingsPageHeader title='Credit Usage' onBack={onBack} />
+    <div className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
+      <SettingsPageHeader title={t`Credit Usage`} onBack={onBack} />
 
-      <div className='flex flex-1 flex-col overflow-hidden p-4'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
           activeQuickFilters={[period]}
           customSearchComponent={<div />}
@@ -480,7 +517,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               icon: 'lucide:rotate-cw',
               id: 'refresh',
               isIconButton: true,
-              tooltip: 'Refresh credit usage',
+              tooltip: t`Refresh credit usage`,
               variant: 'outline',
               onClick: () => void refetch(),
             },
@@ -494,7 +531,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               ? [
                   {
                     id: 'month',
-                    label: 'Month',
+                    label: t`Month`,
                     options: MONTH_OPTIONS.map((o) => ({
                       label: o.name,
                       value: String(o.value || ''),
@@ -506,7 +543,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               ? [
                   {
                     id: 'year',
-                    label: 'Year',
+                    label: t`Year`,
                     options: yearOptions.map((o) => ({
                       label: o.name,
                       value: String(o.value || ''),
@@ -690,8 +727,8 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
           <div className='mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2 2xl:grid-cols-4'>
             <ChartCard
-              subtitle={`Top agents by credit usage · ${periodSubtitle}`}
-              title='Highest Credit Consumption'
+              subtitle={t`Top agents by credit usage · ${periodSubtitle}`}
+              title={t`Highest Credit Consumption`}
             >
               <HighestConsumptionPieChart
                 data={highestConsumption.map((item) => ({
@@ -702,8 +739,8 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </ChartCard>
 
             <ChartCard
-              subtitle='Credit usage trend across the selected period'
-              title='Usage Timeline'
+              subtitle={t`Credit usage trend across the selected period`}
+              title={t`Usage Timeline`}
             >
               <UsageTimelineChart data={timelineData} />
             </ChartCard>
@@ -725,7 +762,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
           <div className='mt-5 flex min-h-[320px] flex-col rounded-xl border border-[var(--border-default)] bg-surface p-4 shadow-[var(--shadow-sm)]'>
             <h4 className='mb-3 pl-0.5 font-poppins text-14 font-semibold text-text-primary'>
-              Transaction Activity
+              {t`Transaction Activity`}
             </h4>
             <CustomFilter
               activeFilters={transactionFilters}
@@ -742,7 +779,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   icon: 'tabler:refresh',
                   id: 'refresh-transactions',
                   isIconButton: true,
-                  tooltip: 'Refresh',
+                  tooltip: t`Refresh`,
                   variant: 'outline',
                   onClick: () => void refetch(),
                 },
@@ -799,7 +836,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </div>
             <Pagination
               className='mt-4 shrink-0'
-              itemLabel='Transactions'
+              itemLabel={t`Transactions`}
               page={page}
               pageSize={pageSize}
               showPageNumbers={false}
@@ -870,12 +907,13 @@ function DistributionDonutChart({
   centerValue?: string
   data: { color: string; credits: number; name: string }[]
 }) {
+  const { t } = useLingui()
   const total = data.reduce((sum, item) => sum + item.credits, 0)
 
   if (data.length === 0) {
     return (
       <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
-        No distribution data for this period.
+        {t`No distribution data for this period.`}
       </div>
     )
   }
@@ -890,7 +928,7 @@ function DistributionDonutChart({
           <div
             className='group flex cursor-pointer flex-col gap-1.5 rounded-lg p-1.5 transition-all hover:bg-gray-1 active:scale-95'
             key={index}
-            title={`${formatNumber(entry.credits)} credits (${percentage}%)`}
+            title={t`${formatNumber(entry.credits)} credits (${percentage}%)`}
           >
             <div className='flex items-center justify-between text-[11px] font-medium lowercase'>
               <div className='flex min-w-0 items-center gap-2'>
@@ -1044,7 +1082,7 @@ function HighestConsumptionPieChart({
   if (chartData.length === 0) {
     return (
       <div className='flex h-[200px] items-center justify-center text-13 text-gray-10'>
-        No consumption data for this period.
+        {t`No consumption data for this period.`}
       </div>
     )
   }
@@ -1131,6 +1169,7 @@ function MetricSummaryCard({
   trendTone?: 'down' | 'neutral' | 'up'
   value: string
 }) {
+  const { t } = useLingui()
   const trendStyles = {
     down: 'bg-red-2 text-red-11 border border-red-3',
     neutral: 'bg-gray-2 text-text-muted border border-gray-3',
@@ -1156,7 +1195,7 @@ function MetricSummaryCard({
             {trend}
           </span>
           <span className='font-inter text-11 font-normal text-text-muted'>
-            vs last period
+            {t`vs last period`}
           </span>
         </div>
       ) : null}
@@ -1183,7 +1222,7 @@ function UsageTimelineChart({
   if (chartData.length === 0) {
     return (
       <div className='flex h-[180px] items-center justify-center text-13 text-gray-10'>
-        No timeline data for this period.
+        {t`No timeline data for this period.`}
       </div>
     )
   }
@@ -1226,7 +1265,10 @@ function UsageTimelineChart({
         />
         <Tooltip
           cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
+          formatter={(val: any) => [
+            t`${formatNumber(val)} credits`,
+            t`Credits`,
+          ]}
           contentStyle={{
             border: 'none',
             borderRadius: '8px',

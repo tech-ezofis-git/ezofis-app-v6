@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Papa from 'papaparse'
 import { useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
@@ -35,9 +36,10 @@ export default function Step1TemplateUpload({
   setUploadState,
   onNext,
 }: Props) {
+  const { t } = useLingui()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false) // New loading state
+  const [isDownloading, setIsDownloading] = useState(false)
   const tenantId = authUserStore.getState()?.session?.tenantId
 
   const onFileChange = async (file: File | undefined) => {
@@ -48,7 +50,7 @@ export default function Step1TemplateUpload({
 
     if (!isAllowed) {
       showToast({
-        message: 'Please upload only CSV or XLSX files',
+        message: t`Please upload only CSV or XLSX files`,
         variant: 'error',
       })
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -65,7 +67,7 @@ export default function Step1TemplateUpload({
 
       setRowCount(response?.rowCount)
       showToast({
-        message: `Detected ${response?.headers.length} columns and ${response?.rowCount} records`,
+        message: t`Detected ${response?.headers.length} columns and ${response?.rowCount} records`,
         variant: 'success',
       })
       setUploadState('ready')
@@ -73,7 +75,8 @@ export default function Step1TemplateUpload({
     } catch (err) {
       setUploadState('error')
       showToast({
-        message: err instanceof Error ? err.message : 'Failed to parse file',
+        message:
+          err instanceof Error ? err.message : t`Failed to parse file`,
         variant: 'error',
       })
     }
@@ -85,7 +88,6 @@ export default function Step1TemplateUpload({
     setIsDownloading(true)
     try {
       const fileUrl = downloadTemplate(tenantId as string)
-      // Programmatic download to allow for the loading state to be visible
       const link = document.createElement('a')
       link.href = fileUrl
       link.setAttribute('download', 'template.xlsx')
@@ -93,11 +95,10 @@ export default function Step1TemplateUpload({
       link.click()
       document.body.removeChild(link)
 
-      // Simulating a brief delay so the spinner is visible to the user
       await new Promise((resolve) => setTimeout(resolve, 800))
     } catch (error) {
-      showToast({ message: 'Failed to download template', variant: 'error' })
-      console.error(e)
+      showToast({ message: t`Failed to download template`, variant: 'error' })
+      console.error(error)
     } finally {
       setIsDownloading(false)
     }
@@ -109,11 +110,10 @@ export default function Step1TemplateUpload({
       <div className='flex flex-col justify-between gap-4 md:flex-row md:items-center'>
         <div>
           <h2 className='text-xl font-bold text-gray-13'>
-            Upload Purchase Order
+            {t`Upload Purchase Order`}
           </h2>
           <p className='mt-0.5 text-xs font-medium text-gray-11'>
-            Please upload your PO data file (CSV or XLSX) to begin the
-            configuration.
+            {t`Please upload your PO data file (CSV or XLSX) to begin the configuration.`}
           </p>
         </div>
         <button
@@ -126,7 +126,7 @@ export default function Step1TemplateUpload({
           ) : (
             <Icon className='text-base' name='tabler:download' />
           )}
-          {isDownloading ? 'Preparing...' : 'Download Template'}
+          {isDownloading ? t`Preparing...` : t`Download Template`}
         </button>
       </div>
 
@@ -160,16 +160,16 @@ export default function Step1TemplateUpload({
             />
           </div>
           <h3 className='mb-1 text-lg font-semibold text-gray-13'>
-            Drop your PO file here, or{' '}
+            {t`Drop your PO file here, or`}{' '}
             <button
               className='font-bold text-primary-9 hover:underline'
               onClick={() => fileInputRef.current?.click()}
             >
-              browse
+              {t`browse`}
             </button>
           </h3>
           <p className='mb-6 text-xs font-medium text-gray-10'>
-            Accepted formats: CSV, XLSX
+            {t`Accepted formats: CSV, XLSX`}
           </p>
 
           <div className='flex gap-3'>
@@ -208,7 +208,7 @@ export default function Step1TemplateUpload({
             <div className='flex flex-col items-center gap-2'>
               <span className='size-8 animate-spin rounded-full border-4 border-primary-9 border-t-transparent' />
               <span className='animate-pulse text-xs font-bold text-primary-11'>
-                Analyzing Columns...
+                {t`Analyzing Columns...`}
               </span>
             </div>
           </AnimateFadeIn>
@@ -224,11 +224,11 @@ export default function Step1TemplateUpload({
             />
             <div>
               <p className='text-xs font-bold text-success-main'>
-                File Selected
+                {t`File Selected`}
               </p>
               <p className='text-[10px] font-medium text-success-main/70'>
-                {uploadedFile.name} • {uploadedColumns.length} columns •{' '}
-                {rowCount} records
+                {uploadedFile.name} • {uploadedColumns.length} {t`columns`} •{' '}
+                {rowCount} {t`records`}
               </p>
             </div>
           </div>
@@ -254,7 +254,7 @@ async function extractHeadersAndData(
           const fields = (results.meta?.fields ?? [])
             .map(normalizeHeader)
             .filter(Boolean)
-          const rowCount = results.data.length // Count rows of data
+          const rowCount = results.data.length
 
           if (!fields.length) reject(new Error('No header row found in CSV.'))
           else resolve({ headers: fields, rowCount })
@@ -284,7 +284,7 @@ async function extractHeadersAndData(
       }) as unknown[][]
       const headerRow = rows?.[0] ?? []
       const headers = headerRow.map(normalizeHeader).filter(Boolean)
-      const rowCount = rows.length - 1 // Subtract 1 to exclude header row
+      const rowCount = rows.length - 1
 
       return { headers, rowCount }
     } catch {

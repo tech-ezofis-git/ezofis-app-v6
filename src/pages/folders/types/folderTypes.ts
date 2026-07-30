@@ -8,6 +8,9 @@ export interface AiSummaryData {
   insight: string
   recommendations: string[]
   summary: string
+  complianceText?: string
+  creditConsumed?: boolean
+  rawOutput?: string
 }
 export type AppView =
   | 'explorer'
@@ -132,6 +135,7 @@ export interface ShareData {
     name: string
     permission: string
     shareId?: string
+    shareUrl?: string
   }>
 }
 

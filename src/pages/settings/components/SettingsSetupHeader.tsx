@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useMemo } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import { createSettingsSetupBreadcrumbs } from '../helpers/settingsBreadcrumbs'
@@ -27,13 +28,26 @@ export default function SettingsSetupHeader({
   onBackToSettings,
   onCancelSetup,
 }: SettingsSetupHeaderProps) {
+  const { i18n, t } = useLingui()
   const breadcrumbConfig = useMemo(
     () =>
-      createSettingsSetupBreadcrumbs(moduleTitle, setupTitle, {
-        onBackToSettings,
-        onCancelSetup,
-      }),
-    [moduleTitle, onBackToSettings, onCancelSetup, setupTitle],
+      createSettingsSetupBreadcrumbs(
+        moduleTitle,
+        setupTitle,
+        {
+          onBackToSettings,
+          onCancelSetup,
+        },
+        t`Settings`,
+      ),
+    [
+      i18n.locale,
+      moduleTitle,
+      onBackToSettings,
+      onCancelSetup,
+      setupTitle,
+      t,
+    ],
   )
 
   useSettingsTopbar(breadcrumbConfig)
@@ -44,7 +58,7 @@ export default function SettingsSetupHeader({
         <div className='flex min-w-0 items-start gap-3'>
           {showBackButton ? (
             <IconButton
-              ariaLabel='Back'
+              ariaLabel={t`Back`}
               color='gray'
               icon='lucide:arrow-left'
               size='sm'

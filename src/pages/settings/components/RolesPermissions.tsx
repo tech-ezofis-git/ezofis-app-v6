@@ -1,4 +1,6 @@
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import {
   Check,
   ChevronDown,
@@ -41,7 +43,6 @@ import Menu from '@/components/base/menu/Menu'
 import DropdownMenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
@@ -119,31 +120,36 @@ type RoleUserProps = {
 
 type TabKey = 'roles' | 'permissions' | 'menus' | 'assignments'
 
-const tabs: { key: TabKey; label: string }[] = [
-  { key: 'roles', label: 'Role List' },
-  { key: 'permissions', label: 'Permission Matrix' },
-  { key: 'menus', label: 'Menu Profiles' },
-  { key: 'assignments', label: 'User Assignments' },
+const tabs: { key: TabKey; label: ReturnType<typeof msg> }[] = [
+  { key: 'roles', label: msg`Role List` },
+  { key: 'permissions', label: msg`Permission Matrix` },
+  { key: 'menus', label: msg`Menu Profiles` },
+  { key: 'assignments', label: msg`User Assignments` },
 ]
 
-const roleSteps: CreateStep[] = [
+const roleStepDefs: Array<{
+  caption: ReturnType<typeof msg>
+  description: ReturnType<typeof msg>
+  key: CreateStepKey
+  title: ReturnType<typeof msg>
+}> = [
   {
-    caption: 'Step 1',
-    description: 'Role name & user assignments',
+    caption: msg`Step 1`,
+    description: msg`Define the role name, assign users, and describe its scope.`,
     key: 'details',
-    title: 'Role Details',
+    title: msg`Role Details`,
   },
   {
-    caption: 'Step 2',
-    description: 'Module access & privilege matrix',
+    caption: msg`Step 2`,
+    description: msg`Enable or disable access for each module in this role.`,
     key: 'permissions',
-    title: 'Permissions',
+    title: msg`Permissions`,
   },
   {
-    caption: 'Step 3',
-    description: 'Review & save role configuration',
+    caption: msg`Step 3`,
+    description: msg`Validate the role configuration before saving.`,
     key: 'review',
-    title: 'Review',
+    title: msg`Review`,
   },
 ]
 
@@ -184,6 +190,7 @@ const permissionColumnHelper = createColumnHelper<PermissionRow>()
 const userAssignmentColumnHelper = createColumnHelper<AssignedUser>()
 
 export default function RolesPermissions({ onBack }: RoleUserProps) {
+  const { t } = useLingui()
   const [roles, setRoles] = useState<Role[]>([])
   const [selectedRoleId, setSelectedRoleId] = useState('')
   const [permissionRows, setPermissionRows] = useState<PermissionRow[]>([])
@@ -237,7 +244,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
   const deleteRole = (roleId: string | number) => {
     const confirmed = window.confirm(
-      'Are you sure you want to delete this role?',
+      t`Are you sure you want to delete this role?`,
     )
     if (!confirmed) return
 
@@ -353,7 +360,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
         if (response.error || !response.data) {
           showToast({
-            message: response.error || 'Failed to load role permissions',
+            message: response.error || t`Failed to load role permissions`,
             variant: 'error',
           })
           return
@@ -377,7 +384,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         setIsLoadingRolePermissions(false)
       }
     },
-    [apiMenus, loadMenus],
+    [apiMenus, loadMenus, t],
   )
 
   useEffect(() => {
@@ -422,8 +429,8 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       showToast({
         message: editingRoleId
-          ? 'Role updated successfully'
-          : 'Role created successfully',
+          ? t`Role updated successfully`
+          : t`Role created successfully`,
         variant: 'success',
       })
       await loadRoles()
@@ -440,7 +447,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       if (response.error || !response.data) {
         showToast({
-          message: response.error || 'Failed to load role',
+          message: response.error || t`Failed to load role`,
           variant: 'error',
         })
         return
@@ -537,7 +544,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         permissionRows={newPermissionRows}
         roleName={newRoleName}
         selectedUsers={selectedUsers}
-        submitLabel={editingRoleId ? 'Update Role' : 'Save Role'}
+        submitLabel={editingRoleId ? t`Update Role` : t`Save Role`}
         userOptions={userOptions}
         onBack={() => setCreateStep((step) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
@@ -545,7 +552,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         onCreate={saveRole}
         onDescriptionChange={setNewRoleDescription}
         onNext={() =>
-          setCreateStep((step) => Math.min(step + 1, roleSteps.length - 1))
+          setCreateStep((step) => Math.min(step + 1, roleStepDefs.length - 1))
         }
         onRoleNameChange={setNewRoleName}
         onSelectedUsersChange={setSelectedUsers}
@@ -556,7 +563,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   }
 
   return (
-    <main className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
       <RoleList
         isLoading={isLoadingRoles}
         isLoadingRoleDetails={isLoadingRoleDetails}
@@ -640,13 +647,14 @@ function CreatePermissionMatrix({
   rows: PermissionRow[]
   onToggle: (categoryKey: string) => void
 }) {
+  const { t } = useLingui()
   // console.log(rows, "rows")
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
     () => [
       permissionColumnHelper.accessor('category', {
         enableSorting: false,
-        header: 'Category',
+        header: t`Category`,
         id: 'category',
         meta: settingsHeaderMeta.start,
         size: 360,
@@ -658,7 +666,7 @@ function CreatePermissionMatrix({
       }),
       permissionColumnHelper.display({
         enableSorting: false,
-        header: 'Access',
+        header: t`Access`,
         id: 'access',
         meta: settingsHeaderMeta.center,
         size: 140,
@@ -672,7 +680,7 @@ function CreatePermissionMatrix({
         ),
       }),
     ],
-    [onToggle],
+    [onToggle, t],
   )
 
   const permissionTable = useReactTable({
@@ -749,6 +757,17 @@ function CreateRolePage({
   onStepChange: (step: number) => void
   onTogglePermission: (categoryKey: string) => void
 }) {
+  const { i18n, t } = useLingui()
+  const roleSteps = useMemo<CreateStep[]>(
+    () =>
+      roleStepDefs.map((step) => ({
+        caption: i18n._(step.caption),
+        description: i18n._(step.description),
+        key: step.key,
+        title: i18n._(step.title),
+      })),
+    [i18n.locale],
+  )
   const enabledCount = useMemo(
     () => countEnabledPermissions(permissionRows),
     [permissionRows],
@@ -769,11 +788,11 @@ function CreateRolePage({
   const getMissingLabels = (step = activeStep) => {
     if (step === 1) return []
 
-    const fields = [{ label: 'Role Name', value: roleName }]
+    const fields = [{ label: t`Role Name`, value: roleName }]
     const labels = getMissingRequiredLabels(fields)
 
     if (!selectedUsers.length) {
-      labels.push('Select Users')
+      labels.push(t`Select Users`)
     }
 
     return labels
@@ -840,112 +859,185 @@ function CreateRolePage({
 
   const activeStepConfig = roleSteps[activeStep]
 
-  const wizardSteps = useMemo(() => {
-    return roleSteps.map((s, idx) => ({
-      id: idx,
-      label: s.title,
-      description: s.description,
-      icon: s.key === 'details' ? 'tabler:shield' : s.key === 'permissions' ? 'tabler:shield-check' : 'tabler:check',
-    }))
-  }, [])
-
   return (
-    <SettingsWizardLayout
-      activeStep={activeStep}
-      steps={wizardSteps}
-      onStepChange={handleStepChange}
-      onBack={handleBack}
-      onNext={handleNext}
-      onSave={handleSave}
-      onCancel={onCancel}
-      isSaving={isSaving}
-      saveLabel={submitLabel}
-      moduleTitle='Roles & Permissions'
-      setupTitle={editingRoleId ? 'Edit Role' : 'Create Role'}
-      headerTitle={editingRoleId ? 'Edit Role Setup' : 'New Role Setup'}
-      headerDescription='Define role details, access scopes, and permission privilege matrices'
-    >
-      {activeStep === 0 ? (
-        <SettingsFormSection>
-          <InputText
-            error={getFieldRequiredError('Role Name', showErrors, roleName)}
-            label='Role Name *'
-            placeholder='e.g. AP Supervisor'
-            value={roleName}
-            onChange={onRoleNameChange}
-          />
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)] text-[var(--text-primary)]'>
+      <SettingsSetupHeader
+        moduleTitle={t`Roles & Permissions`}
+        progress={progress}
+        stepDescription={activeStepConfig.description}
+        stepTitle={activeStepConfig.title}
+        setupTitle={editingRoleId ? t`Edit Role` : t`Create Role`}
+        onBackToSettings={onBackToSettings}
+        onCancelSetup={onCancel}
+      />
 
-          <InputSelectMultiple
-            className='bg-surface'
-            label='Select Users *'
-            options={userOptions}
-            placeholder='Select users...'
-            value={selectedUsers}
-            clearable
-            searchable
-            error={
-              showErrors && !selectedUsers.length
-                ? 'Please fill the required field: Select Users'
-                : undefined
-            }
-            onChange={(value) =>
-              onSelectedUsersChange((value || []) as Option[])
-            }
-          />
-          <SettingsSelectedChips
-            items={selectedUsers}
-            onRemove={(id) =>
-              onSelectedUsersChange(
-                selectedUsers.filter((user) => user.id !== id),
+      <div className='grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[296px_1fr]'>
+        <aside className='ez-scrollbar overflow-y-auto border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
+          <div className='space-y-5'>
+            {roleSteps.map((step, index) => {
+              const isActive = index === activeStep
+              const isCompleted = index < activeStep
+
+              return (
+                <button
+                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
+                  key={step.key}
+                  type='button'
+                  onClick={() => handleStepChange(index)}
+                >
+                  <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
+                    {index < roleSteps.length - 1 ? (
+                      <span className='absolute top-8 left-1/2 h-12 w-[2px] -translate-x-1/2 bg-[var(--gray-3)]' />
+                    ) : null}
+                    <span
+                      className={[
+                        'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
+                        isCompleted
+                          ? 'text-[var(--primary-9)]'
+                          : isActive
+                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)] ring-1 ring-[var(--primary-8)]'
+                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
+                      ].join(' ')}
+                    >
+                      {isCompleted ? (
+                        <Check size={14} />
+                      ) : (
+                        <RoleStepIcon step={step.key} />
+                      )}
+                    </span>
+                  </div>
+                  <div>
+                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
+                      {step.title}
+                    </div>
+                  </div>
+                </button>
               )
-            }
-          />
+            })}
+          </div>
+        </aside>
 
-          <InputTextarea
-            label='Description'
-            minRows={5}
-            placeholder="Describe this role's responsibilities and scope..."
-            value={description}
-            onChange={onDescriptionChange}
-          />
-        </SettingsFormSection>
-      ) : null}
-
-      {activeStep === 1 ? (
-        <SettingsFormSection>
-          <CreatePermissionMatrix
-            rows={permissionRows}
-            onToggle={onTogglePermission}
-          />
-        </SettingsFormSection>
-      ) : null}
-
-      {activeStep === 2 ? (
-        <SettingsFormSection>
-          <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
-            <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-              Role Summary
-            </h3>
-            <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-              <SummaryItem label='Role Name' value={roleName || '—'} />
-              <SummaryItem
-                label='Permissions'
-                value={`${enabledCount} enabled`}
+        <SettingsSetupContent>
+          {activeStep === 0 ? (
+            <SettingsFormSection>
+              <InputText
+                error={getFieldRequiredError(t`Role Name`, showErrors, roleName)}
+                label={t`Role Name`}
+                placeholder={t`e.g. AP Supervisor`}
+                required
+                value={roleName}
+                onChange={onRoleNameChange}
               />
-              <SummaryItem label='Description' value={description || '—'} />
-              <SummaryItem
-                label='Users'
-                value={
-                  selectedUsers.length
-                    ? selectedUsers.map((user) => user.name).join(', ')
-                    : '—'
+
+              <InputSelectMultiple
+                className='bg-surface'
+                label={t`Select Users`}
+                options={userOptions}
+                placeholder={t`Select users...`}
+                required
+                value={selectedUsers}
+                clearable
+                searchable
+                error={
+                  showErrors && !selectedUsers.length
+                    ? t`Please fill the required field: Select Users`
+                    : undefined
+                }
+                onChange={(value) =>
+                  onSelectedUsersChange((value || []) as Option[])
                 }
               />
+              <SettingsSelectedChips
+                items={selectedUsers}
+                onRemove={(id) =>
+                  onSelectedUsersChange(
+                    selectedUsers.filter((user) => user.id !== id),
+                  )
+                }
+              />
+
+              <InputTextarea
+                label={t`Description`}
+                minRows={5}
+                placeholder={t`Describe this role's responsibilities and scope...`}
+                value={description}
+                onChange={onDescriptionChange}
+              />
+            </SettingsFormSection>
+          ) : null}
+
+          {activeStep === 1 ? (
+            <SettingsFormSection>
+              <CreatePermissionMatrix
+                rows={permissionRows}
+                onToggle={onTogglePermission}
+              />
+            </SettingsFormSection>
+          ) : null}
+
+          {activeStep === 2 ? (
+            <SettingsFormSection>
+              <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+                <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+                  {t`Role Summary`}
+                </h3>
+                <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+                  <SummaryItem label={t`Role Name`} value={roleName || '—'} />
+                  <SummaryItem
+                    label={t`Permissions`}
+                    value={t`${enabledCount} enabled`}
+                  />
+                  <SummaryItem
+                    label={t`Description`}
+                    value={description || '—'}
+                  />
+                  <SummaryItem
+                    label={t`Users`}
+                    value={
+                      selectedUsers.length
+                        ? selectedUsers.map((user) => user.name).join(', ')
+                        : '—'
+                    }
+                  />
+                </div>
+              </div>
+            </SettingsFormSection>
+          ) : null}
+
+          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+            <button
+              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+              disabled={activeStep === 0}
+              type='button'
+              onClick={handleBack}
+            >
+              {t`Back`}
+            </button>
+
+            <div className='flex items-center gap-3'>
+              {isLastStep ? (
+                <button
+                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                  disabled={isSaving}
+                  type='button'
+                  onClick={handleSave}
+                >
+                  {isSaving ? t`Saving...` : submitLabel}
+                </button>
+              ) : (
+                <button
+                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                  type='button'
+                  onClick={handleNext}
+                >
+                  {t`Next`}
+                </button>
+              )}
             </div>
           </div>
-        </SettingsFormSection>
-      ) : null}
-    </SettingsWizardLayout>
+        </SettingsSetupContent>
+      </div>
+    </main>
   )
 }
 
@@ -1054,6 +1146,7 @@ function MenuProfiles({
   onRoleChange: (id: string) => void
   onToggle: (id: string) => void
 }) {
+  const { t } = useLingui()
   const orderedItems = [...items].sort((a, b) => a.order - b.order)
 
   return (
@@ -1080,18 +1173,18 @@ function MenuProfiles({
         <div className='flex items-center gap-3 border-b border-[var(--border-default)] px-5 py-4'>
           <Grid2X2 className='text-[var(--primary-9)]' size={18} />
           <h2 className='text-md font-semibold text-[var(--gray-13)]'>
-            Menu Visibility for {selectedRoleName}
+            {t`Menu Visibility for ${selectedRoleName}`}
           </h2>
         </div>
 
         <div className='ez-scrollbar max-h-[calc(100vh-320px)] overflow-y-auto'>
           {isLoading ? (
             <div className='px-5 py-12 text-center text-sm text-[var(--gray-11)]'>
-              Loading menus...
+              {t`Loading menus...`}
             </div>
           ) : orderedItems.length === 0 ? (
             <div className='px-5 py-12 text-center text-sm text-[var(--gray-11)]'>
-              No menus found.
+              {t`No menus found.`}
             </div>
           ) : (
             orderedItems.map((item) => (
@@ -1172,12 +1265,13 @@ function PermissionMatrix({
   onRoleChange: (id: string) => void
   onToggle: (categoryKey: string) => void
 }) {
+  const { t } = useLingui()
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
     () => [
       permissionColumnHelper.accessor('category', {
         enableSorting: false,
-        header: 'Category',
+        header: t`Category`,
         id: 'category',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -1190,7 +1284,7 @@ function PermissionMatrix({
       }),
       permissionColumnHelper.display({
         enableSorting: false,
-        header: 'Access',
+        header: t`Access`,
         id: 'access',
         meta: settingsHeaderMeta.center,
         minSize: 40,
@@ -1205,7 +1299,7 @@ function PermissionMatrix({
         ),
       }),
     ],
-    [onToggle],
+    [onToggle, t],
   )
 
   const permissionTable = useReactTable({
@@ -1238,9 +1332,9 @@ function PermissionMatrix({
         }
       />
       <DataTable
-        emptyDescription='Menus will appear here once navigation items are available.'
+        emptyDescription={t`Menus will appear here once navigation items are available.`}
         emptyIcon='lucide:shield'
-        emptyTitle='No permissions to configure'
+        emptyTitle={t`No permissions to configure`}
         isLoading={isLoading}
         isReLoading={isLoading}
         pageSize={Math.max(5, rows.length || 5)}
@@ -1276,6 +1370,7 @@ function RoleList({
   onEdit: (id: string) => void
   onReload: () => void | Promise<void>
 }) {
+  const { t } = useLingui()
   const tableSearchOptions = useSettingsTableSearch()
   const {
     page,
@@ -1326,9 +1421,9 @@ function RoleList({
       }),
       roleColumnHelper.accessor((row) => `${row.name} ${row.description}`, {
         enableSorting: false,
-        header: 'Role',
+        header: t`Role`,
         id: 'role',
-        meta: { ...settingsHeaderMeta.start, label: 'Role' },
+        meta: { ...settingsHeaderMeta.start, label: t`Role` },
         minSize: 40,
         size: 360,
         cell: ({ row }) => {
@@ -1348,12 +1443,12 @@ function RoleList({
       }),
       roleColumnHelper.accessor('type', {
         enableSorting: false,
-        header: 'Type',
+        header: t`Type`,
         id: 'type',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Type',
+          label: t`Type`,
         },
         minSize: 40,
         size: 180,
@@ -1365,21 +1460,21 @@ function RoleList({
       }),
       roleColumnHelper.accessor('users', {
         enableSorting: false,
-        header: 'Users',
+        header: t`Users`,
         id: 'users',
         meta: { ...settingsHeaderMeta.start, disableEllipsis: true },
         minSize: 40,
         size: 160,
         cell: ({ getValue }) => (
           <span className='inline-flex items-center rounded-[8px] bg-[var(--gray-2)] px-4 py-1 text-sm font-semibold text-[var(--gray-13)]'>
-            {getValue()} users
+            {t`${getValue()} users`}
           </span>
         ),
       }),
       roleColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Actions',
+        header: t`Actions`,
         id: 'actions',
         meta: settingsHeaderMeta.end,
         minSize: 72,
@@ -1408,14 +1503,14 @@ function RoleList({
               >
                 <DropdownMenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => onEdit(role.id)}
                 />
                 <DropdownMenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => onDelete(role.id)}
                 />
               </Menu>
@@ -1424,7 +1519,7 @@ function RoleList({
         },
       }),
     ],
-    [isLoadingRoleDetails, onEdit, onDelete],
+    [isLoadingRoleDetails, onEdit, onDelete, t],
   )
 
   const roleTable = useReactTable({
@@ -1452,14 +1547,14 @@ function RoleList({
   const typeOptions = useMemo(
     () =>
       Array.from(new Set(roles.map((r) => r.type).filter(Boolean))).map(
-        (t) => ({ label: t, value: t }),
+        (type) => ({ label: type, value: type }),
       ),
     [roles],
   )
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
-      <SettingsPageHeader title='Roles & Permissions' onBack={onBack} />
+      <SettingsPageHeader title={t`Roles & Permissions`} onBack={onBack} />
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
@@ -1468,16 +1563,16 @@ function RoleList({
           filters={[
             {
               id: 'name',
-              label: 'Name',
+              label: t`Name`,
               options: roles
                 .map((r) => String(r.name || '').trim())
                 .filter(Boolean)
                 .sort((a, b) => a.localeCompare(b))
                 .map((name) => ({ label: name, value: name })),
               searchable: true,
-              searchPlaceholder: 'Search name...',
+              searchPlaceholder: t`Search name...`,
             },
-            { id: 'type', label: 'Type', options: typeOptions },
+            { id: 'type', label: t`Type`, options: typeOptions },
           ]}
           trailingActions={<TableExport table={roleTable as any} />}
           actionButtons={[
@@ -1487,13 +1582,13 @@ function RoleList({
               icon: 'tabler:refresh',
               id: 'refresh',
               isIconButton: true,
-              tooltip: 'Refresh',
+              tooltip: t`Refresh`,
               variant: 'outline',
               onClick: onReload,
             },
           ]}
           addButton={{
-            tooltip: 'Create Role',
+            tooltip: t`Create Role`,
             onClick: onCreate,
           }}
           showReset={
@@ -1511,9 +1606,9 @@ function RoleList({
         <div className='mt-4 flex min-h-0 flex-1 flex-col overflow-hidden'>
           <div className='min-h-0 flex-1 overflow-hidden'>
             <DataTable
-              emptyDescription='Create a role to manage access permissions across the platform.'
+              emptyDescription={t`Create a role to manage access permissions across the platform.`}
               emptyIcon='lucide:shield'
-              emptyTitle='No roles yet'
+              emptyTitle={t`No roles yet`}
               isLoading={isLoading}
               isReLoading={isLoading}
               pageSize={pageSize}
@@ -1530,7 +1625,7 @@ function RoleList({
           </div>
           <Pagination
             className='mt-4 shrink-0'
-            itemLabel='Roles'
+            itemLabel={t`Roles`}
             page={page}
             pageSize={pageSize}
             showPageNumbers={false}
@@ -1559,6 +1654,7 @@ function RoleTabSelect({
   selectedRoleId: string
   onRoleChange: (id: string) => void
 }) {
+  const { t } = useLingui()
   const roleOptions = useMemo(
     () =>
       roles.map((role) => ({
@@ -1590,7 +1686,7 @@ function RoleTabSelect({
   return (
     <InputSelect
       options={roleOptions}
-      placeholder='Select role'
+      placeholder={t`Select role`}
       value={selectedRole}
       width={220}
       onChange={(option) => {
@@ -1647,6 +1743,8 @@ function TabBar({
   onChange: (tab: TabKey) => void
   onToolbarSlotChange: (node: HTMLDivElement | null) => void
 }) {
+  const { i18n } = useLingui()
+
   return (
     <div className='flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-gray-3 bg-surface px-4 py-2'>
       <div className='flex h-14 min-w-0 items-center'>
@@ -1665,7 +1763,7 @@ function TabBar({
               ].join(' ')}
               onClick={() => onChange(tab.key)}
             >
-              {tab.label}
+              {i18n._(tab.label)}
 
               {isActive ? (
                 <span className='absolute bottom-0 left-0 h-[2px] w-full bg-primary-9' />
@@ -1709,6 +1807,7 @@ function UserAssignments({
   users: AssignedUser[]
   onChangeRole: (id: string, role: string) => void
 }) {
+  const { t } = useLingui()
   const tableSearchOptions = useSettingsTableSearch()
   const userAssignmentColumns = useMemo(
     () => [
@@ -1731,9 +1830,9 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.accessor('name', {
         enableSorting: false,
-        header: 'User',
+        header: t`User`,
         id: 'name',
-        meta: { ...settingsHeaderMeta.start, label: 'User' },
+        meta: { ...settingsHeaderMeta.start, label: t`User` },
         minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
@@ -1744,9 +1843,9 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.accessor('email', {
         enableSorting: false,
-        header: 'Email',
+        header: t`Email`,
         id: 'email',
-        meta: { ...settingsHeaderMeta.start, label: 'Email' },
+        meta: { ...settingsHeaderMeta.start, label: t`Email` },
         minSize: 40,
         size: 240,
         cell: ({ getValue }) => (
@@ -1755,9 +1854,9 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.accessor('role', {
         enableSorting: false,
-        header: 'Current Role',
+        header: t`Current Role`,
         id: 'role',
-        meta: { ...settingsHeaderMeta.start, label: 'Current Role' },
+        meta: { ...settingsHeaderMeta.start, label: t`Current Role` },
         minSize: 40,
         size: 160,
         cell: ({ getValue }) => (
@@ -1768,7 +1867,7 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.display({
         enableSorting: false,
-        header: 'Change Role',
+        header: t`Change Role`,
         id: 'changeRole',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -1797,7 +1896,7 @@ function UserAssignments({
         },
       }),
     ],
-    [onChangeRole, roleNames],
+    [onChangeRole, roleNames, t],
   )
 
   const userAssignmentTable = useReactTable({
@@ -1819,9 +1918,9 @@ function UserAssignments({
       <TabToolbarPortal slot={toolbarSlot} toolbar={toolbar} />
 
       <DataTable
-        emptyDescription='Assign users to roles once users are available in the platform.'
+        emptyDescription={t`Assign users to roles once users are available in the platform.`}
         emptyIcon='lucide:user-round'
-        emptyTitle='No user assignments yet'
+        emptyTitle={t`No user assignments yet`}
         isLoading={false}
         isReLoading={false}
         pageSize={Math.max(5, users.length || 5)}
@@ -1839,7 +1938,7 @@ function UserAssignments({
           className='h-10 rounded-[8px] bg-[var(--primary-9)] px-5 text-sm font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
           type='button'
         >
-          Save Assignments
+          {t`Save Assignments`}
         </button>
       </div>
     </>

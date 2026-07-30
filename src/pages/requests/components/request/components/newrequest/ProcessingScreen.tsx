@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
@@ -24,6 +25,7 @@ const ProcessingScreen = ({
   onComplete,
   onRedirect,
 }: ProcessingScreenProps) => {
+  const { t } = useLingui()
   const [step, setStep] = useState(0)
   const [showLongWaitMessage, setShowLongWaitMessage] = useState(false)
 
@@ -112,11 +114,11 @@ const ProcessingScreen = ({
   const [keywordIndex, setKeywordIndex] = useState(0)
 
   const loadingPhrases = [
-    'Analyzing spatial layout',
-    'Extracting textual metadata',
-    'Recognizing table structures',
-    'Mapping semantic entities',
-    'Validating data consistency',
+    t`Analyzing spatial layout`,
+    t`Extracting textual metadata`,
+    t`Recognizing table structures`,
+    t`Mapping semantic entities`,
+    t`Validating data consistency`,
   ]
 
   // Keyword loop timer - slower pace (10s)
@@ -201,10 +203,10 @@ const ProcessingScreen = ({
               </div>
               <div className='flex min-w-0 flex-col'>
                 <h3 className='mb-1 text-[13px] leading-none font-bold text-[var(--gray-13)]'>
-                  Document Preview
+                  {t`Document Preview`}
                 </h3>
                 <p className='truncate text-[11px] font-medium text-[var(--gray-10)]'>
-                  {file?.name || 'Loading document...'}
+                  {file?.name || t`Loading document...`}
                 </p>
               </div>
             </div>
@@ -232,7 +234,7 @@ const ProcessingScreen = ({
 
               <button
                 className='flex h-8 w-8 items-center justify-center rounded-lg text-[var(--gray-11)] transition-all duration-500 hover:bg-[var(--primary-2)] hover:text-[var(--primary-9)] active:rotate-180'
-                title='Refresh Preview'
+                title={t`Refresh Preview`}
                 onClick={() => {
                   setPreviewUrl(null)
                   setRefreshCounter((prev) => prev + 1)
@@ -260,7 +262,7 @@ const ProcessingScreen = ({
                   </Worker>
                 ) : (
                   <img
-                    alt='Document Preview'
+                    alt={t`Document Preview`}
                     className='h-full w-full object-contain'
                     src={previewUrl}
                   />
@@ -269,7 +271,7 @@ const ProcessingScreen = ({
                 <div className='flex h-full flex-col items-center justify-center text-[var(--gray-8)]'>
                   <BarLoader />
                   <p className='mt-4 text-sm font-medium'>
-                    Loading document...
+                    {t`Loading document...`}
                   </p>
                 </div>
               )}
@@ -290,7 +292,7 @@ const ProcessingScreen = ({
           <div className='relative flex h-full flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface p-4 shadow-sm 2xl:p-6'>
             <div className='mb-2 flex shrink-0 items-center justify-between 2xl:mb-4'>
               <h2 className='text-base font-bold text-[var(--gray-12)] 2xl:text-lg'>
-                Processing Timeline
+                {t`Processing Timeline`}
               </h2>
 
               <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-2)] px-2.5 py-1 shadow-sm'>
@@ -356,10 +358,10 @@ const ProcessingScreen = ({
                       }`}
                     >
                       {uploadStatus === 'success'
-                        ? 'File uploaded successfully'
+                        ? t`File uploaded successfully`
                         : uploadStatus === 'error'
-                          ? 'Upload failed'
-                          : 'Uploading file...'}
+                          ? t`Upload failed`
+                          : t`Uploading file...`}
                     </p>
                     {step === 0 && (
                       <div className='flex animate-pulse items-center gap-1 text-[var(--orange-9)]'>
@@ -381,7 +383,7 @@ const ProcessingScreen = ({
                   <p className='mt-0.5 text-xs text-[var(--gray-10)] 2xl:text-sm'>
                     {uploadStatus === 'success'
                       ? file?.name
-                      : 'Initializing upload...'}
+                      : t`Initializing upload...`}
                   </p>
                 </div>
               </div>
@@ -412,7 +414,7 @@ const ProcessingScreen = ({
                     <p
                       className={`flex items-center text-sm font-medium transition-colors duration-300 2xl:text-base ${step === 1 ? 'text-[var(--primary-9)]' : step > 1 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]'}`}
                     >
-                      Extracting data
+                      {t`Extracting data`}
                     </p>
                     {step === 1 && (
                       <div className='flex animate-pulse items-center gap-1 text-[var(--orange-9)]'>
@@ -432,7 +434,7 @@ const ProcessingScreen = ({
                     )}
                   </div>
                   <p className='mt-0.5 text-xs text-[var(--gray-9)] 2xl:text-sm'>
-                    {step > 1 ? 'Data extraction complete' : ''}
+                    {step > 1 ? t`Data extraction complete` : ''}
                   </p>
                   {step === 1 && (
                     <div className='animate-fade-in-up mt-2'>
@@ -476,7 +478,7 @@ const ProcessingScreen = ({
                     <p
                       className={`text-sm font-medium transition-colors duration-300 2xl:text-base ${step === 2 ? 'text-[var(--primary-9)]' : step > 2 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]'}`}
                     >
-                      Matching PO details
+                      {t`Matching PO details`}
                     </p>
                     {step === 2 && (
                       <div className='flex animate-pulse items-center gap-1 text-[var(--orange-9)]'>
@@ -497,8 +499,8 @@ const ProcessingScreen = ({
                   </div>
                   <p className='mt-0.5 text-xs text-[var(--gray-9)] 2xl:text-sm'>
                     {step > 2
-                      ? 'Records matched successfully'
-                      : 'Cross-referencing records'}
+                      ? t`Records matched successfully`
+                      : t`Cross-referencing records`}
                   </p>
                 </div>
               </div>
@@ -529,7 +531,7 @@ const ProcessingScreen = ({
                     <p
                       className={`text-sm font-medium transition-colors duration-300 2xl:text-base ${step === 3 ? 'text-[var(--primary-9)]' : step > 3 ? 'text-[var(--gray-12)]' : 'text-[var(--gray-10)]'}`}
                     >
-                      Policy Compliance
+                      {t`Policy Compliance`}
                     </p>
                     {step === 3 && (
                       <div className='flex animate-pulse items-center gap-1 text-[var(--orange-9)]'>
@@ -550,8 +552,8 @@ const ProcessingScreen = ({
                   </div>
                   <p className='mt-0.5 text-xs text-[var(--gray-9)] 2xl:text-sm'>
                     {step > 3
-                      ? 'Guidelines validated'
-                      : 'Validating guidelines'}
+                      ? t`Guidelines validated`
+                      : t`Validating guidelines`}
                   </p>
                 </div>
               </div>
@@ -582,7 +584,7 @@ const ProcessingScreen = ({
                     <p
                       className={`text-sm font-medium transition-colors duration-300 2xl:text-base ${step === 4 ? 'text-[var(--primary-9)]' : step > 4 ? 'text-[var(--green-11)]' : 'text-[var(--gray-10)]'}`}
                     >
-                      AP Agent Decision
+                      {t`AP Agent Decision`}
                     </p>
                     {step === 4 && (
                       <div className='flex animate-pulse items-center gap-1 text-[var(--orange-9)]'>
@@ -603,8 +605,8 @@ const ProcessingScreen = ({
                   </div>
                   <p className='mt-0.5 text-xs text-[var(--gray-9)] 2xl:text-sm'>
                     {step > 4
-                      ? 'Final decision determined'
-                      : 'Analyzing context & keywords'}
+                      ? t`Final decision determined`
+                      : t`Analyzing context & keywords`}
                   </p>
                 </div>
               </div>
@@ -619,18 +621,17 @@ const ProcessingScreen = ({
                     />
                     <div>
                       <p className='mb-1 text-[10px] font-bold tracking-wider uppercase opacity-70'>
-                        Quick Hint
+                        {t`Quick Hint`}
                       </p>
                       <p className='text-[10px] leading-relaxed font-medium 2xl:text-[11px]'>
-                        This is taking a bit longer. You can safely navigate
-                        away; we'll notify you in the inbox once ready.
+                        {t`This is taking a bit longer. You can safely navigate away; we'll notify you in the inbox once ready.`}
                       </p>
                       {onRedirect && (
                         <button
                           className='mt-2 flex cursor-pointer items-center gap-1 text-[10px] font-bold text-[var(--blue-11)] hover:underline'
                           onClick={onRedirect}
                         >
-                          Go to Inbox
+                          {t`Go to Inbox`}
                           <Icon className='h-3 w-3' name='tabler:arrow-right' />
                         </button>
                       )}

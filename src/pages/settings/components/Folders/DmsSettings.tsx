@@ -1,5 +1,7 @@
 import { Combobox as MantineCombobox, useCombobox } from '@mantine/core'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import { Check, Folder, Link2 } from 'lucide-react'
 import {
   type Dispatch,
@@ -23,7 +25,6 @@ import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -54,7 +55,6 @@ import SettingsPageHeader, {
 } from '../SettingsPageHeader'
 import SettingsSetupContent from '../SettingsSetupContent'
 import SettingsSetupHeader from '../SettingsSetupHeader'
-import SettingsWizardLayout from '../SettingsWizardLayout'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
@@ -103,7 +103,7 @@ type SelectOption = {
   value?: string
 }
 
-type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
+type WizardStep = 1 | 2 | 3 | 4 | 5
 
 type WizardStepItem = {
   description: string
@@ -271,13 +271,36 @@ const defaultFields: FieldRow[] = [
   },
 ]
 
-const wizardSteps: WizardStepItem[] = [
-  { description: 'Name, owner & category', id: 1, title: 'Folder Details' },
-  { description: 'Storage provider', id: 2, title: 'Storage' },
-  { description: 'Metadata fields', id: 3, title: 'Fields' },
-  { description: 'Version strategy', id: 4, title: 'Versioning' },
-  { description: 'ERP & sync mapping', id: 5, title: 'Integrations' },
-  { description: 'Security policies', id: 6, title: 'Security' },
+const wizardStepDefs: Array<{
+  description: ReturnType<typeof msg>
+  id: WizardStep
+  title: ReturnType<typeof msg>
+}> = [
+  {
+    description: msg`Name, owner and category`,
+    id: 1,
+    title: msg`Folder Details`,
+  },
+  {
+    description: msg`Select storage provider`,
+    id: 2,
+    title: msg`Storage`,
+  },
+  {
+    description: msg`Configure metadata fields`,
+    id: 3,
+    title: msg`Fields`,
+  },
+  {
+    description: msg`File version strategy`,
+    id: 4,
+    title: msg`Versioning`,
+  },
+  {
+    description: msg`ERP and sync mapping`,
+    id: 5,
+    title: msg`Integrations`,
+  },
 ]
 
 type StorageOption = {
@@ -566,13 +589,19 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
-  // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
-  //   null,
-  // )
-  const [securityRepository, setSecurityRepository] = useState<RepositoryRow | null>(
+  const { i18n, t } = useLingui()
+  const wizardSteps = useMemo<WizardStepItem[]>(
+    () =>
+      wizardStepDefs.map((step) => ({
+        description: i18n._(step.description),
+        id: step.id,
+        title: i18n._(step.title),
+      })),
+    [i18n.locale],
+  )
+  const [securityFolderName, setSecurityFolderName] = useState<string | null>(
     null,
   )
-  const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(null)
   const [showWizard, setShowWizard] = useState(false)
   const [showAiBuilder, setShowAiBuilder] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
@@ -616,8 +645,7 @@ export default function DmsFolderConfiguration({
   }, [repositories, activeFilters])
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
-    setSecurityRepository(null)
-    setEditingRepositoryId(repository.id)
+    setSecurityFolderName(null)
     setShowAiBuilder(false)
     setFolderName(repository.name)
     setShowWizard(true)
@@ -627,7 +655,7 @@ export default function DmsFolderConfiguration({
   const openSecurityRepository = useCallback((repository: RepositoryRow) => {
     setShowWizard(false)
     setShowAiBuilder(false)
-    setSecurityRepository(repository)
+    setSecurityFolderName(repository.name)
   }, [])
 
   const loadRepositories = useCallback(async () => {
@@ -677,7 +705,6 @@ export default function DmsFolderConfiguration({
 
   const closeWizard = () => {
     setShowWizard(false)
-    setEditingRepositoryId(null)
     setStep(1)
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
@@ -685,10 +712,10 @@ export default function DmsFolderConfiguration({
 
   const openManualBuilder = () => {
     setShowAiBuilder(false)
-    setEditingRepositoryId(null)
     setFolderName('')
     setDescription('')
     setFields(defaultFields)
+    setFolderOwner(resolveCurrentUserOwner())
     setStep(1)
     setShowWizard(true)
   }
@@ -719,7 +746,7 @@ export default function DmsFolderConfiguration({
     }
   }, [userOptions])
 
-  const handleAiBuilderApply = (payload: {
+  const handleAiBuilderApply = async (payload: {
     description: string
     fields: Array<{
       dataType: string
@@ -733,46 +760,85 @@ export default function DmsFolderConfiguration({
     storage?: string
     versioning?: string
   }) => {
+    const trimmedName = payload.folderName.trim()
+    if (!trimmedName) {
+      showToast({ message: t`Folder name is required.`, variant: 'error' })
+      return
+    }
+
+    const owner = resolveCurrentUserOwner()
+    if (!owner?.id) {
+      showToast({
+        message: t`Unable to resolve the current user as folder owner.`,
+        variant: 'error',
+      })
+      return
+    }
+
     const mappedFields = payload.fields.map((field, index) => {
       const includeInFolderStructure = Boolean(field.includeInFolderStructure)
 
       return {
         dataType: field.dataType || 'SHORT_TEXT',
-        fieldName: field.fieldName,
         iconKey: includeInFolderStructure
           ? field.iconKey || 'folder'
           : field.iconKey || 'document',
-        id: crypto.randomUUID(),
         includeInFolderStructure,
         isMandatory: Boolean(field.isMandatory),
         level: 0,
+        name: field.fieldName,
         orderId: index + 1,
       }
     })
 
-    setFolderName(payload.folderName)
-    setDescription(payload.description)
-    setFields(
-      mappedFields.length > 0
-        ? recalculateFieldHierarchy(mappedFields)
-        : defaultFields,
-    )
-    setFolderOwner(resolveCurrentUserOwner())
-    if (payload.storage) {
-      setStorage(payload.storage)
-      setStorageConnectorId(null)
-      setStorageConnectorLabel(null)
+    const selectedStorageOption =
+      storageOptions.find((item) => item.id === payload.storage) ??
+      storageOptions.find((item) => item.id === 'EZOFIS Drive') ??
+      storageOptions[0]
+
+    if (isCloudStorageOption(selectedStorageOption)) {
+      showToast({
+        message: t`${selectedStorageOption.title} needs a connected account. Saving with EZOFIS Drive instead.`,
+        variant: 'warning',
+      })
     }
-    if (payload.versioning) {
-      setVersioning(payload.versioning)
+
+    const ezofisStorage =
+      storageOptions.find((item) => item.storageProviderCode === 'EZOFIS') ??
+      storageOptions[0]
+
+    const storageForCreate = isCloudStorageOption(selectedStorageOption)
+      ? ezofisStorage
+      : selectedStorageOption
+
+    const createPayload = {
+      description: payload.description.trim(),
+      fields: mappedFields,
+      name: trimmedName,
+      ownerId: String(owner.value || owner.id),
+      ownerName: String(owner.name || ''),
+      storageDrive: null,
+      storageProviderCode: storageForCreate.storageProviderCode,
+      versioning: payload.versioning || 'Incremental Version',
     }
-    setShowAiBuilder(false)
-    setStep(1)
-    setShowWizard(true)
+
+    const response = await createRepository(createPayload)
+
+    if (response.error) {
+      showToast({
+        message: t`Failed to create folder: ${response.error}`,
+        variant: 'error',
+      })
+      return
+    }
+
+    setFolderOwner(owner)
     showToast({
-      message: 'AI folder setup applied. Review and finish configuration.',
+      message: t`Folder created successfully.`,
       variant: 'success',
     })
+    await loadRepositories()
+    setShowAiBuilder(false)
   }
 
   const handleStorageChange = (nextStorage: string) => {
@@ -839,6 +905,16 @@ export default function DmsFolderConfiguration({
         orderId: field.orderId ?? index + 1,
       })),
       name: trimmedName,
+      ownerId: String(
+        folderOwner?.value ||
+          folderOwner?.id ||
+          resolveCurrentUserOwner()?.value ||
+          resolveCurrentUserOwner()?.id ||
+          '',
+      ),
+      ownerName: String(
+        folderOwner?.name || resolveCurrentUserOwner()?.name || '',
+      ),
       storageDrive: null,
       storageProviderCode: selectedStorageOption.storageProviderCode,
       storageProviderId:
@@ -878,7 +954,6 @@ export default function DmsFolderConfiguration({
   } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
     onSecurityRepository: openSecurityRepository,
-    // onSecurityRepository: openSecurityRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
     isReLoading: isLoadingRepositories,
@@ -889,17 +964,16 @@ export default function DmsFolderConfiguration({
   })
 
   const statusOptions = [
-    { label: 'Active', value: 'Active' },
-    { label: 'Inactive', value: 'Inactive' },
+    { label: t`Active`, value: 'active' },
+    { label: t`Archived`, value: 'archived' },
   ]
 
   return (
-    <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      {securityRepository ? (
+    <div className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
+      {securityFolderName ? (
         <FolderSecurity
-          folderName={securityRepository.name}
-          repositoryId={securityRepository.id}
-          onBack={() => setSecurityRepository(null)}
+          folderName={securityFolderName}
+          onBack={() => setSecurityFolderName(null)}
         />
       ) : showAiBuilder ? (
         <AiFolderBuilder
@@ -907,14 +981,14 @@ export default function DmsFolderConfiguration({
           onApply={handleAiBuilderApply}
         />
       ) : !showWizard ? (
-        <div className='flex min-h-0 flex-1 flex-col'>
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           <SettingsPageHeader
-            description='Create and manage folders with custom fields, storage, and versioning.'
-            title='Folder Configuration'
+            description={t`Create and manage folders with custom fields, storage, and versioning.`}
+            title={t`Folder Configuration`}
             onBack={onBack}
           />
 
-          <div className='flex flex-1 flex-col overflow-hidden p-4'>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
             <CustomFilter
               activeFilters={activeFilters}
               trailingActions={
@@ -926,23 +1000,23 @@ export default function DmsFolderConfiguration({
                     withinPortal
                     target={
                       <IconButton
-                        ariaLabel='New Folder'
+                        ariaLabel={t`New Folder`}
                         color='primary'
                         icon='lucide:plus'
                         size='md'
-                        tooltip='New Folder'
+                        tooltip={t`New Folder`}
                         variant='solid'
                       />
                     }
                   >
                     <MenuItem
                       icon='lucide:wrench'
-                      label='Manual builder'
+                      label={t`Manual builder`}
                       onClick={openManualBuilder}
                     />
                     <MenuItem
-                      leftSection={<AiBrandIcon className='size-4' variant='curved-purple' />}
-                      label='AI builder'
+                      icon='lucide:sparkles'
+                      label={t`AI builder`}
                       onClick={openAiBuilder}
                     />
                   </Menu>
@@ -955,7 +1029,7 @@ export default function DmsFolderConfiguration({
                   icon: 'tabler:refresh',
                   id: 'refresh',
                   isIconButton: true,
-                  tooltip: 'Refresh',
+                  tooltip: t`Refresh`,
                   variant: 'outline',
                   onClick: loadRepositories,
                 },
@@ -966,16 +1040,16 @@ export default function DmsFolderConfiguration({
               filters={[
                 {
                   id: 'name',
-                  label: 'Name',
+                  label: t`Name`,
                   options: repositories
                     .map((r) => String(r.name || '').trim())
                     .filter(Boolean)
                     .sort((a, b) => a.localeCompare(b))
                     .map((name) => ({ label: name, value: name })),
                   searchable: true,
-                  searchPlaceholder: 'Search name...',
+                  searchPlaceholder: t`Search name...`,
                 },
-                { id: 'status', label: 'Status', options: statusOptions },
+                { id: 'status', label: t`Status`, options: statusOptions },
               ]}
               showReset={
                 Object.keys(activeFilters).some((k) => activeFilters[k]) ||
@@ -992,6 +1066,9 @@ export default function DmsFolderConfiguration({
             <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
               <div className='min-h-0 flex-1 overflow-hidden'>
                 <DataTable
+                  emptyDescription={t`Create a folder to organize documents with custom fields and storage.`}
+                  emptyIcon='lucide:folder'
+                  emptyTitle={t`No folders yet`}
                   isLoading={isLoadingRepositories}
                   isReLoading={isLoadingRepositories}
                   pageSize={pagination.pageSize}
@@ -1008,7 +1085,7 @@ export default function DmsFolderConfiguration({
               </div>
               <Pagination
                 className='mt-4 shrink-0'
-                itemLabel='Folders'
+                itemLabel={t`Folders`}
                 page={pagination.page}
                 pageSize={pagination.pageSize}
                 showPageNumbers={false}
@@ -1020,41 +1097,34 @@ export default function DmsFolderConfiguration({
           </div>
         </div>
       ) : (
-        (() => {
-          const currentStepInfo = wizardSteps.find((item) => item.id === step)
-          const formattedWizardSteps = wizardSteps.map((item) => ({
-            id: item.id - 1,
-            label: item.title,
-            description: item.description,
-            icon: item.id === 1 ? 'tabler:folder' : item.id === 2 ? 'tabler:database' : item.id === 3 ? 'tabler:list-details' : item.id === 4 ? 'tabler:git-branch' : item.id === 5 ? 'tabler:api' : 'tabler:shield-lock',
-          }))
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+          <SettingsSetupHeader
+            moduleTitle={t`Folder Configuration`}
+            progress={(step / wizardSteps.length) * 100}
+            stepDescription={
+              wizardSteps.find((item) => item.id === step)?.description || ''
+            }
+            stepTitle={
+              wizardSteps.find((item) => item.id === step)?.title || ''
+            }
+            setupTitle={t`New Folder`}
+            onBackToSettings={onBack}
+            onCancelSetup={closeWizard}
+          />
 
-          return (
-            <SettingsWizardLayout
-              activeStep={step - 1}
-              steps={formattedWizardSteps}
-              onStepChange={(stepIdx) => setStep((stepIdx + 1) as WizardStep)}
-              onBack={goBack}
-              onNext={step === 5 ? () => { void handleCreateRepository() } : goNext}
-              onSave={closeWizard}
-              onCancel={closeWizard}
-              isSaving={isSavingRepository}
-              nextLabel={step === 5 ? 'Save & Next' : 'Continue'}
-              saveLabel='Done'
-              moduleTitle='Folder Configuration'
-              setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
-              headerTitle={editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'}
-              headerDescription='Configure repository storage, metadata fields, versioning, and security'
-            >
+          <div className='grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[296px_1fr]'>
+            <aside className='ez-scrollbar overflow-y-auto border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
+              <StepNav step={step} steps={wizardSteps} setStep={setStep} />
+            </aside>
+
+            <SettingsSetupContent fullWidth>
               <WizardContent
                 description={description}
                 displayMode={displayMode}
-                editingRepositoryId={editingRepositoryId}
                 fields={fields}
                 folderCoordinator={folderCoordinator}
                 folderName={folderName}
                 folderOwner={folderOwner}
-                setStep={setStep}
                 step={step}
                 storage={storage}
                 storageConnectorId={storageConnectorId}
@@ -1071,9 +1141,43 @@ export default function DmsFolderConfiguration({
                 setVersioning={setVersioning}
                 onStorageConnectorChange={handleStorageConnectorChange}
               />
-            </SettingsWizardLayout>
-          )
-        })()
+
+              <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+                <button
+                  className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={step === 1}
+                  type='button'
+                  onClick={goBack}
+                >
+                  {t`Back`}
+                </button>
+
+                <div className='flex items-center gap-3'>
+                  {step === 5 ? (
+                    <button
+                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                      disabled={isSavingRepository}
+                      type='button'
+                      onClick={() => {
+                        void handleCreateRepository()
+                      }}
+                    >
+                      {isSavingRepository ? t`Saving...` : t`Save`}
+                    </button>
+                  ) : (
+                    <button
+                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                      type='button'
+                      onClick={goNext}
+                    >
+                      {t`Next`}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </SettingsSetupContent>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -1261,7 +1365,7 @@ function FieldsTable({
             field.level === next[index]?.level &&
             field.orderId === next[index]?.orderId &&
             field.includeInFolderStructure ===
-            next[index]?.includeInFolderStructure,
+              next[index]?.includeInFolderStructure,
         )
       return unchanged ? prev : next
     })
@@ -1289,11 +1393,11 @@ function FieldsTable({
         prev.map((field) =>
           field.id === id
             ? {
-              ...field,
-              iconKey: checked ? field.iconKey || 'folder' : undefined,
-              includeInFolderStructure: checked,
-              isMandatory: checked ? true : field.isMandatory,
-            }
+                ...field,
+                iconKey: checked ? field.iconKey || 'folder' : undefined,
+                includeInFolderStructure: checked,
+                isMandatory: checked ? true : field.isMandatory,
+              }
             : field,
         ),
       ),
@@ -1658,14 +1762,16 @@ function StepIcon({ step }: { step: WizardStep }) {
 
 function StepNav({
   step,
+  steps,
   setStep,
 }: {
   step: WizardStep
+  steps: WizardStepItem[]
   setStep: (step: WizardStep) => void
 }) {
   return (
     <div className='space-y-5'>
-      {wizardSteps.map((item, index) => {
+      {steps.map((item, index) => {
         const isCompleted = step > item.id
         const isActive = step === item.id
 
@@ -1680,7 +1786,7 @@ function StepNav({
             onClick={() => setStep(item.id)}
           >
             <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
-              {index < wizardSteps.length - 1 && (
+              {index < steps.length - 1 && (
                 <span className='absolute top-8 left-1/2 h-12 w-[1.5px] -translate-x-1/2 bg-[var(--gray-3)]' />
               )}
 
@@ -1734,14 +1840,13 @@ function useRepositoryTable(
   rows: RepositoryRow[],
   {
     onEditRepository,
-    onSecurityRepository
-
+    onSecurityRepository,
   }: {
     onEditRepository: (repository: RepositoryRow) => void
     onSecurityRepository: (repository: RepositoryRow) => void
-
   },
 ) {
+  const { t } = useLingui()
   const columnHelper = createColumnHelper<RepositoryRow>()
   const tableSearchOptions = useSettingsTableSearch()
   const {
@@ -1775,8 +1880,8 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('name', {
         enableSorting: false,
-        header: 'Folder',
-        meta: { ...settingsHeaderMeta.start, label: 'Folder' },
+        header: t`Folder`,
+        meta: { ...settingsHeaderMeta.start, label: t`Folder` },
         minSize: 40,
         size: 260,
         cell: ({ row }) => (
@@ -1785,15 +1890,15 @@ function useRepositoryTable(
               {row.original.name}
             </div>
             <div className='truncate text-xs text-gray-11'>
-              Owner: {row.original.owner}
+              {t`Owner: ${row.original.owner}`}
             </div>
           </div>
         ),
       }),
       columnHelper.accessor('storage', {
         enableSorting: false,
-        header: 'Storage',
-        meta: { ...settingsHeaderMeta.start, label: 'Storage' },
+        header: t`Storage`,
+        meta: { ...settingsHeaderMeta.start, label: t`Storage` },
         minSize: 40,
         size: 140,
         cell: (info) => (
@@ -1804,45 +1909,46 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('documents', {
         enableSorting: false,
-        header: 'Documents',
+        header: t`Documents`,
         meta: settingsHeaderMeta.start,
         minSize: 40,
         size: 150,
-        cell: (info) => `${info.getValue().toLocaleString()} documents`,
+        cell: (info) =>
+          t`${info.getValue().toLocaleString()} documents`,
       }),
       columnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
-        meta: { ...settingsHeaderMeta.start, label: 'Status' },
+        header: t`Status`,
+        meta: { ...settingsHeaderMeta.start, label: t`Status` },
         minSize: 40,
         size: 110,
         cell: (info) => (
           <span
             className={cn(
-              'rounded-lg px-3 py-1 text-xs font-semibold capitalize',
+              'rounded-lg px-3 py-1 text-xs font-semibold',
               info.getValue() === 'active'
                 ? 'bg-primary-9 text-white'
                 : 'bg-gray-2 text-gray-13',
             )}
           >
-            {info.getValue()}
+            {info.getValue() === 'active' ? t`Active` : t`Archived`}
           </span>
         ),
       }),
       columnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Actions',
+        header: t`Actions`,
         id: 'actions',
         meta: settingsHeaderMeta.end,
-        minSize: 100,
-        size: 100,
+        minSize: 72,
+        size: 72,
         cell: ({ row }) => {
           const repository = row.original
 
           return (
             <div
-              className='flex items-center justify-end gap-1'
+              className='flex justify-end'
               onClick={(event) => event.stopPropagation()}
             >
               <Menu
@@ -1860,23 +1966,26 @@ function useRepositoryTable(
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => onEditRepository(repository)}
                 />
                 <MenuItem
                   icon='lucide:shield'
-                  label='Security'
+                  label={t`Security`}
                   onClick={() => onSecurityRepository(repository)}
                 />
-                <MenuItem icon='lucide:settings' label='Settings' disabled />
+                <MenuItem
+                  icon='lucide:settings'
+                  label={t`Settings`}
+                  disabled
+                />
               </Menu>
             </div>
           )
         },
       }),
     ],
-    [columnHelper, onEditRepository, onSecurityRepository],
-
+    [columnHelper, onEditRepository, onSecurityRepository, t],
   )
 
   const table = useReactTable({
@@ -1908,7 +2017,6 @@ function useRepositoryTable(
 function WizardContent({
   description,
   displayMode,
-  editingRepositoryId,
   fields,
   folderCoordinator,
   folderName,
@@ -1925,14 +2033,12 @@ function WizardContent({
   setFolderCoordinator,
   setFolderName,
   setFolderOwner,
-  setStep,
   setStorage,
   setVersioning,
   onStorageConnectorChange,
 }: {
   description: string
   displayMode: string
-  editingRepositoryId?: string | null
   fields: FieldRow[]
   folderCoordinator: SelectOption | null
   folderName: string
@@ -1943,7 +2049,6 @@ function WizardContent({
   setFolderCoordinator: Dispatch<SetStateAction<SelectOption | null>>
   setFolderName: Dispatch<SetStateAction<string>>
   setFolderOwner: Dispatch<SetStateAction<SelectOption | null>>
-  setStep: (step: WizardStep) => void
   setVersioning: Dispatch<SetStateAction<string>>
   step: WizardStep
   storage: string
@@ -1957,6 +2062,7 @@ function WizardContent({
   ) => void
   setStorage: (nextStorage: string) => void
 }) {
+  const { t } = useLingui()
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
   const [newIsFolder, setNewIsFolder] = useState(false)
@@ -1975,7 +2081,7 @@ function WizardContent({
     if (!response.error && Array.isArray(response.data)) {
       response.data.forEach(
         (repository: { fields?: Array<{ dataType?: string }> }) => {
-          ; (repository.fields || []).forEach((field) => {
+          ;(repository.fields || []).forEach((field) => {
             if (field.dataType) types.add(field.dataType)
           })
         },
@@ -2023,35 +2129,36 @@ function WizardContent({
   if (step === 1) {
     return (
       <SettingsFormSection>
-        {/* <p className='text-sm text-gray-11'>
-          Define the basic information for your folder.
-        </p> */}
+        <p className='text-sm text-gray-11'>
+          {t`Define the basic information for your folder.`}
+        </p>
 
         <InputText
-          label='Folder Name *'
-          placeholder='e.g. AP Invoices 2026'
+          label={t`Folder Name`}
+          placeholder={t`e.g. AP Invoices 2026`}
+          required
           value={folderName}
           onChange={(value: string) => setFolderName(value)}
         />
 
         <InputTextarea
-          label='Description'
+          label={t`Description`}
           minRows={3}
-          placeholder='Describe the purpose of this folder...'
+          placeholder={t`Describe the purpose of this folder...`}
           value={description}
           onChange={setDescription}
         />
 
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <InputSelect
-            label='Folder Owner'
+            label={t`Folder Owner`}
             options={userOptions}
             value={folderOwner}
             onChange={(item: SelectOption | null) => setFolderOwner(item)}
           />
 
           <InputSelect
-            label='Folder Coordinator'
+            label={t`Folder Coordinator`}
             options={userOptions}
             value={folderCoordinator}
             onChange={(item: SelectOption | null) => setFolderCoordinator(item)}
@@ -2335,16 +2442,6 @@ function WizardContent({
           </div>
         </div>
       </div>
-    )
-  }
-
-  if (step === 6) {
-    return (
-      <FolderSecurity
-        folderName={folderName || 'Folder'}
-        repositoryId={editingRepositoryId || ''}
-        onBack={() => setStep(5)}
-      />
     )
   }
 

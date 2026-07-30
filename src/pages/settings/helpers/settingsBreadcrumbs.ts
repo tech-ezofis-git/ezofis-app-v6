@@ -13,10 +13,11 @@ export type SettingsBreadcrumbItem = {
 export function createSettingsListBreadcrumbs(
   moduleLabel: string,
   onBackToSettings?: () => void,
+  settingsLabel: string = SETTINGS_ROOT_LABEL,
 ): SettingsBreadcrumbConfig {
   return {
     items: [
-      { key: 'settings', label: SETTINGS_ROOT_LABEL },
+      { key: 'settings', label: settingsLabel },
       { label: moduleLabel },
     ],
     onNavigate: onBackToSettings
@@ -27,9 +28,11 @@ export function createSettingsListBreadcrumbs(
   }
 }
 
-export function createSettingsRootBreadcrumbs(): SettingsBreadcrumbConfig {
+export function createSettingsRootBreadcrumbs(
+  settingsLabel: string = SETTINGS_ROOT_LABEL,
+): SettingsBreadcrumbConfig {
   return {
-    items: [{ label: SETTINGS_ROOT_LABEL }],
+    items: [{ label: settingsLabel }],
   }
 }
 
@@ -43,10 +46,11 @@ export function createSettingsSetupBreadcrumbs(
     onBackToSettings?: () => void
     onCancelSetup: () => void
   },
+  settingsLabel: string = SETTINGS_ROOT_LABEL,
 ): SettingsBreadcrumbConfig {
   return {
     items: [
-      { key: 'settings', label: SETTINGS_ROOT_LABEL },
+      { key: 'settings', label: settingsLabel },
       { key: 'folder', label: setupLabel },
       { label: moduleLabel },
     ],

@@ -1,41 +1,41 @@
+import { useLingui } from '@lingui/react/macro'
 import { Fragment } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-// import { ArrowDown, ArrowRight } from 'lucide-react'
-// import SectionHeader from '../../components/SectionHeader'
 import Integration from './Integration'
 
 const Integrations = () => {
+  const { t } = useLingui()
   const storageSettings = setupStore((state) => state.storageSettings)
   const emailSettings = setupStore((state) => state.emailSettings)
   const erpSettings = setupStore((state) => state.erpSettings)
 
   const getEmailDisplayName = () => {
     if (emailSettings.provider === 'DIRECT_UPLOAD') {
-      return 'Direct Upload'
+      return t`Direct Upload`
     }
-    return emailSettings.provider || 'Not selected'
+    return emailSettings.provider || t`Not selected`
   }
 
   const getErpDisplayName = () => {
     if (erpSettings.system === 'PREDEFINED') {
-      return 'Predefined Master Data'
+      return t`Predefined Master Data`
     }
     if (
       erpSettings.wantsFileBasedImport ||
       erpSettings.system === 'FILE_BASED_IMPORT'
     ) {
-      return 'Manual PO Import'
+      return t`Manual PO Import`
     }
-    return erpSettings.system || 'Not selected'
+    return erpSettings.system || t`Not selected`
   }
 
   const getStorageDisplayName = () => {
     if (storageSettings.system === 'Included storage') {
-      return 'Default Storage'
+      return t`Default Storage`
     }
-    return storageSettings.system || 'Not selected'
+    return storageSettings.system || t`Not selected`
   }
 
   const getEmailIcon = () => {
@@ -86,31 +86,31 @@ const Integrations = () => {
     {
       account:
         emailSettings.provider === 'DIRECT_UPLOAD'
-          ? 'N/A'
+          ? t`N/A`
           : emailSettings.account ||
             emailSettings.email ||
-            'Not configured',
+            t`Not configured`,
       icon: getEmailIcon(),
       iconBgColor: getEmailIconBg(),
       iconColor: getEmailIconColor(),
-      name: 'Capture',
+      name: t`Capture`,
       platform: getEmailDisplayName(),
       status: emailSettings.isConnected ? 'connected' : 'pending',
     },
     {
       account:
         erpSettings.system === 'PREDEFINED'
-          ? 'System Default'
+          ? t`System Default`
           : erpSettings.system === 'QuickBooks'
-            ? erpSettings.account || 'Not configured'
+            ? erpSettings.account || t`Not configured`
             : erpSettings.importMethod === 'import'
-              ? erpSettings.selectedFormName || 'Not configured'
+              ? erpSettings.selectedFormName || t`Not configured`
               : erpSettings.uploadedTemplate?.name ||
-                (erpSettings.wantsFileBasedImport ? 'N/A' : 'Not configured'),
+                (erpSettings.wantsFileBasedImport ? t`N/A` : t`Not configured`),
       icon: getErpIcon(),
       iconBgColor: getErpIconBg(),
       iconColor: getErpIconColor(),
-      name: 'File Upload',
+      name: t`File Upload`,
       platform: getErpDisplayName(),
       status:
         erpSettings.isConnected ||
@@ -122,14 +122,14 @@ const Integrations = () => {
     {
       account:
         storageSettings.system === 'Included storage'
-          ? 'Basic'
+          ? t`Basic`
           : storageSettings.account ||
             storageSettings.apiUrl ||
-            'Not configured',
+            t`Not configured`,
       icon: 'tabler:cloud-filled',
       iconBgColor: getStorageIconBg(),
       iconColor: getStorageIconColor(),
-      name: 'Storage',
+      name: t`Storage`,
       platform: getStorageDisplayName(),
       status: storageSettings.isConnected ? 'connected' : 'pending',
     },
@@ -139,13 +139,12 @@ const Integrations = () => {
     <div>
       <Title
         className='items-start text-left'
-        description='Review your connections and confirm your setup before activation.'
+        description={t`Review your connections and confirm your setup before activation.`}
         descriptionClassName='max-w-2xl text-pretty'
         level={3}
-        title='Configuration Summary'
+        title={t`Configuration Summary`}
       />
       <div className='mt-5'>
-        {/* Horizontal flow with visual connection */}
         <div className='mx-auto flex w-full max-w-6xl flex-col items-stretch gap-6 px-4 lg:flex-row'>
           {integrations.map((integration, index) => (
             <Fragment key={integration.name}>
@@ -159,7 +158,6 @@ const Integrations = () => {
                   platform={integration.platform}
                 />
               </div>
-              {/* Add flow indicator - arrow or line */}
               {index < integrations.length - 1 && (
                 <div className='flex shrink-0 flex-col items-center justify-center lg:flex-row'>
                   <div className='relative mx-2 hidden w-16 items-center justify-center lg:flex'>
@@ -172,7 +170,6 @@ const Integrations = () => {
                     </div>
                   </div>
 
-                  {/* Mobile Vertical Line with Arrow */}
                   <div className='relative my-2 flex h-16 flex-col items-center justify-center lg:hidden'>
                     <div className='bg-gray-200 absolute inset-0 left-1/2 h-full w-[2px] -translate-x-1/2' />
                     <div className='bg-gray-50 border-gray-200 text-gray-400 relative z-10 rounded-full border p-1.5 shadow-sm'>

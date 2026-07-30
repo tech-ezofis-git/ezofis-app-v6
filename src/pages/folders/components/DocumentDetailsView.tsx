@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useState } from 'react'
 import fileApi from '@/api/file/file'
 import Tooltip from '@/components/base/Tooltip'
@@ -87,7 +88,10 @@ const formatDateTime = (value?: string) => {
   return date.toLocaleString()
 }
 
-const buildInfoCards = (data: WorkspaceDocumentDetail | null): DetailCard[] => {
+const buildInfoCards = (
+  data: WorkspaceDocumentDetail | null,
+  t: ReturnType<typeof useLingui>['t'],
+): DetailCard[] => {
   if (!data) return []
   if (Array.isArray(data.infoCards) && data.infoCards.length > 0)
     return data.infoCards
@@ -114,11 +118,11 @@ const buildInfoCards = (data: WorkspaceDocumentDetail | null): DetailCard[] => {
             String(field.label || field.key || '')
               .trim()
               .toLowerCase() === 'status'
-              ? 'Current Stage'
+              ? t`Current Stage`
               : field.label || field.key || '-',
           value: toDisplayValue(field.value),
         })),
-      title: section.title || section.sectionKey || `Section ${index + 1}`,
+      title: section.title || section.sectionKey || t`Section ${index + 1}`,
     }))
     .filter((card) => card.rows.length > 0)
 }
@@ -140,6 +144,7 @@ export function DocumentDetailsView({
   onShare: () => void
   onWorkflow: () => void
 }) {
+  const { t } = useLingui()
   const [data, setData] = useState<WorkspaceDocumentDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -204,7 +209,7 @@ export function DocumentDetailsView({
         if (mounted) setData(response as WorkspaceDocumentDetail)
       } catch (exception: any) {
         if (mounted)
-          setError(exception?.message || 'Unable to load document details')
+          setError(exception?.message || t`Unable to load document details`)
       } finally {
         if (mounted) setLoading(false)
       }
@@ -349,7 +354,7 @@ export function DocumentDetailsView({
       )
 
       if (!(response?.data instanceof Blob)) {
-        throw new Error(response?.error || 'Unable to download file')
+        throw new Error(response?.error || t`Unable to download file`)
       }
 
       const downloadUrl = URL.createObjectURL(response.data)
@@ -362,7 +367,7 @@ export function DocumentDetailsView({
       URL.revokeObjectURL(downloadUrl)
     } catch (exception: any) {
       console.error(exception)
-      setDownloadError(exception?.message || 'Unable to download file')
+      setDownloadError(exception?.message || t`Unable to download file`)
     } finally {
       setIsDownloading(false)
     }
@@ -391,7 +396,7 @@ export function DocumentDetailsView({
     printWindow.addEventListener('load', triggerPrint, { once: true })
   }
 
-  const infoCards = useMemo(() => buildInfoCards(data), [data])
+  const infoCards = useMemo(() => buildInfoCards(data, t), [data, t])
   const lineItems = Array.isArray(data?.lineItems) ? data.lineItems : []
   const hasLineItems = lineItems.length > 0
   const hasValidFileUrl = Boolean(previewUrl) && !fileLoadFailed
@@ -404,30 +409,34 @@ export function DocumentDetailsView({
     data?.fileType?.toLowerCase().includes('jpeg'),
   )
 
-  const tabs = [
-    {
-      count: timeline.length,
-      icon: 'clock',
-      key: 'timeline',
-      label: 'Timeline',
-    },
-    {
-      count: comments.length,
-      icon: 'messageSquare',
-      key: 'comments',
-      label: 'Comments',
-    },
-    {
-      count: relatedDocs.length,
-      icon: 'paperclip',
-      key: 'relatedDocs',
-      label: 'Related Docs',
-    },
-  ] as const
+  const tabs = useMemo(
+    () =>
+      [
+        {
+          count: timeline.length,
+          icon: 'clock',
+          key: 'timeline',
+          label: t`Timeline`,
+        },
+        {
+          count: comments.length,
+          icon: 'messageSquare',
+          key: 'comments',
+          label: t`Comments`,
+        },
+        {
+          count: relatedDocs.length,
+          icon: 'paperclip',
+          key: 'relatedDocs',
+          label: t`Related Docs`,
+        },
+      ] as const,
+    [comments.length, relatedDocs.length, t, timeline.length],
+  )
 
   if (loading)
     return (
-      <div className='p-6 text-[13px] text-gray-10'>Loading document...</div>
+      <div className='p-6 text-[13px] text-gray-10'>{t`Loading document...`}</div>
     )
 
   if (error) {
@@ -437,7 +446,7 @@ export function DocumentDetailsView({
           className='mb-4 h-8 border-transparent px-3 text-[13px] shadow-none'
           onClick={onBack}
         >
-          <ArrowLeft size={12} /> Back
+          <ArrowLeft size={12} /> {t`Back`}
         </Button>
         <div className='rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
           {error}
@@ -455,21 +464,21 @@ export function DocumentDetailsView({
           className='h-8 border-transparent px-3 text-[13px] shadow-none'
           onClick={onBack}
         >
-          <ArrowLeft size={12} /> Back
+          <ArrowLeft size={12} /> {t`Back`}
         </Button>
         {/* <PrimaryButton className="h-8 px-3 text-[13px]"><DynamicIcon name="download" className="h-4 w-4" />Download</PrimaryButton>
         <Button onClick={onEdit} className="h-8 px-3 text-[13px]"><DynamicIcon name="edit" className="h-4 w-4" />Edit Metadata</Button> */}
         <Button className='h-8 px-3 text-[13px]' onClick={onAiSummary}>
           <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
-          AI Summary
+          {t`AI Summary`}
         </Button>
         <Button className='h-8 px-3 text-[13px]' onClick={onShare}>
           <DynamicIcon className='h-4 w-4' name='share' />
-          Share
+          {t`Share`}
         </Button>
         <Button className='h-8 px-3 text-[13px]' onClick={onWorkflow}>
           <DynamicIcon className='h-4 w-4' name='check' />
-          Start Workflow
+          {t`Start Workflow`}
         </Button>
       </div>
 
@@ -513,9 +522,9 @@ export function DocumentDetailsView({
                 </div>
 
                 <div className='flex shrink-0 items-center gap-1.5'>
-                  <Tooltip content='Print' position='top'>
+                  <Tooltip content={t`Print`} position='top'>
                     <button
-                      aria-label='Print'
+                      aria-label={t`Print`}
                       className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
                       disabled={!previewUrl || isPreviewLoading}
                       type='button'
@@ -526,11 +535,11 @@ export function DocumentDetailsView({
                   </Tooltip>
 
                   <Tooltip
-                    content={isDownloading ? 'Downloading...' : 'Download'}
+                    content={isDownloading ? t`Downloading...` : t`Download`}
                     position='top'
                   >
                     <button
-                      aria-label='Download'
+                      aria-label={t`Download`}
                       className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
                       disabled={isDownloading || isPreviewLoading}
                       type='button'
@@ -567,11 +576,11 @@ export function DocumentDetailsView({
               </div>
             </Card>
 
-            <Card className='p-5'>
-              <h3 className='mb-4 text-[15px] font-semibold text-gray-13'>
-                Invoice Line Items
-              </h3>
-              {hasLineItems ? (
+            {hasLineItems ? (
+              <Card className='p-5'>
+                <h3 className='mb-4 text-[15px] font-semibold text-gray-13'>
+                  {t`Invoice Line Items`}
+                </h3>
                 <div className='overflow-x-auto'>
                   <table className='w-full text-[13px]'>
                     <thead>
@@ -602,14 +611,8 @@ export function DocumentDetailsView({
                     </tbody>
                   </table>
                 </div>
-              ) : (
-                <NoDataState
-                  description='No invoice line item data is available for this document.'
-                  icon='fileText'
-                  title='No line items found'
-                />
-              )}
-            </Card>
+              </Card>
+            ) : null}
 
             <div className='flex w-fit gap-1 rounded-xl bg-gray-2 p-1'>
               {tabs.map((item) => (
@@ -628,7 +631,7 @@ export function DocumentDetailsView({
               {tab === 'timeline' &&
                 (timelineLoading ? (
                   <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                    Loading timeline...
+                    {t`Loading timeline...`}
                   </div>
                 ) : timeline.length ? (
                   <div className='space-y-4'>
@@ -666,9 +669,9 @@ export function DocumentDetailsView({
                   </div>
                 ) : (
                   <NoDataState
-                    description='No activity timeline is available for this document.'
+                    description={t`No activity timeline is available for this document.`}
                     icon='clock'
-                    title='No timeline found'
+                    title={t`No timeline found`}
                   />
                 ))}
 
@@ -677,7 +680,7 @@ export function DocumentDetailsView({
                   <div className='flex-1 overflow-y-auto p-5'>
                     {commentsLoading ? (
                       <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                        Loading comments...
+                        {t`Loading comments...`}
                       </div>
                     ) : comments.length ? (
                       <div className='space-y-4'>
@@ -686,7 +689,7 @@ export function DocumentDetailsView({
                             item.authorName ||
                             item.author ||
                             item.actorName ||
-                            'User'
+                            t`User`
                           const message =
                             item.body ||
                             item.message ||
@@ -715,7 +718,7 @@ export function DocumentDetailsView({
                               >
                                 <div className='flex items-center gap-3'>
                                   <b className='text-[13px] font-semibold'>
-                                    {isMine ? 'You' : author}
+                                    {isMine ? t`You` : author}
                                   </b>
 
                                   <span
@@ -737,9 +740,9 @@ export function DocumentDetailsView({
                       </div>
                     ) : (
                       <NoDataState
-                        description='No comments are available for this document. Add the first comment to start collaboration.'
+                        description={t`No comments are available for this document. Add the first comment to start collaboration.`}
                         icon='messageSquare'
-                        title='No comments found'
+                        title={t`No comments found`}
                       />
                     )}
                   </div>
@@ -748,7 +751,7 @@ export function DocumentDetailsView({
                     <div className='flex items-center gap-3'>
                       <textarea
                         className='h-12 flex-1 resize-none rounded-lg border border-gray-3 bg-white px-4 py-3 text-[13px] text-gray-13 outline-none focus:border-blue-7'
-                        placeholder='Add a comment...'
+                        placeholder={t`Add a comment...`}
                         rows={1}
                         value={commentText}
                         onChange={(event) => setCommentText(event.target.value)}
@@ -759,7 +762,7 @@ export function DocumentDetailsView({
                         disabled={!commentText.trim() || savingComment}
                         onClick={saveComment}
                       >
-                        {savingComment ? 'Posting...' : 'Post'}
+                        {savingComment ? t`Posting...` : t`Post`}
                       </PrimaryButton>
                     </div>
                   </div>
@@ -786,14 +789,14 @@ export function DocumentDetailsView({
                           </p>
                         </div>
                       </div>
-                      <StatusPill status={item.status || 'Active'} />
+                      <StatusPill status={item.status || t`Active`} />
                     </div>
                   ))
                 ) : (
                   <NoDataState
-                    description='No related documents are linked with this file yet.'
+                    description={t`No related documents are linked with this file yet.`}
                     icon='paperclip'
-                    title='Related documents not found'
+                    title={t`Related documents not found`}
                   />
                 ))}
             </Card>
@@ -842,6 +845,8 @@ function DummyDocumentPreview({
   fileName: string
   fileType: string
 }) {
+  const { t } = useLingui()
+
   return (
     <div className='flex h-full min-h-[560px] items-center justify-center bg-blue-3/30'>
       <div className='text-center'>
@@ -851,7 +856,7 @@ function DummyDocumentPreview({
         <p className='mt-4 text-[14px] font-semibold text-gray-10'>
           {fileName}
         </p>
-        <p className='mt-2 text-[12px] text-gray-10'>{fileType} Viewer</p>
+        <p className='mt-2 text-[12px] text-gray-10'>{t`${fileType} Viewer`}</p>
       </div>
     </div>
   )

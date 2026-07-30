@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
 import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
@@ -9,6 +10,7 @@ import User from './components/User'
 import UserMenuTrigger from './components/UserMenuTrigger'
 
 const UserMenu = () => {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const resetAuthState = authUserStore((state) => state.resetAuthState)
 
@@ -28,17 +30,17 @@ const UserMenu = () => {
       <MenuDivider />
       <MenuItem
         icon='lucide:user'
-        label='Profile'
+        label={t`Profile`}
         onClick={() => goto('profile')}
       />
       <MenuItem
         icon='lucide:shield'
-        label='Security'
+        label={t`Security`}
         onClick={() => goto('security')}
       />
       <MenuItem
         icon='lucide:settings-2'
-        label='Preferences'
+        label={t`Preferences`}
         onClick={() => goto('preferences')}
       />
       <MenuDivider />
@@ -48,7 +50,7 @@ const UserMenu = () => {
       <MenuItem
         icon='lucide:log-out'
         iconClass='text-red-11'
-        label='Log out'
+        label={t`Log out`}
         onClick={logout}
       />
     </Menu>

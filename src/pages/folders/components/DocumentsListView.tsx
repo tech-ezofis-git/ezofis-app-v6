@@ -4,11 +4,21 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { useLingui } from '@lingui/react/macro'
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
+import Icon from '@/components/base/icon/Icon'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
+import type { Option } from '@/types/option'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
-import type { ExplorerView, FileItem, FolderItem, RepositoryFilePage } from '../types/folderTypes'
+import type {
+  ExplorerView,
+  FileItem,
+  FolderItem,
+  RepositoryFilePage,
+  TreeNode,
+} from '../types/folderTypes'
 import type { FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
 import {
   getRepositoryFieldRawValue,
@@ -16,6 +26,7 @@ import {
 } from '../utils/repositoryFieldUtils'
 import { matchesAnyFilterValue } from '../utils/multiFilterValues'
 import { type BreadcrumbItem } from './Breadcrumbs'
+import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { FolderFilterBar } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
 import { Button, EllipsisText, StatusPill } from './Ui'
@@ -29,6 +40,7 @@ type ActionMenuPosition = {
 type AnyFileItem = FileItem & Record<string, any>
 
 type DocumentsListViewProps = {
+  activeRepositoryId?: string
   breadcrumbs: BreadcrumbItem[]
   currentFolderGroupField?: string
   error?: string
@@ -43,6 +55,7 @@ type DocumentsListViewProps = {
   loading?: boolean
   loadingPage?: boolean
   refreshing?: boolean
+  repositories?: TreeNode[]
   searchQuery?: string
   view: ExplorerView
   onAiSummary: (id: string) => void
@@ -54,9 +67,12 @@ type DocumentsListViewProps = {
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onRefresh?: () => void
+  onRepositoryChange?: (id: string) => void
   onSearchChange?: (value: string) => void
   onShare: (id: string) => void
   onUpload?: () => void
+  onUploadFile?: (file: File) => void
+  uploadDisabled?: boolean
   onWorkflow: (id: string) => void
   setView: (view: ExplorerView) => void
 }
@@ -229,6 +245,7 @@ const getColumnWidth = (key: string, label?: string, dataType?: string) => {
 
 const buildRepositoryColumns = (
   fileColumns: DynamicRepositoryColumn[],
+  labels: { currentStage: string; name: string },
 ): DynamicColumn[] => {
   const normalColumns = fileColumns.filter(
     (column) => !isHiddenFileKey(column.key) && !isPrimaryNameKey(column.key),
@@ -237,12 +254,12 @@ const buildRepositoryColumns = (
   return [
     {
       key: '__name',
-      label: 'Name',
+      label: labels.name,
       minWidth: 220,
     },
     {
       key: '__status',
-      label: 'Current Stage',
+      label: labels.currentStage,
       minWidth: 140,
     },
     ...normalColumns.map((column) => {
@@ -259,6 +276,7 @@ const buildRepositoryColumns = (
 }
 
 export function DocumentsListView({
+  activeRepositoryId = '',
   breadcrumbs: _breadcrumbs,
   currentFolderGroupField = '',
   error = '',
@@ -281,15 +299,20 @@ export function DocumentsListView({
   onPageChange,
   onPageSizeChange,
   onRefresh,
+  onRepositoryChange,
   onSearchChange,
   onShare,
   onUpload,
+  onUploadFile,
+  uploadDisabled = false,
   onWorkflow,
   refreshing = false,
+  repositories = [],
   searchQuery: searchQueryProp = '',
   setView,
   view,
 }: DocumentsListViewProps) {
+  const { t } = useLingui()
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [actionMenuPosition, setActionMenuPosition] =
     useState<ActionMenuPosition | null>(null)
@@ -298,6 +321,30 @@ export function DocumentsListView({
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   const normalizedFiles = useMemo(() => files as AnyFileItem[], [files])
+
+  const repositoryOptions = useMemo<Option[]>(
+    () =>
+      repositories.map((node) => ({
+        id: node.id,
+        name: node.title,
+        value: node.id,
+      })),
+    [repositories],
+  )
+
+  const selectedRepositoryOption = useMemo(
+    () =>
+      repositoryOptions.find(
+        (option) =>
+          String(option.value || option.id) === String(activeRepositoryId),
+      ) ?? null,
+    [activeRepositoryId, repositoryOptions],
+  )
+
+  const handleRepositoryChange = (option: Option | null) => {
+    if (!option || !onRepositoryChange) return
+    onRepositoryChange(String(option.value || option.id))
+  }
 
   useEffect(() => {
     setSearchQuery(searchQueryProp)
@@ -312,8 +359,12 @@ export function DocumentsListView({
   }, [onSearchChange, searchQuery])
 
   const columns = useMemo(
-    () => buildRepositoryColumns(fileColumns),
-    [fileColumns],
+    () =>
+      buildRepositoryColumns(fileColumns, {
+        currentStage: t`Current Stage`,
+        name: t`Name`,
+      }),
+    [fileColumns, t],
   )
 
   const currentPage = filePage?.page || 1
@@ -329,6 +380,9 @@ export function DocumentsListView({
             normalizedFiles.length,
           )
   const isBusy = loading || loadingPage || refreshing
+  const hasActiveQuery =
+    Boolean(String(searchQuery || '').trim()) ||
+    Object.values(fileFilters).some((value) => Boolean(String(value || '').trim()))
 
   // Client OR-match for multi-select (same field); AND across different fields.
   const visibleFiles = useMemo(() => {
@@ -473,7 +527,7 @@ export function DocumentsListView({
               <button
                 className='h-5 w-5 rounded-md border border-transparent transition-all hover:border-blue-9 hover:bg-blue-1 disabled:cursor-not-allowed disabled:opacity-40'
                 disabled={isBusy}
-                title='Select'
+                title={t`Select`}
                 type='button'
                 onClick={() => toggleSelect(fileId)}
               />
@@ -592,6 +646,7 @@ export function DocumentsListView({
     openActionMenu,
     selectedIds,
     selectionEnabled,
+    t,
     visibleFiles,
   ])
 
@@ -671,9 +726,25 @@ export function DocumentsListView({
           folders={folders}
           isBusy={isBusy}
           refreshing={refreshing}
-          searchPlaceholder='Search invoice, supplier, PO...'
+          searchPlaceholder={t`Search invoice, supplier, PO...`}
           searchQuery={searchQuery}
           view={view}
+          afterSearchActions={
+            repositoryOptions.length > 0 ? (
+              <InputSelect
+                aria-label={t`Repository`}
+                className='shrink-0 border-[var(--gray-3)] transition-colors hover:border-[var(--primary-3)]'
+                options={repositoryOptions}
+                searchable
+                value={selectedRepositoryOption}
+                width={240}
+                leftSection={
+                  <Icon className='text-[var(--gray-10)]' name='lucide:folder' />
+                }
+                onChange={handleRepositoryChange}
+              />
+            ) : null
+          }
           onFilterChange={updateFilter}
           onFilterMenuOpenChange={onFilterMenuOpenChange}
           onRefresh={handleRefresh}
@@ -690,21 +761,45 @@ export function DocumentsListView({
           !loading &&
           !loadingPage &&
           !refreshing ? (
-            <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
-              <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
-              <b className='text-gray-13'>No documents found</b>
-              <p className='text-sm text-gray-10'>
-                Try changing the file search or resetting the selected
-                filters.
-              </p>
-              <Button
-                className='mt-2 h-9 px-4 text-sm'
-                onClick={resetSearchAndFilters}
-              >
-                <DynamicIcon className='h-4 w-4' name='refresh' />
-                Reset Search
-              </Button>
-            </div>
+            hasActiveQuery ? (
+              <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
+                <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
+                <b className='text-gray-13'>{t`No documents found`}</b>
+                <p className='text-sm text-gray-10'>
+                  {t`Try changing the file search or resetting the selected filters.`}
+                </p>
+                <Button
+                  className='mt-2 h-9 px-4 text-sm'
+                  onClick={resetSearchAndFilters}
+                >
+                  <DynamicIcon className='h-4 w-4' name='refresh' />
+                  {t`Reset Search`}
+                </Button>
+              </div>
+            ) : (
+              <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
+                <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
+                  <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
+                    <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
+                  </div>
+                </div>
+                <b className='text-gray-13'>{t`No documents found`}</b>
+                <p className='max-w-[460px] text-sm text-gray-10'>
+                  {t`This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content.`}
+                </p>
+                {onUploadFile || onUpload ? (
+                  <EmptyFolderUploadDropzone
+                    className='mt-4'
+                    disabled={uploadDisabled}
+                    onFileSelected={(file) => {
+                      if (onUploadFile) onUploadFile(file)
+                      else onUpload?.()
+                    }}
+                    onOpenUpload={onUpload}
+                  />
+                ) : null}
+              </div>
+            )
           ) : (
             <DataTable
               component={<div />}
@@ -727,7 +822,7 @@ export function DocumentsListView({
 
       <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
         <Pagination
-          itemLabel='Files'
+          itemLabel={t`Files`}
           page={currentPage}
           pageSize={pageSize}
           showPageNumbers={false}
@@ -770,27 +865,27 @@ export function DocumentsListView({
 
           <MenuItem
             icon='eye'
-            label='View Details'
+            label={t`View Details`}
             onClick={() => closeAndRun(() => onOpenFile(openMenuId))}
           />
           <MenuItem
             icon='edit'
-            label='Edit Metadata'
+            label={t`Edit Metadata`}
             onClick={() => closeAndRun(() => onEdit(openMenuId))}
           />
           <MenuItem
             icon='bot'
-            label='AI Summary'
+            label={t`AI Summary`}
             onClick={() => closeAndRun(() => onAiSummary(openMenuId))}
           />
           <MenuItem
             icon='share'
-            label='Share'
+            label={t`Share`}
             onClick={() => closeAndRun(() => onShare(openMenuId))}
           />
           <MenuItem
             icon='clock'
-            label='Start Workflow'
+            label={t`Start Workflow`}
             onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
           />
 
@@ -798,7 +893,7 @@ export function DocumentsListView({
 
           <MenuItem
             icon='trash'
-            label='Delete'
+            label={t`Delete`}
             danger
             onClick={() =>
               closeAndRun(() => console.log('delete file:', openMenuId))

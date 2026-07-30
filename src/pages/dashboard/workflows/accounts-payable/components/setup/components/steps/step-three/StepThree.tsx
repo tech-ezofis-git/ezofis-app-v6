@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useEffect } from 'react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
@@ -9,6 +10,7 @@ import { StepFooter, StepLayout } from '../components/StepLayout'
 import StorageSystem from './components/StorageSystem'
 
 const StepThree = () => {
+  const { t } = useLingui()
   const setStep = setupStore((state) => state.setStep)
   const storageSettings = setupStore((state) => state.storageSettings)
   const setStorageSettings = setupStore((state) => state.setStorageSettings)
@@ -33,7 +35,6 @@ const StepThree = () => {
         typeof event.data.connector === 'string' ? event.data.connector : ''
       const current = setupStore.getState().storageSettings
 
-      // Ignore late OAuth success after the user switched away from cloud storage
       if (
         !current.system ||
         current.system === 'Included storage' ||
@@ -79,14 +80,14 @@ const StepThree = () => {
 
   return (
     <StepLayout
-      description='Choose where to store your invoice documents. Data is securely encrypted and accessible 24/7.'
-      title='Select Storage'
+      description={t`Choose where to store your invoice documents. Data is securely encrypted and accessible 24/7.`}
+      title={t`Select Storage`}
       footer={
         <StepFooter>
           <Button
             color='gray'
             icon='lucide:arrow-left'
-            label='Back'
+            label={t`Back`}
             variant='outline'
             onClick={() => setStep(1)}
           />
@@ -97,7 +98,7 @@ const StepThree = () => {
               {storageSettings.isConnecting && (
                 <Button
                   color='gray'
-                  label='Cancel'
+                  label={t`Cancel`}
                   variant='outline'
                   onClick={() =>
                     setStorageSettings({
@@ -109,14 +110,14 @@ const StepThree = () => {
               )}
               <Button
                 icon='lucide:plug'
-                label={`Connect ${storageSettings.system}`}
+                label={t`Connect ${storageSettings.system}`}
                 loading={storageSettings.isConnecting}
                 onClick={handleConnect}
               />
             </div>
           ) : (
             <Button
-              label='Continue'
+              label={t`Continue`}
               suffixIcon='tabler:arrow-right'
               disabled={
                 !(
@@ -137,7 +138,7 @@ const StepThree = () => {
       {storageSettings.system === 'Included storage' && (
         <AnimateSlideUp delay={0.4}>
           <Alert
-            text='Storage selected. Documents will be saved here once you begin processing.'
+            text={t`Storage selected. Documents will be saved here once you begin processing.`}
             variant='green'
           />
         </AnimateSlideUp>
@@ -148,7 +149,7 @@ const StepThree = () => {
         storageSettings.system !== 'Included storage' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text={`Your ${storageSettings.system} account is connected. Invoice documents will be saved here during processing.`}
+              text={t`Your ${storageSettings.system} account is connected. Invoice documents will be saved here during processing.`}
               variant='green'
             />
           </AnimateSlideUp>

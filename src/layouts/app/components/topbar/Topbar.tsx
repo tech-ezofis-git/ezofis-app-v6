@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import SidebarToggle from '../sidebar/SidebarToggle'
@@ -7,6 +8,7 @@ import PageTitle from './components/PageTitle'
 import UserMenu from './components/user-menu/UserMenu'
 
 const Topbar = () => {
+  const { t } = useLingui()
   const openAskAI = useAskAIStore((state) => state.open)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
 
@@ -27,7 +29,7 @@ const Topbar = () => {
       <div className='flex items-center'>
         <GlobalSearch />
         <IconButton
-          ariaLabel='Ask AI'
+          ariaLabel={t`Ask AI`}
           className={
             isAskAIOpen
               ? 'text-primary-11 hover:text-primary-12'
@@ -35,16 +37,16 @@ const Topbar = () => {
           }
           color='gray'
           icon='lucide:bot'
-          tooltip='Ask AI'
+          tooltip={t`Ask AI`}
           variant='ghost'
           onClick={handleOpenAskAI}
         />
         <IconButton
-          ariaLabel='Quick Help'
+          ariaLabel={t`Quick Help`}
           className='text-gray-11 hover:text-gray-13'
           color='gray'
           icon='lucide:help-circle'
-          tooltip='Quick Help'
+          tooltip={t`Quick Help`}
           variant='ghost'
           onClick={() =>
             globalThis.open('https://help.ezofis.com/', '_blank', 'noopener')

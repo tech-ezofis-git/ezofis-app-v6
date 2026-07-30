@@ -1,4 +1,6 @@
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import {
   Check,
   Key,
@@ -24,9 +26,7 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
-import cn from '@/utils/cn'
 import {
   matchesCategoryFilterValue,
 } from '@/utils/filterUtils'
@@ -81,36 +81,41 @@ type StepKey = 'login' | 'business' | 'groups' | 'authentication' | 'review'
 
 type UserStatus = 'active' | 'inactive' | 'pending'
 
-const steps: Step[] = [
+const stepDefs: Array<{
+  caption: ReturnType<typeof msg>
+  description: ReturnType<typeof msg>
+  key: StepKey
+  title: ReturnType<typeof msg>
+}> = [
   {
-    caption: 'Step 1',
-    description: 'Account credentials & identity',
+    caption: msg`Step 1`,
+    description: msg`Capture primary identity and sign-in configuration.`,
     key: 'login',
-    title: 'Login Details',
+    title: msg`Login Details`,
   },
   {
-    caption: 'Step 2',
-    description: 'Department & business hierarchy',
+    caption: msg`Step 2`,
+    description: msg`Align this user with the business hierarchy and operating model.`,
     key: 'business',
-    title: 'Business Detail',
+    title: msg`Business Detail`,
   },
   {
-    caption: 'Step 3',
-    description: 'Assign user access groups',
+    caption: msg`Step 3`,
+    description: msg`Assign this user to one or more groups. Groups determine shared folder and workflow access.`,
     key: 'groups',
-    title: 'Group Assignment',
+    title: msg`Group Assignment`,
   },
   {
-    caption: 'Step 4',
-    description: 'Security & verification',
+    caption: msg`Step 4`,
+    description: msg`Govern multi-factor verification for secure user access.`,
     key: 'authentication',
-    title: 'Authentication',
+    title: msg`Authentication`,
   },
   {
-    caption: 'Step 5',
-    description: 'Review & save profile',
+    caption: msg`Step 5`,
+    description: msg`Validate the user profile before provisioning access.`,
     key: 'review',
-    title: 'Review',
+    title: msg`Review`,
   },
 ]
 
@@ -160,73 +165,62 @@ const mfaMethods = ['Email OTP', 'Mobile OTP', 'Authenticator App']
 
 type LoginOption = {
   description: string
-  icon: (isSelected: boolean) => React.ReactNode
+  icon: React.ReactNode
   title: string
   value: LoginType
 }
 
-const loginOptions: LoginOption[] = [
+const loginOptionDefs: Array<{
+  description: ReturnType<typeof msg>
+  title: ReturnType<typeof msg>
+  value: LoginType
+}> = [
   {
-    description: 'Email and password',
-    icon: (isSelected) => (
-      <Key
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-      />
-    ),
-    title: 'Password',
+    description: msg`Email and password`,
+    title: msg`Password`,
     value: 'Password',
   },
   {
-    description: 'Sign in with Google',
-    icon: (isSelected) => (
-      <svg
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-        fill='currentColor'
-        viewBox='0 0 24 24'
-      >
-        <path d='M12.24 10.285V13.4h6.887c-.58 3.013-3.084 5.216-6.887 5.216-4.28 0-7.75-3.47-7.75-7.75s3.47-7.75 7.75-7.75c2.18 0 4.1.815 5.57 2.152l2.3-2.3C18.17 1.25 15.39 0 12.24 0 5.48 0 0 5.48 0 12.24s5.48 12.24 12.24 12.24c6.9 0 11.96-4.85 11.96-11.96 0-.82-.08-1.57-.22-2.24H12.24z' />
-      </svg>
-    ),
-    title: 'Google',
+    description: msg`Sign in with Google`,
+    title: msg`Google`,
     value: 'Google',
   },
   {
-    description: 'Sign in with Microsoft',
-    icon: (isSelected) => (
-      <svg
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-        fill='currentColor'
-        viewBox='0 0 23 23'
-      >
-        <path d='M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z' />
-      </svg>
-    ),
-    title: 'Microsoft',
+    description: msg`Sign in with Microsoft`,
+    title: msg`Microsoft`,
     value: 'Microsoft',
   },
   {
-    description: 'Sign in with AD',
-    icon: (isSelected) => (
-      <Server
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-      />
-    ),
-    title: 'Active Directory',
+    description: msg`Sign in with AD`,
+    title: msg`Active directory`,
     value: 'Active Directory',
   },
 ]
+
+const loginOptionIcons: Record<LoginType, React.ReactNode> = {
+  'Active Directory': (
+    <Server className='h-4 w-4 shrink-0 text-[var(--primary-9)]' />
+  ),
+  Google: (
+    <svg
+      className='h-4 w-4 shrink-0 text-[var(--primary-9)]'
+      fill='currentColor'
+      viewBox='0 0 24 24'
+    >
+      <path d='M12.24 10.285V13.4h6.887c-.58 3.013-3.084 5.216-6.887 5.216-4.28 0-7.75-3.47-7.75-7.75s3.47-7.75 7.75-7.75c2.18 0 4.1.815 5.57 2.152l2.3-2.3C18.17 1.25 15.39 0 12.24 0 5.48 0 0 5.48 0 12.24s5.48 12.24 12.24 12.24c6.9 0 11.96-4.85 11.96-11.96 0-.82-.08-1.57-.22-2.24H12.24z' />
+    </svg>
+  ),
+  Microsoft: (
+    <svg
+      className='h-4 w-4 shrink-0 text-[var(--primary-9)]'
+      fill='currentColor'
+      viewBox='0 0 23 23'
+    >
+      <path d='M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z' />
+    </svg>
+  ),
+  Password: <Key className='h-4 w-4 shrink-0 text-[var(--primary-9)]' />,
+}
 
 const userColumnHelper = createColumnHelper<AppUser>()
 
@@ -240,6 +234,7 @@ type ManageUserProps = {
 }
 
 export default function ManageUser({ onBack }: ManageUserProps) {
+  const { t } = useLingui()
   const groupOptions = useMemo(() => getDummyGroupOptions(), [])
 
   const [users, setUsers] = useState<AppUser[]>([])
@@ -453,9 +448,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       const createdUser = response.data
         ? mapApiUserToSettingsUser(
-          response.data as Record<string, unknown>,
-          users.length,
-        )
+            response.data as Record<string, unknown>,
+            users.length,
+          )
         : null
       const listResponse = await getUsers()
 
@@ -506,9 +501,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         (row) => `${row.firstName} ${row.lastName} ${row.email}`,
         {
           enableSorting: false,
-          header: 'Name',
+          header: t`Name`,
           id: 'name',
-          meta: { ...settingsHeaderMeta.start, label: 'Name' },
+          meta: { ...settingsHeaderMeta.start, label: t`Name` },
           minSize: 40,
           size: 260,
           cell: ({ row }) => {
@@ -516,16 +511,10 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
             return (
               <div className='min-w-0'>
-                <div
-                  className='truncate font-semibold text-[var(--gray-13)] hover:whitespace-normal hover:break-words'
-                  title={`${user.firstName} ${user.lastName}`}
-                >
+                <div className='truncate font-semibold text-[var(--gray-13)]'>
                   {user.firstName} {user.lastName}
                 </div>
-                <div
-                  className='truncate text-[var(--gray-10)] hover:whitespace-normal hover:break-words'
-                  title={user.email}
-                >
+                <div className='truncate text-[var(--gray-10)]'>
                   {user.email}
                 </div>
               </div>
@@ -536,9 +525,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('department', {
         enableSorting: false,
-        header: 'Department',
+        header: t`Department`,
         id: 'department',
-        meta: { ...settingsHeaderMeta.start, label: 'Department' },
+        meta: { ...settingsHeaderMeta.start, label: t`Department` },
         minSize: 40,
         size: 140,
         cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
@@ -546,12 +535,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('role', {
         enableSorting: false,
-        header: 'Role',
+        header: t`Role`,
         id: 'role',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Role',
+          label: t`Role`,
         },
         minSize: 40,
         size: 150,
@@ -564,12 +553,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Status',
+          label: t`Status`,
         },
         minSize: 40,
         size: 110,
@@ -578,7 +567,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('loginType', {
         enableSorting: false,
-        header: 'Login Type',
+        header: t`Login Type`,
         id: 'loginType',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -588,7 +577,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('lastLogin', {
         enableSorting: false,
-        header: 'Last Login',
+        header: t`Last Login`,
         id: 'lastLogin',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -598,7 +587,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('created', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'created',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -609,7 +598,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       userColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Actions',
+        header: t`Actions`,
         id: 'actions',
         meta: settingsHeaderMeta.end,
         minSize: 72,
@@ -637,14 +626,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => openEditUser(user)}
                 />
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => deleteUser(user.id)}
                 />
               </Menu>
@@ -653,7 +642,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         },
       }),
     ],
-    [openEditUser, deleteUser],
+    [deleteUser, openEditUser, t],
   )
   const {
     page,
@@ -671,6 +660,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     ...paginationModel,
     columns: userColumns,
     data: filteredUsers,
+    initialState: {
+      columnPinning: {
+        left: ['avatar', 'name'],
+        right: ['actions'],
+      },
+    },
     state: {
       ...tableSearchOptions.state,
       pagination,
@@ -703,9 +698,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         })
         .filter(Boolean)
         .sort((a, b) => a!.label.localeCompare(b!.label)) as {
-          label: string
-          value: string
-        }[],
+        label: string
+        value: string
+      }[],
     [users],
   )
   const loginTypeOptions = useMemo(
@@ -754,7 +749,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         }}
         onChange={setDraftUser}
         onNext={() =>
-          setActiveStep((step) => Math.min(step + 1, steps.length - 1))
+          setActiveStep((step) => Math.min(step + 1, stepDefs.length - 1))
         }
         onSave={saveUser}
         onStepChange={setActiveStep}
@@ -762,11 +757,11 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     )
   }
   return (
-    <main className='flex h-full flex-col bg-[var(--surface)]'>
-      <section className='flex flex-1 flex-col'>
-        <SettingsPageHeader title='User Management' onBack={onBack} />
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>
+      <section className='flex min-h-0 flex-1 flex-col'>
+        <SettingsPageHeader title={t`User Management`} onBack={onBack} />
 
-        <div className='flex flex-1 flex-col overflow-hidden px-6 py-2 md:px-8'>
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-8'>
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={userTable as any} />}
@@ -778,40 +773,40 @@ export default function ManageUser({ onBack }: ManageUserProps) {
                 icon: 'tabler:refresh',
                 id: 'refresh',
                 isIconButton: true,
-                tooltip: 'Refresh',
+                tooltip: t`Refresh`,
                 variant: 'outline',
                 onClick: loadUsers,
               },
             ]}
             addButton={{
-              tooltip: 'Add User',
+              tooltip: t`Add User`,
               onClick: openAddUser,
             }}
             filters={[
               {
                 id: 'name',
-                label: 'Name',
+                label: t`Name`,
                 options: nameOptions,
                 searchable: true,
-                searchPlaceholder: 'Search name...',
+                searchPlaceholder: t`Search name...`,
               },
-              { id: 'role', label: 'Role', options: roleOptions },
-              { id: 'status', label: 'Status', options: statusOptions },
+              { id: 'role', label: t`Role`, options: roleOptions },
+              { id: 'status', label: t`Status`, options: statusOptions },
             ]}
             moreFilters={[
               {
                 id: 'department',
-                label: 'Department',
+                label: t`Department`,
                 options: departmentOptions,
               },
               {
                 id: 'loginType',
-                label: 'Login Type',
+                label: t`Login Type`,
                 options: loginTypeOptions,
               },
               {
                 id: 'businessUnit',
-                label: 'Business Unit',
+                label: t`Business Unit`,
                 options: businessUnitOptions,
               },
             ]}
@@ -830,9 +825,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
-                emptyDescription='Add a user to grant access to the platform and assign folder permissions.'
+                emptyDescription={t`Add a user to grant access to the platform and assign folder permissions.`}
                 emptyIcon='lucide:users'
-                emptyTitle='No users yet'
+                emptyTitle={t`No users yet`}
                 isLoading={isLoadingUsers}
                 isReLoading={isLoadingUsers}
                 pageSize={pageSize}
@@ -840,6 +835,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
                 table={userTable}
                 hideActionBar
                 hideGrouping
+                isSticky
                 stickyHeader
                 onReload={() => {
                   void loadUsers()
@@ -849,7 +845,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             </div>
             <Pagination
               className='mt-4 shrink-0'
-              itemLabel='Users'
+              itemLabel={t`Users`}
               page={page}
               pageSize={pageSize}
               showPageNumbers={false}
@@ -865,6 +861,8 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 }
 
 function Authentication({ user, onChange }: FormSectionProps) {
+  const { t } = useLingui()
+
   const toggleMethod = (method: string) => {
     const exists = user.mfaMethods.includes(method)
     const nextMethods = exists
@@ -880,10 +878,10 @@ function Authentication({ user, onChange }: FormSectionProps) {
         <div className='flex items-center justify-between gap-4'>
           <div>
             <h3 className='text-sm font-semibold text-[var(--gray-13)]'>
-              Multi-Factor Authentication
+              {t`Multi-Factor Authentication`}
             </h3>
             <p className='text-xs text-[var(--gray-11)]'>
-              Require additional verification for sign-in
+              {t`Require additional verification for sign-in`}
             </p>
           </div>
           <Switch
@@ -894,7 +892,7 @@ function Authentication({ user, onChange }: FormSectionProps) {
       </div>
 
       <h3 className='mb-4 text-sm font-semibold text-[var(--gray-13)]'>
-        MFA Methods
+        {t`MFA Methods`}
       </h3>
       <div className='space-y-4'>
         {mfaMethods.map((method) => {
@@ -942,59 +940,61 @@ function BusinessDetails({
   managerOptions: SettingsOption[]
   showErrors?: boolean
 }) {
+  const { t } = useLingui()
+
   return (
     <SettingsFormSection>
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <SettingsSelectField
-          label='Job Title'
+          label={t`Job Title`}
           options={jobTitles}
-          placeholder='Select'
+          placeholder={t`Select`}
           value={user.jobTitle}
           onChange={(value) => onChange({ ...user, jobTitle: value })}
         />
 
         <EzTextField
-          label='Employee ID'
+          label={t`Employee ID`}
           placeholder='EMP-001'
           value={user.employeeId}
           onChange={(value) => onChange({ ...user, employeeId: value })}
         />
 
         <SettingsSelectField
-          label='Department'
+          label={t`Department`}
           options={departments}
-          placeholder='Select'
+          placeholder={t`Select`}
           value={user.department}
           onChange={(value) => onChange({ ...user, department: value })}
         />
 
         <EzTextField
-          label='Business Unit'
-          placeholder='e.g. Corporate'
+          label={t`Business Unit`}
+          placeholder={t`e.g. Corporate`}
           value={user.businessUnit}
           onChange={(value) => onChange({ ...user, businessUnit: value })}
         />
 
         <SettingsSelectField
-          label='Manager'
+          label={t`Manager`}
           options={managerOptions}
-          placeholder='Select'
+          placeholder={t`Select`}
           value={user.manager}
           clearable
           onChange={(value) => onChange({ ...user, manager: value })}
         />
 
         <EzTextField
-          label='Location'
-          placeholder='e.g. New York, NY'
+          label={t`Location`}
+          placeholder={t`e.g. New York, NY`}
           value={user.location}
           onChange={(value) => onChange({ ...user, location: value })}
         />
       </div>
 
       <SettingsSelectField
-        error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
-        label='Role'
+        error={getFieldRequiredError(t`Role`, Boolean(showErrors), user.role)}
+        label={t`Role`}
         options={roles}
         value={user.role}
         required
@@ -1165,16 +1165,31 @@ function LoginDetails({
   user,
   onChange,
 }: FormSectionProps & { showErrors?: boolean }) {
+  const { i18n, t } = useLingui()
+  const loginOptions = useMemo<LoginOption[]>(
+    () =>
+      loginOptionDefs.map((opt) => ({
+        description: i18n._(opt.description),
+        icon: loginOptionIcons[opt.value],
+        title: i18n._(opt.title),
+        value: opt.value,
+      })),
+    [i18n.locale],
+  )
+  const firstNameLabel = t`First Name`
+  const lastNameLabel = t`Last Name`
+  const emailLabel = t`Email Address`
+
   return (
     <SettingsFormSection>
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
-          label='First Name'
-          placeholder='Enter first name'
+          label={firstNameLabel}
+          placeholder={t`Enter first name`}
           value={user.firstName}
           required
           error={getFieldRequiredError(
-            'First Name',
+            firstNameLabel,
             Boolean(showErrors),
             user.firstName,
           )}
@@ -1182,12 +1197,12 @@ function LoginDetails({
         />
 
         <EzTextField
-          label='Last Name'
-          placeholder='Enter last name'
+          label={lastNameLabel}
+          placeholder={t`Enter last name`}
           value={user.lastName}
           required
           error={getFieldRequiredError(
-            'Last Name',
+            lastNameLabel,
             Boolean(showErrors),
             user.lastName,
           )}
@@ -1196,13 +1211,13 @@ function LoginDetails({
       </div>
 
       <EzTextField
-        label='Email Address'
-        placeholder='user@company.com'
+        label={emailLabel}
+        placeholder={t`user@company.com`}
         type='email'
         value={user.email}
         required
         error={getFieldRequiredError(
-          'Email Address',
+          emailLabel,
           Boolean(showErrors),
           user.email,
         )}
@@ -1210,15 +1225,15 @@ function LoginDetails({
       />
 
       <EzTextField
-        label='Username'
-        placeholder='Enter username'
+        label={t`Username`}
+        placeholder={t`Enter username`}
         value={user.username}
         onChange={(value) => onChange({ ...user, username: value })}
       />
 
       <div className='space-y-2'>
         <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-          Login Type *
+          {t`Login Type`} *
         </label>
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           {loginOptions.map((opt) => {
@@ -1249,14 +1264,14 @@ function LoginDetails({
                   )}
                 </div>
 
-                {opt.icon(isSelected)}
+                {opt.icon}
 
-                <div className='min-w-0 flex-1'>
-                  <div
-                    className='truncate text-xs font-semibold text-[var(--gray-13)] hover:whitespace-normal hover:break-words'
-                    title={opt.title}
-                  >
+                <div className='min-w-0 flex-1 overflow-hidden'>
+                  <div className='truncate text-xs font-semibold text-[var(--gray-13)]'>
                     {opt.title}
+                  </div>
+                  <div className='mt-0.5 line-clamp-2 text-[11px] leading-snug text-[var(--gray-10)]'>
+                    {opt.description}
                   </div>
                 </div>
               </button>
@@ -1264,13 +1279,13 @@ function LoginDetails({
           })}
         </div>
         {getFieldRequiredError(
-          'Login Type',
+          t`Login Type`,
           Boolean(showErrors),
           user.loginType,
         ) ? (
           <p className='text-xs text-[var(--red-9)]'>
             {getFieldRequiredError(
-              'Login Type',
+              t`Login Type`,
               Boolean(showErrors),
               user.loginType,
             )}
@@ -1280,11 +1295,11 @@ function LoginDetails({
 
       {user.loginType === 'Password' ? (
         <EzPasswordField
-          label='Password'
+          label={t`Password`}
           value={user.password}
           required
           error={getFieldRequiredError(
-            'Password',
+            t`Password`,
             Boolean(showErrors),
             user.password,
           )}
@@ -1294,7 +1309,7 @@ function LoginDetails({
 
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
-          label='Password Expiry (Days)'
+          label={t`Password Expiry (Days)`}
           placeholder='90'
           type='number'
           value={String(user.passwordExpiryDays)}
@@ -1304,7 +1319,7 @@ function LoginDetails({
         />
 
         <SettingsDateField
-          label='Account Expiry Date'
+          label={t`Account Expiry Date`}
           value={user.accountExpiryDate}
           onChange={(value) => onChange({ ...user, accountExpiryDate: value })}
         />
@@ -1312,7 +1327,7 @@ function LoginDetails({
 
       <ToggleRow
         checked={user.forcePasswordReset}
-        label='Force password reset on first login'
+        label={t`Force password reset on first login`}
         onChange={(checked) =>
           onChange({ ...user, forcePasswordReset: checked })
         }
@@ -1322,32 +1337,34 @@ function LoginDetails({
 }
 
 function Review({ user }: { user: DraftUser }) {
+  const { t } = useLingui()
+
   return (
     <SettingsFormSection>
       <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
         <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-          User Summary
+          {t`User Summary`}
         </h3>
 
         <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
           <SummaryItem
-            label='Name'
+            label={t`Name`}
             value={`${user.firstName} ${user.lastName}`.trim() || '—'}
           />
-          <SummaryItem label='Email' value={user.email || '—'} />
-          <SummaryItem label='Job Title' value={user.jobTitle || '—'} />
-          <SummaryItem label='Manager' value={user.manager || '—'} />
-          <SummaryItem label='Login' value={user.loginType} />
-          <SummaryItem label='Department' value={user.department || '—'} />
-          <SummaryItem label='Role' value={user.role || '—'} />
-          <SummaryItem label='Location' value={user.location || '—'} />
+          <SummaryItem label={t`Email`} value={user.email || '—'} />
+          <SummaryItem label={t`Job Title`} value={user.jobTitle || '—'} />
+          <SummaryItem label={t`Manager`} value={user.manager || '—'} />
+          <SummaryItem label={t`Login`} value={user.loginType} />
+          <SummaryItem label={t`Department`} value={user.department || '—'} />
+          <SummaryItem label={t`Role`} value={user.role || '—'} />
+          <SummaryItem label={t`Location`} value={user.location || '—'} />
           <SummaryItem
-            label='Groups'
+            label={t`Groups`}
             value={user.groups.length ? user.groups.join(', ') : '—'}
           />
           <SummaryItem
-            label='MFA'
-            value={`${user.mfaEnabled ? 'Enabled' : 'Disabled'} (${user.mfaMethods.join(', ') || 'No methods'})`}
+            label={t`MFA`}
+            value={`${user.mfaEnabled ? t`Enabled` : t`Disabled`} (${user.mfaMethods.join(', ') || t`No methods`})`}
           />
         </div>
       </div>
@@ -1461,6 +1478,17 @@ function UserSetup({
   onSave: () => void
   onStepChange: (step: number) => void
 }) {
+  const { i18n, t } = useLingui()
+  const steps = useMemo<Step[]>(
+    () =>
+      stepDefs.map((step) => ({
+        caption: i18n._(step.caption),
+        description: i18n._(step.description),
+        key: step.key,
+        title: i18n._(step.title),
+      })),
+    [i18n.locale],
+  )
   const [showErrors, setShowErrors] = useState(false)
   const progress = useMemo(
     () => calculateUserSetupProgress(draftUser),
@@ -1527,57 +1555,122 @@ function UserSetup({
 
   const activeStepConfig = steps[activeStep]
 
-  const wizardSteps = useMemo(() => {
-    return steps.map((s, idx) => ({
-      id: idx,
-      label: s.title,
-      description: s.description,
-      icon: s.key === 'login' ? 'tabler:user' : s.key === 'business' ? 'tabler:building' : s.key === 'groups' ? 'tabler:users' : s.key === 'authentication' ? 'tabler:shield' : 'tabler:check',
-    }))
-  }, [])
-
   return (
-    <SettingsWizardLayout
-      activeStep={activeStep}
-      steps={wizardSteps}
-      onStepChange={handleStepChange}
-      onBack={handleBack}
-      onNext={handleNext}
-      onSave={handleSave}
-      onCancel={onCancel}
-      isSaving={isSaving}
-      saveLabel={editingUserId ? 'Update User' : 'Save User'}
-      moduleTitle='User Management'
-      setupTitle={editingUserId ? 'Edit User' : 'Create User'}
-      headerTitle={editingUserId ? 'Edit User Setup' : 'New User Setup'}
-      headerDescription='Configure user account details, business hierarchy, and permissions'
-    >
-      {activeStep === 0 && (
-        <LoginDetails
-          showErrors={showErrors}
-          user={draftUser}
-          onChange={onChange}
-        />
-      )}
-      {activeStep === 1 && (
-        <BusinessDetails
-          managerOptions={managerOptions}
-          showErrors={showErrors}
-          user={draftUser}
-          onChange={onChange}
-        />
-      )}
-      {activeStep === 2 && (
-        <GroupAssignment
-          groupOptions={groupOptions}
-          user={draftUser}
-          onChange={onChange}
-        />
-      )}
-      {activeStep === 3 && (
-        <Authentication user={draftUser} onChange={onChange} />
-      )}
-      {activeStep === 4 && <Review user={draftUser} />}
-    </SettingsWizardLayout>
+    <main className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)] text-[var(--text-primary)]'>
+      <SettingsSetupHeader
+        moduleTitle={t`User Management`}
+        progress={progress}
+        stepDescription={activeStepConfig.description}
+        stepTitle={activeStepConfig.title}
+        setupTitle={editingUserId ? t`Edit User` : t`Create User`}
+        onBackToSettings={onBackToSettings}
+        onCancelSetup={onCancel}
+      />
+
+      <div className='grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[296px_1fr]'>
+        <aside className='ez-scrollbar overflow-y-auto border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
+          <div className='space-y-5'>
+            {steps.map((step, index) => {
+              const isActive = index === activeStep
+              const isCompleted = index < activeStep
+
+              return (
+                <button
+                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
+                  key={step.key}
+                  onClick={() => handleStepChange(index)}
+                >
+                  <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
+                    {index < steps.length - 1 && (
+                      <span className='absolute top-8 left-1/2 h-12 w-[2px] -translate-x-1/2 bg-[var(--gray-3)]' />
+                    )}
+
+                    <span
+                      className={[
+                        'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
+                        isCompleted
+                          ? 'text-[var(--primary-9)]'
+                          : isActive
+                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)] ring-1 ring-[var(--primary-8)]'
+                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
+                      ].join(' ')}
+                    >
+                      {isCompleted ? (
+                        <Check size={14} />
+                      ) : (
+                        <StepIcon step={step.key} />
+                      )}
+                    </span>
+                  </div>
+                  <div>
+                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
+                      {step.title}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </aside>
+
+        <SettingsSetupContent>
+          {activeStep === 0 && (
+            <LoginDetails
+              showErrors={showErrors}
+              user={draftUser}
+              onChange={onChange}
+            />
+          )}
+          {activeStep === 1 && (
+            <BusinessDetails
+              managerOptions={managerOptions}
+              showErrors={showErrors}
+              user={draftUser}
+              onChange={onChange}
+            />
+          )}
+          {activeStep === 2 && (
+            <GroupAssignment
+              groupOptions={groupOptions}
+              user={draftUser}
+              onChange={onChange}
+            />
+          )}
+          {activeStep === 3 && (
+            <Authentication user={draftUser} onChange={onChange} />
+          )}
+          {activeStep === 4 && <Review user={draftUser} />}
+
+          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
+            <button
+              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
+              disabled={activeStep === 0}
+              onClick={handleBack}
+            >
+              {t`Back`}
+            </button>
+
+            <div className='flex items-center gap-3'>
+              {activeStep === steps.length - 1 ? (
+                <button
+                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
+                  disabled={isSaving}
+                  onClick={handleSave}
+                >
+                  {isSaving ? t`Saving...` : t`Save User`}
+                </button>
+              ) : (
+                <button
+                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
+                  onClick={handleNext}
+                >
+                  {t`Next`}
+                </button>
+              )}
+            </div>
+          </div>
+        </SettingsSetupContent>
+      </div>
+    </main>
   )
 }

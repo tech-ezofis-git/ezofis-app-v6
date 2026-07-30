@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
@@ -1185,12 +1186,37 @@ const InboxList: React.FC<InboxListProps> = ({
   onRefresh,
   onRowClick,
 }) => {
+  const { t } = useLingui()
   const openNewRequest = requestStore((state) => state.openNewRequest)
   const columns =
     useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
   // const [rowSize, setRowSize] = useState<RowSize>('default')
 
   const [filterFields, setFilterFields] = useState<V6FilterField[]>([])
+
+  const dueDateFilterOptions = useMemo(
+    () =>
+      DUE_DATE_FILTER_OPTIONS.map((opt) => ({
+        ...opt,
+        label:
+          opt.value === 'overdue'
+            ? t`Overdue`
+            : opt.value === 'today'
+              ? t`Due Today`
+              : opt.value === 'next_7_days'
+                ? t`Due in Next 7 Days`
+                : opt.value === 'next_15_days'
+                  ? t`Due in Next 15 Days`
+                  : opt.value === 'next_1_month'
+                    ? t`Due in Next 1 Month`
+                    : opt.value === 'no_due_date'
+                      ? t`No Due Date`
+                      : opt.value === 'custom'
+                        ? t`Custom Range`
+                        : opt.label,
+      })),
+    [t],
+  )
 
   useEffect(() => {
     if (workflow?.id) {
@@ -1249,8 +1275,11 @@ const InboxList: React.FC<InboxListProps> = ({
   }, [flatRows])
 
   const amountRangeOptions = useMemo(
-    () => getAmountRangeOptions(flatRows),
-    [flatRows],
+    () =>
+      getAmountRangeOptions(flatRows).map((opt) =>
+        opt.value === 'custom' ? { ...opt, label: t`Custom Range` } : opt,
+      ),
+    [flatRows, t],
   )
 
   const activeFiltersMap = useMemo(() => {
@@ -1760,7 +1789,7 @@ const InboxList: React.FC<InboxListProps> = ({
           isLoading={isLoading || isRefetching}
           optionalFields={optionalFilterFields}
           onFieldOpen={handleFieldOpen}
-          searchPlaceholder='Search invoice, supplier, PO...'
+          searchPlaceholder={t`Search invoice, supplier, PO...`}
           searchQuery={searchState?.value || ''}
           viewMode={viewMode}
           activeFilters={{
@@ -1776,7 +1805,7 @@ const InboxList: React.FC<InboxListProps> = ({
           fields={[
             {
               id: 'Supplier Name',
-              label: 'Supplier',
+              label: t`Supplier`,
               valueGetter: (row) => getRowColumnValue(row, 'vendor'),
             },
           ]}
@@ -1784,27 +1813,27 @@ const InboxList: React.FC<InboxListProps> = ({
             {
               icon: 'tabler:calendar-due',
               id: 'due_date',
-              label: 'Due Date',
-              options: DUE_DATE_FILTER_OPTIONS,
+              label: t`Due Date`,
+              options: dueDateFilterOptions,
               type: 'date',
             },
             {
               icon: 'tabler:circle-check',
               id: 'matched',
-              label: 'Matched',
+              label: t`Matched`,
             },
             {
               icon: 'tabler:alert-triangle',
               id: 'discrepancies',
-              label: 'Discrepancies',
+              label: t`Discrepancies`,
               options: [
                 {
-                  label: 'All',
+                  label: t`All`,
                   value: 'discrepancies:discrepancies',
                 },
-                { label: 'Not Matched', value: 'discrepancies:NOT_MATCHED' },
+                { label: t`Not Matched`, value: 'discrepancies:NOT_MATCHED' },
                 {
-                  label: 'Partially Matched',
+                  label: t`Partially Matched`,
                   value: 'discrepancies:PARTIALLY_MATCHED',
                 },
               ],
@@ -1813,7 +1842,7 @@ const InboxList: React.FC<InboxListProps> = ({
             {
               icon: 'tabler:currency-dollar',
               id: 'highValue',
-              label: 'High Value',
+              label: t`High Value`,
               options: amountRangeOptions,
               type: 'number',
             },
@@ -1823,21 +1852,21 @@ const InboxList: React.FC<InboxListProps> = ({
               icon: 'tabler:refresh',
               id: 'refresh',
               isIconButton: true,
-              tooltip: 'Refresh',
+              tooltip: t`Refresh`,
               onClick: onRefresh,
             },
             {
               icon: 'tabler:download',
               id: 'export',
               isIconButton: true,
-              tooltip: 'Export',
+              tooltip: t`Export`,
               onClick: () => {},
             },
             {
               icon: 'tabler:table-import',
               id: 'upload-po',
               isIconButton: true,
-              tooltip: 'Import PO Data',
+              tooltip: t`Import PO Data`,
               onClick: handlePoSheet,
             },
           ]}
@@ -1919,7 +1948,7 @@ const InboxList: React.FC<InboxListProps> = ({
       {!selectedItem && (
         <div className='z-10 shrink-0 bg-primary-1 pt-2'>
           <Pagination
-            itemLabel='Requests'
+            itemLabel={t`Requests`}
             page={page}
             pageSize={pageSize}
             showPageNumbers={false}

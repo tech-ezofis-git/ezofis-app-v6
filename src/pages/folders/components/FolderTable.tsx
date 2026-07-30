@@ -4,6 +4,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { useLingui } from '@lingui/react/macro'
 import {
   useCallback,
   useEffect,
@@ -30,6 +31,7 @@ import {
   formatFolderModifiedDate,
 } from '../utils/folderExplorerUtils'
 import { getRepositoryFieldStringValue } from '../utils/repositoryFieldUtils'
+import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { filterFolderFiles, filterFolders } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
 import { EllipsisText, StatusPill } from './Ui'
@@ -113,6 +115,12 @@ type FolderTableDataTableSplitProps = {
 
   onShare: (id: string) => void
 
+  onUpload?: () => void
+
+  onUploadFile?: (file: File) => void
+
+  uploadDisabled?: boolean
+
   onWorkflow: (id: string) => void
 }
 
@@ -127,18 +135,19 @@ const FULL_PANEL_FOLDER_HEIGHT = 'calc(100vh - 248px)'
 const FULL_PANEL_FILE_HEIGHT = 'calc(100vh - 300px)'
 
 const getSplitFolderBodyHeight = (folderCount: number) =>
-  Math.min(260, Math.max(56, folderCount * 52 + 44))
+  Math.min(260, Math.max(48, folderCount * 40 + 40))
 
 const EXPLORER_CELL_META = {
-  className: 'align-bottom',
+  className: 'align-middle',
   disableEllipsis: true,
 }
 const EXPLORER_VALUE_CLASS = 'text-sm font-normal leading-4 text-gray-12'
 const EXPLORER_NAME_BUTTON_CLASS =
-  'flex min-w-0 max-w-full items-end gap-1.5 text-left'
+  'flex min-w-0 max-w-full items-center gap-1.5 text-left'
 const EXPLORER_NAME_TEXT_WRAP_CLASS = 'min-w-0 flex-1'
 const EXPLORER_NAME_TEXT_CLASS = 'text-sm font-normal leading-none text-gray-12'
-const EXPLORER_ICON_WRAP_CLASS = 'inline-flex size-4 shrink-0 items-end justify-center'
+const EXPLORER_ICON_WRAP_CLASS =
+  'inline-flex size-4 shrink-0 items-center justify-center'
 const EXPLORER_ICON_CLASS = 'block size-4 text-[#4f5b88]'
 
 function ExplorerValue({ value }: { value: string }) {
@@ -272,8 +281,15 @@ export default function FolderTableDataTableSplit({
 
   onShare,
 
+  onUpload,
+
+  onUploadFile,
+
+  uploadDisabled = false,
+
   onWorkflow,
 }: FolderTableDataTableSplitProps) {
+  const { t } = useLingui()
   const [splitViewMode, setSplitViewMode] = useState<SplitViewMode>('split')
 
   const visibleFileColumns = useMemo(
@@ -325,10 +341,10 @@ export default function FolderTableDataTableSplit({
   }, [])
 
   const leftViewLabel =
-    splitViewMode === 'files-only' ? 'Show folders only' : 'Show files only'
+    splitViewMode === 'files-only' ? t`Show folders only` : t`Show files only`
   const rightViewLabel = isSplitView
-    ? 'Show folders only'
-    : 'Show both folders and files'
+    ? t`Show folders only`
+    : t`Show both folders and files`
 
   const renderSplitDivider = () => (
     <div
@@ -356,7 +372,7 @@ export default function FolderTableDataTableSplit({
                 className='block size-3.5 shrink-0 text-gray-8'
                 name='folder'
               />
-              <span className='leading-none text-gray-8'>FOLDERS</span>
+              <span className='leading-none text-gray-8'>{t`FOLDERS`}</span>
               <span className='mb-[0.15em] inline-block h-px w-5 shrink-0 bg-gray-4' />
               <span className='leading-none text-gray-8'>{folders.length}</span>
             </>
@@ -366,7 +382,7 @@ export default function FolderTableDataTableSplit({
                 className='block size-3.5 shrink-0 text-gray-8'
                 name='fileText'
               />
-              <span className='leading-none text-gray-8'>FILES IN THIS FOLDER</span>
+              <span className='leading-none text-gray-8'>{t`FILES IN THIS FOLDER`}</span>
               <span className='mb-[0.15em] inline-block h-px w-5 shrink-0 bg-gray-4' />
               <span className='leading-none text-gray-8'>{files.length}</span>
             </>
@@ -466,7 +482,11 @@ export default function FolderTableDataTableSplit({
           !loadingFolders &&
           !folders.length &&
           !files.length ? (
-          <EmptyState />
+          <EmptyState
+            onUpload={onUpload}
+            onUploadFile={onUploadFile}
+            uploadDisabled={uploadDisabled}
+          />
         ) : null}
       </div>
 
@@ -487,10 +507,19 @@ export default function FolderTableDataTableSplit({
   )
 }
 
-function EmptyState() {
+function EmptyState({
+  onUpload,
+  onUploadFile,
+  uploadDisabled = false,
+}: {
+  onUpload?: () => void
+  onUploadFile?: (file: File) => void
+  uploadDisabled?: boolean
+}) {
+  const { t } = useLingui()
   return (
     <div className='flex h-full min-h-[320px] items-center justify-center bg-surface px-6 text-center'>
-      <div>
+      <div className='flex w-full max-w-3xl flex-col items-center'>
         <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
           <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
             <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
@@ -498,14 +527,24 @@ function EmptyState() {
         </div>
 
         <h3 className='mt-5 text-[16px] font-bold text-gray-13'>
-          No repository items found
+          {t`No repository items found`}
         </h3>
 
         <p className='mt-2 max-w-[460px] text-[14px] leading-6 font-medium text-gray-10'>
-          This folder does not contain any folders or files yet. Upload
-          documents or create a new folder to start organizing repository
-          content.
+          {t`This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content.`}
         </p>
+
+        {onUploadFile || onUpload ? (
+          <EmptyFolderUploadDropzone
+            className='mt-6'
+            disabled={uploadDisabled}
+            onFileSelected={(file) => {
+              if (onUploadFile) onUploadFile(file)
+              else onUpload?.()
+            }}
+            onOpenUpload={onUpload}
+          />
+        ) : null}
       </div>
     </div>
   )
@@ -554,6 +593,7 @@ function FileDataTableSection({
   onShare: (id: string) => void
   onWorkflow: (id: string) => void
 }) {
+  const { t } = useLingui()
   const mergedFileFilters = useMemo(
     () => mergeFileExplorerFilters(folderFilters, fileFilters),
     [folderFilters, fileFilters],
@@ -638,11 +678,11 @@ function FileDataTableSection({
     const resolvedColumns: DynamicRepositoryColumn[] = [
       {
         key: '__name',
-        label: 'Name',
+        label: t`Name`,
       } as DynamicRepositoryColumn,
       {
         key: '__status',
-        label: 'Current Stage',
+        label: t`Current Stage`,
       } as DynamicRepositoryColumn,
       ...normalColumns,
     ]
@@ -716,7 +756,7 @@ function FileDataTableSection({
 
           return (
             <div
-              className='flex items-end justify-end'
+              className='flex items-center justify-end'
               onClick={(event) => event.stopPropagation()}
             >
               <Menu
@@ -735,27 +775,27 @@ function FileDataTableSection({
               >
                 <MenuItem
                   icon='lucide:eye'
-                  label='View Details'
+                  label={t`View Details`}
                   onClick={() => onOpenFile(fileId)}
                 />
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit Metadata'
+                  label={t`Edit Metadata`}
                   onClick={() => onEditMetadata(fileId)}
                 />
                 <MenuItem
                   icon='lucide:bot'
-                  label='AI Summary'
+                  label={t`AI Summary`}
                   onClick={() => onAiSummary(fileId)}
                 />
                 <MenuItem
                   icon='lucide:share-2'
-                  label='Share'
+                  label={t`Share`}
                   onClick={() => onShare(fileId)}
                 />
                 <MenuItem
                   icon='lucide:play'
-                  label='Start Workflow'
+                  label={t`Start Workflow`}
                   onClick={() => onWorkflow(fileId)}
                 />
                 <MenuDivider />
@@ -763,7 +803,7 @@ function FileDataTableSection({
                   className='text-red-9'
                   icon='lucide:trash-2'
                   iconClass='text-red-9'
-                  label='Delete'
+                  label={t`Delete`}
                 />
               </Menu>
             </div>
@@ -780,6 +820,7 @@ function FileDataTableSection({
     onOpenFile,
     onShare,
     onWorkflow,
+    t,
   ])
 
   const fileTable = useReactTable({
@@ -843,6 +884,7 @@ function FileDataTableSection({
           isLoading={loading || loadingPage}
           isReLoading={loadingPage}
           pageSize={pageSize}
+          rowSize='compact'
           table={fileTable}
           tableBodyMaxHeight={fileTableMaxHeight}
           hideGrouping
@@ -857,7 +899,7 @@ function FileDataTableSection({
       {filePage ? (
         <div className='shrink-0 px-1 pt-3 pb-2'>
           <Pagination
-            itemLabel='Files'
+            itemLabel={t`Files`}
             page={currentPage}
             pageSize={pageSize}
             showPageNumbers={false}
@@ -938,6 +980,7 @@ function FolderDataTableSection({
 
   onReload?: () => void
 }) {
+  const { t } = useLingui()
   const folderScrollRef = useRef<HTMLDivElement | null>(null)
 
   const lastFolderScrollTopRef = useRef(0)
@@ -995,7 +1038,7 @@ function FolderDataTableSection({
   const folderColumns = useMemo(
     () => [
       folderColumnHelper.accessor('name', {
-        header: () => <EllipsisText lines={1} value='Name' />,
+        header: () => <EllipsisText lines={1} value={t`Name`} />,
         id: 'name',
         maxSize: 360,
         meta: EXPLORER_CELL_META,
@@ -1031,7 +1074,7 @@ function FolderDataTableSection({
       }),
 
       folderColumnHelper.accessor('items', {
-        header: () => <EllipsisText lines={1} value='Items' />,
+        header: () => <EllipsisText lines={1} value={t`Items`} />,
         id: 'items',
         maxSize: 140,
         meta: EXPLORER_CELL_META,
@@ -1043,7 +1086,7 @@ function FolderDataTableSection({
       }),
 
       folderColumnHelper.accessor('modified', {
-        header: () => <EllipsisText lines={1} value='Date Modified' />,
+        header: () => <EllipsisText lines={1} value={t`Date Modified`} />,
         id: 'modified',
         maxSize: 180,
         meta: EXPLORER_CELL_META,
@@ -1069,7 +1112,7 @@ function FolderDataTableSection({
 
           return (
             <div
-              className='flex items-end justify-end'
+              className='flex items-center justify-end'
               onClick={(event) => event.stopPropagation()}
             >
               <Menu
@@ -1088,17 +1131,17 @@ function FolderDataTableSection({
               >
                 <MenuItem
                   icon='lucide:folder'
-                  label='Open'
+                  label={t`Open`}
                   onClick={() => onOpenFolder(folderId)}
                 />
-                <MenuItem icon='lucide:pencil' label='Rename' />
-                <MenuItem icon='lucide:share-2' label='Share' />
+                <MenuItem icon='lucide:pencil' label={t`Rename`} />
+                <MenuItem icon='lucide:share-2' label={t`Share`} />
                 <MenuDivider />
                 <MenuItem
                   className='text-red-9'
                   icon='lucide:trash-2'
                   iconClass='text-red-9'
-                  label='Delete'
+                  label={t`Delete`}
                 />
               </Menu>
             </div>
@@ -1107,7 +1150,7 @@ function FolderDataTableSection({
       }),
     ],
 
-    [loadingFolders, loadingPage, onOpenFolder],
+    [loadingFolders, loadingPage, onOpenFolder, t],
   )
 
   const folderTable = useReactTable({
@@ -1149,6 +1192,7 @@ function FolderDataTableSection({
         isLoadingMore={loadingFolders}
         isReLoading={loadingFolders && folders.length > 0}
         pageSize={Math.max(5, folders.length || 5)}
+        rowSize='compact'
         table={folderTable}
         tableBodyMaxHeight={resolvedFolderBodyMaxHeight}
         hideGrouping

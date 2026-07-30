@@ -28,6 +28,12 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: geometricPrecision;
     color-scheme: light dark;
+    direction: ltr;
+  }
+
+  body,
+  #app {
+    direction: ltr;
   }
 
   @media (prefers-reduced-motion: no-preference) {

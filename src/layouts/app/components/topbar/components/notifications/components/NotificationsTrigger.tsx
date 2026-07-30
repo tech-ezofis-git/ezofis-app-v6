@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import Indicator from '@/components/base/Indicator'
 import Tooltip from '@/components/base/Tooltip'
@@ -8,9 +9,11 @@ interface Props {
 }
 
 const NotificationsTrigger = ({ isNotificationsOpened = false, unreadCount = 0 }: Props) => {
+  const { t } = useLingui()
+
   return (
     <Tooltip
-      content='Notifications'
+      content={t`Notifications`}
       disabled={isNotificationsOpened}
       openDelay={500}
       position='bottom'

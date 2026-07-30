@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useState } from 'react'
 import type { WorkflowData } from '../types/folderTypes'
 import { folderApi } from '../api/folderApi'
@@ -5,6 +6,7 @@ import { DynamicIcon } from './icons'
 import { Button, Card, PrimaryButton } from './Ui'
 
 export function StartWorkflowView({ onBack }: { onBack: () => void }) {
+  const { t } = useLingui()
   const [data, setData] = useState<WorkflowData | null>(null)
   const [selected, setSelected] = useState('ap2')
 
@@ -24,7 +26,7 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
 
   if (!data) {
     return (
-      <div className='p-6 text-[13px] text-gray-10'>Loading workflow...</div>
+      <div className='p-6 text-[13px] text-gray-10'>{t`Loading workflow...`}</div>
     )
   }
 
@@ -39,7 +41,7 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
           onClick={onBack}
         >
           <DynamicIcon className='h-4 w-4' name='arrowLeft' />
-          Back
+          {t`Back`}
         </button>
       </div>
 
@@ -74,7 +76,7 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
           <Card className='rounded-xl border border-gray-3 bg-surface-primary p-5 shadow-sm'>
             <h2 className='mb-4 flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
               <DynamicIcon className='h-4 w-4 text-blue-11' name='zap' />
-              Select Workflow Template
+              {t`Select Workflow Template`}
             </h2>
 
             <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
@@ -96,7 +98,7 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
 
                     {template.recommended && (
                       <span className='rounded-full bg-blue-9 px-2 py-0.5 text-[10px] font-bold text-white'>
-                        Recommended
+                        {t`Recommended`}
                       </span>
                     )}
                   </div>
@@ -130,30 +132,30 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
           <Card className='rounded-xl border border-gray-3 bg-surface-primary p-5 shadow-sm'>
             <h2 className='mb-4 flex items-center gap-2 text-[15px] font-semibold text-gray-13'>
               <DynamicIcon className='h-4 w-4 text-blue-11' name='users' />
-              Configure Approvers
+              {t`Configure Approvers`}
             </h2>
 
             <div className='mb-5 flex flex-wrap items-center gap-2 rounded-xl bg-gray-2 p-3'>
-              <WorkflowStep icon='zap' label='AI Extract' tone='blue' />
+              <WorkflowStep icon='zap' label={t`AI Extract`} tone='blue' />
               <StepArrow />
               <WorkflowStep
                 icon='user'
-                label={`L1: ${l1Approver || '-'}`}
+                label={t`L1: ${l1Approver || '-'}`}
                 tone='orange'
               />
               <StepArrow />
               <WorkflowStep
                 icon='user'
-                label={`L2: ${l2Approver || '-'}`}
+                label={t`L2: ${l2Approver || '-'}`}
                 tone='blue'
               />
               <StepArrow />
-              <WorkflowStep icon='check' label='Complete' tone='green' />
+              <WorkflowStep icon='check' label={t`Complete`} tone='green' />
             </div>
 
             <div className='grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2'>
               <Field
-                label='L1 Approver *'
+                label={t`L1 Approver *`}
                 options={approverOptions}
                 value={l1Approver}
                 dot
@@ -161,7 +163,7 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
               />
 
               <Field
-                label='L2 Approver'
+                label={t`L2 Approver`}
                 options={approverOptions}
                 value={l2Approver}
                 dot
@@ -170,7 +172,7 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
 
               <Field
                 icon='calendar'
-                label='Due Date'
+                label={t`Due Date`}
                 type='date'
                 value={dueDate}
                 onChange={setDueDate}
@@ -178,7 +180,7 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
 
               <Field
                 icon='flag'
-                label='Priority'
+                label={t`Priority`}
                 options={['Low', 'Medium', 'High', 'Critical']}
                 value={priority}
                 dot
@@ -192,12 +194,12 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
                   className='h-3.5 w-3.5 text-gray-10'
                   name='messageSquare'
                 />
-                Note to Approver
+                {t`Note to Approver`}
               </span>
 
               <textarea
                 className='h-20 w-full resize-none rounded-lg border border-gray-3 bg-white p-3 text-[13px] leading-5 text-gray-13 transition-all outline-none placeholder:text-gray-8 focus:border-blue-8 focus:ring-2 focus:ring-blue-3'
-                placeholder='Add a note for the approver...'
+                placeholder={t`Add a note for the approver...`}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
@@ -205,11 +207,11 @@ export function StartWorkflowView({ onBack }: { onBack: () => void }) {
           </Card>
 
           <div className='flex justify-end gap-3 pb-2'>
-            <Button className='h-9 px-4 text-[13px]'>Cancel</Button>
+            <Button className='h-9 px-4 text-[13px]'>{t`Cancel`}</Button>
 
             <PrimaryButton className='h-9 px-4 text-[13px]'>
               <DynamicIcon className='h-4 w-4' name='check' />
-              Launch Workflow
+              {t`Launch Workflow`}
             </PrimaryButton>
           </div>
         </div>

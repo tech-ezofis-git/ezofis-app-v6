@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import Menu from '@/components/base/menu/Menu'
 import PageEmptyState from '@/components/common/PageEmptyState'
@@ -8,6 +9,7 @@ import { mockNotifications } from './mockData'
 import type { NotificationItem } from './types'
 
 const Notifications = () => {
+  const { t } = useLingui()
   const [isNotificationsOpened, setIsNotificationsOpened] = useState(false)
   const [notificationsList, setNotificationsList] = useState<NotificationItem[]>(mockNotifications)
   const [activeTab, setActiveTab] = useState<string>('All')
@@ -70,7 +72,7 @@ const Notifications = () => {
             description="You're all caught up. New notifications will appear here."
             fill={true}
             icon='lucide:bell-off'
-            title='No notifications'
+            title={t`No notifications`}
           />
         )}
       </div>

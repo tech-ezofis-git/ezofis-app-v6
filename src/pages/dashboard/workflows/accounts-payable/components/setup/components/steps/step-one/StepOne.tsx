@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useEffect } from 'react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
@@ -11,6 +12,7 @@ import ImapSettings from './components/ImapSettings'
 import ProviderSettings from './components/ProviderSettings'
 
 const StepOne = () => {
+  const { t } = useLingui()
   const setStep = setupStore((state) => state.setStep)
   const emailSettings = setupStore((state) => state.emailSettings)
   const setEmailSettings = setupStore((state) => state.setEmailSettings)
@@ -37,7 +39,6 @@ const StepOne = () => {
       const connectedEmail =
         externalAccountEmail || session?.email || current.email || ''
 
-      // Ignore late OAuth success after the user switched away from email OAuth
       if (
         !current.provider ||
         current.provider === 'DIRECT_UPLOAD' ||
@@ -76,16 +77,21 @@ const StepOne = () => {
     }
   }
 
+  const providerLabel = emailSettings.provider
+    ? emailSettings.provider.charAt(0).toUpperCase() +
+      emailSettings.provider.slice(1)
+    : ''
+
   return (
     <StepLayout
-      description="Pick how you'll import invoices to get started. You can change this later in settings."
-      title="Let's set up your AP workflow"
+      description={t`Pick how you'll import invoices to get started. You can change this later in settings.`}
+      title={t`Let's set up your AP workflow`}
       footer={
         <StepFooter align='end'>
           {emailSettings.isConnected ? (
             <Button
               key='continue-button'
-              label='Continue'
+              label={t`Continue`}
               suffixIcon='tabler:arrow-right'
               onClick={() => setStep(1)}
             />
@@ -94,7 +100,7 @@ const StepOne = () => {
               {emailSettings.isConnecting && (
                 <Button
                   color='gray'
-                  label='Cancel'
+                  label={t`Cancel`}
                   variant='outline'
                   onClick={() =>
                     setEmailSettings({ ...emailSettings, isConnecting: false })
@@ -108,8 +114,8 @@ const StepOne = () => {
                 loading={emailSettings.isConnecting}
                 label={
                   emailSettings.provider
-                    ? `Connect ${emailSettings.provider.charAt(0).toUpperCase() + emailSettings.provider.slice(1)}`
-                    : 'Select an integration'
+                    ? t`Connect ${providerLabel}`
+                    : t`Select an integration`
                 }
                 onClick={handleConnect}
               />
@@ -134,7 +140,7 @@ const StepOne = () => {
       {emailSettings.provider === 'DIRECT_UPLOAD' && (
         <AnimateSlideUp delay={0.4}>
           <Alert
-            text="Quick Drop selected. You'll be able to upload your first invoices once your setup is complete."
+            text={t`Quick Drop selected. You'll be able to upload your first invoices once your setup is complete.`}
             variant='green'
           />
         </AnimateSlideUp>
@@ -143,7 +149,7 @@ const StepOne = () => {
       {emailSettings.provider === 'gmail' && !emailSettings.isConnected && (
         <AnimateSlideUp delay={0.4}>
           <Alert
-            text='Gmail selected. Click Connect Gmail to link your account.'
+            text={t`Gmail selected. Click Connect Gmail to link your account.`}
             variant='primary'
           />
         </AnimateSlideUp>
@@ -152,7 +158,7 @@ const StepOne = () => {
       {emailSettings.provider === 'outlook' && !emailSettings.isConnected && (
         <AnimateSlideUp delay={0.4}>
           <Alert
-            text='Outlook selected. Click Connect Outlook to link your account.'
+            text={t`Outlook selected. Click Connect Outlook to link your account.`}
             variant='primary'
           />
         </AnimateSlideUp>
@@ -162,7 +168,7 @@ const StepOne = () => {
         emailSettings.provider !== 'DIRECT_UPLOAD' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text='Invoice emails will be read from this inbox and sent for processing automatically.'
+              text={t`Invoice emails will be read from this inbox and sent for processing automatically.`}
               variant='green'
             />
           </AnimateSlideUp>

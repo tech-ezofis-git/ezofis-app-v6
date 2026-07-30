@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import type { TreeNode } from '../types/folderTypes'
 import { DynamicIcon } from './icons'
 
@@ -48,6 +49,7 @@ function TreeItem({
   onSelect: (id: string) => void
   onToggle: (id: string) => void
 }) {
+  const { t } = useLingui()
   const isExpanded = expandedIds.includes(node.id)
   const isActive = activeId === node.id
   const canExpand = Boolean(node.hasChildren || node.children?.length)
@@ -68,32 +70,32 @@ function TreeItem({
     <div>
       <div
         style={{ paddingLeft: `${8 + level * 22}px` }}
-        className={`group flex min-h-10 cursor-pointer items-end gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-none transition-all ${
+        className={`group flex min-h-9 cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-none transition-all ${
           isActive ? 'bg-blue-2 text-blue-11' : 'text-gray-12 hover:bg-gray-2'
         }`}
         onClick={handleNodeClick}
       >
         {/* Always reserve chevron width so folder icons share one vertical column */}
-        <div className='flex h-5 w-6 shrink-0 items-end justify-center'>
+        <div className='flex h-4 w-5 shrink-0 items-center justify-center'>
           {canExpand ? (
             <button
-              title={isExpanded ? 'Collapse' : 'Expand'}
+              title={isExpanded ? t`Collapse` : t`Expand`}
               type='button'
-              className='flex h-5 w-6 items-center justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
+              className='flex h-4 w-5 items-center justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
               onClick={handleChevronClick}
             >
               <DynamicIcon
-                className={`block size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                className={`block size-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                 name='chevronRight'
               />
             </button>
           ) : (
-            <span aria-hidden className='h-5 w-6' />
+            <span aria-hidden className='h-4 w-5' />
           )}
         </div>
 
         <DynamicIcon
-          className={`block size-5 shrink-0 ${isActive ? 'text-blue-10' : 'text-gray-11'}`}
+          className={`block size-3.5 shrink-0 ${isActive ? 'text-blue-10' : 'text-gray-11'}`}
           name={node.iconKey || node.title || 'folder'}
         />
 

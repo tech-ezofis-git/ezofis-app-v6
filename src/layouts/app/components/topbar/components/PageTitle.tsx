@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useMatches, useParams } from '@tanstack/react-router'
 import formApi from '@/api/form/form'
@@ -8,11 +9,13 @@ import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import useFoldersTopbarStore from '@/pages/folders/stores/useFoldersTopbarStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
+import { localizeRequestListTab } from '@/pages/requests/utils/localizeRequestUi'
 import SettingsBreadcrumbs from '@/pages/settings/components/SettingsBreadcrumbs'
 import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 
 const PageTitle = () => {
+  const { t, i18n } = useLingui()
   const matches = useMatches()
   const { closeRequest, isRequestOpen, requestListTab, selectedWorkflow } =
     requestStore((state) => state)
@@ -28,6 +31,12 @@ const PageTitle = () => {
 
   const current = matches[matches.length - 1]
   const isFormEntriesRoute = current?.routeId === '/_app/forms_/$formId/entries'
+  const isSettingsRoute = current?.routeId === '/_app/settings'
+  const isFoldersRoute = current?.routeId === '/_app/folders'
+  const isRequestsRoute = current?.routeId === '/_app/requests'
+  const isWorkflowsRoute = current?.routeId === '/_app/workflows'
+  const isDashboardRoute =
+    current?.routeId === '/_app/' || current?.routeId === '/_app'
 
   const { formId } = useParams({ strict: false }) as any
   const { data: formData } = useQuery({
@@ -41,33 +50,62 @@ const PageTitle = () => {
   })
 
   const formName = formData?._json?.settings?.general?.name || formData?.name
-  const rawPageTitle =
-    isFormEntriesRoute && formName
-      ? formName
-      : (current?.staticData?.pageTitle ?? 'Untitled')
-  const pageTitle = rawPageTitle.replace(/\s*\(Embed\)$/i, '')
+  const rawPageTitle = String(current?.staticData?.pageTitle ?? '')
 
-  const routeId = current?.routeId as string | undefined
+  const localizedPageTitle = (() => {
+    if (isFormEntriesRoute && formName) return formName
 
-  const isSettingsRoute =
-    routeId === '/_app/settings' ||
-    routeId === '/embed/settings' ||
-    pageTitle === 'Settings'
-  const isFoldersRoute =
-    routeId === '/_app/folders' ||
-    routeId === '/embed/folders' ||
-    pageTitle === 'Folders'
+    switch (rawPageTitle) {
+      case 'Dashboard':
+        return t`Dashboard`
+      case 'Requests':
+        return t`Requests`
+      case 'Folders':
+        return t`Folders`
+      case 'Workflows':
+        return t`Workflows`
+      case 'Forms':
+        return t`Forms`
+      case 'Form Entries':
+        return t`Form Entries`
+      case 'Settings':
+        return t`Settings`
+      case 'Reports':
+        return t`Reports`
+      case 'Tasks':
+        return t`Tasks`
+      case 'Trash':
+        return t`Trash`
+      case 'Help Center':
+        return t`Help Center`
+      case 'Form Builder':
+        return t`Form Builder`
+      case 'Workflow Builder':
+        return t`Workflow Builder`
+      case 'My Account':
+        return t`My Account`
+      case 'Sign In':
+        return t`Sign In`
+      case 'Sign Up':
+        return t`Sign Up`
+      case 'Forgot Password':
+        return t`Forgot Password`
+      case 'Reset Password':
+        return t`Reset Password`
+      case 'On Boarding':
+        return t`On Boarding`
+      case 'Portals':
+        return t`Portals`
+      case 'Playground':
+        return t`Playground`
+      case 'Mobile Preview':
+        return t`Mobile Preview`
+      default:
+        return rawPageTitle || t`Untitled`
+    }
+  })()
 
   const renderContent = () => {
-    const isRequestsRoute =
-      routeId === '/_app/requests' ||
-      routeId === '/embed/requests' ||
-      pageTitle === 'Requests'
-    const isWorkflowsRoute =
-      routeId === '/_app/workflows' ||
-      routeId === '/embed/workflows' ||
-      pageTitle === 'Workflows'
-
     if (isWorkflowsRoute && isBuilderOpen) {
       return (
         <div className='flex items-center gap-3'>
@@ -76,7 +114,7 @@ const PageTitle = () => {
             onClick={closeBuilder}
           >
             <Icon className='mr-2' name='lucide:arrow-left' />
-            <Title level={3} title='Workflow Builder' />
+            <Title level={3} title={t`Workflow Builder`} />
           </button>
         </div>
       )
@@ -98,7 +136,14 @@ const PageTitle = () => {
           >
             {selectedWorkflow.name}
           </span>
-          <Badge color={badgeColor} label={requestListTab || 'Inbox'} />
+          <Badge
+            color={badgeColor}
+            label={
+              requestListTab
+                ? localizeRequestListTab(i18n, requestListTab)
+                : t`Inbox`
+            }
+          />
         </div>
       )
     }
@@ -123,31 +168,32 @@ const PageTitle = () => {
 
     return (
       <div className='flex items-center gap-4'>
-        <Title level={3} title={pageTitle} />
-        {pageTitle === 'Dashboard' && isApSetUpCompleted && (
-          <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
-            <button
-              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
-                role === 'management'
-                  ? 'bg-primary-9 text-white shadow-sm'
-                  : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
-              }`}
-              onClick={() => setRole('management')}
-            >
-              Management
-            </button>
-            <button
-              className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
-                role === 'ap'
-                  ? 'bg-primary-9 text-white shadow-sm'
-                  : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
-              }`}
-              onClick={() => setRole('ap')}
-            >
-              AP Team
-            </button>
-          </div>
-        )}
+        <Title level={3} title={localizedPageTitle} />
+        {(isDashboardRoute || rawPageTitle === 'Dashboard') &&
+          isApSetUpCompleted && (
+            <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
+              <button
+                className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
+                  role === 'management'
+                    ? 'bg-primary-9 text-white shadow-sm'
+                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
+                }`}
+                onClick={() => setRole('management')}
+              >
+                {t`Management`}
+              </button>
+              <button
+                className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
+                  role === 'ap'
+                    ? 'bg-primary-9 text-white shadow-sm'
+                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
+                }`}
+                onClick={() => setRole('ap')}
+              >
+                {t`AP Team`}
+              </button>
+            </div>
+          )}
       </div>
     )
   }

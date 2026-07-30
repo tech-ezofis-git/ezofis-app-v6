@@ -5,23 +5,22 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { motion } from 'motion/react'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import {
   generateFolderConfig,
   type FolderConfigField,
   type FolderConfigSuggestion,
 } from '@/services/ai/gemini'
-import type { Option } from '@/types/option'
 import cn from '@/utils/cn'
 import {
   BuilderTimelineStep,
@@ -81,132 +80,9 @@ export type AiFolderBuilderApplyPayload = {
 
 type AiFolderBuilderProps = {
   onBack: () => void
-  onApply: (payload: AiFolderBuilderApplyPayload) => void
+  onApply: (payload: AiFolderBuilderApplyPayload) => void | Promise<void>
 }
 
-const BUILDER_STEPS: Array<{
-  description: string
-  id: BuilderStepId
-  title: string
-}> = [
-  {
-    description:
-      'Set the folder name and let AI draft a clear business description for this repository.',
-    id: 1,
-    title: 'Folder Details',
-  },
-  {
-    description:
-      'Choose where documents in this folder will be stored and accessed.',
-    id: 2,
-    title: 'Storage',
-  },
-  {
-    description:
-      'Define metadata fields used for search, filtering, and folder structure.',
-    id: 3,
-    title: 'Fields',
-  },
-  {
-    description:
-      'Decide how document revisions are tracked when files are updated.',
-    id: 4,
-    title: 'Versioning',
-  },
-  {
-    description:
-      'Optionally connect ERP or other systems so data can sync with this folder.',
-    id: 5,
-    title: 'Integrations',
-  },
-  {
-    description:
-      'Review your full folder setup, then apply it to create the repository.',
-    id: 6,
-    title: 'Review',
-  },
-]
-
-const STORAGE_CHIPS: ChipOption[] = [
-  { label: 'EZOFIS Drive', logo: '/favicon.svg', value: 'EZOFIS Drive' },
-  { label: 'OneDrive', logo: OneDriveLogo, value: 'One Drive' },
-  { label: 'Google Drive', logo: GoogleDriveLogo, value: 'Google Drive' },
-]
-
-const FIELD_CHIPS: ChipOption[] = [
-  {
-    icon: 'tabler:sparkles',
-    label: 'Recommend fields',
-    value: 'Suggest the best metadata fields and folder structure for this folder',
-  },
-  {
-    label: 'By supplier / vendor',
-    value: 'Organize by supplier or vendor, then document type',
-  },
-  {
-    label: 'By employee',
-    value: 'Organize by employee, then document type',
-  },
-  {
-    label: 'By document type',
-    value: 'Organize primarily by document type',
-  },
-  {
-    label: 'By customer',
-    value: 'Organize by customer, then document type',
-  },
-]
-
-const VERSIONING_CHIPS: ChipOption[] = [
-  { label: 'Incremental Version', value: 'Incremental Version' },
-  { label: 'Timestamp Version', value: 'Timestamp Version' },
-  { label: 'Replace Existing', value: 'Replace Existing' },
-]
-
-const INTEGRATION_CHIPS: ChipOption[] = [
-  { label: 'No integrations', value: 'None' },
-  { label: 'SAP', value: 'SAP' },
-  { label: 'Oracle ERP', value: 'Oracle ERP' },
-  { label: 'Microsoft Dynamics', value: 'Microsoft Dynamics' },
-  { label: 'QuickBooks', value: 'QuickBooks' },
-  { label: 'Custom API', value: 'Custom API' },
-]
-
-const STORAGE_META: Record<
-  string,
-  { icon?: string; label: string; logo?: string }
-> = {
-  'EZOFIS Drive': { label: 'EZOFIS Drive', logo: '/favicon.svg' },
-  'One Drive': { label: 'OneDrive', logo: OneDriveLogo },
-  'Google Drive': { label: 'Google Drive', logo: GoogleDriveLogo },
-}
-
-const NAME_CHIPS: ChipOption[] = [
-  { label: 'Accounts Payable', value: 'Accounts Payable' },
-  { label: 'Accounts Receivable', value: 'Accounts Receivable' },
-  { label: 'HR Documents', value: 'HR Documents' },
-  { label: 'Legal Contracts', value: 'Legal Contracts' },
-]
-
-const EXAMPLE_PROMPTS: ChipOption[] = [
-  {
-    label: 'HR payslips folder',
-    value: '__prompt__:Create an HR folder for payslips and employee documents',
-  },
-  {
-    label: 'Legal contracts folder',
-    value:
-      '__prompt__:Create a Legal folder for contracts and compliance documents',
-  },
-  {
-    label: 'Accounts payable folder',
-    value:
-      '__prompt__:Create an Accounts Payable folder for invoices, POs, and vendor bills',
-  },
-]
-
-const NAME_QUESTION =
-  'To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup.'
 
 const RECOMMEND_FIELDS_VALUE =
   'Suggest the best metadata fields and folder structure for this folder'
@@ -311,10 +187,10 @@ function TypewriterText({
 
 function AiSparkleIcon({ size = 14 }: { size?: number }) {
   return (
-    <AiBrandIcon
-      className='shrink-0'
+    <Icon
+      className='shrink-0 text-primary-9'
+      name='tabler:sparkles'
       style={{ height: size, width: size }}
-      variant='curved-purple'
     />
   )
 }
@@ -335,11 +211,13 @@ function SparkIconLoading({ size = 14 }: { size?: number }) {
   )
 }
 
-function AiGeneratedBadge({ label = 'AI generated' }: { label?: string }) {
+function AiGeneratedBadge({ label }: { label?: string }) {
+  const { t } = useLingui()
+  const resolvedLabel = label ?? t`AI generated`
   return (
     <span className='inline-flex items-center gap-1 rounded-full border border-primary-4 bg-primary-3 px-2 py-0.5 text-[10px] font-semibold text-primary-9'>
       <AiSparkleIcon size={12} />
-      {label}
+      {resolvedLabel}
     </span>
   )
 }
@@ -353,6 +231,7 @@ function SuggestionChipRow({
   disabled?: boolean
   onSelect: (value: string) => void
 }) {
+  const { t } = useLingui()
   const [expanded, setExpanded] = useState(false)
   const maxVisible = 3
   const hasOverflow = chips.length > maxVisible
@@ -373,11 +252,7 @@ function SuggestionChipRow({
             <img alt='' className='size-3.5 object-contain' src={chip.logo} />
           ) : null}
           {chip.icon ? (
-            chip.icon === 'tabler:sparkles' ? (
-              <AiBrandIcon className='size-3.5' />
-            ) : (
-              <Icon className='size-3.5 text-primary-9' name={chip.icon} />
-            )
+            <Icon className='size-3.5 text-primary-9' name={chip.icon} />
           ) : null}
           {chip.label}
         </button>
@@ -390,7 +265,7 @@ function SuggestionChipRow({
           type='button'
           onClick={() => setExpanded(true)}
         >
-          More (+{hiddenCount})
+          {t`More (+${hiddenCount})`}
         </button>
       ) : null}
 
@@ -401,7 +276,7 @@ function SuggestionChipRow({
           type='button'
           onClick={() => setExpanded(false)}
         >
-          Less
+          {t`Less`}
         </button>
       ) : null}
     </div>
@@ -409,7 +284,16 @@ function SuggestionChipRow({
 }
 
 function StorageBadge({ storage }: { storage: string }) {
-  const meta = STORAGE_META[storage]
+  const { t } = useLingui()
+  const storageMeta: Record<
+    string,
+    { icon?: string; label: string; logo?: string }
+  > = {
+    'EZOFIS Drive': { label: t`EZOFIS Drive`, logo: '/favicon.svg' },
+    'One Drive': { label: t`OneDrive`, logo: OneDriveLogo },
+    'Google Drive': { label: t`Google Drive`, logo: GoogleDriveLogo },
+  }
+  const meta = storageMeta[storage]
   if (!meta) {
     return (
       <span className='inline-flex items-center gap-1.5 rounded-full bg-primary-3 px-2.5 py-1 text-[11px] font-semibold text-primary-9'>
@@ -428,34 +312,29 @@ function StorageBadge({ storage }: { storage: string }) {
   )
 }
 
+/** Same datatype control as AP onboarding column mapping. */
 const FIELD_DATA_TYPES = [
-  'SHORT_TEXT',
-  'LONG_TEXT',
-  'NUMBER',
-  'DATE',
-  'DATE_TIME',
-  'TIME',
-  'CURRENCY_AMOUNT',
-  'SINGLE_SELECT',
-  'MULTI_SELECT',
-  'YES_NO_TOGGLE',
-  'EMAIL',
-  'PHONE_NUMBER',
-  'URL',
-  'FILE_UPLOAD',
+  { icon: 'lucide:type', id: 'SHORT_TEXT', name: 'Short Text' },
+  { icon: 'tabler:align-left', id: 'LONG_TEXT', name: 'Long Text' },
+  { icon: 'tabler:numbers', id: 'NUMBER', name: 'Number' },
+  { icon: 'tabler:calendar', id: 'DATE', name: 'Date' },
+  { icon: 'tabler:clock', id: 'DATE_TIME', name: 'Date & Time' },
+  { icon: 'tabler:currency-dollar', id: 'CURRENCY_AMOUNT', name: 'Currency' },
+  { icon: 'tabler:list', id: 'SINGLE_SELECT', name: 'Dropdown' },
+  { icon: 'tabler:list-check', id: 'MULTI_SELECT', name: 'Multi Select' },
+  { icon: 'tabler:mail', id: 'EMAIL', name: 'Email' },
+  { icon: 'tabler:phone', id: 'PHONE_NUMBER', name: 'Phone' },
+  { icon: 'tabler:link', id: 'URL', name: 'Link' },
 ] as const
 
-const formatDataTypeLabel = (value: string) =>
-  value
+const formatDataTypeLabel = (value: string) => {
+  const match = FIELD_DATA_TYPES.find((type) => type.id === value)
+  if (match) return match.name
+  return value
     .replace(/_/g, ' ')
     .toLowerCase()
     .replace(/\b\w/g, (char) => char.toUpperCase())
-
-const FIELD_TYPE_OPTIONS: Option[] = FIELD_DATA_TYPES.map((type) => ({
-  id: type,
-  name: formatDataTypeLabel(type),
-  value: type,
-}))
+}
 
 function sortFieldsByType(fields: EditableField[]): EditableField[] {
   const folderFields = fields.filter((field) => field.includeInFolderStructure)
@@ -501,44 +380,82 @@ function FieldTypeInlineSelect({
   value: string
   onChange: (dataType: string) => void
 }) {
-  const [showSelect, setShowSelect] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const selected =
-    FIELD_TYPE_OPTIONS.find((option) => option.value === value) ||
-    FIELD_TYPE_OPTIONS[0]
+  const { t } = useLingui()
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const active =
+    FIELD_DATA_TYPES.find((type) => type.id === value) || FIELD_DATA_TYPES[0]
 
-  const keepOpen = showSelect || dropdownOpen
+  useEffect(() => {
+    if (!open) return
 
-  if (!keepOpen) {
-    return (
-      <button
-        className='rounded px-1 py-0.5 text-left text-[12px] text-[var(--gray-10)] transition hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]'
-        type='button'
-        onClick={() => setShowSelect(true)}
-      >
-        {formatDataTypeLabel(value)}
-      </button>
-    )
-  }
+    const handlePointerDown = (event: MouseEvent) => {
+      if (
+        rootRef.current &&
+        !rootRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [open])
 
   return (
-    <div className='max-w-[180px]'>
-      <InputSelect
-        autoOpen
-        classNames={{ input: 'h-7 text-12' }}
-        options={FIELD_TYPE_OPTIONS}
-        width='target'
-        value={selected}
-        onChange={(option) => {
-          if (!option?.value) return
-          onChange(String(option.value))
-        }}
-        onDropdownClose={() => {
-          setDropdownOpen(false)
-          setShowSelect(false)
-        }}
-        onDropdownOpen={() => setDropdownOpen(true)}
-      />
+    <div className='relative shrink-0' ref={rootRef}>
+      <Tooltip content={active.name} position='top'>
+        <button
+          aria-expanded={open}
+          aria-label={t`Field type`}
+          className={cn(
+            'flex size-8 items-center justify-center rounded-[8px] border transition-colors hover:bg-[var(--gray-2)]',
+            open
+              ? 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-12)]'
+              : 'border-transparent text-[var(--gray-9)] hover:text-[var(--gray-11)]',
+          )}
+          title={active.name}
+          type='button'
+          onClick={(event) => {
+            event.stopPropagation()
+            setOpen((prev) => !prev)
+          }}
+        >
+          <Icon className='size-3.5 shrink-0' name={active.icon} />
+        </button>
+      </Tooltip>
+
+      {open ? (
+        <div
+          className='animate-in fade-in zoom-in-95 absolute top-9 right-0 z-50 w-48 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] py-1.5 shadow-xl duration-150'
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className='mb-1 border-b border-[var(--border-default)]/60 px-2.5 pb-1 text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase select-none'>
+            {t`Choose Datatype`}
+          </div>
+          <div className='custom-scrollbar max-h-56 overflow-y-auto'>
+            {FIELD_DATA_TYPES.map((type) => (
+              <button
+                key={type.id}
+                type='button'
+                className={cn(
+                  'flex min-h-8 w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--gray-2)]',
+                  value === type.id
+                    ? 'bg-[var(--gray-2)] text-[var(--gray-13)]'
+                    : 'text-[var(--gray-12)] hover:text-[var(--gray-13)]',
+                )}
+                onClick={() => {
+                  onChange(type.id)
+                  setOpen(false)
+                }}
+              >
+                <Icon className='size-3.5 shrink-0' name={type.icon} />
+                <span className='truncate'>{type.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -550,9 +467,22 @@ function FieldsEditor({
   fields: EditableField[]
   onChange: (fields: EditableField[]) => void
 }) {
+  const { t } = useLingui()
   const [newFieldName, setNewFieldName] = useState('')
+  const [newDataType, setNewDataType] = useState('SHORT_TEXT')
   const [newIsMandatory, setNewIsMandatory] = useState(false)
   const [newIsFolder, setNewIsFolder] = useState(false)
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
+  const nameInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!editingFieldId) return
+    const frame = requestAnimationFrame(() => {
+      nameInputRef.current?.focus()
+      nameInputRef.current?.select()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [editingFieldId])
 
   const folderFields = fields.filter((field) => field.includeInFolderStructure)
   const metadataFields = fields.filter(
@@ -575,6 +505,7 @@ function FieldsEditor({
   }
 
   const removeField = (id: string) => {
+    if (editingFieldId === id) setEditingFieldId(null)
     onChange(fields.filter((field) => field.id !== id))
   }
 
@@ -585,7 +516,7 @@ function FieldsEditor({
       sortFieldsByType([
         ...fields,
         {
-          dataType: 'SHORT_TEXT',
+          dataType: newDataType,
           fieldName: name,
           iconKey: newIsFolder ? 'folder' : 'document',
           id: crypto.randomUUID(),
@@ -596,6 +527,7 @@ function FieldsEditor({
       ]),
     )
     setNewFieldName('')
+    setNewDataType('SHORT_TEXT')
     setNewIsMandatory(false)
     setNewIsFolder(false)
   }
@@ -604,14 +536,12 @@ function FieldsEditor({
 
   const renderAddFieldRow = (key: string) => (
     <div
-      className='flex w-full items-center rounded-[12px] border border-dashed border-[var(--gray-4)] bg-[var(--gray-1)] px-2.5 py-2'
+      className='flex w-full items-center gap-1 rounded-[12px] border border-dashed border-[var(--gray-4)] bg-[var(--gray-1)] py-1.5 pr-2 pl-1'
       key={key}
     >
-      <span className='flex size-8 shrink-0' aria-hidden />
-
       <button
         aria-label={
-          newIsFolder ? 'Change to normal field' : 'Change to folder field'
+          newIsFolder ? t`Change to normal field` : t`Change to folder field`
         }
         className={cn(
           'flex size-8 shrink-0 items-center justify-center rounded-[8px] transition hover:opacity-90',
@@ -620,8 +550,8 @@ function FieldsEditor({
         )}
         title={
           newIsFolder
-            ? 'Folder field — click for normal'
-            : 'Normal field — click for folder'
+            ? t`Folder field — click for normal`
+            : t`Normal field — click for folder`
         }
         type='button'
         onClick={() => {
@@ -635,32 +565,28 @@ function FieldsEditor({
         <Icon className='size-4' name={addFieldVisual.icon} />
       </button>
 
-      <div className='flex min-w-0 flex-1 items-center px-1'>
-        <input
-          className='w-auto min-w-0 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[var(--gray-13)] outline-none placeholder:font-medium placeholder:text-[var(--gray-8)] hover:border-[var(--gray-4)] focus:border-[var(--primary-6)] focus:bg-surface'
-          maxLength={20}
-          placeholder='Field name'
-          size={Math.max(newFieldName.length, 10)}
-          value={newFieldName}
-          onChange={(event) => setNewFieldName(event.target.value.slice(0, 20))}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              addField()
-            }
-          }}
-        />
-        <div className='min-w-0 flex-1' />
-      </div>
+      <input
+        className='min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 text-[13px] font-semibold text-[var(--gray-13)] outline-none placeholder:font-medium placeholder:text-[var(--gray-8)] hover:border-[var(--gray-4)] focus:border-[var(--primary-6)] focus:bg-surface'
+        maxLength={20}
+        placeholder={t`Field name`}
+        value={newFieldName}
+        onChange={(event) => setNewFieldName(event.target.value.slice(0, 20))}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            addField()
+          }
+        }}
+      />
 
       <button
         aria-label={
           newIsMandatory || newIsFolder
-            ? 'Mark as optional'
-            : 'Mark as mandatory'
+            ? t`Mark as optional`
+            : t`Mark as mandatory`
         }
         className={cn(
-          'flex size-8 shrink-0 items-center justify-center rounded text-[16px] font-semibold leading-none transition',
+          'flex size-8 shrink-0 items-center justify-center text-[15px] font-semibold leading-none transition',
           newIsFolder || newIsMandatory
             ? 'text-[var(--red-10)]'
             : 'text-[var(--gray-6)] hover:bg-[var(--red-3)] hover:text-[var(--red-9)]',
@@ -668,10 +594,10 @@ function FieldsEditor({
         disabled={newIsFolder}
         title={
           newIsFolder
-            ? 'Folder fields are mandatory'
+            ? t`Folder fields are mandatory`
             : newIsMandatory
-              ? 'Mandatory — click to make optional'
-              : 'Optional — click to make mandatory'
+              ? t`Mandatory — click to make optional`
+              : t`Optional — click to make mandatory`
         }
         type='button'
         onClick={() => setNewIsMandatory((prev) => !prev)}
@@ -679,8 +605,13 @@ function FieldsEditor({
         *
       </button>
 
+      <FieldTypeInlineSelect
+        value={newDataType}
+        onChange={setNewDataType}
+      />
+
       <button
-        aria-label='Add field'
+        aria-label={t`Add field`}
         className={cn(
           'flex size-8 shrink-0 items-center justify-center rounded-[8px] transition',
           newFieldName.trim()
@@ -688,7 +619,7 @@ function FieldsEditor({
             : 'bg-[var(--gray-3)] text-[var(--gray-8)]',
         )}
         disabled={!newFieldName.trim()}
-        title='Add field'
+        title={t`Add field`}
         type='button'
         onClick={addField}
       >
@@ -704,6 +635,7 @@ function FieldsEditor({
     const visual = fieldVisual(field.includeInFolderStructure)
     const showTree = options?.showTree ?? false
     const depth = options?.depth ?? 0
+    const isEditingName = editingFieldId === field.id
 
     return (
       <div
@@ -714,13 +646,13 @@ function FieldsEditor({
           <FolderTreeLines depth={depth} isLast={options?.isLast ?? true} />
         ) : null}
         <SortableItem
-          className='relative min-w-0 flex-1 items-center rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-2'
+          className='relative min-w-0 flex-1 items-center gap-1 rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-1)] py-1.5 pr-2 pl-1'
           handlerClassName='size-8 text-[var(--gray-9)]'
           handlerPosition='before'
           id={field.id}
           trailing={
             <button
-              aria-label={`Remove ${field.fieldName}`}
+              aria-label={t`Remove ${field.fieldName}`}
               className='flex size-8 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition hover:bg-[var(--red-3)] hover:text-[var(--red-11)]'
               type='button'
               onClick={() => removeField(field.id)}
@@ -732,16 +664,16 @@ function FieldsEditor({
           {field.aiGenerated ? (
             <span
               className='absolute -top-1.5 -right-1.5 z-10 flex size-5 items-center justify-center rounded-full border border-primary-4 bg-primary-2 text-primary-9 shadow-sm'
-              title='Generated by AI'
+              title={t`Generated by AI`}
             >
-              <AiBrandIcon className='size-3' />
+              <Icon className='size-3' name='tabler:sparkles' />
             </span>
           ) : null}
           <button
             aria-label={
               field.includeInFolderStructure
-                ? 'Change to normal field'
-                : 'Change to folder field'
+                ? t`Change to normal field`
+                : t`Change to folder field`
             }
             className={cn(
               'flex size-8 shrink-0 items-center justify-center rounded-[8px] transition hover:opacity-90',
@@ -750,8 +682,8 @@ function FieldsEditor({
             )}
             title={
               field.includeInFolderStructure
-                ? 'Folder field — click for normal'
-                : 'Normal field — click for folder'
+                ? t`Folder field — click for normal`
+                : t`Normal field — click for folder`
             }
             type='button'
             onClick={() =>
@@ -763,49 +695,71 @@ function FieldsEditor({
             <Icon className='size-4' name={visual.icon} />
           </button>
 
-          <div className='min-w-0 flex-1 space-y-0.5 px-1'>
-            <div className='flex items-center gap-0.5'>
+          <div className='flex min-w-0 flex-1 items-center gap-0'>
+            {isEditingName ? (
               <input
-                className='w-auto min-w-0 max-w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold text-[var(--gray-13)] outline-none hover:border-[var(--gray-4)] focus:border-[var(--primary-6)] focus:bg-surface'
+                ref={nameInputRef}
+                className='w-auto min-w-[4ch] max-w-full rounded-md border border-[var(--primary-6)] bg-surface px-1 py-1 text-[13px] font-semibold text-[var(--gray-13)] outline-none'
                 maxLength={20}
                 size={Math.max(field.fieldName.length, 1)}
                 value={field.fieldName}
+                onBlur={() => setEditingFieldId(null)}
                 onChange={(event) =>
                   updateField(field.id, {
                     fieldName: event.target.value.slice(0, 20),
                   })
                 }
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === 'Escape') {
+                    event.preventDefault()
+                    setEditingFieldId(null)
+                  }
+                }}
               />
+            ) : (
               <button
-                aria-label={
-                  field.isMandatory ? 'Mark as optional' : 'Mark as mandatory'
-                }
-                className={cn(
-                  'shrink-0 select-none text-[13px] font-semibold leading-none transition',
-                  field.isMandatory
-                    ? 'text-[var(--red-10)]'
-                    : 'text-[var(--gray-6)] hover:text-[var(--red-9)]',
-                )}
-                title={
-                  field.isMandatory
-                    ? 'Mandatory — click to make optional'
-                    : 'Optional — click to make mandatory'
-                }
+                className='max-w-full truncate rounded-md px-1 py-1 text-left text-[13px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-3)]'
                 type='button'
-                onClick={() =>
-                  updateField(field.id, {
-                    isMandatory: !field.isMandatory,
-                  })
-                }
+                onClick={() => setEditingFieldId(field.id)}
               >
-                *
+                {field.fieldName || t`Untitled`}
               </button>
-            </div>
-            <FieldTypeInlineSelect
-              value={field.dataType}
-              onChange={(dataType) => updateField(field.id, { dataType })}
-            />
+            )}
+            <button
+              aria-label={
+                field.isMandatory ? t`Mark as optional` : t`Mark as mandatory`
+              }
+              className={cn(
+                'flex h-7 w-3.5 shrink-0 items-center justify-center text-[15px] font-semibold leading-none transition',
+                field.isMandatory
+                  ? 'text-[var(--red-10)]'
+                  : 'text-[var(--gray-6)] hover:text-[var(--red-9)]',
+              )}
+              title={
+                field.isMandatory
+                  ? t`Mandatory — click to make optional`
+                  : t`Optional — click to make mandatory`
+              }
+              type='button'
+              onMouseDown={(event) => {
+                // Keep edit mode from stealing focus when toggling mandatory.
+                event.preventDefault()
+              }}
+              onClick={() =>
+                updateField(field.id, {
+                  isMandatory: !field.isMandatory,
+                })
+              }
+            >
+              *
+            </button>
+            <div className='min-w-0 flex-1' />
           </div>
+
+          <FieldTypeInlineSelect
+            value={field.dataType}
+            onChange={(dataType) => updateField(field.id, { dataType })}
+          />
         </SortableItem>
       </div>
     )
@@ -850,23 +804,153 @@ export default function AiFolderBuilder({
   onBack,
   onApply,
 }: AiFolderBuilderProps) {
+  const { t } = useLingui()
   const initialGreetingId = useMemo(() => crypto.randomUUID(), [])
+
+  const builderSteps = useMemo(
+    () => [
+      {
+        description: t`Set the folder name and let AI draft a clear business description for this repository.`,
+        id: 1 as BuilderStepId,
+        title: t`Folder Details`,
+      },
+      {
+        description: t`Choose where documents in this folder will be stored and accessed.`,
+        id: 2 as BuilderStepId,
+        title: t`Storage`,
+      },
+      {
+        description: t`Define metadata fields used for search, filtering, and folder structure.`,
+        id: 3 as BuilderStepId,
+        title: t`Fields`,
+      },
+      {
+        description: t`Decide how document revisions are tracked when files are updated.`,
+        id: 4 as BuilderStepId,
+        title: t`Versioning`,
+      },
+      {
+        description: t`Optionally connect ERP or other systems so data can sync with this folder.`,
+        id: 5 as BuilderStepId,
+        title: t`Integrations`,
+      },
+      {
+        description: t`Review your full folder setup, then apply it to create the repository.`,
+        id: 6 as BuilderStepId,
+        title: t`Review`,
+      },
+    ],
+    [t],
+  )
+
+  const storageChips = useMemo<ChipOption[]>(
+    () => [
+      { label: t`EZOFIS Drive`, logo: '/favicon.svg', value: 'EZOFIS Drive' },
+      { label: t`OneDrive`, logo: OneDriveLogo, value: 'One Drive' },
+      { label: t`Google Drive`, logo: GoogleDriveLogo, value: 'Google Drive' },
+    ],
+    [t],
+  )
+
+  const fieldChips = useMemo<ChipOption[]>(
+    () => [
+      {
+        icon: 'tabler:sparkles',
+        label: t`Recommend fields`,
+        value: RECOMMEND_FIELDS_VALUE,
+      },
+      {
+        label: t`By supplier / vendor`,
+        value: 'Organize by supplier or vendor, then document type',
+      },
+      {
+        label: t`By employee`,
+        value: 'Organize by employee, then document type',
+      },
+      {
+        label: t`By document type`,
+        value: 'Organize primarily by document type',
+      },
+      {
+        label: t`By customer`,
+        value: 'Organize by customer, then document type',
+      },
+    ],
+    [t],
+  )
+
+  const versioningChips = useMemo<ChipOption[]>(
+    () => [
+      { label: t`Incremental Version`, value: 'Incremental Version' },
+      { label: t`Timestamp Version`, value: 'Timestamp Version' },
+      { label: t`Replace Existing`, value: 'Replace Existing' },
+    ],
+    [t],
+  )
+
+  const integrationChips = useMemo<ChipOption[]>(
+    () => [
+      { label: t`No integrations`, value: 'None' },
+      { label: 'SAP', value: 'SAP' },
+      { label: t`Oracle ERP`, value: 'Oracle ERP' },
+      { label: t`Microsoft Dynamics`, value: 'Microsoft Dynamics' },
+      { label: 'QuickBooks', value: 'QuickBooks' },
+      { label: t`Custom API`, value: 'Custom API' },
+    ],
+    [t],
+  )
+
+  const storageMeta = useMemo(
+    () => ({
+      'EZOFIS Drive': { label: t`EZOFIS Drive`, logo: '/favicon.svg' },
+      'One Drive': { label: t`OneDrive`, logo: OneDriveLogo },
+      'Google Drive': { label: t`Google Drive`, logo: GoogleDriveLogo },
+    }),
+    [t],
+  )
+
+  const nameChips = useMemo<ChipOption[]>(
+    () => [
+      { label: t`Accounts Payable`, value: 'Accounts Payable' },
+      { label: t`Accounts Receivable`, value: 'Accounts Receivable' },
+      { label: t`HR Documents`, value: 'HR Documents' },
+      { label: t`Legal Contracts`, value: 'Legal Contracts' },
+    ],
+    [t],
+  )
+
+  const examplePrompts = useMemo<ChipOption[]>(
+    () => [
+      {
+        label: t`HR payslips folder`,
+        value: '__prompt__:Create an HR folder for payslips and employee documents',
+      },
+      {
+        label: t`Legal contracts folder`,
+        value:
+          '__prompt__:Create a Legal folder for contracts and compliance documents',
+      },
+      {
+        label: t`Accounts payable folder`,
+        value:
+          '__prompt__:Create an Accounts Payable folder for invoices, POs, and vendor bills',
+      },
+    ],
+    [t],
+  )
+
+  const nameQuestion = t`To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup.`
+
   const [phase, setPhase] = useState<ChatPhase>('name')
   const [activeStep, setActiveStep] = useState<BuilderStepId>(1)
   const [input, setInput] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [isSavingFolder, setIsSavingFolder] = useState(false)
   const [draft, setDraft] = useState<DraftAnswers>(emptyDraft)
   const [editableFields, setEditableFields] = useState<EditableField[]>([])
-  const [messages, setMessages] = useState<ChatMessage[]>(() => [
-    {
-      chips: [...NAME_CHIPS, ...EXAMPLE_PROMPTS],
-      id: initialGreetingId,
-      role: 'assistant',
-      stepId: 1,
-      text: NAME_QUESTION,
-    },
-  ])
-  const [typingId, setTypingId] = useState<string | null>(initialGreetingId)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [typingId, setTypingId] = useState<string | null>(null)
+  const greetingInitialized = useRef(false)
   const [editingFromReview, setEditingFromReview] = useState(false)
   const [aiDescriptionGenerated, setAiDescriptionGenerated] = useState(false)
   const [aiFieldsGenerated, setAiFieldsGenerated] = useState(false)
@@ -876,11 +960,26 @@ export default function AiFolderBuilder({
   )
 
   useEffect(() => {
+    if (greetingInitialized.current) return
+    greetingInitialized.current = true
+    setMessages([
+      {
+        chips: [...nameChips, ...examplePrompts],
+        id: initialGreetingId,
+        role: 'assistant',
+        stepId: 1,
+        text: nameQuestion,
+      },
+    ])
+    setTypingId(initialGreetingId)
+  }, [examplePrompts, initialGreetingId, nameChips, nameQuestion])
+
+  useEffect(() => {
     const node = listRef.current
     if (!node) return
     if (editingFromReview) return
     node.scrollTop = node.scrollHeight
-  }, [messages, isSending, typingId, activeStep, phase, editableFields, editingFromReview])
+  }, [messages, isSending, typingId, activeStep, phase, editingFromReview])
 
   const completedSteps = useMemo(() => {
     const done = new Set<BuilderStepId>()
@@ -994,8 +1093,8 @@ export default function AiFolderBuilder({
 
       pushAssistant(
         description
-          ? `Description ready: “${description}” Review it below, then continue to Storage.`
-          : `Folder “${folderName}” is ready. Continue to choose a storage provider.`,
+          ? t`Description ready: “${description}” Review it below, then continue to Storage.`
+          : t`Folder “${folderName}” is ready. Continue to choose a storage provider.`,
         undefined,
         'details_ready',
         1,
@@ -1003,18 +1102,18 @@ export default function AiFolderBuilder({
 
       if (suggestion.source === 'local') {
         showToast({
-          message: 'Gemini unavailable — used local description fallback.',
+          message: t`Gemini unavailable — used local description fallback.`,
           variant: 'warning',
         })
       }
     } catch (error: any) {
       const message =
         error?.message ||
-        'Could not generate description. You can retry with another folder name.'
+        t`Could not generate description. You can retry with another folder name.`
       showToast({ message, variant: 'error' })
       pushAssistant(
         `${message}`,
-        [...NAME_CHIPS, ...EXAMPLE_PROMPTS],
+        [...nameChips, ...examplePrompts],
         'name',
         1,
       )
@@ -1063,7 +1162,7 @@ export default function AiFolderBuilder({
 
       pushAssistant(
         suggestion.reply ||
-          `Recommended ${fields.length} fields for “${answers.folderName}”. Adjust them below, then continue.`,
+          t`Recommended ${fields.length} fields for “${answers.folderName}”. Adjust them below, then continue.`,
         undefined,
         'fields_ready',
         3,
@@ -1071,16 +1170,16 @@ export default function AiFolderBuilder({
 
       if (suggestion.source === 'local') {
         showToast({
-          message: 'Gemini unavailable — used local fields fallback.',
+          message: t`Gemini unavailable — used local fields fallback.`,
           variant: 'warning',
         })
       }
     } catch (error: any) {
       const message =
         error?.message ||
-        'Could not generate fields. Try Recommend fields again.'
+        t`Could not generate fields. Try Recommend fields again.`
       showToast({ message, variant: 'error' })
-      pushAssistant(message, FIELD_CHIPS, 'fields', 3)
+      pushAssistant(message, fieldChips, 'fields', 3)
     } finally {
       setIsSending(false)
     }
@@ -1110,25 +1209,25 @@ export default function AiFolderBuilder({
       setAiFieldsGenerated(suggestion.fields.length > 0)
       pushAssistant(
         suggestion.reply ||
-          `Configuration for “${suggestion.folderName}” is ready. Review each step and continue through the remaining options.`,
+          t`Configuration for “${suggestion.folderName}” is ready. Review each step and continue through the remaining options.`,
         undefined,
         'details_ready',
         1,
       )
       if (suggestion.source === 'local') {
         showToast({
-          message: 'Gemini unavailable — used local folder setup fallback.',
+          message: t`Gemini unavailable — used local folder setup fallback.`,
           variant: 'warning',
         })
       }
     } catch (error: any) {
       const message =
         error?.message ||
-        'Could not generate folder configuration. Try again.'
+        t`Could not generate folder configuration. Try again.`
       showToast({ message, variant: 'error' })
       pushAssistant(
         message,
-        [...NAME_CHIPS, ...EXAMPLE_PROMPTS],
+        [...nameChips, ...examplePrompts],
         'name',
         1,
       )
@@ -1144,8 +1243,8 @@ export default function AiFolderBuilder({
       return
     }
     pushAssistant(
-      'Select the storage provider where documents for this folder should be stored.',
-      STORAGE_CHIPS,
+      t`Select the storage provider where documents for this folder should be stored.`,
+      storageChips,
       'storage',
       2,
     )
@@ -1158,8 +1257,8 @@ export default function AiFolderBuilder({
       return
     }
     pushAssistant(
-      'Which versioning strategy should apply when the same file is uploaded again?',
-      VERSIONING_CHIPS,
+      t`Which versioning strategy should apply when the same file is uploaded again?`,
+      versioningChips,
       'versioning',
       4,
     )
@@ -1183,8 +1282,8 @@ export default function AiFolderBuilder({
       setPhase('details_ready')
     } else if (stepId === 2) {
       pushAssistant(
-        'Update the storage provider for this folder.',
-        STORAGE_CHIPS,
+        t`Update the storage provider for this folder.`,
+        storageChips,
         'storage',
         2,
       )
@@ -1193,23 +1292,23 @@ export default function AiFolderBuilder({
         setPhase('fields_ready')
       } else {
         pushAssistant(
-          'How should documents be organized? Choose Recommend fields or another option.',
-          FIELD_CHIPS,
+          t`How should documents be organized? Choose Recommend fields or another option.`,
+          fieldChips,
           'fields',
           3,
         )
       }
     } else if (stepId === 4) {
       pushAssistant(
-        'Update the versioning strategy for this folder.',
-        VERSIONING_CHIPS,
+        t`Update the versioning strategy for this folder.`,
+        versioningChips,
         'versioning',
         4,
       )
     } else {
       pushAssistant(
-        'Update the integration preference for this folder.',
-        INTEGRATION_CHIPS,
+        t`Update the integration preference for this folder.`,
+        integrationChips,
         'integrations',
         5,
       )
@@ -1256,7 +1355,7 @@ export default function AiFolderBuilder({
       setInput('')
       appendUser(folderName)
       pushAssistant(
-        `Folder name recorded as “${folderName}”. Generating a business description now…`,
+        t`Folder name recorded as “${folderName}”. Generating a business description now…`,
         undefined,
         'name',
         1,
@@ -1275,8 +1374,8 @@ export default function AiFolderBuilder({
         return
       }
       pushAssistant(
-        `${STORAGE_META[storage]?.label || storage} selected. How should documents be organized? Choose Recommend fields to generate a starter set.`,
-        FIELD_CHIPS,
+        t`${storageMeta[storage]?.label || storage} selected. How should documents be organized? Choose Recommend fields to generate a starter set.`,
+        fieldChips,
         'fields',
         3,
       )
@@ -1289,11 +1388,11 @@ export default function AiFolderBuilder({
       setInput('')
       appendUser(
         structure === RECOMMEND_FIELDS_VALUE
-          ? 'Recommend fields'
+          ? t`Recommend fields`
           : structure,
       )
       pushAssistant(
-        'Generating recommended fields for this folder…',
+        t`Generating recommended fields for this folder…`,
         undefined,
         'fields',
         3,
@@ -1318,8 +1417,8 @@ export default function AiFolderBuilder({
         return
       }
       pushAssistant(
-        'Versioning strategy saved. Do you require an ERP or system integration, or should integrations be configured later?',
-        INTEGRATION_CHIPS,
+        t`Versioning strategy saved. Do you require an ERP or system integration, or should integrations be configured later?`,
+        integrationChips,
         'integrations',
         5,
       )
@@ -1336,11 +1435,11 @@ export default function AiFolderBuilder({
   }
 
   const placeholderByPhase: Partial<Record<ChatPhase, string>> = {
-    name: 'Enter folder name…',
-    storage: 'Or type a storage provider…',
-    fields: 'Describe structure or fields…',
-    versioning: 'Or type a versioning strategy…',
-    integrations: 'Or type an integration…',
+    name: t`Enter folder name…`,
+    storage: t`Or type a storage provider…`,
+    fields: t`Describe structure or fields…`,
+    versioning: t`Or type a versioning strategy…`,
+    integrations: t`Or type an integration…`,
   }
 
   const canSend =
@@ -1384,7 +1483,7 @@ export default function AiFolderBuilder({
           className='min-h-[52px] max-h-28 w-full resize-none rounded-[14px] bg-transparent py-3 pl-3.5 pr-12 text-[13px] text-[var(--gray-13)] outline-none'
           disabled={isSending}
           placeholder={
-            placeholderByPhase[phase] || 'Type your answer…'
+            placeholderByPhase[phase] || t`Type your answer…`
           }
           rows={2}
           value={input}
@@ -1398,7 +1497,7 @@ export default function AiFolderBuilder({
         />
         <div className='absolute right-2 bottom-2'>
           <button
-            aria-label='Send'
+            aria-label={t`Send`}
             className='flex size-8 items-center justify-center rounded-full bg-[var(--primary-9)] text-white transition hover:bg-[var(--primary-10)] disabled:opacity-40'
             disabled={!canSend}
             type='submit'
@@ -1444,17 +1543,17 @@ export default function AiFolderBuilder({
           <div className={cn('flex items-center gap-2 text-[12px] font-medium text-primary-9', iconGutter)}>
             <SparkIconLoading size={16} />
             {stepId === 1
-              ? 'Generating description…'
+              ? t`Generating description…`
               : stepId === 3
-                ? 'Generating recommended fields…'
-                : 'Working…'}
+                ? t`Generating recommended fields…`
+                : t`Working…`}
           </div>
         ) : null}
 
         {phase === 'details_ready' && draft.folderName ? (
           <div className={cn('space-y-3 rounded-[12px] border border-primary-4 bg-primary-2 p-4', iconGutter)}>
             <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
-              Folder details
+              {t`Folder details`}
             </p>
             <div className='space-y-2'>
               <input
@@ -1482,9 +1581,9 @@ export default function AiFolderBuilder({
                 {aiDescriptionGenerated ? (
                   <span
                     className='mt-1.5 inline-flex shrink-0 text-primary-9'
-                    title='Generated by AI'
+                    title={t`Generated by AI`}
                   >
-                    <AiBrandIcon className='size-3.5' />
+                    <Icon className='size-3.5' name='tabler:sparkles' />
                   </span>
                 ) : null}
               </div>
@@ -1520,7 +1619,7 @@ export default function AiFolderBuilder({
               icon={
                 editingFromReview ? 'lucide:check' : 'lucide:arrow-right'
               }
-              label={editingFromReview ? 'Done' : 'Continue'}
+              label={editingFromReview ? t`Done` : t`Continue`}
               onClick={continueFromDetails}
             />
           </div>
@@ -1531,13 +1630,13 @@ export default function AiFolderBuilder({
             {editingFromReview ? (
               <Button
                 color='gray'
-                label='Regenerate'
+                label={t`Regenerate`}
                 variant='subtle'
                 onClick={() => {
                   setPhase('fields')
                   pushAssistant(
-                    'How should documents be organized? Choose Recommend fields or another option.',
-                    FIELD_CHIPS,
+                    t`How should documents be organized? Choose Recommend fields or another option.`,
+                    fieldChips,
                     'fields',
                     3,
                   )
@@ -1550,7 +1649,7 @@ export default function AiFolderBuilder({
               icon={
                 editingFromReview ? 'lucide:check' : 'lucide:arrow-right'
               }
-              label={editingFromReview ? 'Done' : 'Continue'}
+              label={editingFromReview ? t`Done` : t`Continue`}
               onClick={continueFromFields}
             />
           </div>
@@ -1571,7 +1670,7 @@ export default function AiFolderBuilder({
           <div className={cn('flex justify-end', iconGutter)}>
             <Button
               color='gray'
-              label='Back to review'
+              label={t`Back to review`}
               variant='subtle'
               onClick={goToReview}
             />
@@ -1585,18 +1684,18 @@ export default function AiFolderBuilder({
     1: (
       <div className='space-y-1.5'>
         <p className='text-[13px] font-semibold text-[var(--gray-13)]'>
-          {draft.folderName || 'Untitled folder'}
+          {draft.folderName || t`Untitled folder`}
         </p>
         <div className='flex items-start gap-1.5'>
           <p className='min-w-0 flex-1 text-[12px] text-[var(--gray-10)]'>
-            {draft.description.trim() || 'Description pending'}
+            {draft.description.trim() || t`Description pending`}
           </p>
           {aiDescriptionGenerated ? (
             <span
               className='mt-0.5 inline-flex shrink-0 text-primary-9'
-              title='Generated by AI'
+              title={t`Generated by AI`}
             >
-              <AiBrandIcon className='size-3.5' />
+              <Icon className='size-3.5' name='tabler:sparkles' />
             </span>
           ) : null}
         </div>
@@ -1606,8 +1705,8 @@ export default function AiFolderBuilder({
     3: (
       <p className='text-[12px] text-[var(--gray-11)]'>
         {editableFields.length
-          ? `${editableFields.length} fields configured`
-          : 'Fields pending'}
+          ? t`${editableFields.length} fields configured`
+          : t`Fields pending`}
       </p>
     ),
     4: (
@@ -1618,7 +1717,7 @@ export default function AiFolderBuilder({
     5: (
       <span className='rounded-full bg-[var(--gray-2)] px-2.5 py-1 text-[11px] font-medium text-[var(--gray-11)]'>
         {draft.integrations === 'None' || !draft.integrations
-          ? 'No integrations'
+          ? t`No integrations`
           : draft.integrations}
       </span>
     ),
@@ -1627,7 +1726,7 @@ export default function AiFolderBuilder({
         <div className='flex items-start justify-between gap-3'>
           <div className='min-w-0 flex-1'>
             <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
-              Folder details
+              {t`Folder details`}
             </p>
             <p className='mt-1.5 text-[14px] font-semibold text-[var(--gray-13)]'>
               {draft.folderName}
@@ -1639,9 +1738,9 @@ export default function AiFolderBuilder({
               {aiDescriptionGenerated ? (
                 <span
                   className='mt-0.5 inline-flex shrink-0 text-primary-9'
-                  title='Generated by AI'
+                  title={t`Generated by AI`}
                 >
-                  <AiBrandIcon className='size-3.5' />
+                  <Icon className='size-3.5' name='tabler:sparkles' />
                 </span>
               ) : null}
             </div>
@@ -1649,7 +1748,7 @@ export default function AiFolderBuilder({
           <Button
             color='gray'
             icon='lucide:pencil'
-            label='Edit'
+            label={t`Edit`}
             size='sm'
             variant='subtle'
             onClick={() => editFromReview(1)}
@@ -1659,7 +1758,7 @@ export default function AiFolderBuilder({
         <div className='flex items-start justify-between gap-3 border-t border-[var(--gray-3)] pt-4'>
           <div>
             <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
-              Storage
+              {t`Storage`}
             </p>
             <div className='mt-2'>
               <StorageBadge storage={draft.storage} />
@@ -1668,7 +1767,7 @@ export default function AiFolderBuilder({
           <Button
             color='gray'
             icon='lucide:pencil'
-            label='Edit'
+            label={t`Edit`}
             size='sm'
             variant='subtle'
             onClick={() => editFromReview(2)}
@@ -1679,10 +1778,10 @@ export default function AiFolderBuilder({
           <div className='min-w-0 flex-1'>
             <div className='flex flex-wrap items-center gap-2'>
               <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
-                Fields ({editableFields.length})
+                {t`Fields (${editableFields.length})`}
               </p>
               {aiFieldsGenerated ? (
-                <AiGeneratedBadge label='AI fields' />
+                <AiGeneratedBadge label={t`AI fields`} />
               ) : null}
             </div>
             <div className='mt-2 space-y-3'>
@@ -1713,10 +1812,10 @@ export default function AiFolderBuilder({
                             </div>
                             <div className='min-w-0 flex-1'>
                               <div className='flex items-center gap-1.5'>
-                                <p className='min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--gray-13)]'>
+                                <p className='min-w-0 truncate text-[13px] font-semibold text-[var(--gray-13)]'>
                                   {field.fieldName}
                                   {field.isMandatory ? (
-                                    <span className='ml-1 text-[var(--red-10)]'>
+                                    <span className='pl-0.5 text-[var(--red-10)]'>
                                       *
                                     </span>
                                   ) : null}
@@ -1724,9 +1823,12 @@ export default function AiFolderBuilder({
                                 {field.aiGenerated ? (
                                   <span
                                     className='inline-flex shrink-0 text-primary-9'
-                                    title='Generated by AI'
+                                    title={t`Generated by AI`}
                                   >
-                                    <AiBrandIcon className='size-3.5' />
+                                    <Icon
+                                      className='size-3.5'
+                                      name='tabler:sparkles'
+                                    />
                                   </span>
                                 ) : null}
                               </div>
@@ -1762,10 +1864,10 @@ export default function AiFolderBuilder({
                         </div>
                         <div className='min-w-0 flex-1'>
                           <div className='flex items-center gap-1.5'>
-                            <p className='min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--gray-13)]'>
+                            <p className='min-w-0 truncate text-[13px] font-semibold text-[var(--gray-13)]'>
                               {field.fieldName}
                               {field.isMandatory ? (
-                                <span className='ml-1 text-[var(--red-10)]'>
+                                <span className='pl-0.5 text-[var(--red-10)]'>
                                   *
                                 </span>
                               ) : null}
@@ -1773,9 +1875,12 @@ export default function AiFolderBuilder({
                             {field.aiGenerated ? (
                               <span
                                 className='inline-flex shrink-0 text-primary-9'
-                                title='Generated by AI'
+                                title={t`Generated by AI`}
                               >
-                                <AiBrandIcon className='size-3.5' variant='curved-purple' />
+                                <Icon
+                                  className='size-3.5'
+                                  name='tabler:sparkles'
+                                />
                               </span>
                             ) : null}
                           </div>
@@ -1792,7 +1897,7 @@ export default function AiFolderBuilder({
           <Button
             color='gray'
             icon='lucide:pencil'
-            label='Edit'
+            label={t`Edit`}
             size='sm'
             variant='subtle'
             onClick={() => editFromReview(3)}
@@ -1802,7 +1907,7 @@ export default function AiFolderBuilder({
         <div className='flex items-start justify-between gap-3 border-t border-[var(--gray-3)] pt-4'>
           <div>
             <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
-              Versioning
+              {t`Versioning`}
             </p>
             <p className='mt-1.5 text-[13px] font-medium text-[var(--gray-12)]'>
               {draft.versioning}
@@ -1811,7 +1916,7 @@ export default function AiFolderBuilder({
           <Button
             color='gray'
             icon='lucide:pencil'
-            label='Edit'
+            label={t`Edit`}
             size='sm'
             variant='subtle'
             onClick={() => editFromReview(4)}
@@ -1821,18 +1926,18 @@ export default function AiFolderBuilder({
         <div className='flex items-start justify-between gap-3 border-t border-[var(--gray-3)] pt-4'>
           <div>
             <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
-              Integrations
+              {t`Integrations`}
             </p>
             <p className='mt-1.5 text-[13px] font-medium text-[var(--gray-12)]'>
               {draft.integrations === 'None' || !draft.integrations
-                ? 'No integrations'
+                ? t`No integrations`
                 : draft.integrations}
             </p>
           </div>
           <Button
             color='gray'
             icon='lucide:pencil'
-            label='Edit'
+            label={t`Edit`}
             size='sm'
             variant='subtle'
             onClick={() => editFromReview(5)}
@@ -1847,7 +1952,7 @@ export default function AiFolderBuilder({
       <div className='flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border-default)] bg-surface px-4 py-3'>
         <div className='flex min-w-0 items-center gap-2'>
           <IconButton
-            ariaLabel='Back'
+            ariaLabel={t`Back`}
             color='gray'
             icon='lucide:arrow-left'
             size='md'
@@ -1856,34 +1961,41 @@ export default function AiFolderBuilder({
           />
           <div className='min-w-0'>
             <h1 className='mb-0.5 truncate text-15 font-semibold text-[var(--gray-13)]'>
-              AI Folder Builder
+              {t`AI Folder Builder`}
             </h1>
             <p className='truncate text-12 text-[var(--gray-9)]'>
-              Complete each stage, then continue
+              {t`Complete each stage, then continue`}
             </p>
           </div>
         </div>
         <Button
           color='primary'
-          disabled={!canApply}
-          icon='lucide:check'
-          label='Use this setup'
+          disabled={!canApply || isSavingFolder}
+          icon='lucide:save'
+          label={isSavingFolder ? t`Saving…` : t`Save Folder`}
           onClick={() => {
-            onApply({
-              description: draft.description.trim(),
-              fields: stripEditableIds(editableFields),
-              folderName: draft.folderName,
-              integrations: draft.integrations || 'None',
-              storage: draft.storage || 'EZOFIS Drive',
-              versioning: draft.versioning || 'Incremental Version',
-            })
+            void (async () => {
+              setIsSavingFolder(true)
+              try {
+                await onApply({
+                  description: draft.description.trim(),
+                  fields: stripEditableIds(editableFields),
+                  folderName: draft.folderName,
+                  integrations: draft.integrations || 'None',
+                  storage: draft.storage || 'EZOFIS Drive',
+                  versioning: draft.versioning || 'Incremental Version',
+                })
+              } finally {
+                setIsSavingFolder(false)
+              }
+            })()
           }}
         />
       </div>
 
       <div className='min-h-0 flex-1 overflow-y-auto' ref={listRef}>
         <div className='mx-auto flex w-full max-w-[720px] flex-col px-4 py-8 sm:px-6'>
-          {BUILDER_STEPS.map((item, index) => {
+          {builderSteps.map((item, index) => {
             const showAllFlow = phase === 'ready' || editingFromReview
             const visible = showAllFlow
               ? true
@@ -1891,7 +2003,7 @@ export default function AiFolderBuilder({
             if (!visible) return null
 
             const status = stepStatus(item.id)
-            const nextStep = BUILDER_STEPS[index + 1]
+            const nextStep = builderSteps[index + 1]
             const nextVisible = nextStep
               ? showAllFlow || nextStep.id <= unlockedStep
               : false
@@ -1908,7 +2020,7 @@ export default function AiFolderBuilder({
               }
             }
 
-            const prevStep = BUILDER_STEPS[index - 1]
+            const prevStep = builderSteps[index - 1]
             const prevVisible =
               index > 0 &&
               (showAllFlow || (prevStep && prevStep.id <= unlockedStep))

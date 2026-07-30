@@ -1,4 +1,4 @@
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useViewportSize } from '@mantine/hooks'
 import { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
@@ -144,6 +144,7 @@ interface InvoiceTablePanelProps {
 }
 
 const InvoiceTablePanel = ({ activeCard, onClose }: InvoiceTablePanelProps) => {
+  const { t } = useLingui()
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredInvoices = useMemo(() => {
@@ -199,7 +200,7 @@ const InvoiceTablePanel = ({ activeCard, onClose }: InvoiceTablePanelProps) => {
         </div>
         <button
           className='flex size-7 items-center justify-center rounded-lg text-gray-10 transition-all hover:bg-gray-3 hover:text-gray-13 active:scale-95'
-          title='Close panel'
+          title={t`Close panel`}
           onClick={onClose}
         >
           <Icon className='size-4' name='lucide:x' />
@@ -215,7 +216,7 @@ const InvoiceTablePanel = ({ activeCard, onClose }: InvoiceTablePanelProps) => {
           />
           <input
             className='w-full rounded-lg border border-gray-3 bg-surface py-1.5 pr-4 pl-9 text-12 shadow-sm transition-all outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary'
-            placeholder='Search invoice, supplier, PO...'
+            placeholder={t`Search invoice, supplier, PO...`}
             type='text'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

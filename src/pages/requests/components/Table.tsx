@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import type { Column } from '@/components/base/data-table/types'
 import type { Request } from '@/types/request'
 import { getRequestGroupListQueryOptions } from '@/api/local/requests/queries'
@@ -17,108 +18,114 @@ import { formatDatetime } from '@/utils/dayjs'
 
 const Table = () => {
   // const openRequest = requestStore((state) => state.openRequest)
+  const { t } = useLingui()
 
-  const columns: Column[] = [
-    {
-      id: 'name',
-      label: 'Name',
-      size: 160,
-      renderCell: (row) => (
-        <span
-          // onClick={openRequest}
-          className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
-        >
-          {String(row.name)}
-        </span>
-      ),
-    },
-    {
-      enableGrouping: true,
-      id: 'status',
-      label: 'Status',
-      size: 140,
-      renderCell: (row) => (
-        <RequestStatusBadge status={row.status as Request['status']} />
-      ),
-    },
-    { id: 'vendor', label: 'Vendor', size: 200 },
-    {
-      id: 'amount',
-      label: 'Amount',
-      size: 140,
-      renderCell: (row) => `$${Number(row.amount).toFixed(2)}`,
-    },
-    {
-      enableGrouping: true,
-      id: 'documentType',
-      label: 'Document Type',
-      size: 200,
-    },
-    { id: 'documentNumber', label: 'Document Number', size: 240 },
-    {
-      id: 'documentDate',
-      label: 'Document Date',
-      size: 200,
-      renderCell: (row) => formatDatetime(row.documentDate as string),
-    },
-    {
-      id: 'createdBy',
-      label: 'Raised By',
-      size: 240,
-    },
-    {
-      id: 'createdAt',
-      label: 'Raised At',
-      size: 200,
-      renderCell: (row) => formatDatetime(row.createdAt as string, 'datetime'),
-    },
-    {
-      id: 'updatedBy',
-      label: 'Last Action By',
-      size: 240,
-    },
-    {
-      id: 'updatedAt',
-      label: 'Last Action At',
-      size: 200,
-      renderCell: (row) => formatDatetime(row.updatedAt as string, 'datetime'),
-    },
-    {
-      className: 'p-1',
-      hideHeader: true,
-      id: 'actions',
-      isDisplayColumn: true,
-      label: 'Actions',
-      size: 40,
-      renderCell: (row) => (
-        <div className='flex items-center justify-center'>
-          <Menu
-            position='bottom-end'
-            width={160}
-            target={
-              <IconButton
-                color='gray'
-                icon='lucide:more-vertical'
-                variant='ghost'
-              />
-            }
+  const columns: Column[] = useMemo(
+    () => [
+      {
+        id: 'name',
+        label: t`Name`,
+        size: 160,
+        renderCell: (row) => (
+          <span
+            // onClick={openRequest}
+            className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
           >
-            <MenuItem
-              icon='lucide:edit'
-              label='Edit'
-              onClick={() => showToast({ message: String(row.itemId) })}
-            />
-            <MenuItem
-              icon='lucide:trash-2'
-              iconClass='text-red-11'
-              label='Delete'
-              onClick={() => showToast({ message: String(row.itemId) })}
-            />
-          </Menu>
-        </div>
-      ),
-    },
-  ]
+            {String(row.name)}
+          </span>
+        ),
+      },
+      {
+        enableGrouping: true,
+        id: 'status',
+        label: t`Status`,
+        size: 140,
+        renderCell: (row) => (
+          <RequestStatusBadge status={row.status as Request['status']} />
+        ),
+      },
+      { id: 'vendor', label: t`Vendor`, size: 200 },
+      {
+        id: 'amount',
+        label: t`Amount`,
+        size: 140,
+        renderCell: (row) => `$${Number(row.amount).toFixed(2)}`,
+      },
+      {
+        enableGrouping: true,
+        id: 'documentType',
+        label: t`Document Type`,
+        size: 200,
+      },
+      { id: 'documentNumber', label: t`Document Number`, size: 240 },
+      {
+        id: 'documentDate',
+        label: t`Document Date`,
+        size: 200,
+        renderCell: (row) => formatDatetime(row.documentDate as string),
+      },
+      {
+        id: 'createdBy',
+        label: t`Raised By`,
+        size: 240,
+      },
+      {
+        id: 'createdAt',
+        label: t`Raised At`,
+        size: 200,
+        renderCell: (row) =>
+          formatDatetime(row.createdAt as string, 'datetime'),
+      },
+      {
+        id: 'updatedBy',
+        label: t`Last Action By`,
+        size: 240,
+      },
+      {
+        id: 'updatedAt',
+        label: t`Last Action At`,
+        size: 200,
+        renderCell: (row) =>
+          formatDatetime(row.updatedAt as string, 'datetime'),
+      },
+      {
+        className: 'p-1',
+        hideHeader: true,
+        id: 'actions',
+        isDisplayColumn: true,
+        label: t`Actions`,
+        size: 40,
+        renderCell: (row) => (
+          <div className='flex items-center justify-center'>
+            <Menu
+              position='bottom-end'
+              width={160}
+              target={
+                <IconButton
+                  color='gray'
+                  icon='lucide:more-vertical'
+                  variant='ghost'
+                />
+              }
+            >
+              <MenuItem
+                icon='lucide:edit'
+                label={t`Edit`}
+                onClick={() => showToast({ message: String(row.itemId) })}
+              />
+              <MenuItem
+                icon='lucide:trash-2'
+                iconClass='text-red-11'
+                label={t`Delete`}
+                onClick={() => showToast({ message: String(row.itemId) })}
+              />
+            </Menu>
+          </div>
+        ),
+      },
+    ],
+    [t],
+  )
 
   const initialVisibilityState = {
     createdAt: false,
@@ -168,7 +175,7 @@ const Table = () => {
       </div>
       <Pagination
         className='mt-4'
-        itemLabel='Requests'
+        itemLabel={t`Requests`}
         page={page}
         pageSize={pageSize}
         showPageNumbers={false}
