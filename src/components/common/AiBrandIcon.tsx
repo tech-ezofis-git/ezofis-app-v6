@@ -74,7 +74,7 @@ export default function AiBrandIcon({
       break
     case 'default':
     default:
-      iconSrc = resolvedColorScheme === 'dark' ? darkIcon : lightIcon
+      iconSrc = outlinePurpleIcon
       break
   }
 
