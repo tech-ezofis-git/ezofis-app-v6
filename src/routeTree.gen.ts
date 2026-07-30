@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
 import { Route as PlaygroundRouteRouteImport } from './routes/playground/route'
+import { Route as EmbedRouteRouteImport } from './routes/embed/route'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
 import { Route as AppRouteRouteImport } from './routes/_app/route'
 import { Route as StoriesIndexRouteImport } from './routes/stories/index'
@@ -67,6 +68,9 @@ import { Route as StoriesAccordionRouteImport } from './routes/stories/accordion
 import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
 import { Route as FormBuilderFormIdRouteImport } from './routes/form-builder/$formId'
+import { Route as EmbedRequestsRouteImport } from './routes/embed/requests'
+import { Route as EmbedFoldersRouteImport } from './routes/embed/folders'
+import { Route as EmbedDashboardRouteImport } from './routes/embed/dashboard'
 import { Route as AppWorkflowsRouteImport } from './routes/_app/workflows'
 import { Route as AppTrashRouteImport } from './routes/_app/trash'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
@@ -98,6 +102,11 @@ const StoriesRouteRoute = StoriesRouteRouteImport.update({
 const PlaygroundRouteRoute = PlaygroundRouteRouteImport.update({
   id: '/playground',
   path: '/playground',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmbedRouteRoute = EmbedRouteRouteImport.update({
+  id: '/embed',
+  path: '/embed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
@@ -377,6 +386,21 @@ const FormBuilderFormIdRoute = FormBuilderFormIdRouteImport.update({
   path: '/form-builder/$formId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmbedRequestsRoute = EmbedRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => EmbedRouteRoute,
+} as any)
+const EmbedFoldersRoute = EmbedFoldersRouteImport.update({
+  id: '/folders',
+  path: '/folders',
+  getParentRoute: () => EmbedRouteRoute,
+} as any)
+const EmbedDashboardRoute = EmbedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => EmbedRouteRoute,
+} as any)
 const AppWorkflowsRoute = AppWorkflowsRouteImport.update({
   id: '/workflows',
   path: '/workflows',
@@ -465,6 +489,7 @@ const AppFormsFormIdEntriesRoute = AppFormsFormIdEntriesRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
   '/auth': typeof AuthRoute
@@ -479,6 +504,9 @@ export interface FileRoutesByFullPath {
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
   '/workflows': typeof AppWorkflowsRoute
+  '/embed/dashboard': typeof EmbedDashboardRoute
+  '/embed/folders': typeof EmbedFoldersRoute
+  '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
@@ -540,6 +568,7 @@ export interface FileRoutesByFullPath {
   '/forms/$formId/entries': typeof AppFormsFormIdEntriesRoute
 }
 export interface FileRoutesByTo {
+  '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/auth': typeof AuthRoute
   '/folders': typeof AppFoldersRoute
@@ -553,6 +582,9 @@ export interface FileRoutesByTo {
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
   '/workflows': typeof AppWorkflowsRoute
+  '/embed/dashboard': typeof EmbedDashboardRoute
+  '/embed/folders': typeof EmbedFoldersRoute
+  '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
@@ -617,6 +649,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/_auth': typeof AuthRouteRouteWithChildren
+  '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
   '/auth': typeof AuthRoute
@@ -631,6 +664,9 @@ export interface FileRoutesById {
   '/_app/tasks': typeof AppTasksRoute
   '/_app/trash': typeof AppTrashRoute
   '/_app/workflows': typeof AppWorkflowsRoute
+  '/embed/dashboard': typeof EmbedDashboardRoute
+  '/embed/folders': typeof EmbedFoldersRoute
+  '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/stories/Alert': typeof StoriesAlertRoute
@@ -694,6 +730,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/embed'
     | '/playground'
     | '/stories'
     | '/auth'
@@ -708,6 +745,9 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/trash'
     | '/workflows'
+    | '/embed/dashboard'
+    | '/embed/folders'
+    | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
@@ -769,6 +809,7 @@ export interface FileRouteTypes {
     | '/forms/$formId/entries'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/embed'
     | '/playground'
     | '/auth'
     | '/folders'
@@ -782,6 +823,9 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/trash'
     | '/workflows'
+    | '/embed/dashboard'
+    | '/embed/folders'
+    | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
@@ -845,6 +889,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_auth'
+    | '/embed'
     | '/playground'
     | '/stories'
     | '/auth'
@@ -859,6 +904,9 @@ export interface FileRouteTypes {
     | '/_app/tasks'
     | '/_app/trash'
     | '/_app/workflows'
+    | '/embed/dashboard'
+    | '/embed/folders'
+    | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/stories/Alert'
@@ -923,6 +971,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRouteRoute: typeof AppRouteRouteWithChildren
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  EmbedRouteRoute: typeof EmbedRouteRouteWithChildren
   PlaygroundRouteRoute: typeof PlaygroundRouteRoute
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
@@ -954,6 +1003,13 @@ declare module '@tanstack/react-router' {
       path: '/playground'
       fullPath: '/playground'
       preLoaderRoute: typeof PlaygroundRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/embed': {
+      id: '/embed'
+      path: '/embed'
+      fullPath: '/embed'
+      preLoaderRoute: typeof EmbedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -1341,6 +1397,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FormBuilderFormIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/embed/requests': {
+      id: '/embed/requests'
+      path: '/requests'
+      fullPath: '/embed/requests'
+      preLoaderRoute: typeof EmbedRequestsRouteImport
+      parentRoute: typeof EmbedRouteRoute
+    }
+    '/embed/folders': {
+      id: '/embed/folders'
+      path: '/folders'
+      fullPath: '/embed/folders'
+      preLoaderRoute: typeof EmbedFoldersRouteImport
+      parentRoute: typeof EmbedRouteRoute
+    }
+    '/embed/dashboard': {
+      id: '/embed/dashboard'
+      path: '/dashboard'
+      fullPath: '/embed/dashboard'
+      preLoaderRoute: typeof EmbedDashboardRouteImport
+      parentRoute: typeof EmbedRouteRoute
+    }
     '/_app/workflows': {
       id: '/_app/workflows'
       path: '/workflows'
@@ -1519,6 +1596,22 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
   AuthRouteRouteChildren,
 )
 
+interface EmbedRouteRouteChildren {
+  EmbedDashboardRoute: typeof EmbedDashboardRoute
+  EmbedFoldersRoute: typeof EmbedFoldersRoute
+  EmbedRequestsRoute: typeof EmbedRequestsRoute
+}
+
+const EmbedRouteRouteChildren: EmbedRouteRouteChildren = {
+  EmbedDashboardRoute: EmbedDashboardRoute,
+  EmbedFoldersRoute: EmbedFoldersRoute,
+  EmbedRequestsRoute: EmbedRequestsRoute,
+}
+
+const EmbedRouteRouteWithChildren = EmbedRouteRoute._addFileChildren(
+  EmbedRouteRouteChildren,
+)
+
 interface StoriesRouteRouteChildren {
   StoriesAlertRoute: typeof StoriesAlertRoute
   StoriesAccordionRoute: typeof StoriesAccordionRoute
@@ -1626,6 +1719,7 @@ const StoriesRouteRouteWithChildren = StoriesRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   AppRouteRoute: AppRouteRouteWithChildren,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  EmbedRouteRoute: EmbedRouteRouteWithChildren,
   PlaygroundRouteRoute: PlaygroundRouteRoute,
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
   AuthRoute: AuthRoute,
