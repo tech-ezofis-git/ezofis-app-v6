@@ -24,6 +24,7 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import {
   matchesCategoryFilterValue,
@@ -82,33 +83,31 @@ type UserStatus = 'active' | 'inactive' | 'pending'
 const steps: Step[] = [
   {
     caption: 'Step 1',
-    description: 'Capture primary identity and sign-in configuration.',
+    description: 'Account credentials & identity',
     key: 'login',
     title: 'Login Details',
   },
   {
     caption: 'Step 2',
-    description:
-      'Align this user with the business hierarchy and operating model.',
+    description: 'Department & business hierarchy',
     key: 'business',
     title: 'Business Detail',
   },
   {
     caption: 'Step 3',
-    description:
-      'Assign this user to one or more groups. Groups determine shared folder and workflow access.',
+    description: 'Assign user access groups',
     key: 'groups',
     title: 'Group Assignment',
   },
   {
     caption: 'Step 4',
-    description: 'Govern multi-factor verification for secure user access.',
+    description: 'Security & verification',
     key: 'authentication',
     title: 'Authentication',
   },
   {
     caption: 'Step 5',
-    description: 'Validate the user profile before provisioning access.',
+    description: 'Review & save profile',
     key: 'review',
     title: 'Review',
   },
@@ -1501,122 +1500,57 @@ function UserSetup({
 
   const activeStepConfig = steps[activeStep]
 
+  const wizardSteps = useMemo(() => {
+    return steps.map((s, idx) => ({
+      id: idx,
+      label: s.title,
+      description: s.description,
+      icon: s.key === 'login' ? 'tabler:user' : s.key === 'business' ? 'tabler:building' : s.key === 'groups' ? 'tabler:users' : s.key === 'authentication' ? 'tabler:shield' : 'tabler:check',
+    }))
+  }, [])
+
   return (
-    <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <SettingsSetupHeader
-        moduleTitle='User Management'
-        progress={progress}
-        stepDescription={activeStepConfig.description}
-        stepTitle={activeStepConfig.title}
-        setupTitle={editingUserId ? 'Edit User' : 'Create User'}
-        onBackToSettings={onBackToSettings}
-        onCancelSetup={onCancel}
-      />
-
-      <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-        <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
-          <div className='space-y-5'>
-            {steps.map((step, index) => {
-              const isActive = index === activeStep
-              const isCompleted = index < activeStep
-
-              return (
-                <button
-                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
-                  key={step.key}
-                  onClick={() => handleStepChange(index)}
-                >
-                  <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
-                    {index < steps.length - 1 && (
-                      <span className='absolute top-8 left-1/2 h-12 w-[2px] -translate-x-1/2 bg-[var(--gray-3)]' />
-                    )}
-
-                    <span
-                      className={[
-                        'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
-                        isCompleted
-                          ? 'text-[var(--primary-9)]'
-                          : isActive
-                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)] ring-1 ring-[var(--primary-8)]'
-                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
-                      ].join(' ')}
-                    >
-                      {isCompleted ? (
-                        <Check size={14} />
-                      ) : (
-                        <StepIcon step={step.key} />
-                      )}
-                    </span>
-                  </div>
-                  <div>
-                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
-                      {step.title}
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </aside>
-
-        <SettingsSetupContent>
-          {activeStep === 0 && (
-            <LoginDetails
-              showErrors={showErrors}
-              user={draftUser}
-              onChange={onChange}
-            />
-          )}
-          {activeStep === 1 && (
-            <BusinessDetails
-              managerOptions={managerOptions}
-              showErrors={showErrors}
-              user={draftUser}
-              onChange={onChange}
-            />
-          )}
-          {activeStep === 2 && (
-            <GroupAssignment
-              groupOptions={groupOptions}
-              user={draftUser}
-              onChange={onChange}
-            />
-          )}
-          {activeStep === 3 && (
-            <Authentication user={draftUser} onChange={onChange} />
-          )}
-          {activeStep === 4 && <Review user={draftUser} />}
-
-          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-            <button
-              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-              disabled={activeStep === 0}
-              onClick={handleBack}
-            >
-              Back
-            </button>
-
-            <div className='flex items-center gap-3'>
-              {activeStep === steps.length - 1 ? (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
-                  disabled={isSaving}
-                  onClick={handleSave}
-                >
-                  {isSaving ? 'Saving...' : 'Save User'}
-                </button>
-              ) : (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                  onClick={handleNext}
-                >
-                  Next
-                </button>
-              )}
-            </div>
-          </div>
-        </SettingsSetupContent>
-      </div>
-    </main>
+    <SettingsWizardLayout
+      activeStep={activeStep}
+      steps={wizardSteps}
+      onStepChange={handleStepChange}
+      onBack={handleBack}
+      onNext={handleNext}
+      onSave={handleSave}
+      onCancel={onCancel}
+      isSaving={isSaving}
+      saveLabel={editingUserId ? 'Update User' : 'Save User'}
+      moduleTitle='User Management'
+      setupTitle={editingUserId ? 'Edit User' : 'Create User'}
+      headerTitle={editingUserId ? 'Edit User Setup' : 'New User Setup'}
+      headerDescription='Configure user account details, business hierarchy, and permissions'
+    >
+      {activeStep === 0 && (
+        <LoginDetails
+          showErrors={showErrors}
+          user={draftUser}
+          onChange={onChange}
+        />
+      )}
+      {activeStep === 1 && (
+        <BusinessDetails
+          managerOptions={managerOptions}
+          showErrors={showErrors}
+          user={draftUser}
+          onChange={onChange}
+        />
+      )}
+      {activeStep === 2 && (
+        <GroupAssignment
+          groupOptions={groupOptions}
+          user={draftUser}
+          onChange={onChange}
+        />
+      )}
+      {activeStep === 3 && (
+        <Authentication user={draftUser} onChange={onChange} />
+      )}
+      {activeStep === 4 && <Review user={draftUser} />}
+    </SettingsWizardLayout>
   )
 }
