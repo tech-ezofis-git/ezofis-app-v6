@@ -823,8 +823,14 @@ const isStandardField = (field: any, label: string) => {
   const lowerLabel = String(label || '').toLowerCase()
   const type = String(field.type ?? '').toUpperCase()
 
-  // Skip file uploads per user rule
-  if (type === 'FILE_UPLOAD') return true
+  // Skip file uploads and table controls — not useful as list/filter columns
+  if (
+    type === 'FILE_UPLOAD' ||
+    type === 'DYNAMIC_TABLE' ||
+    type === 'TABLE'
+  ) {
+    return true
+  }
 
   // Standard invoice fields to avoid duplicates
   return (
@@ -1496,6 +1502,7 @@ const getBaseColumns = (
           <div className='flex min-w-0 items-center gap-1.5'>
             <AiBrandIcon
               className='size-[14px] shrink-0 text-[var(--primary-9)]'
+              variant='curved-purple'
             />
             <HoverExpandableText
               className='text-[13px] font-medium text-[var(--gray-11)]'

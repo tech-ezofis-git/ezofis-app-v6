@@ -50,6 +50,7 @@ import SettingsPageHeader, {
 } from './SettingsPageHeader'
 import SettingsSetupContent from './SettingsSetupContent'
 import SettingsSetupHeader from './SettingsSetupHeader'
+import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AppMenu = {
@@ -81,17 +82,17 @@ type MenuStep = {
 
 const menuSteps: MenuStep[] = [
   {
-    description: 'Define the menu key and display label shown in navigation.',
+    description: 'Menu key & label',
     key: 'details',
     title: 'Menu Details',
   },
   {
-    description: 'Set the route path and sort order for this menu item.',
+    description: 'Route path & sort order',
     key: 'route',
     title: 'Route & Order',
   },
   {
-    description: 'Validate the menu configuration before saving.',
+    description: 'Review & save menu settings',
     key: 'review',
     title: 'Review',
   },
@@ -684,195 +685,123 @@ function MenuSetup({
 
   const activeStepConfig = menuSteps[activeStep]
 
+  const wizardSteps = useMemo(() => {
+    return menuSteps.map((s, idx) => ({
+      id: idx,
+      label: s.title,
+      description: s.description,
+      icon: s.key === 'details' ? 'tabler:menu-2' : s.key === 'route' ? 'tabler:route' : 'tabler:check',
+    }))
+  }, [])
+
   return (
-    <main className='min-h-screen bg-[var(--surface)] text-[var(--text-primary)]'>
-      <SettingsSetupHeader
-        moduleTitle='Menu & Profile Management'
-        progress={progress}
-        stepDescription={activeStepConfig.description}
-        stepTitle={activeStepConfig.title}
-        setupTitle={editingMenuId ? 'Edit Menu' : 'Create Menu'}
-        onBackToSettings={onBackToSettings}
-        onCancelSetup={onCancel}
-      />
-
-      <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-        <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
-          <div className='space-y-5'>
-            {menuSteps.map((step, index) => {
-              const isActive = index === activeStep
-              const isCompleted = index < activeStep
-
-              return (
-                <button
-                  className='group flex w-full items-center gap-5 rounded-[14px] px-3 py-2 text-left transition hover:bg-surface-raised'
-                  key={step.key}
-                  type='button'
-                  onClick={() => handleStepChange(index)}
-                >
-                  <div className='relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-3)]'>
-                    {index < menuSteps.length - 1 ? (
-                      <span className='absolute top-8 left-1/2 h-12 w-[2px] -translate-x-1/2 bg-[var(--gray-3)]' />
-                    ) : null}
-                    <span
-                      className={[
-                        'z-10 flex h-8 w-8 items-center justify-center rounded-full transition',
-                        isCompleted
-                          ? 'text-[var(--primary-9)]'
-                          : isActive
-                            ? 'bg-[var(--primary-3)] text-[var(--primary-11)] ring-1 ring-[var(--primary-8)]'
-                            : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
-                      ].join(' ')}
-                    >
-                      {isCompleted ? (
-                        <Check size={14} />
-                      ) : (
-                        <MenuStepIcon step={step.key} />
-                      )}
-                    </span>
-                  </div>
-                  <div>
-                    <div className='text-md mt-1 font-semibold text-[var(--indigo-12)]'>
-                      {step.title}
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </aside>
-
-        <SettingsSetupContent>
-          {activeStep === 0 ? (
-            <SettingsFormSection>
-              {editingMenuId ? (
-                <InputText
-                  label='Menu Key'
-                  value={formState.key}
-                  disabled
-                  onChange={() => undefined}
-                />
-              ) : (
-                <InputText
-                  label='Menu Key *'
-                  placeholder='e.g. reports'
-                  value={formState.key}
-                  error={getFieldRequiredError(
-                    'Menu Key',
-                    showErrors,
-                    formState.key,
-                  )}
-                  onChange={(value) => onChange({ ...formState, key: value })}
-                />
+    <SettingsWizardLayout
+      activeStep={activeStep}
+      steps={wizardSteps}
+      onStepChange={handleStepChange}
+      onBack={handleBack}
+      onNext={handleNext}
+      onSave={handleSave}
+      onCancel={onCancel}
+      isSaving={isSaving}
+      saveLabel={editingMenuId ? 'Update Menu' : 'Save Menu'}
+      moduleTitle='Menu & Profile Management'
+      setupTitle={editingMenuId ? 'Edit Menu' : 'Create Menu'}
+      headerTitle={editingMenuId ? 'Edit Menu Setup' : 'New Menu Setup'}
+      headerDescription='Configure application navigation menus, route paths, and display order'
+    >
+      {activeStep === 0 ? (
+        <SettingsFormSection>
+          {editingMenuId ? (
+            <InputText
+              label='Menu Key'
+              value={formState.key}
+              disabled
+              onChange={() => undefined}
+            />
+          ) : (
+            <InputText
+              label='Menu Key *'
+              placeholder='e.g. reports'
+              value={formState.key}
+              error={getFieldRequiredError(
+                'Menu Key',
+                showErrors,
+                formState.key,
               )}
-              <InputText
-                label='Label *'
-                placeholder='e.g. Reports'
-                value={formState.label}
-                error={getFieldRequiredError(
-                  'Label',
-                  showErrors,
-                  formState.label,
-                )}
-                onChange={(value) => onChange({ ...formState, label: value })}
+              onChange={(value) => onChange({ ...formState, key: value })}
+            />
+          )}
+          <InputText
+            label='Label *'
+            placeholder='e.g. Reports'
+            value={formState.label}
+            error={getFieldRequiredError(
+              'Label',
+              showErrors,
+              formState.label,
+            )}
+            onChange={(value) => onChange({ ...formState, label: value })}
+          />
+        </SettingsFormSection>
+      ) : null}
+
+      {activeStep === 1 ? (
+        <SettingsFormSection>
+          <InputText
+            label='Route Path *'
+            placeholder='e.g. /reports'
+            value={formState.routePath}
+            error={getFieldRequiredError(
+              'Route Path',
+              showErrors,
+              formState.routePath,
+            )}
+            onChange={(value) =>
+              onChange({ ...formState, routePath: value })
+            }
+          />
+          <InputNumber
+            label='Sort Order *'
+            min={0}
+            value={formState.sortOrder}
+            error={
+              showErrors && !(formState.sortOrder >= 0)
+                ? 'Please fill the required field: Sort Order'
+                : undefined
+            }
+            onChange={(value) =>
+              onChange({
+                ...formState,
+                sortOrder: Number(value) || 0,
+              })
+            }
+          />
+        </SettingsFormSection>
+      ) : null}
+
+      {activeStep === 2 ? (
+        <SettingsFormSection>
+          <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+            <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+              Menu Summary
+            </h3>
+            <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+              <SummaryItem label='Menu Key' value={formState.key || '—'} />
+              <SummaryItem label='Label' value={formState.label || '—'} />
+              <SummaryItem
+                label='Route Path'
+                value={formState.routePath || '—'}
               />
-            </SettingsFormSection>
-          ) : null}
-
-          {activeStep === 1 ? (
-            <SettingsFormSection>
-              <InputText
-                label='Route Path *'
-                placeholder='e.g. /reports'
-                value={formState.routePath}
-                error={getFieldRequiredError(
-                  'Route Path',
-                  showErrors,
-                  formState.routePath,
-                )}
-                onChange={(value) =>
-                  onChange({ ...formState, routePath: value })
-                }
+              <SummaryItem
+                label='Sort Order'
+                value={String(formState.sortOrder)}
               />
-              <InputNumber
-                label='Sort Order *'
-                min={0}
-                value={formState.sortOrder}
-                error={
-                  showErrors && !(formState.sortOrder >= 0)
-                    ? 'Please fill the required field: Sort Order'
-                    : undefined
-                }
-                onChange={(value) =>
-                  onChange({
-                    ...formState,
-                    sortOrder: Number(value) || 0,
-                  })
-                }
-              />
-            </SettingsFormSection>
-          ) : null}
-
-          {activeStep === 2 ? (
-            <SettingsFormSection>
-              <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
-                <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-                  Menu Summary
-                </h3>
-                <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-                  <SummaryItem label='Menu Key' value={formState.key || '—'} />
-                  <SummaryItem label='Label' value={formState.label || '—'} />
-                  <SummaryItem
-                    label='Route Path'
-                    value={formState.routePath || '—'}
-                  />
-                  <SummaryItem
-                    label='Sort Order'
-                    value={String(formState.sortOrder)}
-                  />
-                </div>
-              </div>
-            </SettingsFormSection>
-          ) : null}
-
-          <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-            <button
-              className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-              disabled={activeStep === 0}
-              type='button'
-              onClick={handleBack}
-            >
-              Back
-            </button>
-
-            <div className='flex items-center gap-3'>
-              {isLastStep ? (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
-                  disabled={isSaving}
-                  type='button'
-                  onClick={handleSave}
-                >
-                  {isSaving
-                    ? 'Saving...'
-                    : editingMenuId
-                      ? 'Update Menu'
-                      : 'Save Menu'}
-                </button>
-              ) : (
-                <button
-                  className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                  type='button'
-                  onClick={handleNext}
-                >
-                  Next
-                </button>
-              )}
             </div>
           </div>
-        </SettingsSetupContent>
-      </div>
-    </main>
+        </SettingsFormSection>
+      ) : null}
+    </SettingsWizardLayout>
   )
 }
 

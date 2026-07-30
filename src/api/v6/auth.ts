@@ -20,6 +20,36 @@ export const getV6ApiErrorMessage = (
   return fallback
 }
 
+/** One successful /userSession per page load (sign-in or browser refresh). */
+let hasFetchedUserSession = false
+let inFlightUserSession: Promise<{ data: any; error: string }> | null = null
+
+const USER_SESSION_REDIRECT_FLAG = 'ezofis.userSessionFetched'
+
+/** Clear the once-per-pageload gate (call on logout). */
+export const resetUserSessionFetchGate = () => {
+  hasFetchedUserSession = false
+  inFlightUserSession = null
+  try {
+    globalThis.sessionStorage?.removeItem(USER_SESSION_REDIRECT_FLAG)
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Keep the "already fetched" gate across a hard redirect after sign-in
+ * so AppLayout does not call /userSession again on the next page load.
+ */
+export const markUserSessionFetchedForRedirect = () => {
+  hasFetchedUserSession = true
+  try {
+    globalThis.sessionStorage?.setItem(USER_SESSION_REDIRECT_FLAG, '1')
+  } catch {
+    // ignore
+  }
+}
+
 // The JSON structure required by V6 Signup
 export interface V6SignupPayload {
   name: string
@@ -192,40 +222,74 @@ export const login = async (payload: {
 }
 
 export const getSession = async () => {
-  const response: any = { data: null, error: '' }
-  try {
-    const { data, status } = await axiosV6({
-      method: 'GET',
-      url: `/userSession`,
-    })
-    if (status !== 200) throw new Error('invalid status code')
-
-    if (data) {
-      const store = authUserStore.getState()
-      const fallbackTenantId =
-        (store.identity as any)?.tenantId ||
-        (getFromLocalStorage('tenantId', 'STRING') as string) ||
-        ''
-      const sessionData = {
-        ...data,
-        tenantId: data.tenantId || fallbackTenantId || data.TenantId || '',
-      }
-      setToLocalStorage(sessionData, 'session')
-      if (sessionData.tenantId) {
-        setToLocalStorage(String(sessionData.tenantId), 'tenantId', 'STRING')
-      }
-      const { setSession } = authUserStore.getState()
-      setSession(sessionData)
-      response.data = sessionData
+  // After sign-in (or a prior call this page load), reuse cached session — no extra API hit.
+  if (hasFetchedUserSession) {
+    return {
+      data: authUserStore.getState().session,
+      error: '',
     }
-  } catch (e: any) {
-    console.error(e)
-    response.error = getV6ApiErrorMessage(
-      e?.response?.data,
-      'error fetching session',
-    )
   }
-  return response
+
+  // Hard redirect after login sets this so the next page load skips a duplicate fetch.
+  try {
+    if (globalThis.sessionStorage?.getItem(USER_SESSION_REDIRECT_FLAG) === '1') {
+      globalThis.sessionStorage.removeItem(USER_SESSION_REDIRECT_FLAG)
+      hasFetchedUserSession = true
+      return {
+        data: authUserStore.getState().session,
+        error: '',
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // Deduplicate concurrent callers (Strict Mode / sign-in + AppLayout race).
+  if (inFlightUserSession) {
+    return inFlightUserSession
+  }
+
+  inFlightUserSession = (async () => {
+    const response: { data: any; error: string } = { data: null, error: '' }
+    try {
+      const { data, status } = await axiosV6({
+        method: 'GET',
+        url: `/userSession`,
+      })
+      if (status !== 200) throw new Error('invalid status code')
+
+      if (data) {
+        const store = authUserStore.getState()
+        const fallbackTenantId =
+          (store.identity as any)?.tenantId ||
+          (getFromLocalStorage('tenantId', 'STRING') as string) ||
+          ''
+        const sessionData = {
+          ...data,
+          tenantId: data.tenantId || fallbackTenantId || data.TenantId || '',
+        }
+        setToLocalStorage(sessionData, 'session')
+        if (sessionData.tenantId) {
+          setToLocalStorage(String(sessionData.tenantId), 'tenantId', 'STRING')
+        }
+        const { setSession } = authUserStore.getState()
+        setSession(sessionData)
+        response.data = sessionData
+      }
+      hasFetchedUserSession = true
+    } catch (e: any) {
+      console.error(e)
+      response.error = getV6ApiErrorMessage(
+        e?.response?.data,
+        'error fetching session',
+      )
+    } finally {
+      inFlightUserSession = null
+    }
+    return response
+  })()
+
+  return inFlightUserSession
 }
 
 export const socialLogin = async (payload: {
@@ -413,6 +477,8 @@ export const authApiV6 = {
   getSharePreview,
   getTenants,
   setSharePassword,
+  resetUserSessionFetchGate,
+  markUserSessionFetchedForRedirect,
 }
 
 export default authApiV6

@@ -687,7 +687,7 @@ const Header: React.FC<HeaderProps> = ({
                   !isProcessing && setShowAIInsights(!showAIInsights)
                 }
               >
-                <AiBrandIcon className='size-[16px]' />
+                <AiBrandIcon className='size-[16px]' variant='curved-purple' />
                 <span>AI Insights</span>
                 {agentData?.score !== undefined && (
                   <span
@@ -717,6 +717,7 @@ const Header: React.FC<HeaderProps> = ({
                             <div className='flex items-center gap-2'>
                               <AiBrandIcon
                                 className='size-[20px] text-[var(--primary-9)]'
+                                variant='curved-purple'
                               />
                               <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
                                 Invoice Decision Details

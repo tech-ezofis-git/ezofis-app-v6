@@ -74,6 +74,8 @@ type Store = {
   setRestrictNavigationUntilApSetup: (value: boolean) => void
   setStep: (value: number) => void
   setStorageSettings: (storageSettings: StorageSettings) => void
+  /** Clear setup UI/session flags without starting the AP setup wizard (e.g. on logout). */
+  resetSetupState: () => void
 }
 
 const initialEmailSettings: EmailSettings = {
@@ -128,13 +130,10 @@ const useSetupStore = create<Store>()((set, get) => ({
   emailSettings: initialEmailSettings,
   erpSettings: initialErpSettings,
   isActivatingAutomation: false,
-  isApSetUpCompleted:
-    typeof window !== 'undefined'
-      ? localStorage.getItem('isApSetUpCompleted') === 'true'
-      : false,
+  isApSetUpCompleted: false,
   isSetupCalloutDismissed: false,
   isSetupOpen: false,
-  isSetupStarted: true,
+  isSetupStarted: false,
   restrictNavigationUntilApSetup:
     typeof window !== 'undefined'
       ? localStorage.getItem('restrictNavigationUntilApSetup') === 'true'
@@ -201,6 +200,25 @@ const useSetupStore = create<Store>()((set, get) => ({
         ...storageSettings,
       },
     }),
+
+  resetSetupState: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('isApSetUpCompleted')
+      localStorage.removeItem('restrictNavigationUntilApSetup')
+    }
+    set({
+      emailSettings: initialEmailSettings,
+      erpSettings: initialErpSettings,
+      isActivatingAutomation: false,
+      isApSetUpCompleted: false,
+      isSetupCalloutDismissed: false,
+      isSetupOpen: false,
+      isSetupStarted: false,
+      restrictNavigationUntilApSetup: false,
+      step: 0,
+      storageSettings: initialStorageSettings,
+    })
+  },
 }))
 
 export const shouldLockAppNavigation = () => {

@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import apiRouter from '@/api/apiRouter'
 import authApiV6 from '@/api/v6/auth'
 import showToast from '@/components/base/toast/showToast'
-import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { redirectAfterLogin } from '@/pages/sign-in/utils/redirectAfterLogin'
 import cn from '@/utils/cn'
 import { AppButton } from '../../components/primitives/AppButton'
 import { AppInput } from '../../components/primitives/AppInput'
@@ -61,25 +61,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
   }, [shareToken])
 
   const handleLoggedNavigation = async () => {
-    try {
-      await apiRouter.userSession()
-    } catch (err) {
-      console.error('Failed to load session details:', err)
-    }
-
-    if (shareTenantId) {
-      void navigate({ replace: true, to: '/folders' })
-      setLoading(false)
-      return
-    }
-
-    const { isApSetUpCompleted } = useSetupStore.getState()
-    if (!isApSetUpCompleted) {
-      void navigate({ replace: true, to: '/' })
-    } else {
-      void navigate({ replace: true, to: '/requests' })
-    }
-    setLoading(false)
+    await redirectAfterLogin({ navigate, shareTenantId })
   }
 
   const signInSocial = async (
@@ -119,9 +101,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
     } else {
       setShowTenantList(false)
       setTenantList([])
-      setTimeout(() => {
-        void handleLoggedNavigation()
-      }, 100)
+      await handleLoggedNavigation()
     }
   }
 
@@ -185,7 +165,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
         setShowTenantList(false)
         setTenantList([])
         onSignIn?.({ password, username: email })
-        void handleLoggedNavigation()
+        await handleLoggedNavigation()
       }
     } catch (e: any) {
       console.error(e)

@@ -1298,13 +1298,23 @@ const InboxList: React.FC<InboxListProps> = ({
     return map
   }, [activeQuickFilters])
 
+  const [debouncedSearchState, setDebouncedSearchState] =
+    React.useState(searchState)
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchState(searchState)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [searchState])
+
   React.useEffect(() => {
     if (onFilterClausesChange) {
       const clauses = buildV6FilterClauses(
         activeFiltersMap,
         filterFields,
         activeQuickFilters,
-        searchState?.value,
+        debouncedSearchState,
       )
       onFilterClausesChange(clauses)
     }
@@ -1312,7 +1322,7 @@ const InboxList: React.FC<InboxListProps> = ({
     activeFiltersMap,
     filterFields,
     activeQuickFilters,
-    searchState?.value,
+    debouncedSearchState,
     onFilterClausesChange,
   ])
 
@@ -1350,27 +1360,36 @@ const InboxList: React.FC<InboxListProps> = ({
 
   const optionalFilterFields = useMemo<DynamicFilterField[]>(() => {
     if (filterFields && filterFields.length > 0) {
-      return filterFields.map((f) => {
-        const fieldId = f.sqlColumnName || f.name
-        const typeUpper = (f.dataType || '').toUpperCase()
-        let fieldType: 'date' | 'number' | 'category' = 'category'
-        if (typeUpper.includes('DATE') || typeUpper.includes('TIME')) {
-          fieldType = 'date'
-        } else if (
-          typeUpper.includes('NUMBER') ||
-          typeUpper.includes('INT') ||
-          typeUpper.includes('FLOAT')
-        ) {
-          fieldType = 'number'
-        }
-        return {
-          id: fieldId,
-          label: f.name,
-          options: controlOptionsMap[fieldId] || [],
-          type: fieldType,
-          valueGetter: (row) => getRowColumnValue(row, fieldId),
-        }
-      })
+      return filterFields
+        .filter((f) => {
+          const typeUpper = (f.dataType || '').toUpperCase()
+          return (
+            typeUpper !== 'FILE_UPLOAD' &&
+            typeUpper !== 'DYNAMIC_TABLE' &&
+            typeUpper !== 'TABLE'
+          )
+        })
+        .map((f) => {
+          const fieldId = f.sqlColumnName || f.name
+          const typeUpper = (f.dataType || '').toUpperCase()
+          let fieldType: 'date' | 'number' | 'category' = 'category'
+          if (typeUpper.includes('DATE') || typeUpper.includes('TIME')) {
+            fieldType = 'date'
+          } else if (
+            typeUpper.includes('NUMBER') ||
+            typeUpper.includes('INT') ||
+            typeUpper.includes('FLOAT')
+          ) {
+            fieldType = 'number'
+          }
+          return {
+            id: fieldId,
+            label: f.name,
+            options: controlOptionsMap[fieldId] || [],
+            type: fieldType,
+            valueGetter: (row) => getRowColumnValue(row, fieldId),
+          }
+        })
     }
 
     const skipIds = new Set([

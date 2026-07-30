@@ -8,6 +8,7 @@ import WelcomeMessage from './components/WelcomeMessage'
 
 const Setup = () => {
   const isSetupOpen = setupStore((state) => state.isSetupOpen)
+  const isSetupStarted = setupStore((state) => state.isSetupStarted)
   const closeSetup = setupStore((state) => state.closeSetup)
 
   return (
@@ -16,8 +17,7 @@ const Setup = () => {
       <OverlayHeader title='AP Enterprise' onClose={closeSetup} />
 
       <OverlayContent hasHeader>
-        <WelcomeMessage />
-        <Steps />
+        {isSetupStarted ? <Steps /> : <WelcomeMessage />}
       </OverlayContent>
     </Modal>
   )

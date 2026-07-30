@@ -234,7 +234,8 @@ export default function History({
     )
   }
 
-  if (error) {
+  if (!flows && error) {
+
     return (
       <div className='p-4 text-center text-xs font-semibold text-red-9'>
         Failed to load history.

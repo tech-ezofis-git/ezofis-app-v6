@@ -86,8 +86,71 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       if (data.connectorId) settings.ocrAgent.connectorId = data.connectorId
     }
     if (toolType?.includes('ap agent')) {
-      settings.apAgent = settings.apAgent || {}
-      if (data.connectorId) settings.apAgent.connectorId = data.connectorId
+      const existingApAgent = settings.apAgent || {}
+      const features: string[] = Array.isArray(existingApAgent.features)
+        ? [...existingApAgent.features]
+        : []
+
+      const setFeature = (code: string, enabled: boolean) => {
+        const idx = features.indexOf(code)
+        if (enabled && idx === -1) features.push(code)
+        if (!enabled && idx !== -1) features.splice(idx, 1)
+      }
+
+      setFeature('DUPLICATE_DETECT', data.duplicateDetection !== false)
+      setFeature('BACKORDER_DETECT', !!data.backOrderDetection)
+      setFeature('TWO_WAY_MATCH', data.poMatching === '2-Way Match')
+      setFeature('THREE_WAY_MATCH', data.poMatching === '3-Way Match')
+
+      const formId =
+        data.invoiceType === 'Non-PO'
+          ? (data.invoiceMaster?.id ?? data.invoiceMaster)
+          : (data.poMaster?.id ?? data.poMaster)
+
+      const fieldScore = Array.isArray(data.weights)
+        ? data.weights.map((w: any) => ({
+            id: w.rowId || w.fieldId || w.id,
+            label: w.label || '',
+            value: w.value ?? 0,
+          }))
+        : existingApAgent.fieldScore || []
+
+      settings.apAgent = {
+        ...existingApAgent,
+        connectorId: data.connectorId ?? existingApAgent.connectorId ?? '',
+        decisionApprove: data.thresholds?.approved ?? existingApAgent.decisionApprove,
+        decisionPartial: data.thresholds?.partial ?? existingApAgent.decisionPartial,
+        decisionReject:
+          data.thresholds?.reject ?? existingApAgent.decisionReject ?? 0,
+        features,
+        fieldScore,
+        formId: formId ?? existingApAgent.formId ?? '',
+        resource:
+          existingApAgent.resource || (formId ? 'FORM' : existingApAgent.resource),
+        vendorMasterId:
+          data.vendorSource?.id ?? data.vendorSource ?? existingApAgent.vendorMasterId,
+        vendorValidationRequired: !!(
+          data.vendorMustExist ??
+          data.vendorSource?.id ??
+          data.vendorSource
+        ),
+      }
+
+      // Clean up flat UI fields that live under apAgent
+      delete settings.weights
+      delete settings.thresholds
+      delete settings.invoiceType
+      delete settings.poMatching
+      delete settings.poMaster
+      delete settings.invoiceMaster
+      delete settings.vendorMustExist
+      delete settings.vendorSource
+      delete settings.syncGL
+      delete settings.syncMatter
+      delete settings.glSource
+      delete settings.matterSource
+      delete settings.duplicateDetection
+      delete settings.backOrderDetection
     }
 
     // Clean up internal UI fields

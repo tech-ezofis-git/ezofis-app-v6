@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import cn from '@/utils/cn'
+import useSettingsTopbar from '../../hooks/useSettingsTopbar'
 import FolderSecurityPolicyWizard from './FolderSecurityPolicyWizard'
 import DocumentSecurityRuleWizard from './DocumentSecurityRuleWizard'
 
 export type FolderSecurityProps = {
   folderName: string
+  repositoryId: string
   onBack: () => void
 }
 
@@ -17,13 +19,32 @@ const tabs: { key: TabKey; label: string }[] = [
 
 export default function FolderSecurity({
   folderName,
+  repositoryId,
   onBack,
 }: FolderSecurityProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('folder')
 
+  const breadcrumbConfig = useMemo(
+    () => ({
+      items: [
+        { key: 'settings', label: 'Settings' },
+        { key: 'folder', label: folderName },
+        { label: 'Security' },
+      ],
+      onNavigate: (key: string) => {
+        if (key === 'settings' || key === 'folder') {
+          onBack()
+        }
+      },
+    }),
+    [folderName, onBack],
+  )
+
+  useSettingsTopbar(breadcrumbConfig)
+
   return (
-    <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      <div className='flex min-h-10 flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] bg-[var(--surface)] px-4'>
+    <div className='flex h-full min-h-0 flex-col bg-gray-1'>
+      <div className='flex min-h-10 flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] bg-gray-1 px-4'>
         <div className='flex h-10 min-w-0 items-center'>
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key
@@ -53,9 +74,17 @@ export default function FolderSecurity({
 
       <div className='flex-1 min-h-0'>
         {activeTab === 'folder' ? (
-          <FolderSecurityPolicyWizard folderName={folderName} onClose={onBack} />
+          <FolderSecurityPolicyWizard
+            folderName={folderName}
+            repositoryId={repositoryId}
+            onClose={onBack}
+          />
         ) : (
-          <DocumentSecurityRuleWizard folderName={folderName} onClose={onBack} />
+          <DocumentSecurityRuleWizard
+            folderName={folderName}
+            repositoryId={repositoryId}
+            onClose={onBack}
+          />
         )}
       </div>
     </div>

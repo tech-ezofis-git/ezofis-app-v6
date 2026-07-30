@@ -20,8 +20,15 @@ const directUploadItem = {
 }
 
 const emailProviders = [
-  { icon: 'logos:google-gmail', name: 'Gmail', value: 'gmail' },
   {
+    description: 'Connect your Gmail account to sync invoices from your inbox.',
+    icon: 'logos:google-gmail',
+    name: 'Gmail',
+    value: 'gmail',
+  },
+  {
+    description:
+      'Connect your Outlook account to sync invoices from your inbox.',
     icon: 'vscode-icons:file-type-outlook',
     name: 'Outlook',
     value: 'outlook',
@@ -143,7 +150,7 @@ const ProviderSettings = () => {
                       ? emailSettings.account ||
                         emailSettings.email ||
                         'Connected'
-                      : undefined
+                      : item.description
                   }
                   icon={item.icon}
                   name={item.name}

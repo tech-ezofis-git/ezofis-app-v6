@@ -19,8 +19,8 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
-import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
+import { redirectAfterLogin } from '../utils/redirectAfterLogin'
 interface Props {
   onChangeView: () => void
 }
@@ -131,32 +131,9 @@ const SignInForm = ({ onChangeView }: Props) => {
     }
   }, [origin])
 
-  // === navigation after successful login (simplified Vue logged()) ===
+  // === navigation after successful login ===
   const handleLoggedNavigation = async () => {
-    try {
-      await apiRouter.userSession()
-    } catch (err) {
-      console.error('Failed to load session details:', err)
-    }
-
-    if (shareTenantId) {
-      const shareCtx = authUserStore.getState().shareContext
-      if (shareCtx?.workflowInstanceId) {
-        navigate({ replace: true, to: '/requests' })
-      } else {
-        navigate({ replace: true, to: '/folders' })
-      }
-      setLoading(false)
-      return
-    }
-
-    const { isApSetUpCompleted } = useSetupStore.getState()
-    if (!isApSetUpCompleted) {
-      navigate({ replace: true, to: '/' })
-    } else {
-      navigate({ replace: true, to: '/requests' })
-    }
-    setLoading(false)
+    await redirectAfterLogin({ navigate, shareTenantId })
   }
 
   // === EMAIL + PASSWORD LOGIN (with tenant + social support) ===
@@ -196,10 +173,7 @@ const SignInForm = ({ onChangeView }: Props) => {
     } else {
       setShowTenantListModal(false)
       setTenantList([])
-
-      setTimeout(() => {
-        handleLoggedNavigation()
-      }, 100)
+      await handleLoggedNavigation()
     }
   }
 
@@ -263,7 +237,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         showToast({ message: 'SuccessFully Logged in', variant: 'success' })
         setShowTenantListModal(false)
         setTenantList([])
-        handleLoggedNavigation()
+        await handleLoggedNavigation()
       }
     } catch (e: any) {
       console.error(e)

@@ -1,6 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import type { Menu } from '@/layouts/app/types'
 import Icon from '@/components/base/icon/Icon'
+import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import cn from '@/utils/cn'
 
@@ -13,15 +14,23 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
   const pathname = useLocation({
     select: (location) => location.pathname,
   })
-  const isActive = pathname === route
+  const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
+  const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
+  const isActive = !isDemoFormOpen && pathname === route
   const isNavigationLocked = useSetupStore(
     (state) =>
       state.restrictNavigationUntilApSetup && !state.isApSetUpCompleted,
   )
   const isLinkDisabled = isNavigationLocked && route !== '/'
 
+  const handleClick = () => {
+    // Close demo even when already on this route (pathname won't change).
+    closeDemoForm()
+    onClick()
+  }
+
   return (
-    <li key={label} onClick={isLinkDisabled ? undefined : onClick}>
+    <li key={label} onClick={isLinkDisabled ? undefined : handleClick}>
       <Link
         tabIndex={isLinkDisabled ? -1 : undefined}
         to={route}

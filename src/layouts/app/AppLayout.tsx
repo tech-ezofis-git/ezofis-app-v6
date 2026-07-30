@@ -6,6 +6,7 @@ import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { useIsMobile } from '@/pages/mobile'
+import authUserStore from '@/stores/authUserStore'
 import requestStore from '../../pages/requests/stores/useRequestStore'
 import NewRequest from './components/NewRequest'
 import RequestDemoForm from './components/RequestDemoForm'
@@ -24,39 +25,57 @@ const AppLayout = ({ children }: Props) => {
   const closeNewRequest = requestStore((state) => state.closeNewRequest)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
+  const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
   const restrictNavigationUntilApSetup = useSetupStore(
     (state) => state.restrictNavigationUntilApSetup,
   )
+  const isAuthenticated = authUserStore((state) => state.isAuthenticated)
   const isMobile = useIsMobile()
 
   useEffect(() => {
     if (isNewRequestOpen) {
       closeNewRequest()
     }
-  }, [pathname, closeNewRequest])
+    if (isDemoFormOpen) {
+      closeDemoForm()
+    }
+  }, [pathname, closeNewRequest, closeDemoForm])
 
   useEffect(() => {
+    if (!authUserStore.getState().isAuthenticated) return
+
+    const applyIncompleteSetup = (configuration: unknown) => {
+      if (String(configuration) === '0') {
+        useSetupStore.getState().setIsSetupStarted(true)
+        useSetupStore.getState().setisApSetUpCompleted(false)
+        if (pathname !== '/') {
+          navigate({ replace: true, to: '/' })
+        }
+      }
+    }
+
     const fetchSession = async () => {
       try {
+        // Gated: runs on browser refresh; skipped if sign-in already loaded session
         const res = await authApi.getSession()
-        if (res?.data?.configuration === 0) {
-          useSetupStore.getState().setIsSetupStarted(true)
-          useSetupStore.getState().setisApSetUpCompleted(false)
-          navigate({ to: '/' })
-        } else if (res?.data?.configuration === 1) {
-          navigate({ to: '/requests' })
-        }
+        applyIncompleteSetup(
+          res?.data?.configuration ??
+            authUserStore.getState().session?.configuration,
+        )
       } catch (err) {
         console.error('Failed to fetch session on app layout mount:', err)
       }
     }
     fetchSession()
+    // Mount-only (browser refresh). Sign-in already calls userSession before entering the app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
+    if (!isAuthenticated) return
     if (
       restrictNavigationUntilApSetup &&
       !isApSetUpCompleted &&
@@ -64,7 +83,13 @@ const AppLayout = ({ children }: Props) => {
     ) {
       navigate({ replace: true, to: '/' })
     }
-  }, [isApSetUpCompleted, restrictNavigationUntilApSetup, pathname, navigate])
+  }, [
+    isAuthenticated,
+    isApSetUpCompleted,
+    restrictNavigationUntilApSetup,
+    pathname,
+    navigate,
+  ])
 
   if (isMobile) {
     return (

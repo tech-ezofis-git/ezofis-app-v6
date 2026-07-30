@@ -157,7 +157,10 @@ export interface V6WorkflowDetail {
 
 const getTenantHeaders = () => {
   const store = authUserStore.getState()
-  const tenantId = store.session?.tenantId || ''
+  const tenantId =
+    store.session?.tenantId ||
+    (store.identity as { tenantId?: string } | null)?.tenantId ||
+    ''
   return { 'X-Tenant-Id': tenantId }
 }
 
@@ -644,6 +647,15 @@ export interface V6FilterField {
   supportedOperators: string[]
 }
 
+const EXCLUDED_FILTER_FIELD_DATA_TYPES = new Set([
+  'FILE_UPLOAD',
+  'DYNAMIC_TABLE',
+  'TABLE',
+])
+
+export const isExcludedFilterFieldDataType = (dataType: unknown) =>
+  EXCLUDED_FILTER_FIELD_DATA_TYPES.has(String(dataType || '').toUpperCase())
+
 export interface V6FilterFieldsResponse {
   workflowId: string
   formId: string
@@ -706,7 +718,15 @@ const getFilterFields = async (workflowId: string) => {
       url: `/workflows/${workflowId}/filter-fields`,
     })
     if (status !== 200) throw new Error('invalid status code')
-    response.data = data as V6FilterFieldsResponse
+    const payload = data as V6FilterFieldsResponse
+    response.data = {
+      ...payload,
+      fields: Array.isArray(payload?.fields)
+        ? payload.fields.filter(
+            (field) => !isExcludedFilterFieldDataType(field.dataType),
+          )
+        : [],
+    }
   } catch (e: unknown) {
     console.error(e)
     const err = e as { message?: string; response?: { data?: string } }

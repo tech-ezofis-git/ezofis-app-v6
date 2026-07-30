@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import cn from '@/utils/cn'
 
 export type SetupStepId = 1 | 2 | 3 | 4 | 5 | 6
@@ -872,7 +873,7 @@ export function AiProcessingState({
         className='relative flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent-primary'
         transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <Icon className='size-6' name='tabler:sparkles' />
+        <AiBrandIcon className='size-6' variant='curved-purple' />
       </motion.div>
 
       <div className='min-h-[48px] max-w-md px-4'>

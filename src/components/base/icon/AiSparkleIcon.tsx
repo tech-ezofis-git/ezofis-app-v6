@@ -1,16 +1,17 @@
-import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
+import cn from '@/utils/cn'
 
 interface Props {
   className?: string
   size?: number
 }
 
-/** Shared tabler:sparkles icon used for AI suggestion / Ask AI UI. */
+/** Shared AiBrandIcon used for AI suggestion / Ask AI UI. */
 const AiSparkleIcon = ({ className, size = 18 }: Props) => (
-  <Icon
-    className={className ?? 'shrink-0 text-[var(--primary-9)]'}
-    name='tabler:sparkles'
+  <AiBrandIcon
+    className={cn('shrink-0', className)}
     style={{ height: size, width: size }}
+    variant='curved-purple'
   />
 )
 

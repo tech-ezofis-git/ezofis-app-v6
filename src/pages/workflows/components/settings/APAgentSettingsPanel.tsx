@@ -2,14 +2,57 @@ import type { Node } from '@xyflow/react'
 import { useQuery } from '@tanstack/react-query'
 import { useNodes, useReactFlow } from '@xyflow/react'
 import { nanoid } from 'nanoid'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getMasterFormsQueryOptions } from '@/api/form/queries'
+import { requestApi } from '@/api/requests/requests'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
+
+const toWeightRows = (raw: any[] | undefined) =>
+  Array.isArray(raw)
+    ? raw.map((w) => ({
+        fieldId: w.fieldId ?? w.id ?? null,
+        label: w.label ?? w.name ?? '',
+        rowId: w.rowId || w.id || nanoid(),
+        value: Number(w.value) || 0,
+      }))
+    : []
+
+const extractFormFieldOptions = (formJson: any) => {
+  const allOptions: { id: string; name: string }[] = []
+  const panels = [...(formJson?.panels || []), ...(formJson?.secondaryPanels || [])]
+
+  panels.forEach((panel: any) => {
+    if (!panel.fields?.length) return
+    panel.fields.forEach((field: any) => {
+      if (field.type === 'DIVIDER') return
+      const fieldIdentifier = String(field.name || field.id)
+      if (field.type === 'TABLE') {
+        allOptions.push({
+          id: fieldIdentifier,
+          name: field.label || field.type,
+        })
+        field.settings?.specific?.tableColumns?.forEach((column: any) => {
+          allOptions.push({
+            id: String(column.name || column.id),
+            name: column.label || column.type,
+          })
+        })
+      } else {
+        allOptions.push({
+          id: fieldIdentifier,
+          name: field.label || field.type,
+        })
+      }
+    })
+  })
+
+  return allOptions
+}
 
 const invoiceTypeOptions = [
   {
@@ -39,16 +82,6 @@ const poMatchingOptions = [
     id: 2,
     name: '3-Way Match',
   },
-]
-
-const availableFields = [
-  { icon: 'lucide:user', id: 1, name: 'Supplier Name' },
-  { icon: 'lucide:hash', id: 2, name: 'PO Number' },
-  { icon: 'lucide:banknote', id: 3, name: 'Currency' },
-  { icon: 'lucide:dollar-sign', id: 4, name: 'Total Due' },
-  { icon: 'lucide:list', id: 5, name: 'Line Items' },
-  { icon: 'lucide:calendar', id: 6, name: 'Invoice Date' },
-  { icon: 'lucide:percent', id: 7, name: 'Tax Amount' },
 ]
 
 interface Props {
@@ -124,7 +157,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
 
   // Validation States
   const [vendorMustExist, setVendorMustExist] = useState(
-    nodeData.vendorMustExist ?? true,
+    nodeData.vendorMustExist ?? !!nodeData.vendorSource,
   )
   const [syncGL, setSyncGL] = useState(nodeData.syncGL ?? false)
   const [syncMatter, setSyncMatter] = useState(nodeData.syncMatter ?? false)
@@ -135,46 +168,11 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     nodeData.backOrderDetection ?? false,
   )
 
-  // Scoring States
-  const [weights, setWeights] = useState(
-    nodeData.weights || [
-      {
-        fieldId: 1,
-        icon: 'lucide:user',
-        label: 'Supplier Name',
-        rowId: nanoid(),
-        value: 35,
-      },
-      {
-        fieldId: 2,
-        icon: 'lucide:hash',
-        label: 'PO Number',
-        rowId: nanoid(),
-        value: 35,
-      },
-      {
-        fieldId: 3,
-        icon: 'lucide:banknote',
-        label: 'Currency',
-        rowId: nanoid(),
-        value: 10,
-      },
-      {
-        fieldId: 4,
-        icon: 'lucide:dollar-sign',
-        label: 'Total Due',
-        rowId: nanoid(),
-        value: 10,
-      },
-      {
-        fieldId: 5,
-        icon: 'lucide:list',
-        label: 'Line Items',
-        rowId: nanoid(),
-        value: 10,
-      },
-    ],
-  )
+  // Scoring States — loaded from workflow JSON fieldScore via import
+  const [weights, setWeights] = useState(() => toWeightRows(nodeData.weights))
+  const [formFieldOptions, setFormFieldOptions] = useState<
+    { id: string; name: string }[]
+  >([])
 
   const [thresholds, setThresholds] = useState(
     nodeData.thresholds || {
@@ -198,6 +196,26 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   const glSourceValue = glSource || getMasterOption(nodeData.glSource) || null
   const matterSourceValue =
     matterSource || getMasterOption(nodeData.matterSource) || null
+
+  const scoreSourceFormId =
+    (isPO ? poMasterValue?.id : invoiceMasterValue?.id) ??
+    poMasterValue?.id ??
+    invoiceMasterValue?.id ??
+    null
+
+  // Options: form fields from selected master + entries already saved in workflow JSON
+  const scoreFieldOptions = useMemo(() => {
+    const byId = new Map<string, { id: string; name: string }>()
+    formFieldOptions.forEach((opt) => byId.set(String(opt.id), opt))
+    weights.forEach((w: any) => {
+      if (!w.label) return
+      const id = String(w.fieldId ?? w.rowId)
+      if (!byId.has(id)) {
+        byId.set(id, { id, name: w.label })
+      }
+    })
+    return Array.from(byId.values())
+  }, [formFieldOptions, weights])
 
   // --- Update Logic ---
   const updateNodeData = (key: string, value: any) => {
@@ -230,16 +248,16 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     updateNodeData('weights', newWeights)
   }
 
-  const updateWeightField = (rowId: string, fieldId: number) => {
-    const field = availableFields.find((f) => f.id === fieldId)
-    if (!field) return
+  const updateWeightField = (
+    rowId: string,
+    option: { id: string | number; name: string },
+  ) => {
     const newWeights = weights.map((w: any) =>
       w.rowId === rowId
         ? {
             ...w,
-            fieldId: field.id,
-            icon: field.icon,
-            label: field.name,
+            fieldId: option.id,
+            label: option.name,
           }
         : w,
     )
@@ -248,16 +266,18 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   }
 
   const addWeight = () => {
-    const nextAvailable = availableFields.find(
-      (f) => !weights.find((w: any) => w.fieldId === f.id),
+    const nextAvailable = scoreFieldOptions.find(
+      (f) =>
+        !weights.find(
+          (w: any) =>
+            String(w.fieldId) === String(f.id) || w.label === f.name,
+        ),
     )
-    const field = nextAvailable || availableFields[0]
     const newWeights = [
       ...weights,
       {
-        fieldId: field.id,
-        icon: field.icon,
-        label: field.name,
+        fieldId: nextAvailable?.id ?? null,
+        label: nextAvailable?.name ?? '',
         rowId: nanoid(),
         value: 0,
       },
@@ -270,6 +290,16 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     const newWeights = weights.filter((w: any) => w.rowId !== rowId)
     setWeights(newWeights)
     updateNodeData('weights', newWeights)
+  }
+
+  const getWeightSelectValue = (w: any) => {
+    if (!w.label && (w.fieldId == null || w.fieldId === '')) return null
+    const id = String(w.fieldId ?? w.rowId)
+    return (
+      scoreFieldOptions.find((f) => String(f.id) === id) ||
+      scoreFieldOptions.find((f) => f.name === w.label) ||
+      (w.label ? { id, name: w.label } : null)
+    )
   }
 
   // --- Sync local state with nodeData changes ---
@@ -292,8 +322,47 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     ) {
       setVendorMustExist(nodeData.vendorMustExist)
     }
-    // Add other syncs as needed...
   }, [nodeData])
+
+  // Hydrate scoring from workflow JSON when the selected node changes
+  useEffect(() => {
+    setWeights(toWeightRows(nodeData.weights))
+    setThresholds(
+      nodeData.thresholds || {
+        approved: 90,
+        partial: 60,
+      },
+    )
+  }, [currentNode?.id])
+
+  // Load selectable fields from the selected master form (not hardcoded)
+  useEffect(() => {
+    if (!scoreSourceFormId) {
+      setFormFieldOptions([])
+      return
+    }
+
+    let cancelled = false
+    const loadFields = async () => {
+      try {
+        const response = await requestApi.getForm(scoreSourceFormId)
+        if (!response?.formJson || cancelled) return
+        const form =
+          typeof response.formJson === 'string'
+            ? JSON.parse(response.formJson)
+            : response.formJson
+        if (!cancelled) setFormFieldOptions(extractFormFieldOptions(form))
+      } catch (e) {
+        console.error('Error loading AP Agent score fields:', e)
+        if (!cancelled) setFormFieldOptions([])
+      }
+    }
+
+    loadFields()
+    return () => {
+      cancelled = true
+    }
+  }, [scoreSourceFormId])
 
   // Special sync for masterForms once they load — resolve IDs to named options
   useEffect(() => {
@@ -550,6 +619,10 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                 onChange={(checked) => {
                   setVendorMustExist(checked)
                   updateNodeData('vendorMustExist', checked)
+                  if (!checked) {
+                    setVendorSource(null)
+                    updateNodeData('vendorSource', null)
+                  }
                 }}
               />
             </div>
@@ -568,6 +641,10 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     onChange={(val) => {
                       setVendorSource(val)
                       updateNodeData('vendorSource', val)
+                      // Enable verification whenever a master form is selected
+                      const enabled = !!val
+                      setVendorMustExist(enabled)
+                      updateNodeData('vendorMustExist', enabled)
                     }}
                   />
                 </div>
@@ -769,14 +846,16 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                 >
                   <div className='w-[140px] shrink-0'>
                     <InputSelect
-                      options={availableFields}
+                      options={scoreFieldOptions}
                       placeholder='Select Field'
                       searchable={true}
-                      value={
-                        availableFields.find((f) => f.id === w.fieldId) || null
-                      }
+                      value={getWeightSelectValue(w)}
                       onChange={(val) =>
-                        val && updateWeightField(w.rowId, Number(val.id))
+                        val &&
+                        updateWeightField(w.rowId, {
+                          id: val.id,
+                          name: val.name,
+                        })
                       }
                     />
                   </div>
@@ -867,14 +946,17 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
             </div>
 
             <div className='grid grid-cols-2 gap-2'>
-              <div className='space-y-1 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-1.5 shadow-sm transition-colors hover:border-[#86efac]'>
-                <div className='flex items-center justify-between px-0.5 pb-0.5'>
+              <div className='space-y-1.5 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] p-2 shadow-sm transition-colors hover:border-[#86efac]'>
+                <div className='flex items-center justify-between px-0.5'>
                   <span className='text-13 font-bold tracking-tight text-[#16a34a]'>
                     Approved
                   </span>
+                  <span className='text-12 font-semibold text-[#16a34a]'>
+                    {thresholds.approved}%
+                  </span>
                 </div>
 
-                <div className='group/slider relative flex h-7 items-center'>
+                <div className='group/slider relative flex h-6 items-center'>
                   <div
                     className='pointer-events-none absolute -top-7 z-40 rounded-md bg-gray-13 px-2 py-1 text-13 font-bold whitespace-nowrap text-white opacity-0 shadow-sm transition-all duration-200 group-hover/slider:opacity-100 group-active/slider:opacity-100'
                     style={{
@@ -886,18 +968,27 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     <div className='absolute bottom-[-3px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-13' />
                   </div>
 
+                  {/* Unfilled track — solid gray for clear contrast */}
                   <div
                     className={cn(
-                      'pointer-events-none absolute right-0 left-0 h-[6.5px] rounded-full shadow-inner',
-                      isThresholdInvalid ? 'bg-red-a2' : 'bg-white/60',
+                      'pointer-events-none absolute right-0 left-0 h-2 rounded-full',
+                      isThresholdInvalid ? 'bg-red-5' : 'bg-gray-5',
                     )}
+                  />
+                  {/* Filled score line */}
+                  <div
+                    className={cn(
+                      'pointer-events-none absolute left-0 z-10 h-2 rounded-full',
+                      isThresholdInvalid ? 'bg-red-9' : 'bg-[#16a34a]',
+                    )}
+                    style={{ width: `${thresholds.approved}%` }}
                   />
                   <div
                     className={cn(
-                      'pointer-events-none absolute z-20 h-4.5 w-4.5 rounded-full border-[2.5px] border-white shadow-md ring-0 transition-all duration-300',
+                      'pointer-events-none absolute z-20 h-4 w-4 rounded-full border-[2.5px] border-white shadow-md ring-0 transition-all duration-300',
                       isThresholdInvalid
-                        ? 'bg-red-11 group-hover/slider:ring-red-11/20'
-                        : 'bg-[#16a34a] group-hover/slider:ring-[#16a34a]/20',
+                        ? 'bg-red-11 group-hover/slider:ring-4 group-hover/slider:ring-red-11/20'
+                        : 'bg-[#16a34a] group-hover/slider:ring-4 group-hover/slider:ring-[#16a34a]/20',
                     )}
                     style={{
                       left: `${thresholds.approved}%`,
@@ -914,7 +1005,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     onChange={(e) => {
                       const newThresholds = {
                         ...thresholds,
-                        approved: parseInt(e.target.value),
+                        approved: Number.parseInt(e.target.value, 10),
                       }
                       setThresholds(newThresholds)
                       updateNodeData('thresholds', newThresholds)
@@ -923,14 +1014,17 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                 </div>
               </div>
 
-              <div className='space-y-1 rounded-lg border border-[#fef3c7] bg-[#fffbeb] p-1.5 shadow-sm transition-colors hover:border-[#fcd34d]'>
-                <div className='flex items-center justify-between px-0.5 pb-0.5'>
+              <div className='space-y-1.5 rounded-lg border border-[#fef3c7] bg-[#fffbeb] p-2 shadow-sm transition-colors hover:border-[#fcd34d]'>
+                <div className='flex items-center justify-between px-0.5'>
                   <span className='text-13 font-bold tracking-tight text-[#d97706]'>
                     Partial Match
                   </span>
+                  <span className='text-12 font-semibold text-[#d97706]'>
+                    {thresholds.partial}%
+                  </span>
                 </div>
 
-                <div className='group/slider relative flex h-7 items-center'>
+                <div className='group/slider relative flex h-6 items-center'>
                   <div
                     className='pointer-events-none absolute -top-7 z-40 rounded-md bg-gray-13 px-2 py-1 text-13 font-bold whitespace-nowrap text-white opacity-0 shadow-sm transition-all duration-200 group-hover/slider:opacity-100 group-active/slider:opacity-100'
                     style={{
@@ -942,18 +1036,27 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     <div className='absolute bottom-[-3px] left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-gray-13' />
                   </div>
 
+                  {/* Unfilled track — solid gray for clear contrast */}
                   <div
                     className={cn(
-                      'pointer-events-none absolute right-0 left-0 h-[6.5px] rounded-full shadow-inner',
-                      isThresholdInvalid ? 'bg-red-a2' : 'bg-white/60',
+                      'pointer-events-none absolute right-0 left-0 h-2 rounded-full',
+                      isThresholdInvalid ? 'bg-red-5' : 'bg-gray-5',
                     )}
+                  />
+                  {/* Filled score line */}
+                  <div
+                    className={cn(
+                      'pointer-events-none absolute left-0 z-10 h-2 rounded-full',
+                      isThresholdInvalid ? 'bg-red-9' : 'bg-[#d97706]',
+                    )}
+                    style={{ width: `${thresholds.partial}%` }}
                   />
                   <div
                     className={cn(
-                      'pointer-events-none absolute z-20 h-4.5 w-4.5 rounded-full border-[2.5px] border-white shadow-md ring-0 transition-all duration-300',
+                      'pointer-events-none absolute z-20 h-4 w-4 rounded-full border-[2.5px] border-white shadow-md ring-0 transition-all duration-300',
                       isThresholdInvalid
-                        ? 'bg-red-11 group-hover/slider:ring-red-11/20'
-                        : 'bg-[#d97706] group-hover/slider:ring-[#d97706]/20',
+                        ? 'bg-red-11 group-hover/slider:ring-4 group-hover/slider:ring-red-11/20'
+                        : 'bg-[#d97706] group-hover/slider:ring-4 group-hover/slider:ring-[#d97706]/20',
                     )}
                     style={{
                       left: `${thresholds.partial}%`,
@@ -970,7 +1073,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                     onChange={(e) => {
                       const newThresholds = {
                         ...thresholds,
-                        partial: parseInt(e.target.value),
+                        partial: Number.parseInt(e.target.value, 10),
                       }
                       setThresholds(newThresholds)
                       updateNodeData('thresholds', newThresholds)

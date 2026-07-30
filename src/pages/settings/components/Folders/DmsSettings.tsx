@@ -23,6 +23,7 @@ import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -53,6 +54,7 @@ import SettingsPageHeader, {
 } from '../SettingsPageHeader'
 import SettingsSetupContent from '../SettingsSetupContent'
 import SettingsSetupHeader from '../SettingsSetupHeader'
+import SettingsWizardLayout from '../SettingsWizardLayout'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import AiFolderBuilder from './AiFolderBuilder'
@@ -101,7 +103,7 @@ type SelectOption = {
   value?: string
 }
 
-type WizardStep = 1 | 2 | 3 | 4 | 5
+type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
 
 type WizardStepItem = {
   description: string
@@ -270,11 +272,12 @@ const defaultFields: FieldRow[] = [
 ]
 
 const wizardSteps: WizardStepItem[] = [
-  { description: 'Name, owner and category', id: 1, title: 'Folder Details' },
-  { description: 'Select storage provider', id: 2, title: 'Storage' },
-  { description: 'Configure metadata fields', id: 3, title: 'Fields' },
-  { description: 'File version strategy', id: 4, title: 'Versioning' },
-  { description: 'ERP and sync mapping', id: 5, title: 'Integrations' },
+  { description: 'Name, owner & category', id: 1, title: 'Folder Details' },
+  { description: 'Storage provider', id: 2, title: 'Storage' },
+  { description: 'Metadata fields', id: 3, title: 'Fields' },
+  { description: 'Version strategy', id: 4, title: 'Versioning' },
+  { description: 'ERP & sync mapping', id: 5, title: 'Integrations' },
+  { description: 'Security policies', id: 6, title: 'Security' },
 ]
 
 type StorageOption = {
@@ -563,9 +566,13 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
-  const [securityFolderName, setSecurityFolderName] = useState<string | null>(
+  // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
+  //   null,
+  // )
+  const [securityRepository, setSecurityRepository] = useState<RepositoryRow | null>(
     null,
   )
+  const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(null)
   const [showWizard, setShowWizard] = useState(false)
   const [showAiBuilder, setShowAiBuilder] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
@@ -609,7 +616,8 @@ export default function DmsFolderConfiguration({
   }, [repositories, activeFilters])
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
-    setSecurityFolderName(null)
+    setSecurityRepository(null)
+    setEditingRepositoryId(repository.id)
     setShowAiBuilder(false)
     setFolderName(repository.name)
     setShowWizard(true)
@@ -619,7 +627,7 @@ export default function DmsFolderConfiguration({
   const openSecurityRepository = useCallback((repository: RepositoryRow) => {
     setShowWizard(false)
     setShowAiBuilder(false)
-    setSecurityFolderName(repository.name)
+    setSecurityRepository(repository)
   }, [])
 
   const loadRepositories = useCallback(async () => {
@@ -669,6 +677,7 @@ export default function DmsFolderConfiguration({
 
   const closeWizard = () => {
     setShowWizard(false)
+    setEditingRepositoryId(null)
     setStep(1)
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
@@ -676,6 +685,7 @@ export default function DmsFolderConfiguration({
 
   const openManualBuilder = () => {
     setShowAiBuilder(false)
+    setEditingRepositoryId(null)
     setFolderName('')
     setDescription('')
     setFields(defaultFields)
@@ -868,6 +878,7 @@ export default function DmsFolderConfiguration({
   } = useRepositoryTable(filteredRepositories, {
     onEditRepository: openEditRepository,
     onSecurityRepository: openSecurityRepository,
+    // onSecurityRepository: openSecurityRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
     isReLoading: isLoadingRepositories,
@@ -884,10 +895,11 @@ export default function DmsFolderConfiguration({
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      {securityFolderName ? (
+      {securityRepository ? (
         <FolderSecurity
-          folderName={securityFolderName}
-          onBack={() => setSecurityFolderName(null)}
+          folderName={securityRepository.name}
+          repositoryId={securityRepository.id}
+          onBack={() => setSecurityRepository(null)}
         />
       ) : showAiBuilder ? (
         <AiFolderBuilder
@@ -929,7 +941,7 @@ export default function DmsFolderConfiguration({
                       onClick={openManualBuilder}
                     />
                     <MenuItem
-                      icon='lucide:sparkles'
+                      leftSection={<AiBrandIcon className='size-4' variant='curved-purple' />}
                       label='AI builder'
                       onClick={openAiBuilder}
                     />
@@ -1008,34 +1020,41 @@ export default function DmsFolderConfiguration({
           </div>
         </div>
       ) : (
-        <>
-          <SettingsSetupHeader
-            moduleTitle='Folder Configuration'
-            progress={(step / wizardSteps.length) * 100}
-            stepDescription={
-              wizardSteps.find((item) => item.id === step)?.description || ''
-            }
-            stepTitle={
-              wizardSteps.find((item) => item.id === step)?.title || ''
-            }
-            setupTitle='New Folder'
-            onBackToSettings={onBack}
-            onCancelSetup={closeWizard}
-          />
+        (() => {
+          const currentStepInfo = wizardSteps.find((item) => item.id === step)
+          const formattedWizardSteps = wizardSteps.map((item) => ({
+            id: item.id - 1,
+            label: item.title,
+            description: item.description,
+            icon: item.id === 1 ? 'tabler:folder' : item.id === 2 ? 'tabler:database' : item.id === 3 ? 'tabler:list-details' : item.id === 4 ? 'tabler:git-branch' : item.id === 5 ? 'tabler:api' : 'tabler:shield-lock',
+          }))
 
-          <div className='grid min-h-[calc(100vh-96px)] grid-cols-1 lg:grid-cols-[296px_1fr]'>
-            <aside className='border-r border-[var(--border-default)] bg-[var(--surface)] px-4 py-9'>
-              <StepNav step={step} setStep={setStep} />
-            </aside>
-
-            <SettingsSetupContent fullWidth>
+          return (
+            <SettingsWizardLayout
+              activeStep={step - 1}
+              steps={formattedWizardSteps}
+              onStepChange={(stepIdx) => setStep((stepIdx + 1) as WizardStep)}
+              onBack={goBack}
+              onNext={step === 5 ? () => { void handleCreateRepository() } : goNext}
+              onSave={closeWizard}
+              onCancel={closeWizard}
+              isSaving={isSavingRepository}
+              nextLabel={step === 5 ? 'Save & Next' : 'Continue'}
+              saveLabel='Done'
+              moduleTitle='Folder Configuration'
+              setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
+              headerTitle={editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'}
+              headerDescription='Configure repository storage, metadata fields, versioning, and security'
+            >
               <WizardContent
                 description={description}
                 displayMode={displayMode}
+                editingRepositoryId={editingRepositoryId}
                 fields={fields}
                 folderCoordinator={folderCoordinator}
                 folderName={folderName}
                 folderOwner={folderOwner}
+                setStep={setStep}
                 step={step}
                 storage={storage}
                 storageConnectorId={storageConnectorId}
@@ -1052,43 +1071,9 @@ export default function DmsFolderConfiguration({
                 setVersioning={setVersioning}
                 onStorageConnectorChange={handleStorageConnectorChange}
               />
-
-              <div className='mt-8 flex items-center justify-between border-t border-[var(--border-default)] pt-6'>
-                <button
-                  className='inline-flex h-10 items-center rounded-[5px] border border-[var(--border-default)] bg-surface px-5 text-[15px] font-semibold text-[var(--gray-13)] transition hover:bg-[var(--gray-2)] disabled:cursor-not-allowed disabled:opacity-50'
-                  disabled={step === 1}
-                  type='button'
-                  onClick={goBack}
-                >
-                  Back
-                </button>
-
-                <div className='flex items-center gap-3'>
-                  {step === 5 ? (
-                    <button
-                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)] disabled:cursor-not-allowed disabled:opacity-60'
-                      disabled={isSavingRepository}
-                      type='button'
-                      onClick={() => {
-                        void handleCreateRepository()
-                      }}
-                    >
-                      {isSavingRepository ? 'Saving...' : 'Save'}
-                    </button>
-                  ) : (
-                    <button
-                      className='h-10 rounded-[5px] bg-[var(--primary-9)] px-5 text-[15px] font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
-                      type='button'
-                      onClick={goNext}
-                    >
-                      Next
-                    </button>
-                  )}
-                </div>
-              </div>
-            </SettingsSetupContent>
-          </div>
-        </>
+            </SettingsWizardLayout>
+          )
+        })()
       )}
     </div>
   )
@@ -1276,7 +1261,7 @@ function FieldsTable({
             field.level === next[index]?.level &&
             field.orderId === next[index]?.orderId &&
             field.includeInFolderStructure ===
-              next[index]?.includeInFolderStructure,
+            next[index]?.includeInFolderStructure,
         )
       return unchanged ? prev : next
     })
@@ -1304,11 +1289,11 @@ function FieldsTable({
         prev.map((field) =>
           field.id === id
             ? {
-                ...field,
-                iconKey: checked ? field.iconKey || 'folder' : undefined,
-                includeInFolderStructure: checked,
-                isMandatory: checked ? true : field.isMandatory,
-              }
+              ...field,
+              iconKey: checked ? field.iconKey || 'folder' : undefined,
+              includeInFolderStructure: checked,
+              isMandatory: checked ? true : field.isMandatory,
+            }
             : field,
         ),
       ),
@@ -1749,10 +1734,12 @@ function useRepositoryTable(
   rows: RepositoryRow[],
   {
     onEditRepository,
-    onSecurityRepository,
+    onSecurityRepository
+
   }: {
     onEditRepository: (repository: RepositoryRow) => void
     onSecurityRepository: (repository: RepositoryRow) => void
+
   },
 ) {
   const columnHelper = createColumnHelper<RepositoryRow>()
@@ -1848,14 +1835,14 @@ function useRepositoryTable(
         header: 'Actions',
         id: 'actions',
         meta: settingsHeaderMeta.end,
-        minSize: 72,
-        size: 72,
+        minSize: 100,
+        size: 100,
         cell: ({ row }) => {
           const repository = row.original
 
           return (
             <div
-              className='flex justify-end'
+              className='flex items-center justify-end gap-1'
               onClick={(event) => event.stopPropagation()}
             >
               <Menu
@@ -1889,6 +1876,7 @@ function useRepositoryTable(
       }),
     ],
     [columnHelper, onEditRepository, onSecurityRepository],
+
   )
 
   const table = useReactTable({
@@ -1920,6 +1908,7 @@ function useRepositoryTable(
 function WizardContent({
   description,
   displayMode,
+  editingRepositoryId,
   fields,
   folderCoordinator,
   folderName,
@@ -1936,12 +1925,14 @@ function WizardContent({
   setFolderCoordinator,
   setFolderName,
   setFolderOwner,
+  setStep,
   setStorage,
   setVersioning,
   onStorageConnectorChange,
 }: {
   description: string
   displayMode: string
+  editingRepositoryId?: string | null
   fields: FieldRow[]
   folderCoordinator: SelectOption | null
   folderName: string
@@ -1952,6 +1943,7 @@ function WizardContent({
   setFolderCoordinator: Dispatch<SetStateAction<SelectOption | null>>
   setFolderName: Dispatch<SetStateAction<string>>
   setFolderOwner: Dispatch<SetStateAction<SelectOption | null>>
+  setStep: (step: WizardStep) => void
   setVersioning: Dispatch<SetStateAction<string>>
   step: WizardStep
   storage: string
@@ -1983,7 +1975,7 @@ function WizardContent({
     if (!response.error && Array.isArray(response.data)) {
       response.data.forEach(
         (repository: { fields?: Array<{ dataType?: string }> }) => {
-          ;(repository.fields || []).forEach((field) => {
+          ; (repository.fields || []).forEach((field) => {
             if (field.dataType) types.add(field.dataType)
           })
         },
@@ -2031,9 +2023,9 @@ function WizardContent({
   if (step === 1) {
     return (
       <SettingsFormSection>
-        <p className='text-sm text-gray-11'>
+        {/* <p className='text-sm text-gray-11'>
           Define the basic information for your folder.
-        </p>
+        </p> */}
 
         <InputText
           label='Folder Name *'
@@ -2343,6 +2335,16 @@ function WizardContent({
           </div>
         </div>
       </div>
+    )
+  }
+
+  if (step === 6) {
+    return (
+      <FolderSecurity
+        folderName={folderName || 'Folder'}
+        repositoryId={editingRepositoryId || ''}
+        onBack={() => setStep(5)}
+      />
     )
   }
 

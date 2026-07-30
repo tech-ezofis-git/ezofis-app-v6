@@ -1,8 +1,10 @@
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import Tooltip from '@/components/base/Tooltip'
 import Logo from '@/components/common/Logo'
-import useSidebarStore from '@/layouts/app/stores/useSidebarStore'
+import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
+import cn from '@/utils/cn'
 import type { Menus } from '../../../types'
 import SidebarToggle from '../SidebarToggle'
 import MenuItem from './components/MenuItem'
@@ -12,7 +14,8 @@ interface Props {
 }
 
 const SidebarSmall = ({ menus }: Props) => {
-  const openSidebar = useSidebarStore((state) => state.openSidebar)
+  const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
+  const openDemoForm = useRequestDemoStore((s) => s.openDemoForm)
 
   return (
     <aside className='fixed top-0 left-0 z-[60] hidden h-svh border-r border-gray-3 xl:block'>
@@ -40,21 +43,22 @@ const SidebarSmall = ({ menus }: Props) => {
         </div>
 
         <div className='flex flex-col items-center gap-3'>
-          {/* Blinking CTA icon — click to expand sidebar & request a demo */}
+          {/* Request a Demo — highlighted while demo form is open */}
           <Tooltip
             content='Automate Your Full AP Workflow — Request a Demo'
             position='right'
           >
             <button
+              aria-current={isDemoFormOpen ? 'page' : undefined}
               aria-label='Request a Demo'
-              className='group relative flex size-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-2 active:scale-95'
+              className={cn(
+                'group relative flex size-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-2 active:scale-95',
+                isDemoFormOpen && 'bg-gray-3',
+              )}
               type='button'
-              onClick={openSidebar}
+              onClick={openDemoForm}
             >
-              <Icon
-                className='relative size-4 text-primary-10 group-hover:text-primary-11'
-                name='lucide:sparkles'
-              />
+              <AiBrandIcon className='relative size-4' variant='curved-purple' />
             </button>
           </Tooltip>
 

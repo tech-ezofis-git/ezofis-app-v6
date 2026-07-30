@@ -3,6 +3,7 @@ import posthog from 'posthog-js'
 import { create } from 'zustand'
 import type { User } from '@/schemas/user'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { resetUserSessionFetchGate } from '@/api/v6/auth'
 import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 
 export type DefaultView = Record<string, unknown>
@@ -139,25 +140,7 @@ const authUserStore = create<Store>()((set) => {
     },
 
     resetAuthState: () => {
-      // Clear localStorage
-      if (globalThis.window !== undefined) {
-        globalThis.localStorage.removeItem('identity')
-        globalThis.localStorage.removeItem('session')
-        globalThis.localStorage.removeItem('isApSetUpCompleted')
-        globalThis.localStorage.removeItem('restrictNavigationUntilApSetup')
-      }
-
-      // Reset setup store state
-      try {
-        useSetupStore.getState().setisApSetUpCompleted(false)
-        useSetupStore.getState().setRestrictNavigationUntilApSetup(false)
-        useSetupStore.getState().setIsSetupStarted(true)
-        useSetupStore.getState().setStep(0)
-      } catch (err) {
-        console.error('Failed to reset setup store state:', err)
-      }
-
-      // Clear in-memory state
+      // Clear auth in memory first so route guards immediately treat the user as logged out
       set(() => ({
         defaultView: {},
         identity: null,
@@ -169,7 +152,13 @@ const authUserStore = create<Store>()((set) => {
         signUpUserData: emptySignUp,
       }))
 
+      resetUserSessionFetchGate()
+
       if (globalThis.window !== undefined) {
+        globalThis.localStorage.removeItem('identity')
+        globalThis.localStorage.removeItem('session')
+        globalThis.localStorage.removeItem('isApSetUpCompleted')
+        globalThis.localStorage.removeItem('restrictNavigationUntilApSetup')
         try {
           sessionStorage.removeItem('ezofis.repositoryShareContext')
           sessionStorage.removeItem('shareToken')
@@ -181,6 +170,13 @@ const authUserStore = create<Store>()((set) => {
         } catch {
           // ignore
         }
+      }
+
+      // Reset setup after auth is cleared (avoids AP-setup flash / redirect loops)
+      try {
+        useSetupStore.getState().resetSetupState()
+      } catch (err) {
+        console.error('Failed to reset setup store state:', err)
       }
     },
 
