@@ -48,12 +48,12 @@ export type CreditsUsageTimelinePoint = {
 }
 
 export type CreditsUsageTransaction = {
-  activityType: string
+  agent: string
   createdAt: string
   credit: number
   id: number
   identifyId?: number | string | null
-  identifyTable?: string | null
+  fileName?: string | null
   inputTokens?: number | null
   outputTokens?: number | null
   remarks?: string | null
@@ -89,7 +89,13 @@ const mapBuckets = (value: unknown): CreditsUsageBucket[] => {
       const record = (item || {}) as Record<string, unknown>
       return {
         creditsUsed: toNumber(record.creditsUsed ?? record.creditUsed),
-        type: String(record.type || record.activityType || record.name || '—'),
+        type: String(
+          record.type ||
+            record.agent ||
+            record.activityType ||
+            record.name ||
+            '—',
+        ),
       }
     })
     .filter((item) => item.type !== '—')
@@ -130,13 +136,17 @@ const mapTransactions = (value: unknown): CreditsUsageTransaction[] => {
   return value.map((item, index) => {
     const record = (item || {}) as Record<string, unknown>
     return {
-      activityType: String(record.activityType || '—'),
+      agent: String(record.agent || record.activityType || '—'),
       createdAt: String(record.createdAt || ''),
       credit: toNumber(record.credit ?? record.creditsUsed),
       id: toNumber(record.id, index + 1),
       identifyId: record.identifyId == null ? null : String(record.identifyId),
-      identifyTable:
-        record.identifyTable == null ? null : String(record.identifyTable),
+      fileName:
+        record.fileName == null
+          ? record.identifyTable == null
+            ? null
+            : String(record.identifyTable)
+          : String(record.fileName),
       inputTokens:
         record.inputTokens == null ? null : toNumber(record.inputTokens),
       outputTokens:
