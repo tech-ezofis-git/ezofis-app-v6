@@ -10,6 +10,7 @@ export interface EmbedModeOptions {
 export interface EmbedModeState {
   isEmbed: boolean
   sessionToken?: string
+  hasTopbar: boolean
 }
 
 /**
@@ -24,12 +25,15 @@ export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
   const searchParams = new URLSearchParams(location.search)
   const isEmbedQuery = searchParams.get('embed') === 'true'
   const sessionToken = searchParams.get('session') ?? undefined
+  const hasTopbar =
+    searchParams.get('topbar') === 'true' || searchParams.get('brand') === 'true'
 
   const isEmbed = isEmbedPath || isEmbedQuery
 
   return {
     isEmbed,
     sessionToken,
+    hasTopbar,
   }
 }
 
