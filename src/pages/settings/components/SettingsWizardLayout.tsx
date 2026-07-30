@@ -85,7 +85,7 @@ export default function SettingsWizardLayout({
   }, [steps, activeStep])
 
   return (
-    <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-surface', className)}>
+    <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-gray-1', className)}>
       {/* Top Header */}
       <div className='mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3 md:px-8'>
         <div className='flex flex-col gap-0.5 min-w-0'>

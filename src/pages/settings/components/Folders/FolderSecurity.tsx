@@ -43,8 +43,8 @@ export default function FolderSecurity({
   useSettingsTopbar(breadcrumbConfig)
 
   return (
-    <div className='flex h-full min-h-0 flex-col bg-surface'>
-      <div className='flex min-h-10 flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] bg-surface px-4'>
+    <div className='flex h-full min-h-0 flex-col bg-gray-1'>
+      <div className='flex min-h-10 flex-wrap items-center justify-between gap-3 border-b border-[var(--border-default)] bg-gray-1 px-4'>
         <div className='flex h-10 min-w-0 items-center'>
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key
