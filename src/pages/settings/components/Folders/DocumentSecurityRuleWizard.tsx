@@ -540,9 +540,6 @@ export default function DocumentSecurityRuleWizard({
 
           {/* Rule Action Cards */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-gray-11">
-              Rule Action
-            </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <button
                 type="button"

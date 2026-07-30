@@ -15,6 +15,7 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
     select: (location) => location.pathname,
   })
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
+  const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
   const isActive = !isDemoFormOpen && pathname === route
   const isNavigationLocked = useSetupStore(
     (state) =>
@@ -38,6 +39,7 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
             isLinkDisabled &&
               'pointer-events-none cursor-not-allowed opacity-40',
           )}
+          onClick={() => closeDemoForm()}
         >
           <Icon
             name={icon}
