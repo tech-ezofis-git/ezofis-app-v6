@@ -1078,12 +1078,12 @@ const FormCard = ({
             {effectiveScore !== undefined && effectiveScore !== null && (
               <span
                 className={cn(
-                  'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
+                  'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
                   Number(effectiveScore) >= 90
-                    ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                    ? 'bg-[var(--green-1)] text-[var(--green-9)]'
                     : Number(effectiveScore) >= 70
-                      ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                      : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+                      ? 'bg-[var(--orange-1)] text-[var(--orange-9)]'
+                      : 'bg-[var(--red-1)] text-[var(--red-9)]',
                 )}
               >
                 {Math.round(Number(effectiveScore))}%
@@ -1125,12 +1125,12 @@ const FormCard = ({
           {effectiveScore !== undefined && effectiveScore !== null && (
             <span
               className={cn(
-                'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
+                'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
                 Number(effectiveScore) >= 90
-                  ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                  ? 'bg-[var(--green-1)] text-[var(--green-9)]'
                   : Number(effectiveScore) >= 70
-                    ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                    : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+                    ? 'bg-[var(--orange-1)] text-[var(--orange-9)]'
+                    : 'bg-[var(--red-1)] text-[var(--red-9)]',
               )}
             >
               {Math.round(Number(effectiveScore))}%
@@ -1165,7 +1165,7 @@ const FormCard = ({
                     ? `Switch to Invoice: ${invoiceValue}`
                     : `Switch to PO: ${poValue}`
                 }
-                className='group/suggest flex w-full max-w-full cursor-pointer flex-col gap-0.5 rounded-md border border-[var(--primary-4)] bg-[var(--primary-2)] px-2 py-1.5 text-left transition-colors hover:border-[var(--primary-6)] hover:bg-[var(--primary-3)]'
+                className='group/suggest mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-1)] px-2.5 py-1 text-xs transition-all hover:bg-[var(--primary-2)] active:scale-98 animate-in fade-in zoom-in-95 duration-200'
                 onClick={(e) => {
                   e.stopPropagation()
                   applySourceValue(isUsingPo ? invoiceValue : poValue)
@@ -1178,20 +1178,19 @@ const FormCard = ({
                   }
                 }}
               >
-                <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
-                  <AiBrandIcon className='size-[14px] shrink-0' variant='curved-purple' />
-                  <span className='font-normal text-[var(--primary-9)]/70'>
-                    {isUsingPo ? 'from Invoice' : 'from PO Master'}
+                <div className='flex min-w-0 items-center gap-1.5'>
+                  <AiBrandIcon className='size-[13px] shrink-0' variant='curved-purple' />
+                  <span className='font-semibold text-[var(--primary-9)] shrink-0'>
+                    {isUsingPo ? 'Invoice' : 'PO Master'}
                   </span>
-                </div>
-                <div className='flex min-w-0 items-center justify-between gap-2 pl-4'>
-                  <span className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
+                  <span className='text-[var(--primary-9)]/60 shrink-0'>·</span>
+                  <span className='truncate font-bold text-[var(--gray-13)]'>
                     {isUsingPo ? invoiceValue : poValue}
                   </span>
-                  <span className='shrink-0 text-[10px] font-semibold text-[var(--primary-9)] opacity-80 group-hover/suggest:opacity-100'>
-                    Switch
-                  </span>
                 </div>
+                <span className='shrink-0 font-bold text-[var(--primary-9)] transition-colors group-hover/suggest:underline'>
+                  Apply
+                </span>
               </div>
             )}
           </div>
