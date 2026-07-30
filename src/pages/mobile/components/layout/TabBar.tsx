@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import cn from '@/utils/cn'
 import { Icon } from '../primitives/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 
 export type TabBarItemId = 'home' | 'inbox' | 'folder' | 'ai' | 'menu'
 
@@ -45,13 +46,17 @@ export function TabBar({ activeId, onChange }: TabBarProps) {
                 type='button'
                 onClick={() => onChange(tab.id)}
               >
-                <Icon
-                  className={cn(
-                    'size-4',
-                    active ? 'text-[var(--primary-9)]' : undefined,
-                  )}
-                  name={tab.icon}
-                />
+                {tab.id === 'ai' ? (
+                  <AiBrandIcon className='size-4' variant='curved-purple' />
+                ) : (
+                  <Icon
+                    className={cn(
+                      'size-4',
+                      active ? 'text-[var(--primary-9)]' : undefined,
+                    )}
+                    name={tab.icon}
+                  />
+                )}
                 <span
                   className={cn(
                     'truncate',

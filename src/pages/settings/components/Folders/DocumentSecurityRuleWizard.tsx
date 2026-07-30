@@ -127,6 +127,23 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
+const getAvatarColor = (str: string) => {
+  const colors = [
+    'bg-[var(--violet-9)] text-white',
+    'bg-[var(--blue-9)] text-white',
+    'bg-[var(--green-9)] text-white',
+    'bg-[var(--orange-9)] text-white',
+    'bg-[var(--pink-9)] text-white',
+    'bg-[var(--cyan-9)] text-white',
+    'bg-[var(--teal-9)] text-white',
+    'bg-[var(--indigo-9)] text-white',
+  ]
+  let hash = 0
+  for (let i = 0; i < str.length; i++)
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
 const SecurityWizardSkeleton = () => (
   <div className="flex flex-col gap-4 animate-in fade-in duration-300">
     <div className="space-y-1.5">
@@ -752,7 +769,7 @@ export default function DocumentSecurityRuleWizard({
 
           <Divider />
 
-          <div className="rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs space-y-3">
+          <div className="space-y-3">
             <InputSelectMultiple
               className="bg-surface"
               label="Select Users & Groups *"
@@ -822,15 +839,25 @@ export default function DocumentSecurityRuleWizard({
                 <Icon name="tabler:users" className="size-3.5 text-primary-9" /> Target Users ({selectedPrincipals.length})
               </span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {selectedPrincipals.map((p) => (
-                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1 text-xs font-medium text-gray-12">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-9 text-[9px] font-bold text-white">
-                    {getInitials(p.name)}
+            <div className="flex flex-wrap gap-2">
+              {selectedPrincipals.map((p) => {
+                const initials = getInitials(p.name)
+                const avatarBg = getAvatarColor(p.name)
+
+                return (
+                  <span
+                    key={p.id}
+                    className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1 text-xs font-medium text-gray-13"
+                  >
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold shadow-2xs ${avatarBg}`}
+                    >
+                      {initials}
+                    </span>
+                    {p.name}
                   </span>
-                  {p.name}
-                </span>
-              ))}
+                )
+              })}
               {selectedPrincipals.length === 0 && (
                 <span className="text-xs italic text-gray-10">No target users assigned</span>
               )}

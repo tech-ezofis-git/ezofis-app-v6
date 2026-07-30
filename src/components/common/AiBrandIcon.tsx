@@ -37,7 +37,7 @@ interface AiBrandIconProps {
 export default function AiBrandIcon({
   className,
   alt = 'AI Brand',
-  variant = 'default',
+  variant = 'curved-purple',
 }: AiBrandIconProps) {
   const { resolvedColorScheme } = useTheme()
 

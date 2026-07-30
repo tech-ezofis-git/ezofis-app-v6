@@ -4,6 +4,7 @@ import { twMerge } from 'tailwind-merge'
 import fileApi from '@/api/file/file'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   type AttachmentItem,
   useAttachments,
@@ -578,7 +579,7 @@ export default function Attachments({
                     </span>
                     {file.isAiMatch && (
                       <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)] shrink-0'>
-                        <Icon name='tabler:sparkles' className='size-3' />
+                        <AiBrandIcon className='size-3 shrink-0' variant='curved-purple' />
                         Added via AI match
                       </span>
                     )}

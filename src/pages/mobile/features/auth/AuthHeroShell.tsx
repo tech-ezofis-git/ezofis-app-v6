@@ -3,6 +3,7 @@ import logoMark from '@/assets/logo/mark.png'
 import cn from '@/utils/cn'
 import { ScreenScroll, ScreenShell } from '../../components/layout/ScreenShell'
 import { Icon } from '../../components/primitives/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 
 type AuthHeroShellProps = {
   children: ReactNode
@@ -38,7 +39,7 @@ export function AuthHeroShell({
 
           <div className='inline-flex w-fit max-w-full items-center gap-2 rounded-xl bg-white/15 px-2.5 py-2 backdrop-blur-sm'>
             <span className='inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/20 text-white'>
-              <Icon className='size-4' name='Sparkles' />
+              <AiBrandIcon className='size-4' variant='curved-purple' />
             </span>
             <span className='pr-1 text-12 font-medium leading-snug text-white'>
               AI-enhanced document management

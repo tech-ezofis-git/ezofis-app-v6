@@ -88,6 +88,23 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
+const getAvatarColor = (str: string) => {
+  const colors = [
+    'bg-[var(--violet-9)] text-white',
+    'bg-[var(--blue-9)] text-white',
+    'bg-[var(--green-9)] text-white',
+    'bg-[var(--orange-9)] text-white',
+    'bg-[var(--pink-9)] text-white',
+    'bg-[var(--cyan-9)] text-white',
+    'bg-[var(--teal-9)] text-white',
+    'bg-[var(--indigo-9)] text-white',
+  ]
+  let hash = 0
+  for (let i = 0; i < str.length; i++)
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
 const SecurityWizardSkeleton = () => (
   <div className="flex flex-col gap-4 animate-in fade-in duration-300">
     <div className="space-y-1.5">
@@ -384,32 +401,16 @@ export default function FolderSecurityPolicyWizard({
         <div className="flex flex-col gap-4">
           <div>
             <h2 className="text-15 font-semibold text-gray-13">
-              Let&apos;s set up your folder security policy
+              Folder Security Policy
             </h2>
             <p className="mt-0.5 text-xs text-gray-11">
-              Pick who can view, upload, download, and manage documents.
+              Select users or groups who will receive access permissions for this folder.
             </p>
           </div>
 
           <Divider />
 
-          {isOpenRepo ? (
-            <Alert
-              text={`Repository "${folderName}" is currently open: No policy restrictions are active. All tenant users can access this folder. Select users/groups below to apply security policies.`}
-              variant="primary"
-            />
-          ) : null}
-
           <div className="space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-13">
-                Target Users & Groups
-              </label>
-              <p className="mt-0.5 text-xs text-gray-11">
-                Pick users or groups who will receive access permissions.
-              </p>
-            </div>
-
             <InputSelectMultiple
               className="bg-surface"
               label="Select Users & Groups *"
@@ -566,15 +567,25 @@ export default function FolderSecurityPolicyWizard({
             <div className="text-xs font-semibold text-gray-12 flex items-center justify-between">
               <span>Assigned Users & Groups ({selectedPrincipals.length})</span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {selectedPrincipals.map((p) => (
-                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1 text-xs font-medium text-gray-12">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary-9 text-[9px] font-bold text-white">
-                    {getInitials(p.name)}
+            <div className="flex flex-wrap gap-2">
+              {selectedPrincipals.map((p) => {
+                const initials = getInitials(p.name)
+                const avatarBg = getAvatarColor(p.name)
+
+                return (
+                  <span
+                    key={p.id}
+                    className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1 text-xs font-medium text-gray-13"
+                  >
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold shadow-2xs ${avatarBg}`}
+                    >
+                      {initials}
+                    </span>
+                    {p.name}
                   </span>
-                  {p.name}
-                </span>
-              ))}
+                )
+              })}
               {selectedPrincipals.length === 0 && (
                 <span className="text-xs italic text-gray-10">No users or groups selected</span>
               )}

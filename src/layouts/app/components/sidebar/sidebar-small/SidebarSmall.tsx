@@ -1,4 +1,5 @@
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import Tooltip from '@/components/base/Tooltip'
 import Logo from '@/components/common/Logo'
@@ -57,15 +58,7 @@ const SidebarSmall = ({ menus }: Props) => {
               type='button'
               onClick={openDemoForm}
             >
-              <Icon
-                className={cn(
-                  'relative size-4 transition-colors',
-                  isDemoFormOpen
-                    ? 'text-primary-11'
-                    : 'text-primary-10 group-hover:text-primary-11',
-                )}
-                name='lucide:sparkles'
-              />
+              <AiBrandIcon className='relative size-4' variant='curved-purple' />
             </button>
           </Tooltip>
 

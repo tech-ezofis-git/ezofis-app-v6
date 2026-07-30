@@ -4,6 +4,7 @@ import { ActionIcon, Badge, Box, Group, Paper, Text } from '@mantine/core'
 import { memo } from 'react'
 import { tv } from 'tailwind-variants'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import cn from '@/utils/cn'
 import { type Field, useFormStore } from '../store'
 
@@ -117,7 +118,7 @@ const QuestionCard = memo(
               )}
 
               <ActionIcon color='indigo' size='xs' variant='transparent'>
-                <Icon className='size-4 animate-pulse' name='tabler:sparkles' />
+                <AiBrandIcon className='size-4 animate-pulse' variant='curved-purple' />
               </ActionIcon>
             </Group>
 

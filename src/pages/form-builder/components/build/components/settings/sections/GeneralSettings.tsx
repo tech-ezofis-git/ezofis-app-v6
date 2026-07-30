@@ -1,6 +1,7 @@
 import { Box, Divider, Group, UnstyledButton } from '@mantine/core'
 import type { FormType } from '@/pages/form-builder/store/formStore'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Input from '@/components/base/inputs/InputText'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
@@ -108,12 +109,7 @@ const GeneralSettings = () => {
 
       <Box className='bg-gray-50 rounded-2xl border border-gray-2 p-4'>
         <Group gap='xs' mb={8}>
-          <Icon
-            className='text-accent-primary'
-            height={14}
-            name='lucide:sparkles'
-            width={14}
-          />
+          <AiBrandIcon className='size-3.5 shrink-0' variant='curved-purple' />
           <div className='text-[11px] font-bold text-gray-11'>Quick Note</div>
         </Group>
         <div className='text-[10px] leading-relaxed font-medium text-gray-6'>

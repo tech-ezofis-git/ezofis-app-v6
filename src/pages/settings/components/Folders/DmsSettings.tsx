@@ -23,6 +23,7 @@ import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -564,9 +565,9 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
-  const [securityFolderName, setSecurityFolderName] = useState<string | null>(
-    null,
-  )
+  // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
+  //   null,
+  // )
   const [securityRepository, setSecurityRepository] = useState<RepositoryRow | null>(
     null,
   )
@@ -939,7 +940,7 @@ export default function DmsFolderConfiguration({
                       onClick={openManualBuilder}
                     />
                     <MenuItem
-                      icon='lucide:sparkles'
+                      leftSection={<AiBrandIcon className='size-4' variant='curved-purple' />}
                       label='AI builder'
                       onClick={openAiBuilder}
                     />
@@ -1880,15 +1881,6 @@ function useRepositoryTable(
               className='flex items-center justify-end gap-1'
               onClick={(event) => event.stopPropagation()}
             >
-              <IconButton
-                ariaLabel='Security'
-                color='gray'
-                icon='lucide:shield'
-                size='md'
-                tooltip='Folder & Document Security'
-                variant='ghost'
-                onClick={() => onSecurityRepository(repository)}
-              />
               <Menu
                 position='bottom-end'
                 width={160}
@@ -1906,11 +1898,6 @@ function useRepositoryTable(
                   icon='lucide:pencil'
                   label='Edit'
                   onClick={() => onEditRepository(repository)}
-                />
-                <MenuItem
-                  icon='lucide:shield'
-                  label='Security'
-                  onClick={() => onSecurityRepository(repository)}
                 />
                 <MenuItem
                   icon='lucide:shield'
