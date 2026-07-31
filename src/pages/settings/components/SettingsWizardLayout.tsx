@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import Stepper from '@/components/base/Stepper'
 import Button from '@/components/base/button/Button'
 import cn from '@/utils/cn'
+import { createSettingsSetupBreadcrumbs } from '../helpers/settingsBreadcrumbs'
 import useSettingsTopbar from '../hooks/useSettingsTopbar'
 
 export type SettingsWizardStep = {
@@ -61,19 +62,12 @@ export default function SettingsWizardLayout({
 
   const breadcrumbConfig = useMemo(() => {
     if (!moduleTitle || !setupTitle) return { items: [] }
-    return {
-      items: [
-        { key: 'settings', label: 'Settings' },
-        { key: 'module', label: moduleTitle },
-        { label: setupTitle },
-      ],
-      onNavigate: (key: string) => {
-        if (key === 'settings' || key === 'module') {
-          onCancel?.() || onBack?.()
-        }
+    return createSettingsSetupBreadcrumbs(moduleTitle, setupTitle, {
+      onCancelSetup: () => {
+        onCancel?.()
       },
-    }
-  }, [moduleTitle, setupTitle, onCancel, onBack])
+    })
+  }, [moduleTitle, setupTitle, onCancel])
 
   useSettingsTopbar(breadcrumbConfig)
 
