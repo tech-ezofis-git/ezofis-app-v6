@@ -189,15 +189,15 @@ const mapRepositoryToRow = (
   return {
     createdAt: String(
       repository.createdAtUtc ||
-        repository.createdAt ||
-        repository.created ||
-        '',
+      repository.createdAt ||
+      repository.created ||
+      '',
     ),
     createdBy: String(
       repository.createdByName ||
-        repository.createdBy ||
-        repository.ownerName ||
-        '',
+      repository.createdBy ||
+      repository.ownerName ||
+      '',
     ).trim(),
     description: String(repository.description || '').trim(),
     documents: getRepositoryDocumentCount(repository),
@@ -1087,7 +1087,7 @@ export default function DmsFolderConfiguration({
                       onClick={openManualBuilder}
                     />
                     <MenuItem
-                      leftSection={<AiBrandIcon className='size-4' variant='curved-purple' />}
+                      leftSection={<AiBrandIcon className='size-4' variant='outline-purple' />}
                       label='AI builder'
                       onClick={openAiBuilder}
                     />
@@ -1223,8 +1223,8 @@ export default function DmsFolderConfiguration({
               onNext={
                 step === 5
                   ? () => {
-                      void handleCreateRepository()
-                    }
+                    void handleCreateRepository()
+                  }
                   : goNext
               }
               onSave={closeWizard}

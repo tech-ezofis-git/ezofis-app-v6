@@ -58,7 +58,7 @@ const SidebarSmall = ({ menus }: Props) => {
               type='button'
               onClick={openDemoForm}
             >
-              <AiBrandIcon className='relative size-4' variant='curved-purple' />
+              <AiBrandIcon className='relative size-4' variant='outline-purple' />
             </button>
           </Tooltip>
 

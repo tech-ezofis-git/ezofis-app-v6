@@ -12,13 +12,13 @@ export const SETUP_STEPS: Array<{
   icon: string
   title: string
 }> = [
-  { id: 1, icon: 'lucide:folder', title: 'Folder Details' },
-  { id: 2, icon: 'lucide:hard-drive', title: 'Storage' },
-  { id: 3, icon: 'lucide:table', title: 'Metadata' },
-  { id: 4, icon: 'lucide:git-branch', title: 'Versioning' },
-  { id: 5, icon: 'lucide:plug', title: 'Integration' },
-  { id: 6, icon: 'lucide:check-circle-2', title: 'Review' },
-]
+    { id: 1, icon: 'lucide:folder', title: 'Folder Details' },
+    { id: 2, icon: 'lucide:hard-drive', title: 'Storage' },
+    { id: 3, icon: 'lucide:table', title: 'Metadata' },
+    { id: 4, icon: 'lucide:git-branch', title: 'Versioning' },
+    { id: 5, icon: 'lucide:plug', title: 'Integration' },
+    { id: 6, icon: 'lucide:check-circle-2', title: 'Review' },
+  ]
 
 export function FolderCreationHeader({
   draftSaved,
@@ -102,11 +102,11 @@ export function SetupTimeline({
                   className={cn(
                     'relative flex size-10 items-center justify-center rounded-full border-2 text-[12px] font-semibold transition-all duration-300',
                     isCompleted &&
-                      'border-[var(--green-6)] bg-[var(--green-3)] text-[var(--green-11)]',
+                    'border-[var(--green-6)] bg-[var(--green-3)] text-[var(--green-11)]',
                     isCurrent &&
-                      'border-primary-10 bg-primary-10 text-white shadow-[0_0_0_4px_rgba(106,76,240,0.25)]',
+                    'border-primary-10 bg-primary-10 text-white shadow-[0_0_0_4px_rgba(106,76,240,0.25)]',
                     isUpcoming &&
-                      'border-border-default bg-surface-primary text-muted',
+                    'border-border-default bg-surface-primary text-muted',
                   )}
                 >
                   <Icon className='size-4' name={step.icon} />
@@ -366,7 +366,7 @@ function CarouselPeekCard({
           ? 'border-[var(--green-6)]/70'
           : 'border-border-default/80',
         locked &&
-          'cursor-default hover:shadow-[0_8px_28px_rgba(15,23,42,0.07)]',
+        'cursor-default hover:shadow-[0_8px_28px_rgba(15,23,42,0.07)]',
       )}
       initial={false}
       transition={{
@@ -764,7 +764,7 @@ export function InlineAlert({
         'rounded-[10px] px-2.5 py-2 text-[11px] leading-relaxed',
         tone === 'info' && 'bg-[var(--cyan-3)] text-[var(--cyan-11)]',
         tone === 'warning' &&
-          'bg-[var(--warning-main)]/10 text-[var(--warning-main)]',
+        'bg-[var(--warning-main)]/10 text-[var(--warning-main)]',
         tone === 'error' && 'bg-[var(--error-main)]/10 text-[var(--error-main)]',
         tone === 'success' && 'bg-success-subtle text-[var(--green-9)]',
       )}
@@ -873,7 +873,7 @@ export function AiProcessingState({
         className='relative flex size-14 items-center justify-center rounded-full bg-accent-soft text-accent-primary'
         transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <AiBrandIcon className='size-6' variant='curved-purple' />
+        <AiBrandIcon className='size-6' variant='outline-purple' />
       </motion.div>
 
       <div className='min-h-[48px] max-w-md px-4'>

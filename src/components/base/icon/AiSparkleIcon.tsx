@@ -11,7 +11,7 @@ const AiSparkleIcon = ({ className, size = 18 }: Props) => (
   <AiBrandIcon
     className={cn('shrink-0', className)}
     style={{ height: size, width: size }}
-    variant='curved-purple'
+    variant='outline-purple'
   />
 )
 

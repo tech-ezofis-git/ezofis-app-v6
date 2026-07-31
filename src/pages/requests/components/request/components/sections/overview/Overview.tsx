@@ -1171,7 +1171,7 @@ const FormCard = ({
                     ? `Switch to Invoice: ${invoiceValue}`
                     : `Switch to PO: ${poValue}`
                 }
-                className='group/suggest mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-1)] px-2.5 py-1 text-xs transition-all hover:bg-[var(--primary-2)] active:scale-98 animate-in fade-in zoom-in-95 duration-200'
+                className='group/suggest mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all hover:bg-[var(--primary-2)] active:scale-98 animate-in fade-in zoom-in-95 duration-200'
                 onClick={(e) => {
                   e.stopPropagation()
                   applySourceValue(isUsingPo ? invoiceValue : poValue)
@@ -1185,7 +1185,7 @@ const FormCard = ({
                 }}
               >
                 <div className='flex min-w-0 items-center gap-1.5'>
-                  <AiBrandIcon className='size-[13px] shrink-0' variant='curved-purple' />
+                  <AiBrandIcon className='size-[13px] shrink-0' variant='outline-purple' />
                   <span className='font-semibold text-[var(--primary-9)] shrink-0'>
                     {isUsingPo ? 'Invoice' : 'PO Master'}
                   </span>
@@ -4494,7 +4494,7 @@ const Overview = (props: any) => {
                                   {/* Header row inside single card */}
                                   <div className='mb-3 flex items-center justify-between'>
                                     <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                      <AiBrandIcon className='size-4 shrink-0' variant='curved-purple' />
+                                      <AiBrandIcon className='size-4 shrink-0' variant='outline-purple' />
                                       <span>
                                         Related to{' '}
                                         <strong className='font-bold text-[var(--gray-13)]'>
