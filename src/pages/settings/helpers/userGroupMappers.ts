@@ -1,5 +1,6 @@
 export type SettingsGroup = {
   created: string
+  createdBy: string
   description: string
   id: number | string
   memberIds: string[]
@@ -18,7 +19,9 @@ export type SettingsOption = {
 export type SettingsUser = {
   accountExpiryDate: string
   businessUnit: string
+  countryCode: string
   created: string
+  createdBy: string
   department: string
   email: string
   employeeId: string
@@ -35,6 +38,7 @@ export type SettingsUser = {
   mfaEnabled: boolean
   mfaMethods: string[]
   passwordExpiryDays: number
+  phoneNumber: string
   role: string
   status: 'active' | 'inactive' | 'pending'
   username: string
@@ -80,27 +84,196 @@ const normalizeStatus = (value: unknown): SettingsUser['status'] => {
 }
 
 const mapAuthStrategyToLoginType = (authStrategy: string) => {
-  switch (authStrategy) {
-    case 'Google':
-      return 'Google'
-    case 'Microsoft':
-      return 'Microsoft'
-    case 'ActiveDirectory':
-    case 'LDAP':
-      return 'Active Directory'
+  switch (String(authStrategy || '').trim().toLowerCase()) {
+    case 'googlesso':
+    case 'google':
+    case 'google sso':
+      return 'GoogleSSO'
+    case 'ms entra id':
+    case 'microsoft':
+    case 'entra':
+    case 'azuread':
+      return 'MS Entra ID'
+    case 'ldap/ad':
+    case 'ldap':
+    case 'activedirectory':
+    case 'active directory':
+      return 'LDAP/AD'
+    case 'ezofis':
+    case 'password':
+    case '':
+      return 'Password'
     default:
       return 'Password'
   }
 }
 
-const formatDate = (value: unknown) => {
-  if (!value) return '—'
-  const date = new Date(String(value))
-  if (Number.isNaN(date.getTime())) return String(value)
-  return date.toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
+/** Normalize API login type / auth strategy values for UI display. */
+export const normalizeLoginType = (value: unknown) =>
+  mapAuthStrategyToLoginType(String(value || ''))
+
+const normalizeOptionalText = (value: unknown) => {
+  const text = String(value ?? '').trim()
+  return !text || text === '—' ? '' : text
+}
+
+const pickRawText = (raw: Record<string, any>, keys: string[]) => {
+  for (const key of keys) {
+    if (raw[key] == null) continue
+    const text = String(raw[key]).trim()
+    if (text && text !== '—') return text
+  }
+  return ''
+}
+
+const pickCreatedBy = (raw: Record<string, any>) =>
+  pickRawText(raw, [
+    'createdByName',
+    'CreatedByName',
+    'createdBy',
+    'CreatedBy',
+    'createdByUserName',
+    'createdByEmail',
+    'createdByUser',
+    'ownerName',
+  ])
+
+const normalizeYesNoFlag = (value: unknown) => {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+
+  const text = String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+  return (
+    text === 'yes' ||
+    text === 'true' ||
+    text === '1' ||
+    text === 'y' ||
+    text === 'on'
+  )
+}
+
+const extractMfaMethods = (raw: Record<string, any>): string[] => {
+  const candidates = [
+    raw.mfaMethods,
+    raw['MFA Methods'],
+    raw.MFAMethods,
+    raw.mfaMethod,
+  ]
+
+  for (const candidate of candidates) {
+    if (candidate == null || candidate === '') continue
+
+    if (Array.isArray(candidate)) {
+      const mapped = candidate.map(String).map((item) => item.trim()).filter(Boolean)
+      if (mapped.length) return mapped
+      continue
+    }
+
+    if (typeof candidate === 'string') {
+      const mapped = candidate
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean)
+      if (mapped.length) return mapped
+    }
+  }
+
+  return []
+}
+
+const extractUserGroups = (raw: Record<string, any>): string[] => {
+  const candidates = [
+    raw.groups,
+    raw.group,
+    raw.Groups,
+    raw.Group,
+    raw.groupNames,
+    raw.groupList,
+    raw.groupName,
+  ]
+
+  for (const candidate of candidates) {
+    if (candidate == null || candidate === '') continue
+
+    if (Array.isArray(candidate)) {
+      const mapped = candidate
+        .map((group) => {
+          if (typeof group === 'string' || typeof group === 'number') {
+            return String(group).trim()
+          }
+          if (!group || typeof group !== 'object') return ''
+          return String(
+            group.groupName ||
+              group.name ||
+              group.value ||
+              group.groupId ||
+              group.id ||
+              '',
+          ).trim()
+        })
+        .filter(Boolean)
+
+      if (mapped.length) return Array.from(new Set(mapped))
+      continue
+    }
+
+    if (typeof candidate === 'string') {
+      const mapped = candidate
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part && part !== '—')
+      if (mapped.length) return Array.from(new Set(mapped))
+    }
+  }
+
+  return []
+}
+
+/** Fill user.groups from group memberships when the user payload omits them. */
+export const applyGroupMembershipsToUsers = (
+  users: SettingsUser[],
+  groups: SettingsGroup[],
+): SettingsUser[] => {
+  if (!users.length || !groups.length) return users
+
+  return users.map((user) => {
+    if (user.groups.length) return user
+
+    const userId = String(user.id)
+    const email = user.email.trim().toLowerCase()
+    const fullName = `${user.firstName} ${user.lastName}`.trim().toLowerCase()
+    const username = user.username.trim().toLowerCase()
+
+    const memberships = groups
+      .filter((group) => {
+        const inIds = group.memberIds.some((id) => {
+          const normalized = String(id).trim().toLowerCase()
+          return (
+            normalized === userId.toLowerCase() ||
+            (email && normalized === email) ||
+            (username && normalized === username)
+          )
+        })
+        if (inIds) return true
+
+        return group.members.some((member) => {
+          const normalized = String(member).trim().toLowerCase()
+          return (
+            (email && normalized === email) ||
+            (fullName && normalized === fullName) ||
+            (username && normalized === username)
+          )
+        })
+      })
+      .map((group) => group.name)
+      .filter(Boolean)
+
+    return memberships.length
+      ? { ...user, groups: Array.from(new Set(memberships)) }
+      : user
   })
 }
 
@@ -132,29 +305,38 @@ export const mapApiUserToSettingsUser = (
       ? loginName
       : `${loginName || `user${index + 1}`}@company.com`
 
-  const rawGroups = raw.groups || raw.groupNames || raw.groupList || []
-  const groups = Array.isArray(rawGroups)
-    ? rawGroups
-        .map((group) =>
-          typeof group === 'string'
-            ? group
-            : String(group.groupName || group.name || group.value || ''),
-        )
-        .filter(Boolean)
-    : []
-
   return {
-    accountExpiryDate: String(raw.accountExpiryDate || ''),
-    businessUnit: String(raw.businessUnit || raw.BusinessUnit || '—'),
-    created: formatDate(
+    accountExpiryDate: String(
+      raw.accountExpiryDate || raw.AccountExpiryDate || '',
+    ),
+    businessUnit: pickRawText(raw, [
+      'Bussiness Unit',
+      'Business Unit',
+      'businessUnit',
+      'BusinessUnit',
+      'bussinessUnit',
+    ]),
+    countryCode: String(raw.countryCode || raw.CountryCode || ''),
+    created: normalizeOptionalText(
       raw.createdAtUtc || raw.created || raw.createdAt || raw.createdDate,
     ),
-    department: String(raw.department || raw.Department || '—'),
+    createdBy: pickCreatedBy(raw),
+    department: pickRawText(raw, ['department', 'Department']),
     email: resolvedEmail,
-    employeeId: String(raw.employeeId || raw.EmployeeId || '—'),
+    employeeId: pickRawText(raw, [
+      'Employee Id',
+      'Employee ID',
+      'employeeId',
+      'EmployeeId',
+    ]),
     firstName,
-    forcePasswordReset: Boolean(raw.forcePasswordReset),
-    groups,
+    forcePasswordReset: normalizeYesNoFlag(
+      raw.forcePasswordResetOnLogin ??
+        raw.ForcePasswordResetOnLogin ??
+        raw.forcePasswordReset ??
+        raw.ForcePasswordReset,
+    ),
+    groups: extractUserGroups(raw),
     id:
       raw.id ??
       raw.userId ??
@@ -162,28 +344,46 @@ export const mapApiUserToSettingsUser = (
       loginName ??
       resolvedEmail ??
       `user-${index + 1}`,
-    jobTitle: String(raw.jobTitle || raw.JobTitle || raw.designation || '—'),
-    lastLogin: formatDate(
+    jobTitle: pickRawText(raw, [
+      'Job Title',
+      'jobTitle',
+      'JobTitle',
+      'designation',
+      'Designation',
+    ]),
+    lastLogin: normalizeOptionalText(
       raw.lastLogin || raw.lastLoginDate || raw.lastAccessedAt,
     ),
     lastName,
-    location: String(raw.location || raw.Location || '—'),
-    loginType: String(
+    location: pickRawText(raw, ['location', 'Location']),
+    loginType: normalizeLoginType(
       raw.loginType ||
         raw.LoginType ||
-        mapAuthStrategyToLoginType(String(raw.authStrategy || '')),
+        raw.authStrategy ||
+        '',
     ),
-    manager: String(raw.manager || raw.Manager || '—'),
-    mfaEnabled: Boolean(raw.mfaEnabled ?? true),
-    mfaMethods: Array.isArray(raw.mfaMethods) ? raw.mfaMethods.map(String) : [],
-    passwordExpiryDays: Number(raw.passwordExpiryDays || 90),
+    manager: pickRawText(raw, ['Manager', 'manager']),
+    mfaEnabled: normalizeYesNoFlag(
+      raw.MFAuthentication ??
+        raw.mfAuthentication ??
+        raw.mfaEnabled ??
+        raw.MfaEnabled ??
+        true,
+    ),
+    mfaMethods: extractMfaMethods(raw),
+    passwordExpiryDays: Number(
+      raw.passwordExpiryDays || raw.PasswordExpiryDays || 90,
+    ),
+    phoneNumber: String(
+      raw.phoneNo || raw.phoneNumber || raw.PhoneNO || raw.PhoneNo || '',
+    ),
     role: String(
       raw.role ||
         raw.roleName ||
         raw.userType ||
         raw.UserType ||
-        'Business User',
-    ),
+        '',
+    ).trim(),
     status: normalizeStatus(raw.status ?? raw.isActive),
     username: loginName || resolvedEmail.split('@')[0],
   }
@@ -245,11 +445,12 @@ export const mapApiGroupToSettingsGroup = (
     Number(raw.userCount ?? raw.memberCount ?? 0)
 
   return {
-    created: formatDate(
-      raw.createdAtUtc || raw.created || raw.createdAt || raw.createdDate,
-    ),
+    created: String(
+      raw.createdAtUtc || raw.created || raw.createdAt || raw.createdDate || '',
+    ) || '—',
+    createdBy: pickCreatedBy(raw),
     description: String(
-      raw.description || raw.groupDescription || raw.caption || '—',
+      raw.description || raw.groupDescription || raw.caption || '',
     ),
     id: raw.groupId ?? raw.id ?? raw.value ?? index + 1,
     memberIds: memberIds.length
@@ -291,4 +492,22 @@ export const mapGroupsToOptions = (data: unknown): SettingsOption[] => {
     name: group.name,
     value: group.name,
   }))
+}
+
+export const mapRolesToOptions = (data: unknown): SettingsOption[] => {
+  return toArray(data)
+    .map((raw, index) => {
+      const name = String(
+        raw.roleName || raw.name || raw.value || `Role ${index + 1}`,
+      ).trim()
+      if (!name) return null
+
+      return {
+        description: String(raw.description || ''),
+        id: String(raw.roleId || raw.id || name),
+        name,
+        value: name,
+      } satisfies SettingsOption
+    })
+    .filter(Boolean) as SettingsOption[]
 }

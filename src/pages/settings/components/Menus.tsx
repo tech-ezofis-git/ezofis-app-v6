@@ -28,10 +28,12 @@ import {
 import DataTable from '@/components/base/data-table/DataTable'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'
+import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -43,13 +45,10 @@ import {
   useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
-import { calculateMenuSetupProgress } from '../helpers/settingsSetupProgress'
 import SettingsFormSection from './SettingsFormSection'
 import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from './SettingsPageHeader'
-import SettingsSetupContent from './SettingsSetupContent'
-import SettingsSetupHeader from './SettingsSetupHeader'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
@@ -116,19 +115,8 @@ const emptyMenuForm: MenuFormState = {
 
 const menuColumnHelper = createColumnHelper<AppMenu>()
 
-const formatMenuDate = (value?: string) => {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
 const mapApiMenuToAppMenu = (menu: V6MenuItem): AppMenu => ({
-  created: formatMenuDate(menu.createdAtUtc),
+  created: formatUtcToLocalDateTime(menu.createdAtUtc),
   id: String(menu.id || menu.menuId || ''),
   isSystem: Boolean(menu.isSystem),
   key: String(menu.key || ''),
@@ -142,6 +130,8 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
   const [isLoadingMenus, setIsLoadingMenus] = useState(true)
   const [isLoadingMenuDetails, setIsLoadingMenuDetails] = useState(false)
   const [isSavingMenu, setIsSavingMenu] = useState(false)
+  const [deletingMenuId, setDeletingMenuId] = useState<string | null>(null)
+  const [isDeletingMenu, setIsDeletingMenu] = useState(false)
   const [isSetupOpen, setIsSetupOpen] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
   const [editingMenuId, setEditingMenuId] = useState<string | null>(null)
@@ -224,8 +214,13 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
     }
   }, [])
 
+  const deletingMenu = useMemo(
+    () => menus.find((menu) => menu.id === deletingMenuId) || null,
+    [deletingMenuId, menus],
+  )
+
   const deleteMenu = useCallback(
-    async (menuId: string, isSystem: boolean) => {
+    (menuId: string, isSystem: boolean) => {
       if (isSystem) {
         showToast({
           message: 'System menus cannot be deleted',
@@ -234,12 +229,22 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
         return
       }
 
-      const confirmed = window.confirm(
-        'Are you sure you want to delete this menu?',
-      )
-      if (!confirmed) return
+      setDeletingMenuId(menuId)
+    },
+    [],
+  )
 
-      const response = await deleteMenuApi(menuId)
+  const cancelDeleteMenu = useCallback(() => {
+    if (isDeletingMenu) return
+    setDeletingMenuId(null)
+  }, [isDeletingMenu])
+
+  const confirmDeleteMenu = useCallback(async () => {
+    if (!deletingMenuId) return
+
+    setIsDeletingMenu(true)
+    try {
+      const response = await deleteMenuApi(deletingMenuId)
 
       if (response.error) {
         showToast({ message: response.error, variant: 'error' })
@@ -247,10 +252,12 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
       }
 
       showToast({ message: 'Menu deleted successfully', variant: 'success' })
+      setDeletingMenuId(null)
       await loadMenus()
-    },
-    [loadMenus],
-  )
+    } finally {
+      setIsDeletingMenu(false)
+    }
+  }, [deletingMenuId, loadMenus])
 
   const saveMenu = async () => {
     const key = formState.key.trim()
@@ -501,6 +508,22 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
 
   return (
     <main className='flex h-full flex-col bg-[var(--surface)]'>
+      <ConfirmDialog
+        opened={Boolean(deletingMenuId)}
+        title='Delete Menu'
+        description={
+          deletingMenu
+            ? `Are you sure you want to delete "${deletingMenu.label}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this menu? This action cannot be undone.'
+        }
+        confirmLabel='Delete'
+        isConfirming={isDeletingMenu}
+        variant='danger'
+        onCancel={cancelDeleteMenu}
+        onConfirm={() => {
+          void confirmDeleteMenu()
+        }}
+      />
       <section className='flex min-h-0 flex-1 flex-col'>
         <SettingsPageHeader
           description='Manage navigation menus, routes, and display order across the platform.'
@@ -578,11 +601,6 @@ function MenuSetup({
   onSave: () => void
   onStepChange: (step: number) => void
 }) {
-  const progress = useMemo(
-    () => calculateMenuSetupProgress(formState, Boolean(editingMenuId)),
-    [editingMenuId, formState],
-  )
-  const isLastStep = activeStep === menuSteps.length - 1
   const [showErrors, setShowErrors] = useState(false)
 
   const getMissingLabels = (step = activeStep) => {

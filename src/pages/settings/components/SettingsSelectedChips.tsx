@@ -1,7 +1,9 @@
 import IconButton from '@/components/base/button/IconButton'
+import cn from '@/utils/cn'
 import type { SettingsOption } from '../helpers/userGroupMappers'
 
 type SettingsSelectedChipsProps = {
+  className?: string
   items: SettingsOption[]
   onRemove: (id: SettingsOption['id']) => void
 }
@@ -32,13 +34,19 @@ const getAvatarColor = (str: string) => {
 }
 
 export default function SettingsSelectedChips({
+  className,
   items,
   onRemove,
 }: SettingsSelectedChipsProps) {
   if (!items.length) return null
 
   return (
-    <div className='mt-2 w-full rounded-[10px] border border-[var(--border-default)] bg-surface p-3 shadow-xs'>
+    <div
+      className={cn(
+        'mt-2 w-full rounded-[10px] border border-[var(--border-default)] bg-surface p-3 shadow-xs',
+        className,
+      )}
+    >
       <div className='ez-scrollbar flex max-h-36 flex-wrap gap-2 overflow-y-auto'>
         {items.map((item) => {
           const initials = getInitials(item.name)

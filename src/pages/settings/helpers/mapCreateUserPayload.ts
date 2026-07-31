@@ -1,20 +1,35 @@
 import type { CreateV6UserPayload, UpdateV6UserPayload } from '@/api/v6/user'
+import { getDialCodeFromCountryValue } from './countryDialCodes'
 import type { SettingsUser } from './userGroupMappers'
 
 export type DraftSettingsUser = SettingsUser & {
   password: string
+  resetPassword?: boolean
 }
 
 const mapAuthStrategy = (loginType: string) => {
   switch (loginType) {
-    case 'Google':
+    case 'GoogleSSO':
       return 'Google'
-    case 'Microsoft':
+    case 'MS Entra ID':
       return 'Microsoft'
-    case 'Active Directory':
+    case 'LDAP/AD':
       return 'ActiveDirectory'
     default:
       return 'Ezofis'
+  }
+}
+
+const mapLoginTypeToApi = (loginType: string) => {
+  switch (loginType) {
+    case 'GoogleSSO':
+      return 'GoogleSSO'
+    case 'MS Entra ID':
+      return 'MS Entra ID'
+    case 'LDAP/AD':
+      return 'LDAP/AD'
+    default:
+      return 'Password'
   }
 }
 
@@ -37,6 +52,7 @@ export const mapDraftUserToCreatePayload = (
     'accountExpiryDate': toIsoDate(user.accountExpiryDate),
     'authStrategy': mapAuthStrategy(user.loginType),
     'Bussiness Unit': user.businessUnit,
+    'countryCode': getDialCodeFromCountryValue(user.countryCode),
     'department': user.department,
     displayName,
     'email': user.email,
@@ -47,11 +63,12 @@ export const mapDraftUserToCreatePayload = (
     'Job Title': user.jobTitle,
     'lastName': user.lastName,
     'location': user.location,
-    'LoginType': user.loginType,
+    'LoginType': mapLoginTypeToApi(user.loginType),
     'Manager': user.manager,
     'MFA Methods': user.mfaMethods.join(', '),
     'MFAuthentication': user.mfaEnabled ? 'Yes' : 'No',
     'passwordExpiryDays': user.passwordExpiryDays,
+    'phoneNo': user.phoneNumber,
     'role': user.role,
     'userName': user.username || user.email.split('@')[0] || '',
   }
@@ -63,47 +80,19 @@ export const mapDraftUserToCreatePayload = (
   return payload
 }
 
-const getDisplayName = (user: DraftSettingsUser) =>
-  `${user.firstName} ${user.lastName}`.trim() || user.firstName || user.username
-
-const normalizeField = (value: string) => {
-  const trimmed = value.trim()
-  return trimmed === '—' ? '' : trimmed
-}
-
 export const mapDraftUserToUpdatePayload = (
   current: DraftSettingsUser,
-  original: DraftSettingsUser,
+  _original?: DraftSettingsUser,
 ): UpdateV6UserPayload => {
-  const payload: UpdateV6UserPayload = {}
+  const payload = mapDraftUserToCreatePayload(current)
 
-  if (
-    normalizeField(current.firstName) !== normalizeField(original.firstName)
-  ) {
-    payload.firstName = current.firstName
+  // Password is not returned from the API; only send it when reset is enabled.
+  if (!(current.resetPassword && current.password.trim())) {
+    delete payload.password
   }
 
-  if (normalizeField(current.lastName) !== normalizeField(original.lastName)) {
-    payload.lastName = current.lastName
+  return {
+    ...payload,
+    jobTitle: current.jobTitle,
   }
-
-  if (getDisplayName(current) !== getDisplayName(original)) {
-    payload.displayName = getDisplayName(current)
-  }
-
-  if (normalizeField(current.role) !== normalizeField(original.role)) {
-    payload.role = current.role
-  }
-
-  if (
-    normalizeField(current.department) !== normalizeField(original.department)
-  ) {
-    payload.department = current.department
-  }
-
-  if (normalizeField(current.jobTitle) !== normalizeField(original.jobTitle)) {
-    payload.jobTitle = current.jobTitle
-  }
-
-  return payload
 }

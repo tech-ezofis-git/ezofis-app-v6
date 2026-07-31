@@ -1,6 +1,7 @@
 import { DateInput as Base } from '@mantine/dates'
 import { forwardRef } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import ClearButton from './ClearButton'
 import InputLabel from './InputLabel'
@@ -111,6 +112,7 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
         value={normalizedValue}
         valueFormat={valueFormat}
         allowDeselect
+        pointer
         classNames={{
           calendarHeaderControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50',
@@ -119,7 +121,7 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
           day: 'text-13 text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[outside]:text-gray-8 data-[outside]:opacity-100 data-[outside]:hover:text-gray-12 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white data-[today]:bg-primary-4 data-[today]:font-medium data-[today]:text-primary-11',
           description: classNames.description,
           error: classNames.error,
-          input: classNames.input,
+          input: cn(classNames.input, 'cursor-pointer focus:cursor-pointer'),
           label: classNames.label,
           monthsListControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
@@ -127,6 +129,10 @@ const InputDate = forwardRef<HTMLInputElement, Props>(
           wrapper: classNames.wrapper,
           yearsListControl:
             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
+        }}
+        styles={{
+          input: { cursor: 'pointer' },
+          wrapper: { cursor: 'pointer', ['--input-cursor' as string]: 'pointer' },
         }}
         popoverProps={{
           withinPortal: true,

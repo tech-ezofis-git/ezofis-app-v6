@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
@@ -254,11 +254,16 @@ export default function DocumentSecurityRuleWizard({
     [],
   )
 
+  const loadDataRequestIdRef = useRef(0)
+
   const loadData = useCallback(async () => {
+    const requestId = ++loadDataRequestIdRef.current
     setAccessError(null)
 
     // Check cache
     const cachedSec = await getDocumentSecurity(repositoryId, true)
+    if (requestId !== loadDataRequestIdRef.current) return
+
     const hasCache = Boolean(cachedSec.isFromCache && cachedSec.data)
 
     if (hasCache) {
@@ -273,10 +278,18 @@ export default function DocumentSecurityRuleWizard({
       getFilterFields(),
     ])
 
-    const userList = uRes.data || []
-    const groupList = gRes.data || []
-    setUsers(userList)
-    setGroups(groupList)
+    if (requestId !== loadDataRequestIdRef.current) {
+      return
+    }
+
+    if (uRes.canceled && gRes.canceled) {
+      return
+    }
+
+    const userList = uRes.canceled ? [] : uRes.data || []
+    const groupList = gRes.canceled ? [] : gRes.data || []
+    if (!uRes.canceled) setUsers(userList)
+    if (!gRes.canceled) setGroups(groupList)
 
     if (fieldsRes.data && fieldsRes.data.length > 0) {
       const mergedFields = Array.from(new Set([...fieldsRes.data, ...DEFAULT_FIELDS]))
@@ -289,8 +302,10 @@ export default function DocumentSecurityRuleWizard({
 
     // Background Revalidation
     const docSecRes = await getDocumentSecurity(repositoryId, false)
-    if (docSecRes.isCanceled) {
-      setIsLoading(false)
+    if (docSecRes.isCanceled || requestId !== loadDataRequestIdRef.current) {
+      if (requestId === loadDataRequestIdRef.current) {
+        setIsLoading(false)
+      }
       return
     }
 
@@ -310,7 +325,9 @@ export default function DocumentSecurityRuleWizard({
       applyDocumentSecurityData(docSecRes.data, userList, groupList)
     }
 
-    setIsLoading(false)
+    if (requestId === loadDataRequestIdRef.current) {
+      setIsLoading(false)
+    }
   }, [repositoryId, applyDocumentSecurityData])
 
   useEffect(() => {

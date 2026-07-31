@@ -8,6 +8,7 @@ import { useComments } from '@/pages/requests/hooks/useComments'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
+import { parseUtcDate } from '@/utils/utcDate'
 // import IconButton from '@/components/base/button/IconButton'
 
 dayjs.extend(relativeTime)
@@ -380,18 +381,7 @@ function pickFileName(x: any) {
 
 const parseCommentDate = (val: any): Date | string => {
   if (!val) return ''
-  if (typeof val === 'string') {
-    const clean = val.trim()
-    if (
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(clean) &&
-      !clean.endsWith('Z') &&
-      !/[+-]\d{2}(:?\d{2})?$/.test(clean)
-    ) {
-      const d = new Date(clean + 'Z')
-      if (!Number.isNaN(d.getTime())) return d
-    }
-  }
-  return val
+  return parseUtcDate(val) || val
 }
 
 const formatCommentText = (text: string): string => {

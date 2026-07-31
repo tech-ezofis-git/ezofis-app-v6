@@ -48,12 +48,19 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       return [first, count]
     }, [value])
 
+    const selectedIconKey = (firstValue as (Option & { iconKey?: string }) | null)
+      ?.iconKey
+
     const _classNames = {
       description: classNames.description,
       error: classNames.error,
-      input: cn(classNames.input, readOnly && 'border-dashed'),
+      input: cn(
+        classNames.input,
+        'cursor-pointer select-none focus:cursor-pointer focus-visible:cursor-pointer [&_*]:cursor-pointer',
+        readOnly && 'border-dashed',
+      ),
       label: classNames.label,
-      wrapper: classNames.wrapper,
+      wrapper: cn(classNames.wrapper, 'cursor-pointer'),
     }
 
     const _label = label ? (
@@ -98,8 +105,13 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
         }
 
         return (
-          <div className='truncate text-13 font-normal text-gray-12'>
-            {firstValue?.name}
+          <div className='flex min-w-0 items-center gap-2'>
+            {selectedIconKey?.includes(':') ? (
+              <Icon className='size-4 shrink-0' name={selectedIconKey} />
+            ) : null}
+            <div className='truncate text-13 font-normal text-gray-12'>
+              {firstValue?.name}
+            </div>
           </div>
         )
       }
@@ -116,7 +128,15 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
           )}
         </div>
       )
-    }, [value, variant, firstValue, counter, placeholder, iconOnly])
+    }, [
+      value,
+      variant,
+      firstValue,
+      counter,
+      placeholder,
+      iconOnly,
+      selectedIconKey,
+    ])
 
     return (
       <Base.Target>
@@ -127,11 +147,15 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
           description={rest.error ? undefined : description}
           inputWrapperOrder={inputWrapperOrder}
           label={_label}
+          pointer
           ref={ref}
           rightSection={_rightSection}
           rightSectionPointerEvents={clearable ? 'auto' : 'none'}
+          styles={{
+            input: { cursor: 'pointer' },
+            wrapper: { cursor: 'pointer', ['--input-cursor' as string]: 'pointer' },
+          }}
           type='button'
-          pointer
           onClick={readOnly ? undefined : onClick}
         >
           {children}

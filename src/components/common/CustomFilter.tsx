@@ -281,7 +281,15 @@ export default function CustomFilter({
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node
       const element = target instanceof Element ? target : target.parentElement
-      const inBar = Boolean(filtersRef.current?.contains(target))
+
+      const activeButton =
+        activeFilterDropdown && activeFilterDropdown !== 'more'
+          ? filterButtonRefs.current[activeFilterDropdown]
+          : null
+      const inActiveFilterButton = Boolean(activeButton?.contains(target))
+      const inMoreButton = Boolean(
+        moreFiltersButtonRef.current?.contains(target),
+      )
       const inPanel = Boolean(moreFiltersPanelRef.current?.contains(target))
       const inFilterDropdown = Boolean(
         filterDropdownPanelRef.current?.contains(target),
@@ -301,7 +309,13 @@ export default function CustomFilter({
         ),
       )
 
-      if (!inBar && !inPanel && !inFilterDropdown && !inDatePicker) {
+      if (
+        !inActiveFilterButton &&
+        !inMoreButton &&
+        !inPanel &&
+        !inFilterDropdown &&
+        !inDatePicker
+      ) {
         setActiveFilterDropdown(null)
       }
     }
@@ -311,7 +325,7 @@ export default function CustomFilter({
     return () => {
       document.removeEventListener('click', handleClickOutside, true)
     }
-  }, [])
+  }, [activeFilterDropdown])
 
   useEffect(() => {
     if (!activeFilterDropdown || activeFilterDropdown === 'more') {

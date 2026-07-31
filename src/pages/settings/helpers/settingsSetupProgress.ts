@@ -76,29 +76,29 @@ export function calculateUserSetupProgress(user: SettingsUser) {
 }
 
 export function getSetupProgressStyle(progress: number) {
-  if (progress >= 100) {
+  if (progress <= 25) {
     return {
-      barClassName: 'bg-[var(--green-9)]',
-      textClassName: 'text-[var(--green-11)]',
+      barClassName: 'bg-orange-9',
+      textClassName: 'text-orange-11',
     }
   }
 
-  if (progress >= 67) {
+  if (progress <= 50) {
     return {
-      barClassName: 'bg-[var(--primary-9)]',
-      textClassName: 'text-[var(--primary-11)]',
+      barClassName: 'bg-blue-9',
+      textClassName: 'text-blue-11',
     }
   }
 
-  if (progress >= 34) {
+  if (progress <= 75) {
     return {
-      barClassName: 'bg-[var(--orange-9)]',
-      textClassName: 'text-[var(--orange-11)]',
+      barClassName: 'bg-purple-9',
+      textClassName: 'text-purple-11',
     }
   }
 
   return {
-    barClassName: 'bg-[var(--red-9)]',
-    textClassName: 'text-[var(--red-11)]',
+    barClassName: 'bg-green-9',
+    textClassName: 'text-green-11',
   }
 }

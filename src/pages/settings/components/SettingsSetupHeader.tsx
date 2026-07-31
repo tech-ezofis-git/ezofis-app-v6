@@ -39,28 +39,28 @@ export default function SettingsSetupHeader({
   useSettingsTopbar(breadcrumbConfig)
 
   return (
-    <header className='border-b border-[var(--border-default)] bg-surface px-4 py-3'>
-      <div className='flex items-start justify-between gap-5'>
-        <div className='flex min-w-0 items-start gap-3'>
-          {showBackButton ? (
-            <IconButton
-              ariaLabel='Back'
-              color='gray'
-              icon='lucide:arrow-left'
-              size='sm'
-              variant='ghost'
-              onClick={onCancelSetup}
-            />
-          ) : null}
+    <header className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-4 md:px-8'>
+      <div className='flex min-w-0 items-start gap-3'>
+        {showBackButton ? (
+          <IconButton
+            ariaLabel='Back'
+            color='gray'
+            icon='lucide:arrow-left'
+            size='sm'
+            variant='ghost'
+            onClick={onCancelSetup}
+          />
+        ) : null}
 
-          <div className='min-w-0'>
-            <p className='text-15/6 font-semibold text-gray-13'>{stepTitle}</p>
-            <p className='mt-1 text-13/5 text-gray-11'>{stepDescription}</p>
-          </div>
+        <div className='flex min-w-0 flex-col gap-1'>
+          <h2 className='truncate text-18/6 font-semibold tracking-tight text-gray-13'>
+            {stepTitle}
+          </h2>
+          <p className='truncate text-13/5 text-gray-11'>{stepDescription}</p>
         </div>
-
-        {showProgress ? <SetupProgressBar progress={progress} /> : null}
       </div>
+
+      {showProgress ? <SetupProgressBar progress={progress} /> : null}
     </header>
   )
 }

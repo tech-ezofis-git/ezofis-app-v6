@@ -7,5 +7,5 @@ type SettingsFormSectionProps = {
 export default function SettingsFormSection({
   children,
 }: SettingsFormSectionProps) {
-  return <div className='space-y-6'>{children}</div>
+  return <div className='flex flex-col gap-6 md:gap-7'>{children}</div>
 }

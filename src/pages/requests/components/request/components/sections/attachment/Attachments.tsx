@@ -10,6 +10,7 @@ import {
   useAttachments,
 } from '@/pages/requests/hooks/useAttachments'
 import authUserStore from '@/stores/authUserStore'
+import { formatUtcToLocalDate } from '@/utils/utcDate'
 
 type FileLike = AttachmentItem
 
@@ -598,7 +599,7 @@ export default function Attachments({
                       <>
                         <span className='text-[11px] text-gray-8'>
                           {file.createdAt
-                            ? new Date(file.createdAt).toLocaleDateString()
+                            ? formatUtcToLocalDate(file.createdAt)
                             : 'Unknown date'}
                         </span>
                         {file.uploadedBy && (

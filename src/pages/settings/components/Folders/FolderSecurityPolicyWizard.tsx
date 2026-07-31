@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
@@ -204,11 +204,16 @@ export default function FolderSecurityPolicyWizard({
     [],
   )
 
+  const loadDataRequestIdRef = useRef(0)
+
   const loadData = useCallback(async () => {
+    const requestId = ++loadDataRequestIdRef.current
     setAccessError(null)
 
     // Check Cache first
     const cachedSec = await getFolderSecurity(repositoryId, true)
+    if (requestId !== loadDataRequestIdRef.current) return
+
     const hasCache = Boolean(cachedSec.isFromCache && cachedSec.data)
 
     if (hasCache) {
@@ -218,10 +223,18 @@ export default function FolderSecurityPolicyWizard({
     }
 
     const [uRes, gRes] = await Promise.all([getUsers(), getGroups()])
-    const userList = uRes.data || []
-    const groupList = gRes.data || []
-    setUsers(userList)
-    setGroups(groupList)
+    if (requestId !== loadDataRequestIdRef.current) {
+      return
+    }
+
+    if (uRes.canceled && gRes.canceled) {
+      return
+    }
+
+    const userList = uRes.canceled ? [] : uRes.data || []
+    const groupList = gRes.canceled ? [] : gRes.data || []
+    if (!uRes.canceled) setUsers(userList)
+    if (!gRes.canceled) setGroups(groupList)
 
     if (hasCache && cachedSec.data) {
       applySecurityData(cachedSec.data, userList, groupList)
@@ -229,8 +242,10 @@ export default function FolderSecurityPolicyWizard({
 
     // Background Revalidation
     const secRes = await getFolderSecurity(repositoryId, false)
-    if (secRes.isCanceled) {
-      setIsLoading(false)
+    if (secRes.isCanceled || requestId !== loadDataRequestIdRef.current) {
+      if (requestId === loadDataRequestIdRef.current) {
+        setIsLoading(false)
+      }
       return
     }
 
@@ -250,7 +265,9 @@ export default function FolderSecurityPolicyWizard({
       applySecurityData(secRes.data, userList, groupList)
     }
 
-    setIsLoading(false)
+    if (requestId === loadDataRequestIdRef.current) {
+      setIsLoading(false)
+    }
   }, [repositoryId, applySecurityData])
 
   useEffect(() => {

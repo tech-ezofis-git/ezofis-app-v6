@@ -1,8 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import Stepper from '@/components/base/Stepper'
 import Button from '@/components/base/button/Button'
-import useSettingsTopbar from '../hooks/useSettingsTopbar'
 import cn from '@/utils/cn'
+import useSettingsTopbar from '../hooks/useSettingsTopbar'
 
 export type SettingsWizardStep = {
   id: number
@@ -57,6 +57,7 @@ export default function SettingsWizardLayout({
   className,
 }: SettingsWizardLayoutProps) {
   const isLastStep = activeStep === steps.length - 1
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const breadcrumbConfig = useMemo(() => {
     if (!moduleTitle || !setupTitle) return { items: [] }
@@ -76,6 +77,15 @@ export default function SettingsWizardLayout({
 
   useSettingsTopbar(breadcrumbConfig)
 
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        behavior: 'smooth',
+        top: 0,
+      })
+    }
+  }, [activeStep])
+
   const formattedSteps = useMemo(() => {
     return steps.map((s, idx) => ({
       ...s,
@@ -85,15 +95,22 @@ export default function SettingsWizardLayout({
   }, [steps, activeStep])
 
   return (
-    <div className={cn('flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-gray-1', className)}>
+    <div
+      className={cn(
+        'flex min-h-0 w-full flex-1 flex-col overflow-hidden',
+        className,
+      )}
+    >
       {/* Top Header */}
-      <div className='mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3 md:px-8'>
-        <div className='flex flex-col gap-0.5 min-w-0'>
-          <h2 className='text-15 font-semibold tracking-tight text-gray-13 truncate'>
+      <div className='mb-4 border-b border-gray-3 px-6 py-4 md:px-8'>
+        <div className='flex min-w-0 flex-col gap-1'>
+          <h2 className='truncate text-18/6 font-semibold tracking-tight text-gray-13'>
             {headerTitle}
           </h2>
           {headerDescription ? (
-            <p className='text-xs text-gray-11 truncate'>{headerDescription}</p>
+            <p className='truncate text-13/5 text-gray-11'>
+              {headerDescription}
+            </p>
           ) : null}
         </div>
       </div>
@@ -101,7 +118,7 @@ export default function SettingsWizardLayout({
       {/* Main Grid */}
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[290px_1fr]'>
         {/* Sidebar Stepper */}
-        <aside className='hidden h-full border-r border-[var(--border-default)] bg-gray-1/30 pt-4 pr-3 pb-4 pl-4 xl:block'>
+        <aside className='hidden h-full border-r border-gray-3 bg-gray-1/30 pt-3 pr-2 pb-3 pl-3.5 xl:block'>
           <Stepper
             active={activeStep}
             orientation='vertical'
@@ -111,40 +128,49 @@ export default function SettingsWizardLayout({
         </aside>
 
         {/* Content Area */}
-        <div className='col-span-1 h-full w-full overflow-y-auto'>
-          <div className='mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10'>
-            {children}
+        <div
+          className='col-span-1 h-full w-full overflow-y-auto'
+          ref={scrollContainerRef}
+        >
+          <div className='mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10'>
+            <div className='flex min-h-full w-full flex-col gap-6 py-6 md:gap-7 md:py-8'>
+              <div className='flex flex-col gap-6 md:gap-7'>{children}</div>
 
-            {/* Footer Navigation */}
-            <div className='mt-6 flex items-center justify-between border-t border-[var(--border-default)] pt-4'>
-              <Button
-                color='gray'
-                disabled={isBackDisabled || activeStep === 0 || isLoading || isSaving}
-                icon='lucide:arrow-left'
-                label='Back'
-                size='sm'
-                variant='outline'
-                onClick={onBack}
-              />
+              {/* Footer Navigation */}
+              <div
+                className={cn(
+                  'mt-2 flex flex-wrap items-center gap-3 border-t border-gray-3 pt-6',
+                  activeStep === 0 ? 'justify-end' : 'justify-between',
+                )}
+              >
+                {activeStep > 0 ? (
+                  <Button
+                    color='gray'
+                    disabled={isBackDisabled || isLoading || isSaving}
+                    icon='lucide:arrow-left'
+                    label='Back'
+                    variant='outline'
+                    onClick={onBack}
+                  />
+                ) : null}
 
-              {isLastStep ? (
-                <Button
-                  disabled={isNextDisabled || isSaving || isLoading}
-                  label={isSaving ? 'Saving...' : saveLabel}
-                  loading={isSaving}
-                  size='sm'
-                  suffixIcon='tabler:arrow-right'
-                  onClick={onSave}
-                />
-              ) : (
-                <Button
-                  disabled={isNextDisabled || isLoading || isSaving}
-                  label={nextLabel}
-                  size='sm'
-                  suffixIcon='tabler:arrow-right'
-                  onClick={onNext}
-                />
-              )}
+                {isLastStep ? (
+                  <Button
+                    disabled={isNextDisabled || isSaving || isLoading}
+                    label={isSaving ? 'Saving...' : saveLabel}
+                    loading={isSaving}
+                    suffixIcon='tabler:arrow-right'
+                    onClick={onSave}
+                  />
+                ) : (
+                  <Button
+                    disabled={isNextDisabled || isLoading || isSaving}
+                    label={nextLabel}
+                    suffixIcon='tabler:arrow-right'
+                    onClick={onNext}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>

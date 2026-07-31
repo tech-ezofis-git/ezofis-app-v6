@@ -9,22 +9,19 @@ export default function SetupProgressBar({ progress }: SetupProgressBarProps) {
   const { barClassName, textClassName } = getSetupProgressStyle(progress)
 
   return (
-    <div className='w-44'>
-      <div
+    <div className='flex flex-col items-end gap-1'>
+      <span
         className={cn(
-          'mb-2 text-right text-[12px] font-semibold transition-colors duration-300',
+          'text-13/5 font-semibold transition-colors duration-500',
           textClassName,
         )}
       >
         {progress}% Complete
-      </div>
-      <div className='h-1.5 overflow-hidden rounded-full bg-[var(--gray-3)]'>
+      </span>
+      <div className='h-1.5 w-32 overflow-hidden rounded-full bg-gray-3'>
         <div
+          className={cn('h-full transition-all duration-500', barClassName)}
           style={{ width: `${progress}%` }}
-          className={cn(
-            'h-full rounded-full transition-all duration-300',
-            barClassName,
-          )}
         />
       </div>
     </div>

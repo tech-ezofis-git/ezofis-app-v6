@@ -2,6 +2,7 @@ import {
   getAgentDataFromItem,
   getItemDecision,
 } from '@/pages/requests/utils/inboxList.utils'
+import { formatUtcToLocalDate } from '@/utils/utcDate'
 
 export type InboxCardTone = 'error' | 'success' | 'warning' | 'accent'
 
@@ -433,7 +434,7 @@ export const mapInboxItemToRequestCard = (row: any): InboxCardData => {
     : due !== '-'
       ? `Due ${due}`
       : row.raisedAt
-        ? `Raised ${String(row.raisedAt).slice(0, 10)}`
+        ? `Raised ${formatUtcToLocalDate(row.raisedAt)}`
         : '—'
 
   return {

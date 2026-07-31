@@ -1,3 +1,5 @@
+import { formatUtcToLocalDateTime } from '@/utils/utcDate'
+
 export type CommentItem = {
   actorName?: string
   author?: string
@@ -69,9 +71,7 @@ export const toDisplayValue = (value: any) => {
 
 export const formatDateTime = (value?: string) => {
   if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+  return formatUtcToLocalDateTime(value, value)
 }
 
 export const buildInfoCards = (

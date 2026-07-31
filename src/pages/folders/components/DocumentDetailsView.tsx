@@ -4,6 +4,7 @@ import fileApi from '@/api/file/file'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import authUserStore from '@/stores/authUserStore'
+import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import { folderApi } from '../api/folderApi'
 import { resolveShareContext } from '../utils/shareContextStorage'
 import { DynamicIcon } from './icons'
@@ -82,9 +83,7 @@ const toDisplayValue = (value: any) => {
 
 const formatDateTime = (value?: string) => {
   if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
+  return formatUtcToLocalDateTime(value, value)
 }
 
 const buildInfoCards = (data: WorkspaceDocumentDetail | null): DetailCard[] => {

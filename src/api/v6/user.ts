@@ -1,6 +1,13 @@
+import axios from 'axios'
 import authUserStore from '../../stores/authUserStore'
 import { axiosV6 } from '../axios'
 import { getV6ApiErrorMessage } from './auth'
+
+const isRequestCanceled = (error: unknown) => {
+  if (axios.isCancel(error)) return true
+  const err = error as { code?: string; name?: string }
+  return err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError'
+}
 
 export type CreateV6GroupPayload = {
   description: string
@@ -19,6 +26,7 @@ export type CreateV6UserPayload = {
   'accountExpiryDate': string
   'authStrategy': string
   'Bussiness Unit': string
+  'countryCode'?: string
   'department': string
   'displayName': string
   'email': string
@@ -35,6 +43,7 @@ export type CreateV6UserPayload = {
   'MFAuthentication': string
   'password'?: string
   'passwordExpiryDays': number
+  'phoneNo'?: string
   'role': string
   'userName': string
 }
@@ -51,17 +60,10 @@ export type UpdateV6MenuPayload = {
   sortOrder: number
 }
 
-export type UpdateV6UserPayload = {
+export type UpdateV6UserPayload = Partial<CreateV6UserPayload> & {
   avatarPath?: string
-  countryCode?: string
-  department?: string
-  displayName?: string
-  firstName?: string
   jobTitle?: string
   language?: string
-  lastName?: string
-  phoneNo?: string
-  role?: string
   uiPreference?: string
 }
 
@@ -102,11 +104,20 @@ export type V6MenuItem = {
   visible?: boolean
 }
 
+export type V6RolePermissionKey = {
+  key?: string
+  name?: string
+  visible?: boolean | string | number
+}
+
 export type V6RoleItem = {
+  createdAt?: string
+  createdAtUtc?: string
   description?: string
   id?: string
   name?: string
   permissionCount?: number
+  permissionKeys?: V6RolePermissionKey[]
   permissions?: string[]
   roleId?: string
   roleName?: string
@@ -291,6 +302,7 @@ const extractMenuItems = (data: unknown): V6MenuItem[] => {
 
 export const getUsers = async () => {
   const response: {
+    canceled?: boolean
     data: V6UserListItem[]
     error: string
   } = {
@@ -315,6 +327,12 @@ export const getUsers = async () => {
     const rawData = typeof data === 'string' ? JSON.parse(data) : data
     response.data = extractUserItems(rawData)
   } catch (error: any) {
+    // Duplicate identical GETs are aborted by axios interceptors (e.g. Strict Mode).
+    // That is not a real failure — ignore so callers don't show "Failed to load users".
+    if (isRequestCanceled(error)) {
+      response.canceled = true
+      return response
+    }
     console.error(error)
     response.error = getV6ApiErrorMessage(
       error?.response?.data,
@@ -327,6 +345,7 @@ export const getUsers = async () => {
 
 export const getRoles = async () => {
   const response: {
+    canceled?: boolean
     data: V6RoleItem[]
     error: string
   } = {
@@ -349,6 +368,11 @@ export const getRoles = async () => {
     const rawData = typeof data === 'string' ? JSON.parse(data) : data
     response.data = extractRoleItems(rawData)
   } catch (error: any) {
+    // Duplicate identical GETs are aborted by axios interceptors (e.g. Strict Mode).
+    if (isRequestCanceled(error)) {
+      response.canceled = true
+      return response
+    }
     console.error(error)
     response.error = getV6ApiErrorMessage(
       error?.response?.data,
@@ -464,6 +488,7 @@ export const updateRole = async (
 
 export const getGroups = async () => {
   const response: {
+    canceled?: boolean
     data: V6GroupItem[]
     error: string
   } = {
@@ -486,6 +511,11 @@ export const getGroups = async () => {
     const rawData = typeof data === 'string' ? JSON.parse(data) : data
     response.data = extractGroupItems(rawData)
   } catch (error: any) {
+    // Duplicate identical GETs are aborted by axios interceptors (e.g. Strict Mode).
+    if (isRequestCanceled(error)) {
+      response.canceled = true
+      return response
+    }
     console.error(error)
     response.error = getV6ApiErrorMessage(
       error?.response?.data,

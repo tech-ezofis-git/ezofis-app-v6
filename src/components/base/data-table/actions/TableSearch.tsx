@@ -106,8 +106,8 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
         ) : null}
 
         {isExpanded && selectedColumnLabel ? (
-          <span className='text-12 font-semibold whitespace-nowrap text-gray-11'>
-            {selectedColumnLabel} :
+          <span className='text-12 font-semibold whitespace-nowrap text-gray-12'>
+            {selectedColumnLabel}:
           </span>
         ) : null}
       </div>
@@ -123,7 +123,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
           type='text'
           value={inputValue}
           className={cn(
-            'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-11',
+            'h-full w-full border-0 bg-transparent px-2 text-13 font-medium text-gray-12 outline-0 placeholder:text-gray-9',
             isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
           placeholder={

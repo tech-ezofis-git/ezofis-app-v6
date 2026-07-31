@@ -1,15 +1,18 @@
 import dayjs from 'dayjs'
+import { parseUtcDate } from './utcDate'
 
 const formatDatetime = (
   date: string | Date,
   format: 'date' | 'datetime' | 'time' | string = 'date',
 ) => {
-  if (format === 'date') return dayjs(date).format('DD-MMM-YYYY')
-  else if (format === 'time') return dayjs(date).format('HH:mm A')
-  else if (format === 'datetime')
-    return dayjs(date).format('DD-MMM-YYYY HH:mm A')
+  const parsed = parseUtcDate(date)
+  const value = parsed ?? date
 
-  return dayjs(date).format(format || 'DD-MMM-YYYY HH:mm A')
+  if (format === 'date') return dayjs(value).format('DD-MMM-YYYY')
+  if (format === 'time') return dayjs(value).format('hh:mm A')
+  if (format === 'datetime') return dayjs(value).format('DD-MMM-YYYY hh:mm A')
+
+  return dayjs(value).format(format || 'DD-MMM-YYYY hh:mm A')
 }
 
 export { formatDatetime }

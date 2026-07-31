@@ -1,39 +1,54 @@
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Check,
-  Key,
+  KeyRound,
+  Mail,
   MoreHorizontal,
   Server,
   ShieldCheck,
+  Smartphone,
   UserRound,
   UsersRound,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   createUser,
   deleteUser as deleteUserApi,
+  getGroups,
+  getRoles,
   getUsers,
   updateUser,
 } from '@/api/v6/user'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
+import Icon from '@/components/base/icon/Icon'
+import PasswordRequirements, {
+  requirementsConfig,
+} from '@/layouts/auth/components/PasswordRequirements'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
+import dayjs from 'dayjs'
 import {
   matchesCategoryFilterValue,
 } from '@/utils/filterUtils'
 import {
   dummySettingsUsers,
-  getDummyGroupOptions,
 } from '../data/settingsDummyData'
+import {
+  countryDialCodeOptions,
+  getCountrySelectValue,
+  getDialCodeFromCountryValue,
+} from '../helpers/countryDialCodes'
 import {
   type DraftSettingsUser,
   mapDraftUserToCreatePayload,
@@ -50,11 +65,15 @@ import {
   useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
-import { calculateUserSetupProgress } from '../helpers/settingsSetupProgress'
 import {
+  applyGroupMembershipsToUsers,
+  mapApiGroupsToSettingsGroups,
   mapApiUsersToSettingsUsers,
   mapApiUserToSettingsUser,
+  mapGroupsToOptions,
+  mapRolesToOptions,
   mapUsersToManagerOptions,
+  type SettingsGroup,
   type SettingsOption,
   type SettingsUser,
 } from '../helpers/userGroupMappers'
@@ -62,13 +81,13 @@ import SettingsDateField from './SettingsDateField'
 import SettingsFormSection from './SettingsFormSection'
 import SettingsPageHeader from './SettingsPageHeader'
 import SettingsSelectField from './SettingsSelectField'
-import SettingsSetupContent from './SettingsSetupContent'
-import SettingsSetupHeader from './SettingsSetupHeader'
+import SettingsSelectedChips from './SettingsSelectedChips'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
+import { formatDatetime } from '@/utils/dayjs'
 
 type AppUser = SettingsUser
 type DraftUser = DraftSettingsUser
-type LoginType = 'Password' | 'Google' | 'Microsoft' | 'Active Directory'
+type LoginType = 'Password' | 'GoogleSSO' | 'MS Entra ID' | 'LDAP/AD'
 
 type Step = {
   caption: string
@@ -114,10 +133,47 @@ const steps: Step[] = [
   },
 ]
 
+const getExpiryStartDate = () => dayjs().add(1, 'day').startOf('day')
+
+const syncExpiryFromDays = (days: number) => {
+  const passwordExpiryDays = Math.max(0, Math.floor(Number(days) || 0))
+
+  return {
+    accountExpiryDate: getExpiryStartDate()
+      .add(passwordExpiryDays, 'day')
+      .format('YYYY-MM-DD'),
+    passwordExpiryDays,
+  }
+}
+
+const syncExpiryFromDate = (date: string) => {
+  const trimmed = String(date || '').trim()
+  if (!trimmed) {
+    return { accountExpiryDate: '', passwordExpiryDays: 0 }
+  }
+
+  const start = getExpiryStartDate()
+  let expiry = dayjs(trimmed).startOf('day')
+  if (!expiry.isValid()) {
+    return { accountExpiryDate: trimmed, passwordExpiryDays: 0 }
+  }
+
+  if (expiry.isBefore(start)) {
+    expiry = start
+  }
+
+  return {
+    accountExpiryDate: expiry.format('YYYY-MM-DD'),
+    passwordExpiryDays: Math.max(0, expiry.diff(start, 'day')),
+  }
+}
+
 const emptyUser: DraftUser = {
-  accountExpiryDate: '',
+  accountExpiryDate: syncExpiryFromDays(90).accountExpiryDate,
   businessUnit: '',
+  countryCode: '',
   created: 'Jun 6, 2026',
+  createdBy: '',
   department: '',
   email: '',
   employeeId: '',
@@ -126,105 +182,144 @@ const emptyUser: DraftUser = {
   groups: [],
   id: 0,
   jobTitle: '',
-  lastLogin: '—',
+  lastLogin: '',
   lastName: '',
   location: '',
   loginType: 'Password',
   manager: '',
   mfaEnabled: true,
-  mfaMethods: [],
+  mfaMethods: ['Email OTP'],
   password: '',
   passwordExpiryDays: 90,
-  role: 'Business User',
+  phoneNumber: '',
+  role: '',
   status: 'active',
   username: '',
 }
 
 const departments = ['Administration', 'Finance', 'IT', 'Legal', 'Procurement']
-const jobTitles = ['Executive', 'Manager']
-const roles = [
-  'Administrator',
-  'Workspace Owner',
-  'Process Owner',
-  'Folder Owner',
-  'Business User',
-]
+const defaultJobTitles = ['Executive', 'Manager', 'Project Lead']
 const loginTypes: LoginType[] = [
   'Password',
-  'Google',
-  'Microsoft',
-  'Active Directory',
+  'GoogleSSO',
+  'MS Entra ID',
+  'LDAP/AD',
 ]
 
-const mfaMethods = ['Email OTP', 'Mobile OTP', 'Authenticator App']
+const mfaMethodOptions = [
+  {
+    icon: Mail,
+    iconClassName: 'text-[var(--blue-9)]',
+    title: 'Email OTP',
+    value: 'Email OTP',
+  },
+  {
+    icon: Smartphone,
+    iconClassName: 'text-[var(--green-9)]',
+    title: 'Mobile OTP',
+    value: 'Mobile OTP',
+  },
+  {
+    icon: ShieldCheck,
+    iconClassName: 'text-[var(--orange-9)]',
+    title: 'Authenticator App',
+    value: 'Authenticator App',
+  },
+] as const
 
 type LoginOption = {
   description: string
-  icon: (isSelected: boolean) => React.ReactNode
+  icon: () => React.ReactNode
   title: string
   value: LoginType
+}
+
+function LoginTypeIcon({
+  type,
+  className,
+}: {
+  type: string
+  className?: string
+}) {
+  const iconClass = cn('size-4 shrink-0', className)
+  const normalized = String(type || '').trim().toLowerCase()
+
+  switch (normalized) {
+    case 'googlesso':
+    case 'google':
+    case 'google sso':
+      return <Icon className={iconClass} name='logos:google-icon' />
+    case 'ms entra id':
+    case 'microsoft':
+    case 'entra':
+    case 'azuread':
+      return <Icon className={iconClass} name='logos:microsoft-icon' />
+    case 'ldap/ad':
+    case 'ldap':
+    case 'active directory':
+    case 'activedirectory':
+      return <Server className={cn(iconClass, 'text-[var(--blue-9)]')} />
+    case 'password':
+    case 'ezofis':
+    default:
+      return <KeyRound className={cn(iconClass, 'text-[var(--orange-9)]')} />
+  }
+}
+
+function formatLoginTypeLabel(type: string) {
+  const normalized = String(type || '').trim().toLowerCase()
+  if (normalized === 'ezofis' || normalized === 'password') return 'Password'
+  if (
+    normalized === 'googlesso' ||
+    normalized === 'google' ||
+    normalized === 'google sso'
+  ) {
+    return 'Google'
+  }
+  if (
+    normalized === 'ms entra id' ||
+    normalized === 'microsoft' ||
+    normalized === 'entra' ||
+    normalized === 'azuread'
+  ) {
+    return 'Microsoft'
+  }
+  if (
+    normalized === 'ldap/ad' ||
+    normalized === 'ldap' ||
+    normalized === 'activedirectory' ||
+    normalized === 'active directory'
+  ) {
+    return 'Active Directory'
+  }
+  if (!type) return '—'
+  return type
 }
 
 const loginOptions: LoginOption[] = [
   {
     description: 'Email and password',
-    icon: (isSelected) => (
-      <Key
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-      />
-    ),
+    icon: () => <LoginTypeIcon type='Password' />,
     title: 'Password',
     value: 'Password',
   },
   {
     description: 'Sign in with Google',
-    icon: (isSelected) => (
-      <svg
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-        fill='currentColor'
-        viewBox='0 0 24 24'
-      >
-        <path d='M12.24 10.285V13.4h6.887c-.58 3.013-3.084 5.216-6.887 5.216-4.28 0-7.75-3.47-7.75-7.75s3.47-7.75 7.75-7.75c2.18 0 4.1.815 5.57 2.152l2.3-2.3C18.17 1.25 15.39 0 12.24 0 5.48 0 0 5.48 0 12.24s5.48 12.24 12.24 12.24c6.9 0 11.96-4.85 11.96-11.96 0-.82-.08-1.57-.22-2.24H12.24z' />
-      </svg>
-    ),
+    icon: () => <LoginTypeIcon type='GoogleSSO' />,
     title: 'Google',
-    value: 'Google',
+    value: 'GoogleSSO',
   },
   {
     description: 'Sign in with Microsoft',
-    icon: (isSelected) => (
-      <svg
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-        fill='currentColor'
-        viewBox='0 0 23 23'
-      >
-        <path d='M0 0h11v11H0zM12 0h11v11H12zM0 12h11v11H0zM12 12h11v11H12z' />
-      </svg>
-    ),
+    icon: () => <LoginTypeIcon type='MS Entra ID' />,
     title: 'Microsoft',
-    value: 'Microsoft',
+    value: 'MS Entra ID',
   },
   {
-    description: 'Sign in with AD',
-    icon: (isSelected) => (
-      <Server
-        className={cn(
-          'h-4 w-4 shrink-0 transition-colors',
-          isSelected ? 'text-[var(--primary-9)]' : 'text-[var(--gray-9)]',
-        )}
-      />
-    ),
+    description: 'Sign in with Active Directory',
+    icon: () => <LoginTypeIcon type='LDAP/AD' />,
     title: 'Active Directory',
-    value: 'Active Directory',
+    value: 'LDAP/AD',
   },
 ]
 
@@ -240,7 +335,13 @@ type ManageUserProps = {
 }
 
 export default function ManageUser({ onBack }: ManageUserProps) {
-  const groupOptions = useMemo(() => getDummyGroupOptions(), [])
+  const [groupOptions, setGroupOptions] = useState<SettingsOption[]>([])
+  const [settingsGroups, setSettingsGroups] = useState<SettingsGroup[]>([])
+  const [isLoadingGroups, setIsLoadingGroups] = useState(true)
+  const settingsGroupsRef = useRef<SettingsGroup[]>([])
+  settingsGroupsRef.current = settingsGroups
+  const [apiRoleOptions, setApiRoleOptions] = useState<SettingsOption[]>([])
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true)
 
   const [users, setUsers] = useState<AppUser[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
@@ -254,6 +355,10 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   const [originalUser, setOriginalUser] = useState<DraftUser | null>(null)
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [deletingUserId, setDeletingUserId] = useState<string | number | null>(
+    null,
+  )
+  const [isDeletingUser, setIsDeletingUser] = useState(false)
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -270,14 +375,29 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           ) {
             matches = false
           }
+        } else if (key === 'email') {
+          if (
+            !matchesCategoryFilterValue(user.email, value, 'contains') &&
+            !matchesCategoryFilterValue(user.email, value)
+          ) {
+            matches = false
+          }
+        } else if (key === 'loginType') {
+          const loginLabel = formatLoginTypeLabel(String(user.loginType || ''))
+          if (
+            !matchesCategoryFilterValue(loginLabel, value) &&
+            !matchesCategoryFilterValue(user.loginType, value)
+          ) {
+            matches = false
+          }
         } else if (
           key === 'role' ||
-          key === 'loginType' ||
           key === 'department' ||
           key === 'status' ||
           key === 'businessUnit' ||
           key === 'location' ||
-          key === 'jobTitle'
+          key === 'jobTitle' ||
+          key === 'manager'
         ) {
           if (
             !matchesCategoryFilterValue(
@@ -294,12 +414,21 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   }, [users, activeFilters])
 
   const tableSearchOptions = useSettingsTableSearch()
+  const loadUsersRequestIdRef = useRef(0)
+  const loadGroupsRequestIdRef = useRef(0)
+  const loadRolesRequestIdRef = useRef(0)
 
   const loadUsers = useCallback(async () => {
+    const requestId = ++loadUsersRequestIdRef.current
     setIsLoadingUsers(true)
 
     try {
       const response = await getUsers()
+
+      // Superseded by a newer identical request (axios cancels the older one)
+      if (response.canceled || requestId !== loadUsersRequestIdRef.current) {
+        return
+      }
 
       if (response.error) {
         showToast({ message: response.error, variant: 'error' })
@@ -308,16 +437,90 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       }
 
       setUsers(
-        response.data.length ? mapApiUsersToSettingsUsers(response.data) : [],
+        applyGroupMembershipsToUsers(
+          response.data.length
+            ? mapApiUsersToSettingsUsers(response.data)
+            : [],
+          settingsGroupsRef.current,
+        ),
       )
     } finally {
-      setIsLoadingUsers(false)
+      if (requestId === loadUsersRequestIdRef.current) {
+        setIsLoadingUsers(false)
+      }
+    }
+  }, [])
+
+  const loadGroups = useCallback(async () => {
+    const requestId = ++loadGroupsRequestIdRef.current
+    setIsLoadingGroups(true)
+
+    try {
+      const response = await getGroups()
+
+      if (response.canceled || requestId !== loadGroupsRequestIdRef.current) {
+        return
+      }
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        setGroupOptions([])
+        setSettingsGroups([])
+        return
+      }
+
+      const mappedGroups = mapApiGroupsToSettingsGroups(response.data)
+      setSettingsGroups(mappedGroups)
+      setGroupOptions(mapGroupsToOptions(response.data))
+    } finally {
+      if (requestId === loadGroupsRequestIdRef.current) {
+        setIsLoadingGroups(false)
+      }
+    }
+  }, [])
+
+  const loadRoles = useCallback(async () => {
+    const requestId = ++loadRolesRequestIdRef.current
+    setIsLoadingRoles(true)
+
+    try {
+      const response = await getRoles()
+
+      if (response.canceled || requestId !== loadRolesRequestIdRef.current) {
+        return
+      }
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        setApiRoleOptions([])
+        return
+      }
+
+      setApiRoleOptions(mapRolesToOptions(response.data))
+    } finally {
+      if (requestId === loadRolesRequestIdRef.current) {
+        setIsLoadingRoles(false)
+      }
     }
   }, [])
 
   useEffect(() => {
     void loadUsers()
   }, [loadUsers])
+
+  useEffect(() => {
+    void loadGroups()
+  }, [loadGroups])
+
+  useEffect(() => {
+    void loadRoles()
+  }, [loadRoles])
+
+  useEffect(() => {
+    if (!settingsGroups.length) return
+
+    setUsers((current) => applyGroupMembershipsToUsers(current, settingsGroups))
+  }, [settingsGroups])
 
   const managerOptions = useMemo(
     () =>
@@ -330,13 +533,68 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   const openAddUser = () => {
     setEditingUserId(null)
     setOriginalUser(null)
-    setDraftUser({ ...emptyUser, id: Date.now() })
+    setDraftUser({
+      ...emptyUser,
+      id: Date.now(),
+    })
     setActiveStep(0)
     setIsSetupOpen(true)
   }
 
   const openEditUser = (user: AppUser) => {
-    const snapshot = { ...user, password: '' }
+    const clearPlaceholder = (value: string) => {
+      const trimmed = String(value || '').trim()
+      return !trimmed || trimmed === '—' ? '' : trimmed
+    }
+
+    const resolvedGroups = (() => {
+      const fromUser = (user.groups || []).filter(
+        (groupName) =>
+          Boolean(String(groupName || '').trim()) && groupName !== '—',
+      )
+      if (fromUser.length) return fromUser
+
+      return (
+        applyGroupMembershipsToUsers([user], settingsGroups)[0]?.groups || []
+      )
+    })()
+
+    const snapshot = {
+      ...user,
+      businessUnit: clearPlaceholder(user.businessUnit),
+      countryCode: getCountrySelectValue(user.countryCode || ''),
+      department: clearPlaceholder(user.department),
+      employeeId: clearPlaceholder(user.employeeId),
+      groups: resolvedGroups,
+      jobTitle: clearPlaceholder(user.jobTitle),
+      location: clearPlaceholder(user.location),
+      manager: clearPlaceholder(user.manager),
+      password: '',
+      phoneNumber: user.phoneNumber || '',
+      resetPassword: false,
+    }
+    const isPasswordLogin = snapshot.loginType === 'Password'
+
+    if (isPasswordLogin) {
+      if (snapshot.accountExpiryDate) {
+        Object.assign(snapshot, syncExpiryFromDate(snapshot.accountExpiryDate))
+      } else if (snapshot.passwordExpiryDays > 0) {
+        Object.assign(snapshot, syncExpiryFromDays(snapshot.passwordExpiryDays))
+      }
+    }
+
+    if (snapshot.mfaEnabled) {
+      const hasPhone = Boolean(String(snapshot.phoneNumber || '').trim())
+      const method = snapshot.mfaMethods[0]
+      snapshot.mfaMethods =
+        method === 'Mobile OTP' && !hasPhone
+          ? [mfaMethodOptions[0].value]
+          : method
+            ? [method]
+            : [mfaMethodOptions[0].value]
+    } else {
+      snapshot.mfaMethods = []
+    }
 
     setEditingUserId(user.id)
     setOriginalUser(snapshot)
@@ -345,15 +603,27 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setIsSetupOpen(true)
   }
 
-  const deleteUser = async (userId: string | number) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this user?',
-    )
-    if (!confirmed) return
+  const deletingUser = useMemo(
+    () => users.find((user) => user.id === deletingUserId) || null,
+    [deletingUserId, users],
+  )
 
+  const deleteUser = (userId: string | number) => {
+    setDeletingUserId(userId)
+  }
+
+  const cancelDeleteUser = () => {
+    if (isDeletingUser) return
+    setDeletingUserId(null)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (deletingUserId == null) return
+
+    setIsDeletingUser(true)
     setIsLoadingUsers(true)
     try {
-      const response = await deleteUserApi(String(userId))
+      const response = await deleteUserApi(String(deletingUserId))
 
       if (response.error) {
         showToast({ message: response.error, variant: 'error' })
@@ -361,8 +631,10 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       }
 
       showToast({ message: 'User deleted successfully', variant: 'success' })
+      setDeletingUserId(null)
       await loadUsers()
     } finally {
+      setIsDeletingUser(false)
       setIsLoadingUsers(false)
     }
   }
@@ -377,13 +649,18 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         `${draftUser.firstName}.${draftUser.lastName}`.toLowerCase(),
     }
 
-    const missingLabels = getMissingRequiredUserLabels(normalizedUser)
+    const validationMessage = getUserSetupValidationMessage(normalizedUser)
 
-    if (missingLabels.length) {
-      const nextStep = missingLabels.every((label) => label === 'Role') ? 1 : 0
+    if (validationMessage) {
+      const nextStep =
+        validationMessage.includes('Role') &&
+        !validationMessage.includes('First Name') &&
+        !validationMessage.includes('Password')
+          ? 1
+          : 0
       setActiveStep(nextStep)
       showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
+        message: validationMessage,
         variant: 'error',
       })
       return
@@ -400,11 +677,6 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         originalUser,
       )
 
-      if (!Object.keys(updatePayload).length) {
-        showToast({ message: 'No changes to save', variant: 'default' })
-        return
-      }
-
       setIsSaving(true)
 
       try {
@@ -418,7 +690,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         const listResponse = await getUsers()
 
         if (!listResponse.error && listResponse.data.length) {
-          setUsers(mapApiUsersToSettingsUsers(listResponse.data))
+          setUsers(
+            applyGroupMembershipsToUsers(
+              mapApiUsersToSettingsUsers(listResponse.data),
+              settingsGroups,
+            ),
+          )
         } else {
           const { password: _password, ...userWithoutPassword } = normalizedUser
 
@@ -460,15 +737,27 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       const listResponse = await getUsers()
 
       if (!listResponse.error && listResponse.data.length) {
-        setUsers(mapApiUsersToSettingsUsers(listResponse.data))
+        setUsers(
+          applyGroupMembershipsToUsers(
+            mapApiUsersToSettingsUsers(listResponse.data),
+            settingsGroups,
+          ),
+        )
       } else if (createdUser) {
-        setUsers((current) => [createdUser, ...current])
+        setUsers((current) =>
+          applyGroupMembershipsToUsers(
+            [createdUser, ...current],
+            settingsGroups,
+          ),
+        )
       } else {
         const { password: _password, ...userWithoutPassword } = normalizedUser
-        setUsers((current) => [
-          { ...userWithoutPassword, id: Date.now() },
-          ...current,
-        ])
+        setUsers((current) =>
+          applyGroupMembershipsToUsers(
+            [{ ...userWithoutPassword, id: Date.now() }, ...current],
+            settingsGroups,
+          ),
+        )
       }
 
       showToast({ message: 'User created successfully', variant: 'success' })
@@ -503,36 +792,46 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       }),
 
       userColumnHelper.accessor(
-        (row) => `${row.firstName} ${row.lastName} ${row.email}`,
+        (row) => `${row.firstName} ${row.lastName}`,
         {
           enableSorting: false,
           header: 'Name',
           id: 'name',
           meta: { ...settingsHeaderMeta.start, label: 'Name' },
           minSize: 40,
-          size: 260,
+          size: 180,
           cell: ({ row }) => {
             const user = row.original
+            const fullName = `${user.firstName} ${user.lastName}`.trim()
 
             return (
-              <div className='min-w-0'>
-                <div
-                  className='truncate font-semibold text-[var(--gray-13)] hover:whitespace-normal hover:break-words'
-                  title={`${user.firstName} ${user.lastName}`}
-                >
-                  {user.firstName} {user.lastName}
-                </div>
-                <div
-                  className='truncate text-[var(--gray-10)] hover:whitespace-normal hover:break-words'
-                  title={user.email}
-                >
-                  {user.email}
-                </div>
+              <div
+                className='min-w-0 truncate font-semibold text-[var(--gray-13)]'
+                title={fullName}
+              >
+                {fullName || ''}
               </div>
             )
           },
         },
       ),
+
+      userColumnHelper.accessor('email', {
+        enableSorting: false,
+        header: 'Email',
+        id: 'email',
+        meta: { ...settingsHeaderMeta.start, label: 'Email' },
+        minSize: 40,
+        size: 180,
+        cell: ({ getValue }) => (
+          <span
+            className='block min-w-0 truncate text-[var(--gray-12)]'
+            title={String(getValue() || '')}
+          >
+            {String(getValue() || '').trim() || ''}
+          </span>
+        ),
+      }),
 
       userColumnHelper.accessor('department', {
         enableSorting: false,
@@ -540,8 +839,11 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         id: 'department',
         meta: { ...settingsHeaderMeta.start, label: 'Department' },
         minSize: 40,
-        size: 140,
-        cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
+        size: 120,
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '').trim()
+          return <span>{value && value !== '—' ? value : ''}</span>
+        },
       }),
 
       userColumnHelper.accessor('role', {
@@ -554,9 +856,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           label: 'Role',
         },
         minSize: 40,
-        size: 150,
+        size: 130,
         cell: ({ getValue }) => (
-          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-2.5 py-0.5 font-medium text-[var(--gray-13)]'>
             {String(getValue())}
           </span>
         ),
@@ -572,7 +874,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           label: 'Status',
         },
         minSize: 40,
-        size: 110,
+        size: 100,
         cell: ({ getValue }) => <StatusBadge status={getValue()} />,
       }),
 
@@ -580,10 +882,27 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: 'Login Type',
         id: 'loginType',
-        meta: settingsHeaderMeta.start,
-        minSize: 40,
-        size: 140,
-        cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
+        meta: {
+          ...settingsHeaderMeta.start,
+          className: '!px-2',
+          disableEllipsis: true,
+          label: 'Login Type',
+        },
+        maxSize: 156,
+        minSize: 156,
+        size: 156,
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '').trim()
+          if (!value) return <span />
+          const label = formatLoginTypeLabel(value)
+
+          return (
+            <span className='inline-flex items-center gap-1.5 whitespace-nowrap'>
+              <LoginTypeIcon type={value} />
+              <span>{label}</span>
+            </span>
+          )
+        },
       }),
 
       userColumnHelper.accessor('lastLogin', {
@@ -592,8 +911,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         id: 'lastLogin',
         meta: settingsHeaderMeta.start,
         minSize: 40,
-        size: 120,
-        cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
+        size: 145,
+        cell: ({ getValue }) => {
+          const raw = String(getValue() || '').trim()
+          if (!raw || raw === '—') return <span />
+          return <span>{formatDatetime(raw, 'datetime')}</span>
+        },
       }),
 
       userColumnHelper.accessor('created', {
@@ -602,18 +925,22 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         id: 'created',
         meta: settingsHeaderMeta.start,
         minSize: 40,
-        size: 120,
-        cell: ({ getValue }) => <span>{String(getValue() || '—')}</span>,
+        size: 145,
+        cell: ({ getValue }) => {
+          const raw = String(getValue() || '').trim()
+          if (!raw || raw === '—') return <span />
+          return <span>{formatDatetime(raw, 'datetime')}</span>
+        },
       }),
 
       userColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Actions',
+        header: '',
         id: 'actions',
         meta: settingsHeaderMeta.end,
-        minSize: 72,
-        size: 72,
+        minSize: 56,
+        size: 56,
         cell: ({ row }) => {
           const user = row.original
 
@@ -687,13 +1014,17 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     },
   })
 
-  const roleOptions = useMemo(
-    () =>
-      Array.from(new Set(users.map((u) => String(u.role)).filter(Boolean))).map(
-        (r) => ({ label: r, value: r }),
-      ),
-    [users],
-  )
+  const roleOptions = useMemo(() => {
+    const fromApi = apiRoleOptions
+      .map((role) => role.value || role.name)
+      .filter(Boolean)
+    const fromUsers = users.map((u) => String(u.role)).filter(Boolean)
+
+    return Array.from(new Set([...fromApi, ...fromUsers])).map((r) => ({
+      label: r,
+      value: r,
+    }))
+  }, [apiRoleOptions, users])
   const nameOptions = useMemo(
     () =>
       users
@@ -708,11 +1039,51 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         }[],
     [users],
   )
+  const emailOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          users
+            .map((u) => String(u.email || '').trim())
+            .filter(Boolean),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((email) => ({ label: email, value: email })),
+    [users],
+  )
   const loginTypeOptions = useMemo(
     () =>
       Array.from(
-        new Set(users.map((u) => String(u.loginType)).filter(Boolean)),
+        new Set(
+          users
+            .map((u) => formatLoginTypeLabel(String(u.loginType)))
+            .filter((value) => value && value !== '—'),
+        ),
       ).map((r) => ({ label: r, value: r })),
+    [users],
+  )
+  const jobTitleSelectOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...defaultJobTitles,
+          ...users
+            .map((u) => String(u.jobTitle || '').trim())
+            .filter((value) => value && value !== '—'),
+        ]),
+      ).sort((a, b) => a.localeCompare(b)),
+    [users],
+  )
+  const locationSelectOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          users
+            .map((u) => String(u.location || '').trim())
+            .filter((value) => value && value !== '—'),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
     [users],
   )
   const departmentOptions = useMemo(
@@ -732,8 +1103,47 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   const businessUnitOptions = useMemo(
     () =>
       Array.from(
-        new Set(users.map((u) => String(u.businessUnit)).filter(Boolean)),
-      ).map((r) => ({ label: r, value: r })),
+        new Set(
+          users
+            .map((u) => String(u.businessUnit || '').trim())
+            .filter((value) => value && value !== '—'),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((r) => ({ label: r, value: r })),
+    [users],
+  )
+  const businessUnitSelectOptions = useMemo(
+    () => businessUnitOptions.map((option) => option.value),
+    [businessUnitOptions],
+  )
+  const jobTitleFilterOptions = useMemo(
+    () =>
+      jobTitleSelectOptions.map((title) => ({
+        label: title,
+        value: title,
+      })),
+    [jobTitleSelectOptions],
+  )
+  const locationFilterOptions = useMemo(
+    () =>
+      locationSelectOptions.map((location) => ({
+        label: location,
+        value: location,
+      })),
+    [locationSelectOptions],
+  )
+  const managerFilterOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          users
+            .map((u) => String(u.manager || '').trim())
+            .filter((value) => value && value !== '—'),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((manager) => ({ label: manager, value: manager })),
     [users],
   )
 
@@ -741,11 +1151,17 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     return (
       <UserSetup
         activeStep={activeStep}
+        businessUnitOptions={businessUnitSelectOptions}
         draftUser={draftUser}
         editingUserId={editingUserId}
         groupOptions={groupOptions}
+        isLoadingGroups={isLoadingGroups}
+        isLoadingRoles={isLoadingRoles}
         isSaving={isSaving}
+        jobTitleOptions={jobTitleSelectOptions}
+        locationOptions={locationSelectOptions}
         managerOptions={managerOptions}
+        roleOptions={apiRoleOptions}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={() => {
@@ -763,6 +1179,22 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   }
   return (
     <main className='flex h-full flex-col bg-[var(--surface)]'>
+      <ConfirmDialog
+        opened={deletingUserId != null}
+        title='Delete User'
+        description={
+          deletingUser
+            ? `Are you sure you want to delete "${`${deletingUser.firstName} ${deletingUser.lastName}`.trim() || deletingUser.email}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this user? This action cannot be undone.'
+        }
+        confirmLabel='Delete'
+        isConfirming={isDeletingUser}
+        variant='danger'
+        onCancel={cancelDeleteUser}
+        onConfirm={() => {
+          void confirmDeleteUser()
+        }}
+      />
       <section className='flex flex-1 flex-col'>
         <SettingsPageHeader title='User Management' onBack={onBack} />
 
@@ -770,7 +1202,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={userTable as any} />}
-            trailingActions={<TableExport table={userTable as any} />}
+            trailingActions={
+              <TableExport fileName='users' table={userTable as any} />
+            }
             actionButtons={[
               {
                 color: 'gray',
@@ -795,6 +1229,13 @@ export default function ManageUser({ onBack }: ManageUserProps) {
                 searchable: true,
                 searchPlaceholder: 'Search name...',
               },
+              {
+                id: 'email',
+                label: 'Email',
+                options: emailOptions,
+                searchable: true,
+                searchPlaceholder: 'Search email...',
+              },
               { id: 'role', label: 'Role', options: roleOptions },
               { id: 'status', label: 'Status', options: statusOptions },
             ]}
@@ -803,16 +1244,41 @@ export default function ManageUser({ onBack }: ManageUserProps) {
                 id: 'department',
                 label: 'Department',
                 options: departmentOptions,
+                searchable: true,
+                searchPlaceholder: 'Search department...',
               },
               {
-                id: 'loginType',
-                label: 'Login Type',
-                options: loginTypeOptions,
+                id: 'jobTitle',
+                label: 'Job Title',
+                options: jobTitleFilterOptions,
+                searchable: true,
+                searchPlaceholder: 'Search job title...',
               },
               {
                 id: 'businessUnit',
                 label: 'Business Unit',
                 options: businessUnitOptions,
+                searchable: true,
+                searchPlaceholder: 'Search business unit...',
+              },
+              {
+                id: 'location',
+                label: 'Location',
+                options: locationFilterOptions,
+                searchable: true,
+                searchPlaceholder: 'Search location...',
+              },
+              {
+                id: 'manager',
+                label: 'Manager',
+                options: managerFilterOptions,
+                searchable: true,
+                searchPlaceholder: 'Search manager...',
+              },
+              {
+                id: 'loginType',
+                label: 'Login Type',
+                options: loginTypeOptions,
               },
             ]}
             showReset={
@@ -864,142 +1330,231 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   )
 }
 
-function Authentication({ user, onChange }: FormSectionProps) {
-  const toggleMethod = (method: string) => {
-    const exists = user.mfaMethods.includes(method)
-    const nextMethods = exists
-      ? user.mfaMethods.filter((item) => item !== method)
-      : [...user.mfaMethods, method]
-
-    onChange({ ...user, mfaMethods: nextMethods })
-  }
+function Authentication({
+  showErrors,
+  user,
+  onChange,
+}: FormSectionProps & { showErrors?: boolean }) {
+  const hasPhoneNumber = Boolean(String(user.phoneNumber || '').trim())
+  const selectedMethod =
+    user.mfaMethods[0] === 'Mobile OTP' && !hasPhoneNumber
+      ? ''
+      : user.mfaMethods[0] || ''
+  const methodError =
+    showErrors && user.mfaEnabled && !selectedMethod
+      ? 'Please fill the required field: MFA Method'
+      : undefined
 
   return (
     <SettingsFormSection>
-      <div className='mb-7 rounded-[14px] border border-[var(--border-default)] bg-surface p-5'>
-        <div className='flex items-center justify-between gap-4'>
-          <div>
-            <h3 className='text-sm font-semibold text-[var(--gray-13)]'>
-              Multi-Factor Authentication
-            </h3>
-            <p className='text-xs text-[var(--gray-11)]'>
-              Require additional verification for sign-in
-            </p>
+      <div className='flex items-center justify-between gap-4 rounded-[12px] border border-[var(--border-default)] bg-surface p-3.5'>
+        <div className='min-w-0'>
+          <div className='text-xs font-semibold text-[var(--gray-13)]'>
+            Multi-Factor Authentication
           </div>
-          <Switch
-            checked={user.mfaEnabled}
-            onChange={(checked) => onChange({ ...user, mfaEnabled: checked })}
-          />
+          <p className='mt-0.5 text-xs text-[var(--gray-11)]'>
+            Require additional verification for sign-in
+          </p>
         </div>
+        <Switch
+          checked={user.mfaEnabled}
+          onChange={(checked) => {
+            if (!checked) {
+              onChange({ ...user, mfaEnabled: false, mfaMethods: [] })
+              return
+            }
+
+            const current = user.mfaMethods[0]
+            const nextMethod =
+              current === 'Mobile OTP' && !hasPhoneNumber
+                ? mfaMethodOptions[0].value
+                : current || mfaMethodOptions[0].value
+
+            onChange({
+              ...user,
+              mfaEnabled: true,
+              mfaMethods: [nextMethod],
+            })
+          }}
+        />
       </div>
 
-      <h3 className='mb-4 text-sm font-semibold text-[var(--gray-13)]'>
-        MFA Methods
-      </h3>
-      <div className='space-y-4'>
-        {mfaMethods.map((method) => {
-          const selected = user.mfaMethods.includes(method)
+      {user.mfaEnabled ? (
+        <div className='space-y-2'>
+          <label className='block text-xs font-semibold text-[var(--gray-13)]'>
+            MFA Method <span className='text-[var(--red-9)]'>*</span>
+          </label>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'>
+            {mfaMethodOptions.map((opt) => {
+              const isMobileOtp = opt.value === 'Mobile OTP'
+              const isDisabled = isMobileOtp && !hasPhoneNumber
+              const isSelected = selectedMethod === opt.value
+              const MethodIcon = opt.icon
 
-          return (
-            <button
-              disabled={!user.mfaEnabled}
-              key={method}
-              className={[
-                'flex h-[66px] w-full items-center gap-4 rounded-[10px] border bg-surface px-5 text-left transition disabled:cursor-not-allowed disabled:opacity-50',
-                selected
-                  ? 'border-[var(--primary-6)] bg-[var(--primary-2)]'
-                  : 'border-[var(--border-default)] hover:border-[var(--primary-5)]',
-              ].join(' ')}
-              onClick={() => toggleMethod(method)}
-            >
-              <span
-                className={[
-                  'flex h-5 w-5 items-center justify-center rounded-[6px] border',
-                  selected
-                    ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white'
-                    : 'border-[var(--primary-8)] bg-surface',
-                ].join(' ')}
-              >
-                {selected && <Check size={12} />}
-              </span>
-              <span className='text-sm font-semibold text-[var(--gray-13)]'>
-                {method}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+              return (
+                <button
+                  key={opt.value}
+                  type='button'
+                  disabled={isDisabled}
+                  title={
+                    isDisabled
+                      ? 'Add a phone number in Login Details to enable Mobile OTP'
+                      : undefined
+                  }
+                  className={[
+                    'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
+                    isDisabled
+                      ? 'cursor-not-allowed border-[var(--border-default)] bg-[var(--gray-2)] opacity-60'
+                      : 'cursor-pointer',
+                    !isDisabled && isSelected
+                      ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
+                      : '',
+                    !isDisabled && !isSelected
+                      ? 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]'
+                      : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  onClick={() => {
+                    if (isDisabled) return
+                    onChange({
+                      ...user,
+                      mfaMethods: [opt.value],
+                    })
+                  }}
+                >
+                  <div
+                    className={[
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                      isSelected
+                        ? 'border-[var(--primary-9)] bg-surface'
+                        : 'border-[var(--gray-7)] bg-surface',
+                    ].join(' ')}
+                  >
+                    {isSelected ? (
+                      <div className='h-2 w-2 rounded-full bg-[var(--primary-9)]' />
+                    ) : null}
+                  </div>
+
+                  <MethodIcon
+                    className={cn(
+                      'size-4 shrink-0',
+                      isDisabled ? 'text-[var(--gray-8)]' : opt.iconClassName,
+                    )}
+                  />
+
+                  <div className='min-w-0 flex-1'>
+                    <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
+                      {opt.title}
+                    </div>
+                    {isDisabled ? (
+                      <div className='mt-0.5 text-[11px] text-[var(--gray-10)]'>
+                        Requires phone number
+                      </div>
+                    ) : null}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          {methodError ? (
+            <p className='text-xs text-[var(--red-9)]'>{methodError}</p>
+          ) : null}
+        </div>
+      ) : null}
     </SettingsFormSection>
   )
 }
 
 function BusinessDetails({
+  businessUnitOptions,
+  isLoadingRoles,
+  jobTitleOptions,
+  locationOptions,
   managerOptions,
+  roleOptions,
   showErrors,
   user,
   onChange,
 }: FormSectionProps & {
+  businessUnitOptions: string[]
+  isLoadingRoles?: boolean
+  jobTitleOptions: string[]
+  locationOptions: string[]
   managerOptions: SettingsOption[]
+  roleOptions: SettingsOption[]
   showErrors?: boolean
 }) {
   return (
     <SettingsFormSection>
+      <SettingsSelectField
+        error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
+        label='Role'
+        options={roleOptions}
+        placeholder={isLoadingRoles ? 'Loading roles...' : 'Select role'}
+        value={user.role}
+        required
+        searchable
+        onChange={(value) => onChange({ ...user, role: value })}
+      />
+
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <SettingsSelectField
+          clearable
+          creatable
           label='Job Title'
-          options={jobTitles}
-          placeholder='Select'
-          value={user.jobTitle}
+          options={jobTitleOptions}
+          placeholder='Select or type job title'
+          value={user.jobTitle === '—' ? '' : user.jobTitle}
           onChange={(value) => onChange({ ...user, jobTitle: value })}
         />
 
         <EzTextField
           label='Employee ID'
           placeholder='EMP-001'
-          value={user.employeeId}
+          value={user.employeeId === '—' ? '' : user.employeeId}
           onChange={(value) => onChange({ ...user, employeeId: value })}
         />
 
         <SettingsSelectField
+          creatable
           label='Department'
           options={departments}
-          placeholder='Select'
+          placeholder='Select or type department'
           value={user.department}
           onChange={(value) => onChange({ ...user, department: value })}
         />
 
-        <EzTextField
+        <SettingsSelectField
+          clearable
+          creatable
           label='Business Unit'
-          placeholder='e.g. Corporate'
-          value={user.businessUnit}
+          options={businessUnitOptions}
+          placeholder='Select or type business unit'
+          value={user.businessUnit === '—' ? '' : user.businessUnit}
           onChange={(value) => onChange({ ...user, businessUnit: value })}
         />
 
         <SettingsSelectField
+          clearable
           label='Manager'
           options={managerOptions}
           placeholder='Select'
+          searchable
           value={user.manager}
-          clearable
           onChange={(value) => onChange({ ...user, manager: value })}
         />
 
-        <EzTextField
+        <SettingsSelectField
+          clearable
+          creatable
           label='Location'
-          placeholder='e.g. New York, NY'
-          value={user.location}
+          options={locationOptions}
+          placeholder='Select or type location'
+          value={user.location === '—' ? '' : user.location}
           onChange={(value) => onChange({ ...user, location: value })}
         />
       </div>
-
-      <SettingsSelectField
-        error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
-        label='Role'
-        options={roles}
-        value={user.role}
-        required
-        onChange={(value) => onChange({ ...user, role: value })}
-      />
     </SettingsFormSection>
   )
 }
@@ -1029,29 +1584,39 @@ function EzPasswordField({
 }
 
 function EzTextField({
+  autoFocus,
+  disabled,
   error,
   label,
   placeholder,
   required,
   type = 'text',
   value,
+  onBlur,
   onChange,
 }: {
+  autoFocus?: boolean
+  disabled?: boolean
   error?: string
   label: string
   placeholder?: string
   required?: boolean
   type?: string
   value: string
+  onBlur?: () => void
   onChange: (value: string) => void
 }) {
   return (
     <InputText
+      autoFocus={autoFocus}
+      disabled={disabled}
       error={error}
-      label={required ? `${label} *` : label}
+      label={label}
       placeholder={placeholder}
+      required={required}
       type={type}
       value={value}
+      onBlur={onBlur}
       onChange={(eventOrValue: any) => {
         const nextValue =
           typeof eventOrValue === 'string'
@@ -1068,8 +1633,37 @@ function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U'
 }
 
+function getPasswordRequirementError(password: string) {
+  const unmet = requirementsConfig.find((req) => !req.regex.test(password))
+  return unmet ? `Password must meet: ${unmet.label}` : undefined
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function getEmailValidationError(email: string) {
+  const trimmed = String(email || '').trim()
+  if (!trimmed) return undefined
+  if (!EMAIL_PATTERN.test(trimmed)) {
+    return 'Please enter a valid email address'
+  }
+  return undefined
+}
+
 function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
-  if (step === 2 || step === 3) return []
+  if (step === 2) return []
+
+  if (step === 3) {
+    const hasPhone = Boolean(String(user.phoneNumber || '').trim())
+    const method = user.mfaMethods[0]
+    const hasValidMethod = Boolean(
+      method && !(method === 'Mobile OTP' && !hasPhone),
+    )
+
+    if (user.mfaEnabled && !hasValidMethod) {
+      return ['MFA Method']
+    }
+    return []
+  }
 
   if (step === 1) {
     return getMissingRequiredLabels([{ label: 'Role', value: user.role }])
@@ -1082,102 +1676,189 @@ function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
     { label: 'Login Type', value: user.loginType },
   ]
 
-  if (user.loginType === 'Password') {
-    loginFields.push({ label: 'Password', value: user.password })
+  if (user.loginType === 'Password' && user.resetPassword !== false) {
+    loginFields.push({
+      label: user.resetPassword === true ? 'New Password' : 'Password',
+      value: user.password,
+    })
   }
 
   if (step === 0) {
     return getMissingRequiredLabels(loginFields)
   }
 
-  return getMissingRequiredLabels([
+  const missing = getMissingRequiredLabels([
     ...loginFields,
     { label: 'Role', value: user.role },
   ])
+
+  if (user.mfaEnabled) {
+    const hasPhone = Boolean(String(user.phoneNumber || '').trim())
+    const method = user.mfaMethods[0]
+    const hasValidMethod = Boolean(
+      method && !(method === 'Mobile OTP' && !hasPhone),
+    )
+    if (!hasValidMethod) {
+      missing.push('MFA Method')
+    }
+  }
+
+  return missing
+}
+
+function getUserSetupValidationMessage(user: DraftUser, step?: number) {
+  const missingLabels = getMissingRequiredUserLabels(user, step)
+  if (missingLabels.length) {
+    return getRequiredFieldErrorMessage(missingLabels)
+  }
+
+  if (step === undefined || step === 0) {
+    const emailError = getEmailValidationError(user.email)
+    if (emailError) return emailError
+
+    if (
+      user.loginType === 'Password' &&
+      user.resetPassword !== false &&
+      user.password
+    ) {
+      return getPasswordRequirementError(user.password)
+    }
+  }
+
+  return undefined
 }
 
 function GroupAssignment({
   groupOptions,
+  isLoadingGroups,
   user,
   onChange,
 }: FormSectionProps & {
-  groupOptions: Array<{ caption: string; name: string }>
+  groupOptions: SettingsOption[]
+  isLoadingGroups?: boolean
 }) {
-  const toggleGroup = (name: string) => {
-    const exists = user.groups.includes(name)
-    const nextGroups = exists
-      ? user.groups.filter((item) => item !== name)
-      : [...user.groups, name]
-    onChange({ ...user, groups: nextGroups })
-  }
+  const selectedGroups = useMemo(() => {
+    return user.groups
+      .map((groupName) => String(groupName || '').trim())
+      .filter((groupName) => groupName && groupName !== '—')
+      .map((groupName) => {
+        const normalized = groupName.toLowerCase()
+        const matched = groupOptions.find((option) => {
+          return (
+            option.name.toLowerCase() === normalized ||
+            String(option.value || '').toLowerCase() === normalized ||
+            String(option.id).toLowerCase() === normalized
+          )
+        })
+
+        return (
+          matched || {
+            id: groupName,
+            name: groupName,
+            value: groupName,
+          }
+        )
+      })
+  }, [groupOptions, user.groups])
 
   return (
     <SettingsFormSection>
-      {groupOptions.length ? (
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-          {groupOptions.map((group) => {
-            const selected = user.groups.includes(group.name)
-
-            return (
-              <button
-                key={group.name}
-                className={[
-                  'flex min-h-[60px] items-center gap-4 rounded-[10px] border bg-surface px-5 text-left transition',
-                  selected
-                    ? 'border-[var(--primary-6)] bg-[var(--primary-2)] shadow-[0_0_0_1px_var(--primary-5)]'
-                    : 'border-[var(--border-default)] hover:border-[var(--primary-5)]',
-                ].join(' ')}
-                onClick={() => toggleGroup(group.name)}
-              >
-                <span
-                  className={[
-                    'flex h-5 w-5 items-center justify-center rounded-[6px] border',
-                    selected
-                      ? 'border-[var(--primary-9)] bg-[var(--primary-9)] text-white'
-                      : 'border-[var(--primary-8)] bg-surface',
-                  ].join(' ')}
-                >
-                  {selected && <Check size={12} />}
-                </span>
-                <span>
-                  <span className='block text-sm font-semibold text-[var(--gray-13)]'>
-                    {group.name}
-                  </span>
-                  <span className='mt-1 block text-xs text-[var(--gray-11)]'>
-                    {group.caption}
-                  </span>
-                </span>
-              </button>
+      <div className='space-y-2'>
+        <InputSelectMultiple
+          label='Groups'
+          options={groupOptions}
+          placeholder={
+            isLoadingGroups
+              ? 'Loading groups...'
+              : 'Search and select groups...'
+          }
+          value={selectedGroups}
+          clearable
+          searchable
+          onChange={(value) =>
+            onChange({
+              ...user,
+              groups: (value || []).map(
+                (option) => option.value || option.name || String(option.id),
+              ),
+            })
+          }
+        />
+        <SettingsSelectedChips
+          className='mt-0'
+          items={selectedGroups}
+          onRemove={(id) => {
+            const removed = selectedGroups.find(
+              (option) => String(option.id) === String(id),
             )
-          })}
-        </div>
-      ) : (
+            if (!removed) return
+
+            onChange({
+              ...user,
+              groups: user.groups.filter(
+                (groupName) =>
+                  groupName !== removed.name &&
+                  groupName !== removed.value &&
+                  groupName !== String(removed.id),
+              ),
+            })
+          }}
+        />
+      </div>
+      {!isLoadingGroups && !groupOptions.length ? (
         <div className='rounded-[10px] border border-dashed border-[var(--border-default)] bg-surface px-5 py-8 text-center text-sm text-[var(--gray-10)]'>
           No groups available from the API yet.
         </div>
-      )}
+      ) : null}
     </SettingsFormSection>
   )
 }
 
 function LoginDetails({
+  autoFocusFirstName,
+  isEditing,
   showErrors,
   user,
   onChange,
-}: FormSectionProps & { showErrors?: boolean }) {
+}: FormSectionProps & {
+  autoFocusFirstName?: boolean
+  isEditing?: boolean
+  showErrors?: boolean
+}) {
+  const firstNameRef = useRef<HTMLInputElement>(null)
+  const [showEmailFormatError, setShowEmailFormatError] = useState(false)
+  const showPasswordField =
+    user.loginType === 'Password' && (!isEditing || Boolean(user.resetPassword))
+
+  useEffect(() => {
+    if (!autoFocusFirstName) return
+
+    const timer = window.setTimeout(() => {
+      firstNameRef.current?.focus()
+    }, 50)
+
+    return () => window.clearTimeout(timer)
+  }, [autoFocusFirstName])
+
+  useEffect(() => {
+    if (showErrors) setShowEmailFormatError(true)
+  }, [showErrors])
+
   return (
     <SettingsFormSection>
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-        <EzTextField
-          label='First Name'
-          placeholder='Enter first name'
-          value={user.firstName}
-          required
+        <InputText
+          ref={firstNameRef}
+          autoFocus={Boolean(autoFocusFirstName)}
           error={getFieldRequiredError(
             'First Name',
             Boolean(showErrors),
             user.firstName,
           )}
+          label='First Name'
+          placeholder='Enter first name'
+          required
+          value={user.firstName}
           onChange={(value) => onChange({ ...user, firstName: value })}
         />
 
@@ -1195,30 +1876,80 @@ function LoginDetails({
         />
       </div>
 
-      <EzTextField
-        label='Email Address'
-        placeholder='user@company.com'
-        type='email'
-        value={user.email}
-        required
-        error={getFieldRequiredError(
-          'Email Address',
-          Boolean(showErrors),
-          user.email,
-        )}
-        onChange={(value) => onChange({ ...user, email: value })}
-      />
+      <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
+        <EzTextField
+          label='Email Address'
+          placeholder='user@company.com'
+          type='email'
+          value={user.email}
+          required
+          error={
+            getFieldRequiredError(
+              'Email Address',
+              Boolean(showErrors),
+              user.email,
+            ) ||
+            (showEmailFormatError
+              ? getEmailValidationError(user.email)
+              : undefined)
+          }
+          onBlur={() => setShowEmailFormatError(true)}
+          onChange={(value) => {
+            setShowEmailFormatError(false)
+            onChange({ ...user, email: value })
+          }}
+        />
 
-      <EzTextField
-        label='Username'
-        placeholder='Enter username'
-        value={user.username}
-        onChange={(value) => onChange({ ...user, username: value })}
-      />
+        <EzTextField
+          label='Username'
+          placeholder='Enter username'
+          value={user.username}
+          onChange={(value) => onChange({ ...user, username: value })}
+        />
+      </div>
 
       <div className='space-y-2'>
         <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-          Login Type *
+          Phone Number
+        </label>
+        <div className='grid grid-cols-[120px_minmax(0,1fr)] gap-3'>
+          <SettingsSelectField
+            clearable
+            options={countryDialCodeOptions}
+            placeholder='Code'
+            searchable
+            value={getCountrySelectValue(user.countryCode || '')}
+            onChange={(value) =>
+              onChange({
+                ...user,
+                countryCode: value || '',
+              })
+            }
+          />
+          <InputText
+            placeholder='Enter phone number'
+            type='tel'
+            value={user.phoneNumber}
+            onChange={(value) => {
+              const nextPhone = value.replace(/[^\d\s()-]/g, '')
+              const nextUser = { ...user, phoneNumber: nextPhone }
+
+              if (
+                !nextPhone.trim() &&
+                nextUser.mfaMethods[0] === 'Mobile OTP'
+              ) {
+                nextUser.mfaMethods = ['Email OTP']
+              }
+
+              onChange(nextUser)
+            }}
+          />
+        </div>
+      </div>
+
+      <div className='space-y-2'>
+        <label className='block text-xs font-semibold text-[var(--gray-13)]'>
+          Login Type <span className='text-[var(--red-9)]'>*</span>
         </label>
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           {loginOptions.map((opt) => {
@@ -1234,7 +1965,25 @@ function LoginDetails({
                     ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
                     : 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]',
                 ].join(' ')}
-                onClick={() => onChange({ ...user, loginType: opt.value })}
+                onClick={() => {
+                  const nextUser = { ...user, loginType: opt.value }
+
+                  if (opt.value === 'Password') {
+                    Object.assign(
+                      nextUser,
+                      syncExpiryFromDays(nextUser.passwordExpiryDays || 90),
+                    )
+                    if (isEditing) {
+                      nextUser.resetPassword = false
+                      nextUser.password = ''
+                    }
+                  } else if (isEditing) {
+                    nextUser.resetPassword = false
+                    nextUser.password = ''
+                  }
+
+                  onChange(nextUser)
+                }}
               >
                 <div
                   className={[
@@ -1249,13 +1998,10 @@ function LoginDetails({
                   )}
                 </div>
 
-                {opt.icon(isSelected)}
+                {opt.icon()}
 
                 <div className='min-w-0 flex-1'>
-                  <div
-                    className='truncate text-xs font-semibold text-[var(--gray-13)] hover:whitespace-normal hover:break-words'
-                    title={opt.title}
-                  >
+                  <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
                     {opt.title}
                   </div>
                 </div>
@@ -1278,35 +2024,74 @@ function LoginDetails({
         ) : null}
       </div>
 
-      {user.loginType === 'Password' ? (
-        <EzPasswordField
-          label='Password'
-          value={user.password}
-          required
-          error={getFieldRequiredError(
-            'Password',
-            Boolean(showErrors),
-            user.password,
-          )}
-          onChange={(value) => onChange({ ...user, password: value })}
+      {user.loginType === 'Password' && isEditing ? (
+        <ToggleRow
+          checked={Boolean(user.resetPassword)}
+          label='Reset password'
+          onChange={(checked) =>
+            onChange({
+              ...user,
+              password: checked ? user.password : '',
+              resetPassword: checked,
+            })
+          }
         />
+      ) : null}
+
+      {showPasswordField ? (
+        <div className='space-y-3'>
+          <EzPasswordField
+            label={isEditing ? 'New Password' : 'Password'}
+            value={user.password}
+            required
+            error={
+              getFieldRequiredError(
+                isEditing ? 'New Password' : 'Password',
+                Boolean(showErrors),
+                user.password,
+              ) ||
+              (showErrors && user.password
+                ? getPasswordRequirementError(user.password)
+                : undefined)
+            }
+            onChange={(value) => onChange({ ...user, password: value })}
+          />
+          <PasswordRequirements password={user.password} />
+        </div>
       ) : null}
 
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
+          disabled={user.loginType !== 'Password'}
           label='Password Expiry (Days)'
           placeholder='90'
           type='number'
-          value={String(user.passwordExpiryDays)}
+          value={
+            user.loginType === 'Password'
+              ? String(user.passwordExpiryDays)
+              : ''
+          }
           onChange={(value) =>
-            onChange({ ...user, passwordExpiryDays: Number(value) || 0 })
+            onChange({
+              ...user,
+              ...syncExpiryFromDays(Number(value)),
+            })
           }
         />
 
         <SettingsDateField
+          disabled={user.loginType !== 'Password'}
           label='Account Expiry Date'
-          value={user.accountExpiryDate}
-          onChange={(value) => onChange({ ...user, accountExpiryDate: value })}
+          minDate={dayjs().add(1, 'day').format('YYYY-MM-DD')}
+          value={
+            user.loginType === 'Password' ? user.accountExpiryDate : ''
+          }
+          onChange={(value) =>
+            onChange({
+              ...user,
+              ...syncExpiryFromDate(value),
+            })
+          }
         />
       </div>
 
@@ -1335,15 +2120,23 @@ function Review({ user }: { user: DraftUser }) {
             value={`${user.firstName} ${user.lastName}`.trim() || '—'}
           />
           <SummaryItem label='Email' value={user.email || '—'} />
-          <SummaryItem label='Job Title' value={user.jobTitle || '—'} />
-          <SummaryItem label='Manager' value={user.manager || '—'} />
-          <SummaryItem label='Login' value={user.loginType} />
-          <SummaryItem label='Department' value={user.department || '—'} />
-          <SummaryItem label='Role' value={user.role || '—'} />
-          <SummaryItem label='Location' value={user.location || '—'} />
+          <SummaryItem
+            label='Phone'
+            value={
+              user.phoneNumber
+                ? `${getDialCodeFromCountryValue(user.countryCode)} ${user.phoneNumber}`.trim()
+                : '—'
+            }
+          />
+          <SummaryItem label='Job Title' value={user.jobTitle || ''} />
+          <SummaryItem label='Manager' value={user.manager || ''} />
+          <SummaryItem label='Login' value={formatLoginTypeLabel(user.loginType)} />
+          <SummaryItem label='Department' value={user.department || ''} />
+          <SummaryItem label='Role' value={user.role || ''} />
+          <SummaryItem label='Location' value={user.location || ''} />
           <SummaryItem
             label='Groups'
-            value={user.groups.length ? user.groups.join(', ') : '—'}
+            value={user.groups.length ? user.groups.join(', ') : ''}
           />
           <SummaryItem
             label='MFA'
@@ -1363,11 +2156,13 @@ function StatusBadge({ status }: { status: UserStatus }) {
         ? 'border-[var(--orange-5)] bg-[var(--orange-2)] text-[var(--orange-11)]'
         : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]'
 
+  const label = status.charAt(0).toUpperCase() + status.slice(1)
+
   return (
     <span
-      className={`inline-flex items-center rounded-[10px] border px-3 py-1 font-semibold ${className}`}
+      className={`inline-flex items-center rounded-[10px] border px-2.5 py-0.5 font-semibold ${className}`}
     >
-      {status}
+      {label}
     </span>
   )
 }
@@ -1434,11 +2229,17 @@ function ToggleRow({
 
 function UserSetup({
   activeStep,
+  businessUnitOptions,
   draftUser,
   editingUserId,
   groupOptions,
+  isLoadingGroups,
+  isLoadingRoles,
   isSaving,
+  jobTitleOptions,
+  locationOptions,
   managerOptions,
+  roleOptions,
   onBack,
   onBackToSettings,
   onCancel,
@@ -1448,11 +2249,17 @@ function UserSetup({
   onStepChange,
 }: {
   activeStep: number
+  businessUnitOptions: string[]
   draftUser: DraftUser
   editingUserId: string | number | null
-  groupOptions: Array<{ caption: string; name: string }>
+  groupOptions: SettingsOption[]
+  isLoadingGroups?: boolean
+  isLoadingRoles?: boolean
   isSaving: boolean
+  jobTitleOptions: string[]
+  locationOptions: string[]
   managerOptions: SettingsOption[]
+  roleOptions: SettingsOption[]
   onBack: () => void
   onBackToSettings?: () => void
   onCancel: () => void
@@ -1462,18 +2269,17 @@ function UserSetup({
   onStepChange: (step: number) => void
 }) {
   const [showErrors, setShowErrors] = useState(false)
-  const progress = useMemo(
-    () => calculateUserSetupProgress(draftUser),
-    [draftUser],
-  )
 
   const handleNext = () => {
-    const missingLabels = getMissingRequiredUserLabels(draftUser, activeStep)
+    const validationMessage = getUserSetupValidationMessage(
+      draftUser,
+      activeStep,
+    )
 
-    if (missingLabels.length) {
+    if (validationMessage) {
       setShowErrors(true)
       showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
+        message: validationMessage,
         variant: 'error',
       })
       return
@@ -1484,12 +2290,12 @@ function UserSetup({
   }
 
   const handleSave = () => {
-    const missingLabels = getMissingRequiredUserLabels(draftUser)
+    const validationMessage = getUserSetupValidationMessage(draftUser)
 
-    if (missingLabels.length) {
+    if (validationMessage) {
       setShowErrors(true)
       showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
+        message: validationMessage,
         variant: 'error',
       })
       return
@@ -1502,13 +2308,16 @@ function UserSetup({
   const handleStepChange = (step: number) => {
     if (step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
-        const missingLabels = getMissingRequiredUserLabels(draftUser, index)
+        const validationMessage = getUserSetupValidationMessage(
+          draftUser,
+          index,
+        )
 
-        if (missingLabels.length) {
+        if (validationMessage) {
           setShowErrors(true)
           onStepChange(index)
           showToast({
-            message: getRequiredFieldErrorMessage(missingLabels),
+            message: validationMessage,
             variant: 'error',
           })
           return
@@ -1524,8 +2333,6 @@ function UserSetup({
     setShowErrors(false)
     onBack()
   }
-
-  const activeStepConfig = steps[activeStep]
 
   const wizardSteps = useMemo(() => {
     return steps.map((s, idx) => ({
@@ -1554,6 +2361,8 @@ function UserSetup({
     >
       {activeStep === 0 && (
         <LoginDetails
+          autoFocusFirstName={!editingUserId}
+          isEditing={Boolean(editingUserId)}
           showErrors={showErrors}
           user={draftUser}
           onChange={onChange}
@@ -1561,7 +2370,12 @@ function UserSetup({
       )}
       {activeStep === 1 && (
         <BusinessDetails
+          businessUnitOptions={businessUnitOptions}
+          isLoadingRoles={isLoadingRoles}
+          jobTitleOptions={jobTitleOptions}
+          locationOptions={locationOptions}
           managerOptions={managerOptions}
+          roleOptions={roleOptions}
           showErrors={showErrors}
           user={draftUser}
           onChange={onChange}
@@ -1570,12 +2384,17 @@ function UserSetup({
       {activeStep === 2 && (
         <GroupAssignment
           groupOptions={groupOptions}
+          isLoadingGroups={isLoadingGroups}
           user={draftUser}
           onChange={onChange}
         />
       )}
       {activeStep === 3 && (
-        <Authentication user={draftUser} onChange={onChange} />
+        <Authentication
+          showErrors={showErrors}
+          user={draftUser}
+          onChange={onChange}
+        />
       )}
       {activeStep === 4 && <Review user={draftUser} />}
     </SettingsWizardLayout>

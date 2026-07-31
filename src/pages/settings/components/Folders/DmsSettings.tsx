@@ -40,6 +40,7 @@ import CustomFilter from '@/components/common/CustomFilter'
 import { DynamicIcon } from '@/pages/folders/components/icons'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
   settingsHeaderMeta,
@@ -52,8 +53,6 @@ import SettingsPageHeader, {
   type SettingsAddAction,
   SettingsHeaderAddButton,
 } from '../SettingsPageHeader'
-import SettingsSetupContent from '../SettingsSetupContent'
-import SettingsSetupHeader from '../SettingsSetupHeader'
 import SettingsWizardLayout from '../SettingsWizardLayout'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
@@ -84,10 +83,12 @@ type FieldRow = {
 }
 
 type RepositoryRow = {
+  createdAt: string
+  createdBy: string
+  description: string
   documents: number
   id: string
   name: string
-  owner: string
   status: RepositoryStatus
   storage: string
 }
@@ -186,10 +187,22 @@ const mapRepositoryToRow = (
       : 'EZOFIS'
 
   return {
+    createdAt: String(
+      repository.createdAtUtc ||
+        repository.createdAt ||
+        repository.created ||
+        '',
+    ),
+    createdBy: String(
+      repository.createdByName ||
+        repository.createdBy ||
+        repository.ownerName ||
+        '',
+    ).trim(),
+    description: String(repository.description || '').trim(),
     documents: getRepositoryDocumentCount(repository),
     id,
     name,
-    owner: String(repository.createdByName || repository.ownerName || '—'),
     status: getRepositoryStatus(repository),
     storage: formatStorageLabel(storageCode),
   }
@@ -604,16 +617,132 @@ export default function DmsFolderConfiguration({
       Object.entries(activeFilters).forEach(([key, value]) => {
         if (!value) return
         if (key === 'name') {
-          if (!matchesCategoryFilterValue(repo.name, value, 'contains')) {
+          if (
+            !matchesCategoryFilterValue(repo.name, value, 'contains') &&
+            !matchesCategoryFilterValue(repo.name, value)
+          ) {
+            matches = false
+          }
+        } else if (key === 'description') {
+          if (
+            !matchesCategoryFilterValue(repo.description, value, 'contains') &&
+            !matchesCategoryFilterValue(repo.description, value)
+          ) {
+            matches = false
+          }
+        } else if (key === 'storage') {
+          if (!matchesCategoryFilterValue(repo.storage, value)) matches = false
+        } else if (key === 'documents') {
+          if (
+            !matchesCategoryFilterValue(String(repo.documents), value)
+          ) {
             matches = false
           }
         } else if (key === 'status') {
           if (!matchesCategoryFilterValue(repo.status, value)) matches = false
+        } else if (key === 'createdAt') {
+          if (
+            !matchesCategoryFilterValue(repo.createdAt, value, 'contains') &&
+            !matchesCategoryFilterValue(repo.createdAt, value)
+          ) {
+            matches = false
+          }
+        } else if (key === 'createdBy') {
+          if (
+            !matchesCategoryFilterValue(repo.createdBy, value, 'contains') &&
+            !matchesCategoryFilterValue(repo.createdBy, value)
+          ) {
+            matches = false
+          }
         }
       })
       return matches
     })
   }, [repositories, activeFilters])
+
+  const folderNameOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          repositories.map((r) => String(r.name || '').trim()).filter(Boolean),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((name) => ({ label: name, value: name })),
+    [repositories],
+  )
+
+  const descriptionOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          repositories
+            .map((r) => String(r.description || '').trim())
+            .filter(Boolean),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((description) => ({ label: description, value: description })),
+    [repositories],
+  )
+
+  const storageFilterOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          repositories
+            .map((r) => String(r.storage || '').trim())
+            .filter(Boolean),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((storage) => ({ label: storage, value: storage })),
+    [repositories],
+  )
+
+  const documentCountOptions = useMemo(
+    () =>
+      Array.from(new Set(repositories.map((r) => String(r.documents))))
+        .sort((a, b) => Number(a) - Number(b))
+        .map((count) => ({ label: count, value: count })),
+    [repositories],
+  )
+
+  const createdByOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          repositories
+            .map((r) => String(r.createdBy || '').trim())
+            .filter(Boolean),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((createdBy) => ({ label: createdBy, value: createdBy })),
+    [repositories],
+  )
+
+  const createdAtOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          repositories
+            .map((r) => String(r.createdAt || '').trim())
+            .filter(Boolean),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((createdAt) => ({
+          label: formatDatetime(createdAt, 'datetime') || createdAt,
+          value: createdAt,
+        })),
+    [repositories],
+  )
+
+  const statusOptions = [
+    { label: 'Active', value: 'active' },
+    { label: 'Archived', value: 'archived' },
+  ]
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
     setSecurityRepository(null)
@@ -630,11 +759,22 @@ export default function DmsFolderConfiguration({
     setSecurityRepository(repository)
   }, [])
 
+  const loadRepositoriesRequestIdRef = useRef(0)
+  const loadUsersRequestIdRef = useRef(0)
+
   const loadRepositories = useCallback(async () => {
+    const requestId = ++loadRepositoriesRequestIdRef.current
     setIsLoadingRepositories(true)
 
     try {
       const response = await getRepositorys()
+
+      if (
+        response.canceled ||
+        requestId !== loadRepositoriesRequestIdRef.current
+      ) {
+        return
+      }
 
       if (response.error) {
         // showToast({
@@ -653,12 +793,20 @@ export default function DmsFolderConfiguration({
 
       setRepositories(rows)
     } finally {
-      setIsLoadingRepositories(false)
+      if (requestId === loadRepositoriesRequestIdRef.current) {
+        setIsLoadingRepositories(false)
+      }
     }
   }, [])
 
   const loadUsers = useCallback(async () => {
+    const requestId = ++loadUsersRequestIdRef.current
     const response = await getUsers()
+
+    if (response.canceled || requestId !== loadUsersRequestIdRef.current) {
+      return
+    }
+
     if (response.error) return
 
     setUserOptions(
@@ -888,11 +1036,6 @@ export default function DmsFolderConfiguration({
     },
   })
 
-  const statusOptions = [
-    { label: 'Active', value: 'Active' },
-    { label: 'Inactive', value: 'Inactive' },
-  ]
-
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       {securityRepository ? (
@@ -919,7 +1062,10 @@ export default function DmsFolderConfiguration({
               activeFilters={activeFilters}
               trailingActions={
                 <>
-                  <TableExport table={repositoryTable as any} />
+                  <TableExport
+                    fileName='folders'
+                    table={repositoryTable as any}
+                  />
                   <Menu
                     position='bottom-end'
                     width={200}
@@ -966,16 +1112,45 @@ export default function DmsFolderConfiguration({
               filters={[
                 {
                   id: 'name',
-                  label: 'Name',
-                  options: repositories
-                    .map((r) => String(r.name || '').trim())
-                    .filter(Boolean)
-                    .sort((a, b) => a.localeCompare(b))
-                    .map((name) => ({ label: name, value: name })),
+                  label: 'Folder',
+                  options: folderNameOptions,
                   searchable: true,
-                  searchPlaceholder: 'Search name...',
+                  searchPlaceholder: 'Search folder...',
+                },
+                {
+                  id: 'storage',
+                  label: 'Storage',
+                  options: storageFilterOptions,
                 },
                 { id: 'status', label: 'Status', options: statusOptions },
+              ]}
+              moreFilters={[
+                {
+                  id: 'description',
+                  label: 'Description',
+                  options: descriptionOptions,
+                  searchable: true,
+                  searchPlaceholder: 'Search description...',
+                },
+                {
+                  id: 'documents',
+                  label: 'Documents',
+                  options: documentCountOptions,
+                },
+                {
+                  id: 'createdAt',
+                  label: 'Created',
+                  options: createdAtOptions,
+                  searchable: true,
+                  searchPlaceholder: 'Search created...',
+                },
+                {
+                  id: 'createdBy',
+                  label: 'Created By',
+                  options: createdByOptions,
+                  searchable: true,
+                  searchPlaceholder: 'Search created by...',
+                },
               ]}
               showReset={
                 Object.keys(activeFilters).some((k) => activeFilters[k]) ||
@@ -1021,12 +1196,22 @@ export default function DmsFolderConfiguration({
         </div>
       ) : (
         (() => {
-          const currentStepInfo = wizardSteps.find((item) => item.id === step)
           const formattedWizardSteps = wizardSteps.map((item) => ({
             id: item.id - 1,
             label: item.title,
             description: item.description,
-            icon: item.id === 1 ? 'tabler:folder' : item.id === 2 ? 'tabler:database' : item.id === 3 ? 'tabler:list-details' : item.id === 4 ? 'tabler:git-branch' : item.id === 5 ? 'tabler:api' : 'tabler:shield-lock',
+            icon:
+              item.id === 1
+                ? 'tabler:folder'
+                : item.id === 2
+                  ? 'tabler:database'
+                  : item.id === 3
+                    ? 'tabler:list-details'
+                    : item.id === 4
+                      ? 'tabler:git-branch'
+                      : item.id === 5
+                        ? 'tabler:api'
+                        : 'tabler:shield-lock',
           }))
 
           return (
@@ -1035,7 +1220,13 @@ export default function DmsFolderConfiguration({
               steps={formattedWizardSteps}
               onStepChange={(stepIdx) => setStep((stepIdx + 1) as WizardStep)}
               onBack={goBack}
-              onNext={step === 5 ? () => { void handleCreateRepository() } : goNext}
+              onNext={
+                step === 5
+                  ? () => {
+                      void handleCreateRepository()
+                    }
+                  : goNext
+              }
               onSave={closeWizard}
               onCancel={closeWizard}
               isSaving={isSavingRepository}
@@ -1043,7 +1234,9 @@ export default function DmsFolderConfiguration({
               saveLabel='Done'
               moduleTitle='Folder Configuration'
               setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
-              headerTitle={editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'}
+              headerTitle={
+                editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'
+              }
               headerDescription='Configure repository storage, metadata fields, versioning, and security'
             >
               <WizardContent
@@ -1767,7 +1960,7 @@ function useRepositoryTable(
         size: 48,
         cell: () => (
           <div className='flex justify-center'>
-            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-primary-3 text-primary-9'>
+            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--primary-3)] text-[var(--primary-9)]'>
               <Folder size={16} />
             </div>
           </div>
@@ -1776,67 +1969,134 @@ function useRepositoryTable(
       columnHelper.accessor('name', {
         enableSorting: false,
         header: 'Folder',
+        id: 'folder',
         meta: { ...settingsHeaderMeta.start, label: 'Folder' },
         minSize: 40,
-        size: 260,
-        cell: ({ row }) => (
-          <div className='min-w-0'>
-            <div className='truncate font-semibold text-gray-13'>
-              {row.original.name}
-            </div>
-            <div className='truncate text-xs text-gray-11'>
-              Owner: {row.original.owner}
-            </div>
+        size: 200,
+        cell: ({ getValue }) => (
+          <div className='min-w-0 truncate text-sm font-semibold text-[var(--gray-13)]'>
+            {String(getValue() || '')}
           </div>
         ),
+      }),
+      columnHelper.accessor('description', {
+        enableSorting: false,
+        header: 'Description',
+        id: 'description',
+        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        minSize: 40,
+        size: 220,
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '').trim()
+          return (
+            <span
+              className='block min-w-0 truncate text-sm text-[var(--gray-12)]'
+              title={value}
+            >
+              {value}
+            </span>
+          )
+        },
       }),
       columnHelper.accessor('storage', {
         enableSorting: false,
         header: 'Storage',
-        meta: { ...settingsHeaderMeta.start, label: 'Storage' },
+        id: 'storage',
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Storage',
+        },
         minSize: 40,
-        size: 140,
-        cell: (info) => (
-          <span className='rounded-lg border border-gray-3 px-3 py-1 text-xs font-medium'>
-            {info.getValue()}
+        size: 120,
+        cell: ({ getValue }) => (
+          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+            {getValue()}
           </span>
         ),
       }),
       columnHelper.accessor('documents', {
         enableSorting: false,
         header: 'Documents',
-        meta: settingsHeaderMeta.start,
+        id: 'documents',
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Documents',
+        },
         minSize: 40,
-        size: 150,
-        cell: (info) => `${info.getValue().toLocaleString()} documents`,
+        size: 110,
+        cell: ({ getValue }) => (
+          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+            {getValue().toLocaleString()}
+          </span>
+        ),
       }),
       columnHelper.accessor('status', {
         enableSorting: false,
         header: 'Status',
-        meta: { ...settingsHeaderMeta.start, label: 'Status' },
+        id: 'status',
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Status',
+        },
         minSize: 40,
         size: 110,
-        cell: (info) => (
-          <span
-            className={cn(
-              'rounded-lg px-3 py-1 text-xs font-semibold capitalize',
-              info.getValue() === 'active'
-                ? 'bg-primary-9 text-white'
-                : 'bg-gray-2 text-gray-13',
-            )}
-          >
-            {info.getValue()}
-          </span>
-        ),
+        cell: ({ getValue }) => {
+          const status = getValue()
+          const isActive = status === 'active'
+          return (
+            <span
+              className={[
+                'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-semibold capitalize',
+                isActive
+                  ? 'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]'
+                  : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
+              ].join(' ')}
+            >
+              {isActive ? 'Active' : 'Archived'}
+            </span>
+          )
+        },
+      }),
+      columnHelper.accessor('createdAt', {
+        enableSorting: false,
+        header: 'Created',
+        id: 'createdAt',
+        meta: { ...settingsHeaderMeta.start, label: 'Created' },
+        minSize: 40,
+        size: 145,
+        cell: ({ getValue }) => {
+          const raw = String(getValue() || '').trim()
+          if (!raw) return <span />
+          return <span>{formatDatetime(raw, 'datetime')}</span>
+        },
+      }),
+      columnHelper.accessor('createdBy', {
+        enableSorting: false,
+        header: 'Created By',
+        id: 'createdBy',
+        meta: { ...settingsHeaderMeta.start, label: 'Created By' },
+        minSize: 40,
+        size: 140,
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '').trim()
+          return (
+            <span className='block min-w-0 truncate text-sm text-[var(--gray-12)]'>
+              {value}
+            </span>
+          )
+        },
       }),
       columnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Actions',
+        header: '',
         id: 'actions',
         meta: settingsHeaderMeta.end,
-        minSize: 100,
-        size: 100,
+        minSize: 56,
+        size: 56,
         cell: ({ row }) => {
           const repository = row.original
 
@@ -1876,7 +2136,6 @@ function useRepositoryTable(
       }),
     ],
     [columnHelper, onEditRepository, onSecurityRepository],
-
   )
 
   const table = useReactTable({

@@ -8,6 +8,7 @@ import { classNames, inputWrapperOrder } from './shared/constants'
 
 interface Props extends InputProps {
   value: string
+  autoFocus?: boolean
   leftSection?: ReactNode
   leftSectionPointerEvents?: 'auto' | 'none'
   rightSection?: ReactNode

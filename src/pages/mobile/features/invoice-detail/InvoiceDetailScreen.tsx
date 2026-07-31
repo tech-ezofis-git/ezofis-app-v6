@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import cn from '@/utils/cn'
+import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 import { AppBar, IconButton } from '../../components/layout/AppBar'
 import { ScreenScroll, ScreenShell } from '../../components/layout/ScreenShell'
 import { AppButton } from '../../components/primitives/AppButton'
@@ -31,14 +32,9 @@ type InvoiceDetailScreenProps = {
 function formatWhen(value?: string | number | Date | null) {
   if (!value) return ''
   try {
-    const d = new Date(value)
-    if (Number.isNaN(d.getTime())) return String(value).slice(0, 16)
-    return d.toLocaleString(undefined, {
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      month: 'short',
-    })
+    const formatted = formatUtcToLocalDateTime(value, '')
+    if (formatted) return formatted
+    return String(value).slice(0, 16)
   } catch {
     return String(value).slice(0, 16)
   }

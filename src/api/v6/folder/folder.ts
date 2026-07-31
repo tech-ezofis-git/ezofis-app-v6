@@ -191,7 +191,7 @@ export const verifyMailOTP = async (payload: {
 }
 
 export const getRepositorys = async () => {
-  const response: any = { data: null, error: '' }
+  const response: any = { data: null, error: '', canceled: false }
 
   try {
     const { data, status } = await axiosV6({
@@ -202,6 +202,11 @@ export const getRepositorys = async () => {
     if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
+    // Duplicate identical GETs are aborted by axios interceptors (e.g. Strict Mode).
+    if (isRequestCanceled(e)) {
+      response.canceled = true
+      return response
+    }
     console.error(e)
     response.error = e?.response?.data || 'error fetching repositories'
   }

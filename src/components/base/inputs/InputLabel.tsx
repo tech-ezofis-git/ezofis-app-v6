@@ -19,6 +19,11 @@ const InputLabel = ({
   tooltip,
   tooltipWidth,
 }: Props) => {
+  const rawLabel = String(label || '')
+  const hasStarSuffix = /\s*\*$/.test(rawLabel)
+  const cleanLabel = hasStarSuffix ? rawLabel.replace(/\s*\*$/, '').trimEnd() : rawLabel
+  const showRequired = Boolean(required || hasStarSuffix)
+
   return (
     <div
       className={cn(
@@ -26,9 +31,9 @@ const InputLabel = ({
         className,
       )}
     >
-      {label}
+      {cleanLabel}
       {optional && <span className='font-normal text-gray-10'>(optional)</span>}
-      {required && <span className='text-red-11'>*</span>}
+      {showRequired && <span className='text-[var(--red-9)]'>*</span>}
       {tooltip && (
         <Tooltip content={tooltip} position='top-start' width={tooltipWidth}>
           <Icon

@@ -14,6 +14,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -41,9 +42,11 @@ import Menu from '@/components/base/menu/Menu'
 import DropdownMenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import { formatDatetime } from '@/utils/dayjs'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -55,7 +58,6 @@ import {
   useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
-import { calculateRoleSetupProgress } from '../helpers/settingsSetupProgress'
 import { mapUsersToOptions } from '../helpers/userGroupMappers'
 import SettingsFormSection from './SettingsFormSection'
 import SettingsPageHeader, {
@@ -63,8 +65,6 @@ import SettingsPageHeader, {
   SettingsHeaderAddButton,
 } from './SettingsPageHeader'
 import SettingsSelectedChips from './SettingsSelectedChips'
-import SettingsSetupContent from './SettingsSetupContent'
-import SettingsSetupHeader from './SettingsSetupHeader'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 
 type AssignedUser = {
@@ -104,10 +104,13 @@ type PermissionRow = {
 }
 
 type Role = {
+  createdAt: string
   description: string
   id: string
   name: string
+  permissionCount: number
   permissions: string[]
+  status: 'active' | 'inactive'
   type: 'System' | 'Custom'
   userIds: string[]
   users: number
@@ -146,6 +149,35 @@ const roleSteps: CreateStep[] = [
     title: 'Review',
   },
 ]
+
+const ROLE_PERMISSION_PAGES: Array<{ key: string; name: string }> = [
+  { key: 'dashboard', name: 'Dashboard' },
+  { key: 'request', name: 'Request' },
+  { key: 'folder', name: 'Folder' },
+  { key: 'workflow', name: 'Workflow' },
+  { key: 'form', name: 'Form' },
+  { key: 'settings', name: 'Settings' },
+]
+
+const ROLE_PERMISSION_KEY_ALIASES: Record<string, string> = {
+  form: 'form',
+  forms: 'form',
+  request: 'request',
+  requests: 'request',
+}
+
+const ALLOWED_ROLE_PERMISSION_KEYS = new Set(
+  ROLE_PERMISSION_PAGES.map((page) => page.key),
+)
+
+const normalizeRolePermissionKey = (value: string) => {
+  const slug = normalizeCategorySlug(value)
+  if (!slug) return ''
+  return ROLE_PERMISSION_KEY_ALIASES[slug] || slug
+}
+
+const isAllowedRolePermissionKey = (value: string) =>
+  ALLOWED_ROLE_PERMISSION_KEYS.has(normalizeRolePermissionKey(value))
 
 const initialMenuItems: MenuItem[] = []
 
@@ -205,6 +237,9 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     useState(false)
   const [isLoadingMenus, setIsLoadingMenus] = useState(false)
   const [isSavingRole, setIsSavingRole] = useState(false)
+  const [deletingRoleId, setDeletingRoleId] = useState<string | number | null>(
+    null,
+  )
   const userOptions: Option[] = useMemo(() => {
     return mapUsersToOptions(
       users.map((user) => ({
@@ -235,16 +270,29 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     setEditingRoleId(null)
   }
 
-  const deleteRole = (roleId: string | number) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this role?',
-    )
-    if (!confirmed) return
+  const deletingRole = useMemo(
+    () => roles.find((role) => role.id === deletingRoleId) || null,
+    [deletingRoleId, roles],
+  )
 
-    setRoles((current) => current.filter((role) => role.id !== roleId))
+  const deleteRole = (roleId: string | number) => {
+    setDeletingRoleId(roleId)
   }
 
+  const cancelDeleteRole = () => {
+    setDeletingRoleId(null)
+  }
+
+  const confirmDeleteRole = () => {
+    if (deletingRoleId == null) return
+    setRoles((current) => current.filter((role) => role.id !== deletingRoleId))
+    setDeletingRoleId(null)
+  }
+
+  const loadRolesRequestIdRef = useRef(0)
+
   const loadRoles = useCallback(async () => {
+    const requestId = ++loadRolesRequestIdRef.current
     setIsLoadingRoles(true)
     try {
       const [rolesResponse, usersResponse] = await Promise.all([
@@ -252,39 +300,53 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         getUsers(),
       ])
 
-      if (usersResponse.error) {
-        showToast({ message: usersResponse.error, variant: 'error' })
-      } else {
-        const apiUsers = usersResponse.data.map((user) => ({
-          email: user.email,
-          id: String(user.id),
-          name:
-            `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-            user.displayName ||
-            user.email,
-          role: user.role || 'Business User',
-        }))
-        setUsers(apiUsers)
-      }
-
-      if (rolesResponse.error) {
-        showToast({ message: rolesResponse.error, variant: 'error' })
+      if (requestId !== loadRolesRequestIdRef.current) {
         return
       }
 
-      const mappedRoles = rolesResponse.data.map(mapApiRoleToRole)
-      setRoles(mappedRoles)
-      if (mappedRoles.length) {
-        setSelectedRoleId((current) =>
-          mappedRoles.some((role) => role.id === current)
-            ? current
-            : mappedRoles[0].id,
-        )
-      } else {
-        setSelectedRoleId('')
+      if (rolesResponse.canceled && usersResponse.canceled) {
+        return
+      }
+
+      if (!usersResponse.canceled) {
+        if (usersResponse.error) {
+          showToast({ message: usersResponse.error, variant: 'error' })
+        } else {
+          const apiUsers = usersResponse.data.map((user) => ({
+            email: user.email,
+            id: String(user.id),
+            name:
+              `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+              user.displayName ||
+              user.email,
+            role: user.role || 'Business User',
+          }))
+          setUsers(apiUsers)
+        }
+      }
+
+      if (!rolesResponse.canceled) {
+        if (rolesResponse.error) {
+          showToast({ message: rolesResponse.error, variant: 'error' })
+          return
+        }
+
+        const mappedRoles = rolesResponse.data.map(mapApiRoleToRole)
+        setRoles(mappedRoles)
+        if (mappedRoles.length) {
+          setSelectedRoleId((current) =>
+            mappedRoles.some((role) => role.id === current)
+              ? current
+              : mappedRoles[0].id,
+          )
+        } else {
+          setSelectedRoleId('')
+        }
       }
     } finally {
-      setIsLoadingRoles(false)
+      if (requestId === loadRolesRequestIdRef.current) {
+        setIsLoadingRoles(false)
+      }
     }
   }, [])
 
@@ -317,17 +379,11 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     // } finally {
     //   setIsLoadingMenus(false)
     // }
-    const menus = [
-      { key: 'dashboard', name: 'Dashboard', visible: false },
-      { key: 'requests', name: 'Requests', visible: false },
-      { key: 'folder', name: 'Folder', visible: false },
-
-      { key: 'workflow', name: 'Workflow', visible: false },
-
-      { key: 'forms', name: 'Forms', visible: false },
-
-      { key: 'settings', name: 'Settings', visible: false },
-    ]
+    const menus = ROLE_PERMISSION_PAGES.map((page) => ({
+      key: page.key,
+      name: page.name,
+      visible: false,
+    }))
     setApiMenus(menus)
     setMenuItems(menus.map(mapApiMenuToProfileItem))
     return menus
@@ -360,12 +416,19 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         }
 
         const role = mapApiRoleToRole(response.data)
-        setPermissionRows(mapPermissionsToRows(role.permissions, menus))
+        const menusWithVisibility = applyPermissionKeysToMenus(
+          menus,
+          getRolePermissionKeys(response.data),
+        )
+        setPermissionRows(
+          mapPermissionsToRows(role.permissions, menusWithVisibility),
+        )
         setRoles((current) =>
           current.map((item) =>
             item.id === role.id
               ? {
                   ...item,
+                  permissionCount: role.permissionCount,
                   permissions: role.permissions,
                   userIds: role.userIds,
                   users: role.users,
@@ -382,8 +445,9 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
   useEffect(() => {
     if (!apiMenus.length) return
+    if (isCreatingRole) return
     setNewPermissionRows(buildEmptyPermissionRows(apiMenus))
-  }, [apiMenus])
+  }, [apiMenus, isCreatingRole])
 
   const saveRole = async () => {
     const cleanName = newRoleName.trim()
@@ -447,27 +511,10 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
       }
 
       const role = mapApiRoleToRole(response.data)
+      const permissionKeys = getRolePermissionKeys(response.data)
+      const updatedApiMenus = applyPermissionKeysToMenus(apiMenus, permissionKeys)
 
-      const permissionKeys = (response.data as any)?.permissionKeys || []
-      const permissionKeysMap = new Map<string, boolean>(
-        permissionKeys.map((pk: any) => [
-          String(pk.key || '').toLowerCase(),
-          pk.visible === true,
-        ]),
-      )
-
-      const updatedApiMenus = apiMenus.map((item) => {
-        const itemKeyNormalized = String(item.key || '').toLowerCase()
-        const visibleFromApi = permissionKeysMap.has(itemKeyNormalized)
-          ? permissionKeysMap.get(itemKeyNormalized)
-          : item.visible
-        return {
-          ...item,
-          visible: visibleFromApi,
-        }
-      })
       setApiMenus(updatedApiMenus)
-
       setEditingRoleId(role.id)
       setNewRoleName(role.name)
       setNewRoleDescription(role.description)
@@ -557,6 +604,19 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
   return (
     <main className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
+      <ConfirmDialog
+        opened={deletingRoleId != null}
+        title='Delete Role'
+        description={
+          deletingRole
+            ? `Are you sure you want to delete "${deletingRole.name}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this role? This action cannot be undone.'
+        }
+        confirmLabel='Delete'
+        variant='danger'
+        onCancel={cancelDeleteRole}
+        onConfirm={confirmDeleteRole}
+      />
       <RoleList
         isLoading={isLoadingRoles}
         isLoadingRoleDetails={isLoadingRoleDetails}
@@ -753,17 +813,6 @@ function CreateRolePage({
     () => countEnabledPermissions(permissionRows),
     [permissionRows],
   )
-  const progress = useMemo(
-    () =>
-      calculateRoleSetupProgress(
-        roleName,
-        description,
-        selectedUsers.length,
-        enabledCount,
-      ),
-    [description, enabledCount, roleName, selectedUsers.length],
-  )
-  const isLastStep = activeStep === roleSteps.length - 1
   const [showErrors, setShowErrors] = useState(false)
 
   const getMissingLabels = (step = activeStep) => {
@@ -838,8 +887,6 @@ function CreateRolePage({
     onBack()
   }
 
-  const activeStepConfig = roleSteps[activeStep]
-
   const wizardSteps = useMemo(() => {
     return roleSteps.map((s, idx) => ({
       id: idx,
@@ -875,32 +922,6 @@ function CreateRolePage({
             onChange={onRoleNameChange}
           />
 
-          <InputSelectMultiple
-            className='bg-surface'
-            label='Select Users *'
-            options={userOptions}
-            placeholder='Select users...'
-            value={selectedUsers}
-            clearable
-            searchable
-            error={
-              showErrors && !selectedUsers.length
-                ? 'Please fill the required field: Select Users'
-                : undefined
-            }
-            onChange={(value) =>
-              onSelectedUsersChange((value || []) as Option[])
-            }
-          />
-          <SettingsSelectedChips
-            items={selectedUsers}
-            onRemove={(id) =>
-              onSelectedUsersChange(
-                selectedUsers.filter((user) => user.id !== id),
-              )
-            }
-          />
-
           <InputTextarea
             label='Description'
             minRows={5}
@@ -908,6 +929,35 @@ function CreateRolePage({
             value={description}
             onChange={onDescriptionChange}
           />
+
+          <div className='space-y-1'>
+            <InputSelectMultiple
+              label='Select Users'
+              options={userOptions}
+              placeholder='Select users...'
+              required
+              value={selectedUsers}
+              clearable
+              searchable
+              error={
+                showErrors && !selectedUsers.length
+                  ? 'Please fill the required field: Select Users'
+                  : undefined
+              }
+              onChange={(value) =>
+                onSelectedUsersChange((value || []) as Option[])
+              }
+            />
+            <SettingsSelectedChips
+              className='mt-0'
+              items={selectedUsers}
+              onRemove={(id) =>
+                onSelectedUsersChange(
+                  selectedUsers.filter((user) => user.id !== id),
+                )
+              }
+            />
+          </div>
         </SettingsFormSection>
       ) : null}
 
@@ -957,6 +1007,80 @@ function formatCategoryLabel(key: string): string {
     .join(' ')
 }
 
+function isPermissionKeyVisible(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+  const text = String(value ?? '')
+    .trim()
+    .toLowerCase()
+  return text === 'true' || text === '1' || text === 'yes'
+}
+
+function getRolePermissionKeys(role: V6RoleItem) {
+  return Array.isArray(role.permissionKeys) ? role.permissionKeys : []
+}
+
+function buildPermissionKeysMap(
+  permissionKeys: Array<{ key?: string; visible?: unknown }>,
+) {
+  return new Map(
+    permissionKeys
+      .map((item) => {
+        const key = normalizeRolePermissionKey(String(item.key || ''))
+        if (!key || !ALLOWED_ROLE_PERMISSION_KEYS.has(key)) return null
+        return [key, isPermissionKeyVisible(item.visible)] as const
+      })
+      .filter((entry): entry is readonly [string, boolean] => Boolean(entry)),
+  )
+}
+
+function applyPermissionKeysToMenus(
+  menus: V6MenuItem[],
+  permissionKeys: Array<{ key?: string; name?: string; visible?: unknown }>,
+): V6MenuItem[] {
+  const permissionKeysMap = buildPermissionKeysMap(permissionKeys)
+  const hasPermissionKeys = permissionKeys.length > 0
+  const sourceMenus = (
+    menus.length
+      ? menus
+      : ROLE_PERMISSION_PAGES.map((page) => ({
+          key: page.key,
+          name: page.name,
+          visible: false,
+        }))
+  ).filter((menu) =>
+    isAllowedRolePermissionKey(String(menu.key || menu.id || '')),
+  )
+
+  // Keep a fixed page list only (dashboard, request, folder, workflow, form, settings).
+  const orderedMenus = ROLE_PERMISSION_PAGES.map((page, index) => {
+    const existing =
+      sourceMenus.find(
+        (menu) =>
+          normalizeRolePermissionKey(String(menu.key || menu.id || '')) ===
+          page.key,
+      ) || null
+    const permission = permissionKeys.find(
+      (item) =>
+        normalizeRolePermissionKey(String(item.key || '')) === page.key,
+    )
+    const visible = hasPermissionKeys
+      ? permissionKeysMap.get(page.key) === true
+      : existing?.visible !== false
+
+    return {
+      ...existing,
+      key: page.key,
+      label: String(existing?.label || existing?.name || page.name),
+      name: String(existing?.name || existing?.label || page.name),
+      sortOrder: Number(existing?.sortOrder ?? index),
+      visible,
+    }
+  })
+
+  return orderedMenus
+}
+
 function isPermissionEnabledForCategory(
   categoryKey: string,
   permissions: string[],
@@ -967,9 +1091,18 @@ function isPermissionEnabledForCategory(
 }
 
 function mapApiRoleToRole(role: V6RoleItem): Role {
-  const permissions = Array.isArray(role.permissions)
-    ? role.permissions.map(String)
-    : []
+  const permissionKeys = getRolePermissionKeys(role)
+  const permissionsFromKeys = permissionKeys
+    .filter((item) => isPermissionKeyVisible(item.visible))
+    .map((item) => normalizeRolePermissionKey(String(item.key || '')))
+    .filter((key) => ALLOWED_ROLE_PERMISSION_KEYS.has(key))
+  const permissions = permissionsFromKeys.length
+    ? permissionsFromKeys
+    : Array.isArray(role.permissions)
+      ? role.permissions
+          .map((permission) => normalizeRolePermissionKey(String(permission)))
+          .filter((key) => ALLOWED_ROLE_PERMISSION_KEYS.has(key))
+      : []
   const users = Array.isArray(role.users)
     ? role.users
         .map((user) => {
@@ -980,12 +1113,33 @@ function mapApiRoleToRole(role: V6RoleItem): Role {
     : []
   const userCount =
     typeof role.userCount === 'number' ? role.userCount : users.length
+  const permissionCount =
+    typeof role.permissionCount === 'number'
+      ? role.permissionCount
+      : permissions.length
+  const rawStatus = String(
+    (role as { status?: string; isActive?: boolean | string }).status ??
+      (role as { isActive?: boolean | string }).isActive ??
+      'active',
+  )
+    .trim()
+    .toLowerCase()
+  const status: Role['status'] =
+    rawStatus === 'inactive' ||
+    rawStatus === 'disabled' ||
+    rawStatus === 'false' ||
+    rawStatus === '0'
+      ? 'inactive'
+      : 'active'
 
   return {
+    createdAt: String(role.createdAtUtc || role.createdAt || ''),
     description: String(role.description || ''),
     id: String(role.roleId || role.id || ''),
     name: String(role.roleName || role.name || ''),
+    permissionCount,
     permissions,
+    status,
     type: 'Custom',
     userIds: users,
     users: userCount,
@@ -1297,8 +1451,6 @@ function RoleList({
           if (!matchesCategoryFilterValue(role.name, value, 'contains')) {
             matches = false
           }
-        } else if (key === 'type') {
-          if (!matchesCategoryFilterValue(role.type, value)) matches = false
         }
       })
       return matches
@@ -1324,66 +1476,121 @@ function RoleList({
           </div>
         ),
       }),
-      roleColumnHelper.accessor((row) => `${row.name} ${row.description}`, {
+      roleColumnHelper.accessor('name', {
         enableSorting: false,
         header: 'Role',
         id: 'role',
         meta: { ...settingsHeaderMeta.start, label: 'Role' },
         minSize: 40,
-        size: 360,
-        cell: ({ row }) => {
-          const role = row.original
-
-          return (
-            <div className='min-w-0'>
-              <div className='truncate text-sm font-semibold text-[var(--gray-13)]'>
-                {role.name}
-              </div>
-              <div className='mt-1 truncate text-sm text-[var(--gray-11)]'>
-                {role.description}
-              </div>
-            </div>
-          )
-        },
-      }),
-      roleColumnHelper.accessor('type', {
-        enableSorting: false,
-        header: 'Type',
-        id: 'type',
-        meta: {
-          ...settingsHeaderMeta.start,
-          disableEllipsis: true,
-          label: 'Type',
-        },
-        minSize: 40,
         size: 180,
         cell: ({ getValue }) => (
-          <span className='inline-flex items-center rounded-[8px] border border-[var(--border-default)] bg-surface px-3 py-1 text-xs font-semibold text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
+          <div className='min-w-0 truncate text-sm font-semibold text-[var(--gray-13)]'>
+            {String(getValue() || '')}
+          </div>
         ),
+      }),
+      roleColumnHelper.accessor('description', {
+        enableSorting: false,
+        header: 'Description',
+        id: 'description',
+        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        minSize: 40,
+        size: 240,
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '').trim()
+          return (
+            <span
+              className='block min-w-0 truncate text-sm text-[var(--gray-12)]'
+              title={value}
+            >
+              {value}
+            </span>
+          )
+        },
       }),
       roleColumnHelper.accessor('users', {
         enableSorting: false,
         header: 'Users',
         id: 'users',
-        meta: { ...settingsHeaderMeta.start, disableEllipsis: true },
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Users',
+        },
         minSize: 40,
-        size: 160,
+        size: 100,
         cell: ({ getValue }) => (
-          <span className='inline-flex items-center rounded-[8px] bg-[var(--gray-2)] px-4 py-1 text-sm font-semibold text-[var(--gray-13)]'>
-            {getValue()} users
+          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+            {getValue()}
           </span>
         ),
+      }),
+      roleColumnHelper.accessor('permissionCount', {
+        enableSorting: false,
+        header: 'Access Pages',
+        id: 'accessPages',
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Access Pages',
+        },
+        minSize: 40,
+        size: 120,
+        cell: ({ getValue }) => (
+          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+            {getValue()}
+          </span>
+        ),
+      }),
+      roleColumnHelper.accessor('status', {
+        enableSorting: false,
+        header: 'Status',
+        id: 'status',
+        meta: {
+          ...settingsHeaderMeta.start,
+          disableEllipsis: true,
+          label: 'Status',
+        },
+        minSize: 40,
+        size: 110,
+        cell: ({ getValue }) => {
+          const status = getValue()
+          const isActive = status === 'active'
+          return (
+            <span
+              className={[
+                'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-semibold',
+                isActive
+                  ? 'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]'
+                  : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
+              ].join(' ')}
+            >
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
+          )
+        },
+      }),
+      roleColumnHelper.accessor('createdAt', {
+        enableSorting: false,
+        header: 'Created',
+        id: 'createdAt',
+        meta: { ...settingsHeaderMeta.start, label: 'Created' },
+        minSize: 40,
+        size: 145,
+        cell: ({ getValue }) => {
+          const raw = String(getValue() || '').trim()
+          if (!raw) return <span />
+          return <span>{formatDatetime(raw, 'datetime')}</span>
+        },
       }),
       roleColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Actions',
+        header: '',
         id: 'actions',
         meta: settingsHeaderMeta.end,
-        minSize: 72,
-        size: 72,
+        minSize: 56,
+        size: 56,
         cell: ({ row }) => {
           const role = row.original
 
@@ -1449,14 +1656,6 @@ function RoleList({
     },
   })
 
-  const typeOptions = useMemo(
-    () =>
-      Array.from(new Set(roles.map((r) => r.type).filter(Boolean))).map(
-        (t) => ({ label: t, value: t }),
-      ),
-    [roles],
-  )
-
   return (
     <div className='flex h-full min-h-0 flex-col'>
       <SettingsPageHeader title='Roles & Permissions' onBack={onBack} />
@@ -1477,9 +1676,10 @@ function RoleList({
               searchable: true,
               searchPlaceholder: 'Search name...',
             },
-            { id: 'type', label: 'Type', options: typeOptions },
           ]}
-          trailingActions={<TableExport table={roleTable as any} />}
+          trailingActions={
+            <TableExport fileName='roles' table={roleTable as any} />
+          }
           actionButtons={[
             {
               color: 'gray',
