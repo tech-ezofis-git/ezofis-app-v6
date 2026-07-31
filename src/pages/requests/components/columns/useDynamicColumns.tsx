@@ -920,10 +920,10 @@ const StatusCell = ({
   const parsedForm = getParsedFormData(row)
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-      agentData?.decision ||
-      row.decision ||
-      row.status ||
-      '',
+    agentData?.decision ||
+    row.decision ||
+    row.status ||
+    '',
   ).toUpperCase()
 
   let iconName = 'tabler:clock'
@@ -1502,7 +1502,7 @@ const getBaseColumns = (
           <div className='flex min-w-0 items-center gap-1.5'>
             <AiBrandIcon
               className='size-[14px] shrink-0 text-[var(--primary-9)]'
-              variant='curved-purple'
+              variant='outline-purple'
             />
             <HoverExpandableText
               className='text-[13px] font-medium text-[var(--gray-11)]'

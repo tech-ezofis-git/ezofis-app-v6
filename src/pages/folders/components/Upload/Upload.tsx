@@ -852,7 +852,7 @@ export default function Upload({
                       {item.icon === 'tabler:sparkles' ? (
                         <AiBrandIcon
                           className='size-5 transition-transform duration-300 group-hover:rotate-6'
-                          variant='curved-purple'
+                          variant='outline-purple'
                         />
                       ) : (
                         <Icon

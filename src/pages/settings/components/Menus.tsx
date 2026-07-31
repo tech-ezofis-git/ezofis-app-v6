@@ -721,6 +721,7 @@ function MenuSetup({
       onNext={handleNext}
       onSave={handleSave}
       onCancel={onCancel}
+      onBackToSettings={onBack}
       isSaving={isSaving}
       saveLabel={editingMenuId ? 'Update Menu' : 'Save Menu'}
       moduleTitle='Menu & Profile Management'

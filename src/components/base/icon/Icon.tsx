@@ -11,7 +11,7 @@ interface Props extends SVGProps<SVGSVGElement> {
 }
 
 const Icon = forwardRef<SVGSVGElement, Props>(
-  ({ className, name, variant = 'curved-purple', ...props }, ref) => {
+  ({ className, name, variant = 'outline-purple', ...props }, ref) => {
     if (!name || typeof name !== 'string') return null
 
     if (

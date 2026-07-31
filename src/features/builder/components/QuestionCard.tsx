@@ -118,7 +118,7 @@ const QuestionCard = memo(
               )}
 
               <ActionIcon color='indigo' size='xs' variant='transparent'>
-                <AiBrandIcon className='size-4 animate-pulse' variant='curved-purple' />
+                <AiBrandIcon className='size-4 animate-pulse' variant='outline-purple' />
               </ActionIcon>
             </Group>
 

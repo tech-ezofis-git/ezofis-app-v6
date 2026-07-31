@@ -78,11 +78,11 @@ interface FieldMatch {
 type InvoiceErrorItem =
   | string
   | {
-      code?: string
-      detail?: any
-      field?: string
-      message?: string
-    }
+    code?: string
+    detail?: any
+    field?: string
+    message?: string
+  }
   | Record<string, any>
 
 interface InvoiceErrors {
@@ -462,7 +462,7 @@ const Overview = ({
                         <div className='w-2 self-stretch rounded-full bg-[var(--primary-9)] opacity-30' />
                         <div className='flex min-w-0 flex-col gap-1'>
                           <div className='flex items-center gap-2'>
-                              <AiBrandIcon className='size-5 shrink-0 animate-pulse' variant='curved-purple' />
+                            <AiBrandIcon className='size-5 shrink-0 animate-pulse' variant='outline-purple' />
                             <span className='text-[11px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
                               Analysis
                             </span>
@@ -545,8 +545,8 @@ const Overview = ({
                       type={2}
                       userId={userId}
                       workflowId={workflowId}
-                      onClose={() => {}} // Viewer is always open in this layout
-                      // Adjusting FileSheet style to fit container if needed, assuming it fits parent
+                      onClose={() => { }} // Viewer is always open in this layout
+                    // Adjusting FileSheet style to fit container if needed, assuming it fits parent
                     />
                   </div>
                 ) : (
@@ -786,7 +786,7 @@ const Overview = ({
                                           className={cn(
                                             'line-clamp-1 text-11 font-medium transition-all hover:line-clamp-none',
                                             !actual &&
-                                              'text-[var(--gray-8)] italic',
+                                            'text-[var(--gray-8)] italic',
                                           )}
                                         >
                                           {displayActual}
@@ -1098,7 +1098,7 @@ const Overview = ({
                                         typeof row.amount === 'number'
                                           ? row.amount
                                           : typeof row.price === 'number' &&
-                                              typeof row.remaining === 'number'
+                                            typeof row.remaining === 'number'
                                             ? row.price * row.remaining
                                             : '-'
                                       const reason = row.reason || 'BACKORDER'

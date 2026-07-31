@@ -580,7 +580,7 @@ export default function Attachments({
                     </span>
                     {file.isAiMatch && (
                       <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)] shrink-0'>
-                        <AiBrandIcon className='size-3 shrink-0' variant='curved-purple' />
+                        <AiBrandIcon className='size-3 shrink-0' variant='outline-purple' />
                         Added via AI match
                       </span>
                     )}

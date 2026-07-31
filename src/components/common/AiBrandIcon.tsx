@@ -37,7 +37,7 @@ export default function AiBrandIcon({
   className,
   alt = 'AI Brand',
   style,
-  variant = 'default',
+  variant = 'outline-purple',
 }: AiBrandIconProps) {
   const { resolvedColorScheme } = useTheme()
 

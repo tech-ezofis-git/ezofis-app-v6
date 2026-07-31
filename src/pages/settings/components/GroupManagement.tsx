@@ -751,6 +751,7 @@ function GroupSetup({
       onNext={handleNext}
       onSave={handleSave}
       onCancel={onCancel}
+      onBackToSettings={onBack}
       isSaving={isSaving}
       saveLabel={editingGroupId ? 'Update Group' : 'Save Group'}
       moduleTitle='Group Management'

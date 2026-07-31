@@ -22,6 +22,7 @@ export type SettingsWizardLayoutProps = {
   onNext?: () => void
   onSave?: () => void
   onCancel?: () => void
+  onBackToSettings?: () => void
   isNextDisabled?: boolean
   isBackDisabled?: boolean
   isLoading?: boolean
@@ -44,6 +45,7 @@ export default function SettingsWizardLayout({
   onNext,
   onSave,
   onCancel,
+  onBackToSettings,
   isNextDisabled = false,
   isBackDisabled = false,
   isLoading = false,
@@ -62,12 +64,22 @@ export default function SettingsWizardLayout({
 
   const breadcrumbConfig = useMemo(() => {
     if (!moduleTitle || !setupTitle) return { items: [] }
-    return createSettingsSetupBreadcrumbs(moduleTitle, setupTitle, {
-      onCancelSetup: () => {
-        onCancel?.()
+    return {
+      items: [
+        { key: 'settings', label: 'Settings' },
+        { key: 'module', label: moduleTitle },
+        { label: setupTitle },
+      ],
+      onNavigate: (key: string) => {
+        if (key === 'settings') {
+          onCancel?.()
+          onBackToSettings?.()
+        } else if (key === 'module') {
+          onCancel?.()
+        }
       },
-    })
-  }, [moduleTitle, setupTitle, onCancel])
+    }
+  }, [moduleTitle, setupTitle, onCancel, onBackToSettings])
 
   useSettingsTopbar(breadcrumbConfig)
 

@@ -75,7 +75,7 @@ export function EmbedTopbar({
         )}
         {showAiBadge && (
           <div className='flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent-primary shrink-0'>
-            <AiBrandIcon className='size-3.5 shrink-0' variant='curved-purple' />
+            <AiBrandIcon className='size-3.5 shrink-0' variant='outline-purple' />
             <span>AI Enabled</span>
           </div>
         )}

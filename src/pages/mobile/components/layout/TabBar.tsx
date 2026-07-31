@@ -47,7 +47,7 @@ export function TabBar({ activeId, onChange }: TabBarProps) {
                 onClick={() => onChange(tab.id)}
               >
                 {tab.id === 'ai' ? (
-                  <AiBrandIcon className='size-4' variant='curved-purple' />
+                  <AiBrandIcon className='size-4' variant='outline-purple' />
                 ) : (
                   <Icon
                     className={cn(

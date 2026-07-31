@@ -906,6 +906,7 @@ function CreateRolePage({
       onNext={handleNext}
       onSave={handleSave}
       onCancel={onCancel}
+      onBackToSettings={onBack}
       isSaving={isSaving}
       saveLabel={submitLabel}
       moduleTitle='Roles & Permissions'

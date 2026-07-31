@@ -711,7 +711,7 @@ const AskAI = () => {
                 {busy ? (
                   <SparkIconLoading className='size-[18px]' />
                 ) : (
-                  <AiBrandIcon className='size-[18px]' />
+                  <AiBrandIcon className='size-[18px]' variant='outline-purple' />
                 )}
               </div>
             )}

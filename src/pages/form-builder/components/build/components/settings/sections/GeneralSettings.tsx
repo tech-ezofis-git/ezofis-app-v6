@@ -12,19 +12,19 @@ const FORM_TYPES: {
   name: string
   value: FormType
 }[] = [
-  {
-    desc: 'For business processes & automation',
-    icon: 'tabler:git-branch',
-    name: 'Workflow',
-    value: 'WORKFLOW',
-  },
-  {
-    desc: 'For surveys & reviews',
-    icon: 'tabler:message-star',
-    name: 'Master',
-    value: 'MASTER',
-  },
-]
+    {
+      desc: 'For business processes & automation',
+      icon: 'tabler:git-branch',
+      name: 'Workflow',
+      value: 'WORKFLOW',
+    },
+    {
+      desc: 'For surveys & reviews',
+      icon: 'tabler:message-star',
+      name: 'Master',
+      value: 'MASTER',
+    },
+  ]
 
 const GeneralSettings = () => {
   const { description, formType, name, setDescription, setFormType, setName } =
@@ -109,7 +109,7 @@ const GeneralSettings = () => {
 
       <Box className='bg-gray-50 rounded-2xl border border-gray-2 p-4'>
         <Group gap='xs' mb={8}>
-          <AiBrandIcon className='size-3.5 shrink-0' variant='curved-purple' />
+          <AiBrandIcon className='size-3.5 shrink-0' variant='outline-purple' />
           <div className='text-[11px] font-bold text-gray-11'>Quick Note</div>
         </Group>
         <div className='text-[10px] leading-relaxed font-medium text-gray-6'>
