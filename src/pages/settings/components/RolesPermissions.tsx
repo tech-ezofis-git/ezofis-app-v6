@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
   Check,
@@ -1049,7 +1050,7 @@ function applyPermissionKeysToMenus(
           visible: false,
         }))
   ).filter((menu) =>
-    isAllowedRolePermissionKey(String(menu.key || menu.id || '')),
+    isAllowedRolePermissionKey(String(menu.key || (menu as any).id || '')),
   )
 
   // Keep a fixed page list only (dashboard, request, folder, workflow, form, settings).
@@ -1057,7 +1058,7 @@ function applyPermissionKeysToMenus(
     const existing =
       sourceMenus.find(
         (menu) =>
-          normalizeRolePermissionKey(String(menu.key || menu.id || '')) ===
+          normalizeRolePermissionKey(String(menu.key || (menu as any).id || '')) ===
           page.key,
       ) || null
     const permission = permissionKeys.find(
@@ -1071,9 +1072,9 @@ function applyPermissionKeysToMenus(
     return {
       ...existing,
       key: page.key,
-      label: String(existing?.label || existing?.name || page.name),
-      name: String(existing?.name || existing?.label || page.name),
-      sortOrder: Number(existing?.sortOrder ?? index),
+      label: String((existing as any)?.label || (existing as any)?.name || page.name),
+      name: String((existing as any)?.name || (existing as any)?.label || page.name),
+      sortOrder: Number((existing as any)?.sortOrder ?? index),
       visible,
     }
   })
