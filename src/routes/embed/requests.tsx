@@ -10,7 +10,7 @@ import requestStore from '@/pages/requests/stores/useRequestStore'
 export const Route = createFileRoute('/embed/requests')({
   component: RouteComponent,
   staticData: {
-    pageTitle: 'Requests (Embed)',
+    pageTitle: 'Requests',
   },
   beforeLoad: () => {
     requestStore.getState().closeRequest()

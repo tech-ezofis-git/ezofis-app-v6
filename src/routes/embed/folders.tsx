@@ -5,7 +5,7 @@ import FoldersPage from '@/pages/folders/FoldersPage'
 export const Route = createFileRoute('/embed/folders')({
   component: RouteComponent,
   staticData: {
-    pageTitle: 'Folders (Embed)',
+    pageTitle: 'Folders',
   },
 })
 
