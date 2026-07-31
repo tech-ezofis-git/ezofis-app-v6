@@ -1064,6 +1064,7 @@ function HighestConsumptionPieChart({
 }: {
   data: { credits: number; name: string }[]
 }) {
+  const { t } = useLingui()
   const chartData =
     data.length > 0
       ? data.map((item, index) => ({
@@ -1208,6 +1209,7 @@ function UsageTimelineChart({
 }: {
   data: { credits: number; label: string }[]
 }) {
+  const { t } = useLingui()
   const chartData =
     data.length > 0
       ? data
