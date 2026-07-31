@@ -21,6 +21,7 @@ export type SettingsWizardLayoutProps = {
   onNext?: () => void
   onSave?: () => void
   onCancel?: () => void
+  onBackToSettings?: () => void
   isNextDisabled?: boolean
   isBackDisabled?: boolean
   isLoading?: boolean
@@ -43,6 +44,7 @@ export default function SettingsWizardLayout({
   onNext,
   onSave,
   onCancel,
+  onBackToSettings,
   isNextDisabled = false,
   isBackDisabled = false,
   isLoading = false,
@@ -68,12 +70,15 @@ export default function SettingsWizardLayout({
         { label: setupTitle },
       ],
       onNavigate: (key: string) => {
-        if (key === 'settings' || key === 'module') {
-          onCancel?.() || onBack?.()
+        if (key === 'settings') {
+          onCancel?.()
+          onBackToSettings?.()
+        } else if (key === 'module') {
+          onCancel?.()
         }
       },
     }
-  }, [moduleTitle, setupTitle, onCancel, onBack])
+  }, [moduleTitle, setupTitle, onCancel, onBackToSettings])
 
   useSettingsTopbar(breadcrumbConfig)
 

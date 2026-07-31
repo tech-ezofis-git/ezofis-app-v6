@@ -1043,10 +1043,12 @@ export default function DmsFolderConfiguration({
           folderName={securityRepository.name}
           repositoryId={securityRepository.id}
           onBack={() => setSecurityRepository(null)}
+          onBackToSettings={onBack}
         />
       ) : showAiBuilder ? (
         <AiFolderBuilder
           onBack={() => setShowAiBuilder(false)}
+          onBackToSettings={onBack}
           onApply={handleAiBuilderApply}
         />
       ) : !showWizard ? (
@@ -1229,6 +1231,7 @@ export default function DmsFolderConfiguration({
               }
               onSave={closeWizard}
               onCancel={closeWizard}
+              onBackToSettings={onBack}
               isSaving={isSavingRepository}
               nextLabel={step === 5 ? 'Save & Next' : 'Continue'}
               saveLabel='Done'
@@ -2603,6 +2606,7 @@ function WizardContent({
         folderName={folderName || 'Folder'}
         repositoryId={editingRepositoryId || ''}
         onBack={() => setStep(5)}
+        onBackToSettings={onBack}
       />
     )
   }

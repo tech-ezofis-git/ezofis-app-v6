@@ -1,12 +1,14 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import cn from '@/utils/cn'
-import FolderSecurityPolicyWizard from './FolderSecurityPolicyWizard'
+import useSettingsTopbar from '../../hooks/useSettingsTopbar'
 import DocumentSecurityRuleWizard from './DocumentSecurityRuleWizard'
+import FolderSecurityPolicyWizard from './FolderSecurityPolicyWizard'
 
 export type FolderSecurityProps = {
   folderName: string
   repositoryId?: string
   onBack: () => void
+  onBackToSettings?: () => void
 }
 
 type TabKey = 'folder' | 'document'
@@ -20,8 +22,30 @@ export default function FolderSecurity({
   folderName,
   repositoryId = '',
   onBack,
+  onBackToSettings,
 }: FolderSecurityProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('folder')
+
+  const breadcrumbConfig = useMemo(
+    () => ({
+      items: [
+        { key: 'settings', label: 'Settings' },
+        { key: 'folder-configuration', label: 'Folder Configuration' },
+        { label: folderName ? `Security` : 'Folder Security' },
+      ],
+      onNavigate: (key: string) => {
+        if (key === 'settings') {
+          onBack()
+          onBackToSettings?.()
+        } else if (key === 'folder-configuration') {
+          onBack()
+        }
+      },
+    }),
+    [folderName, onBack, onBackToSettings],
+  )
+
+  useSettingsTopbar(breadcrumbConfig)
 
   return (
     <div className='flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface)]'>

@@ -26,6 +26,7 @@ import {
   BuilderTimelineStep,
   type TimelineConnectorState,
 } from './AiFolderBuilderTimeline'
+import useSettingsTopbar from '../../hooks/useSettingsTopbar'
 
 type BuilderStepId = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -80,6 +81,7 @@ export type AiFolderBuilderApplyPayload = {
 
 type AiFolderBuilderProps = {
   onBack: () => void
+  onBackToSettings?: () => void
   onApply: (payload: AiFolderBuilderApplyPayload) => void | Promise<void>
 }
 
@@ -148,32 +150,34 @@ function TypewriterText({
 }) {
   const [shown, setShown] = useState(() => (active ? '' : text))
   const doneRef = useRef(false)
-  const onDoneRef = useRef(onDone)
-  onDoneRef.current = onDone
 
   useEffect(() => {
     if (!active) {
       setShown(text)
+      if (!doneRef.current) {
+        doneRef.current = true
+        onDone?.()
+      }
       return
     }
 
-    doneRef.current = false
     setShown('')
-    let index = 0
-    const id = window.setInterval(() => {
-      index += 1
-      setShown(text.slice(0, index))
-      if (index >= text.length) {
-        window.clearInterval(id)
+    doneRef.current = false
+    let idx = 0
+    const timer = setInterval(() => {
+      idx++
+      setShown(text.slice(0, idx))
+      if (idx >= text.length) {
+        clearInterval(timer)
         if (!doneRef.current) {
           doneRef.current = true
-          onDoneRef.current?.()
+          onDone?.()
         }
       }
     }, speed)
 
-    return () => window.clearInterval(id)
-  }, [active, speed, text])
+    return () => clearInterval(timer)
+  }, [text, active, speed, onDone])
 
   return (
     <span>
@@ -802,10 +806,32 @@ const emptyDraft = (): DraftAnswers => ({
 
 export default function AiFolderBuilder({
   onBack,
+  onBackToSettings,
   onApply,
 }: AiFolderBuilderProps) {
   const { t } = useLingui()
   const initialGreetingId = useMemo(() => crypto.randomUUID(), [])
+
+  const breadcrumbConfig = useMemo(
+    () => ({
+      items: [
+        { key: 'settings', label: 'Settings' },
+        { key: 'folder-configuration', label: 'Folder Configuration' },
+        { label: 'AI Folder Builder' },
+      ],
+      onNavigate: (key: string) => {
+        if (key === 'settings') {
+          onBack()
+          onBackToSettings?.()
+        } else if (key === 'folder-configuration') {
+          onBack()
+        }
+      },
+    }),
+    [onBack, onBackToSettings],
+  )
+
+  useSettingsTopbar(breadcrumbConfig)
 
   const builderSteps = useMemo(
     () => [

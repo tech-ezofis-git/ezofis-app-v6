@@ -2352,6 +2352,7 @@ function UserSetup({
       onNext={handleNext}
       onSave={handleSave}
       onCancel={onCancel}
+      onBackToSettings={onBack}
       isSaving={isSaving}
       saveLabel={editingUserId ? 'Update User' : 'Save User'}
       moduleTitle='User Management'
