@@ -730,7 +730,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               subtitle={t`Top agents by credit usage · ${periodSubtitle}`}
               title={t`Highest Credit Consumption`}
             >
-              <HighestConsumptionPieChart
+              <HighestConsumptionBarChart
                 data={highestConsumption.map((item) => ({
                   credits: item.credits,
                   name: item.name,
@@ -1025,41 +1025,7 @@ function formatPeriodSubtitle(
   return period.replaceAll('_', ' ')
 }
 
-const PIE_COLORS = [
-  'var(--blue-9)',   // Blue (33%)
-  'var(--cyan-9)',   // Cyan/Teal (25%)
-  'var(--yellow-9)', // Yellow/Gold (25%)
-  'var(--orange-9)', // Coral/Orange (17%)
-]
-
-const renderCustomizedLabel = ({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  percent,
-}: any) => {
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-  const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180))
-  const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180))
-
-  return (
-    <text
-      x={x}
-      y={y}
-      fill='white'
-      textAnchor='middle'
-      dominantBaseline='central'
-      fontSize={12}
-      fontWeight={600}
-    >
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  )
-}
-
-function HighestConsumptionPieChart({
+function HighestConsumptionBarChart({
   data,
 }: {
   data: { credits: number; name: string }[]
@@ -1067,15 +1033,10 @@ function HighestConsumptionPieChart({
   const { t } = useLingui()
   const chartData =
     data.length > 0
-      ? data.map((item, index) => ({
-          ...item,
-          color: PIE_COLORS[index % PIE_COLORS.length],
-        }))
+      ? data.slice(0, 5)
       : [
-          { name: 'AP agent', credits: 33, color: 'var(--blue-9)' },
-          { name: 'OCR agent', credits: 25, color: 'var(--cyan-9)' },
-          { name: 'Document Classifier', credits: 25, color: 'var(--yellow-9)' },
-          { name: 'Back order agent', credits: 17, color: 'var(--orange-9)' },
+          { name: 'AP Agent', credits: 79 },
+          { name: 'OCR Agent', credits: 20 },
         ]
 
   const total = chartData.reduce((sum, item) => sum + item.credits, 0)
@@ -1088,62 +1049,72 @@ function HighestConsumptionPieChart({
     )
   }
 
+  const barColors = [
+    '#7C3AED', // Primary purple
+    '#C084FC', // Soft pastel purple
+    '#E9D5FF', // Light purple
+    '#F3E8FF',
+    '#F5F3FF',
+  ]
+
   return (
-    <div className='flex flex-col gap-2'>
-      <div className='h-[160px] w-full'>
+    <div className='flex flex-col h-full justify-between'>
+      <div className='h-[160px] w-full mt-2'>
         <ResponsiveContainer width='100%' height='100%'>
-          <PieChart>
-            <Pie
-              data={chartData}
-              dataKey='credits'
-              nameKey='name'
-              cx='50%'
-              cy='50%'
-              outerRadius={75}
-              labelLine={false}
-              label={renderCustomizedLabel}
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
-              ))}
-            </Pie>
+          <BarChart
+            data={chartData}
+            layout='vertical'
+            margin={{ bottom: 0, left: 10, right: 70, top: 10 }}
+            barCategoryGap='25%'
+          >
+            <CartesianGrid horizontal={false} stroke='var(--gray-2)' strokeDasharray='3 3' />
+            <XAxis type='number' hide />
+            <YAxis
+              dataKey='name'
+              type='category'
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}
+              width={80}
+            />
             <Tooltip
+              cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
+              formatter={(val: any) => [t`${formatNumber(val)} credits`, t`Usage`]}
               contentStyle={{
                 border: 'none',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 fontSize: '11px',
               }}
-              formatter={(val: any) => [`${formatNumber(val)} credits`, 'Usage']}
             />
-          </PieChart>
+            <Bar
+              dataKey='credits'
+              radius={[10, 10, 10, 10]}
+              barSize={18}
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={barColors[index % barColors.length]}
+                />
+              ))}
+              <LabelList
+                dataKey='credits'
+                position='right'
+                formatter={(value: any) => t`${value} credits`}
+                fill='var(--text-primary)'
+                fontSize={12}
+                fontWeight={700}
+                offset={10}
+              />
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Descriptions below */}
-      <div className='mt-2 grid grid-cols-2 gap-x-4 gap-y-2 pl-1'>
-        {chartData.map((item, index) => {
-          const pct = total > 0 ? ((item.credits / total) * 100).toFixed(0) : '0'
-          return (
-            <div key={index} className='flex items-center justify-between text-[11px] font-medium'>
-              <div className='flex items-center gap-2 min-w-0'>
-                <span
-                  className='size-2 rounded-full shrink-0'
-                  style={{ backgroundColor: item.color }}
-                />
-                <span
-                  className='truncate text-gray-10 font-semibold'
-                  title={item.name}
-                >
-                  {item.name}
-                </span>
-              </div>
-              <span className='font-bold text-gray-13 ml-2 shrink-0'>
-                {formatNumber(item.credits)} ({pct}%)
-              </span>
-            </div>
-          )
-        })}
+      <div className='flex justify-between items-center border-t border-[var(--border-default)] pt-4 mt-4 text-13'>
+        <span className='text-text-secondary font-medium'>{t`Total credits used`}</span>
+        <span className='font-bold text-text-primary text-15'>{t`${formatNumber(total)} credits`}</span>
       </div>
     </div>
   )
@@ -1230,41 +1201,20 @@ function UsageTimelineChart({
   }
 
   return (
-    <ResponsiveContainer height={180} width='100%'>
+    <ResponsiveContainer height={200} width='100%'>
       <BarChart
         data={chartData}
-        margin={{ bottom: 0, left: -20, right: 10, top: 10 }}
+        margin={{ bottom: 0, left: 10, right: 10, top: 25 }}
       >
-        <defs>
-          <linearGradient
-            id='creditTimelineGradient'
-            x1='0'
-            x2='0'
-            y1='0'
-            y2='1'
-          >
-            <stop offset='0%' stopColor='var(--purple-9)' stopOpacity={0.9} />
-            <stop
-              offset='100%'
-              stopColor='var(--purple-4)'
-              stopOpacity={0.4}
-            />
-          </linearGradient>
-        </defs>
-        <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
+        <CartesianGrid vertical={false} stroke='var(--gray-2)' strokeDasharray='3 3' />
         <XAxis
           axisLine={false}
           dataKey='label'
           dy={10}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          tick={{ fill: 'var(--gray-10)', fontSize: 12, fontWeight: 550 }}
           tickLine={false}
         />
-        <YAxis
-          axisLine={false}
-          tickLine={false}
-          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
-          dx={-10}
-        />
+        <YAxis hide />
         <Tooltip
           cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
           formatter={(val: any) => [
@@ -1279,11 +1229,20 @@ function UsageTimelineChart({
           }}
         />
         <Bar
-          barSize={16}
+          barSize={18}
           dataKey='credits'
-          fill='url(#creditTimelineGradient)'
-          radius={[4, 4, 0, 0]}
-        />
+          fill='#7C3AED'
+          radius={[10, 10, 0, 0]}
+        >
+          <LabelList
+            dataKey='credits'
+            position='top'
+            fill='var(--text-primary)'
+            fontSize={12}
+            fontWeight={700}
+            offset={8}
+          />
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   )
@@ -1665,6 +1624,82 @@ function CreditsByAiAgentChart({
         />
       </BarChart>
     </ResponsiveContainer>
+  )
+}
+
+const forecastData = [
+  { week: 'W1', actual: 22, projected: null },
+  { week: 'W2', actual: 18, projected: null },
+  { week: 'W3', actual: 24, projected: null },
+  { week: 'W4', actual: 20, projected: 20 },
+  { week: 'W5', actual: null, projected: 26 },
+  { week: 'W6', actual: null, projected: 31 },
+]
+
+function CreditForecastChart() {
+  return (
+    <div className='flex flex-col gap-2'>
+      <ResponsiveContainer height={180} width='100%'>
+        <LineChart
+          data={forecastData}
+          margin={{ bottom: 0, left: -25, right: 10, top: 10 }}
+        >
+          <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
+          <XAxis
+            dataKey='week'
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            dy={10}
+          />
+          <YAxis
+            domain={[18, 32]}
+            ticks={[18, 20, 22, 24, 26, 28, 30, 32]}
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 500 }}
+            dx={-10}
+          />
+          <Tooltip
+            contentStyle={{
+              border: 'none',
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              fontSize: '11px',
+            }}
+          />
+          <Line
+            type='linear'
+            dataKey='actual'
+            stroke='var(--purple-9)'
+            strokeWidth={2}
+            connectNulls
+            dot={{ stroke: 'var(--purple-9)', strokeWidth: 2, r: 4, fill: 'var(--surface)' }}
+          />
+          <Line
+            type='linear'
+            dataKey='projected'
+            stroke='var(--cyan-9)'
+            strokeWidth={2}
+            strokeDasharray='4 4'
+            connectNulls
+            dot={{ stroke: 'var(--cyan-9)', strokeWidth: 2, r: 4, fill: 'var(--surface)' }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+
+      {/* Legend */}
+      <div className='mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-1 text-[11px] font-semibold text-gray-10'>
+        <div className='flex items-center gap-1.5'>
+          <div className='size-2.5 rounded-sm bg-[var(--purple-9)]' />
+          <span>Actual</span>
+        </div>
+        <div className='flex items-center gap-1.5'>
+          <div className='size-2.5 rounded-sm bg-[var(--cyan-9)]' />
+          <span>Projected</span>
+        </div>
+      </div>
+    </div>
   )
 }
 
