@@ -20,7 +20,7 @@ export const StepLayout = ({
   title,
 }: StepLayoutProps) => {
   return (
-    <div className='flex min-h-full w-full flex-col gap-6 py-6 md:gap-7 md:py-8'>
+    <div className='flex min-h-full w-full flex-col gap-6 pt-3 pb-6 md:gap-7 md:pb-8'>
       <AnimateSlideUp delay={0.1}>
         <Title
           className='items-start text-left'

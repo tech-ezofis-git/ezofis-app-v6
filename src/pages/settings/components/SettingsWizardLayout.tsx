@@ -118,7 +118,7 @@ export default function SettingsWizardLayout({
       {/* Main Grid */}
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[290px_1fr]'>
         {/* Sidebar Stepper */}
-        <aside className='hidden h-full border-r border-gray-3 bg-gray-1/30 pt-3 pr-2 pb-3 pl-3.5 xl:block'>
+        <aside className='hidden h-full border-r border-gray-3 bg-gray-1/30 px-3.5 pt-3 pb-3 xl:block'>
           <Stepper
             active={activeStep}
             orientation='vertical'
@@ -133,7 +133,7 @@ export default function SettingsWizardLayout({
           ref={scrollContainerRef}
         >
           <div className='mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10'>
-            <div className='flex min-h-full w-full flex-col gap-6 py-6 md:gap-7 md:py-8'>
+            <div className='flex min-h-full w-full flex-col gap-6 pt-3 pb-6 md:gap-7 md:pb-8'>
               <div className='flex flex-col gap-6 md:gap-7'>{children}</div>
 
               {/* Footer Navigation */}

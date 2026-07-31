@@ -916,6 +916,7 @@ function CreateRolePage({
       {activeStep === 0 ? (
         <SettingsFormSection>
           <InputText
+            autoFocus={!editingRoleId}
             error={getFieldRequiredError('Role Name', showErrors, roleName)}
             label='Role Name *'
             placeholder='e.g. AP Supervisor'
