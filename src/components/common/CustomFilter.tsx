@@ -140,6 +140,8 @@ export interface FilterGroup {
   dataType?: string
   icon?: React.ComponentType<{ className?: string }>
   options?: FilterOption[]
+  searchable?: boolean
+  searchPlaceholder?: string
 }
 
 export interface FilterOption {

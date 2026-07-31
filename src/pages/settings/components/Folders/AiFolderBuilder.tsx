@@ -1374,7 +1374,7 @@ export default function AiFolderBuilder({
         return
       }
       pushAssistant(
-        t`${storageMeta[storage]?.label || storage} selected. How should documents be organized? Choose Recommend fields to generate a starter set.`,
+        t`${(storageMeta as Record<string, any>)[storage]?.label || storage} selected. How should documents be organized? Choose Recommend fields to generate a starter set.`,
         fieldChips,
         'fields',
         3,

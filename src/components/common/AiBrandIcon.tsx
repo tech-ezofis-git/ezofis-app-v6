@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import darkIcon from '@/assets/aibrandicon/dark.png'
 import lightIcon from '@/assets/aibrandicon/sparkles.png'
 import useTheme from '@/hooks/useTheme'
@@ -20,6 +21,7 @@ export type AiBrandIconVariant =
 interface AiBrandIconProps {
   className?: string
   alt?: string
+  style?: CSSProperties
   variant?: AiBrandIconVariant
 }
 
@@ -34,6 +36,7 @@ const OUTLINE_PATH_D =
 export default function AiBrandIcon({
   className,
   alt = 'AI Brand',
+  style,
   variant = 'default',
 }: AiBrandIconProps) {
   const { resolvedColorScheme } = useTheme()
@@ -44,6 +47,7 @@ export default function AiBrandIcon({
       <img
         alt={alt}
         className={cn('object-contain', className)}
+        style={style}
         src={iconSrc}
       />
     )
@@ -105,6 +109,7 @@ export default function AiBrandIcon({
     <svg
       aria-label={alt}
       className={cn('object-contain', className)}
+      style={style}
       viewBox='0 0 1080 1080'
       xmlns='http://www.w3.org/2000/svg'
     >

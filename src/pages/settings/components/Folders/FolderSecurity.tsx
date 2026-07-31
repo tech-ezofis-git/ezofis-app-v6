@@ -5,6 +5,7 @@ import DocumentSecurityRuleWizard from './DocumentSecurityRuleWizard'
 
 export type FolderSecurityProps = {
   folderName: string
+  repositoryId?: string
   onBack: () => void
 }
 
@@ -17,6 +18,7 @@ const tabs: { key: TabKey; label: string }[] = [
 
 export default function FolderSecurity({
   folderName,
+  repositoryId = '',
   onBack,
 }: FolderSecurityProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('folder')
@@ -53,9 +55,17 @@ export default function FolderSecurity({
 
       <div className='min-h-0 flex-1 overflow-hidden'>
         {activeTab === 'folder' ? (
-          <FolderSecurityPolicyWizard folderName={folderName} onClose={onBack} />
+          <FolderSecurityPolicyWizard
+            folderName={folderName}
+            repositoryId={repositoryId}
+            onClose={onBack}
+          />
         ) : (
-          <DocumentSecurityRuleWizard folderName={folderName} onClose={onBack} />
+          <DocumentSecurityRuleWizard
+            folderName={folderName}
+            repositoryId={repositoryId}
+            onClose={onBack}
+          />
         )}
       </div>
     </div>

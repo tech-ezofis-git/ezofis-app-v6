@@ -139,11 +139,11 @@ const SecurityWizardSkeleton = () => (
 
 export default function FolderSecurityPolicyWizard({
   folderName,
-  repositoryId,
+  repositoryId = '',
   onClose,
 }: {
   folderName: string
-  repositoryId: string
+  repositoryId?: string
   onClose: () => void
 }) {
   const [step, setStep] = useState<Step>(0)
