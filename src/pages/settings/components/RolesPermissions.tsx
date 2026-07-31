@@ -1847,6 +1847,8 @@ function TabBar({
   onChange: (tab: TabKey) => void
   onToolbarSlotChange: (node: HTMLDivElement | null) => void
 }) {
+  const { i18n } = useLingui()
+
   return (
     <div className='flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-gray-3 bg-surface px-4 py-2'>
       <div className='flex h-14 min-w-0 items-center'>
@@ -1865,7 +1867,7 @@ function TabBar({
               ].join(' ')}
               onClick={() => onChange(tab.key)}
             >
-              {tab.label}
+              {i18n._(tab.label)}
 
               {isActive ? (
                 <span className='absolute bottom-0 left-0 h-[2px] w-full bg-primary-9' />
@@ -1909,6 +1911,7 @@ function UserAssignments({
   users: AssignedUser[]
   onChangeRole: (id: string, role: string) => void
 }) {
+  const { t } = useLingui()
   const tableSearchOptions = useSettingsTableSearch()
   const userAssignmentColumns = useMemo(
     () => [
@@ -1931,9 +1934,9 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.accessor('name', {
         enableSorting: false,
-        header: 'User',
+        header: t`User`,
         id: 'name',
-        meta: { ...settingsHeaderMeta.start, label: 'User' },
+        meta: { ...settingsHeaderMeta.start, label: t`User` },
         minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
@@ -1944,9 +1947,9 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.accessor('email', {
         enableSorting: false,
-        header: 'Email',
+        header: t`Email`,
         id: 'email',
-        meta: { ...settingsHeaderMeta.start, label: 'Email' },
+        meta: { ...settingsHeaderMeta.start, label: t`Email` },
         minSize: 40,
         size: 240,
         cell: ({ getValue }) => (
@@ -1955,9 +1958,9 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.accessor('role', {
         enableSorting: false,
-        header: 'Current Role',
+        header: t`Current Role`,
         id: 'role',
-        meta: { ...settingsHeaderMeta.start, label: 'Current Role' },
+        meta: { ...settingsHeaderMeta.start, label: t`Current Role` },
         minSize: 40,
         size: 160,
         cell: ({ getValue }) => (
@@ -1968,7 +1971,7 @@ function UserAssignments({
       }),
       userAssignmentColumnHelper.display({
         enableSorting: false,
-        header: 'Change Role',
+        header: t`Change Role`,
         id: 'changeRole',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -1997,7 +2000,7 @@ function UserAssignments({
         },
       }),
     ],
-    [onChangeRole, roleNames],
+    [onChangeRole, roleNames, t],
   )
 
   const userAssignmentTable = useReactTable({
@@ -2019,9 +2022,9 @@ function UserAssignments({
       <TabToolbarPortal slot={toolbarSlot} toolbar={toolbar} />
 
       <DataTable
-        emptyDescription='Assign users to roles once users are available in the platform.'
+        emptyDescription={t`Assign users to roles once users are available in the platform.`}
         emptyIcon='lucide:user-round'
-        emptyTitle='No user assignments yet'
+        emptyTitle={t`No user assignments yet`}
         isLoading={false}
         isReLoading={false}
         pageSize={Math.max(5, users.length || 5)}
@@ -2039,7 +2042,7 @@ function UserAssignments({
           className='h-10 rounded-[8px] bg-[var(--primary-9)] px-5 text-sm font-semibold text-white shadow-[var(--shadow-md)] transition hover:bg-[var(--primary-10)]'
           type='button'
         >
-          Save Assignments
+          {t`Save Assignments`}
         </button>
       </div>
     </>
