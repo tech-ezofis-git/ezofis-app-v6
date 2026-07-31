@@ -1084,12 +1084,12 @@ const FormCard = ({
             {effectiveScore !== undefined && effectiveScore !== null && (
               <span
                 className={cn(
-                  'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
+                  'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
                   Number(effectiveScore) >= 90
-                    ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                    ? 'bg-[var(--green-1)] text-[var(--green-9)]'
                     : Number(effectiveScore) >= 70
-                      ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                      : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+                      ? 'bg-[var(--orange-1)] text-[var(--orange-9)]'
+                      : 'bg-[var(--red-1)] text-[var(--red-9)]',
                 )}
               >
                 {Math.round(Number(effectiveScore))}%
@@ -1131,12 +1131,12 @@ const FormCard = ({
           {effectiveScore !== undefined && effectiveScore !== null && (
             <span
               className={cn(
-                'shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold transition-colors',
+                'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
                 Number(effectiveScore) >= 90
-                  ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-9)]'
+                  ? 'bg-[var(--green-1)] text-[var(--green-9)]'
                   : Number(effectiveScore) >= 70
-                    ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-9)]'
-                    : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
+                    ? 'bg-[var(--orange-1)] text-[var(--orange-9)]'
+                    : 'bg-[var(--red-1)] text-[var(--red-9)]',
               )}
             >
               {Math.round(Number(effectiveScore))}%
@@ -1171,7 +1171,7 @@ const FormCard = ({
                     ? `Switch to Invoice: ${invoiceValue}`
                     : `Switch to PO: ${poValue}`
                 }
-                className='group/suggest flex w-full max-w-full cursor-pointer flex-col gap-0.5 rounded-md border border-[var(--primary-4)] bg-[var(--primary-2)] px-2 py-1.5 text-left transition-colors hover:border-[var(--primary-6)] hover:bg-[var(--primary-3)]'
+                className='group/suggest mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-1)] px-2.5 py-1 text-xs transition-all hover:bg-[var(--primary-2)] active:scale-98 animate-in fade-in zoom-in-95 duration-200'
                 onClick={(e) => {
                   e.stopPropagation()
                   applySourceValue(isUsingPo ? invoiceValue : poValue)
@@ -1184,20 +1184,19 @@ const FormCard = ({
                   }
                 }}
               >
-                <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
-                  <AiBrandIcon className='size-[14px] shrink-0' />
-                  <span className='font-normal text-[var(--primary-9)]/70'>
-                    {isUsingPo ? 'from Invoice' : 'from PO Master'}
+                <div className='flex min-w-0 items-center gap-1.5'>
+                  <AiBrandIcon className='size-[13px] shrink-0' variant='curved-purple' />
+                  <span className='font-semibold text-[var(--primary-9)] shrink-0'>
+                    {isUsingPo ? 'Invoice' : 'PO Master'}
                   </span>
-                </div>
-                <div className='flex min-w-0 items-center justify-between gap-2 pl-4'>
-                  <span className='truncate text-[12px] font-semibold text-[var(--gray-13)]'>
+                  <span className='text-[var(--primary-9)]/60 shrink-0'>·</span>
+                  <span className='truncate font-bold text-[var(--gray-13)]'>
                     {isUsingPo ? invoiceValue : poValue}
                   </span>
-                  <span className='shrink-0 text-[10px] font-semibold text-[var(--primary-9)] opacity-80 group-hover/suggest:opacity-100'>
-                    Switch
-                  </span>
                 </div>
+                <span className='shrink-0 font-bold text-[var(--primary-9)] transition-colors group-hover/suggest:underline'>
+                  Apply
+                </span>
               </div>
             )}
           </div>
@@ -4491,61 +4490,72 @@ const Overview = (props: any) => {
                                 </div>
                               )}
                               {relatedDocsState.status === 'complete' && (
-                                <div className='mb-3 rounded-xl border border-[var(--gray-3)] bg-[var(--surface-primary)] p-3.5 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
-                                  <div className='mb-2.5 flex items-start gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiBrandIcon
-                                      className='size-[16px] mt-0.5 shrink-0'
-                                    />
-                                    <div className='min-w-0'>
-                                      <div>
-                                        <span className='text-[var(--gray-11)]'>
-                                          {' '}
-                                          Related purchase orders or invoices for this supplier.
-                                        </span>
-                                      </div>
-                                      <div className='mt-0.5 text-[var(--gray-12)]'>
-                                        <strong className='font-semibold text-[var(--gray-13)]'>
-                                          {relatedDocsState.data?.chips?.length ?? 0}
+                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] border-l-4 border-l-[var(--primary-9)] bg-[var(--surface-primary)] p-3.5 shadow-sm transition-all hover:shadow-md animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
+                                  {/* Header row inside single card */}
+                                  <div className='mb-3 flex items-center justify-between'>
+                                    <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
+                                      <AiBrandIcon className='size-4 shrink-0' variant='curved-purple' />
+                                      <span>
+                                        Related to{' '}
+                                        <strong className='font-bold text-[var(--gray-13)]'>
+                                          {supplierName || 'Nexus Industrial Solutions Ltd'}
                                         </strong>
-                                        {' '}
-                                        matches found for{' '}
-                                        <strong className='font-semibold'>{supplierName}</strong>
-                                      </div>
+                                      </span>
                                     </div>
+                                    <span className='rounded-full bg-[var(--primary-2)] px-2.5 py-0.5 text-xs font-semibold text-[var(--primary-9)] shrink-0'>
+                                      {relatedDocsState.data?.chips?.length ?? 0} matches
+                                    </span>
                                   </div>
-                                  <div className='flex flex-wrap items-center gap-2'>
+
+                                  {/* Document Chips inside the same card */}
+                                  <div className='flex flex-wrap items-center gap-2.5'>
                                     {relatedDocsState.data?.chips?.map((rawChip: any, idx: number) => {
                                       const chip = {
                                         ...rawChip,
                                         type: rawChip.type || (rawChip.id.includes('PO') ? 'PO' : 'INV'),
                                         confidence: rawChip.confidence || (idx === 0 ? 92 : idx === 1 ? 88 : 74),
                                       };
+                                      const isAttached = attachedDocs[chip.id];
                                       return (
-                                        <div className='flex items-center rounded-xl border border-[var(--gray-3)] bg-[var(--surface-primary)] py-1 pl-2.5 pr-1 text-xs transition-colors hover:border-[var(--gray-4)] shadow-sm' key={chip.id}>
-                                          <div className='flex items-center gap-1.5 border-r border-[var(--gray-3)] pr-2'>
-                                            <div className='flex h-5 w-5 shrink-0 items-center justify-center'>
-                                              <Icon name='vscode-icons:file-type-pdf2' className='h-4 w-4' />
-                                            </div>
+                                        <div
+                                          className='flex items-center gap-2.5 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1.5 text-xs shadow-xs transition-all hover:scale-[1.02] hover:border-[var(--primary-4)] hover:bg-[var(--surface-primary)] hover:shadow-sm active:scale-98 animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both'
+                                          style={{ animationDelay: `${idx * 80}ms` }}
+                                          key={chip.id}
+                                        >
+                                          <div className='flex items-center gap-2'>
+                                            <Icon
+                                              name='tabler:file-text'
+                                              className='h-4 w-4 text-[var(--red-9)] shrink-0'
+                                            />
                                             <button
-                                              className='font-semibold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate hover:whitespace-normal break-all max-w-[120px] sm:max-w-[160px] text-left transition-colors'
-                                              title={t`View Document`}
+                                              className='font-bold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate max-w-[160px] text-left transition-colors'
+                                              title='View Document'
                                             >
                                               {chip.id}.pdf
                                             </button>
-                                            <span className='text-[var(--gray-9)] tabular-nums text-[11px] shrink-0'>{chip.confidence}%</span>
                                           </div>
-                                          <div className='flex items-center gap-0.5 pl-1.5 shrink-0'>
-                                            <button
-                                              className={cn(
-                                                'flex h-6 w-6 items-center justify-center rounded-full transition-colors',
-                                                attachedDocs[chip.id] ? 'bg-[var(--green-2)] text-[var(--green-9)]' : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]'
-                                              )}
-                                              title={attachedDocs[chip.id] ? 'Attached' : 'Attach to invoice'}
-                                              onClick={() => setAttachedDocs(prev => ({ ...prev, [chip.id]: !prev[chip.id] }))}
-                                            >
-                                              <Icon name={attachedDocs[chip.id] ? 'tabler:check' : 'tabler:plus'} className='h-3.5 w-3.5' />
-                                            </button>
-                                          </div>
+
+                                          <span className='text-[var(--gray-9)] tabular-nums text-xs font-medium shrink-0'>
+                                            {chip.confidence}%
+                                          </span>
+
+                                          <button
+                                            className={cn(
+                                              'flex h-5 w-5 items-center justify-center rounded transition-all text-xs font-bold shrink-0 active:scale-90',
+                                              isAttached
+                                                ? 'bg-[var(--green-2)] text-[var(--green-9)]'
+                                                : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]'
+                                            )}
+                                            title={isAttached ? 'Attached' : 'Attach to invoice'}
+                                            onClick={() =>
+                                              setAttachedDocs(prev => ({ ...prev, [chip.id]: !prev[chip.id] }))
+                                            }
+                                          >
+                                            <Icon
+                                              name={isAttached ? 'tabler:check' : 'tabler:plus'}
+                                              className='h-3.5 w-3.5'
+                                            />
+                                          </button>
                                         </div>
                                       )
                                     })}
