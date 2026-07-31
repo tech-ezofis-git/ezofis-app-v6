@@ -8,6 +8,7 @@ import {
   UserRoundCheck,
   Users,
 } from 'lucide-react'
+import { useLingui } from '@lingui/react/macro'
 import React, { useMemo, useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
 import Credits from './components/credits/Credits'
@@ -17,78 +18,13 @@ import ManageUser from './components/ManageUser'
 import RolesPermissions from './components/RolesPermissions'
 import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
 import useSettingsTopbar from './hooks/useSettingsTopbar'
+
 type SettingsItem = {
   description: string
   icon: React.ElementType
   key: string
   title: string
 }
-
-const settingsItems: SettingsItem[] = [
-  {
-    description:
-      'Add, edit, and manage platform users. Configure authentication and assign roles.',
-    icon: Users,
-    key: 'user-management',
-    title: 'User Management',
-  },
-  {
-    description:
-      'Define roles and configure granular permissions across all modules.',
-    icon: Shield,
-    key: 'roles-permissions',
-    title: 'Roles & Permissions',
-  },
-  {
-    description:
-      'Create logical groups to organize users by team, department, or function.',
-    icon: UserRoundCheck,
-    key: 'group-management',
-    title: 'Group Management',
-  },
-  // {
-  //   description:
-  //     'Control navigation visibility, ordering, and default landing pages per role.',
-  //   icon: PanelsTopLeft,
-  //   key: 'menu-profiles',
-  //   title: 'Menu & Profiles',
-  // },
-  {
-    description:
-      'Set up folders with custom fields, storage, security, and versioning.',
-    icon: FolderOpen,
-    key: 'folder-configuration',
-    title: 'Folder Configuration',
-  },
-  // {
-  //   key: 'ai-agent-config',
-  //   title: 'AI Agent Config',
-  //   description:
-  //     'Configure OCR engine, approval thresholds, matching rules, and more.',
-  //   icon: Bot,
-  // },
-  {
-    description:
-      'View activity logs, security events, and configuration change history.',
-    icon: ClipboardList,
-    key: 'audit-monitoring',
-    title: 'Audit & Monitoring',
-  },
-  {
-    description:
-      'Explore, test, and debug API endpoints with live requests and sample responses.',
-    icon: Code2,
-    key: 'playground',
-    title: 'Playground API',
-  },
-  {
-    description:
-      'Monitor credit consumption, usage trends, and module-wise activity across the platform.',
-    icon: BadgeDollarSign,
-    key: 'credit',
-    title: 'Credit Usage',
-  },
-]
 
 export default function SettingsMain() {
   const [activePage, setActivePage] = useState<string>('settings')
@@ -146,7 +82,9 @@ export default function SettingsMain() {
 }
 
 function SettingsDetailShell({ children }: { children: React.ReactNode }) {
-  return <div className='flex h-full min-h-0 flex-col'>{children}</div>
+  return (
+    <div className='flex h-full min-h-0 flex-col overflow-hidden'>{children}</div>
+  )
 }
 
 function SettingsLanding({
@@ -154,14 +92,68 @@ function SettingsLanding({
 }: {
   onOpenPage: (page: string) => void
 }) {
-  const rootBreadcrumbs = useMemo(() => createSettingsRootBreadcrumbs(), [])
+  const { i18n, t } = useLingui()
+
+  const settingsItems: SettingsItem[] = useMemo(
+    () => [
+      {
+        description: t`Add, edit, and manage platform users. Configure authentication and assign roles.`,
+        icon: Users,
+        key: 'user-management',
+        title: t`User Management`,
+      },
+      {
+        description: t`Define roles and configure granular permissions across all modules.`,
+        icon: Shield,
+        key: 'roles-permissions',
+        title: t`Roles & Permissions`,
+      },
+      {
+        description: t`Create logical groups to organize users by team, department, or function.`,
+        icon: UserRoundCheck,
+        key: 'group-management',
+        title: t`Group Management`,
+      },
+      {
+        description: t`Set up folders with custom fields, storage, security, and versioning.`,
+        icon: FolderOpen,
+        key: 'folder-configuration',
+        title: t`Folder Configuration`,
+      },
+      {
+        description: t`View activity logs, security events, and configuration change history.`,
+        icon: ClipboardList,
+        key: 'audit-monitoring',
+        title: t`Audit & Monitoring`,
+      },
+      {
+        description: t`Explore, test, and debug API endpoints with live requests and sample responses.`,
+        icon: Code2,
+        key: 'playground',
+        title: t`Playground API`,
+      },
+      {
+        description: t`Monitor credit consumption, usage trends, and module-wise activity across the platform.`,
+        icon: BadgeDollarSign,
+        key: 'credit',
+        title: t`Credit Usage`,
+      },
+    ],
+    [i18n.locale, t],
+  )
+
+  const rootBreadcrumbs = useMemo(
+    () => createSettingsRootBreadcrumbs(t`Settings`),
+    [i18n.locale, t],
+  )
   useSettingsTopbar(rootBreadcrumbs)
 
   return (
-    <main className='overflow-y-auto bg-[var(--surface)]'>
+    <div className='flex h-full min-h-0 flex-col overflow-hidden'>
+      <main className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--surface)]'>
       <section
-        aria-label='Settings administration modules'
-        className='grid max-h-[calc(100vh-150px)] grid-cols-1 gap-4 p-4 lg:grid-cols-2'
+        aria-label={t`Settings administration modules`}
+        className='grid grid-cols-1 gap-4 p-4 lg:grid-cols-2'
       >
         {settingsItems.map((item) => {
           const Icon = item.icon
@@ -197,5 +189,6 @@ function SettingsLanding({
         })}
       </section>
     </main>
+    </div>
   )
 }

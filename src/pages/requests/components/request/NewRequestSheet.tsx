@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import ApiPlayground from '@/components/playground/ApiPlayground'
 import requestStore from '../../stores/useRequestStore'
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const NewRequestSheet = ({ onClose }: Props) => {
+  const { t } = useLingui()
   const { newRequestMeta } = requestStore((state) => state)
   const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false)
 
@@ -63,7 +65,7 @@ const NewRequestSheet = ({ onClose }: Props) => {
       <div className='flex h-full flex-1 flex-col overflow-hidden bg-surface-muted'>
         {newRequestMeta !== 'po' && (
           <Header
-            title='New Request'
+            title={t`New Request`}
             onClose={onClose}
             onOpenPlayground={() => setIsPlaygroundOpen(true)}
           />

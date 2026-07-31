@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 import type { ExplorerView, FileItem, FolderItem } from '../types/folderTypes'
 import {
@@ -85,6 +86,7 @@ export function ExplorerToolbar({
   setView,
   view,
 }: ExplorerToolbarProps) {
+  const { t } = useLingui()
   const hasActiveFolderFilters = Object.values(folderFilters).some(Boolean)
   const hasActiveFileFilters = Object.values(fileFilters).some(Boolean)
 
@@ -228,10 +230,10 @@ export function ExplorerToolbar({
         refreshing={refreshing}
         searchPlaceholder={
           filterMode === 'files'
-            ? 'Search files...'
+            ? t`Search files...`
             : filterMode === 'both'
-              ? 'Search folders and files...'
-              : 'Search folders...'
+              ? t`Search folders and files...`
+              : t`Search folders...`
         }
         searchQuery={searchQuery}
         view={view}

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import type { Column } from '@/components/base/data-table/types'
 import type { RowSize } from '@/components/base/data-table/types'
@@ -38,110 +39,122 @@ interface TableProps {
 }
 
 const Table = ({ onCreate }: TableProps) => {
+  const { t } = useLingui()
   const navigate = useNavigate()
-  const columns: Column[] = [
-    {
-      id: 'name',
-      label: 'Name',
-      size: 200,
-      renderCell: (row) => (
-        <span className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'>
-          {String(row.name)}
-        </span>
-      ),
-    },
-    {
-      id: 'flowstatus',
-      label: 'Status',
-      size: 140,
-      renderCell: (row) => (
-        <FormStatusBadge
-          status={
-            String(row.flowstatus || row.flowStatus) as 'Draft' | 'Published'
-          }
-        />
-      ),
-    },
-    {
-      id: 'description',
-      label: 'Description',
-      size: 240,
-      renderCell: (row) => String(row.description || '-'),
-    },
-    {
-      id: 'createdBy',
-      label: 'Created By',
-      size: 140,
-      renderCell: (row: any) => String(row.createdByName || loggedInUser),
-    },
-    {
-      id: 'createdAt',
-      label: 'Created At',
-      size: 180,
-      renderCell: (row: any) =>
-        formatDatetime(row.createdAt as string, 'datetime'),
-    },
-    {
-      id: 'modifiedBy',
-      label: 'Modified By',
-      size: 140,
-      renderCell: (row: any) =>
-        String(row.modifiedByName || row.createdByName || loggedInUser),
-    },
-    {
-      id: 'modifiedAt',
-      label: 'Modified At',
-      size: 180,
-      renderCell: (row: any) =>
-        formatDatetime(row.modifiedAt || (row.createdAt as string), 'datetime'),
-    },
-    {
-      className: 'p-1',
-      enableSorting: false,
-      hideHeader: true,
-      id: 'actions',
-      isDisplayColumn: true,
-      label: 'Actions',
-      showMenu: false,
-      size: 40,
-      renderCell: (row) => (
-        <div className='flex items-center justify-center'>
-          <Menu
-            position='bottom-end'
-            width={160}
-            target={
-              <IconButton
-                color='gray'
-                icon='lucide:more-vertical'
-                variant='ghost'
-              />
+  const session = authUserStore((state) => state.session)
+  const loggedInUser = session?.firstName
+    ? `${session.firstName} ${session.lastName || ''}`.trim()
+    : session?.email || '-'
+
+  const columns: Column[] = useMemo(
+    () => [
+      {
+        id: 'name',
+        label: t`Name`,
+        size: 200,
+        renderCell: (row) => (
+          <span className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'>
+            {String(row.name)}
+          </span>
+        ),
+      },
+      {
+        id: 'flowstatus',
+        label: t`Status`,
+        size: 140,
+        renderCell: (row) => (
+          <FormStatusBadge
+            status={
+              String(row.flowstatus || row.flowStatus) as 'Draft' | 'Published'
             }
-          >
-            <MenuItem
-              icon='lucide:edit'
-              label='Edit'
-              onClick={() => {
-                const workflow = row as unknown as any
-                navigate({
-                  params: { workflowId: workflow.id.toString() },
-                  to: '/workflow-builder/$workflowId',
-                })
-              }}
-            />
-            <MenuItem
-              icon='lucide:trash-2'
-              iconClass='text-red-11'
-              label='Delete'
-              onClick={() => {
-                const workflow = row as unknown as any
-                showToast({ message: `Delete workflow ID: ${workflow.id}` })
-              }}
-            />
-          </Menu>
-        </div>
-      ),
-    },
-  ]
+          />
+        ),
+      },
+      {
+        id: 'description',
+        label: t`Description`,
+        size: 240,
+        renderCell: (row) => String(row.description || '-'),
+      },
+      {
+        id: 'createdBy',
+        label: t`Created By`,
+        size: 140,
+        renderCell: (row: any) => String(row.createdByName || loggedInUser),
+      },
+      {
+        id: 'createdAt',
+        label: t`Created At`,
+        size: 180,
+        renderCell: (row: any) =>
+          formatDatetime(row.createdAt as string, 'datetime'),
+      },
+      {
+        id: 'modifiedBy',
+        label: t`Modified By`,
+        size: 140,
+        renderCell: (row: any) =>
+          String(row.modifiedByName || row.createdByName || loggedInUser),
+      },
+      {
+        id: 'modifiedAt',
+        label: t`Modified At`,
+        size: 180,
+        renderCell: (row: any) =>
+          formatDatetime(
+            row.modifiedAt || (row.createdAt as string),
+            'datetime',
+          ),
+      },
+      {
+        className: 'p-1',
+        enableSorting: false,
+        hideHeader: true,
+        id: 'actions',
+        isDisplayColumn: true,
+        label: t`Actions`,
+        showMenu: false,
+        size: 40,
+        renderCell: (row) => (
+          <div className='flex items-center justify-center'>
+            <Menu
+              position='bottom-end'
+              width={160}
+              target={
+                <IconButton
+                  color='gray'
+                  icon='lucide:more-vertical'
+                  variant='ghost'
+                />
+              }
+            >
+              <MenuItem
+                icon='lucide:edit'
+                label={t`Edit`}
+                onClick={() => {
+                  const workflow = row as unknown as any
+                  navigate({
+                    params: { workflowId: workflow.id.toString() },
+                    to: '/workflow-builder/$workflowId',
+                  })
+                }}
+              />
+              <MenuItem
+                icon='lucide:trash-2'
+                iconClass='text-red-11'
+                label={t`Delete`}
+                onClick={() => {
+                  const workflow = row as unknown as any
+                  showToast({ message: `Delete workflow ID: ${workflow.id}` })
+                }}
+              />
+            </Menu>
+          </div>
+        ),
+      },
+    ],
+    [loggedInUser, navigate, t],
+  )
 
   const initialVisibilityState = {
     createdAt: true,
@@ -187,11 +200,6 @@ const Table = ({ onCreate }: TableProps) => {
     setPage(1)
     clearPending()
   }, [clearPending, pendingAskAiAction])
-
-  const session = authUserStore((state) => state.session)
-  const loggedInUser = session?.firstName
-    ? `${session.firstName} ${session.lastName || ''}`.trim()
-    : session?.email || '-'
 
   const payload = useMemo((): WorkflowBrowsePayload => {
     const sortColumn = sortState?.[0]?.id
@@ -381,7 +389,7 @@ const Table = ({ onCreate }: TableProps) => {
       <CustomFilter
         activeFilters={activeFilters}
         customSearchComponent={<TableSearch table={table as any} />}
-        searchPlaceholder='Search workflows...'
+        searchPlaceholder={t`Search workflows...`}
         searchQuery=''
         actionButtons={[
           {
@@ -390,7 +398,7 @@ const Table = ({ onCreate }: TableProps) => {
             icon: 'tabler:refresh',
             id: 'refresh',
             isIconButton: true,
-            tooltip: 'Refresh',
+            tooltip: t`Refresh`,
             variant: 'outline',
             onClick: () => refetch(),
           },
@@ -399,7 +407,7 @@ const Table = ({ onCreate }: TableProps) => {
           onCreate
             ? {
                 icon: 'lucide:plus',
-                tooltip: 'New Workflow',
+                tooltip: t`New Workflow`,
                 onClick: onCreate,
               }
             : undefined
@@ -407,40 +415,40 @@ const Table = ({ onCreate }: TableProps) => {
         filters={[
           {
             id: 'name',
-            label: 'Name',
+            label: t`Name`,
             options: nameOptions,
             searchable: true,
-            searchPlaceholder: 'Search name...',
+            searchPlaceholder: t`Search name...`,
           },
           {
             id: 'flowStatus',
-            label: 'Status',
+            label: t`Status`,
             options: [
-              { label: 'Published', value: 'PUBLISHED' },
-              { label: 'Draft', value: 'DRAFT' },
+              { label: t`Published`, value: 'PUBLISHED' },
+              { label: t`Draft`, value: 'DRAFT' },
             ],
           },
         ]}
         moreFilters={[
           {
             id: 'createdBy',
-            label: 'Created By',
+            label: t`Created By`,
             options: createdByOptions,
           },
           {
             id: 'modifiedBy',
-            label: 'Modified By',
+            label: t`Modified By`,
             options: modifiedByOptions,
           },
           {
             dataType: 'date',
             id: 'createdAt',
-            label: 'Created Date',
+            label: t`Created Date`,
           },
           {
             dataType: 'date',
             id: 'modifiedAt',
-            label: 'Modified Date',
+            label: t`Modified Date`,
           },
         ]}
         showReset={
@@ -481,7 +489,7 @@ const Table = ({ onCreate }: TableProps) => {
       </div>
       <Pagination
         className='mt-4 shrink-0'
-        itemLabel='Workflows'
+        itemLabel={t`Workflows`}
         page={page}
         pageSize={pageSize}
         showPageNumbers={false}

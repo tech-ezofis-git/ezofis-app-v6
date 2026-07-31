@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import React from 'react'
@@ -11,6 +12,7 @@ import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 // import InputSelect from '@/components/base/inputs/InputSelect'
+import { localizeRequestStatus } from '@/pages/requests/utils/localizeRequestUi'
 import cn from '@/utils/cn'
 
 interface HeaderProps {
@@ -143,6 +145,7 @@ const Header: React.FC<HeaderProps> = ({
   onPrev,
   onShare,
 }) => {
+  const { t, i18n } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
   const [showShare, setShowShare] = React.useState(false)
@@ -345,7 +348,7 @@ const Header: React.FC<HeaderProps> = ({
       queryClient.invalidateQueries({ queryKey: ['inbox'] })
 
       showToast({
-        message: 'Request shared successfully',
+        message: t`Request shared successfully`,
         variant: 'success',
       })
     }
@@ -425,7 +428,7 @@ const Header: React.FC<HeaderProps> = ({
 
         <div className='flex flex-col pb-1'>
           <div className='flex items-center gap-3'>
-            <Tooltip content='Previous Request' position='bottom'>
+            <Tooltip content={t`Previous Request`} position='bottom'>
               <IconButton
                 className='size-7 cursor-pointer hover:bg-surface'
                 color='gray'
@@ -439,7 +442,7 @@ const Header: React.FC<HeaderProps> = ({
             <h1 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
               {requestNo}
             </h1>
-            <Tooltip content='Next Request' position='bottom'>
+            <Tooltip content={t`Next Request`} position='bottom'>
               <IconButton
                 className='size-7 cursor-pointer hover:bg-surface'
                 color='gray'
@@ -487,7 +490,7 @@ const Header: React.FC<HeaderProps> = ({
                                 )}
                               />
                             )}
-                            <span>{status}</span>
+                            <span>{localizeRequestStatus(i18n, status)}</span>
                           </span>
                         </div>
                       )
@@ -557,7 +560,7 @@ const Header: React.FC<HeaderProps> = ({
                               isLoaderIcon && 'animate-spin',
                             )}
                           />
-                          <span>{status}</span>
+                          <span>{localizeRequestStatus(i18n, status)}</span>
                         </span>
                       )
                     })())}
@@ -634,7 +637,7 @@ const Header: React.FC<HeaderProps> = ({
             <div className='flex items-center gap-3 pr-3'>
               <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
                 <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                  Invoice Value
+                  {t`Invoice Value`}
                 </span>
                 <div
                   className={cn(
@@ -653,7 +656,7 @@ const Header: React.FC<HeaderProps> = ({
               </div>
               <div className='flex flex-col border-l border-[var(--gray-3)] pl-3 text-right'>
                 <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
-                  PO Value
+                  {t`PO Value`}
                 </span>
                 <div className='flex items-center justify-end text-[var(--primary-9)]'>
                   {formatAmount(poValue) === '0.00' ? (
@@ -687,8 +690,8 @@ const Header: React.FC<HeaderProps> = ({
                   !isProcessing && setShowAIInsights(!showAIInsights)
                 }
               >
-                <AiBrandIcon className='size-[16px]' variant='curved-purple' />
-                <span>AI Insights</span>
+                <AiBrandIcon className='size-[16px]' />
+                <span>{t`AI Insights`}</span>
                 {agentData?.score !== undefined && (
                   <span
                     className={cn(
@@ -717,14 +720,13 @@ const Header: React.FC<HeaderProps> = ({
                             <div className='flex items-center gap-2'>
                               <AiBrandIcon
                                 className='size-[20px] text-[var(--primary-9)]'
-                                variant='curved-purple'
                               />
                               <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
-                                Invoice Decision Details
+                                {t`Invoice Decision Details`}
                               </span>
                             </div>
                             <button
-                              aria-label='Close AI Insights'
+                              aria-label={t`Close AI Insights`}
                               className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
                               onClick={() => setShowAIInsights(false)}
                             >
@@ -760,7 +762,7 @@ const Header: React.FC<HeaderProps> = ({
                 }}
               >
                 <Icon className='size-4' name='tabler:user-share' />
-                <span>Share</span>
+                <span>{t`Share`}</span>
                 {sharedUsers.size > 0 && (
                   <span className='flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--primary-9)] px-1 text-[10px] font-bold text-white'>
                     {sharedUsers.size}
@@ -785,7 +787,7 @@ const Header: React.FC<HeaderProps> = ({
                           name='tabler:user-share'
                         />
                         <span className='text-[13px] font-semibold text-[var(--gray-13)]'>
-                          Share Request
+                          {t`Share Request`}
                         </span>
                       </div>
                       <button
@@ -816,8 +818,8 @@ const Header: React.FC<HeaderProps> = ({
                             autoFocus
                             placeholder={
                               Object.keys(selectedUsersToShare).length > 0
-                                ? 'Add more people...'
-                                : 'Add names or emails'
+                                ? t`Add more people...`
+                                : t`Add names or emails`
                             }
                             onChange={(e) => setShareSearch(e.target.value)}
                             onKeyDown={(e) => {
@@ -994,7 +996,7 @@ const Header: React.FC<HeaderProps> = ({
                                   {isOwner ? (
                                     <div
                                       className='flex w-5 shrink-0 items-center justify-center'
-                                      title='Request Owner'
+                                      title={t`Request Owner`}
                                     >
                                       <Icon
                                         className='size-4 text-[var(--primary-9)]'
@@ -1057,7 +1059,7 @@ const Header: React.FC<HeaderProps> = ({
                                         className='size-3'
                                         name='tabler:crown'
                                       />
-                                      Owner
+                                      {t`Owner`}
                                     </span>
                                   ) : isShared ? (
                                     <span className='flex items-center gap-1 rounded-full bg-[var(--green-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--green-9)]'>
@@ -1065,7 +1067,7 @@ const Header: React.FC<HeaderProps> = ({
                                         className='size-3'
                                         name='tabler:check'
                                       />
-                                      Invited
+                                      {t`Invited`}
                                     </span>
                                   ) : isSelectedToShare ? (
                                     <div
@@ -1162,13 +1164,13 @@ const Header: React.FC<HeaderProps> = ({
                               onChange={() => {}}
                             />
                             <span className='text-[13px] font-medium text-[var(--gray-13)] select-none'>
-                              Send notification
+                              {t`Send notification`}
                             </span>
                           </div>
                           {sendNotification && (
                             <textarea
                               className='w-full rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 text-[13px] font-medium text-[var(--gray-13)] transition-all placeholder:text-[var(--gray-8)] focus:border-[var(--primary-5)] focus:ring-1 focus:ring-[var(--primary-4)] focus:outline-none'
-                              placeholder='Add message (optional)'
+                              placeholder={t`Add message (optional)`}
                               rows={3}
                               value={shareMessage}
                               onChange={(e) => setShareMessage(e.target.value)}
@@ -1185,7 +1187,7 @@ const Header: React.FC<HeaderProps> = ({
                             )}
                             onClick={handleBulkShare}
                           >
-                            {isSharing ? 'Sharing...' : 'Share'}
+                            {isSharing ? t`Sharing...` : t`Share`}
                           </button>
 
                           <div className='mt-2 flex items-center justify-between border-t border-[var(--gray-2)] pt-3'>
@@ -1195,10 +1197,10 @@ const Header: React.FC<HeaderProps> = ({
                                 name='lucide:info'
                               />
                               <span className='text-[13px] font-medium text-[var(--gray-13)]'>
-                                Notify me when accessed
+                                {t`Notify me when accessed`}
                               </span>
                               <span className='ml-0.5 rounded-full bg-[#8c52ff] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white'>
-                                New
+                                {t`New`}
                               </span>
                             </div>
 
@@ -1241,7 +1243,7 @@ const Header: React.FC<HeaderProps> = ({
                   color='primary'
                   icon='lucide:save'
                   iconClass='size-4'
-                  label='Save'
+                  label={t`Save`}
                   loading={approveLoading}
                   size='md'
                   variant='solid'

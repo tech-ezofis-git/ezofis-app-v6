@@ -15,7 +15,9 @@ import {
   type BrowseChildrenDto,
   type BrowseStructureDto,
   getRepositoryItemComments,
+  getRepositoryItemAiSummary,
   getRepositoryItems,
+  getRepositoryItemShares,
   getRepositoryItemTimeline,
   getRepositoryItemWorkspace,
   getSharedWithMe,
@@ -27,6 +29,7 @@ import {
   revokeRepositoryShare,
   shareRepositoryItem,
 } from '../../../api/v6/folder/folder'
+import { mapAiSummaryResponse } from '../utils/mapAiSummaryResponse'
 import { splitFilterValues } from '../utils/multiFilterValues'
 import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
 
@@ -829,18 +832,34 @@ export const folderApi = {
     return result.data
   },
 
-  async getAiSummary(): Promise<AiSummaryData> {
-    return {
-      checks: [],
-      confidence: 0,
-      documentId: '',
-      engineSubtitle: '',
-      engineTitle: 'EZOFIS AI Engine',
-      facts: [],
-      insight: '',
-      recommendations: [],
-      summary: '',
+  async getAiSummary(
+    repositoryId: string,
+    itemId: string,
+    options?: { force?: boolean },
+  ): Promise<AiSummaryData> {
+    if (!repositoryId || !itemId) {
+      throw new Error('Repository and item are required for AI summary.')
     }
+
+    const result = await getRepositoryItemAiSummary({
+      force: options?.force,
+      itemId,
+      repositoryId,
+    })
+
+    if ((result as any).cancelled) {
+      throw new Error('Cancelled')
+    }
+
+    if (result.error || !result.data) {
+      throw new Error(String(result.error || 'Failed to load AI summary.'))
+    }
+
+    return mapAiSummaryResponse({
+      creditConsumed: result.data.creditConsumed,
+      documentId: itemId,
+      output: result.data.output,
+    })
   },
 
   async getDocumentComments(
@@ -1228,58 +1247,100 @@ export const folderApi = {
   async getShareData(options?: {
     itemId?: string
     localShares?: ShareData['sharedWith']
+    repositoryId?: string
   }): Promise<ShareData> {
     const itemId = String(options?.itemId || '').trim()
+    const repositoryId = String(options?.repositoryId || '').trim()
     const localShares = options?.localShares || []
 
-    let remoteShares: ShareData['sharedWith'] = []
-    if (itemId) {
-      const result = await getSharedWithMe()
-      if (!result.error && Array.isArray(result.data)) {
-        remoteShares = result.data
-          .filter(
-            (share: SharedWithMeItem) =>
-              String(share.sourceItemId || '') === itemId,
-          )
-          .map((share: SharedWithMeItem) => {
-            const email = String(share.recipientEmail || '').trim()
-            const name = email.split('@')[0] || email || 'Guest'
-            const initials = name
-              .split(/[\s._-]+/)
-              .filter(Boolean)
-              .slice(0, 2)
-              .map((part) => part[0]?.toUpperCase() || '')
-              .join('') || '?'
-            const dateRaw = share.sharedAtUtc || share.expiresAtUtc
-            const date = dateRaw
-              ? new Date(dateRaw).toLocaleDateString()
-              : ''
-            return {
-              date,
-              email: email || 'Unknown',
-              initials,
-              name,
-              permission:
-                share.permission ||
-                (share.action === 1 ? 'Can Edit' : 'Can View'),
-              shareId: share.shareId,
-            }
-          })
+    const mapShare = (share: SharedWithMeItem): ShareData['sharedWith'][number] => {
+      const email = String(
+        share.recipientEmail ||
+          (share as { email?: string }).email ||
+          '',
+      ).trim()
+      const name = email.split('@')[0] || email || 'Guest'
+      const initials =
+        name
+          .split(/[\s._-]+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((part) => part[0]?.toUpperCase() || '')
+          .join('') || '?'
+      const dateRaw = share.sharedAtUtc || share.expiresAtUtc
+      const date = dateRaw
+        ? (() => {
+            const parsed = new Date(dateRaw)
+            if (Number.isNaN(parsed.getTime())) return ''
+            const months = [
+              'jan',
+              'feb',
+              'mar',
+              'apr',
+              'may',
+              'jun',
+              'jul',
+              'aug',
+              'sep',
+              'oct',
+              'nov',
+              'dec',
+            ] as const
+            return `${parsed.getDate()}-${months[parsed.getMonth()]}-${parsed.getFullYear()}`
+          })()
+        : ''
+      let shareUrl = String(share.shareUrl || '').trim()
+      if (!shareUrl && share.shareToken) {
+        const emailParam = encodeURIComponent(email)
+        shareUrl = `${globalThis.location?.origin || ''}/sign-in?shareToken=${encodeURIComponent(share.shareToken)}${emailParam ? `&email=${emailParam}` : ''}&isNew=true`
+      }
+      return {
+        date,
+        email: email || 'Unknown',
+        initials,
+        name,
+        permission:
+          share.permission || (share.action === 1 ? 'Can Edit' : 'Can View'),
+        shareId: share.shareId,
+        shareUrl: shareUrl || undefined,
       }
     }
 
-    const byEmail = new Map<string, ShareData['sharedWith'][number]>()
+    let remoteShares: ShareData['sharedWith'] = []
+    let link = ''
+
+    if (itemId && repositoryId) {
+      const result = await getRepositoryItemShares({ itemId, repositoryId })
+      if (!result.error && Array.isArray(result.data)) {
+        remoteShares = result.data.map(mapShare)
+        const withLink = remoteShares.find((share) => share.shareUrl)
+        if (withLink?.shareUrl) {
+          link = withLink.shareUrl
+        }
+      }
+    }
+
+    const byKey = new Map<string, ShareData['sharedWith'][number]>()
     ;[...remoteShares, ...localShares].forEach((person) => {
       const key = person.shareId || person.email.toLowerCase()
-      byEmail.set(key, person)
+      const existing = byKey.get(key)
+      if (!existing) {
+        byKey.set(key, person)
+        return
+      }
+      byKey.set(key, {
+        ...existing,
+        ...person,
+        shareUrl: person.shareUrl || existing.shareUrl,
+      })
     })
 
     return {
       documentId: itemId,
       invitePermissions: ['Can View', 'Can Edit'],
-      link: '',
+      link,
       permissions: [],
-      sharedWith: Array.from(byEmail.values()),
+      sharedWith: Array.from(byKey.values()),
     }
   },
 

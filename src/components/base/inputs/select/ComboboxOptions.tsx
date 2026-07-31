@@ -12,6 +12,9 @@ interface Props {
   search: string
   value: Option[]
   creatable?: boolean
+  createOptionLabel?: (search: string) => string
+  /** When set, creatable row only shows if this returns true for current search. */
+  isCreatableSearch?: (search: string) => boolean
   variant?: SelectVariant
   onBottomReached?: () => void
   onChange: (value: Option[]) => void
@@ -20,6 +23,8 @@ interface Props {
 const ComboboxOptions = ({
   comboboxStore,
   creatable,
+  createOptionLabel,
+  isCreatableSearch,
   options,
   search,
   value,
@@ -29,6 +34,23 @@ const ComboboxOptions = ({
 }: Props) => {
   const counter = useRef(-1)
   const hasOptions = options.length > 0
+  const trimmedSearch = search.trim()
+  const canCreate =
+    Boolean(creatable) &&
+    Boolean(trimmedSearch) &&
+    (!isCreatableSearch || isCreatableSearch(trimmedSearch)) &&
+    !options.some(
+      (option) =>
+        option.name.toLowerCase() === trimmedSearch.toLowerCase() ||
+        String(option.value || '').toLowerCase() ===
+          trimmedSearch.toLowerCase(),
+    ) &&
+    !value.some(
+      (option) =>
+        option.name.toLowerCase() === trimmedSearch.toLowerCase() ||
+        String(option.value || '').toLowerCase() ===
+          trimmedSearch.toLowerCase(),
+    )
 
   const isSelected = (id: string | number) =>
     value.some((item) => String(item.id) === String(id))
@@ -55,7 +77,13 @@ const ComboboxOptions = ({
   const handleCreate = () => {
     if (search) {
       const id = counter.current--
-      handleClick({ description: '', disabled: false, id, name: search })
+      handleClick({
+        description: '',
+        disabled: false,
+        id,
+        name: search.trim(),
+        value: search.trim(),
+      })
     }
   }
 
@@ -89,12 +117,15 @@ const ComboboxOptions = ({
           </div>
         )}
 
-        {creatable && search && (
+        {canCreate && (
           <div onClick={handleCreate}>
             <ComboboxOption
               icon='lucide:plus'
               id={0}
-              name={`Create "${search}"`}
+              name={
+                createOptionLabel?.(trimmedSearch) ||
+                `Create "${trimmedSearch}"`
+              }
             />
           </div>
         )}

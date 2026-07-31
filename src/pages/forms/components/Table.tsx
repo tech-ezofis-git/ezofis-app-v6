@@ -1,4 +1,5 @@
 import { type Table as TanstackTable } from '@tanstack/react-table'
+import { useLingui } from '@lingui/react/macro'
 import DataTable from '@/components/base/data-table/DataTable'
 import Pagination from '@/components/base/pagination/Pagination'
 
@@ -27,6 +28,7 @@ const Table = ({
   onPageSizeChange,
   onReload,
 }: TableProps) => {
+  const { t } = useLingui()
   // Component body simplified as columns and state are managed by parent
 
   return (
@@ -52,7 +54,7 @@ const Table = ({
       </div>
       <Pagination
         className='mt-4 shrink-0'
-        itemLabel='Forms'
+        itemLabel={t`Forms`}
         page={page}
         pageSize={pageSize}
         showPageNumbers={false}

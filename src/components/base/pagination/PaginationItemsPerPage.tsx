@@ -1,7 +1,9 @@
+import { useLingui } from '@lingui/react/macro'
 import Button from '@/components/base/button/Button'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import cn from '@/utils/cn'
+
 interface Props {
   pageSize: number
   className?: string
@@ -17,6 +19,9 @@ const PaginationItemsPerPage = ({
   pageSize,
   onPageSizeChange,
 }: Props) => {
+  const { t } = useLingui()
+  const label = itemLabel || t`Items`
+
   return (
     <div
       className={cn(
@@ -24,13 +29,13 @@ const PaginationItemsPerPage = ({
         className,
       )}
     >
-      <div className='text-13 text-gray-11'>{itemLabel} per page:</div>
+      <div className='text-13 text-gray-11'>{t`${label} per page:`}</div>
       <Menu
         width='target'
         target={
           <Button
             color='gray'
-            label={pageSize === 0 ? 'All' : pageSize.toString()}
+            label={pageSize === 0 ? t`All` : pageSize.toString()}
             suffixIcon='lucide:chevron-down'
             suffixIconClass='text-gray-9'
             variant='outline'
@@ -40,7 +45,7 @@ const PaginationItemsPerPage = ({
         {options.map((option) => (
           <MenuItem
             key={option}
-            label={option === 0 ? 'All' : option.toString()}
+            label={option === 0 ? t`All` : option.toString()}
             onClick={() => onPageSizeChange(option)}
           />
         ))}

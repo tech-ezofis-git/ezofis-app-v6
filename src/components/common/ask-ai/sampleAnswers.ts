@@ -2,7 +2,7 @@ import type { AskAiAnswer } from './types'
 
 /**
  * Sample chatbot responses used as docs / offline fallbacks.
- * Shapes match http://52.172.32.88:7071/api/chatbot
+ 
  */
 
 /** From another page → open repository + apply filters (click to go). */

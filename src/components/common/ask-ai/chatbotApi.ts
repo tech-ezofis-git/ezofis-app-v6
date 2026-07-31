@@ -10,9 +10,8 @@ import type {
   AskAiPageContext,
 } from './types'
 
-/** Live chatbot API base — http://52.172.32.88:7071 */
 export const CHATBOT_API_BASE =
-  import.meta.env.VITE_CHATBOT_API_URL || 'http://52.172.32.88:7071'
+  import.meta.env.VITE_CHATBOT_API_URL || 'https://ezchatbot-api.azurewebsites.net'
 
 export type ChatbotRequestBody = {
   actionFrom: string

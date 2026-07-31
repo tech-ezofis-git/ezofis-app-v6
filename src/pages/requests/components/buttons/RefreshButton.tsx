@@ -1,4 +1,5 @@
 import React from 'react'
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 
 interface RefreshButtonProps {
@@ -6,12 +7,13 @@ interface RefreshButtonProps {
 }
 
 const RefreshButton: React.FC<RefreshButtonProps> = ({ onClick }) => {
+  const { t } = useLingui()
   return (
     <IconButton
-      aria-label='Refresh'
+      aria-label={t`Refresh`}
       color='gray'
       icon='tabler:refresh'
-      tooltip='Refresh'
+      tooltip={t`Refresh`}
       variant='outline'
       onClick={onClick}
     />

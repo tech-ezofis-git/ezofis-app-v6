@@ -1,4 +1,5 @@
 import React from 'react'
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
 
@@ -8,8 +9,9 @@ interface UploadPoButtonProps {
 }
 
 const UploadPoButton: React.FC<UploadPoButtonProps> = ({ label, onClick }) => {
+  const { t } = useLingui()
   return (
-    <Tooltip content='Import PO Data' position='top'>
+    <Tooltip content={t`Import PO Data`} position='top'>
       <div>
         <IconButton
           aria-label={label}

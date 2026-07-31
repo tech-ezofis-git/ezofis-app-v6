@@ -1,5 +1,7 @@
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import { LayoutGrid, List, RefreshCcw } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import CustomFilter, {
   type FilterDefinition,
   type FilterGroup,
@@ -39,21 +41,25 @@ const HIDDEN_FILTER_KEYS = new Set([
 
 /** Folder table filters — match Name, Date Modified columns. */
 const DEFAULT_FOLDER_FILTER_SPECS = [
-  { id: '__folderName', label: 'Name' },
-  { id: '__folderModified', label: 'Date Modified' },
+  { id: '__folderName', label: msg`Name` },
+  { id: '__folderModified', label: msg`Date Modified` },
 ] as const
 
 /** Default file filters — same property keys as repository items. */
 const DEFAULT_FILE_FILTER_SPECS = [
-  { id: 'status', label: 'Status', aliases: ['status', 'Status', '__status'] },
+  {
+    id: 'status',
+    label: msg`Status`,
+    aliases: ['status', 'Status', '__status'],
+  },
   {
     id: 'supplier',
-    label: 'Supplier',
+    label: msg`Supplier`,
     aliases: ['supplier', 'Supplier'],
   },
   {
     id: 'documentType',
-    label: 'Document Type',
+    label: msg`Document Type`,
     aliases: ['documentType', 'DocumentType'],
   },
 ] as const
@@ -263,6 +269,7 @@ export const filterFolderFiles = (
 
 type FolderFilterBarProps = {
   activeFilters: Record<string, string>
+  afterSearchActions?: ReactNode
   currentFolderGroupField?: string
   fileColumns?: DynamicRepositoryColumn[]
   files: AnyFileItem[]
@@ -287,6 +294,7 @@ type FolderFilterBarProps = {
 
 export function FolderFilterBar({
   activeFilters,
+  afterSearchActions,
   currentFolderGroupField = '',
   fileColumns = [],
   files,
@@ -308,6 +316,7 @@ export function FolderFilterBar({
   setView,
   view,
 }: FolderFilterBarProps) {
+  const { i18n, t } = useLingui()
   const showFileFilters = filterMode === 'files' || filterMode === 'both'
   const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
   const folderBaseline =
@@ -348,8 +357,9 @@ export function FolderFilterBar({
       DEFAULT_FILE_FILTER_SPECS.map((spec) => ({
         ...spec,
         id: resolveFilterId(spec.id, spec.aliases, fileColumns, files),
+        label: i18n._(spec.label),
       })),
-    [fileColumns, files],
+    [fileColumns, files, i18n.locale],
   )
 
   const buildOptionsForFileFilter = (filterId: string) => {
@@ -405,14 +415,21 @@ export function FolderFilterBar({
   }
 
   const buildFolderFilterDefinitions = (): FilterDefinition[] =>
-    DEFAULT_FOLDER_FILTER_SPECS.map((spec) => ({
-      id: spec.id,
-      label: spec.label,
-      options: buildOptionsForFolderFilter(spec.id),
-      searchable: true,
-      searchPlaceholder: `Search ${spec.label.toLowerCase()}...`,
-      width: 240,
-    }))
+    DEFAULT_FOLDER_FILTER_SPECS.map((spec) => {
+      const label = i18n._(spec.label)
+      const searchPlaceholder =
+        spec.id === '__folderName'
+          ? t`Search name...`
+          : t`Search date modified...`
+      return {
+        id: spec.id,
+        label,
+        options: buildOptionsForFolderFilter(spec.id),
+        searchable: true,
+        searchPlaceholder,
+        width: 240,
+      }
+    })
 
   const buildFileFilterDefinitions = (): FilterDefinition[] =>
     resolvedFileDefaultFilters.map((spec) => {
@@ -423,13 +440,19 @@ export function FolderFilterBar({
       )
 
       const label = matchedColumn?.label || spec.label
+      const searchPlaceholder =
+        spec.id === 'status' || normalizeKey(spec.id).includes('status')
+          ? t`Search status...`
+          : normalizeKey(spec.id).includes('supplier')
+            ? t`Search supplier...`
+            : t`Search document type...`
 
       return {
         id: spec.id,
         label,
         options: buildOptionsForFileFilter(spec.id),
         searchable: true,
-        searchPlaceholder: `Search ${label.toLowerCase()}...`,
+        searchPlaceholder,
         width: 240,
       }
     })
@@ -462,9 +485,11 @@ export function FolderFilterBar({
     folderContextFilters,
     folderBaseline,
     folders,
+    i18n,
     resolvedFileDefaultFilters,
     showFileFilters,
     showFolderFilters,
+    t,
   ])
 
   const moreFilters = useMemo<FilterGroup[]>(() => {
@@ -524,18 +549,23 @@ export function FolderFilterBar({
   return (
     <CustomFilter
       activeFilters={activeFilters}
+      afterSearchActions={afterSearchActions}
       filters={defaultFilters}
       isLoading={isBusy}
       moreFilters={moreFilters}
       multiSelect
-      searchPlaceholder={searchPlaceholder}
+      searchPlaceholder={
+        searchPlaceholder === 'Search files...'
+          ? t`Search files...`
+          : searchPlaceholder
+      }
       searchQuery={searchQuery}
       showReset={hasActiveFilters}
       actionButtons={[
         {
           id: 'upload',
           icon: 'lucide:upload',
-          tooltip: 'Upload',
+          tooltip: t`Upload`,
           onClick: () => onUpload?.(),
           disabled: isBusy,
           isIconButton: true,
@@ -545,7 +575,7 @@ export function FolderFilterBar({
         {
           id: 'refresh',
           icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
-          tooltip: refreshing ? 'Refreshing...' : 'Refresh',
+          tooltip: refreshing ? t`Refreshing...` : t`Refresh`,
           onClick: () => onRefresh?.(),
           disabled: isBusy,
           isIconButton: true,

@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import { searchPlugin } from '@react-pdf-viewer/search'
 import {
@@ -27,6 +28,10 @@ import showToast from '@/components/base/toast/showToast'
 import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
+import {
+  localizeRequestFieldLabel,
+  localizeRequestStatus,
+} from '@/pages/requests/utils/localizeRequestUi'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/search/lib/styles/index.css'
@@ -888,6 +893,7 @@ const DetailReportView = ({
   title,
   onClose,
 }: any) => {
+  const { t } = useLingui()
   return (
     <div className='animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col bg-surface duration-300'>
       {/* Header */}
@@ -901,7 +907,7 @@ const DetailReportView = ({
               className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
               name='tabler:arrow-left'
             />
-            <span>Back</span>
+            <span>{t`Back`}</span>
           </button>
           <div className='mx-1 h-4 w-[1px] bg-[var(--gray-3)]' />
           <div className='flex items-center gap-2'>
@@ -1179,7 +1185,8 @@ const FormCard = ({
                 }}
               >
                 <div className='flex items-center gap-1.5 text-[10px] font-semibold text-[var(--primary-11)]'>
-                  <AiBrandIcon className='size-[14px] shrink-0' variant='curved-purple' />
+                  <AiBrandIcon className='size-[14px] shrink-0' />
+                  <span>AI suggestion</span>
                   <span className='font-normal text-[var(--primary-9)]/70'>
                     {isUsingPo ? 'from Invoice' : 'from PO Master'}
                   </span>
@@ -1422,6 +1429,7 @@ const toPlaygroundAmount = (value: any) => {
 }
 
 const Overview = (props: any) => {
+  const { t, i18n } = useLingui()
   const {
     actions,
     agentData,
@@ -1781,14 +1789,15 @@ const Overview = (props: any) => {
       })
 
       showToast({
-        message: `Supplier verification completed: ${result.value}`,
+        message: t`Supplier verification completed: ${result.value}`,
         variant: 'success',
       })
     } catch (error: any) {
       setSupplierCheckState({ status: 'not_run' })
       showToast({
         message:
-          error?.message || 'Verification failed. 1 credit has been refunded.',
+          error?.message ||
+          t`Verification failed. 1 credit has been refunded.`,
         variant: 'error',
       })
     }
@@ -3137,15 +3146,15 @@ const Overview = (props: any) => {
                           align='left'
                           icon={Paperclip}
                           isSelected={activeDetailView === 'po_matching'}
-                          title='PO Matching'
+                          title={t`PO Matching`}
                           isLoading={
                             isCurrentlyProcessing &&
                             (!poVal || poVal === '-' || poVal === 'N/A')
                           }
                           status={
                             poVal && poVal !== '-' && poVal !== 'N/A'
-                              ? 'Matched'
-                              : 'Not Matched'
+                              ? t`Matched`
+                              : t`Not Matched`
                           }
                           statusType={
                             poVal && poVal !== '-' && poVal !== 'N/A'
@@ -3155,7 +3164,7 @@ const Overview = (props: any) => {
                           value={
                             poVal && poVal !== '-' && poVal !== 'N/A'
                               ? `${poVal}`
-                              : 'No PO Found'
+                              : t`No PO Found`
                           }
                           onClick={() => setActiveDetailView('po_matching')}
                         />
@@ -3165,13 +3174,14 @@ const Overview = (props: any) => {
                       align='left'
                       icon={Layers}
                       isSelected={activeDetailView === 'duplicate_check'}
-                      title='Duplicate Detection'
+                      title={t`Duplicate Detection`}
                       isLoading={
                         isCurrentlyProcessing && !agentData?.duplicate_check
                       }
-                      status={
-                        agentData?.duplicate_check?.status || 'No Duplicate'
-                      }
+                      status={localizeRequestStatus(
+                        i18n,
+                        agentData?.duplicate_check?.status || 'No Duplicate',
+                      )}
                       statusType={
                         agentData?.duplicate_check?.status === 'Duplicate'
                           ? 'warning'
@@ -3179,7 +3189,7 @@ const Overview = (props: any) => {
                       }
                       value={
                         agentData?.duplicate_check?.message ||
-                        'No duplicates detected'
+                        t`No duplicates detected`
                       }
                       onClick={() => setActiveDetailView('duplicate_check')}
                     />
@@ -3190,8 +3200,8 @@ const Overview = (props: any) => {
                         isLoading={false}
                         isPulsing={true}
                         statusType='warning'
-                        title='Supplier Verification'
-                        value='Not Verified'
+                        title={t`Supplier Verification`}
+                        value={t`Not Verified`}
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
@@ -3205,13 +3215,12 @@ const Overview = (props: any) => {
                             }}
                           >
                             <Icon className='size-3.5' name='lucide:bot' />
-                            Verify
+                            {t`Verify`}
                           </button>
                         }
                         onClick={() => {
                           showToast({
-                            message:
-                              "Please click 'Verify' to check if this supplier is legitimate and prevent fraud.",
+                            message: t`Please click 'Verify' to check if this supplier is legitimate and prevent fraud.`,
                           })
                         }}
                       />
@@ -3221,9 +3230,9 @@ const Overview = (props: any) => {
                         align='left'
                         icon={Wand2}
                         isLoading={false}
-                        status='Verifying...'
+                        status={t`Verifying...`}
                         statusType='info'
-                        title='Supplier Verification'
+                        title={t`Supplier Verification`}
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
@@ -3233,7 +3242,7 @@ const Overview = (props: any) => {
                               className='h-3.5 w-3.5 animate-spin text-[var(--primary-9)]'
                               name='tabler:loader-2'
                             />
-                            Verifying...
+                            {t`Verifying...`}
                           </span>
                         }
                       />
@@ -3243,8 +3252,11 @@ const Overview = (props: any) => {
                         align='left'
                         icon={Store}
                         isLoading={isCurrentlyProcessing}
-                        status={supplierCheckState.data?.status || 'Verified'}
-                        title='Supplier Verification'
+                        status={localizeRequestStatus(
+                          i18n,
+                          supplierCheckState.data?.status || 'Verified',
+                        )}
+                        title={t`Supplier Verification`}
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
@@ -3252,7 +3264,7 @@ const Overview = (props: any) => {
                           supplierCheckState.data?.statusType || 'success'
                         }
                         value={
-                          supplierCheckState.data?.value || 'Supplier verified'
+                          supplierCheckState.data?.value || t`Supplier verified`
                         }
                         onClick={() =>
                           setActiveDetailView('supplier_verification')
@@ -3264,9 +3276,12 @@ const Overview = (props: any) => {
                         align='right'
                         icon={ListFilter}
                         isSelected={activeDetailView === 'gl_matching'}
-                        status={glValidationDisplay.status}
+                        status={localizeRequestStatus(
+                          i18n,
+                          glValidationDisplay.status,
+                        )}
                         statusType={glValidationDisplay.statusType}
-                        title='GL Account Matching'
+                        title={t`GL Account Matching`}
                         isLoading={
                           isCurrentlyProcessing &&
                           (!glValidationDisplay?.account ||
@@ -3285,9 +3300,12 @@ const Overview = (props: any) => {
                         align='right'
                         icon={PackageX}
                         isSelected={activeDetailView === 'back_order'}
-                        status={backOrderDisplay.status}
+                        status={localizeRequestStatus(
+                          i18n,
+                          backOrderDisplay.status,
+                        )}
                         statusType={backOrderDisplay.statusType}
-                        title='Back Order'
+                        title={t`Back Order`}
                         value={backOrderDisplay.value}
                         isLoading={
                           isCurrentlyProcessing &&
@@ -3306,7 +3324,7 @@ const Overview = (props: any) => {
                         isSelected={activeDetailView === 'payment_terms'}
                         status={paymentTermsDisplay.calculationText}
                         statusType={paymentTermsDisplay.statusType}
-                        title='Payment Terms'
+                        title={t`Payment Terms`}
                         isLoading={
                           isCurrentlyProcessing &&
                           (!paymentTermsDisplay?.termsDisplay ||
@@ -3329,9 +3347,12 @@ const Overview = (props: any) => {
                         align='right'
                         icon={Briefcase}
                         isSelected={activeDetailView === 'matter_validation'}
-                        status={matterValidationDisplay.status}
+                        status={localizeRequestStatus(
+                          i18n,
+                          matterValidationDisplay.status,
+                        )}
                         statusType={matterValidationDisplay.statusType}
-                        title='Matter Validation'
+                        title={t`Matter Validation`}
                         value={matterValidationDisplay.value}
                         isLoading={
                           isCurrentlyProcessing &&
@@ -3352,27 +3373,27 @@ const Overview = (props: any) => {
                           {
                             icon: FileText,
                             id: 'summary',
-                            label: 'Extracted Data',
+                            label: t`Extracted Data`,
                           },
                           {
                             icon: Layers,
                             id: 'line_items',
-                            label: 'Line Items',
+                            label: t`Line Items`,
                           },
                           {
                             icon: Paperclip,
                             id: 'attachments',
-                            label: 'Attachments',
+                            label: t`Attachments`,
                           },
                           {
                             icon: MessageCircle,
                             id: 'comments',
-                            label: 'Comments',
+                            label: t`Comments`,
                           },
                           {
                             icon: HistoryIcon,
                             id: 'history',
-                            label: 'History',
+                            label: t`History`,
                           },
                         ].map((tab) => (
                           <button
@@ -3423,11 +3444,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'po_matching' && (
                         <DetailReportView
                           icon={Paperclip}
-                          title='PO Matching Analysis'
+                          title={t`PO Matching Analysis`}
                           status={
                             poVal && poVal !== '-' && poVal !== 'N/A'
-                              ? 'Matched'
-                              : 'Not Matched'
+                              ? t`Matched`
+                              : t`Not Matched`
                           }
                           statusType={
                             poVal && poVal !== '-' && poVal !== 'N/A'
@@ -3439,12 +3460,12 @@ const Overview = (props: any) => {
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
                               <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Document Mapping
+                                {t`Document Mapping`}
                               </h4>
                               <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    PO Number (Extracted)
+                                    {t`PO Number (Extracted)`}
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {poVal || 'N/A'}
@@ -3452,7 +3473,7 @@ const Overview = (props: any) => {
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    Vendor Name
+                                    {t`Vendor Name`}
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {agentData?.po_row?.['Vendor Name'] ||
@@ -3461,7 +3482,7 @@ const Overview = (props: any) => {
                                 </div>
                                 <div className='flex justify-between'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    Authorized Amount
+                                    {t`Authorized Amount`}
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {agentData?.po_matching?.po_amount || 'N/A'}
@@ -3471,7 +3492,7 @@ const Overview = (props: any) => {
                             </div>
                             <div className='space-y-4'>
                               <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Validation Log
+                                {t`Validation Log`}
                               </h4>
                               <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
                                 <p className='font-medium text-[var(--gray-12)]'>
@@ -3498,10 +3519,12 @@ const Overview = (props: any) => {
                       {activeDetailView === 'duplicate_check' && (
                         <DetailReportView
                           icon={Layers}
-                          title='Duplicate Payment Check'
-                          status={
-                            agentData?.duplicate_check?.status || 'No Duplicate'
-                          }
+                          title={t`Duplicate Payment Check`}
+                          status={localizeRequestStatus(
+                            i18n,
+                            agentData?.duplicate_check?.status ||
+                            'No Duplicate',
+                          )}
                           statusType={
                             agentData?.duplicate_check?.status === 'Duplicate'
                               ? 'danger'
@@ -3512,12 +3535,12 @@ const Overview = (props: any) => {
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
                               <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Historical Match Results
+                                {t`Historical Match Results`}
                               </h4>
                               <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    Cross-Check Status
+                                    {t`Cross-Check Status`}
                                   </span>
                                   <span
                                     className={cn(
@@ -3534,7 +3557,7 @@ const Overview = (props: any) => {
                                 </div>
                                 <div className='flex flex-col gap-1'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    System Response
+                                    {t`System Response`}
                                   </span>
                                   <span className='leading-normal font-medium text-[var(--gray-13)]'>
                                     {agentData?.duplicate_check?.message ||
@@ -3545,7 +3568,7 @@ const Overview = (props: any) => {
                             </div>
                             <div className='space-y-4'>
                               <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Security & Auditing Policy
+                                {t`Security & Auditing Policy`}
                               </h4>
                               <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-11)]'>
@@ -3572,8 +3595,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'supplier_verification' && (
                         <DetailReportView
                           icon={Store}
-                          status={supplierCheckState.data?.status || 'Verified'}
-                          title='Supplier Verification Registry'
+                          status={localizeRequestStatus(
+                            i18n,
+                            supplierCheckState.data?.status || 'Verified',
+                          )}
+                          title={t`Supplier Verification Registry`}
                           statusType={
                             supplierCheckState.data?.statusType || 'success'
                           }
@@ -3582,12 +3608,12 @@ const Overview = (props: any) => {
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
                               <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Supplier Details
+                                {t`Supplier Details`}
                               </h4>
                               <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    Supplier Code
+                                    {t`Supplier Code`}
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {formModel?.['Supplier ID'] ||
@@ -3645,10 +3671,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'gl_matching' && (
                         <DetailReportView
                           icon={ListFilter}
-                          title='GL Account Matching Report'
-                          status={
-                            glValidationDisplay?.status || 'Not Available'
-                          }
+                          title={t`GL Account Matching Report`}
+                          status={localizeRequestStatus(
+                            i18n,
+                            glValidationDisplay?.status || 'Not Available',
+                          )}
                           statusType={
                             glValidationDisplay?.statusType || 'default'
                           }
@@ -3657,12 +3684,12 @@ const Overview = (props: any) => {
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
                               <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Suggested Allocation
+                                {t`Suggested Allocation`}
                               </h4>
                               <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    Matched GL Account
+                                    {t`Matched GL Account`}
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {glValidationDisplay?.account ||
@@ -3705,18 +3732,18 @@ const Overview = (props: any) => {
                           icon={Calendar}
                           status={paymentTermsDisplay.calculationText}
                           statusType={paymentTermsDisplay.statusType}
-                          title='Payment Terms Analysis'
+                          title={t`Payment Terms Analysis`}
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-2 gap-6'>
                             <div className='space-y-4'>
                               <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Payment Deadlines
+                                {t`Payment Deadlines`}
                               </h4>
                               <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    Billing Terms
+                                    {t`Billing Terms`}
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {paymentTermsDisplay.termsDisplay}
@@ -3736,7 +3763,7 @@ const Overview = (props: any) => {
                                 </div>
                                 <div className='flex justify-between'>
                                   <span className='font-semibold text-[var(--gray-11)]'>
-                                    Time Remaining
+                                    {t`Time Remaining`}
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {paymentTermsDisplay.daysText}
@@ -3764,8 +3791,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'matter_validation' && (
                         <DetailReportView
                           icon={Briefcase}
-                          status={matterValidationDisplay?.status || 'Unknown'}
-                          title='Legal Matter Association Check'
+                          status={localizeRequestStatus(
+                            i18n,
+                            matterValidationDisplay?.status || 'Unknown',
+                          )}
+                          title={t`Legal Matter Association Check`}
                           statusType={
                             matterValidationDisplay?.statusType || 'default'
                           }
@@ -3840,7 +3870,7 @@ const Overview = (props: any) => {
                                   className='h-4 w-4 transition-transform group-hover:-translate-x-0.5'
                                   name='tabler:arrow-left'
                                 />
-                                <span>Back</span>
+                                <span>{t`Back`}</span>
                               </button>
                               <div className='mx-1 h-4 w-[1px] bg-[var(--gray-3)]' />
                               <div className='flex items-center gap-2'>
@@ -4216,7 +4246,7 @@ const Overview = (props: any) => {
                                 icon={getFieldIcon(label)}
                                 isLoading={isCurrentlyProcessing}
                                 key={label}
-                                label={label}
+                                label={localizeRequestFieldLabel(i18n, label)}
                                 options={getOptions(label)}
                                 type={getFieldType(label)}
                                 value={'-'}
@@ -4287,7 +4317,10 @@ const Overview = (props: any) => {
                                       getFieldInvoiceValue(key) ?? displayValue
                                     }
                                     key={key}
-                                    label={key}
+                                    label={localizeRequestFieldLabel(
+                                      i18n,
+                                      key,
+                                    )}
                                     options={getOptions(key)}
                                     poValue={getFieldPoValue(key)}
                                     score={getFieldScore(key)}
@@ -4332,7 +4365,7 @@ const Overview = (props: any) => {
                                     className='h-4 w-4 text-[var(--orange-9)]'
                                     name='tabler:shopping-cart'
                                   />
-                                  PO Line Items ({poLineItems.length})
+                                  {t`PO Line Items`} ({poLineItems.length})
                                 </h4>
                               </div>
                               <div className='relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface'>
@@ -4383,7 +4416,7 @@ const Overview = (props: any) => {
                                   className='h-4 w-4 text-[var(--primary-9)]'
                                   name='tabler:file-invoice'
                                 />
-                                Invoice Line Items ({lineItems.length})
+                                {t`Invoice Line Items`} ({lineItems.length})
                               </h4>
                             </div>
                             <div className='relative overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface'>
@@ -4427,7 +4460,7 @@ const Overview = (props: any) => {
                                 name='tabler:loader-2'
                               />
                               <p className='text-xs font-semibold text-[var(--gray-10)]'>
-                                Loading Attachments...
+                                {t`Loading Attachments...`}
                               </p>
                             </div>
                           ) : (
@@ -4436,8 +4469,8 @@ const Overview = (props: any) => {
                               {relatedDocsState.status === 'not_run' && (
                                 <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiBrandIcon className='size-[16px] shrink-0' variant='curved-purple' />
-                                    <span>Check for related purchase orders or invoices for this supplier.</span>
+                                    <AiBrandIcon className='size-[16px] shrink-0' />
+                                    <span><strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> — Check for related purchase orders or invoices for this supplier.</span>
                                   </div>
                                   <button
                                     className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:animate-none hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
@@ -4453,7 +4486,6 @@ const Overview = (props: any) => {
                                   <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
                                     <AiBrandIcon
                                       className='size-[16px] shrink-0 animate-pulse'
-                                      variant='curved-purple'
                                     />
                                     <span><strong className='font-semibold text-[var(--gray-13)]'>AI is searching</strong> — Checking for related purchase orders or invoices...</span>
                                   </div>
@@ -4464,10 +4496,10 @@ const Overview = (props: any) => {
                                   <div className='mb-2.5 flex items-start gap-2 text-xs text-[var(--gray-12)]'>
                                     <AiBrandIcon
                                       className='size-[16px] mt-0.5 shrink-0'
-                                      variant='curved-purple'
                                     />
                                     <div className='min-w-0'>
                                       <div>
+                                        {/* <strong className='font-semibold text-[var(--gray-13)]'>AI suggestion</strong> */}
                                         <span className='text-[var(--gray-11)]'>
                                           {' '}
                                           Related purchase orders or invoices for this supplier.
@@ -4498,7 +4530,7 @@ const Overview = (props: any) => {
                                             </div>
                                             <button
                                               className='font-semibold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate hover:whitespace-normal break-all max-w-[120px] sm:max-w-[160px] text-left transition-colors'
-                                              title='View Document'
+                                              title={t`View Document`}
                                             >
                                               {chip.id}.pdf
                                             </button>
@@ -4560,7 +4592,7 @@ const Overview = (props: any) => {
                                 name='tabler:loader-2'
                               />
                               <p className='text-xs font-semibold text-[var(--gray-10)]'>
-                                Loading Comments...
+                                {t`Loading Comments...`}
                               </p>
                             </div>
                           ) : (
@@ -4589,7 +4621,7 @@ const Overview = (props: any) => {
                                 name='tabler:loader-2'
                               />
                               <p className='text-xs font-semibold text-[var(--gray-10)]'>
-                                Loading History...
+                                {t`Loading History...`}
                               </p>
                             </div>
                           ) : (

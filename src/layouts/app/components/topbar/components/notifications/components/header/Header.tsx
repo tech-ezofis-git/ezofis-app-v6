@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import ClearAll from './components/ClearAll'
@@ -19,11 +20,13 @@ const Header = ({
   onClearAll,
   unreadCount,
 }: Props) => {
+  const { t } = useLingui()
+
   return (
     <div className='border-b border-gray-3 pr-2 pl-3'>
       <div className='flex flex-wrap items-center py-2'>
         <div className='flex-1 font-poppins text-15 font-semibold text-gray-12'>
-          Notifications
+          {t`Notifications`}
         </div>
         <Search />
         <MarkAll onClick={onMarkAllRead} />
@@ -36,9 +39,9 @@ const Header = ({
         value={activeTab}
         onChange={(val) => val && onTabChange(val)}
       >
-        <Tab label='All' value='All' />
-        <Tab label='Read' value='Read' />
-        <Tab label={`Unread (${unreadCount})`} value='Unread' />
+        <Tab label={t`All`} value='All' />
+        <Tab label={t`Read`} value='Read' />
+        <Tab label={t`Unread (${unreadCount})`} value='Unread' />
       </Tabs>
     </div>
   )

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useRef, useState } from 'react'
 // import MondayLogo from '@/assets/brands/monday.svg'
 // import OracleLogo from '@/assets/brands/oracle.svg'
@@ -52,7 +52,7 @@ const items = [
 ]
 
 const ErpSystem = () => {
-  // /  const emailSettings = setupStore((state) => state.emailSettings)
+  const { t } = useLingui()
   const erpSettings = setupStore((state) => state.erpSettings)
   const setErpSettings = setupStore((state) => state.setErpSettings)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -69,8 +69,8 @@ const ErpSystem = () => {
   } | null>(null)
 
   const getErpLabel = (value: string) => {
-    if (value === 'PREDEFINED') return 'Use demo data'
-    if (value === 'FILE_BASED_IMPORT') return 'Upload PO master file'
+    if (value === 'PREDEFINED') return t`Use demo data`
+    if (value === 'FILE_BASED_IMPORT') return t`Upload PO master file`
     return items.find((item) => item.value === value)?.name || value
   }
 
@@ -160,7 +160,7 @@ const ErpSystem = () => {
         showToast({
           message:
             err.message ||
-            'Failed to parse file. Please upload a valid CSV or Excel file.',
+            t`Failed to parse file. Please upload a valid CSV or Excel file.`,
           variant: 'error',
         })
       } finally {
@@ -424,7 +424,7 @@ const ErpSystem = () => {
         showToast({
           message:
             err.message ||
-            'Failed to parse file. Please upload a valid CSV or Excel file.',
+            t`Failed to parse file. Please upload a valid CSV or Excel file.`,
           variant: 'error',
         })
         setErpSettings({
@@ -469,8 +469,8 @@ const ErpSystem = () => {
       <div>
         <AnimateSlideUp delay={0.1}>
           <SectionHeader
-            description='Import PO master records to validate invoices against approved purchase orders'
-            title='PO Master Data'
+            description={t`Import PO master records to validate invoices against approved purchase orders`}
+            title={t`PO Master Data`}
           />
         </AnimateSlideUp>
 
@@ -482,12 +482,12 @@ const ErpSystem = () => {
               connected={
                 erpSettings.system === 'PREDEFINED' && erpSettings.isConnected
               }
-              description='Try the platform with sample invoices and records.'
+              description={t`Try the platform with sample invoices and records.`}
               icon='tabler:database-search'
-              name='Use demo data'
+              name={t`Use demo data`}
               value='PREDEFINED'
               onClick={() => {
-                requestSwitch('PREDEFINED', 'Use demo data', () => {
+                requestSwitch('PREDEFINED', t`Use demo data`, () => {
                   const current = setupStore.getState().erpSettings
                   setErpSettings({
                     ...current,
@@ -511,14 +511,14 @@ const ErpSystem = () => {
                 erpSettings.system === 'FILE_BASED_IMPORT' &&
                 erpSettings.templateUploaded
               }
-              description='Import your records via CSV or Excel.'
+              description={t`Import your records via CSV or Excel.`}
               icon='tabler:table-import'
-              name='Upload PO master file'
+              name={t`Upload PO master file`}
               value='FILE_BASED_IMPORT'
               onClick={() => {
                 requestSwitch(
                   'FILE_BASED_IMPORT',
-                  'Upload PO master file',
+                  t`Upload PO master file`,
                   () => {
                     const current = setupStore.getState().erpSettings
                     setErpSettings({
@@ -563,20 +563,17 @@ const ErpSystem = () => {
           <AnimateFadeIn delay={0.2}>
             <div className='mt-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm md:p-6'>
               <h3 className='text-15/5 font-semibold text-gray-13'>
-                PO Master File
+                {t`PO Master File`}
               </h3>
 
               <p className='mt-1.5 mb-4 text-13/5.5 text-pretty text-gray-11'>
-                Download the predefined PO Master Data template file to view
-                reference records. Use this file to understand the default
-                schema structure and sample values used for matching.
+                {t`Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching.`}
               </p>
 
-              {/* Download button */}
               <div className='flex justify-start'>
                 <Button
                   icon='tabler:download'
-                  label='Download PO Master Demo Data'
+                  label={t`Download PO Master Demo Data`}
                   size='sm'
                   onClick={handleDownloadPredefinedMaster}
                 />
@@ -602,10 +599,10 @@ const ErpSystem = () => {
                       />
                       <div>
                         <h3 className='text-14 font-semibold text-gray-13'>
-                          Analyzing file and mapping fields...
+                          {t`Analyzing file and mapping fields...`}
                         </h3>
                         <p className='mt-1.5 animate-pulse text-12 text-gray-11'>
-                          Please wait a moment
+                          {t`Please wait a moment`}
                         </p>
                       </div>
                     </div>
@@ -616,17 +613,17 @@ const ErpSystem = () => {
                       </div>
                       <div>
                         <h3 className='text-14 font-semibold text-gray-13 transition-colors group-hover:text-primary-9'>
-                          Upload PO Master File
+                          {t`Upload PO Master File`}
                         </h3>
                         <p className='mt-1.5 text-12 text-gray-11'>
-                          Drag and drop your spreadsheet here, or{' '}
+                          {t`Drag and drop your spreadsheet here, or`}{' '}
                           <span className='font-medium text-primary-9'>
-                            browse files
+                            {t`browse files`}
                           </span>
                         </p>
                       </div>
                       <p className='text-11 text-gray-9'>
-                        Supports Excel (.xlsx, .xls) and CSV formats
+                        {t`Supports Excel (.xlsx, .xls) and CSV formats`}
                       </p>
                     </div>
                   )}
@@ -635,7 +632,7 @@ const ErpSystem = () => {
                 /* Premium layout when template is uploaded */
                 <div className='mt-4 rounded-xl border border-gray-3 bg-surface p-5 shadow-sm md:p-6'>
                   <h3 className='mb-3 text-15/5 font-semibold text-gray-13'>
-                    PO Master file received
+                    {t`PO Master file received`}
                   </h3>
 
                   {/* Premium file details card */}
@@ -656,21 +653,21 @@ const ErpSystem = () => {
                             {erpSettings.uploadedTemplate?.name?.endsWith(
                               '.csv',
                             )
-                              ? 'CSV File'
-                              : 'Excel Spreadsheet'}
+                              ? t`CSV File`
+                              : t`Excel Spreadsheet`}
                           </span>
                           <span>•</span>
                           <span>
-                            {erpSettings.previewRows?.length || 0} Header
-                            Records
+                            {erpSettings.previewRows?.length || 0}{' '}
+                            {t`Header Records`}
                           </span>
                           {erpSettings.lineItemHeaders &&
                             erpSettings.lineItemHeaders.length > 0 && (
                               <>
                                 <span>•</span>
                                 <span>
-                                  {erpSettings.lineItemRows?.length || 0} Line
-                                  Items
+                                  {erpSettings.lineItemRows?.length || 0}{' '}
+                                  {t`Line Items`}
                                 </span>
                               </>
                             )}
@@ -680,7 +677,7 @@ const ErpSystem = () => {
                     <div className='flex items-center gap-2 self-end md:self-auto'>
                       <Button
                         icon='tabler:refresh'
-                        label='Replace File'
+                        label={t`Replace File`}
                         loading={isParsing}
                         size='xs'
                         variant='outline'
@@ -688,7 +685,7 @@ const ErpSystem = () => {
                       />
                       <button
                         className='shrink-0 rounded-lg border border-gray-3 bg-surface p-2 text-gray-9 shadow-sm transition-all hover:bg-gray-3 hover:text-red-11 active:scale-95'
-                        title='Remove file'
+                        title={t`Remove file`}
                         type='button'
                         onClick={() => {
                           setErpSettings({
@@ -737,7 +734,7 @@ const ErpSystem = () => {
                           icon='tabler:refresh'
                           size='xs'
                           variant='outline'
-                          label='Replace File'
+                          label={t`Replace File`}
                           loading={isParsing}
                           onClick={() => lineItemFileInputRef.current?.click()}
                         />
@@ -745,7 +742,7 @@ const ErpSystem = () => {
                           type='button'
                           className='p-2 text-gray-9 hover:text-red-11 hover:bg-gray-3 active:scale-95 transition-all rounded-lg border border-gray-3 bg-surface shadow-sm shrink-0'
                           onClick={handleRemoveLineItemFile}
-                          title='Remove file'
+                          title={t`Remove file`}
                         >
                           <Icon className='size-4' name='tabler:trash' />
                         </button>
@@ -759,12 +756,11 @@ const ErpSystem = () => {
                   >
                     <div className='flex items-center justify-between'>
                       <div>
-                        <h4 className='text-14 font-semibold text-gray-12'>
-                          Mapping Fields
+                        <h4 className='text-sm font-semibold text-gray-12'>
+                          {t`Mapping Fields`}
                         </h4>
-                        <p className='mt-1 text-12 text-pretty text-gray-10'>
-                          Map the columns from your uploaded file to the
-                          platform schema.
+                        <p className='mt-0.5 text-11 text-gray-11'>
+                          {t`Map the columns from your uploaded file to the platform schema.`}
                         </p>
                       </div>
                     </div>
@@ -776,10 +772,8 @@ const ErpSystem = () => {
                             className='size-4 text-blue-9'
                             name='tabler:info-circle'
                           />
-                          <span className='font-normal'>
-                            Line item info: PO Number mapping not matched.
-                            Please map the same PO Number column in both
-                            sections.
+                          <span className='font-medium'>
+                            {t`Line item info: PO Number mapping not matched. Please map the same PO Number column in both sections.`}
                           </span>
                         </div>
                       )}
@@ -792,9 +786,8 @@ const ErpSystem = () => {
                               className='size-4 text-blue-9'
                               name='tabler:info-circle'
                             />
-                            <span className='font-normal'>
-                              Line item info: No line item data found in this
-                              file.
+                            <span className='font-medium'>
+                              {t`Line item info: No line item data found in this file.`}
                             </span>
                           </div>
                         </div>
@@ -804,14 +797,14 @@ const ErpSystem = () => {
                       <div className='mb-0 flex justify-start gap-4'>
                         <button
                           type='button'
-                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-normal transition-all ${
+                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
                             activeMappingTab === 'header'
                               ? 'border-primary-9 text-primary-9'
                               : 'border-transparent text-gray-11 hover:text-gray-13'
                           }`}
                           onClick={() => setActiveMappingTab('header')}
                         >
-                          <span>Header Fields</span>
+                          <span>{t`Header Fields`}</span>
                           <span
                             className={`py-0.2 rounded-full px-1.5 text-11 ${
                               activeMappingTab === 'header'
@@ -826,14 +819,14 @@ const ErpSystem = () => {
                           erpSettings.lineItemHeaders.length > 0 && (
                             <button
                               type='button'
-                              className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-normal transition-all ${
+                              className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
                                 activeMappingTab === 'lineItems'
                                   ? 'border-primary-9 text-primary-9'
                                   : 'border-transparent text-gray-11 hover:text-gray-13'
                               }`}
                               onClick={() => setActiveMappingTab('lineItems')}
                             >
-                              <span>Line Items</span>
+                              <span>{t`Line Items`}</span>
                               <span
                                 className={`py-0.2 rounded-full px-1.5 text-11 ${
                                   activeMappingTab === 'lineItems'
@@ -951,8 +944,8 @@ const ErpSystem = () => {
       <div>
         <AnimateSlideUp delay={0.2}>
           <SectionHeader
-            description='Connect your provider to automate data matching.'
-            title='Direct Integration'
+            description={t`Connect your provider to automate data matching.`}
+            title={t`Direct Integration`}
           />
         </AnimateSlideUp>
         <div className='grid grid-cols-1 gap-3'>
@@ -967,7 +960,9 @@ const ErpSystem = () => {
                     erpSettings.isConnected &&
                     erpSettings.account
                       ? erpSettings.account
-                      : item.description
+                      : item.value === 'QuickBooks'
+                        ? t`Connect your QuickBooks account to sync PO and invoice data automatically.`
+                        : item.description
                   }
                   logo={item.logo}
                   name={item.name}

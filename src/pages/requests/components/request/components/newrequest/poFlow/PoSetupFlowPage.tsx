@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import * as XLSX from 'xlsx'
 import formApi from '@/api/form/form'
 import Button from '@/components/base/button/Button'
@@ -38,6 +39,7 @@ type Props = {
 type StepState = 'waiting' | 'active' | 'done'
 
 export default function PoSetupFlowPage({ onClose }: Props) {
+  const { t } = useLingui()
   const { closeNewRequest, rawWorkflowData } = requestStore((state) => state)
   const tenantId = authUserStore.getState()?.session?.tenantId
 
@@ -101,7 +103,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   // Parse CSV payload (CSV can only have 1 sheet, so we reject it per business rules)
   const parseCsv = async (): Promise<any> => {
     throw new Error(
-      'This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.',
+      t`This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.`,
     )
   }
 
@@ -128,7 +130,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
         const wb = XLSX.read(u8, { type: 'array' })
         if (wb.SheetNames.length < 2) {
           throw new Error(
-            'This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.',
+            t`This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets.`,
           )
         }
 
@@ -173,7 +175,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
         return parseCsv()
       }
     }
-    throw new Error('Unsupported file type. Please upload a CSV or XLSX file.')
+    throw new Error(t`Unsupported file type. Please upload a CSV or XLSX file.`)
   }
 
   // Starts the interactive pipeline
@@ -218,7 +220,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       setUploadState('idle')
       setUploadedFile(null)
       showToast({
-        message: err.message || 'Failed to process file',
+        message: err.message || t`Failed to process file`,
         variant: 'error',
       })
     }
@@ -387,14 +389,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       const { data, error } = await formApi.uploadMasterFile(payload)
       if (data) {
         showToast({
-          message: 'Master fields mapped and saved successfully.',
+          message: t`Master fields mapped and saved successfully.`,
           variant: 'success',
         })
         setUploadState('completed')
       }
 
       if (error) {
-        showToast({ message: 'Error uploading file', variant: 'error' })
+        showToast({ message: t`Error uploading file`, variant: 'error' })
         throw new Error(error)
       }
     } catch (error: any) {
@@ -447,7 +449,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       document.body.removeChild(link)
       await new Promise((resolve) => setTimeout(resolve, 800))
     } catch (error) {
-      showToast({ message: 'Failed to download template', variant: 'error' })
+      showToast({ message: t`Failed to download template`, variant: 'error' })
     } finally {
       setIsDownloading(false)
     }
@@ -460,7 +462,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
     if (!isAllowed) {
       showToast({
-        message: 'Please upload only CSV or XLSX files',
+        message: t`Please upload only CSV or XLSX files`,
         variant: 'error',
       })
       return
@@ -488,7 +490,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   name='tabler:file-import'
                 />
               </div>
-              <h1 className='text-[16px] font-medium text-gray-12'>PO Setup</h1>
+              <h1 className='text-[16px] font-medium text-gray-12'>{t`PO Setup`}</h1>
             </div>
           </div>
 
@@ -497,11 +499,11 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               {/* Header Section */}
               <AnimateSlideUp className='space-y-1.5 text-center'>
                 <h1 className='text-2xl font-bold tracking-tight text-gray-13'>
-                  Intelligent <span className='text-primary-9'>PO Setup</span>
+                  {t`Intelligent`}{' '}
+                  <span className='text-primary-9'>{t`PO Setup`}</span>
                 </h1>
                 <p className='mx-auto max-w-xl text-sm leading-normal font-medium text-gray-10'>
-                  Streamline your Purchase Orders. Automatically match columns,
-                  extract records, and configure ingestion logic.
+                  {t`Streamline your Purchase Orders. Automatically match columns, extract records, and configure ingestion logic.`}
                 </p>
               </AnimateSlideUp>
 
@@ -541,13 +543,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       </div>
                       <div className='text-center'>
                         <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
-                          Drop your PO master file here, or{' '}
+                          {t`Drop your PO master file here, or`}{' '}
                           <span className='font-medium text-primary-9 group-hover:underline'>
-                            browse
+                            {t`browse`}
                           </span>
                         </h3>
                         <p className='mt-1.5 text-[12px] text-gray-8'>
-                          Supports Excel (.xlsx, .xls) and CSV formats
+                          {t`Supports Excel (.xlsx, .xls) and CSV formats`}
                         </p>
                         <div className='mt-3 flex justify-center'>
                           <button
@@ -569,8 +571,8 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                             )}
                             <span>
                               {isDownloading
-                                ? 'Downloading...'
-                                : 'Download PO Template'}
+                                ? t`Downloading...`
+                                : t`Download PO Template`}
                             </span>
                           </button>
                         </div>
@@ -602,7 +604,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         <p className='text-[11px] text-gray-8'>
                           {uploadedFile
                             ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
-                            : 'Processing...'}
+                            : t`Processing...`}
                         </p>
                       </div>
                     </div>
@@ -624,23 +626,23 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                     {
                       color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
                       icon: 'tabler:table-column',
-                      label: 'MAPPING',
-                      sub: 'Automatically links file columns',
-                      title: 'Auto Column Mapping',
+                      label: t`MAPPING`,
+                      sub: t`Automatically links file columns`,
+                      title: t`Auto Column Mapping`,
                     },
                     {
                       color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
                       icon: 'tabler:checks',
-                      label: 'VALIDATION',
-                      sub: 'Validates required system fields',
-                      title: 'Schema Validation',
+                      label: t`VALIDATION`,
+                      sub: t`Validates required system fields`,
+                      title: t`Schema Validation`,
                     },
                     {
                       color: 'text-[var(--green-11)] bg-[var(--green-2)]',
                       icon: 'tabler:database-import',
-                      label: 'INGESTION',
-                      sub: 'Updates records in master database',
-                      title: 'PO Master Update',
+                      label: t`INGESTION`,
+                      sub: t`Updates records in master database`,
+                      title: t`PO Master Update`,
                     },
                   ].map((item, idx) => (
                     <AnimateEntrancePop
@@ -702,7 +704,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 <Icon className='size-4' name='tabler:activity' />
               </div>
               <h1 className='text-[16px] font-medium text-gray-12'>
-                Ingestion timeline
+                {t`Ingestion timeline`}
               </h1>
             </div>
           </div>
@@ -752,21 +754,21 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   <div className='flex-1'>
                     <div className='flex items-center justify-between'>
                       <h3 className='text-[13px] font-bold text-gray-12'>
-                        File Ingestion & Parsing
+                        {t`File Ingestion & Parsing`}
                       </h3>
                       {step1State === 'done' && (
                         <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
-                          Completed in 0.4s
+                          {t`Completed in 0.4s`}
                         </span>
                       )}
                       {step1State === 'active' && (
                         <span className='animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-primary-9'>
-                          In progress
+                          {t`In progress`}
                         </span>
                       )}
                     </div>
                     <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
-                      Ingesting raw file payload and validating structure.
+                      {t`Ingesting raw file payload and validating structure.`}
                     </p>
                   </div>
                 </div>
@@ -775,7 +777,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 {(step1State === 'active' || step1State === 'done') && (
                   <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>File Size</span>
+                      <span className='text-gray-11'>{t`File Size`}</span>
                       <span className='font-bold text-gray-12'>
                         {uploadedFile
                           ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
@@ -783,21 +785,21 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Format</span>
+                      <span className='text-gray-11'>{t`Format`}</span>
                       <span className='font-bold text-gray-12'>
                         {uploadedFile?.name.split('.').pop()?.toUpperCase() ||
                           'XLSX'}
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Rows Detected</span>
+                      <span className='text-gray-11'>{t`Rows Detected`}</span>
                       <span className='font-bold text-gray-12'>
-                        {rowCount || 48} rows
+                        {rowCount || 48} {t`rows`}
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Sheets Used</span>
-                      <span className='font-bold text-gray-12'>1 sheet</span>
+                      <span className='text-gray-11'>{t`Sheets Used`}</span>
+                      <span className='font-bold text-gray-12'>{t`1 sheet`}</span>
                     </div>
                   </div>
                 )}
@@ -841,21 +843,21 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   <div className='flex-1'>
                     <div className='flex items-center justify-between'>
                       <h3 className='text-[13px] font-bold text-gray-12'>
-                        Column & Row Extraction
+                        {t`Column & Row Extraction`}
                       </h3>
                       {step2State === 'done' && (
                         <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
-                          Completed in 0.9s
+                          {t`Completed in 0.9s`}
                         </span>
                       )}
                       {step2State === 'active' && (
                         <span className='animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-primary-9'>
-                          In progress
+                          {t`In progress`}
                         </span>
                       )}
                     </div>
                     <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
-                      Extracting grid fields and filtering metadata records.
+                      {t`Extracting grid fields and filtering metadata records.`}
                     </p>
                   </div>
                 </div>
@@ -864,23 +866,23 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 {(step2State === 'active' || step2State === 'done') && (
                   <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Columns Found</span>
+                      <span className='text-gray-11'>{t`Columns Found`}</span>
                       <span className='font-bold text-gray-12'>
-                        {uploadedColumns.length || 8} columns
+                        {uploadedColumns.length || 8} {t`columns`}
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Empty Rows Skipped</span>
-                      <span className='font-bold text-gray-12'>0 skipped</span>
+                      <span className='text-gray-11'>{t`Empty Rows Skipped`}</span>
+                      <span className='font-bold text-gray-12'>{t`0 skipped`}</span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Header Row</span>
-                      <span className='font-bold text-gray-12'>Row 1</span>
+                      <span className='text-gray-11'>{t`Header Row`}</span>
+                      <span className='font-bold text-gray-12'>{t`Row 1`}</span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Data Rows</span>
+                      <span className='text-gray-11'>{t`Data Rows`}</span>
                       <span className='font-bold text-gray-12'>
-                        {rowCount ? rowCount - 1 : 47} rows
+                        {rowCount ? rowCount - 1 : 47} {t`rows`}
                       </span>
                     </div>
                   </div>
@@ -925,21 +927,21 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   <div className='flex-1'>
                     <div className='flex items-center justify-between'>
                       <h3 className='text-[13px] font-bold text-gray-12'>
-                        Schema Auto-Mapping
+                        {t`Schema Auto-Mapping`}
                       </h3>
                       {step3State === 'done' && (
                         <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
-                          Completed
+                          {t`Completed`}
                         </span>
                       )}
                       {step3State === 'active' && (
                         <span className='animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-primary-9'>
-                          In progress
+                          {t`In progress`}
                         </span>
                       )}
                     </div>
                     <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
-                      Aligning CSV/XLSX headers with database mapping schema.
+                      {t`Aligning CSV/XLSX headers with database mapping schema.`}
                     </p>
                   </div>
                 </div>
@@ -948,25 +950,25 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 {(step3State === 'active' || step3State === 'done') && (
                   <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Fields Matched</span>
+                      <span className='text-gray-11'>{t`Fields Matched`}</span>
                       <span className='font-bold text-gray-12'>
                         {step3State === 'done'
-                          ? '6 / 6 fields'
-                          : '2 / 6 fields'}
+                          ? t`6 / 6 fields`
+                          : t`2 / 6 fields`}
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>Confidence Level</span>
+                      <span className='text-gray-11'>{t`Confidence Level`}</span>
                       <span className='font-bold text-gray-12'>
-                        91% average
+                        {t`91% average`}
                       </span>
                     </div>
                     <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
                       <span className='text-gray-11'>
-                        Fields Needing Review
+                        {t`Fields Needing Review`}
                       </span>
                       <span className='font-bold text-gray-12'>
-                        {step3State === 'done' ? '0 fields' : '4 fields'}
+                        {step3State === 'done' ? t`0 fields` : t`4 fields`}
                       </span>
                     </div>
                   </div>
@@ -981,7 +983,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                           name='tabler:info-circle'
                         />
                         <span className='font-medium'>
-                          Line item info: PO Number column could not be matched.
+                          {t`Line item info: PO Number column could not be matched.`}
                         </span>
                       </div>
                     )}
@@ -997,7 +999,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         }`}
                         onClick={() => setActiveMappingTab('header')}
                       >
-                        <span>Header Fields</span>
+                        <span>{t`Header Fields`}</span>
                         <span
                           className={`py-0.2 rounded-full px-1.5 text-11 ${
                             activeMappingTab === 'header'
@@ -1017,7 +1019,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         }`}
                         onClick={() => setActiveMappingTab('lineItem')}
                       >
-                        <span>Line Items</span>
+                        <span>{t`Line Items`}</span>
                         <span
                           className={`py-0.2 rounded-full px-1.5 text-11 ${
                             activeMappingTab === 'lineItem'
@@ -1041,7 +1043,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                             mapping={mapping}
                             previewRows={previewRows}
                             showActionsRow={false}
-                            title='Header Mapping'
+                            title={t`Header Mapping`}
                             uploadedColumns={uploadedColumns}
                             simple
                             onChangeMapping={setMapping}
@@ -1059,7 +1061,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                             showActionsRow={false}
                             showGrouping={false}
                             templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
-                            title='Line Item Mapping'
+                            title={t`Line Item Mapping`}
                             uploadedColumns={lineItemHeaders}
                             simple
                             onChangeMapping={setLineItemMapping}
@@ -1077,7 +1079,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                           setPreviewRows([])
                         }}
                       >
-                        Cancel
+                        {t`Cancel`}
                       </Button>
                       <Button
                         loading={isSubmitting}
@@ -1092,7 +1094,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                         }
                         onClick={handleManualConfirm}
                       >
-                        Confirm & Ingest
+                        {t`Confirm & Ingest`}
                       </Button>
                     </div>
                   </div>
@@ -1128,14 +1130,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   </div>
                   <div className='flex-1'>
                     <h3 className='text-[13px] font-bold text-gray-12'>
-                      Ingestion & Confirmation
+                      {t`Ingestion & Confirmation`}
                     </h3>
                     <p className='mt-1.5 text-[11px] font-semibold text-gray-8'>
                       {step4State === 'active'
-                        ? 'Finalizing record ingestion...'
+                        ? t`Finalizing record ingestion...`
                         : step4State === 'done'
-                          ? 'Ingestion fully completed.'
-                          : 'Waiting for field verification'}
+                          ? t`Ingestion fully completed.`
+                          : t`Waiting for field verification`}
                     </p>
                   </div>
                 </div>
@@ -1155,7 +1157,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 <Icon className='size-4' name='tabler:circle-check' />
               </div>
               <h1 className='text-[16px] font-medium text-gray-12'>
-                Ingestion Complete
+                {t`Ingestion Complete`}
               </h1>
             </div>
           </div>
@@ -1172,22 +1174,21 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
               <div className='space-y-2'>
                 <h2 className='text-lg font-bold text-gray-12'>
-                  PO Ingestion Successful!
+                  {t`PO Ingestion Successful!`}
                 </h2>
                 <p className='max-w-xs text-[12px] leading-relaxed text-gray-8'>
-                  Your PO file headers were successfully mapped, translated, and
-                  all purchase orders saved to the master ingestion pipeline.
+                  {t`Your PO file headers were successfully mapped, translated, and all purchase orders saved to the master ingestion pipeline.`}
                 </p>
               </div>
 
               {uploadedFile && (
                 <div className='animate-in fade-in w-full space-y-2.5 rounded-xl border border-border-default bg-surface-primary p-4 text-left shadow-2xs duration-500'>
                   <div className='border-b border-border-default/40 pb-2 text-[10px] font-extrabold tracking-wider text-gray-8 uppercase'>
-                    Ingestion Summary
+                    {t`Ingestion Summary`}
                   </div>
                   <div className='flex justify-between text-[12px]'>
                     <span className='font-medium text-gray-8'>
-                      Source File:
+                      {t`Source File:`}
                     </span>
                     <span className='max-w-[200px] truncate font-bold text-gray-12'>
                       {uploadedFile.name}
@@ -1195,18 +1196,18 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   </div>
                   <div className='flex justify-between text-[12px]'>
                     <span className='font-medium text-gray-8'>
-                      Total Records:
+                      {t`Total Records:`}
                     </span>
                     <span className='font-bold text-gray-12'>
-                      {rowCount || 48} rows
+                      {rowCount || 48} {t`rows`}
                     </span>
                   </div>
                   <div className='flex justify-between text-[12px]'>
                     <span className='font-medium text-gray-8'>
-                      Columns Ingested:
+                      {t`Columns Ingested:`}
                     </span>
                     <span className='font-bold text-gray-12'>
-                      {systemColumns.length} fields
+                      {systemColumns.length} {t`fields`}
                     </span>
                   </div>
                 </div>
@@ -1215,7 +1216,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               <Button
                 className='w-full cursor-pointer rounded-xl bg-primary-9 py-3 text-[14px] font-bold text-white shadow-md transition-all hover:scale-[1.01] hover:bg-primary-10 active:scale-[0.99]'
                 color='primary'
-                label='Done'
+                label={t`Done`}
                 size='lg'
                 variant='solid'
                 onClick={() => {
@@ -1247,7 +1248,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 />
               </div>
               <h1 className='text-[16px] font-medium text-gray-12'>
-                Ingestion Error
+                {t`Ingestion Error`}
               </h1>
             </div>
           </div>
@@ -1263,11 +1264,10 @@ export default function PoSetupFlowPage({ onClose }: Props) {
 
               <div className='space-y-2'>
                 <h2 className='text-lg font-bold text-gray-12'>
-                  Ingestion Failed
+                  {t`Ingestion Failed`}
                 </h2>
                 <p className='max-w-xs text-[12px] leading-relaxed text-gray-8'>
-                  The server encountered an error while importing the purchase
-                  orders. Please try again.
+                  {t`The server encountered an error while importing the purchase orders. Please try again.`}
                 </p>
               </div>
 
@@ -1277,14 +1277,14 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   onClick={handleManualConfirm}
                 >
                   <Icon className='size-4' name='tabler:refresh' />
-                  <span>Retry Ingestion</span>
+                  <span>{t`Retry Ingestion`}</span>
                 </button>
 
                 <button
                   className='w-full cursor-pointer rounded-xl border border-border-default bg-surface-primary py-3 text-[14px] font-semibold text-gray-11 transition-all hover:bg-surface-hover'
                   onClick={() => setUploadState('ready')}
                 >
-                  <span>Review Column Mapping</span>
+                  <span>{t`Review Column Mapping`}</span>
                 </button>
               </div>
             </AnimateFadeIn>

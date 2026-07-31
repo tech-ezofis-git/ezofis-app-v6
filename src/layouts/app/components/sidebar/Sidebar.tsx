@@ -28,7 +28,7 @@ const Sidebar = () => {
         },
         {
           icon: 'lucide:folder',
-          label: 'Folders',
+          label: t`Folders`,
           permissionKey: 'folder',
           route: '/folders',
         },
@@ -44,19 +44,19 @@ const Sidebar = () => {
       items: [
         {
           icon: 'lucide:workflow',
-          label: 'Workflows',
+          label: t`Workflows`,
           permissionKey: 'workflow',
           route: '/workflows',
         },
         {
           icon: 'lucide:clipboard-list',
-          label: 'Forms',
+          label: t`Forms`,
           permissionKey: 'forms',
           route: '/forms',
         },
         {
           icon: 'lucide:settings',
-          label: 'Settings',
+          label: t`Settings`,
           permissionKey: 'settings',
           route: '/settings',
         },
@@ -76,7 +76,7 @@ const Sidebar = () => {
         //   route: '/portals',
         // },
       ],
-      label: 'Modules',
+      label: t`Modules`,
     },
     // {
     //   items: [

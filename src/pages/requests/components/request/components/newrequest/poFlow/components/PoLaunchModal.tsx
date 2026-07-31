@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { Modal } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 
@@ -8,6 +9,8 @@ type Props = {
 }
 
 export default function PoLaunchModal({ opened, onClose, onProceed }: Props) {
+  const { t } = useLingui()
+
   return (
     <Modal
       opened={opened}
@@ -25,11 +28,8 @@ export default function PoLaunchModal({ opened, onClose, onProceed }: Props) {
             <div>
               <div className='flex items-center gap-4 text-18 font-semibold'>
                 <Icon className='size-5' name='tabler:cloud-upload' />
-                PO Import
+                {t`PO Import`}
               </div>
-              {/* <div className="mt-1 text-13 text-white/80">
-                                A guided flow for template → upload → mapping → preview.
-                            </div> */}
             </div>
 
             <button
@@ -49,11 +49,10 @@ export default function PoLaunchModal({ opened, onClose, onProceed }: Props) {
                   className='size-4 text-[var(--primary-9)]'
                   name='tabler:download'
                 />
-                Template
+                {t`Template`}
               </div>
               <div className='mt-1 text-12 text-[var(--gray-10)]'>
-                Don't have a PO file ready? Use our template to ensure your data
-                matches our system.
+                {t`Don't have a PO file ready? Use our template to ensure your data matches our system.`}
               </div>
             </div>
 
@@ -63,10 +62,10 @@ export default function PoLaunchModal({ opened, onClose, onProceed }: Props) {
                   className='size-4 text-[var(--primary-9)]'
                   name='tabler:upload'
                 />
-                Upload
+                {t`Upload`}
               </div>
               <div className='mt-1 text-12 text-[var(--gray-10)]'>
-                Upload a PO file; we’ll extract headers for mapping.
+                {t`Upload a PO file; we'll extract headers for mapping.`}
               </div>
             </div>
 
@@ -76,10 +75,10 @@ export default function PoLaunchModal({ opened, onClose, onProceed }: Props) {
                   className='size-4 text-[var(--primary-9)]'
                   name='tabler:circle-check'
                 />
-                Confirm
+                {t`Confirm`}
               </div>
               <div className='mt-1 text-12 text-[var(--gray-10)]'>
-                Validate mappings and confirm to finalize import payload.
+                {t`Validate mappings and confirm to finalize import payload.`}
               </div>
             </div>
           </div>
@@ -89,13 +88,13 @@ export default function PoLaunchModal({ opened, onClose, onProceed }: Props) {
               className='cursor-pointer rounded-xl border border-[var(--gray-4)] bg-[var(--gray-0)] px-4 py-2 text-13 font-semibold text-[var(--gray-12)] hover:bg-[var(--gray-1)]'
               onClick={onClose}
             >
-              Not now
+              {t`Not now`}
             </button>
             <button
               className='cursor-pointer rounded-xl bg-[var(--primary-9)] px-4 py-2 text-13 font-semibold text-white shadow-sm hover:bg-[var(--primary-10)]'
               onClick={onProceed}
             >
-              Continue
+              {t`Continue`}
             </button>
           </div>
         </div>

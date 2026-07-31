@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { SettingsBreadcrumbItem } from '../helpers/settingsBreadcrumbs'
@@ -9,16 +10,45 @@ type Props = {
 }
 
 export default function SettingsBreadcrumbs({ items, onNavigate }: Props) {
+  const { t } = useLingui()
   if (!items.length) return null
+
+  const localizeLabel = (label: string) => {
+    switch (label) {
+      case 'Settings':
+        return t`Settings`
+      case 'Folders':
+        return t`Folders`
+      case 'User Management':
+        return t`User Management`
+      case 'Roles & Permissions':
+        return t`Roles & Permissions`
+      case 'Group Management':
+        return t`Group Management`
+      case 'Folder Configuration':
+        return t`Folder Configuration`
+      case 'Audit & Monitoring':
+        return t`Audit & Monitoring`
+      case 'Credit Usage':
+        return t`Credit Usage`
+      case 'Playground API':
+        return t`Playground API`
+      case 'Accounts Payable':
+        return t`Accounts Payable`
+      default:
+        return label
+    }
+  }
 
   return (
     <nav
-      aria-label='Settings breadcrumb'
+      aria-label={t`Breadcrumb`}
       className='flex min-w-0 items-center gap-2 text-15/5 font-semibold'
     >
       {items.map((item, index) => {
         const isLast = index === items.length - 1
         const isClickable = Boolean(item.key && !isLast && onNavigate)
+        const label = localizeLabel(item.label)
 
         return (
           <Fragment key={`${item.label}-${index}`}>
@@ -35,7 +65,7 @@ export default function SettingsBreadcrumbs({ items, onNavigate }: Props) {
                 type='button'
                 onClick={() => onNavigate?.(item.key!)}
               >
-                {item.label}
+                {label}
               </button>
             ) : (
               <span
@@ -44,7 +74,7 @@ export default function SettingsBreadcrumbs({ items, onNavigate }: Props) {
                   isLast ? 'text-gray-13' : 'text-gray-10',
                 )}
               >
-                {item.label}
+                {label}
               </span>
             )}
           </Fragment>

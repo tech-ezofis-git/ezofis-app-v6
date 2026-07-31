@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
@@ -63,6 +64,7 @@ const findSupplierName = (row: any): string | null => {
 }
 
 const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
+  const { t } = useLingui()
   const { activeQuickFilters, toggleQuickFilter } = requestStore()
 
   const [statusSearch, setStatusSearch] = useState('')
@@ -81,24 +83,34 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
     return Array.from(set).sort((a, b) => a.localeCompare(b))
   }, [data])
 
-  const statuses = ['Approved', 'Partially Approved', 'Rejected']
+  const statuses = useMemo(
+    () => [
+      { label: t`Approved`, value: 'Approved' },
+      { label: t`Partially Approved`, value: 'Partially Approved' },
+      { label: t`Rejected`, value: 'Rejected' },
+    ],
+    [t],
+  )
   const filteredStatuses = useMemo(() => {
-    return statuses.filter((statusVal) =>
-      statusVal.toLowerCase().includes(statusSearch.toLowerCase()),
+    return statuses.filter((statusOpt) =>
+      statusOpt.label.toLowerCase().includes(statusSearch.toLowerCase()),
     )
-  }, [statusSearch])
+  }, [statusSearch, statuses])
 
-  const poAmounts = [
-    { label: '< $1k', val: 'lt1k' },
-    { label: '$1k - $5k', val: '1k_5k' },
-    { label: '$5k - $10k', val: '5k_10k' },
-    { label: '≥ $10k', val: 'ge10k' },
-  ]
+  const poAmounts = useMemo(
+    () => [
+      { label: t`< $1k`, val: 'lt1k' },
+      { label: t`$1k - $5k`, val: '1k_5k' },
+      { label: t`$5k - $10k`, val: '5k_10k' },
+      { label: t`≥ $10k`, val: 'ge10k' },
+    ],
+    [t],
+  )
   const filteredPoAmounts = useMemo(() => {
     return poAmounts.filter((opt) =>
       opt.label.toLowerCase().includes(poSearch.toLowerCase()),
     )
-  }, [poSearch])
+  }, [poAmounts, poSearch])
 
   const filteredSuppliers = useMemo(() => {
     return supplierNames.filter((name) =>
@@ -117,7 +129,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
       inactiveBadgeClass: 'bg-[var(--gray-3)] text-[var(--gray-11)]',
       inactiveClass:
         'bg-[var(--gray-1)] border-[var(--gray-3)] text-[var(--gray-10)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]',
-      label: 'Overdue',
+      label: t`Overdue`,
     },
     {
       activeBadgeClass: 'bg-[var(--green-9)] text-white',
@@ -129,7 +141,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
       inactiveBadgeClass: 'bg-[var(--gray-3)] text-[var(--gray-11)]',
       inactiveClass:
         'bg-[var(--gray-1)] border-[var(--gray-3)] text-[var(--gray-10)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]',
-      label: 'Matched',
+      label: t`Matched`,
     },
     {
       activeBadgeClass: 'bg-[var(--orange-9)] text-white',
@@ -141,7 +153,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
       inactiveBadgeClass: 'bg-[var(--gray-3)] text-[var(--gray-11)]',
       inactiveClass:
         'bg-[var(--gray-1)] border-[var(--gray-3)] text-[var(--gray-10)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]',
-      label: 'Discrepancies',
+      label: t`Discrepancies`,
     },
     {
       activeBadgeClass: 'bg-[var(--blue-9)] text-white',
@@ -153,7 +165,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
       inactiveBadgeClass: 'bg-[var(--gray-3)] text-[var(--gray-11)]',
       inactiveClass:
         'bg-[var(--gray-1)] border-[var(--gray-3)] text-[var(--gray-10)] hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)]',
-      label: 'High Value (≥$10k)',
+      label: t`High Value (≥$10k)`,
     },
   ]
 
@@ -200,17 +212,17 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
           const [field, val] = f.split(':')
           let label = ''
           if (field === 'status') {
-            label = `Status: ${val}`
+            label = t`Status: ${val}`
           } else if (field === 'amount') {
             const amountLabels: Record<string, string> = {
-              '1k_5k': '$1k - $5k',
-              '5k_10k': '$5k - $10k',
-              'ge10k': '≥ $10k',
-              'lt1k': '< $1k',
+              '1k_5k': t`$1k - $5k`,
+              '5k_10k': t`$5k - $10k`,
+              'ge10k': t`≥ $10k`,
+              'lt1k': t`< $1k`,
             }
-            label = `Amount: ${amountLabels[val] || val}`
+            label = t`Amount: ${amountLabels[val] || val}`
           } else if (field === 'supplier') {
-            label = `Supplier: ${val}`
+            label = t`Supplier: ${val}`
           }
 
           return (
@@ -221,7 +233,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               <Icon className='size-3.5' name='tabler:filter' />
               <span>{label}</span>
               <button
-                aria-label={`Remove ${label} filter`}
+                aria-label={t`Remove ${label} filter`}
                 className='flex cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[var(--purple-9)] active:scale-95'
                 type='button'
                 onClick={(e) => {
@@ -246,11 +258,11 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               )}
             >
               <Icon className='size-3.5' name='tabler:plus' />
-              <span>Add Filter</span>
+              <span>{t`Add Filter`}</span>
             </button>
           }
         >
-          <MenuSub icon='tabler:circle-dot' label='Request Status' width={200}>
+          <MenuSub icon='tabler:circle-dot' label={t`Request Status`} width={200}>
             {/* Search Box */}
             <div
               className='border-b border-[var(--gray-3)] px-2 py-1.5'
@@ -263,7 +275,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
                 />
                 <input
                   className='w-full rounded border border-[var(--gray-3)] bg-surface py-1 pr-2 pl-8 text-xs font-medium text-[var(--text-primary)] outline-none focus:border-[var(--primary-9)]'
-                  placeholder='Search status...'
+                  placeholder={t`Search status...`}
                   type='text'
                   value={statusSearch}
                   onChange={(e) => setStatusSearch(e.target.value)}
@@ -280,19 +292,21 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
             </div>
             {filteredStatuses.length === 0 ? (
               <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
-                No results found
+                {t`No results found`}
               </div>
             ) : (
-              filteredStatuses.map((statusVal) => (
+              filteredStatuses.map((statusOpt) => (
                 <MenuItem
-                  key={statusVal}
-                  label={statusVal}
-                  onClick={() => handleAddCustomFilter('status', statusVal)}
+                  key={statusOpt.value}
+                  label={statusOpt.label}
+                  onClick={() =>
+                    handleAddCustomFilter('status', statusOpt.value)
+                  }
                 />
               ))
             )}
           </MenuSub>
-          <MenuSub icon='tabler:currency-dollar' label='PO Amount' width={200}>
+          <MenuSub icon='tabler:currency-dollar' label={t`PO Amount`} width={200}>
             {/* Search Box */}
             <div
               className='border-b border-[var(--gray-3)] px-2 py-1.5'
@@ -305,7 +319,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
                 />
                 <input
                   className='w-full rounded border border-[var(--gray-3)] bg-surface py-1 pr-2 pl-8 text-xs font-medium text-[var(--text-primary)] outline-none focus:border-[var(--primary-9)]'
-                  placeholder='Search PO range...'
+                  placeholder={t`Search PO range...`}
                   type='text'
                   value={poSearch}
                   onChange={(e) => setPoSearch(e.target.value)}
@@ -322,7 +336,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
             </div>
             {filteredPoAmounts.length === 0 ? (
               <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
-                No results found
+                {t`No results found`}
               </div>
             ) : (
               filteredPoAmounts.map((amountOpt) => (
@@ -334,7 +348,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
               ))
             )}
           </MenuSub>
-          <MenuSub icon='tabler:building' label='Supplier' width={240}>
+          <MenuSub icon='tabler:building' label={t`Supplier`} width={240}>
             {/* Search Box */}
             <div
               className='border-b border-[var(--gray-3)] px-2 py-1.5'
@@ -347,7 +361,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
                 />
                 <input
                   className='w-full rounded border border-[var(--gray-3)] bg-surface py-1 pr-2 pl-8 text-xs font-medium text-[var(--text-primary)] outline-none focus:border-[var(--primary-9)]'
-                  placeholder='Search suppliers...'
+                  placeholder={t`Search suppliers...`}
                   type='text'
                   value={supplierSearch}
                   onChange={(e) => setSupplierSearch(e.target.value)}
@@ -365,7 +379,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
             <div className='scrollbar max-h-60 overflow-y-auto'>
               {filteredSuppliers.length === 0 ? (
                 <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
-                  No suppliers found
+                  {t`No suppliers found`}
                 </div>
               ) : (
                 filteredSuppliers.map((name) => (
@@ -386,7 +400,7 @@ const QuickFilters: React.FC<QuickFiltersProps> = ({ counts, data }) => {
             onClick={() => requestStore.getState().clearQuickFilters()}
           >
             <Icon className='size-3' name='tabler:x' />
-            <span>Clear all</span>
+            <span>{t`Clear all`}</span>
           </button>
         )}
       </div>

@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useState } from 'react'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputDate from '@/components/base/inputs/InputDate'
@@ -45,7 +46,7 @@ const getRawValue = (row: MetadataRow | undefined, sqlColumnName: string) => {
   return matchedKey ? row[matchedKey] : ''
 }
 
-const getFileTitle = (row?: MetadataRow) =>
+const getFileTitle = (row?: MetadataRow, fallback = 'Selected Document') =>
   String(
     row?.fileName ??
       row?.FileName ??
@@ -57,7 +58,7 @@ const getFileTitle = (row?: MetadataRow) =>
       row?.ItemId ??
       row?.documentId ??
       row?.DocumentId ??
-      'Selected Document',
+      fallback,
   )
 
 const toTextValue = (value: any) => {
@@ -144,6 +145,7 @@ export function EditMetadataView({
   onBack,
   onSave,
 }: EditMetadataViewProps) {
+  const { t } = useLingui()
   const [formValues, setFormValues] = useState<Record<string, any>>({})
   const [saving, setSaving] = useState(false)
 
@@ -322,7 +324,7 @@ export function EditMetadataView({
       <InputText
         className='w-full'
         label={label}
-        placeholder={`Enter ${label}`}
+        placeholder={t`Enter ${label}`}
         required={required}
         value={toTextValue(value)}
         type={
@@ -350,17 +352,17 @@ export function EditMetadataView({
             onClick={onBack}
           >
             <DynamicIcon className='h-4 w-4' name='arrowLeft' />
-            Back
+            {t`Back`}
           </button>
 
           <div className='h-8 w-px bg-gray-4' />
 
           <div className='min-w-0'>
             <h1 className='truncate text-[16px] font-bold text-gray-13'>
-              Edit Metadata
+              {t`Edit Metadata`}
             </h1>
             <p className='truncate text-[12px] font-semibold text-gray-9'>
-              {getFileTitle(fileData)}
+              {getFileTitle(fileData, t`Selected Document`)}
             </p>
           </div>
         </div>
@@ -372,7 +374,7 @@ export function EditMetadataView({
             onClick={resetValues}
           >
             <DynamicIcon className='h-4 w-4' name='refresh' />
-            Reset
+            {t`Reset`}
           </Button>
 
           <PrimaryButton
@@ -382,7 +384,7 @@ export function EditMetadataView({
             onClick={saveValues}
           >
             <DynamicIcon className='h-4 w-4' name='save' />
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? t`Saving...` : t`Save Changes`}
           </PrimaryButton>
         </div>
       </div>
@@ -391,19 +393,18 @@ export function EditMetadataView({
         <div className='mx-auto w-full max-w-[1120px] space-y-5 px-6 py-6'>
           <div className='flex items-center justify-between gap-4 rounded-xl border border-violet-5 bg-violet-3 p-4 text-violet-11'>
             <p className='text-[13px] leading-5'>
-              <b>Metadata Workspace:</b> Controls are generated from repository
-              field definitions only. Empty or missing values remain blank in
-              edit mode and display as “-” in grid/list view.
+              <b>{t`Metadata Workspace:`}</b>{' '}
+              {t`Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view.`}
             </p>
           </div>
 
           <Card className='rounded-xl border border-gray-3 bg-surface-primary p-5 shadow-sm'>
             <div className='flex items-center justify-between border-b border-gray-3 pb-3'>
               <h2 className='text-[15px] font-semibold text-gray-13'>
-                Repository Fields
+                {t`Repository Fields`}
               </h2>
               <span className='rounded-full bg-gray-2 px-3 py-1 text-[12px] font-semibold text-gray-10'>
-                {editableFields.length} fields
+                {t`${editableFields.length} fields`}
               </span>
             </div>
 
@@ -422,11 +423,9 @@ export function EditMetadataView({
             ) : (
               <div className='flex min-h-[260px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
                 <DynamicIcon className='h-8 w-8 text-gray-8' name='fileText' />
-                <b className='text-gray-13'>No metadata fields available</b>
+                <b className='text-gray-13'>{t`No metadata fields available`}</b>
                 <p className='max-w-[480px] text-sm text-gray-10'>
-                  The selected repository did not return editable metadata
-                  fields. Please confirm the repository field configuration from
-                  the backend response.
+                  {t`The selected repository did not return editable metadata fields. Please confirm the repository field configuration from the backend response.`}
                 </p>
               </div>
             )}

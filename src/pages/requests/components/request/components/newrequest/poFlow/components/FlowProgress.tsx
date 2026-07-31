@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { Stepper } from '@mantine/core'
 
 type Props = {
@@ -5,11 +6,19 @@ type Props = {
 }
 
 export default function FlowProgress({ activeStep }: Props) {
+  const { t } = useLingui()
+
   return (
     <Stepper active={activeStep} radius='xl' size='sm'>
-      <Stepper.Step description='Prepare your file' label='Template & Upload' />
-      <Stepper.Step description='Align data fields' label='Map Columns' />
-      <Stepper.Step description='Validate & submit' label='Preview & Confirm' />
+      <Stepper.Step
+        description={t`Prepare your file`}
+        label={t`Template & Upload`}
+      />
+      <Stepper.Step description={t`Align data fields`} label={t`Map Columns`} />
+      <Stepper.Step
+        description={t`Validate & submit`}
+        label={t`Preview & Confirm`}
+      />
     </Stepper>
   )
 }

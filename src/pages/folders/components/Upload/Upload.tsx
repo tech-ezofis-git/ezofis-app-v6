@@ -1,4 +1,5 @@
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
+import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { UploadFiles, uploadForOcr } from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
@@ -53,6 +54,7 @@ type RepositoryField = {
 type ResultTab = 'fields' | 'json'
 type UploadProps = {
   folderId: string | number | null
+  initialFile?: File | null
   repositoryData: {
     fields?: RepositoryField[]
     id?: string
@@ -63,7 +65,8 @@ type UploadProps = {
   onSuccess?: () => void | Promise<void>
 }
 
-const PROCESS_STEPS = ['Received', 'Analysis', 'Fields', 'Done'] as const
+const PROCESS_STEP_KEYS = ['Received', 'Analysis', 'Fields', 'Done'] as const
+type ProcessStepKey = (typeof PROCESS_STEP_KEYS)[number]
 
 const getFieldKey = (field: RepositoryField) => field.sqlColumnName || field.id
 
@@ -298,11 +301,20 @@ const mapOcrResponseToFieldValues = (
 
 export default function Upload({
   folderId,
+  initialFile = null,
   repositoryData,
   repositoryId,
   onBack,
   onSuccess,
 }: UploadProps) {
+  const { t } = useLingui()
+
+  const processStepLabels: Record<ProcessStepKey, string> = {
+    Analysis: t`Analysis`,
+    Done: t`Done`,
+    Fields: t`Fields`,
+    Received: t`Received`,
+  }
   const invoiceInputRef = useRef<HTMLInputElement>(null)
   const ocrRequestIdRef = useRef(0)
   const lastFileSelectionRef = useRef<{
@@ -366,7 +378,7 @@ export default function Upload({
         if (error) {
           setOcrStatus('error')
           showToast({
-            message: `OCR extraction failed: ${error}`,
+            message: t`OCR extraction failed: ${error}`,
             variant: 'error',
           })
           return
@@ -377,13 +389,14 @@ export default function Upload({
       } catch (error: any) {
         if (requestId !== ocrRequestIdRef.current) return
         setOcrStatus('error')
+        const detail = error?.message || error
         showToast({
-          message: `OCR extraction failed: ${error?.message || error}`,
+          message: t`OCR extraction failed: ${detail}`,
           variant: 'error',
         })
       }
     },
-    [repositoryFields],
+    [repositoryFields, t],
   )
 
   const resetInput = () => {
@@ -427,10 +440,10 @@ export default function Upload({
 
       showToast({
         message: tooLarge
-          ? 'File is too large. Max size is 4MB.'
+          ? t`File is too large. Max size is 4MB.`
           : invalidType
-            ? 'Invalid file type. Please upload a PDF or Image.'
-            : 'No valid files selected.',
+            ? t`Invalid file type. Please upload a PDF or Image.`
+            : t`No valid files selected.`,
         variant: 'error',
       })
 
@@ -467,7 +480,7 @@ export default function Upload({
       if (!activeRepositoryId) {
         setOcrStatus('error')
         showToast({
-          message: 'Repository ID is missing. Cannot run OCR.',
+          message: t`Repository ID is missing. Cannot run OCR.`,
           variant: 'error',
         })
         resetInput()
@@ -479,6 +492,13 @@ export default function Upload({
 
     resetInput()
   }
+
+  useEffect(() => {
+    if (!initialFile) return
+    handleInvoiceFiles([initialFile])
+    // Apply once when Upload mounts with a preselected file from empty-state dropzone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const buildUploadMetadata = () => {
     return repositoryFields.reduce<Record<string, string>>((acc, field) => {
@@ -521,8 +541,9 @@ export default function Upload({
     })
 
     if (missingField) {
+      const fieldName = missingField.name
       showToast({
-        message: `${missingField.name} is mandatory.`,
+        message: t`${fieldName} is mandatory.`,
         variant: 'error',
       })
       return false
@@ -533,7 +554,7 @@ export default function Upload({
 
   const uploadFile = async () => {
     if (!fileData) {
-      showToast({ message: 'Please select a file first.', variant: 'error' })
+      showToast({ message: t`Please select a file first.`, variant: 'error' })
       return null
     }
 
@@ -541,7 +562,7 @@ export default function Upload({
 
     if (!activeRepositoryId) {
       showToast({
-        message: 'Repository ID is missing. Cannot upload.',
+        message: t`Repository ID is missing. Cannot upload.`,
         variant: 'error',
       })
       return null
@@ -564,21 +585,22 @@ export default function Upload({
       if (error) {
         setExportStatus('error')
         showToast({
-          message: `Error uploading file: ${error}`,
+          message: t`Error uploading file: ${error}`,
           variant: 'error',
         })
         return null
       }
 
       setExportStatus('success')
-      showToast({ message: 'File exported successfully.', variant: 'success' })
+      showToast({ message: t`File exported successfully.`, variant: 'success' })
       await onSuccess?.()
       onBack()
       return data
     } catch (error: any) {
       setExportStatus('error')
+      const detail = error?.message || error
       showToast({
-        message: `Exception uploading file: ${error?.message || error}`,
+        message: t`Exception uploading file: ${detail}`,
         variant: 'error',
       })
       return null
@@ -664,7 +686,7 @@ export default function Upload({
           className='w-full'
           disabled={disabled}
           label={label}
-          placeholder={isAnalyzing ? 'Extracting...' : `Enter ${label}`}
+          placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
           required={required}
           rows={3}
           value={toTextValue(value)}
@@ -679,7 +701,7 @@ export default function Upload({
         className='w-full'
         disabled={disabled}
         label={label}
-        placeholder={isAnalyzing ? 'Extracting...' : `Enter ${label}`}
+        placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
         required={required}
         value={toTextValue(value)}
         type={
@@ -699,7 +721,7 @@ export default function Upload({
 
   const copyMetadata = async () => {
     await navigator.clipboard.writeText(safeJson(buildMetadata()))
-    showToast({ message: 'Metadata copied.', variant: 'success' })
+    showToast({ message: t`Metadata copied.`, variant: 'success' })
   }
 
   if (!fileData) {
@@ -708,7 +730,7 @@ export default function Upload({
         <div className='flex items-center justify-between border-b border-gray-3 bg-surface px-6 py-4 md:px-8'>
           <div className='flex items-start gap-3'>
             <IconButton
-              ariaLabel='Back'
+              ariaLabel={t`Back`}
               color='gray'
               icon='lucide:arrow-left'
               size='sm'
@@ -717,12 +739,11 @@ export default function Upload({
             />
             <div>
               <h1 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-                Upload Files
+                {t`Upload Files`}
               </h1>
 
               <p className='text-13/5 text-gray-11'>
-                Upload documents securely, assign metadata, and organize files
-                within your repository for efficient search and management.
+                {t`Upload documents securely, assign metadata, and organize files within your repository for efficient search and management.`}
               </p>
             </div>
           </div>
@@ -732,12 +753,11 @@ export default function Upload({
             <div className='flex w-full max-w-5xl flex-col items-center gap-5'>
               <AnimateSlideUp className='space-y-1 text-center'>
                 <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
-                  Intelligent{' '}
-                  <span className='text-[var(--primary-9)]'>AP Agent</span>
+                  {t`Intelligent`}{' '}
+                  <span className='text-[var(--primary-9)]'>{t`AP Agent`}</span>
                 </h1>
                 <p className='mx-auto max-w-xl text-sm font-medium text-[var(--gray-10)]'>
-                  Streamline your Accounts Payable. Automatically process
-                  invoices, match Purchase Orders, and gain complete visibility.
+                  {t`Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility.`}
                 </p>
               </AnimateSlideUp>
 
@@ -778,13 +798,13 @@ export default function Upload({
                       </div>
                       <div className='text-center'>
                         <h2 className='text-base font-medium tracking-tight text-[var(--gray-13)]'>
-                          Drop your file here, or{' '}
+                          {t`Drop your file here, or`}{' '}
                           <span className='text-[var(--primary-9)]'>
-                            browse
+                            {t`browse`}
                           </span>
                         </h2>
                         <p className='text-xs font-medium text-[var(--gray-9)]'>
-                          Supports PDF and Images · Max 4 MB
+                          {t`Supports PDF and Images · Max 4 MB`}
                         </p>
                       </div>
                     </AnimateStagger>
@@ -808,20 +828,20 @@ export default function Upload({
                 {
                   color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
                   icon: 'tabler:bolt',
-                  sub: 'Process documents faster with our agentic pipeline',
-                  title: 'Lightning Fast',
+                  sub: t`Process documents faster with our agentic pipeline`,
+                  title: t`Lightning Fast`,
                 },
                 {
                   color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
                   icon: 'tabler:sparkles',
-                  sub: 'Industry-leading extraction accuracy',
-                  title: '100% Accuracy',
+                  sub: t`Industry-leading extraction accuracy`,
+                  title: t`100% Accuracy`,
                 },
                 {
                   color: 'text-[var(--green-11)] bg-[var(--green-2)]',
                   icon: 'tabler:clock',
-                  sub: 'Support for PDF, images, and scanned documents',
-                  title: 'Any Format',
+                  sub: t`Support for PDF, images, and scanned documents`,
+                  title: t`Any Format`,
                 },
               ].map((item, idx) => (
                 <AnimateEntrancePop delay={0.4 + idx * 0.1} key={idx}>
@@ -867,7 +887,7 @@ export default function Upload({
     <AnimateFadeIn className='relative flex h-full max-h-[calc(100vh-80px)] flex-col overflow-x-hidden overflow-y-auto bg-surface-muted px-6 py-5'>
       <div className='mx-auto flex w-full max-w-7xl flex-col gap-4'>
         <div className='flex items-center justify-between gap-4 rounded-2xl border border-[var(--gray-3)] bg-surface px-5 py-4 shadow-sm'>
-          {PROCESS_STEPS.map((step, index, list) => {
+          {PROCESS_STEP_KEYS.map((step, index, list) => {
             const isComplete = isStepComplete(
               index,
               activeStepIndex,
@@ -919,24 +939,24 @@ export default function Upload({
                           : 'text-[var(--gray-9)]',
                       ].join(' ')}
                     >
-                      {step}
+                      {processStepLabels[step]}
                     </span>
 
                     {isAnalysisStep && isAnalyzing ? (
                       <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
-                        Analyzing document...
+                        {t`Analyzing document...`}
                       </span>
                     ) : null}
 
                     {isFieldsStep && isFieldsPhase ? (
                       <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
-                        Review fields before export...
+                        {t`Review fields before export...`}
                       </span>
                     ) : null}
 
                     {isDoneStep && isExporting ? (
                       <span className='mt-1 block text-[11px] font-medium text-[var(--gray-10)]'>
-                        Exporting...
+                        {t`Exporting...`}
                       </span>
                     ) : null}
                   </div>
@@ -964,7 +984,7 @@ export default function Upload({
                 </div>
                 <div className='min-w-0'>
                   <h2 className='text-base font-bold text-[var(--gray-13)]'>
-                    Document Preview
+                    {t`Document Preview`}
                   </h2>
                   <p className='truncate text-xs font-medium text-[var(--gray-9)]'>
                     {fileData.name} ({formatFileSize(fileData.size)})
@@ -1022,12 +1042,12 @@ export default function Upload({
                 </div>
                 <div>
                   <h2 className='text-base font-bold text-[var(--gray-13)]'>
-                    Extracted Data
+                    {t`Extracted Data`}
                   </h2>
                   <p className='text-xs font-medium text-[var(--gray-9)]'>
                     {isAnalyzing
-                      ? 'Extracting fields...'
-                      : `${repositoryFields.length} fields ready`}
+                      ? t`Extracting fields...`
+                      : t`${repositoryFields.length} fields ready`}
                   </p>
                 </div>
               </div>
@@ -1043,7 +1063,7 @@ export default function Upload({
                   ].join(' ')}
                   onClick={() => setActiveTab('fields')}
                 >
-                  Fields
+                  {t`Fields`}
                 </button>
                 <button
                   type='button'
@@ -1055,7 +1075,7 @@ export default function Upload({
                   ].join(' ')}
                   onClick={() => setActiveTab('json')}
                 >
-                  JSON
+                  {t`JSON`}
                 </button>
               </div>
             </div>
@@ -1068,7 +1088,7 @@ export default function Upload({
                     name='tabler:loader-2'
                   />
                   <p className='text-sm font-medium text-[var(--gray-11)]'>
-                    Extracting fields from document...
+                    {t`Extracting fields from document...`}
                   </p>
                 </div>
               ) : null}
@@ -1084,7 +1104,7 @@ export default function Upload({
 
                     {!repositoryFields.length ? (
                       <div className='rounded-xl border border-dashed border-[var(--gray-4)] p-8 text-center text-sm font-medium text-[var(--gray-9)]'>
-                        No repository fields configured.
+                        {t`No repository fields configured.`}
                       </div>
                     ) : null}
                   </div>
@@ -1092,13 +1112,13 @@ export default function Upload({
               ) : (
                 <div className='relative h-full max-h-full'>
                   <button
-                    aria-label='Copy JSON'
+                    aria-label={t`Copy JSON`}
                     className='absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border border-[var(--gray-3)] bg-surface/95 px-2.5 py-1.5 text-xs font-semibold text-[var(--gray-11)] shadow-sm backdrop-blur-sm hover:bg-[var(--gray-2)]'
                     type='button'
                     onClick={copyMetadata}
                   >
                     <Copy size={14} />
-                    Copy
+                    {t`Copy`}
                   </button>
                   <pre className='h-full max-h-full overflow-auto rounded-xl bg-[var(--gray-1)] p-4 pt-12 text-xs leading-6 text-[var(--gray-12)]'>
                     {safeJson(buildMetadata())}
@@ -1126,7 +1146,7 @@ export default function Upload({
                     type='button'
                     onClick={handleCancelUpload}
                   >
-                    Cancel
+                    {t`Cancel`}
                   </button>
                 ) : null}
               </div>
@@ -1144,7 +1164,7 @@ export default function Upload({
                 ) : (
                   <ArrowUpFromLine size={15} />
                 )}
-                {isExporting ? 'Exporting...' : 'Export'}
+                {isExporting ? t`Exporting...` : t`Export`}
               </Button>
             </div>
           </AnimateSlideUp>

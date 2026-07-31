@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import cn from '@/utils/cn'
 import PaginationControls from './PaginationControls'
@@ -17,7 +18,7 @@ export interface Props {
 
 const Pagination = ({
   className,
-  itemLabel = 'Items',
+  itemLabel,
   page,
   pageSize,
   showPageNumbers = true,
@@ -25,6 +26,8 @@ const Pagination = ({
   onPageChange,
   onPageSizeChange,
 }: Props) => {
+  const { t } = useLingui()
+  const resolvedItemLabel = itemLabel || t`Items`
   const totalPages = pageSize === 0 ? 1 : Math.ceil(totalItems / pageSize)
 
   const handlePageSizeChange = (value: number) => {
@@ -44,7 +47,7 @@ const Pagination = ({
     <div className={_className}>
       <PaginationSummary
         currentPage={page}
-        itemLabel={itemLabel}
+        itemLabel={resolvedItemLabel}
         pageSize={pageSize}
         totalItems={totalItems}
       />
@@ -57,7 +60,7 @@ const Pagination = ({
           />
           <PaginationItemsPerPage
             className='hidden lg:flex'
-            itemLabel={itemLabel}
+            itemLabel={resolvedItemLabel}
             pageSize={pageSize}
             onPageSizeChange={handlePageSizeChange}
           />
@@ -67,7 +70,7 @@ const Pagination = ({
       {!showPageNumbers && (
         <div className='flex items-center justify-end gap-2'>
           <PaginationItemsPerPage
-            itemLabel={itemLabel}
+            itemLabel={resolvedItemLabel}
             pageSize={pageSize}
             onPageSizeChange={handlePageSizeChange}
           />

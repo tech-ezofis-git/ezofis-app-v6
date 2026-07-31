@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -5,7 +6,6 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import type { IRequestMeta } from '../types'
-import requestStore from '../stores/useRequestStore'
 interface Props {
   // New Props
   activeTab: string
@@ -39,6 +39,7 @@ const Header = ({
   setActiveTab,
   setWorkflow,
 }: Props) => {
+  const { t } = useLingui()
   const processedCount =
     Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
   const inboxCount = Number(metaData?.inboxCount ?? 0)
@@ -55,17 +56,23 @@ const Header = ({
         onChange={(val) => setActiveTab(val as string)}
       >
         <Tab
-          label={isLoading ? 'Invoices' : `Invoices (${inboxCount})`}
+          label={
+            isLoading ? t`Invoices` : t`Invoices (${inboxCount})`
+          }
           value='Inbox'
         />
         <Tab
           value='Exceptions'
           label={
-            isLoading ? 'Exceptions' : `Exceptions (${resolvedExceptionsCount})`
+            isLoading
+              ? t`Exceptions`
+              : t`Exceptions (${resolvedExceptionsCount})`
           }
         />
         <Tab
-          label={isLoading ? 'Processed' : `Processed (${processedCount})`}
+          label={
+            isLoading ? t`Processed` : t`Processed (${processedCount})`
+          }
           value='Processed'
         />
       </Tabs>

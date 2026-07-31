@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useEffect } from 'react'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
@@ -13,6 +14,7 @@ import ErpSystem from './components/ErpSystem'
 const OAUTH_ERP_SYSTEMS = ['QuickBooks'] as const
 
 const StepTwo = () => {
+  const { t } = useLingui()
   const setStep = setupStore((state) => state.setStep)
   const erpSettings = setupStore((state) => state.erpSettings)
   const setErpSettings = setupStore((state) => state.setErpSettings)
@@ -43,7 +45,6 @@ const StepTwo = () => {
         typeof event.data.connector === 'string' ? event.data.connector : ''
       const current = setupStore.getState().erpSettings
 
-      // Ignore late OAuth success after the user switched away from ERP OAuth
       if (
         !current.system ||
         !OAUTH_ERP_SYSTEMS.includes(
@@ -129,7 +130,7 @@ const StepTwo = () => {
   const selectionAlert = (() => {
     if (erpSettings.system === 'PREDEFINED') {
       return {
-        text: 'Demo data selected. This data will be used for invoice processing.',
+        text: t`Demo data selected. This data will be used for invoice processing.`,
         variant: 'green' as const,
       }
     }
@@ -139,13 +140,13 @@ const StepTwo = () => {
       !erpSettings.isParsingTemplate
     ) {
       return {
-        text: 'Upload PO master file selected. A PO master file is required to proceed with the setup.',
+        text: t`Upload PO master file selected. A PO master file is required to proceed with the setup.`,
         variant: 'primary' as const,
       }
     }
     if (isOAuthErp && !erpSettings.isConnected) {
       return {
-        text: `${erpSettings.system} selected. Click Connect ${erpSettings.system} to link your account.`,
+        text: t`${erpSettings.system} selected. Click Connect ${erpSettings.system} to link your account.`,
         variant: 'primary' as const,
       }
     }
@@ -154,14 +155,14 @@ const StepTwo = () => {
 
   return (
     <StepLayout
-      description='ERP data will be used to validate incoming invoices to match with PO information and supplier data.'
-      title='Connect your accounting software'
+      description={t`ERP data will be used to validate incoming invoices to match with PO information and supplier data.`}
+      title={t`Connect your accounting software`}
       footer={
         <StepFooter>
           <Button
             color='gray'
             icon='lucide:arrow-left'
-            label='Back'
+            label={t`Back`}
             variant='outline'
             onClick={() => setStep(0)}
           />
@@ -170,7 +171,7 @@ const StepTwo = () => {
               {erpSettings.isConnecting && (
                 <Button
                   color='gray'
-                  label='Cancel'
+                  label={t`Cancel`}
                   variant='outline'
                   onClick={() =>
                     setErpSettings({ ...erpSettings, isConnecting: false })
@@ -179,7 +180,7 @@ const StepTwo = () => {
               )}
               <Button
                 icon='lucide:plug'
-                label={`Connect ${erpSettings.system}`}
+                label={t`Connect ${erpSettings.system}`}
                 loading={erpSettings.isConnecting}
                 onClick={handleConnect}
               />
@@ -187,7 +188,7 @@ const StepTwo = () => {
           ) : (
             <Button
               disabled={!canContinue}
-              label='Continue'
+              label={t`Continue`}
               suffixIcon='tabler:arrow-right'
               onClick={() => setStep(2)}
             />
@@ -209,7 +210,7 @@ const StepTwo = () => {
         erpSettings.templateUploaded && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text='Your PO master file uploaded successfully. You can proceed to the next step.'
+              text={t`Your PO master file uploaded successfully. You can proceed to the next step.`}
               variant='green'
             />
           </AnimateSlideUp>
@@ -220,7 +221,7 @@ const StepTwo = () => {
         erpSettings.system !== 'FILE_BASED_IMPORT' && (
           <AnimateSlideUp delay={0.4}>
             <Alert
-              text='Your QuickBooks account is connected. PO and supplier data will be used to match and validate invoices.'
+              text={t`Your QuickBooks account is connected. PO and supplier data will be used to match and validate invoices.`}
               variant='green'
             />
           </AnimateSlideUp>

@@ -2,6 +2,7 @@ import { Divider, Rating, Skeleton, Stack, Tooltip } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import type { Column } from '@/components/base/data-table/types'
 import type { Question } from '@/pages/form-builder/store/formStore'
 import formApi from '@/api/form/form'
@@ -150,6 +151,7 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
 }
 
 const FormEntriesPage = () => {
+  const { t } = useLingui()
   const { formId } = useParams({ strict: false }) as any
   const navigate = useNavigate()
 
@@ -533,7 +535,7 @@ const FormEntriesPage = () => {
     const colList: Column[] = [
       {
         id: 'id',
-        label: 'Entry #',
+        label: t`Entry #`,
         // minSize: 140,
         size: 140,
         renderCell: (row: any) => (
@@ -549,7 +551,7 @@ const FormEntriesPage = () => {
 
     // Render dynamic columns from fields
     fields.forEach((field: Question) => {
-      const fieldLabel = field.label || 'Untitled Field'
+      const fieldLabel = field.label || t`Untitled Field`
       const isStatusCol =
         fieldLabel.toLowerCase().trim() === 'matched status'
 
@@ -622,7 +624,7 @@ const FormEntriesPage = () => {
                 <IconButton
                   color='primary'
                   icon='lucide:table'
-                  title='View Line Items Table'
+                  title={t`View Line Items Table`}
                   variant='ghost'
                   onClick={() =>
                     setActiveLineItems({
@@ -633,7 +635,7 @@ const FormEntriesPage = () => {
                   }
                 />
                 <span className='text-[10px] font-semibold text-gray-7'>
-                  ({parsedData.length} items)
+                  ({parsedData.length} {t`items`})
                 </span>
               </div>
             )
@@ -652,21 +654,21 @@ const FormEntriesPage = () => {
       colList.push(
         {
           id: 'empty-1',
-          label: 'Placeholder Column 1',
+          label: t`Placeholder Column 1`,
           size: 180,
           renderCell: () => (
             <span className='text-[var(--gray-6)] italic'>
-              Empty form field
+              {t`Empty form field`}
             </span>
           ),
         },
         {
           id: 'empty-2',
-          label: 'Placeholder Column 2',
+          label: t`Placeholder Column 2`,
           size: 180,
           renderCell: () => (
             <span className='text-[var(--gray-6)] italic'>
-              Empty form field
+              {t`Empty form field`}
             </span>
           ),
         },
@@ -676,7 +678,7 @@ const FormEntriesPage = () => {
     colList.push(
       {
         id: 'createdBy',
-        label: 'Created By',
+        label: t`Created By`,
         size: 180,
         renderCell: (row: any) => (
           <span className='font-medium text-[var(--gray-12)]'>
@@ -690,7 +692,7 @@ const FormEntriesPage = () => {
         hideHeader: true,
         id: 'actions',
         isDisplayColumn: true,
-        label: 'Actions',
+        label: t`Actions`,
         showMenu: false,
         size: 80,
         renderCell: (row: any) => (
@@ -700,7 +702,7 @@ const FormEntriesPage = () => {
           >
             {tabValue === 'Browse' ? (
               <>
-                <Tooltip label='Edit Entry'>
+                <Tooltip label={t`Edit Entry`}>
                   <IconButton
                     color='gray'
                     icon='lucide:pencil'
@@ -708,7 +710,7 @@ const FormEntriesPage = () => {
                     onClick={() => openEditEntry(row)}
                   />
                 </Tooltip>
-                <Tooltip label='Move to Trash'>
+                <Tooltip label={t`Move to Trash`}>
                   <IconButton
                     color='red'
                     icon='lucide:trash-2'
@@ -721,7 +723,7 @@ const FormEntriesPage = () => {
               </>
             ) : (
               <>
-                <Tooltip label='Restore Entry'>
+                <Tooltip label={t`Restore Entry`}>
                   <IconButton
                     color='green'
                     icon='lucide:rotate-ccw'
@@ -729,7 +731,7 @@ const FormEntriesPage = () => {
                     onClick={() => handleRestore(row.id)}
                   />
                 </Tooltip>
-                <Tooltip label='Permanent Delete'>
+                <Tooltip label={t`Permanent Delete`}>
                   <IconButton
                     color='red'
                     icon='lucide:trash-2'
@@ -747,7 +749,7 @@ const FormEntriesPage = () => {
     )
 
     return colList
-  }, [fields, tabValue, activeLineItems, usersData, paginatedEntries])
+  }, [fields, tabValue, activeLineItems, usersData, paginatedEntries, t])
 
   // Initialize selected columns (all columns visible by default)
   const [initialVisibilitySet, setInitialVisibilitySet] = useState(false)
@@ -878,7 +880,7 @@ const FormEntriesPage = () => {
         <Button
           className='mt-6'
           icon='lucide:rotate-cw'
-          label='Retry Loading'
+          label={t`Retry Loading`}
           onClick={() => {
             refetch()
             refetchEntries()
@@ -899,7 +901,7 @@ const FormEntriesPage = () => {
             <IconButton
               color='gray'
               icon='lucide:arrow-left'
-              title='Back to Entries'
+              title={t`Back to Entries`}
               variant='ghost'
               onClick={closeSidebar}
             />
@@ -912,26 +914,26 @@ const FormEntriesPage = () => {
             </div>
             <div className='flex min-w-0 flex-col'>
               <h3 className='truncate text-[14px] font-extrabold text-gray-13'>
-                {isAddOpen ? 'New Form Entry' : selectedEntry?.id}
+                {isAddOpen ? t`New Form Entry` : selectedEntry?.id}
               </h3>
               <p className='truncate text-[10px] font-semibold tracking-wider text-gray-7 uppercase'>
                 {isAddOpen
-                  ? 'Submit answers to form'
-                  : 'Modify submitted answers'}
+                  ? t`Submit answers to form`
+                  : t`Modify submitted answers`}
               </p>
             </div>
           </div>
           <div className='flex items-center gap-3'>
             <Button
               color='gray'
-              label='Cancel'
+              label={t`Cancel`}
               variant='outline'
               onClick={closeSidebar}
             />
             <Button
               color='primary'
               icon='lucide:save'
-              label={isAddOpen ? 'Submit' : 'Save Changes'}
+              label={isAddOpen ? t`Submit` : t`Save Changes`}
               variant='solid'
               onClick={handleSaveEntry}
             />
@@ -1264,7 +1266,7 @@ const FormEntriesPage = () => {
           <IconButton
             color='gray'
             icon='lucide:arrow-left'
-            title='Back to Forms'
+            title={t`Back to Forms`}
             variant='ghost'
             onClick={() => navigate({ to: '/forms' })}
           />
@@ -1273,15 +1275,15 @@ const FormEntriesPage = () => {
             value={tabValue}
             onChange={(val) => setTabValue(val || 'Browse')}
           >
-            <Tab label='Browse' value='Browse' />
-            <Tab label='Trash' value='Trash' />
+            <Tab label={t`Browse`} value='Browse' />
+            <Tab label={t`Trash`} value='Trash' />
           </Tabs>
         </div>
 
         <Button
           color='primary'
           icon='lucide:plus'
-          label='Add Entry'
+          label={t`Add Entry`}
           variant='solid'
           onClick={openNewEntry}
         />
@@ -1299,25 +1301,25 @@ const FormEntriesPage = () => {
             <div>
               <h4 className='text-sm font-semibold text-red-12'>
                 {deletingEntry.type === 'trash'
-                  ? 'Move Entry to Trash'
-                  : 'Permanently Delete Entry'}
+                  ? t`Move Entry to Trash`
+                  : t`Permanently Delete Entry`}
               </h4>
               <p className='mt-0.5 text-xs text-red-11'>
                 {deletingEntry.type === 'trash' ? (
                   <>
-                    Are you sure you want to move{' '}
+                    {t`Are you sure you want to move`}{' '}
                     <span className='font-bold text-red-12'>
                       {deletingEntry.id}
                     </span>{' '}
-                    to Trash?
+                    {t`to Trash?`}
                   </>
                 ) : (
                   <>
-                    Are you sure you want to permanently delete{' '}
+                    {t`Are you sure you want to permanently delete`}{' '}
                     <span className='font-bold text-red-12'>
                       {deletingEntry.id}
                     </span>
-                    ? This action is permanent and cannot be undone.
+                    ? {t`This action is permanent and cannot be undone.`}
                   </>
                 )}
               </p>
@@ -1330,7 +1332,7 @@ const FormEntriesPage = () => {
               variant='subtle'
               onClick={() => setDeletingEntry(null)}
             >
-              Cancel
+              {t`Cancel`}
             </Button>
             <Button
               color='red'
@@ -1347,8 +1349,8 @@ const FormEntriesPage = () => {
               }}
             >
               {deletingEntry.type === 'trash'
-                ? 'Move to Trash'
-                : 'Delete Permanently'}
+                ? t`Move to Trash`
+                : t`Delete Permanently`}
             </Button>
           </div>
         </div>
@@ -1360,7 +1362,7 @@ const FormEntriesPage = () => {
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={table as any} />}
-            searchPlaceholder='Search entries...'
+            searchPlaceholder={t`Search entries...`}
             searchQuery=''
             trailingActions={<TableExport table={table as any} />}
             actionButtons={[
@@ -1370,7 +1372,7 @@ const FormEntriesPage = () => {
                 icon: 'tabler:refresh',
                 id: 'refresh',
                 isIconButton: true,
-                tooltip: 'Refresh',
+                tooltip: t`Refresh`,
                 variant: 'outline',
                 onClick: () => {
                   refetch()
@@ -1383,16 +1385,16 @@ const FormEntriesPage = () => {
                 ? [
                   {
                     id: nameFieldFilter.id,
-                    label: nameFieldFilter.label || 'Name',
+                    label: nameFieldFilter.label || t`Name`,
                     options: nameFieldFilter.options || [],
                     searchable: true,
-                    searchPlaceholder: 'Search name...',
+                    searchPlaceholder: t`Search name...`,
                   },
                 ]
                 : []),
               {
                 id: 'createdBy',
-                label: 'Created By',
+                label: t`Created By`,
                 options: createdByOptions,
               },
             ]}
@@ -1400,7 +1402,7 @@ const FormEntriesPage = () => {
               {
                 dataType: 'date',
                 id: 'createdAt',
-                label: 'Created Date',
+                label: t`Created Date`,
               },
               ...moreEntryFilters,
             ]}
@@ -1441,7 +1443,7 @@ const FormEntriesPage = () => {
           </div>
           <Pagination
             className='mt-4 shrink-0'
-            itemLabel='Entries'
+            itemLabel={t`Entries`}
             page={page}
             pageSize={pageSize}
             showPageNumbers={false}
