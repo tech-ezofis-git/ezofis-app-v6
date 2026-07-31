@@ -1250,6 +1250,7 @@ export default function DmsFolderConfiguration({
                 folderCoordinator={folderCoordinator}
                 folderName={folderName}
                 folderOwner={folderOwner}
+                onBack={onBack}
                 setStep={setStep}
                 step={step}
                 storage={storage}
@@ -2175,6 +2176,7 @@ function WizardContent({
   folderCoordinator,
   folderName,
   folderOwner,
+  onBack,
   step,
   storage,
   storageConnectorId,
@@ -2199,6 +2201,7 @@ function WizardContent({
   folderCoordinator: SelectOption | null
   folderName: string
   folderOwner: SelectOption | null
+  onBack?: () => void
   setDescription: Dispatch<SetStateAction<string>>
   setDisplayMode: Dispatch<SetStateAction<string>>
   setFields: Dispatch<SetStateAction<FieldRow[]>>

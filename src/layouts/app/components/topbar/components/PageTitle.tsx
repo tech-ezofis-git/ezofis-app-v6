@@ -30,13 +30,17 @@ const PageTitle = () => {
   const foldersNavigate = useFoldersTopbarStore((state) => state.onNavigate)
 
   const current = matches[matches.length - 1]
-  const isFormEntriesRoute = current?.routeId === '/_app/forms_/$formId/entries'
-  const isSettingsRoute = current?.routeId === '/_app/settings'
-  const isFoldersRoute = current?.routeId === '/_app/folders'
-  const isRequestsRoute = current?.routeId === '/_app/requests'
-  const isWorkflowsRoute = current?.routeId === '/_app/workflows'
+  const routeId = String(current?.routeId ?? '')
+  const isFormEntriesRoute = routeId === '/_app/forms_/$formId/entries'
+  const isSettingsRoute = routeId === '/_app/settings' || routeId === '/embed/settings'
+  const isFoldersRoute = routeId === '/_app/folders' || routeId === '/embed/folders'
+  const isRequestsRoute = routeId === '/_app/requests' || routeId === '/embed/requests'
+  const isWorkflowsRoute = routeId === '/_app/workflows' || routeId === '/embed/workflows'
   const isDashboardRoute =
-    current?.routeId === '/_app/' || current?.routeId === '/_app'
+    routeId === '/_app/' ||
+    routeId === '/_app' ||
+    routeId === '/embed/dashboard' ||
+    routeId === '/embed'
 
   const { formId } = useParams({ strict: false }) as any
   const { data: formData } = useQuery({

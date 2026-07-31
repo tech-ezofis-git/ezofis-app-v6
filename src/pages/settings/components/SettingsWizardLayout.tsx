@@ -72,8 +72,11 @@ export default function SettingsWizardLayout({
       ],
       onNavigate: (key: string) => {
         if (key === 'settings') {
-          onCancel?.()
-          onBackToSettings?.()
+          if (onBackToSettings) {
+            onBackToSettings()
+          } else {
+            onCancel?.()
+          }
         } else if (key === 'module') {
           onCancel?.()
         }

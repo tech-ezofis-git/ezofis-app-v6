@@ -40,6 +40,7 @@ export function createSettingsSetupBreadcrumbs(
   moduleLabel: string,
   setupLabel: string,
   {
+    onBackToSettings,
     onCancelSetup,
   }: {
     onBackToSettings?: () => void
@@ -54,9 +55,15 @@ export function createSettingsSetupBreadcrumbs(
       { label: setupLabel },
     ],
     onNavigate: (key) => {
-      // From create/edit setup, breadcrumb clicks return to the module list
-      // (not the Settings home page).
-      if (key === 'settings' || key === 'module') onCancelSetup()
+      if (key === 'settings') {
+        if (onBackToSettings) {
+          onBackToSettings()
+        } else {
+          onCancelSetup()
+        }
+      } else if (key === 'module') {
+        onCancelSetup()
+      }
     },
   }
 }

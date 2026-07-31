@@ -35,8 +35,11 @@ export default function FolderSecurity({
       ],
       onNavigate: (key: string) => {
         if (key === 'settings') {
-          onBack()
-          onBackToSettings?.()
+          if (onBackToSettings) {
+            onBackToSettings()
+          } else {
+            onBack()
+          }
         } else if (key === 'folder-configuration') {
           onBack()
         }
