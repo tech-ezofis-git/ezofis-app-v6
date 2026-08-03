@@ -659,25 +659,25 @@ const mapApiFieldsToFieldRows = (
     return defaultFields
   }
 
-  const mapped = apiFields
-    .map((field, index) => {
-      const id = String(field.id || `${field.name || 'field'}-${index}`)
-      const fieldName = String(field.name || field.fieldName || '').trim()
-      if (!fieldName) return null
+  const mapped: FieldRow[] = []
 
-      return {
-        dataType: String(field.dataType || 'SHORT_TEXT'),
-        fieldName,
-        iconKey: field.iconKey ? String(field.iconKey) : undefined,
-        id,
-        includeInFolderStructure: Boolean(field.includeInFolderStructure),
-        isMandatory: Boolean(field.isMandatory),
-        level: Number(field.level) || 0,
-        orderId: Number(field.orderId) || index + 1,
-      } satisfies FieldRow
+  apiFields.forEach((field, index) => {
+    const fieldName = String(field.name || field.fieldName || '').trim()
+    if (!fieldName) return
+
+    mapped.push({
+      dataType: String(field.dataType || 'SHORT_TEXT'),
+      fieldName,
+      iconKey: field.iconKey ? String(field.iconKey) : undefined,
+      id: String(field.id || `${fieldName}-${index}`),
+      includeInFolderStructure: Boolean(field.includeInFolderStructure),
+      isMandatory: Boolean(field.isMandatory),
+      level: Number(field.level) || 0,
+      orderId: Number(field.orderId) || index + 1,
     })
-    .filter((field): field is FieldRow => Boolean(field))
-    .sort((left, right) => left.orderId - right.orderId)
+  })
+
+  mapped.sort((left, right) => left.orderId - right.orderId)
 
   return mapped.length > 0
     ? recalculateFieldHierarchy(mapped)
