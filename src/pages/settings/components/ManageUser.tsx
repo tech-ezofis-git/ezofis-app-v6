@@ -241,7 +241,7 @@ function LoginTypeIcon({
   type: string
   className?: string
 }) {
-  const iconClass = cn('size-4 shrink-0', className)
+  const iconClass = cn('size-3.5 shrink-0', className)
   const normalized = String(type || '').trim().toLowerCase()
 
   switch (normalized) {
@@ -258,11 +258,11 @@ function LoginTypeIcon({
     case 'ldap':
     case 'active directory':
     case 'activedirectory':
-      return <Server className={cn(iconClass, 'text-[var(--blue-9)]')} />
+      return <Server className={cn(iconClass, 'text-[var(--gray-11)]')} />
     case 'password':
     case 'ezofis':
     default:
-      return <KeyRound className={cn(iconClass, 'text-[var(--orange-9)]')} />
+      return <KeyRound className={cn(iconClass, 'text-[var(--gray-11)]')} />
   }
 }
 
@@ -2160,7 +2160,7 @@ function StatusBadge({ status }: { status: UserStatus }) {
 
   return (
     <span
-      className={`inline-flex items-center rounded-[10px] border px-2.5 py-0.5 font-semibold ${className}`}
+      className={`inline-flex items-center rounded-[10px] border px-2.5 py-0.5 font-normal ${className}`}
     >
       {label}
     </span>

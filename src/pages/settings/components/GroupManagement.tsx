@@ -792,31 +792,33 @@ function GroupSetup({
 
       {activeStep === 1 ? (
         <SettingsFormSection>
-          <InputSelectMultiple
-            className='bg-surface'
-            label='Group Members *'
-            options={userOptions}
-            placeholder='Search and select users...'
-            value={selectedMembers}
-            clearable
-            searchable
-            error={
-              showErrors && !selectedMembers.length
-                ? 'Please fill the required field: Group Members'
-                : undefined
-            }
-            onChange={(value) =>
-              onMembersChange((value || []) as SettingsOption[])
-            }
-          />
-          <SettingsSelectedChips
-            items={selectedMembers}
-            onRemove={(id) =>
-              onMembersChange(
-                selectedMembers.filter((member) => member.id !== id),
-              )
-            }
-          />
+          <div className='flex flex-col gap-2'>
+            <InputSelectMultiple
+              label='Group Members *'
+              options={userOptions}
+              placeholder='Search and select users...'
+              value={selectedMembers}
+              clearable
+              searchable
+              error={
+                showErrors && !selectedMembers.length
+                  ? 'Please fill the required field: Group Members'
+                  : undefined
+              }
+              onChange={(value) =>
+                onMembersChange((value || []) as SettingsOption[])
+              }
+            />
+            <SettingsSelectedChips
+              className='mt-0'
+              items={selectedMembers}
+              onRemove={(id) =>
+                onMembersChange(
+                  selectedMembers.filter((member) => member.id !== id),
+                )
+              }
+            />
+          </div>
         </SettingsFormSection>
       ) : null}
 
@@ -867,7 +869,7 @@ function StatusBadge({ status }: { status: SettingsGroup['status'] }) {
 
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${tone}`}
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-normal capitalize ${tone}`}
     >
       {status}
     </span>

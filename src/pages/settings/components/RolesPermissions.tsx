@@ -1562,7 +1562,7 @@ function RoleList({
           return (
             <span
               className={[
-                'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-semibold',
+                'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-normal',
                 isActive
                   ? 'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]'
                   : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',

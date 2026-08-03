@@ -11,6 +11,7 @@ interface Props extends InputProps {
   autoFocus?: boolean
   leftSection?: ReactNode
   leftSectionPointerEvents?: 'auto' | 'none'
+  leftSectionWidth?: number | string
   rightSection?: ReactNode
   rightSectionPointerEvents?: 'auto' | 'none'
   rightSectionWidth?: number | string
@@ -26,6 +27,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
       clearable,
       description,
       label,
+      leftSectionWidth,
       optional,
       required,
       rightSection,
@@ -66,6 +68,7 @@ const InputText = forwardRef<HTMLInputElement, Props>(
         description={rest.error ? undefined : description}
         inputWrapperOrder={inputWrapperOrder}
         label={_label}
+        leftSectionWidth={leftSectionWidth}
         ref={ref}
         rightSection={_rightSection}
         rightSectionWidth={rightSectionWidth}

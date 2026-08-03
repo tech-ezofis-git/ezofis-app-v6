@@ -21,7 +21,12 @@ interface Props<TData> extends ComponentProps<'th'> {
   table: TanstackTable<TData>
 }
 
-const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
+const TableHeaderCell = <TData,>({
+  header,
+  style,
+  table,
+  className,
+}: Props<TData>) => {
   const [opened, setOpened] = useState(false)
 
   const column = header.column
@@ -97,7 +102,10 @@ const TableHeaderCell = <TData,>({ header, style, table }: Props<TData>) => {
 
   return (
     <Th
-      className='group/dtcell min-h-10 max-w-0 overflow-visible bg-[var(--gray-2)] py-0 [--pinned-bg:var(--gray-2)]'
+      className={cn(
+        'group/dtcell min-h-10 max-w-0 overflow-visible bg-[var(--gray-2)] py-0 [--pinned-bg:var(--gray-2)]',
+        className,
+      )}
       key={header.id}
       style={{
         ...getColumnPinnedStyles(column, table),

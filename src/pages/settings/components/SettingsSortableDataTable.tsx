@@ -156,6 +156,7 @@ export default function SettingsSortableDataTable<TData>({
                   <Tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <TableHeaderCell
+                        className={header.column.columnDef.meta?.className}
                         header={header}
                         key={header.id}
                         table={table}
@@ -241,7 +242,7 @@ function SortableDataRow<TData>({
       {row.getVisibleCells().map((cell) => (
         <Td
           className={cn(
-            'max-w-0 overflow-visible py-2.5',
+            'max-w-0 overflow-visible py-1.5',
             cell.column.columnDef.meta?.className,
           )}
           key={cell.id}

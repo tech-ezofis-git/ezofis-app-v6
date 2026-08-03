@@ -1,6 +1,6 @@
 import { Combobox as MantineCombobox, useCombobox } from '@mantine/core'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
-import { Check, Folder, Link2 } from 'lucide-react'
+import { Check, Folder } from 'lucide-react'
 import {
   type Dispatch,
   type ReactNode,
@@ -12,13 +12,14 @@ import {
   useState,
 } from 'react'
 import type { Option } from '@/types/option'
-import { createRepository } from '@/api/createFolder'
-import { getRepositorys } from '@/api/v6/folder/folder'
-import { getUsers } from '@/api/v6/user'
+import { createRepository, deleteRepository, updateRepository } from '@/api/createFolder'
+import { getRepositoryById, getRepositorys } from '@/api/v6/folder/folder'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
+import StorageLogo from '@/assets/brands/storage.svg'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
@@ -38,7 +39,9 @@ import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import { DynamicIcon } from '@/pages/folders/components/icons'
-import authUserStore from '@/stores/authUserStore'
+import BrandCard from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/BrandCard'
+import SectionHeader from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/SectionHeader'
+import { OrDivider } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/StepLayout'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
@@ -67,6 +70,7 @@ type DmsFolderConfigurationProps = {
 type FieldDisplayRow = FieldRow & {
   ancestorContinues: boolean[]
   depth: number
+  isFileNameField: boolean
   isLastAtDepth: boolean
 }
 
@@ -104,7 +108,7 @@ type SelectOption = {
   value?: string
 }
 
-type WizardStep = 1 | 2 | 3 | 4 | 5 | 6
+type WizardStep = 1 | 2 | 3 | 4 | 5
 
 type WizardStepItem = {
   description: string
@@ -223,7 +227,7 @@ const defaultFields: FieldRow[] = [
   {
     dataType: 'SINGLE_SELECT',
     fieldName: 'Document Type',
-    iconKey: 'document',
+    iconKey: 'folder',
     id: 'documentType',
     includeInFolderStructure: true,
     isMandatory: true,
@@ -234,7 +238,7 @@ const defaultFields: FieldRow[] = [
   {
     dataType: 'SHORT_TEXT',
     fieldName: 'PO Number',
-    iconKey: 'folder',
+    iconKey: 'document',
     id: 'poNumber',
     includeInFolderStructure: true,
     isMandatory: true,
@@ -285,12 +289,11 @@ const defaultFields: FieldRow[] = [
 ]
 
 const wizardSteps: WizardStepItem[] = [
-  { description: 'Name, owner & category', id: 1, title: 'Folder Details' },
+  { description: 'Name & description', id: 1, title: 'Folder Details' },
   { description: 'Storage provider', id: 2, title: 'Storage' },
   { description: 'Metadata fields', id: 3, title: 'Fields' },
   { description: 'Version strategy', id: 4, title: 'Versioning' },
   { description: 'ERP & sync mapping', id: 5, title: 'Integrations' },
-  { description: 'Security policies', id: 6, title: 'Security' },
 ]
 
 type StorageOption = {
@@ -318,25 +321,24 @@ const storageOptions: StorageOption[] = [
   {
     comingSoon: false,
     description:
-      'Use EZOFIS-managed storage with built-in encryption, access controls, and no external provider setup.',
+      'Default storage option provided with your account for immediate access.',
     features: [
       'Enterprise-grade encryption at rest',
       'No third-party account required',
       'Automatic backups and versioning support',
     ],
     id: 'EZOFIS Drive',
-    logo: '/favicon.svg',
+    logo: StorageLogo,
     status: 'Ready to use',
     storageProviderCode: 'EZOFIS',
     subtitle: 'Built-in secure storage',
-    title: 'EZOFIS Drive',
+    title: 'Use secure cloud storage',
     type: 'Built-in provider',
   },
   {
     comingSoon: false,
     connectorType: 'ONE_DRIVE',
-    description:
-      'Store folder documents in Microsoft OneDrive with Microsoft 365 sign-in and folder sync.',
+    description: 'Store folder documents in Microsoft OneDrive.',
     features: [
       'Microsoft 365 authentication',
       'Sync with existing OneDrive folders',
@@ -348,14 +350,13 @@ const storageOptions: StorageOption[] = [
     status: 'Connect required',
     storageProviderCode: 'ONE_DRIVE',
     subtitle: 'Microsoft OneDrive',
-    title: 'One Drive',
+    title: 'OneDrive',
     type: 'Microsoft cloud',
   },
   {
     comingSoon: false,
     connectorType: 'GOOGLE_DRIVE',
-    description:
-      'Connect Google Workspace to store files in Google Drive with shared drive support.',
+    description: 'Store folder documents in Google Drive.',
     features: [
       'Google Workspace sign-in',
       'Shared drive compatibility',
@@ -373,7 +374,7 @@ const storageOptions: StorageOption[] = [
   {
     comingSoon: true,
     description:
-      'Azure Blob storage integration for organizations using Microsoft Azure infrastructure.',
+      'Azure Blob storage integration for organizations using Microsoft Azure.',
     features: [
       'Azure AD authentication',
       'Blob container mapping',
@@ -411,12 +412,43 @@ const versionOptions = [
 ]
 
 const integrations = [
-  'SAP',
-  'Oracle ERP',
-  'Microsoft Dynamics',
-  'QuickBooks',
-  'Custom API',
-]
+  {
+    description: 'Configure ERP or system integrations later.',
+    icon: 'tabler:clock',
+    id: 'None',
+    title: 'Skip for now',
+  },
+  {
+    description: 'Sync folder documents and metadata with SAP ERP.',
+    icon: 'tabler:building-warehouse',
+    id: 'SAP',
+    title: 'SAP',
+  },
+  {
+    description: 'Connect Oracle ERP for invoice and master data sync.',
+    icon: 'tabler:database',
+    id: 'Oracle ERP',
+    title: 'Oracle ERP',
+  },
+  {
+    description: 'Integrate with Microsoft Dynamics for finance workflows.',
+    icon: 'tabler:brand-windows',
+    id: 'Microsoft Dynamics',
+    title: 'Microsoft Dynamics',
+  },
+  {
+    description: 'Link QuickBooks for accounting and payment updates.',
+    icon: 'tabler:receipt-2',
+    id: 'QuickBooks',
+    title: 'QuickBooks',
+  },
+  {
+    description: 'Use a custom API endpoint for your own systems.',
+    icon: 'tabler:api',
+    id: 'Custom API',
+    title: 'Custom API',
+  },
+] as const
 const REPOSITORY_FIELD_DATA_TYPES = [
   'SHORT_TEXT',
   'LONG_TEXT',
@@ -476,7 +508,27 @@ const formatDataTypeLabel = (value: string) =>
 
 const getFieldIconKey = (
   field: Pick<FieldRow, 'iconKey' | 'includeInFolderStructure'>,
-) => (field.includeInFolderStructure ? field.iconKey || 'folder' : 'document')
+  isFileNameField = false,
+) => {
+  if (isFileNameField) return 'document'
+  if (!field.includeInFolderStructure) return 'tag'
+
+  return field.iconKey &&
+    field.iconKey !== 'document' &&
+    field.iconKey !== 'tag'
+    ? field.iconKey
+    : 'folder'
+}
+
+const getFieldIconVariant = (
+  field: Pick<FieldRow, 'includeInFolderStructure'> & {
+    isFileNameField?: boolean
+  },
+): 'folder' | 'fileName' | 'metadata' => {
+  if (!field.includeInFolderStructure) return 'metadata'
+  if (field.isFileNameField) return 'fileName'
+  return 'folder'
+}
 
 const FIELD_TREE_STEP = 24
 
@@ -521,11 +573,21 @@ const buildAncestorContinues = (
 
 const buildUnifiedFieldRows = (fields: FieldRow[]): FieldDisplayRow[] => {
   // Keep folder-structure fields first as a tree, then metadata fields flat.
+  // Last hierarchy field is always the file-name level; earlier ones are folders.
   const sorted = recalculateFieldHierarchy(fields)
-  const withDepth = sorted.map((field) => ({
-    ...field,
-    depth: field.includeInFolderStructure ? Math.max(0, field.level - 1) : 0,
-  }))
+  const folderFields = sorted.filter((field) => field.includeInFolderStructure)
+  const fileNameFieldId = folderFields[folderFields.length - 1]?.id
+
+  const withDepth = sorted.map((field) => {
+    const isFileNameField =
+      field.includeInFolderStructure && field.id === fileNameFieldId
+
+    return {
+      ...field,
+      depth: field.includeInFolderStructure ? Math.max(0, field.level - 1) : 0,
+      isFileNameField,
+    }
+  })
 
   return withDepth.map((field, index) => ({
     ...field,
@@ -543,6 +605,7 @@ const recalculateFieldHierarchy = (orderedFields: FieldRow[]): FieldRow[] => {
   )
   const normalized = [...folderFields, ...metadataFields]
   const folderIds = folderFields.map((field) => field.id)
+  const lastFolderIndex = folderFields.length - 1
 
   return normalized.map((field, index) => {
     const orderId = index + 1
@@ -550,15 +613,22 @@ const recalculateFieldHierarchy = (orderedFields: FieldRow[]): FieldRow[] => {
     if (!field.includeInFolderStructure) {
       return {
         ...field,
+        iconKey: undefined,
         level: 0,
         orderId,
       }
     }
 
     const folderIndex = folderIds.indexOf(field.id)
+    const isFileNameField = folderIndex === lastFolderIndex
 
     return {
       ...field,
+      iconKey: isFileNameField
+        ? 'document'
+        : field.iconKey && field.iconKey !== 'document'
+          ? field.iconKey
+          : 'folder',
       level: folderIndex + 1,
       orderId,
     }
@@ -574,6 +644,46 @@ const toFieldTypeOptions = (types: string[]): SelectOption[] =>
       value: type,
     }))
 
+const mapStorageCodeToOptionId = (storageProviderCode?: string | null) => {
+  const code = String(storageProviderCode || 'EZOFIS').toUpperCase()
+  const matched = storageOptions.find(
+    (option) => option.storageProviderCode.toUpperCase() === code,
+  )
+  return matched?.id || storageOptions[0].id
+}
+
+const mapApiFieldsToFieldRows = (
+  apiFields: Array<Record<string, unknown>> | undefined,
+): FieldRow[] => {
+  if (!Array.isArray(apiFields) || apiFields.length === 0) {
+    return defaultFields
+  }
+
+  const mapped = apiFields
+    .map((field, index) => {
+      const id = String(field.id || `${field.name || 'field'}-${index}`)
+      const fieldName = String(field.name || field.fieldName || '').trim()
+      if (!fieldName) return null
+
+      return {
+        dataType: String(field.dataType || 'SHORT_TEXT'),
+        fieldName,
+        iconKey: field.iconKey ? String(field.iconKey) : undefined,
+        id,
+        includeInFolderStructure: Boolean(field.includeInFolderStructure),
+        isMandatory: Boolean(field.isMandatory),
+        level: Number(field.level) || 0,
+        orderId: Number(field.orderId) || index + 1,
+      } satisfies FieldRow
+    })
+    .filter((field): field is FieldRow => Boolean(field))
+    .sort((left, right) => left.orderId - right.orderId)
+
+  return mapped.length > 0
+    ? recalculateFieldHierarchy(mapped)
+    : defaultFields
+}
+
 const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 
 export default function DmsFolderConfiguration({
@@ -586,6 +696,10 @@ export default function DmsFolderConfiguration({
     null,
   )
   const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(null)
+  const [deletingRepositoryId, setDeletingRepositoryId] = useState<string | null>(
+    null,
+  )
+  const [isDeletingRepository, setIsDeletingRepository] = useState(false)
   const [showWizard, setShowWizard] = useState(false)
   const [showAiBuilder, setShowAiBuilder] = useState(false)
   const [step, setStep] = useState<WizardStep>(1)
@@ -598,18 +712,16 @@ export default function DmsFolderConfiguration({
     string | null
   >(null)
   const [isSavingRepository, setIsSavingRepository] = useState(false)
+  const [showConnectorError, setShowConnectorError] = useState(false)
   const [versioning, setVersioning] = useState('Incremental Version')
   const [displayMode, setDisplayMode] = useState('Show Latest Version Only')
   const [folderName, setFolderName] = useState('')
   const [description, setDescription] = useState('')
 
-  const [folderOwner, setFolderOwner] = useState<SelectOption | null>(null)
-  const [folderCoordinator, setFolderCoordinator] =
-    useState<SelectOption | null>(null)
-  const [userOptions, setUserOptions] = useState<SelectOption[]>([])
   const [repositories, setRepositories] = useState<RepositoryRow[]>([])
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [isLoadingRepositories, setIsLoadingRepositories] = useState(true)
+  const [isLoadingEditRepository, setIsLoadingEditRepository] = useState(false)
 
   const filteredRepositories = useMemo(() => {
     return repositories.filter((repo) => {
@@ -744,13 +856,72 @@ export default function DmsFolderConfiguration({
     { label: 'Archived', value: 'archived' },
   ]
 
-  const openEditRepository = useCallback((repository: RepositoryRow) => {
+  const openEditRepository = useCallback(async (repository: RepositoryRow) => {
     setSecurityRepository(null)
-    setEditingRepositoryId(repository.id)
     setShowAiBuilder(false)
-    setFolderName(repository.name)
-    setShowWizard(true)
-    setStep(1)
+    setIsLoadingEditRepository(true)
+
+    try {
+      const response = await getRepositoryById(repository.id)
+
+      if (response.canceled) return
+
+      if (response.error || !response.data) {
+        showToast({
+          message:
+            typeof response.error === 'string'
+              ? response.error
+              : 'Failed to load folder details.',
+          variant: 'error',
+        })
+        return
+      }
+
+      const details = response.data as Record<string, unknown>
+      const storageProviderCode = String(
+        details.storageProviderCode || 'EZOFIS',
+      ).toUpperCase()
+      const storageOptionId = mapStorageCodeToOptionId(storageProviderCode)
+      const storageOption =
+        storageOptions.find((option) => option.id === storageOptionId) ||
+        storageOptions[0]
+      const providerId = details.storageProviderId
+        ? String(details.storageProviderId)
+        : null
+
+      setEditingRepositoryId(String(details.id || repository.id))
+      setFolderName(String(details.name || repository.name || ''))
+      setDescription(
+        String(details.description || repository.description || ''),
+      )
+      setFields(
+        mapApiFieldsToFieldRows(
+          Array.isArray(details.fields)
+            ? (details.fields as Array<Record<string, unknown>>)
+            : undefined,
+        ),
+      )
+      setStorage(storageOption.id)
+      setShowConnectorError(false)
+
+      if (
+        storageOption.storageProviderCode === 'EZOFIS' ||
+        !providerId
+      ) {
+        setStorageConnectorId(null)
+        setStorageConnectorLabel(null)
+      } else {
+        setStorageConnectorId(providerId)
+        setStorageConnectorLabel(
+          String(details.storageProviderName || storageOption.title),
+        )
+      }
+
+      setStep(1)
+      setShowWizard(true)
+    } finally {
+      setIsLoadingEditRepository(false)
+    }
   }, [])
 
   const openSecurityRepository = useCallback((repository: RepositoryRow) => {
@@ -760,7 +931,6 @@ export default function DmsFolderConfiguration({
   }, [])
 
   const loadRepositoriesRequestIdRef = useRef(0)
-  const loadUsersRequestIdRef = useRef(0)
 
   const loadRepositories = useCallback(async () => {
     const requestId = ++loadRepositoriesRequestIdRef.current
@@ -799,29 +969,51 @@ export default function DmsFolderConfiguration({
     }
   }, [])
 
-  const loadUsers = useCallback(async () => {
-    const requestId = ++loadUsersRequestIdRef.current
-    const response = await getUsers()
+  useEffect(() => {
+    void loadRepositories()
+  }, [loadRepositories])
 
-    if (response.canceled || requestId !== loadUsersRequestIdRef.current) {
-      return
-    }
+  const deletingRepository = useMemo(
+    () =>
+      repositories.find((repository) => repository.id === deletingRepositoryId) ||
+      null,
+    [deletingRepositoryId, repositories],
+  )
 
-    if (response.error) return
-
-    setUserOptions(
-      response.data.map((user) => ({
-        id: user.id,
-        name: user.displayName || user.email,
-        value: user.id,
-      })),
-    )
+  const openDeleteRepository = useCallback((repository: RepositoryRow) => {
+    setDeletingRepositoryId(repository.id)
   }, [])
 
-  useEffect(() => {
-    void loadUsers()
-    void loadRepositories()
-  }, [loadRepositories, loadUsers])
+  const cancelDeleteRepository = useCallback(() => {
+    if (isDeletingRepository) return
+    setDeletingRepositoryId(null)
+  }, [isDeletingRepository])
+
+  const confirmDeleteRepository = useCallback(async () => {
+    if (!deletingRepositoryId) return
+
+    setIsDeletingRepository(true)
+    try {
+      const response = await deleteRepository(deletingRepositoryId)
+
+      if (response.error) {
+        showToast({
+          message:
+            typeof response.error === 'string'
+              ? response.error
+              : 'Failed to delete folder',
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({ message: 'Folder deleted successfully.', variant: 'success' })
+      setDeletingRepositoryId(null)
+      await loadRepositories()
+    } finally {
+      setIsDeletingRepository(false)
+    }
+  }, [deletingRepositoryId, loadRepositories])
 
   const closeWizard = () => {
     setShowWizard(false)
@@ -829,6 +1021,7 @@ export default function DmsFolderConfiguration({
     setStep(1)
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
+    setShowConnectorError(false)
   }
 
   const openManualBuilder = () => {
@@ -837,6 +1030,12 @@ export default function DmsFolderConfiguration({
     setFolderName('')
     setDescription('')
     setFields(defaultFields)
+    setStorage('EZOFIS Drive')
+    setStorageConnectorId(null)
+    setStorageConnectorLabel(null)
+    setShowConnectorError(false)
+    setVersioning('Incremental Version')
+    setDisplayMode('Show Latest Version Only')
     setStep(1)
     setShowWizard(true)
   }
@@ -845,27 +1044,6 @@ export default function DmsFolderConfiguration({
     setShowWizard(false)
     setShowAiBuilder(true)
   }
-
-  const resolveCurrentUserOwner = useCallback((): SelectOption | null => {
-    const session = authUserStore.getState().session
-    if (!session?.id) return null
-
-    const fromOptions = userOptions.find(
-      (user) => user.id === session.id || user.value === session.id,
-    )
-    if (fromOptions) return fromOptions
-
-    const name =
-      session.name?.trim() ||
-      `${session.firstName || ''} ${session.lastName || ''}`.trim() ||
-      session.email
-
-    return {
-      id: session.id,
-      name,
-      value: session.id,
-    }
-  }, [userOptions])
 
   const handleAiBuilderApply = (payload: {
     description: string
@@ -905,7 +1083,6 @@ export default function DmsFolderConfiguration({
         ? recalculateFieldHierarchy(mappedFields)
         : defaultFields,
     )
-    setFolderOwner(resolveCurrentUserOwner())
     if (payload.storage) {
       setStorage(payload.storage)
       setStorageConnectorId(null)
@@ -927,6 +1104,7 @@ export default function DmsFolderConfiguration({
     setStorage(nextStorage)
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
+    setShowConnectorError(false)
   }
 
   const handleStorageConnectorChange = (
@@ -935,6 +1113,7 @@ export default function DmsFolderConfiguration({
   ) => {
     setStorageConnectorId(connectorId)
     setStorageConnectorLabel(connectorLabel)
+    if (connectorId) setShowConnectorError(false)
   }
 
   const goNext = () => {
@@ -943,10 +1122,7 @@ export default function DmsFolderConfiguration({
         storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
 
       if (isCloudStorageOption(selectedStorageOption) && !storageConnectorId) {
-        showToast({
-          message: `Connect ${selectedStorageOption.title} and select a connector before continuing.`,
-          variant: 'error',
-        })
+        setShowConnectorError(true)
         return
       }
     }
@@ -967,17 +1143,17 @@ export default function DmsFolderConfiguration({
       storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
 
     if (isCloudStorageOption(selectedStorageOption) && !storageConnectorId) {
-      showToast({
-        message: `Connect ${selectedStorageOption.title} before saving the folder.`,
-        variant: 'error',
-      })
+      setShowConnectorError(true)
       setStep(2)
       return
     }
 
+    const isEditing = Boolean(editingRepositoryId)
+
     const payload = {
       description,
       fields: fields.map((field, index) => ({
+        ...(isEditing ? { id: field.id } : {}),
         dataType: field.dataType,
         iconKey: field.iconKey,
         includeInFolderStructure: field.includeInFolderStructure,
@@ -998,18 +1174,24 @@ export default function DmsFolderConfiguration({
     setIsSavingRepository(true)
 
     try {
-      const response = await createRepository(payload)
+      const response = isEditing
+        ? await updateRepository(editingRepositoryId as string, payload)
+        : await createRepository(payload)
 
       if (response.error) {
         showToast({
-          message: `Failed to create folder: ${response.error}`,
+          message: isEditing
+            ? `Failed to update folder: ${response.error}`
+            : `Failed to create folder: ${response.error}`,
           variant: 'error',
         })
         return
       }
 
       showToast({
-        message: 'Folder created successfully.',
+        message: isEditing
+          ? 'Folder updated successfully.'
+          : 'Folder created successfully.',
         variant: 'success',
       })
       await loadRepositories()
@@ -1024,9 +1206,11 @@ export default function DmsFolderConfiguration({
     table: repositoryTable,
     tableSearchOptions,
   } = useRepositoryTable(filteredRepositories, {
-    onEditRepository: openEditRepository,
+    onDeleteRepository: openDeleteRepository,
+    onEditRepository: (repository) => {
+      void openEditRepository(repository)
+    },
     onSecurityRepository: openSecurityRepository,
-    // onSecurityRepository: openSecurityRepository,
   })
   const repositoryToolbar = useSettingsTableToolbar({
     isReLoading: isLoadingRepositories,
@@ -1036,242 +1220,259 @@ export default function DmsFolderConfiguration({
     },
   })
 
+  const formattedWizardSteps = useMemo(
+    () =>
+      wizardSteps.map((item) => ({
+        id: item.id - 1,
+        label: item.title,
+        description: item.description,
+        icon:
+          item.id === 1
+            ? 'tabler:folder'
+            : item.id === 2
+              ? 'tabler:database'
+              : item.id === 3
+                ? 'tabler:list-details'
+                : item.id === 4
+                  ? 'tabler:git-branch'
+                  : 'tabler:api',
+      })),
+    [],
+  )
+
+  if (securityRepository) {
+    return (
+      <FolderSecurity
+        folderName={securityRepository.name}
+        repositoryId={securityRepository.id}
+        onBack={() => setSecurityRepository(null)}
+        onBackToSettings={onBack}
+      />
+    )
+  }
+
+  if (showAiBuilder) {
+    return (
+      <AiFolderBuilder
+        onBack={() => setShowAiBuilder(false)}
+        onBackToSettings={onBack}
+        onApply={handleAiBuilderApply}
+      />
+    )
+  }
+
+  if (showWizard) {
+    return (
+      <SettingsWizardLayout
+        activeStep={step - 1}
+        steps={formattedWizardSteps}
+        onStepChange={(stepIdx) => setStep((stepIdx + 1) as WizardStep)}
+        onBack={goBack}
+        onNext={goNext}
+        onSave={() => {
+          void handleCreateRepository()
+        }}
+        onCancel={closeWizard}
+        onBackToSettings={onBack}
+        isSaving={isSavingRepository}
+        nextLabel='Continue'
+        saveLabel={editingRepositoryId ? 'Update' : 'Save'}
+        moduleTitle='Folder Configuration'
+        setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
+        headerTitle={
+          editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'
+        }
+        headerDescription='Configure repository storage, metadata fields, versioning, and integrations'
+      >
+        <WizardContent
+          description={description}
+          displayMode={displayMode}
+          editingRepositoryId={editingRepositoryId}
+          fields={fields}
+          folderName={folderName}
+          onBack={onBack}
+          setStep={setStep}
+          showConnectorError={showConnectorError}
+          step={step}
+          storage={storage}
+          storageConnectorId={storageConnectorId}
+          storageConnectorLabel={storageConnectorLabel}
+          versioning={versioning}
+          setDescription={setDescription}
+          setDisplayMode={setDisplayMode}
+          setFields={setFields}
+          setFolderName={setFolderName}
+          setStorage={handleStorageChange}
+          setVersioning={setVersioning}
+          onStorageConnectorChange={handleStorageConnectorChange}
+        />
+      </SettingsWizardLayout>
+    )
+  }
+
   return (
     <div className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
-      {securityRepository ? (
-        <FolderSecurity
-          folderName={securityRepository.name}
-          repositoryId={securityRepository.id}
-          onBack={() => setSecurityRepository(null)}
-          onBackToSettings={onBack}
+      <ConfirmDialog
+        opened={deletingRepositoryId != null}
+        title='Delete Folder'
+        description={
+          deletingRepository
+            ? `Are you sure you want to delete "${deletingRepository.name}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this folder? This action cannot be undone.'
+        }
+        confirmLabel='Delete'
+        isConfirming={isDeletingRepository}
+        variant='danger'
+        onCancel={cancelDeleteRepository}
+        onConfirm={() => {
+          void confirmDeleteRepository()
+        }}
+      />
+      <div className='flex min-h-0 flex-1 flex-col'>
+        <SettingsPageHeader
+          description='Create and manage folders with custom fields, storage, and versioning.'
+          title='Folder Configuration'
+          onBack={onBack}
         />
-      ) : showAiBuilder ? (
-        <AiFolderBuilder
-          onBack={() => setShowAiBuilder(false)}
-          onBackToSettings={onBack}
-          onApply={handleAiBuilderApply}
-        />
-      ) : !showWizard ? (
-        <div className='flex min-h-0 flex-1 flex-col'>
-          <SettingsPageHeader
-            description='Create and manage folders with custom fields, storage, and versioning.'
-            title='Folder Configuration'
-            onBack={onBack}
+
+        <div className='flex flex-1 flex-col overflow-hidden p-4'>
+          <CustomFilter
+            activeFilters={activeFilters}
+            trailingActions={
+              <>
+                <TableExport
+                  fileName='folders'
+                  table={repositoryTable as any}
+                />
+                <Menu
+                  position='bottom-end'
+                  width={200}
+                  withinPortal
+                  target={
+                    <IconButton
+                      ariaLabel='New Folder'
+                      color='primary'
+                      icon='lucide:plus'
+                      size='md'
+                      tooltip='New Folder'
+                      variant='solid'
+                    />
+                  }
+                >
+                  <MenuItem
+                    icon='lucide:wrench'
+                    label='Manual builder'
+                    onClick={openManualBuilder}
+                  />
+                  <MenuItem
+                    leftSection={
+                      <AiBrandIcon className='size-4' variant='outline-purple' />
+                    }
+                    label='AI builder'
+                    onClick={openAiBuilder}
+                  />
+                </Menu>
+              </>
+            }
+            actionButtons={[
+              {
+                color: 'gray',
+                disabled: isLoadingRepositories,
+                icon: 'tabler:refresh',
+                id: 'refresh',
+                isIconButton: true,
+                tooltip: 'Refresh',
+                variant: 'outline',
+                onClick: loadRepositories,
+              },
+            ]}
+            customSearchComponent={
+              <TableSearch table={repositoryTable as any} />
+            }
+            filters={[
+              {
+                id: 'name',
+                label: 'Folder',
+                options: folderNameOptions,
+                searchable: true,
+                searchPlaceholder: 'Search folder...',
+              },
+              {
+                id: 'storage',
+                label: 'Storage',
+                options: storageFilterOptions,
+              },
+              { id: 'status', label: 'Status', options: statusOptions },
+            ]}
+            moreFilters={[
+              {
+                id: 'description',
+                label: 'Description',
+                options: descriptionOptions,
+                searchable: true,
+                searchPlaceholder: 'Search description...',
+              },
+              {
+                id: 'documents',
+                label: 'Documents',
+                options: documentCountOptions,
+              },
+              {
+                id: 'createdAt',
+                label: 'Created',
+                options: createdAtOptions,
+              },
+              {
+                id: 'createdBy',
+                label: 'Created By',
+                options: createdByOptions,
+                searchable: true,
+                searchPlaceholder: 'Search created by...',
+              },
+            ]}
+            onFilterChange={(id, val) => {
+              setActiveFilters((prev) => ({ ...prev, [id]: val }))
+            }}
+            showReset={
+              Object.keys(activeFilters).some((k) => activeFilters[k]) ||
+              !!tableSearchOptions.state.globalFilter?.value
+            }
+            onReset={() => {
+              setActiveFilters({})
+              tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
+            }}
           />
 
-          <div className='flex flex-1 flex-col overflow-hidden p-4'>
-            <CustomFilter
-              activeFilters={activeFilters}
-              trailingActions={
-                <>
-                  <TableExport
-                    fileName='folders'
-                    table={repositoryTable as any}
-                  />
-                  <Menu
-                    position='bottom-end'
-                    width={200}
-                    withinPortal
-                    target={
-                      <IconButton
-                        ariaLabel='New Folder'
-                        color='primary'
-                        icon='lucide:plus'
-                        size='md'
-                        tooltip='New Folder'
-                        variant='solid'
-                      />
-                    }
-                  >
-                    <MenuItem
-                      icon='lucide:wrench'
-                      label='Manual builder'
-                      onClick={openManualBuilder}
-                    />
-                    <MenuItem
-                      leftSection={<AiBrandIcon className='size-4' variant='outline-purple' />}
-                      label='AI builder'
-                      onClick={openAiBuilder}
-                    />
-                  </Menu>
-                </>
-              }
-              actionButtons={[
-                {
-                  color: 'gray',
-                  disabled: isLoadingRepositories,
-                  icon: 'tabler:refresh',
-                  id: 'refresh',
-                  isIconButton: true,
-                  tooltip: 'Refresh',
-                  variant: 'outline',
-                  onClick: loadRepositories,
-                },
-              ]}
-              customSearchComponent={
-                <TableSearch table={repositoryTable as any} />
-              }
-              filters={[
-                {
-                  id: 'name',
-                  label: 'Folder',
-                  options: folderNameOptions,
-                  searchable: true,
-                  searchPlaceholder: 'Search folder...',
-                },
-                {
-                  id: 'storage',
-                  label: 'Storage',
-                  options: storageFilterOptions,
-                },
-                { id: 'status', label: 'Status', options: statusOptions },
-              ]}
-              moreFilters={[
-                {
-                  id: 'description',
-                  label: 'Description',
-                  options: descriptionOptions,
-                  searchable: true,
-                  searchPlaceholder: 'Search description...',
-                },
-                {
-                  id: 'documents',
-                  label: 'Documents',
-                  options: documentCountOptions,
-                },
-                {
-                  id: 'createdAt',
-                  label: 'Created',
-                  options: createdAtOptions,
-                  searchable: true,
-                  searchPlaceholder: 'Search created...',
-                },
-                {
-                  id: 'createdBy',
-                  label: 'Created By',
-                  options: createdByOptions,
-                  searchable: true,
-                  searchPlaceholder: 'Search created by...',
-                },
-              ]}
-              showReset={
-                Object.keys(activeFilters).some((k) => activeFilters[k]) ||
-                !!tableSearchOptions.state.globalFilter?.value
-              }
-              onFilterChange={(id, val) =>
-                setActiveFilters((prev) => ({ ...prev, [id]: val }))
-              }
-              onReset={() => {
-                setActiveFilters({})
-                tableSearchOptions.onGlobalFilterChange({ id: '', value: '' })
-              }}
-            />
-            <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
-              <div className='min-h-0 flex-1 overflow-hidden'>
-                <DataTable
-                  isLoading={isLoadingRepositories}
-                  isReLoading={isLoadingRepositories}
-                  pageSize={pagination.pageSize}
-                  rowSize={repositoryToolbar.rowSize}
-                  table={repositoryTable}
-                  hideActionBar
-                  hideGrouping
-                  stickyHeader
-                  onReload={() => {
-                    void loadRepositories()
-                  }}
-                  onRowSizeChange={repositoryToolbar.onRowSizeChange}
-                />
-              </div>
-              <Pagination
-                className='mt-4 shrink-0'
-                itemLabel='Folders'
-                page={pagination.page}
+          <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+            <div className='min-h-0 flex-1 overflow-hidden'>
+              <DataTable
+                isLoading={isLoadingRepositories || isLoadingEditRepository}
+                isReLoading={isLoadingRepositories || isLoadingEditRepository}
                 pageSize={pagination.pageSize}
-                showPageNumbers={false}
-                totalItems={repositoryTable.getFilteredRowModel().rows.length}
-                onPageChange={pagination.onPageChange}
-                onPageSizeChange={pagination.onPageSizeChange}
+                rowSize={repositoryToolbar.rowSize}
+                table={repositoryTable}
+                hideActionBar
+                hideGrouping
+                stickyHeader
+                onReload={() => {
+                  void loadRepositories()
+                }}
+                onRowSizeChange={repositoryToolbar.onRowSizeChange}
               />
             </div>
+            <Pagination
+              className='mt-4 shrink-0'
+              itemLabel='Folders'
+              page={pagination.page}
+              pageSize={pagination.pageSize}
+              showPageNumbers={false}
+              totalItems={repositoryTable.getFilteredRowModel().rows.length}
+              onPageChange={pagination.onPageChange}
+              onPageSizeChange={pagination.onPageSizeChange}
+            />
           </div>
         </div>
-      ) : (
-        (() => {
-          const formattedWizardSteps = wizardSteps.map((item) => ({
-            id: item.id - 1,
-            label: item.title,
-            description: item.description,
-            icon:
-              item.id === 1
-                ? 'tabler:folder'
-                : item.id === 2
-                  ? 'tabler:database'
-                  : item.id === 3
-                    ? 'tabler:list-details'
-                    : item.id === 4
-                      ? 'tabler:git-branch'
-                      : item.id === 5
-                        ? 'tabler:api'
-                        : 'tabler:shield-lock',
-          }))
-
-          return (
-            <SettingsWizardLayout
-              activeStep={step - 1}
-              steps={formattedWizardSteps}
-              onStepChange={(stepIdx) => setStep((stepIdx + 1) as WizardStep)}
-              onBack={goBack}
-              onNext={
-                step === 5
-                  ? () => {
-                    void handleCreateRepository()
-                  }
-                  : goNext
-              }
-              onSave={closeWizard}
-              onCancel={closeWizard}
-              onBackToSettings={onBack}
-              isSaving={isSavingRepository}
-              nextLabel={step === 5 ? 'Save & Next' : 'Continue'}
-              saveLabel='Done'
-              moduleTitle='Folder Configuration'
-              setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
-              headerTitle={
-                editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'
-              }
-              headerDescription='Configure repository storage, metadata fields, versioning, and security'
-            >
-              <WizardContent
-                description={description}
-                displayMode={displayMode}
-                editingRepositoryId={editingRepositoryId}
-                fields={fields}
-                folderCoordinator={folderCoordinator}
-                folderName={folderName}
-                folderOwner={folderOwner}
-                onBack={onBack}
-                setStep={setStep}
-                step={step}
-                storage={storage}
-                storageConnectorId={storageConnectorId}
-                storageConnectorLabel={storageConnectorLabel}
-                userOptions={userOptions}
-                versioning={versioning}
-                setDescription={setDescription}
-                setDisplayMode={setDisplayMode}
-                setFields={setFields}
-                setFolderCoordinator={setFolderCoordinator}
-                setFolderName={setFolderName}
-                setFolderOwner={setFolderOwner}
-                setStorage={handleStorageChange}
-                setVersioning={setVersioning}
-                onStorageConnectorChange={handleStorageConnectorChange}
-              />
-            </SettingsWizardLayout>
-          )
-        })()
-      )}
+      </div>
     </div>
   )
 }
@@ -1281,13 +1482,13 @@ function FieldNameCell({
   field,
 }: {
   children: ReactNode
-  field: FieldRow
+  field: FieldRow & { isFileNameField?: boolean }
 }) {
   return (
-    <div className='flex min-h-9 min-w-0 items-center'>
+    <div className='flex min-h-8 min-w-0 items-center gap-2'>
       <FieldTreeIcon
-        iconKey={getFieldIconKey(field)}
-        isFolder={field.includeInFolderStructure}
+        iconKey={getFieldIconKey(field, Boolean(field.isFileNameField))}
+        variant={getFieldIconVariant(field)}
       />
       <div className='min-w-0 flex-1'>{children}</div>
     </div>
@@ -1299,16 +1500,18 @@ function FieldNameTreeCell({
   depth,
   iconKey,
   isLastAtDepth,
+  variant,
 }: {
   children: ReactNode
   depth: number
   iconKey: string
   isLastAtDepth: boolean
+  variant: 'folder' | 'fileName' | 'metadata'
 }) {
   return (
-    <div className='flex min-h-9 min-w-0 items-center'>
+    <div className='flex min-h-8 min-w-0 items-center gap-2'>
       <FieldTreeLines depth={depth} isLastAtDepth={isLastAtDepth} />
-      <FieldTreeIcon iconKey={iconKey} isFolder />
+      <FieldTreeIcon iconKey={iconKey} variant={variant} />
       <div className='min-w-0 flex-1'>{children}</div>
     </div>
   )
@@ -1374,12 +1577,11 @@ function FieldNameWithIconInput({
       <MantineCombobox.Target>
         <button
           aria-label='Select field icon'
-          className='flex h-full w-full items-center justify-center gap-0.5 text-gray-11'
+          className='flex h-full w-full items-center justify-center text-gray-11'
           type='button'
           onClick={() => combobox.toggleDropdown()}
         >
-          <DynamicIcon className='h-4 w-4' name={selectedKey} />
-          <Icon className='h-3 w-3 text-gray-8' name='lucide:chevron-down' />
+          <DynamicIcon className='h-3.5 w-3.5' name={selectedKey} />
         </button>
       </MantineCombobox.Target>
 
@@ -1404,31 +1606,30 @@ function FieldNameWithIconInput({
       </MantineCombobox.Dropdown>
     </MantineCombobox>
   ) : (
-    <DynamicIcon className='h-4 w-4 text-gray-11' name='document' />
+    <DynamicIcon className='h-3.5 w-3.5 text-gray-11' name={selectedKey} />
   )
 
   const leftSection = (
-    <div
-      className={cn(
-        'flex h-full w-full items-center justify-center border-r border-[var(--border-default)]',
-      )}
-    >
+    <div className='flex h-full w-full items-center justify-center border-r border-gray-3'>
       {iconSection}
     </div>
   )
 
   return (
     <InputText
-      classNames={{ input: heightClass }}
+      classNames={{
+        input: cn(inputSharedClassNames.input, heightClass),
+      }}
       leftSection={leftSection}
       leftSectionPointerEvents='auto'
+      leftSectionWidth={32}
       placeholder={placeholder}
       ref={inputRef}
       value={value}
       styles={{
-        wrapper: {
-          '--input-left-section-width': showIconPicker ? '44px' : '36px',
-        } as React.CSSProperties,
+        input: {
+          paddingInlineStart: '2.75rem',
+        },
       }}
       onBlur={onBlur}
       onChange={onChange}
@@ -1455,6 +1656,7 @@ function FieldsTable({
         prev.every(
           (field, index) =>
             field.id === next[index]?.id &&
+            field.iconKey === next[index]?.iconKey &&
             field.level === next[index]?.level &&
             field.orderId === next[index]?.orderId &&
             field.includeInFolderStructure ===
@@ -1516,27 +1718,38 @@ function FieldsTable({
         header: '',
         id: 'drag',
         maxSize: 44,
-        meta: settingsHeaderMeta.center,
+        meta: { ...settingsHeaderMeta.center, className: 'px-1 !pl-3' },
         minSize: 44,
         size: 44,
         cell: () => null,
       }),
       fieldColumnHelper.accessor('fieldName', {
         enableSorting: false,
-        header: 'Field Name',
+        header: () => (
+          <div className='flex min-w-0 items-center gap-2'>
+            <span aria-hidden className='inline-block h-3.5 w-3.5 shrink-0' />
+            <span>Field Name</span>
+          </div>
+        ),
         id: 'fieldName',
-        meta: settingsHeaderMeta.start,
-        minSize: 40,
-        size: 360,
+        meta: { ...settingsHeaderMeta.start, className: 'pl-1 pr-3' },
+        minSize: 160,
+        size: 220,
         cell: ({ row }) => {
           const rowId = row.original.id
           const isRowEditing = editingRowId === rowId
 
           if (isRowEditing) {
+            const isFolderLevel =
+              row.original.includeInFolderStructure &&
+              !row.original.isFileNameField
             const nameInput = (
               <FieldNameWithIconInput
-                iconKey={row.original.iconKey || 'folder'}
-                showIconPicker={Boolean(row.original.includeInFolderStructure)}
+                iconKey={getFieldIconKey(
+                  row.original,
+                  row.original.isFileNameField,
+                )}
+                showIconPicker={isFolderLevel}
                 value={row.original.fieldName}
                 onChange={(value) => updateField(rowId, { fieldName: value })}
                 onIconChange={(iconKey) => updateField(rowId, { iconKey })}
@@ -1545,7 +1758,7 @@ function FieldsTable({
 
             if (row.original.includeInFolderStructure) {
               return (
-                <div className='flex min-h-9 min-w-0 items-center'>
+                <div className='flex min-h-8 min-w-0 items-center gap-2'>
                   <FieldTreeLines
                     depth={row.original.depth}
                     isLastAtDepth={row.original.isLastAtDepth}
@@ -1559,7 +1772,7 @@ function FieldsTable({
           }
 
           const nameLabel = (
-            <div className='truncate py-1.5 font-semibold text-gray-13'>
+            <div className='truncate text-13 font-medium text-gray-12'>
               {row.original.fieldName}
             </div>
           )
@@ -1567,8 +1780,12 @@ function FieldsTable({
           return row.original.includeInFolderStructure ? (
             <FieldNameTreeCell
               depth={row.original.depth}
-              iconKey={getFieldIconKey(row.original)}
+              iconKey={getFieldIconKey(
+                row.original,
+                row.original.isFileNameField,
+              )}
               isLastAtDepth={row.original.isLastAtDepth}
+              variant={getFieldIconVariant(row.original)}
             >
               {nameLabel}
             </FieldNameTreeCell>
@@ -1582,15 +1799,15 @@ function FieldsTable({
         header: 'Type',
         id: 'dataType',
         meta: settingsHeaderMeta.start,
-        minSize: 40,
-        size: 170,
+        minSize: 120,
+        size: 140,
         cell: ({ row }) => {
           const rowId = row.original.id
           const isRowEditing = editingRowId === rowId
 
           if (!isRowEditing) {
             return (
-              <span className='text-sm text-gray-12'>
+              <span className='text-13 font-medium text-gray-12'>
                 {formatDataTypeLabel(row.original.dataType)}
               </span>
             )
@@ -1626,8 +1843,8 @@ function FieldsTable({
         header: 'Folder',
         id: 'folder',
         meta: settingsHeaderMeta.center,
-        minSize: 40,
-        size: 100,
+        minSize: 72,
+        size: 80,
         cell: ({ row }) => {
           const rowId = row.original.id
           const isRowEditing = editingRowId === rowId
@@ -1635,7 +1852,7 @@ function FieldsTable({
           if (!isRowEditing) {
             return (
               <div className='flex justify-center'>
-                <span className='text-sm text-gray-11'>
+                <span className='text-13 font-medium text-gray-12'>
                   {row.original.includeInFolderStructure ? 'Yes' : 'No'}
                 </span>
               </div>
@@ -1657,9 +1874,13 @@ function FieldsTable({
         enableSorting: false,
         header: 'Mandatory',
         id: 'isMandatory',
-        meta: settingsHeaderMeta.center,
-        minSize: 40,
-        size: 120,
+        meta: {
+          ...settingsHeaderMeta.center,
+          className: 'whitespace-nowrap',
+          disableEllipsis: true,
+        },
+        minSize: 110,
+        size: 110,
         cell: ({ row }) => {
           const rowId = row.original.id
           const isRowEditing = editingRowId === rowId
@@ -1670,7 +1891,7 @@ function FieldsTable({
           if (!isRowEditing) {
             return (
               <div className='flex justify-center'>
-                <span className='text-sm text-gray-11'>
+                <span className='text-13 font-medium text-gray-12'>
                   {isMandatory ? 'Yes' : 'No'}
                 </span>
               </div>
@@ -1780,7 +2001,7 @@ function FieldsTable({
 
   if (!displayRows.length) {
     return (
-      <div className='rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-8 text-center text-sm text-gray-11 shadow-sm'>
+      <div className='rounded-xl border border-[var(--gray-3)] bg-surface px-4 py-6 text-center text-13 font-medium text-gray-12 shadow-sm'>
         No fields configured yet. Use the form above to add your first field.
       </div>
     )
@@ -1801,19 +2022,21 @@ function FieldsTable({
 
 function FieldTreeIcon({
   iconKey,
-  isFolder,
+  variant,
 }: {
   iconKey: string
-  isFolder: boolean
+  variant: 'folder' | 'fileName' | 'metadata'
 }) {
   return (
     <span
       className={cn(
-        'mr-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-md',
-        isFolder ? 'bg-primary-3 text-primary-9' : 'bg-blue-3 text-blue-9',
+        'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded',
+        variant === 'folder' && 'bg-primary-3 text-primary-9',
+        variant === 'fileName' && 'bg-blue-3 text-blue-9',
+        variant === 'metadata' && 'bg-gray-3 text-gray-11',
       )}
     >
-      <DynamicIcon className='h-3.5 w-3.5' name={iconKey} />
+      <DynamicIcon className='h-2.5 w-2.5' name={iconKey} />
     </span>
   )
 }
@@ -1829,7 +2052,7 @@ function FieldTreeLines({
 
   return (
     <div
-      className='relative mr-1 shrink-0 self-stretch'
+      className='relative shrink-0 self-stretch'
       style={{
         marginLeft: (depth - 1) * FIELD_TREE_STEP,
         width: FIELD_TREE_STEP,
@@ -1912,31 +2135,16 @@ function StepNav({
   )
 }
 
-function StorageCornerCheck() {
-  return (
-    <span className='pointer-events-none absolute top-0 right-0 h-6 w-6 overflow-hidden rounded-tr-[9px]'>
-      <span
-        className='absolute top-0 right-0 h-full w-full bg-primary-9'
-        style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }}
-      />
-      <Check
-        className='absolute top-0.5 right-0.5 h-3 w-3 text-white'
-        strokeWidth={3}
-      />
-    </span>
-  )
-}
-
 function useRepositoryTable(
   rows: RepositoryRow[],
   {
+    onDeleteRepository,
     onEditRepository,
-    onSecurityRepository
-
+    onSecurityRepository,
   }: {
+    onDeleteRepository: (repository: RepositoryRow) => void
     onEditRepository: (repository: RepositoryRow) => void
     onSecurityRepository: (repository: RepositoryRow) => void
-
   },
 ) {
   const columnHelper = createColumnHelper<RepositoryRow>()
@@ -1978,9 +2186,9 @@ function useRepositoryTable(
         minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
-          <div className='min-w-0 truncate text-sm font-semibold text-[var(--gray-13)]'>
+          <span className='text-sm font-semibold text-[var(--gray-13)]'>
             {String(getValue() || '')}
-          </div>
+          </span>
         ),
       }),
       columnHelper.accessor('description', {
@@ -1990,17 +2198,11 @@ function useRepositoryTable(
         meta: { ...settingsHeaderMeta.start, label: 'Description' },
         minSize: 40,
         size: 220,
-        cell: ({ getValue }) => {
-          const value = String(getValue() || '').trim()
-          return (
-            <span
-              className='block min-w-0 truncate text-sm text-[var(--gray-12)]'
-              title={value}
-            >
-              {value}
-            </span>
-          )
-        },
+        cell: ({ getValue }) => (
+          <span className='text-sm text-[var(--gray-12)]'>
+            {String(getValue() || '').trim()}
+          </span>
+        ),
       }),
       columnHelper.accessor('storage', {
         enableSorting: false,
@@ -2053,7 +2255,7 @@ function useRepositoryTable(
           return (
             <span
               className={[
-                'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-semibold capitalize',
+                'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-normal capitalize',
                 isActive
                   ? 'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]'
                   : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
@@ -2084,14 +2286,11 @@ function useRepositoryTable(
         meta: { ...settingsHeaderMeta.start, label: 'Created By' },
         minSize: 40,
         size: 140,
-        cell: ({ getValue }) => {
-          const value = String(getValue() || '').trim()
-          return (
-            <span className='block min-w-0 truncate text-sm text-[var(--gray-12)]'>
-              {value}
-            </span>
-          )
-        },
+        cell: ({ getValue }) => (
+          <span className='text-sm text-[var(--gray-12)]'>
+            {String(getValue() || '').trim()}
+          </span>
+        ),
       }),
       columnHelper.display({
         enableResizing: false,
@@ -2132,14 +2331,20 @@ function useRepositoryTable(
                   label='Security'
                   onClick={() => onSecurityRepository(repository)}
                 />
-                <MenuItem icon='lucide:settings' label='Settings' disabled />
+                <MenuItem
+                  className='text-red-11'
+                  icon='lucide:trash-2'
+                  iconClass='text-red-11'
+                  label='Delete'
+                  onClick={() => onDeleteRepository(repository)}
+                />
               </Menu>
             </div>
           )
         },
       }),
     ],
-    [columnHelper, onEditRepository, onSecurityRepository],
+    [columnHelper, onDeleteRepository, onEditRepository, onSecurityRepository],
   )
 
   const table = useReactTable({
@@ -2173,22 +2378,18 @@ function WizardContent({
   displayMode,
   editingRepositoryId,
   fields,
-  folderCoordinator,
   folderName,
-  folderOwner,
   onBack,
+  showConnectorError,
   step,
   storage,
   storageConnectorId,
   storageConnectorLabel,
-  userOptions,
   versioning,
   setDescription,
   setDisplayMode,
   setFields,
-  setFolderCoordinator,
   setFolderName,
-  setFolderOwner,
   setStep,
   setStorage,
   setVersioning,
@@ -2198,23 +2399,19 @@ function WizardContent({
   displayMode: string
   editingRepositoryId?: string | null
   fields: FieldRow[]
-  folderCoordinator: SelectOption | null
   folderName: string
-  folderOwner: SelectOption | null
   onBack?: () => void
   setDescription: Dispatch<SetStateAction<string>>
   setDisplayMode: Dispatch<SetStateAction<string>>
   setFields: Dispatch<SetStateAction<FieldRow[]>>
-  setFolderCoordinator: Dispatch<SetStateAction<SelectOption | null>>
   setFolderName: Dispatch<SetStateAction<string>>
-  setFolderOwner: Dispatch<SetStateAction<SelectOption | null>>
   setStep: (step: WizardStep) => void
   setVersioning: Dispatch<SetStateAction<string>>
+  showConnectorError?: boolean
   step: WizardStep
   storage: string
   storageConnectorId: string | null
   storageConnectorLabel: string | null
-  userOptions: SelectOption[]
   versioning: string
   onStorageConnectorChange: (
     connectorId: string | null,
@@ -2232,6 +2429,10 @@ function WizardContent({
   const [fieldTypeOptions, setFieldTypeOptions] = useState<SelectOption[]>(() =>
     toFieldTypeOptions([...REPOSITORY_FIELD_DATA_TYPES]),
   )
+  const [selectedIntegration, setSelectedIntegration] = useState<string>('None')
+  const [connectedIntegrationId, setConnectedIntegrationId] = useState<
+    string | null
+  >(null)
 
   const loadFieldTypes = useCallback(async () => {
     const types = new Set<string>(REPOSITORY_FIELD_DATA_TYPES)
@@ -2288,10 +2489,6 @@ function WizardContent({
   if (step === 1) {
     return (
       <SettingsFormSection>
-        {/* <p className='text-sm text-gray-11'>
-          Define the basic information for your folder.
-        </p> */}
-
         <InputText
           label='Folder Name *'
           placeholder='e.g. AP Invoices 2026'
@@ -2306,22 +2503,6 @@ function WizardContent({
           value={description}
           onChange={setDescription}
         />
-
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-          <InputSelect
-            label='Folder Owner'
-            options={userOptions}
-            value={folderOwner}
-            onChange={(item: SelectOption | null) => setFolderOwner(item)}
-          />
-
-          <InputSelect
-            label='Folder Coordinator'
-            options={userOptions}
-            value={folderCoordinator}
-            onChange={(item: SelectOption | null) => setFolderCoordinator(item)}
-          />
-        </div>
       </SettingsFormSection>
     )
   }
@@ -2329,188 +2510,192 @@ function WizardContent({
   if (step === 2) {
     const selectedStorage =
       storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
+    const defaultStorage = storageOptions[0]
+    const cloudStorageOptions = storageOptions.filter(
+      (item) => item.id !== defaultStorage.id,
+    )
+    const isCloudSelected = isCloudStorageOption(selectedStorage)
 
     return (
-      <div>
-        <p className='mb-4 text-sm text-gray-11'>
-          Choose where documents in this folder will be stored.
-        </p>
+      <SettingsFormSection>
+        <div className='space-y-6'>
+          <div>
+            <SectionHeader
+              description='Use built-in secure storage for folder documents.'
+              title='Default Storage'
+            />
+            <BrandCard
+              checked={storage === defaultStorage.id}
+              connected={storage === defaultStorage.id}
+              description={defaultStorage.description}
+              logo={defaultStorage.logo}
+              name={defaultStorage.title}
+              value={defaultStorage.id}
+              onClick={() => setStorage(defaultStorage.id)}
+            />
+          </div>
 
-        <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
-          {storageOptions.map((item) => {
-            const isSelected = storage === item.id
-            const isDisabled = item.comingSoon
+          <OrDivider />
 
-            return (
-              <button
-                disabled={isDisabled}
-                key={item.id}
-                type='button'
-                className={cn(
-                  'relative flex min-h-[132px] w-full flex-col items-center justify-center gap-2 rounded-[12px] border p-4 text-center transition',
-                  isSelected
-                    ? 'border-primary-9 bg-surface shadow-sm'
-                    : 'border-gray-3 bg-surface hover:border-gray-4 hover:bg-surface-muted',
-                  isDisabled && 'cursor-not-allowed opacity-70',
-                )}
-                onClick={() => {
-                  if (!isDisabled) setStorage(item.id)
-                }}
-              >
-                {isSelected ? <StorageCornerCheck /> : null}
+          <div>
+            <SectionHeader
+              description='Connect your provider to securely store and manage folder documents.'
+              title='Cloud Integrations'
+            />
+            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+              {cloudStorageOptions.map((item) => {
+                const isSelected = storage === item.id
+                const isDisabled = item.comingSoon
 
-                <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-gray-2 text-gray-11'>
-                  {item.logo ? (
-                    <img
-                      alt={item.title}
-                      className='h-5 w-5 object-contain'
-                      src={item.logo}
-                    />
-                  ) : item.icon ? (
-                    <Icon className='h-5 w-5' name={item.icon} />
-                  ) : null}
-                </span>
-
-                <div className='min-w-0 px-1'>
+                return (
                   <div
+                    key={item.id}
                     className={cn(
-                      'truncate text-sm font-semibold',
-                      isDisabled ? 'text-gray-9' : 'text-gray-13',
+                      isDisabled && 'pointer-events-none opacity-60',
                     )}
                   >
-                    {item.title}
+                    <BrandCard
+                      checked={isSelected}
+                      connected={
+                        isSelected &&
+                        Boolean(storageConnectorId) &&
+                        !isDisabled
+                      }
+                      description={
+                        isDisabled
+                          ? 'Coming soon'
+                          : isSelected && storageConnectorId
+                            ? storageConnectorLabel || 'Connected'
+                            : item.description
+                      }
+                      icon={item.icon}
+                      logo={item.logo}
+                      name={item.title}
+                      value={item.id}
+                      onClick={() => {
+                        if (!isDisabled) setStorage(item.id)
+                      }}
+                    />
                   </div>
-                  <div className='mt-0.5 truncate text-xs text-gray-11'>
-                    {item.subtitle}
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
+                )
+              })}
+            </div>
+          </div>
 
-        {isCloudStorageOption(selectedStorage) ? (
-          <FolderStorageConnectorPanel
-            connectorId={storageConnectorId}
-            connectorLabel={storageConnectorLabel}
-            option={selectedStorage}
-            onConnectorChange={onStorageConnectorChange}
-          />
-        ) : null}
-      </div>
+          {isCloudSelected ? (
+            <FolderStorageConnectorPanel
+              connectorId={storageConnectorId}
+              connectorLabel={storageConnectorLabel}
+              error={
+                showConnectorError
+                  ? 'Please fill the required field: Connector'
+                  : undefined
+              }
+              option={selectedStorage}
+              required
+              onConnectorChange={onStorageConnectorChange}
+            />
+          ) : null}
+        </div>
+      </SettingsFormSection>
     )
   }
 
   if (step === 3) {
     return (
-      <div className='space-y-5'>
-        <div>
-          <h3 className='font-bold text-gray-13'>
-            Folder Fields Configuration
-          </h3>
-          <p className='text-sm text-gray-11'>
-            Configure metadata fields for documents stored in this folder.
-          </p>
-        </div>
+      <SettingsFormSection>
+        <div className='flex flex-col gap-3'>
+          <div>
+            <h3 className='mb-3 text-14/5 font-semibold text-gray-12'>
+              Folder Fields
+            </h3>
 
-        <div className='rounded-[12px] border border-gray-3 bg-surface-muted p-4'>
-          <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>
-            Add New Field
-          </div>
-          <div className='grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-[88px_minmax(280px,1fr)_200px_108px_auto] lg:items-end'>
-            <div>
-              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
-                Folder
-              </label>
-              <div className='flex h-9 items-center'>
-                <InputCheckbox
-                  checked={newIsFolder}
-                  onChange={(checked) => {
-                    const isFolder = Boolean(checked)
-                    setNewIsFolder(isFolder)
-                    if (isFolder) setNewIsMandatory(true)
-                  }}
-                />
+            <div className='rounded-lg border border-gray-3 bg-surface p-4'>
+              <div className='flex flex-col gap-4'>
+                <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-end'>
+                  <div>
+                    <label className='mb-2 block text-13 font-medium text-gray-11'>
+                      Field Name
+                    </label>
+                    <FieldNameWithIconInput
+                      iconKey={String(newFieldIcon?.value || 'folder')}
+                      placeholder='e.g. Cost Center'
+                      showIconPicker={newIsFolder}
+                      size='md'
+                      value={newFieldName}
+                      onChange={setNewFieldName}
+                      onIconChange={(iconKey) => {
+                        const option = folderIconOptions.find(
+                          (item) => item.value === iconKey,
+                        )
+                        setNewFieldIcon(option || null)
+                      }}
+                    />
+                  </div>
+
+                  <InputSelect
+                    label='Type'
+                    options={fieldTypeOptions}
+                    placeholder='Field type'
+                    width='target'
+                    value={
+                      fieldTypeOptions.find(
+                        (option) => option.value === newFieldType,
+                      ) ||
+                      fieldTypeOptions[0] ||
+                      null
+                    }
+                    onChange={(selected) => {
+                      if (!selected) return
+                      setNewFieldType(String(selected.value || selected.name))
+                    }}
+                  />
+                </div>
+
+                <div className='flex flex-wrap items-center justify-between gap-3'>
+                  <div className='flex flex-wrap items-center gap-5'>
+                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                      <InputCheckbox
+                        checked={newIsFolder}
+                        onChange={(checked) => {
+                          const isFolder = Boolean(checked)
+                          setNewIsFolder(isFolder)
+                          if (isFolder) setNewIsMandatory(true)
+                        }}
+                      />
+                      Folder
+                    </label>
+
+                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                      <InputCheckbox
+                        checked={newIsFolder || newIsMandatory}
+                        disabled={newIsFolder}
+                        onChange={(checked) =>
+                          setNewIsMandatory(Boolean(checked))
+                        }
+                      />
+                      Mandatory
+                    </label>
+                  </div>
+
+                  <Button
+                    className='h-9'
+                    icon='lucide:plus'
+                    label='Add Field'
+                    onClick={addField}
+                  />
+                </div>
               </div>
             </div>
-
-            <div className='sm:col-span-2 lg:col-span-1'>
-              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
-                Field Name
-              </label>
-              <FieldNameWithIconInput
-                iconKey={String(newFieldIcon?.value || 'folder')}
-                placeholder='e.g. Cost Center'
-                showIconPicker={newIsFolder}
-                size='md'
-                value={newFieldName}
-                onChange={setNewFieldName}
-                onIconChange={(iconKey) => {
-                  const option = folderIconOptions.find(
-                    (item) => item.value === iconKey,
-                  )
-                  setNewFieldIcon(option || null)
-                }}
-              />
-            </div>
-
-            <div>
-              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
-                Type
-              </label>
-              <InputSelect
-                options={fieldTypeOptions}
-                placeholder='Field type'
-                width='target'
-                classNames={{
-                  input: cn(inputSharedClassNames.input, 'text-13'),
-                }}
-                value={
-                  fieldTypeOptions.find(
-                    (option) => option.value === newFieldType,
-                  ) ||
-                  fieldTypeOptions[0] ||
-                  null
-                }
-                onChange={(selected) => {
-                  if (!selected) return
-                  setNewFieldType(String(selected.value || selected.name))
-                }}
-              />
-            </div>
-
-            <div>
-              <label className='mb-1.5 block h-4 text-xs leading-4 font-semibold text-gray-11'>
-                Mandatory
-              </label>
-              <div className='flex h-9 items-center'>
-                <InputCheckbox
-                  checked={newIsFolder || newIsMandatory}
-                  disabled={newIsFolder}
-                  onChange={(checked) => setNewIsMandatory(Boolean(checked))}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className='mb-1.5 hidden h-4 lg:block' aria-hidden />
-              <Button
-                className='h-9 w-full whitespace-nowrap lg:w-auto'
-                icon='lucide:plus'
-                label='Add Field'
-                size='lg'
-                onClick={addField}
-              />
-            </div>
           </div>
-        </div>
 
-        <FieldsTable
-          fields={fields}
-          fieldTypeOptions={fieldTypeOptions}
-          setFields={setFields}
-        />
-      </div>
+          <FieldsTable
+            fields={fields}
+            fieldTypeOptions={fieldTypeOptions}
+            setFields={setFields}
+          />
+        </div>
+      </SettingsFormSection>
     )
   }
 
@@ -2522,120 +2707,247 @@ function WizardContent({
     ] as const
 
     return (
-      <div className='space-y-8'>
+      <SettingsFormSection>
+        <div className='flex flex-col gap-6'>
+          <div>
+            <h3 className='text-14/5 font-semibold text-gray-12'>
+              Version Strategy
+            </h3>
+            <p className='mt-1 text-13 text-gray-11'>
+              Choose how document versions are managed in this folder.
+            </p>
+
+            <div className='mt-3 grid grid-cols-1 gap-3'>
+              {versionOptions.map((item) => {
+                const isSelected = versioning === item.id
+
+                return (
+                  <button
+                    key={item.id}
+                    type='button'
+                    className={cn(
+                      'flex w-full items-start gap-3 rounded-[12px] border p-3.5 text-left transition',
+                      isSelected
+                        ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
+                        : 'border-gray-3 bg-surface hover:border-primary-5',
+                    )}
+                    onClick={() => setVersioning(item.id)}
+                  >
+                    <span
+                      className={cn(
+                        'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                        isSelected
+                          ? 'border-primary-9 bg-surface'
+                          : 'border-gray-7 bg-surface',
+                      )}
+                    >
+                      {isSelected ? (
+                        <span className='h-2 w-2 rounded-full bg-primary-9' />
+                      ) : null}
+                    </span>
+
+                    <div className='min-w-0 flex-1'>
+                      <div className='text-13 font-medium text-gray-12'>
+                        {item.title}
+                      </div>
+                      <div className='mt-0.5 text-13 text-gray-11'>
+                        {item.subtitle}
+                      </div>
+                      <code className='mt-2 block truncate rounded-md bg-gray-2 px-2 py-1.5 text-12 text-gray-11'>
+                        {item.sample}
+                      </code>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div>
+            <h3 className='text-14/5 font-semibold text-gray-12'>
+              Display Settings
+            </h3>
+            <p className='mt-1 text-13 text-gray-11'>
+              Control which versions users see by default.
+            </p>
+
+            <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3'>
+              {displayOptions.map((item) => {
+                const isSelected = displayMode === item
+
+                return (
+                  <button
+                    key={item}
+                    type='button'
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
+                      isSelected
+                        ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
+                        : 'border-gray-3 bg-surface hover:border-primary-5',
+                    )}
+                    onClick={() => setDisplayMode(item)}
+                  >
+                    <span
+                      className={cn(
+                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                        isSelected
+                          ? 'border-primary-9 bg-surface'
+                          : 'border-gray-7 bg-surface',
+                      )}
+                    >
+                      {isSelected ? (
+                        <span className='h-2 w-2 rounded-full bg-primary-9' />
+                      ) : null}
+                    </span>
+
+                    <span className='min-w-0 text-13 font-medium text-gray-12'>
+                      {item}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </SettingsFormSection>
+    )
+  }
+
+  if (step === 5) {
+    return (
+      <SettingsFormSection>
         <div>
-          <p className='text-sm text-gray-11'>
-            Choose how document versions are managed in this folder.
+          <h3 className='text-14/5 font-semibold text-gray-12'>
+            Integrations
+          </h3>
+          <p className='mt-1 text-13 text-gray-11'>
+            Optionally connect an ERP or business system to sync folder fields.
           </p>
 
-          <h3 className='mt-5 font-bold text-gray-13'>Version Strategy</h3>
-          <div className='mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3'>
-            {versionOptions.map((item) => {
-              const isSelected = versioning === item.id
+          <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2'>
+            {integrations.map((item) => {
+              const isSelected = selectedIntegration === item.id
+              const isConnected = connectedIntegrationId === item.id
+              const canConnect = item.id !== 'None'
 
               return (
-                <button
+                <div
                   key={item.id}
-                  type='button'
                   className={cn(
-                    'relative flex min-h-[148px] w-full flex-col rounded-[12px] border p-4 text-left transition',
+                    'rounded-[12px] border p-3.5 transition',
                     isSelected
-                      ? 'border-primary-9 bg-primary-2 shadow-sm'
-                      : 'border-gray-3 bg-surface hover:border-gray-4 hover:bg-surface-muted',
+                      ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
+                      : isConnected
+                        ? 'border-green-8 bg-green-1'
+                        : 'border-gray-3 bg-surface hover:border-primary-5',
                   )}
-                  onClick={() => setVersioning(item.id)}
                 >
-                  {isSelected ? <StorageCornerCheck /> : null}
+                  <div className='flex items-start gap-3'>
+                    <button
+                      type='button'
+                      className={cn(
+                        'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition',
+                        isSelected || isConnected
+                          ? 'bg-surface shadow-sm'
+                          : 'bg-gray-2',
+                      )}
+                      onClick={() => {
+                        setSelectedIntegration(item.id)
+                        if (item.id === 'None') {
+                          setConnectedIntegrationId(null)
+                        }
+                      }}
+                    >
+                      <Icon
+                        className={cn(
+                          'size-4',
+                          isConnected
+                            ? 'text-green-11'
+                            : isSelected
+                              ? 'text-primary-9'
+                              : 'text-gray-11',
+                        )}
+                        name={item.icon}
+                      />
+                    </button>
 
-                  <div className='font-semibold text-gray-13'>{item.title}</div>
-                  <div className='mt-1 text-sm text-gray-11'>
-                    {item.subtitle}
+                    <div className='min-w-0 flex-1'>
+                      <div className='flex items-center justify-between gap-2'>
+                        <button
+                          type='button'
+                          className='min-w-0 truncate text-left text-13 font-medium text-gray-12'
+                          onClick={() => {
+                            setSelectedIntegration(item.id)
+                            if (item.id === 'None') {
+                              setConnectedIntegrationId(null)
+                            }
+                          }}
+                        >
+                          {item.title}
+                        </button>
+
+                        {canConnect ? (
+                          <button
+                            type='button'
+                            className={cn(
+                              'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium transition',
+                              isConnected
+                                ? 'bg-green-3 text-green-11'
+                                : 'bg-primary-3 text-primary-11 hover:bg-primary-4',
+                            )}
+                            onClick={() => {
+                              if (isConnected) {
+                                setConnectedIntegrationId(null)
+                                if (selectedIntegration === item.id) {
+                                  setSelectedIntegration('None')
+                                }
+                                return
+                              }
+                              setSelectedIntegration(item.id)
+                              setConnectedIntegrationId(item.id)
+                            }}
+                          >
+                            <Icon
+                              className='size-3.5'
+                              name={
+                                isConnected ? 'lucide:check' : 'lucide:link-2'
+                              }
+                            />
+                            {isConnected ? 'Connected' : 'Connect'}
+                          </button>
+                        ) : (
+                          <span
+                            aria-hidden
+                            className='inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium opacity-0'
+                          >
+                            <Icon className='size-3.5' name='lucide:link-2' />
+                            Connect
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type='button'
+                        className='mt-0.5 w-full text-left text-12 text-gray-11'
+                        onClick={() => {
+                          setSelectedIntegration(item.id)
+                          if (item.id === 'None') {
+                            setConnectedIntegrationId(null)
+                          }
+                        }}
+                      >
+                        {item.description}
+                      </button>
+                    </div>
                   </div>
-                  <code className='mt-auto inline-block w-full truncate rounded-[6px] bg-gray-2 px-2 py-1.5 text-xs text-gray-11'>
-                    {item.sample}
-                  </code>
-                </button>
+                </div>
               )
             })}
           </div>
         </div>
-
-        <div>
-          <h3 className='font-bold text-gray-13'>Display Settings</h3>
-          <div className='mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3'>
-            {displayOptions.map((item) => {
-              const isSelected = displayMode === item
-
-              return (
-                <button
-                  key={item}
-                  type='button'
-                  className={cn(
-                    'relative flex min-h-[72px] w-full items-center gap-3 rounded-[12px] border p-4 text-left transition',
-                    isSelected
-                      ? 'border-primary-9 bg-primary-2 shadow-sm'
-                      : 'border-gray-3 bg-surface hover:border-gray-4 hover:bg-surface-muted',
-                  )}
-                  onClick={() => setDisplayMode(item)}
-                >
-                  <span
-                    className={cn(
-                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
-                      isSelected
-                        ? 'border-primary-9 bg-primary-9'
-                        : 'border-gray-6 bg-surface',
-                    )}
-                  >
-                    {isSelected ? (
-                      <span className='h-1.5 w-1.5 rounded-full bg-white' />
-                    ) : null}
-                  </span>
-
-                  <span className='text-sm font-semibold text-gray-13'>
-                    {item}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      </div>
+      </SettingsFormSection>
     )
   }
 
-  if (step === 6) {
-    return (
-      <FolderSecurity
-        folderName={folderName || 'Folder'}
-        repositoryId={editingRepositoryId || ''}
-        onBack={() => setStep(5)}
-        onBackToSettings={onBack}
-      />
-    )
-  }
-
-  return (
-    <div>
-      <p className='mb-5 text-sm text-gray-11'>
-        Connect external ERP or business systems and map folder fields for
-        synchronization.
-      </p>
-      <div className='mb-3 text-xs font-bold text-gray-11 uppercase'>
-        Available Connections
-      </div>
-      <div className='grid grid-cols-1 gap-3 md:grid-cols-3'>
-        {integrations.map((item) => (
-          <div className='rounded-[10px] border border-gray-3 p-3' key={item}>
-            <div className='mb-3 font-semibold text-gray-13'>{item}</div>
-            <button
-              className='flex h-8 w-full items-center justify-center gap-2 rounded-[8px] border border-gray-3 text-sm font-semibold hover:bg-surface-muted'
-              type='button'
-            >
-              <Link2 size={14} /> Connect
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  return null
 }

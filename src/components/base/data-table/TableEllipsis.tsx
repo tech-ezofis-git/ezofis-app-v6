@@ -101,7 +101,7 @@ export default function TableEllipsis({
       className={cn(
         'block max-w-full min-w-0',
         isTruncated && isHovered
-          ? 'relative z-20 whitespace-normal break-words'
+          ? 'relative z-20 whitespace-normal break-words [&>*]:whitespace-normal'
           : 'overflow-hidden text-ellipsis whitespace-nowrap',
         className,
       )}

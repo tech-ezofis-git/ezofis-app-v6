@@ -1,10 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { getConnectionQueryOptions } from '@/api/connectorQueries'
-import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
-import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
@@ -24,7 +22,9 @@ export type CloudStorageOption = {
 type Props = {
   connectorId: string | null
   connectorLabel: string | null
+  error?: string
   option: CloudStorageOption
+  required?: boolean
   onConnectorChange: (
     connectorId: string | null,
     connectorLabel: string | null,
@@ -45,13 +45,16 @@ const buildConnectionName = (provider: string) => {
 export default function FolderStorageConnectorPanel({
   connectorId,
   connectorLabel,
+  error,
   option,
+  required,
   onConnectorChange,
 }: Props) {
   const session = authUserStore((state) => state.session)
   const queryClient = useQueryClient()
-  const [isConnecting, setIsConnecting] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const [isCreatingConnection, setIsCreatingConnection] = useState(false)
+  const [isConnecting, setIsConnecting] = useState(false)
   const [newConnectionName, setNewConnectionName] = useState('')
   const [pendingConnectionName, setPendingConnectionName] = useState<
     string | null
@@ -62,37 +65,38 @@ export default function FolderStorageConnectorPanel({
   )
 
   const connectionOptions = useMemo(() => {
-    const options: Array<{ id: string | number; name: string; value: string }> =
-      []
+    const options: Array<{ label: string; value: string }> = []
     const seen = new Set<string>()
-
-    if (connectorId && connectorLabel) {
-      options.push({
-        id: connectorId,
-        name: connectorLabel,
-        value: connectorId,
-      })
-      seen.add(connectorId)
-    }
 
     if (Array.isArray(apiConnections)) {
       apiConnections.forEach((item: { id: string | number; name: string }) => {
-        const value = String(item.id)
-        if (seen.has(value)) return
-        options.push({
-          id: item.id,
-          name: item.name,
-          value,
-        })
+        const value = String(item.id || '').trim()
+        const label = String(item.name || '').trim()
+        if (!value || !label || seen.has(value)) return
+        options.push({ label, value })
         seen.add(value)
       })
+    }
+
+    if (connectorId && connectorLabel && !seen.has(connectorId)) {
+      options.unshift({ label: connectorLabel, value: connectorId })
     }
 
     return options
   }, [apiConnections, connectorId, connectorLabel])
 
-  const selectedConnection =
-    connectionOptions.find((item) => item.value === connectorId) || null
+  const selectedLabel =
+    connectionOptions.find((item) => item.value === connectorId)?.label ||
+    connectorLabel ||
+    ''
+
+  useEffect(() => {
+    setIsOpen(false)
+    setIsCreatingConnection(false)
+    setIsConnecting(false)
+    setNewConnectionName('')
+    setPendingConnectionName(null)
+  }, [option.connectorType])
 
   useEffect(() => {
     if (!pendingConnectionName || !Array.isArray(apiConnections)) return
@@ -100,13 +104,13 @@ export default function FolderStorageConnectorPanel({
     const found = apiConnections.find(
       (item: { name: string }) => item.name === pendingConnectionName,
     )
-
     if (!found) return
 
     onConnectorChange(String(found.id), found.name)
     setPendingConnectionName(null)
     setIsConnecting(false)
     setIsCreatingConnection(false)
+    setIsOpen(false)
     setNewConnectionName('')
     showToast({
       message: `${option.title} connected successfully.`,
@@ -135,7 +139,7 @@ export default function FolderStorageConnectorPanel({
     return () => window.removeEventListener('message', handleMessage)
   }, [option.connectorType, pendingConnectionName, queryClient])
 
-  const handleConnect = () => {
+  const handleAuthorize = () => {
     if (!session?.tenantId) {
       showToast({ message: 'Tenant ID is missing.', variant: 'error' })
       return
@@ -145,113 +149,140 @@ export default function FolderStorageConnectorPanel({
       newConnectionName.trim() || buildConnectionName(option.oauthProvider)
 
     setIsConnecting(true)
+    setNewConnectionName(connectionName)
     const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${session.tenantId}&envtype=trial&connectorname=${encodeURIComponent(connectionName)}&provider=${option.oauthProvider}&resulturl=${window.location.origin}/auth/`
     window.open(url, '_blank')
     setPendingConnectionName(connectionName)
   }
 
+  const closeDropdown = () => {
+    setIsOpen(false)
+    setIsCreatingConnection(false)
+    setNewConnectionName('')
+  }
+
   return (
-    <div className='mt-5 space-y-4 rounded-[12px] border border-[var(--border-default)] bg-surface p-5 shadow-sm'>
-      <div className='flex items-start gap-4'>
-        {option.logo ? (
-          <span className='flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-gray-2'>
-            <img
-              alt={option.title}
-              className='h-6 w-6 object-contain'
-              src={option.logo}
-            />
-          </span>
-        ) : null}
-
-        <div className='min-w-0 flex-1'>
-          <h3 className='text-base font-semibold text-gray-13'>
-            {option.title}
-          </h3>
-          <p className='mt-1 text-sm text-gray-11'>{option.subtitle}</p>
-          <p className='mt-3 text-sm leading-6 text-gray-11'>
-            {option.description}
-          </p>
-        </div>
-      </div>
-
-      <Alert
-        text={`${option.title} selected. Click Connect ${option.title} to link your account and choose a connector.`}
-        variant='primary'
-      />
-
-      <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-        <InputSelect
-          label='Connector'
-          options={connectionOptions}
-          value={selectedConnection}
-          placeholder={
-            isLoading ? 'Loading connectors...' : 'Select a connector'
-          }
-          onChange={(selected) => {
-            if (!selected) {
-              onConnectorChange(null, null)
-              return
-            }
-
-            onConnectorChange(String(selected.value), selected.name)
-          }}
-        />
-
-        <div className='flex items-end'>
-          <Button
-            className='w-full'
-            color='primary'
-            icon='lucide:plug'
-            label={`Connect ${option.title}`}
-            loading={isConnecting}
-            variant='solid'
-            onClick={() => setIsCreatingConnection((current) => !current)}
-          />
-        </div>
-      </div>
-
-      {isCreatingConnection ? (
-        <div
+    <div className='space-y-1.5'>
+      <label className='mb-2 flex items-center gap-1 text-13 font-medium text-gray-11'>
+        Connector
+        {required ? <span className='text-red-11'>*</span> : null}
+      </label>
+      <div className='relative'>
+        <button
+          type='button'
           className={cn(
-            'rounded-[10px] border border-gray-3 bg-[var(--gray-1)] p-4',
+            'flex h-9 w-full items-center justify-between rounded-md border bg-surface px-3 text-13 font-medium transition outline-none',
+            error
+              ? 'border-red-8 ring-2 ring-red-5'
+              : isOpen
+                ? 'border-primary-9 ring-2 ring-primary-4'
+                : 'border-gray-3 hover:border-primary-5',
           )}
+          onClick={() => setIsOpen((open) => !open)}
         >
-          <div className='mb-3 flex items-center gap-2 text-sm font-semibold text-gray-13'>
-            <Icon className='h-4 w-4 text-primary-9' name='lucide:link-2' />
-            Create new connection
-          </div>
+          <span
+            className={cn(
+              'truncate',
+              selectedLabel
+                ? 'text-gray-12'
+                : 'font-normal text-gray-8',
+            )}
+          >
+            {selectedLabel ||
+              (isLoading
+                ? 'Loading...'
+                : `Select ${option.title} connector`)}
+          </span>
+          <Icon
+            className='size-4 shrink-0 text-gray-8'
+            name='lucide:chevrons-up-down'
+          />
+        </button>
 
-          <div className='grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto] md:items-end'>
-            <InputText
-              label='Connection name'
-              placeholder={`e.g. My ${option.title}`}
-              value={newConnectionName}
-              onChange={setNewConnectionName}
-            />
+        {isOpen ? (
+          <>
+            <div className='fixed inset-0 z-40' onClick={closeDropdown} />
+            <div
+              className={cn(
+                'absolute top-full left-0 z-50 mt-1 w-full rounded-lg border border-gray-3 bg-surface shadow-lg',
+                isCreatingConnection ? 'p-3' : 'overflow-hidden py-1',
+              )}
+            >
+              {!isCreatingConnection ? (
+                <>
+                  {connectionOptions.map((item) => (
+                    <button
+                      key={item.value}
+                      type='button'
+                      className={cn(
+                        'w-full px-3 py-2 text-left text-sm transition-colors',
+                        connectorId === item.value
+                          ? 'bg-primary-1 font-medium text-primary-9'
+                          : 'text-gray-13 hover:bg-gray-2',
+                      )}
+                      onClick={() => {
+                        onConnectorChange(item.value, item.label)
+                        closeDropdown()
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
 
-            <Button
-              color='primary'
-              icon='lucide:external-link'
-              label='Authorize'
-              loading={isConnecting}
-              variant='solid'
-              onClick={handleConnect}
-            />
-          </div>
+                  {connectionOptions.length > 0 ? (
+                    <div className='my-1 h-px bg-gray-3' />
+                  ) : null}
 
-          <p className='mt-3 text-xs leading-5 text-gray-11'>
-            A sign-in window will open. After authorization, the connector ID
-            will be saved with this folder when you complete setup.
-          </p>
-        </div>
-      ) : null}
-
-      {connectorId ? (
-        <Alert
-          text={`Connected to ${connectorLabel || 'selected connector'} (ID: ${connectorId}).`}
-          variant='green'
-        />
-      ) : null}
+                  <button
+                    type='button'
+                    className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-primary-9 transition-colors hover:bg-primary-1'
+                    onClick={() => {
+                      setIsCreatingConnection(true)
+                      setNewConnectionName(
+                        buildConnectionName(option.oauthProvider),
+                      )
+                    }}
+                  >
+                    <Icon className='size-4' name='lucide:plus' />
+                    Add connection
+                  </button>
+                </>
+              ) : (
+                <div className='space-y-3'>
+                  <InputText
+                    label='Connection name'
+                    placeholder={option.title}
+                    value={newConnectionName}
+                    onChange={setNewConnectionName}
+                  />
+                  <div className='flex items-center justify-end gap-2'>
+                    <Button
+                      color='gray'
+                      label='Cancel'
+                      size='sm'
+                      variant='outline'
+                      onClick={() => {
+                        setIsCreatingConnection(false)
+                        setIsConnecting(false)
+                        setNewConnectionName('')
+                        setPendingConnectionName(null)
+                      }}
+                    />
+                    <Button
+                      icon='lucide:plug'
+                      label='Connect'
+                      loading={isConnecting}
+                      size='sm'
+                      onClick={handleAuthorize}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : null}
+      </div>
+      {error ? <p className='mt-2 text-13 text-red-11'>{error}</p> : null}
     </div>
   )
 }

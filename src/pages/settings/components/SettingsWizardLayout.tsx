@@ -35,6 +35,7 @@ export type SettingsWizardLayoutProps = {
   headerDescription?: string
   children: React.ReactNode
   className?: string
+  contentClassName?: string
 }
 
 export default function SettingsWizardLayout({
@@ -58,6 +59,7 @@ export default function SettingsWizardLayout({
   headerDescription,
   children,
   className,
+  contentClassName,
 }: SettingsWizardLayoutProps) {
   const isLastStep = activeStep === steps.length - 1
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -141,7 +143,12 @@ export default function SettingsWizardLayout({
           className='col-span-1 h-full w-full overflow-y-auto'
           ref={scrollContainerRef}
         >
-          <div className='mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10'>
+          <div
+            className={cn(
+              'mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10',
+              contentClassName,
+            )}
+          >
             <div className='flex min-h-full w-full flex-col gap-6 pt-3 pb-6 md:gap-7 md:pb-8'>
               <div className='flex flex-col gap-6 md:gap-7'>{children}</div>
 
