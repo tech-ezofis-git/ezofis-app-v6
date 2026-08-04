@@ -53,7 +53,7 @@ const Table = ({ onCreate }: TableProps) => {
         label: t`Name`,
         size: 200,
         renderCell: (row) => (
-          <span className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'>
+          <span className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'>
             {String(row.name)}
           </span>
         ),

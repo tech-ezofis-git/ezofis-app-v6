@@ -80,6 +80,8 @@ const PERMISSION_ICON_MAP: Record<keyof FolderPermissionFlags, string> = {
   sendForSignature: 'tabler:writing',
 }
 
+const SELECT_ALL_OPTION_ID = '__select_all__'
+
 const getInitials = (name: string) => {
   if (!name) return '?'
   const clean = name.replace(/^(User:|Group:)\s*/i, '').trim()
@@ -157,6 +159,7 @@ export default function FolderSecurityPolicyWizard({
   const [selectedPrincipals, setSelectedPrincipals] = useState<Principal[]>([])
   const [permissions, setPermissions] = useState<Permission[]>(DEFAULT_PERMISSIONS)
   const [permissionSearch, setPermissionSearch] = useState('')
+  const [showSelectionError, setShowSelectionError] = useState(false)
 
   const applySecurityData = useCallback(
     (secData: any, userList: V6UserListItem[], groupList: V6GroupItem[]) => {
@@ -274,42 +277,177 @@ export default function FolderSecurityPolicyWizard({
     void loadData()
   }, [loadData])
 
-  const principalOptions = useMemo(() => {
-    const userOpts = users.map((u) => {
-      const uName = u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || u.id
+  const userOptions = useMemo(
+    () =>
+      users.map((u) => {
+        const uName =
+          u.displayName ||
+          `${u.firstName || ''} ${u.lastName || ''}`.trim() ||
+          u.email ||
+          u.id
+        return {
+          id: String(u.id),
+          name: uName,
+        }
+      }),
+    [users],
+  )
+
+  const groupOptions = useMemo(
+    () =>
+      groups.map((g) => {
+        const gId = String(g.id || g.groupId || '')
+        const gName = String(g.name || g.description || gId || 'Group')
+        return {
+          id: gId,
+          name: gName,
+        }
+      }),
+    [groups],
+  )
+
+  const selectedUsers = useMemo(
+    () => selectedPrincipals.filter((p) => p.type === 'USER'),
+    [selectedPrincipals],
+  )
+
+  const selectedGroups = useMemo(
+    () => selectedPrincipals.filter((p) => p.type === 'GROUP'),
+    [selectedPrincipals],
+  )
+
+  const userDropdownOptions = useMemo(() => {
+    if (userOptions.length === 0) return userOptions
+    return [
+      {
+        id: SELECT_ALL_OPTION_ID,
+        name: 'All',
+      },
+      ...userOptions,
+    ]
+  }, [userOptions])
+
+  const groupDropdownOptions = useMemo(() => {
+    if (groupOptions.length === 0) return groupOptions
+    return [
+      {
+        id: SELECT_ALL_OPTION_ID,
+        name: 'All',
+      },
+      ...groupOptions,
+    ]
+  }, [groupOptions])
+
+  const allUsersSelected =
+    userOptions.length > 0 && selectedUsers.length === userOptions.length
+  const allGroupsSelected =
+    groupOptions.length > 0 && selectedGroups.length === groupOptions.length
+
+  const onSelectedUsersChange = (selectedOptions: any[]) => {
+    const hasAll = selectedOptions.some(
+      (opt) => String(opt.id || opt.value || '') === SELECT_ALL_OPTION_ID,
+    )
+    const withoutAll = selectedOptions.filter(
+      (opt) => String(opt.id || opt.value || '') !== SELECT_ALL_OPTION_ID,
+    )
+
+    if (hasAll) {
+      setShowSelectionError(false)
+      setSelectedPrincipals([
+        ...userOptions.map((opt) => ({
+          id: opt.id,
+          name: opt.name,
+          type: 'USER' as const,
+        })),
+        ...selectedGroups,
+      ])
+      return
+    }
+
+    if (allUsersSelected && withoutAll.length === 0) {
+      setShowSelectionError(false)
+      setSelectedPrincipals([...selectedGroups])
+      return
+    }
+
+    const nextUsers: Principal[] = withoutAll.map((opt) => {
+      const optId = String(opt.id || opt.value || '')
+      const found = userOptions.find((p) => p.id === optId)
       return {
-        id: String(u.id),
-        name: `User: ${uName}`,
-        rawName: uName,
+        id: optId,
+        name: found ? found.name : String(opt.name || opt.label || optId),
         type: 'USER' as const,
       }
     })
 
-    const groupOpts = groups.map((g) => {
-      const gId = String(g.id || g.groupId || '')
-      const gName = String(g.name || g.description || gId || 'Group')
+    setShowSelectionError(false)
+    setSelectedPrincipals([...nextUsers, ...selectedGroups])
+  }
+
+  const onSelectedGroupsChange = (selectedOptions: any[]) => {
+    const hasAll = selectedOptions.some(
+      (opt) => String(opt.id || opt.value || '') === SELECT_ALL_OPTION_ID,
+    )
+    const withoutAll = selectedOptions.filter(
+      (opt) => String(opt.id || opt.value || '') !== SELECT_ALL_OPTION_ID,
+    )
+
+    if (hasAll) {
+      setShowSelectionError(false)
+      setSelectedPrincipals([
+        ...selectedUsers,
+        ...groupOptions.map((opt) => ({
+          id: opt.id,
+          name: opt.name,
+          type: 'GROUP' as const,
+        })),
+      ])
+      return
+    }
+
+    if (allGroupsSelected && withoutAll.length === 0) {
+      setShowSelectionError(false)
+      setSelectedPrincipals([...selectedUsers])
+      return
+    }
+
+    const nextGroups: Principal[] = withoutAll.map((opt) => {
+      const optId = String(opt.id || opt.value || '')
+      const found = groupOptions.find((p) => p.id === optId)
       return {
-        id: gId,
-        name: `Group: ${gName}`,
-        rawName: gName,
+        id: optId,
+        name: found ? found.name : String(opt.name || opt.label || optId),
         type: 'GROUP' as const,
       }
     })
 
-    return [...userOpts, ...groupOpts]
-  }, [users, groups])
+    setShowSelectionError(false)
+    setSelectedPrincipals([...selectedUsers, ...nextGroups])
+  }
 
-  const onSelectedPrincipalsChange = (selectedOptions: any[]) => {
-    const updated: Principal[] = selectedOptions.map((opt) => {
-      const optId = String(opt.id || opt.value || '')
-      const found = principalOptions.find((p) => p.id === optId)
-      return {
-        id: optId,
-        name: found ? found.rawName : String(opt.name || opt.label || optId),
-        type: found ? found.type : ('USER' as const),
-      }
+  const ensurePrincipalSelection = () => {
+    if (selectedPrincipals.length > 0) {
+      setShowSelectionError(false)
+      return true
+    }
+
+    setShowSelectionError(true)
+    showToast({
+      message: 'Select at least one user or group to continue.',
+      variant: 'error',
     })
-    setSelectedPrincipals(updated)
+    return false
+  }
+
+  const goToStep = (nextStep: Step) => {
+    if (nextStep > 0 && selectedPrincipals.length === 0) {
+      setStep(0)
+      ensurePrincipalSelection()
+      return
+    }
+
+    setShowSelectionError(false)
+    setStep(nextStep)
   }
 
   const togglePermission = (id: keyof FolderPermissionFlags) => {
@@ -421,33 +559,63 @@ export default function FolderSecurityPolicyWizard({
               Folder Security Policy
             </h2>
             <p className="mt-0.5 text-xs text-gray-11">
-              Select users or groups who will receive access permissions for this folder.
+              Select at least one user or group who will receive access permissions for this folder.
             </p>
           </div>
 
           <Divider />
 
-          <div className="space-y-3">
-            <InputSelectMultiple
-              className="bg-surface"
-              label="Select Users & Groups *"
-              options={principalOptions}
-              placeholder={isLoading ? 'Loading users & groups...' : 'Search and select users or groups...'}
-              value={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
-              onChange={(value) => onSelectedPrincipalsChange(value as any[])}
-            />
-
-            <SettingsSelectedChips
-              items={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
-              onRemove={(id) => onSelectedPrincipalsChange(selectedPrincipals.filter((p) => p.id !== id))}
-            />
-
-            {selectedPrincipals.length > 0 ? (
+          <div className="space-y-4">
+            {showSelectionError && selectedPrincipals.length === 0 ? (
               <Alert
-                text={`${selectedPrincipals.length} user/group(s) selected for folder security policy. Click Continue to configure permissions.`}
-                variant="green"
+                text="Select at least one user or group to continue."
+                variant="red"
               />
             ) : null}
+
+            <div className="space-y-3">
+              <InputSelectMultiple
+                clearable
+                label="Select Users"
+                options={userDropdownOptions}
+                placeholder={isLoading ? 'Loading users...' : 'Search and select users...'}
+                searchable
+                value={
+                  allUsersSelected
+                    ? [{ id: SELECT_ALL_OPTION_ID, name: 'All' }]
+                    : selectedUsers.map((p) => ({ id: p.id, name: p.name }))
+                }
+                onChange={(value) => onSelectedUsersChange(value as any[])}
+              />
+              <SettingsSelectedChips
+                items={selectedUsers.map((p) => ({ id: p.id, name: p.name }))}
+                onRemove={(id) =>
+                  onSelectedUsersChange(selectedUsers.filter((p) => p.id !== id))
+                }
+              />
+            </div>
+
+            <div className="space-y-3">
+              <InputSelectMultiple
+                clearable
+                label="Select Groups"
+                options={groupDropdownOptions}
+                placeholder={isLoading ? 'Loading groups...' : 'Search and select groups...'}
+                searchable
+                value={
+                  allGroupsSelected
+                    ? [{ id: SELECT_ALL_OPTION_ID, name: 'All' }]
+                    : selectedGroups.map((p) => ({ id: p.id, name: p.name }))
+                }
+                onChange={(value) => onSelectedGroupsChange(value as any[])}
+              />
+              <SettingsSelectedChips
+                items={selectedGroups.map((p) => ({ id: p.id, name: p.name }))}
+                onRemove={(id) =>
+                  onSelectedGroupsChange(selectedGroups.filter((p) => p.id !== id))
+                }
+              />
+            </div>
           </div>
         </div>
       )
@@ -655,7 +823,7 @@ export default function FolderSecurityPolicyWizard({
             active={step}
             orientation="vertical"
             steps={formattedSteps}
-            setActive={(newStep) => setStep(newStep as Step)}
+            setActive={(newStep) => goToStep(newStep as Step)}
           />
         </aside>
 
@@ -666,15 +834,19 @@ export default function FolderSecurityPolicyWizard({
 
             {/* Footer Navigation */}
             <div className="mt-6 flex items-center justify-between border-t border-[var(--border-default)] pt-4">
-              <Button
-                color="gray"
-                disabled={step === 0 || Boolean(accessError) || isLoading}
-                icon="lucide:arrow-left"
-                label="Back"
-                size="sm"
-                variant="outline"
-                onClick={() => setStep((step - 1) as Step)}
-              />
+              {step > 0 ? (
+                <Button
+                  color="gray"
+                  disabled={Boolean(accessError) || isLoading}
+                  icon="lucide:arrow-left"
+                  label="Back"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => goToStep((step - 1) as Step)}
+                />
+              ) : (
+                <div />
+              )}
 
               {step === 2 ? (
                 <Button
@@ -689,11 +861,14 @@ export default function FolderSecurityPolicyWizard({
                 />
               ) : (
                 <Button
-                  disabled={(step === 0 && selectedPrincipals.length === 0) || Boolean(accessError) || isLoading}
+                  disabled={Boolean(accessError) || isLoading}
                   label="Continue"
                   size="sm"
                   suffixIcon="tabler:arrow-right"
-                  onClick={() => setStep((step + 1) as Step)}
+                  onClick={() => {
+                    if (step === 0 && !ensurePrincipalSelection()) return
+                    goToStep((step + 1) as Step)
+                  }}
                 />
               )}
             </div>

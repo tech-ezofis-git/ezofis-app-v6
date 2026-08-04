@@ -805,12 +805,13 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             const fullName = `${user.firstName} ${user.lastName}`.trim()
 
             return (
-              <div
-                className='min-w-0 truncate font-semibold text-[var(--gray-13)]'
-                title={fullName}
+              <button
+                className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline'
+                type='button'
+                onClick={() => openEditUser(user)}
               >
                 {fullName || ''}
-              </div>
+              </button>
             )
           },
         },
@@ -824,10 +825,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         minSize: 40,
         size: 180,
         cell: ({ getValue }) => (
-          <span
-            className='block min-w-0 truncate text-[var(--gray-12)]'
-            title={String(getValue() || '')}
-          >
+          <span className='text-[var(--gray-12)]'>
             {String(getValue() || '').trim() || ''}
           </span>
         ),

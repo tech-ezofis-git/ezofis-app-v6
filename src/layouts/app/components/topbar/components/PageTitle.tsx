@@ -7,12 +7,21 @@ import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import useDmsSetupStore from '@/pages/dashboard/workflows/document-repository/stores/useDmsSetupStore'
+import {
+  openApSetupPreview,
+  openDmsSetupPreview,
+} from '@/pages/dashboard/workflows/setupPreview'
 import useFoldersTopbarStore from '@/pages/folders/stores/useFoldersTopbarStore'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import { localizeRequestListTab } from '@/pages/requests/utils/localizeRequestUi'
 import SettingsBreadcrumbs from '@/pages/settings/components/SettingsBreadcrumbs'
 import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
+import cn from '@/utils/cn'
+
+/** TEMP: remove after design review of AP vs DMS setup screens. */
+const SHOW_SETUP_DESIGN_SWITCH = true
 
 const PageTitle = () => {
   const { t, i18n } = useLingui()
@@ -22,6 +31,8 @@ const PageTitle = () => {
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
   const { role, setRole } = useDashboardStore()
   const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
+  const isApSetupStarted = useSetupStore((state) => state.isSetupStarted)
+  const isDmsSetupStarted = useDmsSetupStore((state) => state.isSetupStarted)
   const settingsBreadcrumbs = useSettingsTopbarStore(
     (state) => state.breadcrumbs,
   )
@@ -32,10 +43,14 @@ const PageTitle = () => {
   const current = matches[matches.length - 1]
   const routeId = String(current?.routeId ?? '')
   const isFormEntriesRoute = routeId === '/_app/forms_/$formId/entries'
-  const isSettingsRoute = routeId === '/_app/settings' || routeId === '/embed/settings'
-  const isFoldersRoute = routeId === '/_app/folders' || routeId === '/embed/folders'
-  const isRequestsRoute = routeId === '/_app/requests' || routeId === '/embed/requests'
-  const isWorkflowsRoute = routeId === '/_app/workflows' || routeId === '/embed/workflows'
+  const isSettingsRoute =
+    routeId === '/_app/settings' || routeId === '/embed/settings'
+  const isFoldersRoute =
+    routeId === '/_app/folders' || routeId === '/embed/folders'
+  const isRequestsRoute =
+    routeId === '/_app/requests' || routeId === '/embed/requests'
+  const isWorkflowsRoute =
+    routeId === '/_app/workflows' || routeId === '/embed/workflows'
   const isDashboardRoute =
     routeId === '/_app/' ||
     routeId === '/_app' ||
@@ -109,6 +124,12 @@ const PageTitle = () => {
     }
   })()
 
+  const activeSetupPreview = isDmsSetupStarted
+    ? 'dms'
+    : isApSetupStarted
+      ? 'ap'
+      : null
+
   const renderContent = () => {
     if (isWorkflowsRoute && isBuilderOpen) {
       return (
@@ -173,6 +194,35 @@ const PageTitle = () => {
     return (
       <div className='flex items-center gap-4'>
         <Title level={3} title={localizedPageTitle} />
+        {(isDashboardRoute || rawPageTitle === 'Dashboard') &&
+          SHOW_SETUP_DESIGN_SWITCH && (
+            <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
+              <button
+                className={cn(
+                  'cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150',
+                  activeSetupPreview === 'ap'
+                    ? 'bg-primary-9 text-white shadow-sm'
+                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10',
+                )}
+                type='button'
+                onClick={openApSetupPreview}
+              >
+                AP Setup
+              </button>
+              <button
+                className={cn(
+                  'cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150',
+                  activeSetupPreview === 'dms'
+                    ? 'bg-primary-9 text-white shadow-sm'
+                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10',
+                )}
+                type='button'
+                onClick={openDmsSetupPreview}
+              >
+                DMS Folder
+              </button>
+            </div>
+          )}
         {(isDashboardRoute || rawPageTitle === 'Dashboard') &&
           isApSetUpCompleted && (
             <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>

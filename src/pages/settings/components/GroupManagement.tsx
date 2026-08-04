@@ -262,7 +262,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     const groupName = draftGroup.name.trim()
     const users = selectedMembers.map((member) => String(member.id))
 
-    if (!groupName || !description || !users.length) return
+    if (!groupName || !users.length) return
 
     if (editingGroupId) {
       setIsSavingGroup(true)
@@ -338,9 +338,13 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
           minSize: 40,
           size: 200,
           cell: ({ row }) => (
-            <div className='min-w-0 truncate font-semibold text-[var(--gray-13)]'>
+            <button
+              className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline'
+              type='button'
+              onClick={() => openEditGroup(row.original)}
+            >
               {row.original.name}
-            </div>
+            </button>
           ),
         },
       ),
@@ -352,9 +356,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
-          <span className='block max-w-full truncate'>
-            {String(getValue() || '—')}
-          </span>
+          <span>{String(getValue() || '—')}</span>
         ),
       }),
       groupColumnHelper.display({
@@ -652,7 +654,6 @@ function GroupSetup({
     if (step === 0) {
       return getMissingRequiredLabels([
         { label: 'Group Name', value: draftGroup.name },
-        { label: 'Description', value: draftGroup.description },
       ])
     }
 
@@ -664,7 +665,6 @@ function GroupSetup({
     return [
       ...getMissingRequiredLabels([
         { label: 'Group Name', value: draftGroup.name },
-        { label: 'Description', value: draftGroup.description },
       ]),
       ...(selectedMembers.length ? [] : ['Group Members']),
     ]
@@ -691,7 +691,7 @@ function GroupSetup({
 
     if (missingLabels.length) {
       setShowErrors(true)
-      if (missingLabels.includes('Group Name') || missingLabels.includes('Description')) {
+      if (missingLabels.includes('Group Name')) {
         onStepChange(0)
       } else if (missingLabels.includes('Group Members')) {
         onStepChange(1)
@@ -774,15 +774,10 @@ function GroupSetup({
             onChange={(value) => onChange({ ...draftGroup, name: value })}
           />
           <InputTextarea
-            label='Description *'
+            label='Description'
             minRows={4}
             placeholder='Describe the purpose of this group...'
             value={draftGroup.description}
-            error={getFieldRequiredError(
-              'Description',
-              showErrors,
-              draftGroup.description,
-            )}
             onChange={(value) =>
               onChange({ ...draftGroup, description: value })
             }

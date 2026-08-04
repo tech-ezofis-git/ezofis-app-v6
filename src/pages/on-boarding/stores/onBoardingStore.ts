@@ -14,7 +14,7 @@ type Store = {
 const onBoardingStore = create<Store>()((set) => ({
   answers: {},
   step: 1,
-  totalSteps: 6,
+  totalSteps: 7,
 
   back: () =>
     set((state) => ({

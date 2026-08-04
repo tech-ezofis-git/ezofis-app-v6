@@ -27,7 +27,17 @@ const COLORS = [
   'rgba(45, 212, 191, 0.65)', // teal
 ]
 
-export default function SuccessCelebration() {
+type SuccessCelebrationProps = {
+  description?: string
+  loadingLabel?: string
+  title?: string
+}
+
+export default function SuccessCelebration({
+  description = 'Your workflow is now active and ready to process invoices. Redirecting you to your requests dashboard...',
+  loadingLabel = 'Loading request workspace...',
+  title = 'Accounts Payable Setup Successful!',
+}: SuccessCelebrationProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -142,14 +152,13 @@ export default function SuccessCelebration() {
 
           <AnimateSlideUp delay={0.2}>
             <h3 className='md:text-22 mt-6 text-20 font-bold tracking-tight text-gray-13'>
-              Accounts Payable Setup Successful!
+              {title}
             </h3>
           </AnimateSlideUp>
 
           <AnimateSlideUp delay={0.3}>
             <p className='mt-3 max-w-md text-14/5 text-gray-11'>
-              Your workflow is now active and ready to process invoices.
-              Redirecting you to your requests dashboard...
+              {description}
             </p>
           </AnimateSlideUp>
 
@@ -159,7 +168,7 @@ export default function SuccessCelebration() {
                 className='size-4 animate-spin text-primary-9'
                 name='tabler:loader-quarter'
               />
-              <span>Loading request workspace...</span>
+              <span>{loadingLabel}</span>
             </div>
           </AnimateFadeIn>
         </div>

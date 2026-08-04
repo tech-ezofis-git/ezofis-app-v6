@@ -1,24 +1,47 @@
 import { useMemo } from 'react'
 import type { Form } from '@/types/form'
-import Badge from '@/components/base/Badge'
+import cn from '@/utils/cn'
 
 interface Props {
-  status: Form['status']
+  status: Form['status'] | string
 }
 
 const FormStatusBadge = ({ status }: Props) => {
-  const color = useMemo(() => {
-    switch (status?.toUpperCase()) {
-      case 'DRAFT':
-        return 'orange'
-      case 'PUBLISHED':
-        return 'green'
-      default:
-        return 'gray'
-    }
-  }, [status])
+  const normalized = String(status || '').trim().toUpperCase()
 
-  return <Badge color={color} label={status} />
+  const { className, label } = useMemo(() => {
+    switch (normalized) {
+      case 'PUBLISHED':
+        return {
+          className:
+            'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]',
+          label: 'Published',
+        }
+      case 'DRAFT':
+        return {
+          className:
+            'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
+          label: 'Draft',
+        }
+      default:
+        return {
+          className:
+            'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
+          label: status || '—',
+        }
+    }
+  }, [normalized, status])
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-normal',
+        className,
+      )}
+    >
+      {label}
+    </span>
+  )
 }
 
 FormStatusBadge.displayName = 'FormStatusBadge'

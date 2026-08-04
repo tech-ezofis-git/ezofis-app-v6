@@ -125,15 +125,19 @@ const FOLDER_DATA_TYPES = [
   'SHORT_TEXT',
   'LONG_TEXT',
   'NUMBER',
+  'BOOLEAN',
   'DATE',
-  'DATE_TIME',
   'TIME',
-  'CURRENCY_AMOUNT',
+  'DATE_TIME',
   'SINGLE_SELECT',
-  'MULTI_SELECT',
-  'YES_NO_TOGGLE',
-  'EMAIL',
-  'PHONE_NUMBER',
+  'TABLE',
+  'BARCODE',
+  'OMR',
+  'CALCULATED',
+  'AUTO_GENERATED',
+  'LINK',
+  'CURRENCY_AMOUNT',
+  'DYNAMIC_TABLE',
 ] as const
 
 const isRetryableModelError = (error: unknown) => {
@@ -590,17 +594,17 @@ function normalizeFolderDataType(value: string) {
     .replace(/[\s-]+/g, '_')
 
   const aliases: Record<string, string> = {
+    BOOL: 'BOOLEAN',
     CURRENCY: 'CURRENCY_AMOUNT',
     DROPDOWN: 'SINGLE_SELECT',
-    EMAIL_ADDRESS: 'EMAIL',
     LONGTEXT: 'LONG_TEXT',
-    MULTISELECT: 'MULTI_SELECT',
-    PHONE: 'PHONE_NUMBER',
     SELECT: 'SINGLE_SELECT',
     SHORTTEXT: 'SHORT_TEXT',
     TEXT: 'SHORT_TEXT',
-    TOGGLE: 'YES_NO_TOGGLE',
-    YES_NO: 'YES_NO_TOGGLE',
+    TOGGLE: 'BOOLEAN',
+    URL: 'LINK',
+    YES_NO: 'BOOLEAN',
+    YES_NO_TOGGLE: 'BOOLEAN',
   }
 
   const mapped = aliases[normalized] || normalized

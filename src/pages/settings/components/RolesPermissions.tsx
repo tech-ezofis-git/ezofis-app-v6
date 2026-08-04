@@ -1486,10 +1486,15 @@ function RoleList({
         meta: { ...settingsHeaderMeta.start, label: 'Role' },
         minSize: 40,
         size: 180,
-        cell: ({ getValue }) => (
-          <div className='min-w-0 truncate text-sm font-semibold text-[var(--gray-13)]'>
-            {String(getValue() || '')}
-          </div>
+        cell: ({ row }) => (
+          <button
+            className='max-w-full text-left text-sm font-semibold text-[var(--gray-13)] transition-colors hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50'
+            disabled={isLoadingRoleDetails}
+            type='button'
+            onClick={() => onEdit(row.original.id)}
+          >
+            {String(row.original.name || '')}
+          </button>
         ),
       }),
       roleColumnHelper.accessor('description', {
@@ -1501,14 +1506,7 @@ function RoleList({
         size: 240,
         cell: ({ getValue }) => {
           const value = String(getValue() || '').trim()
-          return (
-            <span
-              className='block min-w-0 truncate text-sm text-[var(--gray-12)]'
-              title={value}
-            >
-              {value}
-            </span>
-          )
+          return <span className='text-sm text-[var(--gray-12)]'>{value}</span>
         },
       }),
       roleColumnHelper.accessor('users', {

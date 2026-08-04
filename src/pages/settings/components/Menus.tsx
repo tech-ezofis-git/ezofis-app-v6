@@ -342,10 +342,17 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
 
           return (
             <div className='min-w-0'>
-              <div className='truncate font-semibold text-[var(--gray-13)]'>
+              <button
+                className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50'
+                disabled={isLoadingMenuDetails}
+                type='button'
+                onClick={() => {
+                  void openEditMenu(menu)
+                }}
+              >
                 {menu.label}
-              </div>
-              <div className='mt-1 truncate text-sm text-[var(--gray-10)]'>
+              </button>
+              <div className='mt-1 text-sm text-[var(--gray-10)]'>
                 {menu.key}
               </div>
             </div>
@@ -360,7 +367,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
         minSize: 160,
         size: 200,
         cell: ({ getValue }) => (
-          <span className='block max-w-full truncate font-mono text-sm text-[var(--gray-12)]'>
+          <span className='font-mono text-sm text-[var(--gray-12)]'>
             {getValue()}
           </span>
         ),
