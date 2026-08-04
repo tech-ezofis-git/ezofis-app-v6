@@ -1,7 +1,7 @@
 import setupStore from './accounts-payable/stores/useSetupStore'
 import useDmsSetupStore from './document-repository/stores/useDmsSetupStore'
 
-/** TEMP: shared helpers for AP vs DMS setup design preview. */
+/** Shared helpers for AP vs DMS setup entry and dashboard exit. */
 
 export const openApSetupPreview = () => {
   useDmsSetupStore.getState().resetSetup()
@@ -20,4 +20,13 @@ export const openDmsSetupPreview = () => {
     localStorage.removeItem('restrictNavigationUntilApSetup')
   }
   useDmsSetupStore.getState().startSetup()
+}
+
+/** Leave AP/DMS setup wizards and show the normal Dashboard. */
+export const exitSetupToDashboard = () => {
+  useDmsSetupStore.getState().resetSetup()
+  setupStore.setState({
+    isSetupOpen: false,
+    isSetupStarted: false,
+  })
 }

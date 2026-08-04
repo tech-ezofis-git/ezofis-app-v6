@@ -4,6 +4,7 @@ import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
 import cn from '@/utils/cn'
 
 interface Props extends Menu {
@@ -39,7 +40,12 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
             isLinkDisabled &&
               'pointer-events-none cursor-not-allowed opacity-40',
           )}
-          onClick={() => closeDemoForm()}
+          onClick={() => {
+            closeDemoForm()
+            if (route === '/') {
+              exitSetupToDashboard()
+            }
+          }}
         >
           <Icon
             name={icon}

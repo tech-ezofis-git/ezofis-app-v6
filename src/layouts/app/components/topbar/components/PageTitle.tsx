@@ -20,9 +20,6 @@ import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarSto
 import useWorkflowStore from '@/pages/workflows/stores/useWorkflowStore'
 import cn from '@/utils/cn'
 
-/** TEMP: remove after design review of AP vs DMS setup screens. */
-const SHOW_SETUP_DESIGN_SWITCH = true
-
 const PageTitle = () => {
   const { t, i18n } = useLingui()
   const matches = useMatches()
@@ -129,6 +126,13 @@ const PageTitle = () => {
     : isApSetupStarted
       ? 'ap'
       : null
+  const isSetupMode = Boolean(activeSetupPreview)
+  const showSetupSwitcher =
+    (isDashboardRoute || rawPageTitle === 'Dashboard') && isSetupMode
+  const showRoleSwitcher =
+    (isDashboardRoute || rawPageTitle === 'Dashboard') &&
+    isApSetUpCompleted &&
+    !isSetupMode
 
   const renderContent = () => {
     if (isWorkflowsRoute && isBuilderOpen) {
@@ -194,8 +198,7 @@ const PageTitle = () => {
     return (
       <div className='flex items-center gap-4'>
         <Title level={3} title={localizedPageTitle} />
-        {(isDashboardRoute || rawPageTitle === 'Dashboard') &&
-          SHOW_SETUP_DESIGN_SWITCH && (
+        {showSetupSwitcher && (
             <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
               <button
                 className={cn(
@@ -223,8 +226,7 @@ const PageTitle = () => {
               </button>
             </div>
           )}
-        {(isDashboardRoute || rawPageTitle === 'Dashboard') &&
-          isApSetUpCompleted && (
+        {showRoleSwitcher && (
             <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
               <button
                 className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
