@@ -118,7 +118,7 @@ export type FolderConfigSuggestion = {
   fields: FolderConfigField[]
   folderName: string
   reply: string
-  source?: 'gemini' | 'local'
+  source?: 'gemini' | 'qwen' | 'local'
 }
 
 const FOLDER_DATA_TYPES = [
@@ -160,7 +160,9 @@ const isRetryableModelError = (error: unknown) => {
   )
 }
 
-const buildLocalFolderConfig = (prompt: string): FolderConfigSuggestion => {
+export const buildLocalFolderConfig = (
+  prompt: string,
+): FolderConfigSuggestion => {
   const text = prompt.toLowerCase()
 
   if (
@@ -450,7 +452,8 @@ export type FolderConfigReference = {
   name: string
 }
 
-export const generateFolderConfig = async (
+/** Hidden Gemini path — use generateFolderConfig from folderConfig.ts (provider switch). */
+export const generateFolderConfigViaGemini = async (
   prompt: string,
   history: Array<{ role: 'user' | 'assistant'; text: string }> = [],
   reference?: FolderConfigReference | null,
@@ -587,7 +590,7 @@ Return a practical folder setup for this use case.
     : new Error('Could not generate folder configuration')
 }
 
-function normalizeFolderDataType(value: string) {
+export function normalizeFolderDataType(value: string) {
   const normalized = String(value || '')
     .trim()
     .toUpperCase()

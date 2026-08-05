@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { FolderConfigField } from '@/services/ai/gemini'
+import type { FolderConfigField } from '@/services/ai/folderConfig'
 
 export type DmsSetupField = FolderConfigField & {
   id: string

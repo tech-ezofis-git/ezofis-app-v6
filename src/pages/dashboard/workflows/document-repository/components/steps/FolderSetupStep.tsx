@@ -9,7 +9,7 @@ import {
   StepFooter,
   StepLayout,
 } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/StepLayout'
-import { generateFolderConfig } from '@/services/ai/gemini'
+import { generateFolderConfig } from '@/services/ai/folderConfig'
 import cn from '@/utils/cn'
 import useDmsSetupStore from '../../stores/useDmsSetupStore'
 
