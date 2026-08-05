@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 // @/pages/requests/components/request/components/sections/comments/Comments.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
 import { useComments } from '@/pages/requests/hooks/useComments'
@@ -85,6 +86,7 @@ export default function Comments({
   refetch: propRefetch,
   workflowId,
 }: Props) {
+  const { t } = useLingui()
   const { session } = authUserStore.getState()
   const currentUserEmail = session?.email ?? 'me@app.com'
 
@@ -316,7 +318,7 @@ export default function Comments({
             <div className='flex-1 overflow-hidden rounded-xl border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:bg-surface focus-within:ring-1 focus-within:ring-primary-4'>
               <textarea
                 className='w-full resize-none bg-transparent px-3 py-2 text-13 font-medium text-gray-12 placeholder:text-gray-8 focus:outline-none'
-                placeholder='Add a comment...'
+                placeholder={t`Add a comment...`}
                 ref={textareaRef}
                 rows={1}
                 style={{ lineHeight: '1.4', minHeight: '36px' }}
@@ -334,7 +336,7 @@ export default function Comments({
             {/* Send Button */}
             <button
               disabled={!canSend}
-              title='Send comment'
+              title={t`Send comment`}
               className={cn(
                 'flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-xl bg-primary-9 text-13 font-bold text-text-on-accent transition-all active:scale-95',
                 canSend

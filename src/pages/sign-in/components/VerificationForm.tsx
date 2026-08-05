@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
@@ -8,21 +9,22 @@ import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import authUserStore from '@/stores/authUserStore'
 
 const VerificationForm = () => {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const { user } = authUserStore()
 
   const [loading, setLoading] = useState(false)
   const [code, setCode] = useState('')
   const { elapsed, resendLabel, resetTimer } = useResendTimer(
-    "Didn't receive the code? Resend",
+    t`Didn't receive the code? Resend`,
   )
   const verificationMethod = user.profile.twoStepVerification.method
 
   const description = () => {
     const methods = {
-      app: 'Enter the code from your authenticator app.',
-      email: `We've sent a 6-digit code to ${user.email}.`,
-      sms: `We've sent a 6-digit code to ${user.profile.phoneNumber}.`,
+      app: t`Enter the code from your authenticator app.`,
+      email: t`We've sent a 6-digit code to ${user.email}.`,
+      sms: t`We've sent a 6-digit code to ${user.profile.phoneNumber}.`,
     }
 
     return methods[verificationMethod]
@@ -47,7 +49,7 @@ const VerificationForm = () => {
         className='text-center'
         description={description()}
         level={1}
-        title='Two-Step Verification'
+        title={t`Two-Step Verification`}
       />
 
       <InputPin
@@ -61,7 +63,7 @@ const VerificationForm = () => {
       <div className='space-y-2'>
         <Button
           className='w-full justify-center'
-          label='Verify'
+          label={t`Verify`}
           onClick={verifyCode}
         />
 

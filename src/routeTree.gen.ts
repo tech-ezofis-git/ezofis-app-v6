@@ -66,6 +66,7 @@ import { Route as StoriesAvatarRouteImport } from './routes/stories/avatar'
 import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
 import { Route as StoriesAccordionRouteImport } from './routes/stories/accordion'
 import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
+import { Route as SignRequestSplatRouteImport } from './routes/sign-request/$'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
 import { Route as FormBuilderFormIdRouteImport } from './routes/form-builder/$formId'
 import { Route as EmbedRequestsRouteImport } from './routes/embed/requests'
@@ -376,6 +377,11 @@ const StoriesAlertRoute = StoriesAlertRouteImport.update({
   path: '/Alert',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const SignRequestSplatRoute = SignRequestSplatRouteImport.update({
+  id: '/sign-request/$',
+  path: '/sign-request/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnBoardingTokenRoute = OnBoardingTokenRouteImport.update({
   id: '/on-boarding/$token',
   path: '/on-boarding/$token',
@@ -509,6 +515,7 @@ export interface FileRoutesByFullPath {
   '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
@@ -587,6 +594,7 @@ export interface FileRoutesByTo {
   '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
@@ -669,6 +677,7 @@ export interface FileRoutesById {
   '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
   '/stories/ai-icon': typeof StoriesAiIconRoute
@@ -750,6 +759,7 @@ export interface FileRouteTypes {
     | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
     | '/stories/ai-icon'
@@ -828,6 +838,7 @@ export interface FileRouteTypes {
     | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
     | '/stories/ai-icon'
@@ -909,6 +920,7 @@ export interface FileRouteTypes {
     | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
     | '/stories/ai-icon'
@@ -977,6 +989,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
+  SignRequestSplatRoute: typeof SignRequestSplatRoute
   WorkflowBuilderWorkflowIdRoute: typeof WorkflowBuilderWorkflowIdRoute
   FormBuilderIndexRoute: typeof FormBuilderIndexRoute
   OnBoardingIndexRoute: typeof OnBoardingIndexRoute
@@ -1383,6 +1396,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesAlertRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/sign-request/$': {
+      id: '/sign-request/$'
+      path: '/sign-request/$'
+      fullPath: '/sign-request/$'
+      preLoaderRoute: typeof SignRequestSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/on-boarding/$token': {
       id: '/on-boarding/$token'
       path: '/on-boarding/$token'
@@ -1725,6 +1745,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
+  SignRequestSplatRoute: SignRequestSplatRoute,
   WorkflowBuilderWorkflowIdRoute: WorkflowBuilderWorkflowIdRoute,
   FormBuilderIndexRoute: FormBuilderIndexRoute,
   OnBoardingIndexRoute: OnBoardingIndexRoute,

@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Button from '@/components/base/button/Button'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import cn from '@/utils/cn'
@@ -12,6 +13,7 @@ import {
 import DashboardCharts from './workflows/shared/components/Header'
 
 const DashboardPage = () => {
+  const { t } = useLingui()
   const isActivatingAutomation = setupStore(
     (state) => state.isActivatingAutomation,
   )
@@ -43,14 +45,14 @@ const DashboardPage = () => {
               <div className='flex flex-wrap items-center justify-between gap-3 border-b border-gray-3 px-6 py-3 md:px-8'>
                 <div className='min-w-0'>
                   <p className='text-14 font-medium text-gray-13'>
-                    Accounts Payable Automation
+                    {t`Accounts Payable Automation`}
                   </p>
                   <p className='mt-0.5 text-12 text-gray-10'>
-                    Connect email, ERP, and storage to start invoice processing.
+                    {t`Connect email, ERP, and storage to start invoice processing.`}
                   </p>
                 </div>
                 <Button
-                  label='Get Started'
+                  label={t`Get Started`}
                   size='md'
                   suffixIcon='lucide:arrow-right'
                   onClick={openApSetupPreview}

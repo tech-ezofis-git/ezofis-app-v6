@@ -11,7 +11,7 @@ import type {
 } from './types'
 
 export const CHATBOT_API_BASE =
-  import.meta.env.VITE_CHATBOT_API_URL || 'http://52.172.32.88:7071'
+  import.meta.env.VITE_CHATBOT_API_URL || ' http://52.172.32.88:7071/'
 
 export type ChatbotRequestBody = {
   actionFrom: string
@@ -35,10 +35,10 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
       typeof window === 'undefined'
         ? Buffer.from(padded, 'base64').toString('utf8')
         : decodeURIComponent(
-            Array.from(atob(padded))
-              .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`)
-              .join(''),
-          )
+          Array.from(atob(padded))
+            .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`)
+            .join(''),
+        )
     return JSON.parse(json) as Record<string, unknown>
   } catch {
     return null
@@ -200,7 +200,7 @@ export async function postChatbotMessage(
     try {
       const { getSession, getTenants } = await import('@/api/v6/auth')
       await getSession()
-      ;({ accessToken, tenantId } = resolveChatbotAuth())
+        ; ({ accessToken, tenantId } = resolveChatbotAuth())
 
       if (!tenantId) {
         const store = authUserStore.getState()

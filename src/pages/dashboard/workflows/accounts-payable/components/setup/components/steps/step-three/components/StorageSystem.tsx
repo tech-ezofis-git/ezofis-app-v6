@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 // import AmazonLogo from '@/assets/brands/amazon.svg'
 // import DropboxLogo from '@/assets/brands/dropbox.svg'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
@@ -124,8 +125,8 @@ const StorageSystem = () => {
       <div>
         <AnimateSlideUp delay={0.1}>
           <SectionHeader
-            description='Use built-in secure storage for invoice documents.'
-            title='Default Storage'
+            description={t`Use built-in secure storage for invoice documents.`}
+            title={t`Default Storage`}
           />
         </AnimateSlideUp>
         <AnimateSlideUp delay={0.15}>
@@ -166,8 +167,8 @@ const StorageSystem = () => {
       <div>
         <AnimateSlideUp delay={0.2}>
           <SectionHeader
-            description='Connect your provider to securely store and manage invoice documents.'
-            title='Cloud Integrations'
+            description={t`Connect your provider to securely store and manage invoice documents.`}
+            title={t`Cloud Integrations`}
           />
         </AnimateSlideUp>
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>

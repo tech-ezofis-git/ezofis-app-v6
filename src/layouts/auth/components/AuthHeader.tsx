@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useLingui } from '@lingui/react/macro'
 import Button from '@/components/base/button/Button'
 import Logo from '@/components/common/Logo'
 import cn from '@/utils/cn'
@@ -8,45 +9,46 @@ interface Props {
   logoClassName?: string
 }
 
-const actions = [
-  {
-    currentPath: '/sign-up',
-    description: 'Already have an account?',
-    label: 'Sign In',
-    to: '/sign-in',
-  },
-  {
-    currentPath: '/sign-in',
-    description: "Don't have an account?",
-    label: 'Sign Up',
-    to: '/sign-up',
-  },
-  {
-    currentPath: '/forgot-password',
-    description: 'Remember your password?',
-    label: 'Sign In',
-    to: '/sign-in',
-  },
-  {
-    currentPath: '/reset-password',
-    description: 'Changed your mind?',
-    label: 'Go Back',
-    to: '/sign-in',
-  },
-  {
-    currentPath: '/two-step-verification',
-    description: 'Changed your mind?',
-    label: 'Go Back',
-    to: '/sign-in',
-  },
-]
-
 const AuthHeader = ({ className, logoClassName }: Props) => {
+  const { t } = useLingui()
   const location = useLocation()
   const navigate = useNavigate()
 
+  const actions = [
+    {
+      currentPath: '/sign-up',
+      description: t`Already have an account?`,
+      label: t`Sign In`,
+      to: '/sign-in',
+    },
+    {
+      currentPath: '/sign-in',
+      description: t`Don't have an account?`,
+      label: t`Sign Up`,
+      to: '/sign-up',
+    },
+    {
+      currentPath: '/forgot-password',
+      description: t`Remember your password?`,
+      label: t`Sign In`,
+      to: '/sign-in',
+    },
+    {
+      currentPath: '/reset-password',
+      description: t`Changed your mind?`,
+      label: t`Go Back`,
+      to: '/sign-in',
+    },
+    {
+      currentPath: '/two-step-verification',
+      description: t`Changed your mind?`,
+      label: t`Go Back`,
+      to: '/sign-in',
+    },
+  ]
+
   const action = actions.find(
-    (action) => location.pathname === action.currentPath,
+    (item) => location.pathname === item.currentPath,
   )
 
   const handleClick = () => {

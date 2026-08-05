@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import React, { useEffect, useMemo } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { useRequestDetail } from '@/pages/requests/hooks/useRequestDetails'
 import requestStore from '../stores/useRequestStore'
 import { SkeletonGrid } from './SkeletonGrid' // Moved your skeleton code here
@@ -169,7 +170,7 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
       >
         <SummaryCard
           icon='tabler:percentage'
-          label='Confidence Score'
+          label={t`Confidence Score`}
           progress={summaryMetrics.score.pct}
           status={summaryMetrics.score.status}
           subLabel='Extraction quality signal'
@@ -179,7 +180,7 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
 
         <SummaryCard
           icon='tabler:gavel'
-          label='AI Decision'
+          label={t`AI Decision`}
           progress={summaryMetrics.decision.pct}
           status={summaryMetrics.decision.status}
           subLabel='Based on PO Matching + Rules'
@@ -189,7 +190,7 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
 
         <SummaryCard
           icon='tabler:table'
-          label='Extracted Data'
+          label={t`Extracted Data`}
           progress={summaryMetrics.extraction.pct}
           status={summaryMetrics.extraction.status}
           subLabel='Invoice line items detected'
@@ -200,7 +201,7 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
         <SummaryCard
           helperIcon={summaryMetrics.validation.helperIcon}
           icon={summaryMetrics.validation.icon}
-          label='Validation'
+          label={t`Validation`}
           progress={summaryMetrics.validation.pct}
           status={summaryMetrics.validation.status}
           subLabel={summaryMetrics.validation.subLabel}

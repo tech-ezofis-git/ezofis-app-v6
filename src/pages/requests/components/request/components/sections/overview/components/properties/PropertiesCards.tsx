@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Badge from '@/components/base/Badge'
 import Title from '@/components/base/Title'
 import { formatDatetime } from '@/utils/dayjs'
@@ -45,7 +46,7 @@ const PropertiesCards = ({ data }: Props) => {
 
   return (
     <div>
-      <Title className='mb-3' level={3} title='Invoice Summary' />
+      <Title className='mb-3' level={3} title={t`Invoice Summary`} />
 
       {/* REAL CARD */}
       <div className='rounded-xl border border-gray-3 bg-surface p-4 shadow-sm'>

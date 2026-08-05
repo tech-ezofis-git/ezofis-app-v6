@@ -16,14 +16,21 @@ import {
   type BrowseStructureDto,
   getRepositoryItemComments,
   getRepositoryItemAiSummary,
+  getRepositoryItemFacets,
+  getRepositoryItemFilterFields,
   getRepositoryItems,
+  getRepositoryItemRelated,
   getRepositoryItemShares,
   getRepositoryItemTimeline,
   getRepositoryItemWorkspace,
   getSharedWithMe,
   type PagedDto,
+  type RelatedDocumentItem,
+  type RelatedDocumentsResponse,
   type RepositoryDto,
   type RepositoryFieldDto,
+  type RepositoryItemFacet,
+  type RepositoryItemFilterField,
   type RepositoryShareResult,
   type SharedWithMeItem,
   revokeRepositoryShare,
@@ -32,6 +39,8 @@ import {
 import { mapAiSummaryResponse } from '../utils/mapAiSummaryResponse'
 import { splitFilterValues } from '../utils/multiFilterValues'
 import { FOLDER_FILES_SECTION_MAX_FOLDERS } from '../utils/folderExplorerUtils'
+
+export type { RepositoryItemFacet, RepositoryItemFilterField }
 
 export interface DynamicRepositoryColumn {
   key: string
@@ -895,7 +904,22 @@ export const folderApi = {
       shareToken: options?.shareToken,
       tenantId: options?.tenantId,
     })
-    if (result.error) throw new Error(String(result.error))
+    if (result.error) {
+      const err = result.error
+      const message =
+        typeof err === 'string'
+          ? err
+          : err && typeof err === 'object'
+            ? String(
+                (err as { error?: string; message?: string; title?: string })
+                  .error ||
+                  (err as { message?: string }).message ||
+                  (err as { title?: string }).title ||
+                  'Unable to load document details',
+              )
+            : 'Unable to load document details'
+      throw new Error(message)
+    }
     return toWorkspaceDetail(result.data)
   },
 
@@ -906,6 +930,30 @@ export const folderApi = {
     const result = await getRepositoryItemTimeline({ itemId, repositoryId })
     if (result.error) throw new Error(String(result.error))
     return result.data || { events: [], totalCount: 0 }
+  },
+
+  async getRelatedDocuments(
+    repositoryId: string,
+    itemId: string,
+    request: { page?: number; pageSize?: number } = {},
+  ): Promise<RelatedDocumentsResponse> {
+    const result = await getRepositoryItemRelated({
+      itemId,
+      page: request.page ?? 1,
+      pageSize: request.pageSize ?? 50,
+      repositoryId,
+    })
+    if (result.error) throw new Error(String(result.error))
+    return (
+      result.data || {
+        data: [],
+        match: {},
+        matchFields: [],
+        page: request.page ?? 1,
+        pageSize: request.pageSize ?? 50,
+        totalCount: 0,
+      }
+    )
   },
 
   async getFolderChildren(
@@ -1239,6 +1287,32 @@ export const folderApi = {
     options?: { force?: boolean },
   ): Promise<RepositoryDto> {
     return fetchRepositoryById(repositoryId, options)
+  },
+
+  async getItemFilterFields(
+    repositoryId: string,
+  ): Promise<RepositoryItemFilterField[]> {
+    const result = await getRepositoryItemFilterFields(repositoryId)
+    if (result.error) throw new Error(String(result.error))
+    return result.data?.fields || []
+  },
+
+  async getItemFacets(
+    repositoryId: string,
+    fieldName: string,
+    options?: {
+      limit?: number
+      scopeFilters?: Record<string, string | string[]>
+    },
+  ): Promise<RepositoryItemFacet[]> {
+    const result = await getRepositoryItemFacets({
+      fieldName,
+      limit: options?.limit,
+      repositoryId,
+      scopeFilters: options?.scopeFilters,
+    })
+    if (result.error) throw new Error(String(result.error))
+    return result.data || []
   },
 
   invalidateRepositoryCache(repositoryId?: string) {

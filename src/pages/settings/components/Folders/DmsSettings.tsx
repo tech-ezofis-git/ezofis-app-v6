@@ -11,6 +11,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import { createRepository, deleteRepository, updateRepository } from '@/api/createFolder'
 import { getRepositoryById, getRepositorys } from '@/api/v6/folder/folder'
@@ -711,6 +713,7 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
+  const { t } = useLingui()
   // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
   //   null,
   // )
@@ -874,8 +877,8 @@ export default function DmsFolderConfiguration({
   )
 
   const statusOptions = [
-    { label: 'Active', value: 'active' },
-    { label: 'Archived', value: 'archived' },
+    { label: t`Active`, value: 'active' },
+    { label: t`Archived`, value: 'archived' },
   ]
 
   const openEditRepository = useCallback(async (repository: RepositoryRow) => {
@@ -1560,6 +1563,7 @@ function FieldNameWithIconInput({
   onChange: (value: string) => void
   onIconChange?: (iconKey: string) => void
 }) {
+  const { t } = useLingui()
   const inputRef = useRef<HTMLInputElement>(null)
   const combobox = useCombobox({
     onDropdownClose: () => onSearch(''),
@@ -1613,7 +1617,7 @@ function FieldNameWithIconInput({
         }}
       >
         <ComboboxSearch
-          placeholder='Search icons'
+          placeholder={t`Search icons`}
           search={search}
           onSearch={onSearch}
         />
@@ -1864,7 +1868,7 @@ function FieldsTable({
       fieldColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Folder',
+        header: t`Folder`,
         id: 'folder',
         meta: settingsHeaderMeta.center,
         minSize: 72,
@@ -2171,6 +2175,7 @@ function useRepositoryTable(
     onSecurityRepository: (repository: RepositoryRow) => void
   },
 ) {
+  const { t } = useLingui()
   const columnHelper = createColumnHelper<RepositoryRow>()
   const tableSearchOptions = useSettingsTableSearch()
   const {
@@ -2204,9 +2209,9 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('name', {
         enableSorting: false,
-        header: 'Folder',
+        header: t`Folder`,
         id: 'folder',
-        meta: { ...settingsHeaderMeta.start, label: 'Folder' },
+        meta: { ...settingsHeaderMeta.start, label: t`Folder` },
         minSize: 40,
         size: 200,
         cell: ({ row }) => (
@@ -2221,9 +2226,9 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('description', {
         enableSorting: false,
-        header: 'Description',
+        header: t`Description`,
         id: 'description',
-        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        meta: { ...settingsHeaderMeta.start, label: t`Description` },
         minSize: 40,
         size: 220,
         cell: ({ getValue }) => (
@@ -2234,29 +2239,33 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('storage', {
         enableSorting: false,
-        header: 'Storage',
+        header: t`Storage`,
         id: 'storage',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Storage',
+          label: t`Storage`,
         },
         minSize: 40,
         size: 120,
-        cell: ({ getValue }) => (
-          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
-        ),
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '')
+          const label = value === 'Default' ? t`Default` : value
+          return (
+            <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+              {label}
+            </span>
+          )
+        },
       }),
       columnHelper.accessor('documents', {
         enableSorting: false,
-        header: 'Documents',
+        header: t`Documents`,
         id: 'documents',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Documents',
+          label: t`Documents`,
         },
         minSize: 40,
         size: 110,
@@ -2268,12 +2277,12 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Status',
+          label: t`Status`,
         },
         minSize: 40,
         size: 110,
@@ -2289,16 +2298,16 @@ function useRepositoryTable(
                   : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
               ].join(' ')}
             >
-              {isActive ? 'Active' : 'Archived'}
+              {isActive ? t`Active` : t`Archived`}
             </span>
           )
         },
       }),
       columnHelper.accessor('createdAt', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'createdAt',
-        meta: { ...settingsHeaderMeta.start, label: 'Created' },
+        meta: { ...settingsHeaderMeta.start, label: t`Created` },
         minSize: 40,
         size: 145,
         cell: ({ getValue }) => {
@@ -2309,9 +2318,9 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('createdBy', {
         enableSorting: false,
-        header: 'Created By',
+        header: t`Created By`,
         id: 'createdBy',
-        meta: { ...settingsHeaderMeta.start, label: 'Created By' },
+        meta: { ...settingsHeaderMeta.start, label: t`Created By` },
         minSize: 40,
         size: 140,
         cell: ({ getValue }) => (
@@ -2351,12 +2360,12 @@ function useRepositoryTable(
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => onEditRepository(repository)}
                 />
                 <MenuItem
                   icon='lucide:shield'
-                  label='Security'
+                  label={t`Security`}
                   onClick={() => onSecurityRepository(repository)}
                 />
                 <MenuItem
@@ -2447,6 +2456,7 @@ function WizardContent({
   ) => void
   setStorage: (nextStorage: string) => void
 }) {
+  const { t } = useLingui()
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
   const [newIsFolder, setNewIsFolder] = useState(false)
@@ -2521,16 +2531,16 @@ function WizardContent({
     return (
       <SettingsFormSection>
         <InputText
-          label='Folder Name *'
-          placeholder='e.g. AP Invoices 2026'
+          label={t`Folder Name *`}
+          placeholder={t`e.g. AP Invoices 2026`}
           value={folderName}
           onChange={(value: string) => setFolderName(value)}
         />
 
         <InputTextarea
-          label='Description'
+          label={t`Description`}
           minRows={3}
-          placeholder='Describe the purpose of this folder...'
+          placeholder={t`Describe the purpose of this folder...`}
           value={description}
           onChange={setDescription}
         />
