@@ -516,6 +516,7 @@ const addCustomFieldsToPayloads = (
 }
 
 const StepFour = () => {
+  const { t } = useLingui()
   const emailSettings = setupStore((state) => state.emailSettings)
   const erpSettings = setupStore((state) => state.erpSettings)
   const storageSettings = setupStore((state) => state.storageSettings)

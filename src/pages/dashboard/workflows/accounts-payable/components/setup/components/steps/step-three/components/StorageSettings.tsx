@@ -4,6 +4,7 @@ import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useS
 import SectionHeader from '../../components/SectionHeader'
 
 const StorageSettings = () => {
+  const { t } = useLingui()
   const storageSettings = setupStore((state) => state.storageSettings)
   const setStorageSettings = setupStore((state) => state.setStorageSettings)
 

@@ -2040,7 +2040,7 @@ export default function DashboardCharts() {
                             className='flex h-full items-center bg-gradient-to-r from-primary-9 to-primary-10 px-3 text-11 font-semibold text-white'
                             style={{ width: bar.width }}
                           >
-                            {t`{pct} conversion`, { pct: bar.pct }}
+                            {t`${bar.pct} conversion`}
                           </div>
                         </div>
                       </div>

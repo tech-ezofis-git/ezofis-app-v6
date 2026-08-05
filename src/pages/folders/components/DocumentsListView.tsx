@@ -892,11 +892,6 @@ export function DocumentsListView({
             label={t`Share`}
             onClick={() => closeAndRun(() => onShare(openMenuId))}
           />
-          <MenuItem
-            icon='clock'
-            label={t`Start Workflow`}
-            onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
-          />
 
           <div className='my-2 border-t border-gray-3' />
 

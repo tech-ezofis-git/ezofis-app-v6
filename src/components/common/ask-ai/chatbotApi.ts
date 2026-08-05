@@ -10,13 +10,21 @@ import type {
   AskAiPageContext,
 } from './types'
 
-export const CHATBOT_API_BASE =
-  import.meta.env.VITE_CHATBOT_API_URL || ' http://52.172.32.88:7071/'
+export const CHATBOT_API_BASE = (
+  import.meta.env.VITE_CHATBOT_API_URL ||
+  import.meta.env.VITE_V6_BASE_URL ||
+  'https://demo.ezofis.com/v6api/api'
+)
+  .trim()
+  .replace(/\/+$/, '')
+
+export const CHATBOT_ENDPOINT = `${CHATBOT_API_BASE}/repositories/assistant/chatbot`
+export const SEARCH_ENDPOINT = `${CHATBOT_API_BASE}/repositories/assistant/search`
 
 export type ChatbotRequestBody = {
   actionFrom: string
   message: string
-  specificId: string
+  specificId: string | null
   tenantId: string
   token: string
 }
@@ -238,21 +246,24 @@ export async function postChatbotMessage(
     )
   }
 
+  const specificId = String(pageContext.specificId || '').trim()
   const body: ChatbotRequestBody = {
     actionFrom: pageContext.actionFrom || 'Dashboard',
     message,
-    specificId: pageContext.specificId || '',
+    specificId: specificId || null,
     tenantId,
     token: accessToken.startsWith('Bearer ')
       ? accessToken
       : `Bearer ${accessToken}`,
   }
 
-  const response = await fetch(`${CHATBOT_API_BASE}/api/chatbot`, {
+  const response = await fetch(CHATBOT_ENDPOINT, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      Authorization: body.token,
+      'X-Tenant-Id': tenantId,
     },
     body: JSON.stringify(body),
   })

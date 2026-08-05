@@ -20,16 +20,23 @@ export interface EmbedModeState {
   */
 export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
   const location = useLocation()
-  
+
   const isEmbedPath = location.pathname.startsWith('/embed')
-  
-  const searchParams = new URLSearchParams(location.search)
+
+  const searchParams = new URLSearchParams(
+    location.searchStr.startsWith('?')
+      ? location.searchStr.slice(1)
+      : location.searchStr,
+  )
   const isEmbedQuery = searchParams.get('embed') === 'true'
   const sessionToken = searchParams.get('session') ?? undefined
   const hasTopbar =
-    searchParams.get('topbar') === 'true' || searchParams.get('brand') === 'true' || true
+    searchParams.get('topbar') === 'true' ||
+    searchParams.get('brand') === 'true' ||
+    true
   const hasActions =
-    searchParams.get('actions') === 'true' || searchParams.get('showActions') === 'true'
+    searchParams.get('actions') === 'true' ||
+    searchParams.get('showActions') === 'true'
 
   const isEmbed = isEmbedPath || isEmbedQuery
 

@@ -15,6 +15,7 @@ interface Props {
 }
 
 const LineItems = ({ data }: Props) => {
+  const { t } = useLingui()
   // Transform the Agent 'debug' data into table rows
   const lineItems = useMemo(() => {
     const rawLines = data?.debug?.['Side-by-side Line Item matching'] || []

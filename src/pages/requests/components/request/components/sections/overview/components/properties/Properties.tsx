@@ -10,6 +10,7 @@ interface Props {
 }
 
 const Properties = ({ data }: Props) => {
+  const { t } = useLingui()
   console.log(data, 'this is overview')
   const score = Number(data?.score || 0)
   const paymentTerms = data?.payment_terms || {}

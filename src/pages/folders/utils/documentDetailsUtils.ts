@@ -108,3 +108,120 @@ export const buildInfoCards = (
 }
 
 export const DOCUMENT_PREVIEW_BASE_URL = 'https://demo.ezofis.com/v6api'
+
+const GENERIC_BLOB_TYPES = new Set([
+  '',
+  'application/octet-stream',
+  'binary/octet-stream',
+  'application/force-download',
+  'application/download',
+])
+
+export type DocumentPreviewKind = 'pdf' | 'image' | 'tiff' | 'unsupported'
+
+export const getFileExtension = (fileName?: string | null) => {
+  const name = String(fileName || '').trim().toLowerCase()
+  if (!name.includes('.')) return ''
+  return name.split('.').pop()?.replace(/[^a-z0-9]/g, '') || ''
+}
+
+/** Prefer real Content-Type; fall back to file extension when the API returns a generic blob type. */
+export const resolvePreviewMimeType = (
+  blobType?: string | null,
+  fileName?: string | null,
+  fileTypeHint?: string | null,
+) => {
+  const mime = String(blobType || '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase()
+  if (mime && !GENERIC_BLOB_TYPES.has(mime)) return mime
+
+  const ext = getFileExtension(fileName) || getFileExtension(fileTypeHint)
+  if (ext === 'pdf') return 'application/pdf'
+  if (ext === 'png') return 'image/png'
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg'
+  if (ext === 'tif' || ext === 'tiff') return 'image/tiff'
+  if (ext === 'gif') return 'image/gif'
+  if (ext === 'webp') return 'image/webp'
+  if (ext === 'bmp') return 'image/bmp'
+
+  const hint = String(fileTypeHint || '').toLowerCase()
+  if (hint.includes('pdf')) return 'application/pdf'
+  if (hint.includes('png')) return 'image/png'
+  if (hint.includes('jpg') || hint.includes('jpeg')) return 'image/jpeg'
+  if (hint.includes('tif')) return 'image/tiff'
+
+  return mime
+}
+
+export const resolveDocumentPreviewKind = (
+  mimeType?: string | null,
+  fileName?: string | null,
+): DocumentPreviewKind => {
+  const mime = String(mimeType || '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase()
+  const ext = getFileExtension(fileName)
+
+  if (mime === 'application/pdf' || mime === 'application/x-pdf' || ext === 'pdf') {
+    return 'pdf'
+  }
+
+  if (
+    mime === 'image/tiff' ||
+    mime === 'image/tif' ||
+    ext === 'tif' ||
+    ext === 'tiff'
+  ) {
+    return 'tiff'
+  }
+
+  if (
+    mime.startsWith('image/') ||
+    ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(ext)
+  ) {
+    return 'image'
+  }
+
+  return 'unsupported'
+}
+
+/** Sniff common file signatures when Content-Type / extension are missing. */
+export const sniffBlobMimeType = async (blob: Blob): Promise<string> => {
+  try {
+    const header = new Uint8Array(await blob.slice(0, 8).arrayBuffer())
+    if (
+      header.length >= 4 &&
+      header[0] === 0x25 &&
+      header[1] === 0x50 &&
+      header[2] === 0x44 &&
+      header[3] === 0x46
+    ) {
+      return 'application/pdf'
+    }
+    if (
+      header.length >= 8 &&
+      header[0] === 0x89 &&
+      header[1] === 0x50 &&
+      header[2] === 0x4e &&
+      header[3] === 0x47
+    ) {
+      return 'image/png'
+    }
+    if (header.length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) {
+      return 'image/jpeg'
+    }
+    if (
+      header.length >= 4 &&
+      ((header[0] === 0x49 && header[1] === 0x49 && header[2] === 0x2a && header[3] === 0x00) ||
+        (header[0] === 0x4d && header[1] === 0x4d && header[2] === 0x00 && header[3] === 0x2a))
+    ) {
+      return 'image/tiff'
+    }
+  } catch {
+    // ignore sniff errors
+  }
+  return String(blob.type || '')
+}

@@ -2,10 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import showToast from '@/components/base/toast/showToast'
+import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import { encodeRepositoryNodeId } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
-import { findRepositoryNodeId } from '../utils/folderExplorerUtils'
+import {
+  findRepositoryNodeId,
+  getRepositoryRootNodeId,
+} from '../utils/folderExplorerUtils'
 import { AiSummaryView } from './AiSummaryView'
 import { DocumentDetailsView } from './DocumentDetailsView'
 import { DocumentsListView } from './DocumentsListView'
@@ -54,6 +58,7 @@ export function FolderExplorer() {
     refreshData,
     refreshing,
     repositoryNodes,
+    selectFolder,
     selectedFile,
     selectedRepository,
     toggleFolder,
@@ -79,6 +84,34 @@ export function FolderExplorer() {
     id: string
     repositoryId: string
   } | null>(null)
+  const folderBeforeUploadRef = useRef('')
+
+  const resolveUploadReturnFolder = useCallback(
+    (folderId: string) => {
+      if (!folderId) return ''
+      // List view repository dropdown only matches repository root nodes.
+      if (viewMode === 'list') {
+        return getRepositoryRootNodeId(folderId, tree) || folderId
+      }
+      return folderId
+    },
+    [tree, viewMode],
+  )
+
+  const exitUpload = useCallback(() => {
+    const sourceFolder = folderBeforeUploadRef.current || activeFolder
+    const folderToSelect = resolveUploadReturnFolder(sourceFolder)
+
+    setPendingUploadFile(null)
+
+    if (folderToSelect) selectFolder(folderToSelect)
+    else setAppView('explorer')
+  }, [
+    activeFolder,
+    resolveUploadReturnFolder,
+    selectFolder,
+    setAppView,
+  ])
 
   const openShareForFile = useCallback(
     (fileId: string) => {
@@ -197,15 +230,25 @@ export function FolderExplorer() {
 
   const handleBreadcrumbNavigate = useCallback(
     (key: string) => {
+      if (appView === 'Upload') {
+        setPendingUploadFile(null)
+      }
+
       if (key === 'folders-root') {
         const root = tree.find((node) => !node.isStatic) || tree[0]
-        if (root) void openFolder(root.id)
+        if (root) {
+          if (appView === 'Upload') selectFolder(root.id)
+          else void openFolder(root.id)
+        } else if (appView === 'Upload') {
+          setAppView('explorer')
+        }
         return
       }
 
-      void openFolder(key)
+      if (appView === 'Upload') selectFolder(key)
+      else void openFolder(key)
     },
-    [openFolder, tree],
+    [appView, openFolder, selectFolder, setAppView, tree],
   )
 
   const foldersTopbar = useMemo(() => {
@@ -214,17 +257,23 @@ export function FolderExplorer() {
       label: item.label,
     }))
 
+    const items: SettingsBreadcrumbItem[] = [
+      {
+        key: pathItems.length ? 'folders-root' : undefined,
+        label: t`Folders`,
+      },
+      ...pathItems,
+    ]
+
+    if (appView === 'Upload') {
+      items.push({ label: t`Upload` })
+    }
+
     return {
-      items: [
-        {
-          key: pathItems.length ? 'folders-root' : undefined,
-          label: t`Folders`,
-        },
-        ...pathItems,
-      ],
+      items,
       onNavigate: handleBreadcrumbNavigate,
     }
-  }, [breadcrumbs, handleBreadcrumbNavigate, i18n.locale, t])
+  }, [appView, breadcrumbs, handleBreadcrumbNavigate, i18n.locale, t])
 
   useFoldersTopbar(foldersTopbar)
 
@@ -236,6 +285,7 @@ export function FolderExplorer() {
       })
       return
     }
+    folderBeforeUploadRef.current = activeFolder
     setPendingUploadFile(null)
     setAppView('Upload')
   }
@@ -248,6 +298,7 @@ export function FolderExplorer() {
       })
       return
     }
+    folderBeforeUploadRef.current = activeFolder
     setPendingUploadFile(file)
     setAppView('Upload')
   }
@@ -331,10 +382,7 @@ export function FolderExplorer() {
         initialFile={pendingUploadFile}
         repositoryData={selectedRepository}
         repositoryId={resolvedRepositoryId || null}
-        onBack={() => {
-          setPendingUploadFile(null)
-          setAppView('explorer')
-        }}
+        onBack={exitUpload}
         onSuccess={refreshData}
       />
     )

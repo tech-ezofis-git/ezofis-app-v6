@@ -32,6 +32,7 @@ const auditTrail = [
 ]
 
 const AuditTrail = () => {
+  const { t } = useLingui()
   return (
     <div>
       <Title className='mb-4' level={3} title={t`Audit Trail`} />

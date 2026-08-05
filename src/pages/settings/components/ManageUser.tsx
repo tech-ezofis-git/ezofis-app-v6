@@ -1927,7 +1927,7 @@ function LoginDetails({
               user.email,
             ) ||
             (showEmailFormatError
-              ? getEmailValidationError(user.email)
+              ? getEmailValidationError(user.email, t)
               : undefined)
           }
           onBlur={() => setShowEmailFormatError(true)}

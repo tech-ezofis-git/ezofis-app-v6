@@ -24,6 +24,7 @@ const RequestSummary: React.FC<RequestSummaryProps> = ({
   transactionId,
   workflowId,
 }) => {
+  const { t } = useLingui()
   const cacheSummaryData = requestStore((state) => state.cacheSummaryData)
   const { data: request, isLoading } = useRequestDetail(
     workflowId,

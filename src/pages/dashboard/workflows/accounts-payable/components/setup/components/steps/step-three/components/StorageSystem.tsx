@@ -58,6 +58,7 @@ const getStorageLabel = (value: string) => {
 }
 
 const StorageSystem = () => {
+  const { t } = useLingui()
   const storageSettings = setupStore((state) => state.storageSettings)
   const setStorageSettings = setupStore((state) => state.setStorageSettings)
   const [pendingSwitch, setPendingSwitch] = useState<{

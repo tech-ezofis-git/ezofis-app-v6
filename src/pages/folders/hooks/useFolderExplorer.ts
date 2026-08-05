@@ -619,6 +619,27 @@ export function useFolderExplorer() {
     })
   }, [activeFolder, viewMode])
 
+  const selectFolder = useCallback(
+    (id: string) => {
+      if (!id) {
+        setAppView('explorer')
+        return
+      }
+
+      // Always restore explorer selection (used after Upload / archive).
+      // Bypasses the loading guard in openFolder so grid tree + list
+      // repository dropdown keep the folder that was selected before upload.
+      setActiveFolder(id)
+      setAppView('explorer')
+
+      const path = findPathToNode(tree, id)
+      setExpandedIds((previous) =>
+        Array.from(new Set([...(path.length ? path : previous), id])),
+      )
+    },
+    [tree],
+  )
+
   const openFolder = async (id: string) => {
     if (loading || loadingPage) return
     if (id === activeFolder) {
@@ -630,13 +651,7 @@ export function useFolderExplorer() {
     // effect. Calling ensureTreeChildrenLoaded / loadSelectedRepository here
     // fired a duplicate browse/children request; axios aborted the first and
     // the aborted load cleared the explorer to an empty state.
-    setActiveFolder(id)
-    setAppView('explorer')
-
-    const path = findPathToNode(tree, id)
-    setExpandedIds((previous) =>
-      Array.from(new Set([...(path.length ? path : previous), id])),
-    )
+    selectFolder(id)
   }
 
   const toggleFolder = async (id: string) => {
@@ -920,6 +935,7 @@ export function useFolderExplorer() {
     openFolder,
     pageSize,
     refreshData,
+    selectFolder,
     refreshing,
     repositoryNodes,
     selectedFile,

@@ -8,6 +8,7 @@ interface Props {
 }
 
 const PropertiesCards = ({ data }: Props) => {
+  const { t } = useLingui()
   const score = Number(data?.score || 0)
   const paymentTerms = data?.payment_terms || {}
 

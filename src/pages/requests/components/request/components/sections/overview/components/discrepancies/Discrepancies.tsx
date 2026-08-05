@@ -9,6 +9,7 @@ interface Props {
 }
 
 const Discrepancies = ({ data }: Props) => {
+  const { t } = useLingui()
   const discrepancies: IDiscrepancy[] = useMemo(() => {
     const list: IDiscrepancy[] = []
 

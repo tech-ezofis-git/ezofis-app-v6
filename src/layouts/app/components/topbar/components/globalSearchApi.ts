@@ -1,5 +1,5 @@
 import {
-  CHATBOT_API_BASE,
+  SEARCH_ENDPOINT,
   resolveChatbotAuth,
 } from '@/components/common/ask-ai/chatbotApi'
 
@@ -39,7 +39,7 @@ export async function fetchGlobalSearch(
     throw new Error('Missing tenant. Sign in again, then retry search.')
   }
 
-  const response = await fetch(`${CHATBOT_API_BASE}/api/search`, {
+  const response = await fetch(SEARCH_ENDPOINT, {
     body: JSON.stringify({
       actionFrom: payload.actionFrom || 'Repository',
       query: payload.query,

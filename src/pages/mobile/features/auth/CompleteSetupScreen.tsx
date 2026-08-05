@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { apiRouter } from '@/api/apiRouter'
 import showToast from '@/components/base/toast/showToast'
 import {
@@ -15,6 +16,7 @@ import { AuthHeroShell } from './AuthHeroShell'
 
 export function CompleteSetupScreen() {
   const navigate = useNavigate()
+  const { i18n } = useLingui()
   const { signUpUserData, setSignUpUserData } = authUserStore()
 
   const loginType = String(signUpUserData.loginType || 'EZOFIS').toUpperCase()
@@ -55,7 +57,7 @@ export function CompleteSetupScreen() {
     if (!isSocial) {
       if (!password) return 'Password is required'
       const unmet = requirementsConfig.find((req) => !req.regex.test(password))
-      if (unmet) return `Password must meet: ${unmet.label}`
+      if (unmet) return `Password must meet: ${i18n._(unmet.label)}`
       if (password !== confirmPassword) return 'Passwords do not match'
     }
     return null
@@ -237,7 +239,7 @@ export function CompleteSetupScreen() {
                         className='size-3.5'
                         name={ok ? 'CircleCheck' : 'Circle'}
                       />
-                      {req.label}
+                      {i18n._(req.label)}
                     </li>
                   )
                 })}

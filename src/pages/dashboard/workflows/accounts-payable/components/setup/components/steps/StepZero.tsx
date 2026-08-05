@@ -55,6 +55,7 @@ const getFeatureJSX = (label: string) => {
 }
 
 const StepZero = () => {
+  const { t } = useLingui()
   const setIsSetupStarted = setupStore((state) => state.setIsSetupStarted)
   const setStep = setupStore((state) => state.setStep)
 

@@ -1,4 +1,8 @@
-import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
+import {
+  type DocumentLoadEvent,
+  Viewer,
+  Worker,
+} from '@react-pdf-viewer/core'
 import {
   searchPlugin,
   type HighlightArea,
@@ -6,17 +10,31 @@ import {
 } from '@react-pdf-viewer/search'
 import { FileText } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import BarLoader from '@/components/base/BarLoader'
+import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
 import {
   buildFieldSearchKeywords,
   getFieldDisplayValue,
   getFieldSearchVariantStrings,
 } from '@/pages/folders/utils/fieldPdfSearch'
+import { resolveDocumentPreviewKind } from '@/pages/folders/utils/documentDetailsUtils'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
-const PDF_WORKER_URL =
-  'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'
+const PDF_WORKER_URL = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString()
+
+/**
+ * SpecialZoomLevel.PageWidth re-scales pages while they are still rendering,
+ * which makes @react-pdf-viewer 3.12 paint scanned pages as solid black
+ * (react-pdf-viewer#1293). Measure the first page instead and render once at a
+ * fixed scale.
+ */
+const PROBE_SCALE = 0.25
+const PAGE_WIDTH_GUTTER = 24
+const MIN_PAGE_SCALE = 0.1
+const MAX_PAGE_SCALE = 5
 
 type DocumentPreviewViewerProps = {
   activeHighlightColor?: string
@@ -247,20 +265,24 @@ export default function DocumentPreviewViewer({
   probeTerms = [],
   showScanOverlay = false,
 }: DocumentPreviewViewerProps) {
+  // Trust explicit parent flags first so kind does not flip after mount.
+  const treatAsPdf = Boolean(isPdf)
+  const treatAsImage = !treatAsPdf && Boolean(isImage)
+  const resolvedKind = resolveDocumentPreviewKind(
+    treatAsPdf ? 'application/pdf' : treatAsImage ? 'image/*' : '',
+    fileName,
+  )
+  const treatAsTiff = treatAsImage && resolvedKind === 'tiff'
+  const treatAsRasterImage = treatAsImage && !treatAsTiff
+  const treatAsFallbackPdf = !treatAsPdf && !treatAsImage && resolvedKind === 'pdf'
+
   let content = null
 
   if (isLoading) {
-    content = (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
-        <BarLoader />
-        <p className='text-xs font-bold tracking-widest text-[var(--gray-10)] uppercase'>
-          Loading Preview...
-        </p>
-      </div>
-    )
+    content = <SkeletonDocumentPreview />
   } else if (!fileUrl) {
     content = (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 text-center'>
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
         <FileText className='text-[var(--primary-9)]' size={40} />
         <p className='text-sm font-semibold text-[var(--gray-13)]'>
           Preview not available
@@ -270,7 +292,7 @@ export default function DocumentPreviewViewer({
         ) : null}
       </div>
     )
-  } else if (isPdf) {
+  } else if (treatAsPdf || treatAsFallbackPdf) {
     content = (
       <PdfViewer
         activeHighlightColor={activeHighlightColor}
@@ -284,9 +306,24 @@ export default function DocumentPreviewViewer({
         probeTerms={probeTerms}
       />
     )
-  } else if (isImage) {
+  } else if (treatAsTiff) {
     content = (
-      <div className='flex h-full w-full items-center justify-center p-4'>
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
+        <FileText className='text-[var(--primary-9)]' size={40} />
+        <p className='text-sm font-semibold text-[var(--gray-13)]'>
+          TIFF preview is not supported in the browser
+        </p>
+        {fileName ? (
+          <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
+        ) : null}
+        <p className='max-w-sm text-xs text-[var(--gray-10)]'>
+          Download the file to view it, or upload a PDF / PNG / JPEG for in-app preview.
+        </p>
+      </div>
+    )
+  } else if (treatAsRasterImage) {
+    content = (
+      <div className='flex h-full w-full items-center justify-center bg-[var(--gray-1)] p-4'>
         <img
           alt={fileName || 'Document Preview'}
           className='max-h-full max-w-full object-contain'
@@ -296,17 +333,20 @@ export default function DocumentPreviewViewer({
     )
   } else {
     content = (
-      <div className='flex h-full flex-col items-center justify-center gap-2 text-center'>
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
         <FileText className='text-[var(--primary-9)]' size={40} />
         <p className='text-sm font-semibold text-[var(--gray-13)]'>
           Preview not available
         </p>
+        {fileName ? (
+          <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
+        ) : null}
       </div>
     )
   }
 
   return (
-    <div className={`relative h-full w-full overflow-hidden ${className}`}>
+    <div className={`relative h-full w-full overflow-hidden bg-[var(--gray-1)] ${className}`}>
       {content}
 
       {showScanOverlay && fileUrl ? (
@@ -402,7 +442,40 @@ function PdfViewer({
   const searchPluginInstance = searchPluginInstanceRef.current
 
   const [documentReady, setDocumentReady] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [probeDone, setProbeDone] = useState(false)
+  const [renderAttempt, setRenderAttempt] = useState(0)
+  const [pageScale, setPageScale] = useState<number | null>(null)
+  const blankRetryUsedRef = useRef(false)
+
+  const handleDocumentLoad = (event: DocumentLoadEvent) => {
+    setLoadError(null)
+
+    if (pageScale !== null) {
+      setDocumentReady(true)
+      return
+    }
+
+    const containerWidth = viewerContainerRef.current?.clientWidth ?? 0
+
+    if (!containerWidth) {
+      setPageScale(1)
+      return
+    }
+
+    event.doc
+      .getPage(1)
+      .then((page) => {
+        const pageWidth = page.getViewport({ scale: 1 }).width
+        const usableWidth = Math.max(containerWidth - PAGE_WIDTH_GUTTER, 1)
+        const nextScale = pageWidth > 0 ? usableWidth / pageWidth : 1
+
+        setPageScale(
+          Math.min(Math.max(nextScale, MIN_PAGE_SCALE), MAX_PAGE_SCALE),
+        )
+      })
+      .catch(() => setPageScale(1))
+  }
   const [matchesVersion, setMatchesVersion] = useState(0)
   const lastHighlightKeyRef = useRef('')
   const probeRunIdRef = useRef(0)
@@ -435,12 +508,76 @@ function PdfViewer({
 
   useEffect(() => {
     setDocumentReady(false)
+    setLoadError(null)
     setProbeDone(false)
     lastHighlightKeyRef.current = ''
     matchesRef.current = []
     highlightElementsRef.current = new Map()
     probeRunIdRef.current += 1
-  }, [fileUrl])
+  }, [fileUrl, renderAttempt])
+
+  // Page canvases use a non-alpha 2d context, so a canvas that never received
+  // pixels paints solid black instead of staying transparent. Re-mount the
+  // document once when that happens so the pages render again.
+  useEffect(() => {
+    if (!documentReady || blankRetryUsedRef.current) return
+
+    const container = viewerContainerRef.current
+    if (!container) return
+
+    let cancelled = false
+
+    const isBlankCanvas = (canvas: HTMLCanvasElement) => {
+      const { height, width } = canvas
+      if (!width || !height) return false
+
+      const context = canvas.getContext('2d')
+      if (!context) return false
+
+      const samples = [0.2, 0.5, 0.8]
+
+      try {
+        for (const ratioY of samples) {
+          for (const ratioX of samples) {
+            const [red, green, blue] = context.getImageData(
+              Math.floor(width * ratioX),
+              Math.floor(height * ratioY),
+              1,
+              1,
+            ).data
+            if (red || green || blue) return false
+          }
+        }
+      } catch {
+        return false
+      }
+
+      return true
+    }
+
+    const retryWhenBlank = () => {
+      if (cancelled || blankRetryUsedRef.current) return
+
+      const canvases = Array.from(
+        container.querySelectorAll<HTMLCanvasElement>('canvas'),
+      ).filter((canvas) => !canvas.hidden && canvas.width && canvas.height)
+
+      if (!canvases.length || !canvases.every(isBlankCanvas)) return
+
+      blankRetryUsedRef.current = true
+      setRenderAttempt((previous) => previous + 1)
+    }
+
+    const timers = [
+      window.setTimeout(retryWhenBlank, 400),
+      window.setTimeout(retryWhenBlank, 1200),
+    ]
+
+    return () => {
+      cancelled = true
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [documentReady])
 
   useEffect(() => {
     if (!documentReady) return
@@ -679,15 +816,44 @@ function PdfViewer({
   ])
 
   return (
-    <div className='h-full w-full' ref={viewerContainerRef}>
-      <Worker workerUrl={PDF_WORKER_URL}>
-        <Viewer
-          defaultScale={SpecialZoomLevel.PageWidth}
-          fileUrl={fileUrl}
-          plugins={[searchPluginInstance]}
-          onDocumentLoad={() => setDocumentReady(true)}
-        />
-      </Worker>
+    <div
+      className='relative h-full min-h-[320px] w-full bg-[var(--gray-1)]'
+      ref={viewerContainerRef}
+    >
+      {!documentReady && !loadError ? (
+        <SkeletonDocumentPreview className='absolute inset-0 z-10' />
+      ) : null}
+
+      {loadError ? (
+        <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
+          <FileText className='text-[var(--primary-9)]' size={40} />
+          <p className='text-sm font-semibold text-[var(--gray-13)]'>
+            Unable to display this document
+          </p>
+          <p className='text-xs text-[var(--gray-10)]'>{loadError}</p>
+        </div>
+      ) : null}
+
+      <div
+        className={`h-full w-full ${documentReady ? 'opacity-100' : 'opacity-0'}`}
+      >
+        <Worker
+          key={`${renderAttempt}-${pageScale ?? 'probe'}`}
+          workerUrl={PDF_WORKER_URL}
+        >
+          <Viewer
+            defaultScale={pageScale ?? PROBE_SCALE}
+            fileUrl={fileUrl}
+            plugins={[searchPluginInstance]}
+            renderError={() => (
+              <div className='flex h-full min-h-[320px] items-center justify-center bg-[var(--gray-1)] text-sm text-[var(--gray-11)]'>
+                Unable to display this document
+              </div>
+            )}
+            onDocumentLoad={handleDocumentLoad}
+          />
+        </Worker>
+      </div>
     </div>
   )
 }

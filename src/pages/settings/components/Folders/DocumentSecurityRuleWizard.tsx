@@ -63,21 +63,6 @@ const STEPPER_ITEMS = [
   },
 ]
 
-const DEFAULT_FIELDS = [
-  'Supplier',
-  'Department',
-  'DocumentType',
-  'Status',
-  'AiStatus',
-  'InvoiceNumber',
-  'PoNumber',
-  'FileName',
-  'Currency',
-  'Buyer',
-  'RiskLevel',
-  'Source',
-]
-
 const OPERATOR_OPTIONS = [
   { id: 'equals', name: 'Equals' },
   { id: 'notequals', name: 'Not Equals' },
@@ -188,7 +173,7 @@ export default function DocumentSecurityRuleWizard({
   const [step, setStep] = useState<Step>(0)
   const [users, setUsers] = useState<V6UserListItem[]>([])
   const [groups, setGroups] = useState<V6GroupItem[]>([])
-  const [fieldOptions, setFieldOptions] = useState<string[]>(DEFAULT_FIELDS)
+  const [fieldOptions, setFieldOptions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [accessError, setAccessError] = useState<string | null>(null)
@@ -275,7 +260,7 @@ export default function DocumentSecurityRuleWizard({
     const [uRes, gRes, fieldsRes] = await Promise.all([
       getUsers(),
       getGroups(),
-      getFilterFields(),
+      getFilterFields(repositoryId),
     ])
 
     if (requestId !== loadDataRequestIdRef.current) {
@@ -291,9 +276,8 @@ export default function DocumentSecurityRuleWizard({
     if (!uRes.canceled) setUsers(userList)
     if (!gRes.canceled) setGroups(groupList)
 
-    if (fieldsRes.data && fieldsRes.data.length > 0) {
-      const mergedFields = Array.from(new Set([...fieldsRes.data, ...DEFAULT_FIELDS]))
-      setFieldOptions(mergedFields)
+    if (!fieldsRes.isCanceled) {
+      setFieldOptions(Array.isArray(fieldsRes.data) ? fieldsRes.data : [])
     }
 
     if (hasCache && cachedSec.data) {
@@ -692,6 +676,8 @@ export default function DocumentSecurityRuleWizard({
                         <InputSelect
                           options={fieldSelectOptions}
                           placeholder="Select field..."
+                          searchable
+                          searchPlaceholder="Search fields..."
                           value={cond.field ? { id: cond.field, name: cond.field } : null}
                           onChange={(option) => updateCondition(rule.id, cond.id, 'field', option?.name || '')}
                         />

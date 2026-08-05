@@ -217,6 +217,7 @@ const permissionColumnHelper = createColumnHelper<PermissionRow>()
 const userAssignmentColumnHelper = createColumnHelper<AssignedUser>()
 
 export default function RolesPermissions({ onBack }: RoleUserProps) {
+  const { t } = useLingui()
   const [roles, setRoles] = useState<Role[]>([])
   const [selectedRoleId, setSelectedRoleId] = useState('')
   const [permissionRows, setPermissionRows] = useState<PermissionRow[]>([])
@@ -701,6 +702,7 @@ function CreatePermissionMatrix({
   rows: PermissionRow[]
   onToggle: (categoryKey: string) => void
 }) {
+  const { t } = useLingui()
   // console.log(rows, "rows")
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
@@ -733,7 +735,7 @@ function CreatePermissionMatrix({
         ),
       }),
     ],
-    [onToggle],
+    [onToggle, t],
   )
 
   const permissionTable = useReactTable({
@@ -1331,6 +1333,7 @@ function PermissionMatrix({
   onRoleChange: (id: string) => void
   onToggle: (categoryKey: string) => void
 }) {
+  const { t } = useLingui()
   const tableSearchOptions = useSettingsTableSearch()
   const permissionColumns = useMemo(
     () => [
@@ -1364,7 +1367,7 @@ function PermissionMatrix({
         ),
       }),
     ],
-    [onToggle],
+    [onToggle, t],
   )
 
   const permissionTable = useReactTable({
@@ -1763,6 +1766,7 @@ function RoleTabSelect({
   selectedRoleId: string
   onRoleChange: (id: string) => void
 }) {
+  const { t } = useLingui()
   const roleOptions = useMemo(
     () =>
       roles.map((role) => ({

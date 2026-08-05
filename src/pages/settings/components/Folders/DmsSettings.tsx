@@ -1672,6 +1672,7 @@ function FieldsTable({
   fieldTypeOptions: SelectOption[]
   setFields: Dispatch<SetStateAction<FieldRow[]>>
 }) {
+  const { t } = useLingui()
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -1982,7 +1983,7 @@ function FieldsTable({
         },
       }),
     ],
-    [editingRowId, fieldTypeOptions],
+    [editingRowId, fieldTypeOptions, t],
   )
 
   const table = useReactTable({

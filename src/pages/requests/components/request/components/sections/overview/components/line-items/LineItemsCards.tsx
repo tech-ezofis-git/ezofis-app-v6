@@ -9,6 +9,7 @@ interface Props {
 }
 
 const LineItemsCards = ({ data }: Props) => {
+  const { t } = useLingui()
   const items = useMemo(() => {
     const raw = data?.debug?.['Side-by-side Line Item matching'] || []
 

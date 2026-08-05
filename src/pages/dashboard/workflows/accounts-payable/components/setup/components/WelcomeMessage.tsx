@@ -5,6 +5,7 @@ import Title from '@/components/base/Title'
 import setupStore from '../../../stores/useSetupStore'
 
 const WelcomeMessage = () => {
+  const { t } = useLingui()
   const isSetupStarted = setupStore((state) => state.isSetupStarted)
   const setIsSetupStarted = setupStore((state) => state.setIsSetupStarted)
 

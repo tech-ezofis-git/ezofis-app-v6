@@ -289,7 +289,7 @@ export default function SignRequestInvitePage({
         repositoryId={preview.repositoryId}
         signRequestId={preview.signRequestId}
         signatureFields={signatureFields}
-        onBack={() => setGate('done')}
+        onSigningComplete={() => setGate('done')}
       />
     </div>
   )

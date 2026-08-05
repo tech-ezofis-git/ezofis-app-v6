@@ -44,6 +44,7 @@ const items = [
 ]
 
 const Integrations = () => {
+  const { t } = useLingui()
   const { width } = useViewportSize()
   const [isLoading, setIsLoading] = useState(true)
 

@@ -59,6 +59,7 @@ import type {
   AskAiAnswer,
   AskAiActionContext,
   AskAiBrowseRequest,
+  AskAiCard,
   AskAiCtaMode,
   AskAiTextBlock as TextBlock,
 } from './types'
@@ -609,7 +610,9 @@ const AskAI = () => {
         }),
       ]).then(([result]) => result)
 
-      const blocks = answer.text?.blocks || []
+      const blocks = Array.isArray(answer.text?.blocks)
+        ? answer.text.blocks
+        : []
       const replyText =
         paragraphTextFromBlocks(blocks) ||
         'I found matching documents based on your search.'
@@ -993,7 +996,7 @@ const ChatMessage = ({
     )
   }
 
-  const blocks = msg.blocks || []
+  const blocks = Array.isArray(msg.blocks) ? msg.blocks : []
   const paragraphs = msg.text.split('\n').filter(Boolean)
   const showExtras = Boolean(msg.revealExtras)
   const richBlocks = blocks.filter((b) => b.type !== 'paragraph')
@@ -1059,6 +1062,9 @@ const AnswerBlock = ({
   }
 
   if (block.type === 'bullets') {
+    const bulletItems = block.items ?? []
+    if (!bulletItems.length) return null
+
     const isClickable = Boolean(onActionClick && ctaMode)
     const isApply = ctaMode === 'apply'
     const actionLabel = isApply ? 'Apply filter' : 'Open the page'
@@ -1068,7 +1074,7 @@ const AnswerBlock = ({
         <div className='flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg2)] px-3 py-2'>
           <div className='flex min-w-0 items-center gap-1.5 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
             <Filter className='size-3.5 shrink-0' strokeWidth={2} />
-            <span className='truncate'>Filters Applied</span>
+            <span className='truncate'>{block.title || 'Filters Applied'}</span>
           </div>
           {isClickable ? (
             isApply ? (
@@ -1086,7 +1092,7 @@ const AnswerBlock = ({
         </div>
 
         <div className='flex flex-wrap gap-1.5 px-3 py-2.5'>
-          {block.items.map((item) => (
+          {bulletItems.map((item) => (
             <span
               className='inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[12px] text-[var(--text1)]'
               key={`${item.label}-${item.value}`}
@@ -1139,24 +1145,52 @@ const AnswerBlock = ({
     )
   }
 
+  if (block.type === 'card') {
+    return <AnswerCard card={block} />
+  }
+
+  if (block.type === 'cards') {
+    const cards = block.items ?? []
+    if (!cards.length) return null
+
+    return (
+      <div className='mb-2.5'>
+        {block.title && (
+          <div className='mb-1.5 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
+            {block.title}
+          </div>
+        )}
+        {cards.map((card, index) => (
+          <AnswerCard card={card} key={`${card.title || 'card'}-${index}`} />
+        ))}
+      </div>
+    )
+  }
+
+  return null
+}
+
+const AnswerCard = ({ card }: { card: AskAiCard }) => {
+  const fields = card.fields ?? []
+
   return (
     <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
       <div className='border-b border-[var(--border)] px-3 py-2.5'>
         <div className='text-[13.5px] font-semibold text-[var(--text1)]'>
-          {block.title}
+          {card.title}
         </div>
-        {block.subtitle && (
+        {card.subtitle && (
           <div className='mt-0.5 text-[11.5px] text-[var(--text3)]'>
-            {block.subtitle}
+            {card.subtitle}
           </div>
         )}
       </div>
       <div className='grid grid-cols-2'>
-        {block.fields.map((field, index) => (
+        {fields.map((field, index) => (
           <div
             key={`${field.label}-${index}`}
             className={`border-b border-[var(--border)] px-3 py-2 ${index % 2 === 0 ? 'border-r' : ''
-              } ${block.fields.length % 2 === 1 && index === block.fields.length - 1
+              } ${fields.length % 2 === 1 && index === fields.length - 1
                 ? 'col-span-2 border-r-0'
                 : ''
               }`}

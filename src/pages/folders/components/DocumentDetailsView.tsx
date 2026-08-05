@@ -16,10 +16,17 @@ import {
 } from '@/api/v6/folder/signRequest'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
 import { formatUtcToLocalDate, formatUtcToLocalDateTime } from '@/utils/utcDate'
 import { folderApi } from '../api/folderApi'
+import {
+  resolveDocumentPreviewKind,
+  resolvePreviewMimeType,
+  sniffBlobMimeType,
+  type DocumentPreviewKind,
+} from '../utils/documentDetailsUtils'
 import { resolveShareContext } from '../utils/shareContextStorage'
 import { getFieldDisplayValue, getFieldSearchVariantStrings } from '../utils/fieldPdfSearch'
 import {
@@ -231,6 +238,7 @@ export function DocumentDetailsView({
   // onEdit,
   onAiSummary,
   onBack,
+  onSigningComplete,
   onWorkflow,
   forceSigning = false,
   inviteToken = '',
@@ -245,7 +253,10 @@ export function DocumentDetailsView({
   id: string
   repositoryId: string
   onAiSummary?: () => void
-  onBack: () => void
+  /** Leave the details view. Omit when there is nowhere to go back to. */
+  onBack?: () => void
+  /** Signature was actually submitted (not just the signing UI closed). */
+  onSigningComplete?: () => void
   onEdit?: () => void
   onWorkflow?: () => void
   /** Open a related file in details (use that row's repositoryId + id). */
@@ -302,7 +313,12 @@ export function DocumentDetailsView({
   const [savingComment, setSavingComment] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewMimeType, setPreviewMimeType] = useState<string | null>(null)
+  const [previewKind, setPreviewKind] = useState<DocumentPreviewKind | null>(
+    null,
+  )
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const previewUrlRef = useRef<string | null>(null)
+  const previewRequestIdRef = useRef(0)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [isSigning, setIsSigning] = useState(Boolean(forceSigning))
@@ -311,6 +327,8 @@ export function DocumentDetailsView({
     String(initialSignRequestId || ''),
   )
   const [activeInviteToken] = useState(String(inviteToken || ''))
+  // Signing is offered only through a sign request invite link.
+  const canSign = Boolean(forceSigning || activeInviteToken)
   const [assignedFields, setAssignedFields] = useState<SignRequestFieldDto[]>(
     () => initialSignatureFields,
   )
@@ -469,22 +487,13 @@ export function DocumentDetailsView({
         }
       }
 
-      const hasMyField = fields.some((field) => {
-        const email = String(field.signerEmail || '')
-          .trim()
-          .toLowerCase()
-        return Boolean(email) && email === currentUserEmail
-      })
+      // Signing is invite-only: the normal details view keeps the assigned
+      // places visible as a read-only overlay but never enters sign mode.
+      if (!canSign) return
 
       // Open signing when this user is a pending signer (even if fields load late).
-      if (forceSigning && (fields.length || requestId)) {
+      if (fields.length || requestId || pendingForUser) {
         setRestrictToFields(fields.length > 0)
-        setIsSigning(true)
-      } else if (pendingForUser) {
-        setRestrictToFields(fields.length > 0)
-        setIsSigning(true)
-      } else if (hasMyField && fields.length) {
-        setRestrictToFields(true)
         setIsSigning(true)
       }
     }
@@ -505,8 +514,6 @@ export function DocumentDetailsView({
       setError('')
       setData(null)
       setFileLoadFailed(false)
-      setPreviewUrl(null)
-      setPreviewMimeType(null)
       setTimeline([])
       setComments([])
       setRelatedDocs([])
@@ -769,63 +776,160 @@ export function DocumentDetailsView({
   }, [tab, repositoryId, id, relatedDocsLoaded, inviteToken, t])
 
   useEffect(() => {
-    let activeUrl: string | null = null
-    let mounted = true
+    const requestId = ++previewRequestIdRef.current
+    let cancelled = false
+
+    const replacePreviewUrl = (nextUrl: string | null) => {
+      if (previewUrlRef.current && previewUrlRef.current !== nextUrl) {
+        URL.revokeObjectURL(previewUrlRef.current)
+      }
+      previewUrlRef.current = nextUrl
+      setPreviewUrl(nextUrl)
+    }
+
+    const buildTypedBlob = async (blob: Blob, mimeType: string) => {
+      if (!mimeType || mimeType === blob.type) return blob
+      const buffer = await blob.arrayBuffer()
+      return new Blob([buffer], { type: mimeType })
+    }
+
+    const resolveBlobMime = async (
+      blob: Blob,
+      fileName?: string | null,
+      fileTypeHint?: string | null,
+    ) => {
+      let mimeType = resolvePreviewMimeType(blob.type, fileName, fileTypeHint)
+      if (!mimeType || mimeType === 'application/octet-stream') {
+        const sniffed = await sniffBlobMimeType(blob)
+        mimeType = resolvePreviewMimeType(sniffed, fileName, fileTypeHint)
+      }
+      return mimeType
+    }
 
     const loadPreview = async () => {
       if (!repositoryId || !id) return
 
       setIsPreviewLoading(true)
       setFileLoadFailed(false)
-      setPreviewUrl(null)
-      setPreviewMimeType(null)
 
       try {
-        // Invite path: load via invite file API (same auth as signing).
         if (inviteToken) {
           const inviteFile = await getSignRequestInviteFile({
             accessToken: authUserStore.getState().identity?.accessToken,
             inviteToken,
             tenantId: invitePreview?.tenantId,
           })
-          if (!mounted) return
+          if (cancelled || requestId !== previewRequestIdRef.current) return
           if (inviteFile.error || !(inviteFile.data instanceof Blob)) {
             setFileLoadFailed(true)
+            replacePreviewUrl(null)
+            setPreviewKind(null)
+            setPreviewMimeType(null)
             return
           }
-          const mimeType = inviteFile.data.type || 'application/pdf'
-          activeUrl = URL.createObjectURL(inviteFile.data)
-          setPreviewUrl(activeUrl)
+
+          const mimeType =
+            (await resolveBlobMime(
+              inviteFile.data,
+              invitePreview?.fileName,
+              'pdf',
+            )) || 'application/pdf'
+          const typedBlob = await buildTypedBlob(inviteFile.data, mimeType)
+          if (cancelled || requestId !== previewRequestIdRef.current) return
+
+          const nextUrl = URL.createObjectURL(typedBlob)
+          replacePreviewUrl(nextUrl)
           setPreviewMimeType(mimeType)
+          setPreviewKind(
+            resolveDocumentPreviewKind(mimeType, invitePreview?.fileName),
+          )
           return
         }
 
         const response = await fileApi.viewBinaryV6(repositoryId, id)
-        if (!mounted) return
+        if (cancelled || requestId !== previewRequestIdRef.current) return
 
         if (response?.data instanceof Blob) {
-          const mimeType = response.data.type || 'application/pdf'
-          activeUrl = URL.createObjectURL(response.data)
-          setPreviewUrl(activeUrl)
+          const fileNameHint = data?.fileName || null
+          const fileTypeHint = data?.fileType || null
+          const mimeType = await resolveBlobMime(
+            response.data,
+            fileNameHint,
+            fileTypeHint,
+          )
+          const typedBlob = await buildTypedBlob(
+            response.data,
+            mimeType || response.data.type || '',
+          )
+          if (cancelled || requestId !== previewRequestIdRef.current) return
+
+          const nextUrl = URL.createObjectURL(typedBlob)
+          const kind = resolveDocumentPreviewKind(
+            mimeType,
+            fileNameHint || fileTypeHint,
+          )
+          replacePreviewUrl(nextUrl)
           setPreviewMimeType(mimeType)
+          setPreviewKind(kind === 'unsupported' && !mimeType ? null : kind)
           return
         }
 
         setFileLoadFailed(true)
+        replacePreviewUrl(null)
+        setPreviewKind(null)
+        setPreviewMimeType(null)
       } catch {
-        if (mounted) setFileLoadFailed(true)
+        if (!cancelled && requestId === previewRequestIdRef.current) {
+          setFileLoadFailed(true)
+          replacePreviewUrl(null)
+          setPreviewKind(null)
+          setPreviewMimeType(null)
+        }
       } finally {
-        if (mounted) setIsPreviewLoading(false)
+        if (!cancelled && requestId === previewRequestIdRef.current) {
+          setIsPreviewLoading(false)
+        }
       }
     }
 
+    // Reset kind when switching documents so we don't reuse the previous type.
+    setPreviewKind(null)
     void loadPreview()
 
     return () => {
-      mounted = false
-      if (activeUrl) URL.revokeObjectURL(activeUrl)
+      cancelled = true
     }
-  }, [repositoryId, id, inviteToken, invitePreview?.tenantId])
+  }, [repositoryId, id, inviteToken, invitePreview?.tenantId, invitePreview?.fileName])
+
+  // When detail metadata arrives later, refine MIME/kind only if still unknown.
+  useEffect(() => {
+    if (!previewUrl || (!data?.fileName && !data?.fileType)) return
+
+    setPreviewMimeType((previous) =>
+      resolvePreviewMimeType(previous, data?.fileName, data?.fileType),
+    )
+    setPreviewKind((previous) => {
+      if (previous && previous !== 'unsupported') return previous
+      return resolveDocumentPreviewKind(
+        resolvePreviewMimeType(
+          previewMimeType,
+          data?.fileName,
+          data?.fileType,
+        ),
+        data?.fileName || data?.fileType,
+      )
+    })
+  }, [previewUrl, data?.fileName, data?.fileType])
+
+  // Revoke object URL only when leaving the document view.
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current)
+        previewUrlRef.current = null
+      }
+    }
+  }, [])
 
   const saveComment = async () => {
     const value = commentText.trim()
@@ -883,6 +987,10 @@ export function DocumentDetailsView({
           )
         }
         blob = response.data
+      }
+
+      if (!blob) {
+        throw new Error(t`Unable to download file`)
       }
 
       const downloadUrl = URL.createObjectURL(blob)
@@ -1058,14 +1166,15 @@ export function DocumentDetailsView({
     [lineItems],
   )
   const hasValidFileUrl = Boolean(previewUrl) && !fileLoadFailed
-  const isPdfPreview = previewMimeType === 'application/pdf'
-  const isImagePreview = Boolean(
-    previewMimeType?.startsWith('image/') ||
-    data?.fileType?.toLowerCase().includes('image') ||
-    data?.fileType?.toLowerCase().includes('png') ||
-    data?.fileType?.toLowerCase().includes('jpg') ||
-    data?.fileType?.toLowerCase().includes('jpeg'),
-  )
+  const resolvedPreviewKind =
+    previewKind ||
+    resolveDocumentPreviewKind(
+      previewMimeType,
+      data?.fileName || data?.fileType,
+    )
+  const isPdfPreview = resolvedPreviewKind === 'pdf'
+  const isImagePreview =
+    resolvedPreviewKind === 'image' || resolvedPreviewKind === 'tiff'
 
   const tabs = useMemo(
     () =>
@@ -1094,18 +1203,23 @@ export function DocumentDetailsView({
 
   if (loading)
     return (
-      <div className='p-6 text-[13px] text-gray-10'>{t`Loading document...`}</div>
+      <SkeletonDocumentDetails
+        showMetadata={!forceSigning}
+        showTabs={!forceSigning}
+      />
     )
 
   if (error) {
     return (
       <div className='p-6'>
-        <Button
-          className='mb-4 h-8 border-transparent px-3 text-[13px] shadow-none'
-          onClick={onBack}
-        >
-          <ArrowLeft size={12} /> {t`Back`}
-        </Button>
+        {onBack ? (
+          <Button
+            className='mb-4 h-8 border-transparent px-3 text-[13px] shadow-none'
+            onClick={onBack}
+          >
+            <ArrowLeft size={12} /> {t`Back`}
+          </Button>
+        ) : null}
         <div className='rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
           {error}
         </div>
@@ -1141,12 +1255,8 @@ export function DocumentDetailsView({
           signerName={signerName}
           savedSignatures={savedSignatures}
           onBack={() => {
-            // Exit signing without completing. Invite flow leaves the page;
-            // normal details view only leaves sign mode.
-            if (forceSigning) {
-              onBack()
-              return
-            }
+            // Closing the signing UI is never a completed signature, so the
+            // invite flow must stay on the document instead of reporting done.
             setIsSigning(false)
           }}
           onSaveSignature={(signature) => {
@@ -1232,12 +1342,9 @@ export function DocumentDetailsView({
                 message: t`Signature submitted successfully.`,
                 variant: 'success',
               })
-              if (forceSigning) {
-                onBack()
-                return
-              }
               setIsSigning(false)
               setRestrictToFields(false)
+              onSigningComplete?.()
               return
             }
 
@@ -1288,6 +1395,7 @@ export function DocumentDetailsView({
               message: t`Signature submitted successfully.`,
               variant: 'success',
             })
+            onSigningComplete?.()
           }}
           onSignRequestCreated={(payload) => {
             if (payload?.signRequestId && payload.fields?.length) {
@@ -1312,7 +1420,7 @@ export function DocumentDetailsView({
       ) : null}
 
       <div className='no-print relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary px-5'>
-        {forceSigning ? (
+        {forceSigning || !onBack ? (
           <div className='h-8 w-[72px]' aria-hidden />
         ) : (
           <Button
@@ -1326,31 +1434,28 @@ export function DocumentDetailsView({
         <div className='flex items-center gap-1.5'>
           {!compactActions ? (
             <>
-              <Tooltip content={t`AI Summary`} position='bottom'>
-                <button
-                  aria-label={t`AI Summary`}
-                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-3 bg-surface text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                  disabled={!onAiSummary}
-                  type='button'
-                  onClick={() => onAiSummary?.()}
-                >
-                  <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
-                </button>
-              </Tooltip>
-              <Tooltip content={t`Share`} position='bottom'>
-                <div>
-                  <FolderSharePopover
-                    className='shrink-0'
-                    defaultOpen={autoOpenShare}
-                    iconOnly
-                    sharedIds={sharedEmails}
-                    sharedRoles={sharedRoles}
-                    successMessage={t`Invite sent`}
-                    title={t`Share`}
-                    onOpenChange={(open) => {
-                      if (open && autoOpenShare) onShareOpened?.()
-                    }}
-                    onShare={async (shares, message, meta) => {
+              <button
+                aria-label={t`AI Summary`}
+                className='inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-gray-3 bg-surface px-3.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={!onAiSummary}
+                type='button'
+                onClick={() => onAiSummary?.()}
+              >
+                <DynamicIcon className='h-4 w-4 text-violet-9' name='bot' />
+                <span>{t`AI Summary`}</span>
+              </button>
+              <div>
+                <FolderSharePopover
+                  className='shrink-0'
+                  defaultOpen={autoOpenShare}
+                  sharedIds={sharedEmails}
+                  sharedRoles={sharedRoles}
+                  successMessage={t`Invite sent`}
+                  title={t`Share`}
+                  onOpenChange={(open) => {
+                    if (open && autoOpenShare) onShareOpened?.()
+                  }}
+                  onShare={async (shares, message, meta) => {
                       if (!id || !repositoryId) {
                         showToast({
                           message: t`Missing file context for share`,
@@ -1443,28 +1548,16 @@ export function DocumentDetailsView({
                         return false
                       }
                     }}
-                  />
-                </div>
-              </Tooltip>
-              <Tooltip content={t`Start Workflow`} position='bottom'>
-                <button
-                  aria-label={t`Start Workflow`}
-                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-3 bg-surface text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                  disabled={!onWorkflow}
-                  type='button'
-                  onClick={() => onWorkflow?.()}
-                >
-                  <DynamicIcon className='h-4 w-4' name='check' />
-                </button>
-              </Tooltip>
+                />
+              </div>
             </>
           ) : null}
-          <Tooltip content={t`Sign`} position='bottom'>
+          {canSign ? (
             <button
               ref={signTriggerRef}
               aria-label={t`Sign`}
               aria-expanded={isSigning}
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
                 isSigning
                   ? 'border-primary-6 bg-primary-1 text-primary-9'
                   : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
@@ -1491,8 +1584,9 @@ export function DocumentDetailsView({
               <PenLine
                 className={`h-4 w-4 ${isSigning ? 'text-primary-9' : 'text-violet-9'}`}
               />
+              <span>{t`Sign`}</span>
             </button>
-          </Tooltip>
+          ) : null}
         </div>
       </div>
 

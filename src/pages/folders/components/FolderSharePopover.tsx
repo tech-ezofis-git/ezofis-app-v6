@@ -185,9 +185,20 @@ export default function FolderSharePopover({
   )
   const shareRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(
-    null,
-  )
+  const [panelPos, setPanelPos] = useState<{
+    left: number
+    top?: number
+    bottom?: number
+    maxHeight: number
+  } | null>(null)
+  // The user list scrolls, so its role menu is portalled out to avoid clipping.
+  const userDropdownRef = useRef<HTMLDivElement>(null)
+  const userDropdownAnchorRef = useRef<HTMLButtonElement | null>(null)
+  const [userDropdownPos, setUserDropdownPos] = useState<{
+    left: number
+    top: number
+    width: number
+  } | null>(null)
 
   const { data: rawUsers = [], isLoading: usersLoading } = useQuery(
     getUserListQueryOptions(),
@@ -221,12 +232,35 @@ export default function FolderSharePopover({
     const update = () => {
       const rect = shareRef.current?.getBoundingClientRect()
       if (!rect) return
+
       const width = 360
+      const gap = 8
+      const edge = 8
       const left = Math.min(
-        Math.max(8, rect.right - width),
-        window.innerWidth - width - 8,
+        Math.max(edge, rect.right - width),
+        window.innerWidth - width - edge,
       )
-      setPanelPos({ left, top: rect.bottom + 12 })
+      const spaceBelow = window.innerHeight - rect.bottom - gap - edge
+      const spaceAbove = rect.top - gap - edge
+      const preferredMax = Math.min(
+        Math.floor(window.innerHeight * 0.85),
+        640,
+      )
+      const minComfortable = 280
+
+      if (spaceBelow >= minComfortable || spaceBelow >= spaceAbove) {
+        setPanelPos({
+          left,
+          maxHeight: Math.max(200, Math.min(preferredMax, spaceBelow)),
+          top: rect.bottom + gap,
+        })
+      } else {
+        setPanelPos({
+          bottom: window.innerHeight - rect.top + gap,
+          left,
+          maxHeight: Math.max(200, Math.min(preferredMax, spaceAbove)),
+        })
+      }
     }
     update()
     window.addEventListener('resize', update)
@@ -236,6 +270,56 @@ export default function FolderSharePopover({
       window.removeEventListener('scroll', update, true)
     }
   }, [showShare])
+
+  useLayoutEffect(() => {
+    if (!openUserDropdown) {
+      setUserDropdownPos(null)
+      return
+    }
+    const update = () => {
+      const rect = userDropdownAnchorRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const width = Math.max(120, rect.width)
+      const height = shareRoleOptions.length * 34 + 8
+      const gap = 4
+      const edge = 8
+      const left = Math.min(
+        Math.max(edge, rect.right - width),
+        window.innerWidth - width - edge,
+      )
+      const spaceBelow = window.innerHeight - rect.bottom - gap - edge
+      const top =
+        spaceBelow >= height
+          ? rect.bottom + gap
+          : Math.max(edge, rect.top - gap - height)
+
+      setUserDropdownPos({ left, top, width })
+    }
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [openUserDropdown, shareRoleOptions.length])
+
+  useEffect(() => {
+    if (!openUserDropdown) return
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (
+        userDropdownRef.current?.contains(target) ||
+        userDropdownAnchorRef.current?.contains(target)
+      ) {
+        return
+      }
+      setOpenUserDropdown(null)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [openUserDropdown])
 
   const users = useMemo(() => {
     if (!shareSearch) {
@@ -265,6 +349,7 @@ export default function FolderSharePopover({
       if (
         shareRef.current?.contains(target) ||
         panelRef.current?.contains(target) ||
+        userDropdownRef.current?.contains(target) ||
         target.closest('.mantine-Combobox-dropdown') ||
         target.closest('.mantine-Popover-dropdown') ||
         target.closest('[class*="combobox"]') ||
@@ -277,6 +362,7 @@ export default function FolderSharePopover({
       setSelectedOrder([])
       setShareSearch('')
       setShareMessage('')
+      setOpenUserDropdown(null)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -289,6 +375,7 @@ export default function FolderSharePopover({
     setShareSearch('')
     setShareMessage('')
     setSigningModeOption(SIGNING_MODE_OPTIONS[0])
+    setOpenUserDropdown(null)
   }
 
   const handleToggleSelectUser = (user: any) => {
@@ -434,10 +521,15 @@ export default function FolderSharePopover({
                 <motion.div
                   ref={panelRef}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className='fixed z-[200] flex max-h-[min(80vh,680px)] w-[360px] flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-2xl backdrop-blur-md'
+                  className='fixed z-[200] flex w-[360px] flex-col overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-2xl backdrop-blur-md'
                   exit={{ opacity: 0, scale: 0.95, y: 10 }}
                   initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  style={{ left: panelPos.left, top: panelPos.top }}
+                  style={{
+                    bottom: panelPos.bottom,
+                    left: panelPos.left,
+                    maxHeight: panelPos.maxHeight,
+                    top: panelPos.top,
+                  }}
                   transition={{ duration: 0.15 }}
                 >
             <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-2)] px-4 py-3'>
@@ -554,7 +646,7 @@ export default function FolderSharePopover({
               </div>
             </div>
 
-            <div className='ez-scrollbar min-h-[320px] flex-1 overflow-y-auto overscroll-contain'>
+            <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain'>
             <div className='px-2 py-2'>
               {usersLoading ? (
                 <div className='flex flex-col gap-2 px-2 py-2'>
@@ -718,11 +810,13 @@ export default function FolderSharePopover({
                               <button
                                 type='button'
                                 className='flex cursor-pointer items-center gap-1 rounded-md border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--gray-2)]'
-                                onClick={() =>
-                                  setOpenUserDropdown(
-                                    openUserDropdown === id ? null : id,
-                                  )
-                                }
+                                onClick={(event) => {
+                                  const isOpen = openUserDropdown === id
+                                  userDropdownAnchorRef.current = isOpen
+                                    ? null
+                                    : event.currentTarget
+                                  setOpenUserDropdown(isOpen ? null : id)
+                                }}
                               >
                                 <Icon
                                   className='size-3 text-[var(--primary-9)]'
@@ -734,49 +828,6 @@ export default function FolderSharePopover({
                                   name='lucide:chevron-down'
                                 />
                               </button>
-                              {openUserDropdown === id && (
-                                <div className='absolute top-full right-0 z-[110] mt-1 min-w-[120px] overflow-visible rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
-                                  {shareRoleOptions.map((opt) => (
-                                    <button
-                                      type='button'
-                                      className='flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--gray-2)]'
-                                      key={opt.id}
-                                      onClick={() => {
-                                        setSelectedUsersToShare((prev) => ({
-                                          ...prev,
-                                          [id]: {
-                                            ...prev[id],
-                                            permission: opt.id,
-                                          },
-                                        }))
-                                        if (opt.id === 'Sign') {
-                                          setSelectedOrder((prev) =>
-                                            prev.includes(id)
-                                              ? prev
-                                              : [...prev, id],
-                                          )
-                                        }
-                                        setOpenUserDropdown(null)
-                                      }}
-                                    >
-                                      <Icon
-                                        className='size-3.5 shrink-0 text-[var(--primary-9)]'
-                                        name={roleIcon(opt)}
-                                      />
-                                      <span className='min-w-0 flex-1 text-[11px] font-semibold text-[var(--gray-13)]'>
-                                        {opt.name}
-                                      </span>
-                                      {(selectedUsersToShare[id]?.permission ||
-                                        globalShareRole.id) === opt.id ? (
-                                        <Icon
-                                          className='size-3.5 shrink-0 text-[var(--primary-9)]'
-                                          name='lucide:check'
-                                        />
-                                      ) : null}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
                             </div>
                           ) : null}
                         </div>
@@ -933,6 +984,60 @@ export default function FolderSharePopover({
                 </motion.div>
               ) : null}
             </AnimatePresence>,
+            document.body,
+          )
+        : null}
+
+      {typeof document !== 'undefined' &&
+      showShare &&
+      openUserDropdown &&
+      userDropdownPos
+        ? createPortal(
+            <div
+              ref={userDropdownRef}
+              className='fixed z-[210] overflow-hidden rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'
+              style={{
+                left: userDropdownPos.left,
+                minWidth: userDropdownPos.width,
+                top: userDropdownPos.top,
+              }}
+            >
+              {shareRoleOptions.map((opt) => (
+                <button
+                  type='button'
+                  className='flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-[var(--gray-2)]'
+                  key={opt.id}
+                  onClick={() => {
+                    const id = openUserDropdown
+                    setSelectedUsersToShare((prev) => ({
+                      ...prev,
+                      [id]: { ...prev[id], permission: opt.id },
+                    }))
+                    if (opt.id === 'Sign') {
+                      setSelectedOrder((prev) =>
+                        prev.includes(id) ? prev : [...prev, id],
+                      )
+                    }
+                    setOpenUserDropdown(null)
+                  }}
+                >
+                  <Icon
+                    className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                    name={roleIcon(opt)}
+                  />
+                  <span className='min-w-0 flex-1 text-[11px] font-semibold text-[var(--gray-13)]'>
+                    {opt.name}
+                  </span>
+                  {(selectedUsersToShare[openUserDropdown]?.permission ||
+                    globalShareRole.id) === opt.id ? (
+                    <Icon
+                      className='size-3.5 shrink-0 text-[var(--primary-9)]'
+                      name='lucide:check'
+                    />
+                  ) : null}
+                </button>
+              ))}
+            </div>,
             document.body,
           )
         : null}

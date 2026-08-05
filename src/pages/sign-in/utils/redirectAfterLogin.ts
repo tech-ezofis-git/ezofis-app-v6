@@ -30,7 +30,8 @@ export const redirectAfterLogin = async ({
   redirectTo,
 }: RedirectAfterLoginOptions) => {
   const explicitRedirect = safeInternalRedirect(redirectTo)
-  let destination: NavigateOptions['to'] = explicitRedirect || '/requests'
+  let destination: NavigateOptions['to'] = (explicitRedirect ||
+    '/requests') as NavigateOptions['to']
 
   try {
     const res = await apiRouter.userSession()
@@ -40,7 +41,7 @@ export const redirectAfterLogin = async ({
 
     const shareCtx = authUserStore.getState().shareContext
     if (explicitRedirect) {
-      destination = explicitRedirect
+      destination = explicitRedirect as NavigateOptions['to']
     } else if (shareTenantId || shareCtx) {
       if (shareCtx) {
         const currentSession = authUserStore.getState().session
@@ -61,7 +62,7 @@ export const redirectAfterLogin = async ({
   } catch (err) {
     console.error('Failed to load session details:', err)
     if (explicitRedirect) {
-      destination = explicitRedirect
+      destination = explicitRedirect as NavigateOptions['to']
     } else {
       const shareCtx = authUserStore.getState().shareContext
       destination = shareTenantId || shareCtx ? '/folders' : '/'
@@ -74,7 +75,11 @@ export const redirectAfterLogin = async ({
   if (typeof destination === 'string' && destination.includes('?')) {
     const [pathname, query = ''] = destination.split('?')
     const search = Object.fromEntries(new URLSearchParams(query).entries())
-    await navigate({ replace: true, to: pathname, search })
+    await navigate({
+      replace: true,
+      to: pathname as NavigateOptions['to'],
+      search,
+    })
     return
   }
 

@@ -6,6 +6,7 @@ import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useS
 import SectionHeader from '../../components/SectionHeader'
 
 const ImapSettings = () => {
+  const { t } = useLingui()
   const emailSettings = setupStore((state) => state.emailSettings)
   const setEmailSettings = setupStore((state) => state.setEmailSettings)
 

@@ -1,10 +1,9 @@
-import type { MessageDescriptor } from '@lingui/core'
+import type { I18n, MessageDescriptor } from '@lingui/core'
 import { useEffect, useMemo, useRef } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import Stepper from '@/components/base/Stepper'
 import Button from '@/components/base/button/Button'
 import cn from '@/utils/cn'
-import { createSettingsSetupBreadcrumbs } from '../helpers/settingsBreadcrumbs'
 import useSettingsTopbar from '../hooks/useSettingsTopbar'
 
 export type SettingsWizardStep = {
@@ -17,6 +16,15 @@ export type SettingsWizardStep = {
 }
 
 type Translatable = string | MessageDescriptor
+
+const resolveText = (
+  value: Translatable | undefined,
+  i18n: I18n,
+): string | undefined => {
+  if (value == null) return undefined
+  if (typeof value === 'string') return value
+  return i18n._(value)
+}
 
 export type SettingsWizardLayoutProps = {
   activeStep: number
@@ -95,7 +103,13 @@ export default function SettingsWizardLayout({
         }
       },
     }
-  }, [moduleTitle, setupTitle, onCancel, onBackToSettings])
+  }, [
+    resolvedModuleTitle,
+    resolvedSetupTitle,
+    onCancel,
+    onBackToSettings,
+    t,
+  ])
 
   useSettingsTopbar(breadcrumbConfig)
 

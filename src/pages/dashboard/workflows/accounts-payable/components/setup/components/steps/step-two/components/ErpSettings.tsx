@@ -4,6 +4,7 @@ import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useS
 import SectionHeader from '../../components/SectionHeader'
 
 const ErpSettings = () => {
+  const { t } = useLingui()
   const erpSettings = setupStore((state) => state.erpSettings)
   const setErpSettings = setupStore((state) => state.setErpSettings)
 
