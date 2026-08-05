@@ -25,7 +25,7 @@ export const StepLayout = ({
         <Title
           className='items-start text-left'
           description={description}
-          descriptionClassName='max-w-2xl text-pretty'
+          descriptionClassName='max-w-3xl text-pretty text-13/5'
           level={2}
           title={title}
           titleClassName='tracking-tight'

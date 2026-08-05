@@ -56,7 +56,7 @@ export const dmsStorageOptions: DmsStorageOption[] = [
     icon: 'logos:microsoft-azure',
     id: 'Azure Drive',
     storageProviderCode: 'AZURE',
-    subtitle: 'Coming Soon',
+    subtitle: 'Coming soon',
     title: 'Azure Drive',
   },
 ]
@@ -110,20 +110,20 @@ export const REPOSITORY_FIELD_DATA_TYPES = [
 ] as const
 
 export const DATA_TYPE_LABELS: Record<string, string> = {
-  AUTO_GENERATED: 'Auto Generated',
+  AUTO_GENERATED: 'Auto generated',
   BARCODE: 'Barcode',
   BOOLEAN: 'Boolean',
   CALCULATED: 'Calculated',
-  CURRENCY_AMOUNT: 'Currency Amount',
+  CURRENCY_AMOUNT: 'Currency amount',
   DATE: 'Date',
-  DATE_TIME: 'Date & Time',
-  DYNAMIC_TABLE: 'Dynamic Table',
+  DATE_TIME: 'Date & time',
+  DYNAMIC_TABLE: 'Dynamic table',
   LINK: 'Link',
-  LONG_TEXT: 'Long Text',
+  LONG_TEXT: 'Long text',
   NUMBER: 'Number',
   OMR: 'OMR',
-  SHORT_TEXT: 'Short Text',
-  SINGLE_SELECT: 'Single Select',
+  SHORT_TEXT: 'Short text',
+  SINGLE_SELECT: 'Single select',
   TABLE: 'Table',
   TIME: 'Time',
 }

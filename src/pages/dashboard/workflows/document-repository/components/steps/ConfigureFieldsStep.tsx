@@ -394,7 +394,7 @@ const ConfigureFieldsStep = () => {
   return (
     <StepLayout
       description='Choose the fields each document should have, like vendor name, date, or document type. Mark fields as structure to build your folder hierarchy.'
-      title='Configure Fields'
+      title='Configure fields'
       footer={
         <StepFooter>
           <Button
@@ -418,7 +418,7 @@ const ConfigureFieldsStep = () => {
             <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-end'>
               <div>
                 <label className='mb-2 block text-13 font-medium text-gray-11'>
-                  Field Name
+                  Field name
                 </label>
                 <div className='flex items-center gap-2'>
                   {newIsFolder ? (
@@ -500,7 +500,7 @@ const ConfigureFieldsStep = () => {
               <Button
                 className='h-9'
                 icon='lucide:plus'
-                label='Add Field'
+                label='Add field'
                 onClick={addField}
               />
             </div>
@@ -523,7 +523,7 @@ const ConfigureFieldsStep = () => {
               )}
             >
               <span />
-              <span>Field Name</span>
+              <span>Field name</span>
               <span>Type</span>
               <span className='text-center'>Structure</span>
               <span className='text-center'>Mandatory</span>
