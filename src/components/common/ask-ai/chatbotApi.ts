@@ -11,7 +11,7 @@ import type {
 } from './types'
 
 export const CHATBOT_API_BASE =
-  import.meta.env.VITE_CHATBOT_API_URL || 'https://ezchatbot-api.azurewebsites.net'
+  import.meta.env.VITE_CHATBOT_API_URL || ' http://52.172.32.88:7071/'
 
 export type ChatbotRequestBody = {
   actionFrom: string

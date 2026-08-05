@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
@@ -11,13 +12,13 @@ const ImapSettings = () => {
   return (
     <div>
       <SectionHeader
-        description='Enter IMAP server details for your custom email provider.'
-        title='Custom Email Configuration (IMAP)'
+        description={t`Enter IMAP server details for your custom email provider.`}
+        title={t`Custom Email Configuration (IMAP)`}
       />
 
       <div className='grid grid-cols-1 gap-x-4 gap-y-4 md:grid-cols-2'>
         <InputText
-          label='Email'
+          label={t`Email`}
           value={emailSettings.email || ''}
           required
           onChange={(value) =>
@@ -26,7 +27,7 @@ const ImapSettings = () => {
         />
 
         <InputPassword
-          label='Password'
+          label={t`Password`}
           value={emailSettings.password || ''}
           required
           onChange={(value) =>
@@ -35,7 +36,7 @@ const ImapSettings = () => {
         />
 
         <InputText
-          label='IMAP Server'
+          label={t`IMAP Server`}
           value={emailSettings.server || ''}
           required
           onChange={(value) =>
@@ -44,7 +45,7 @@ const ImapSettings = () => {
         />
 
         <InputNumber
-          label='IMAP Port'
+          label={t`IMAP Port`}
           value={emailSettings.port || ''}
           required
           onChange={(value) =>

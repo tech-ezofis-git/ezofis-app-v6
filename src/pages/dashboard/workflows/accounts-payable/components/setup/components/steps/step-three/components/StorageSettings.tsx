@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import InputText from '@/components/base/inputs/InputText'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import SectionHeader from '../../components/SectionHeader'
@@ -10,12 +11,12 @@ const StorageSettings = () => {
     <div>
       <SectionHeader
         description='Configure authentication and connection details to enable secure document access and syncing.'
-        title='Storage Settings'
+        title={t`Storage Settings`}
       />
 
       <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
         <InputText
-          label='API URL'
+          label={t`API URL`}
           value={storageSettings.apiUrl}
           required
           onChange={(value) =>
@@ -24,7 +25,7 @@ const StorageSettings = () => {
         />
 
         <InputText
-          label='API Key'
+          label={t`API Key`}
           value={storageSettings.apiKey}
           required
           onChange={(value) =>

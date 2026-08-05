@@ -11,6 +11,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import { createRepository } from '@/api/createFolder'
 import { getRepositorys } from '@/api/v6/folder/folder'
@@ -579,6 +581,7 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
+  const { t } = useLingui()
   // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
   //   null,
   // )
@@ -740,8 +743,8 @@ export default function DmsFolderConfiguration({
   )
 
   const statusOptions = [
-    { label: 'Active', value: 'active' },
-    { label: 'Archived', value: 'archived' },
+    { label: t`Active`, value: 'active' },
+    { label: t`Archived`, value: 'archived' },
   ]
 
   const openEditRepository = useCallback((repository: RepositoryRow) => {
@@ -1052,8 +1055,8 @@ export default function DmsFolderConfiguration({
       ) : !showWizard ? (
         <div className='flex min-h-0 flex-1 flex-col'>
           <SettingsPageHeader
-            description='Create and manage folders with custom fields, storage, and versioning.'
-            title='Folder Configuration'
+            description={t`Create and manage folders with custom fields, storage, and versioning.`}
+            title={t`Folder Configuration`}
             onBack={onBack}
           />
 
@@ -1072,23 +1075,23 @@ export default function DmsFolderConfiguration({
                     withinPortal
                     target={
                       <IconButton
-                        ariaLabel='New Folder'
+                        ariaLabel={t`New Folder`}
                         color='primary'
                         icon='lucide:plus'
                         size='md'
-                        tooltip='New Folder'
+                        tooltip={t`New Folder`}
                         variant='solid'
                       />
                     }
                   >
                     <MenuItem
                       icon='lucide:wrench'
-                      label='Manual builder'
+                      label={t`Manual builder`}
                       onClick={openManualBuilder}
                     />
                     <MenuItem
                       leftSection={<AiBrandIcon className='size-4' variant='curved-purple' />}
-                      label='AI builder'
+                      label={t`AI builder`}
                       onClick={openAiBuilder}
                     />
                   </Menu>
@@ -1112,41 +1115,41 @@ export default function DmsFolderConfiguration({
               filters={[
                 {
                   id: 'name',
-                  label: 'Folder',
+                  label: t`Folder`,
                   options: folderNameOptions,
                   searchable: true,
                   searchPlaceholder: 'Search folder...',
                 },
                 {
                   id: 'storage',
-                  label: 'Storage',
+                  label: t`Storage`,
                   options: storageFilterOptions,
                 },
-                { id: 'status', label: 'Status', options: statusOptions },
+                { id: 'status', label: t`Status`, options: statusOptions },
               ]}
               moreFilters={[
                 {
                   id: 'description',
-                  label: 'Description',
+                  label: t`Description`,
                   options: descriptionOptions,
                   searchable: true,
                   searchPlaceholder: 'Search description...',
                 },
                 {
                   id: 'documents',
-                  label: 'Documents',
+                  label: t`Documents`,
                   options: documentCountOptions,
                 },
                 {
                   id: 'createdAt',
-                  label: 'Created',
+                  label: t`Created`,
                   options: createdAtOptions,
                   searchable: true,
                   searchPlaceholder: 'Search created...',
                 },
                 {
                   id: 'createdBy',
-                  label: 'Created By',
+                  label: t`Created By`,
                   options: createdByOptions,
                   searchable: true,
                   searchPlaceholder: 'Search created by...',
@@ -1183,7 +1186,7 @@ export default function DmsFolderConfiguration({
               </div>
               <Pagination
                 className='mt-4 shrink-0'
-                itemLabel='Folders'
+                itemLabel={t`Folders`}
                 page={pagination.page}
                 pageSize={pagination.pageSize}
                 showPageNumbers={false}
@@ -1230,14 +1233,18 @@ export default function DmsFolderConfiguration({
               onSave={closeWizard}
               onCancel={closeWizard}
               isSaving={isSavingRepository}
-              nextLabel={step === 5 ? 'Save & Next' : 'Continue'}
-              saveLabel='Done'
-              moduleTitle='Folder Configuration'
-              setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
-              headerTitle={
-                editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'
+              nextLabel={step === 5 ? t`Save & Next` : t`Continue`}
+              saveLabel={t`Done`}
+              moduleTitle={msg`Folder Configuration`}
+              setupTitle={
+                editingRepositoryId ? msg`Edit Folder` : msg`Create Folder`
               }
-              headerDescription='Configure repository storage, metadata fields, versioning, and security'
+              headerTitle={
+                editingRepositoryId
+                  ? msg`Edit Folder Setup`
+                  : msg`New Folder Setup`
+              }
+              headerDescription={msg`Configure repository storage, metadata fields, versioning, and security`}
             >
               <WizardContent
                 description={description}
@@ -1331,6 +1338,7 @@ function FieldNameWithIconInput({
   onChange: (value: string) => void
   onIconChange?: (iconKey: string) => void
 }) {
+  const { t } = useLingui()
   const inputRef = useRef<HTMLInputElement>(null)
   const combobox = useCombobox({
     onDropdownClose: () => onSearch(''),
@@ -1369,7 +1377,7 @@ function FieldNameWithIconInput({
     >
       <MantineCombobox.Target>
         <button
-          aria-label='Select field icon'
+          aria-label={t`Select field icon`}
           className='flex h-full w-full items-center justify-center gap-0.5 text-gray-11'
           type='button'
           onClick={() => combobox.toggleDropdown()}
@@ -1385,7 +1393,7 @@ function FieldNameWithIconInput({
         }}
       >
         <ComboboxSearch
-          placeholder='Search icons'
+          placeholder={t`Search icons`}
           search={search}
           onSearch={onSearch}
         />
@@ -1619,7 +1627,7 @@ function FieldsTable({
       fieldColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Folder',
+        header: t`Folder`,
         id: 'folder',
         meta: settingsHeaderMeta.center,
         minSize: 40,
@@ -1935,6 +1943,7 @@ function useRepositoryTable(
 
   },
 ) {
+  const { t } = useLingui()
   const columnHelper = createColumnHelper<RepositoryRow>()
   const tableSearchOptions = useSettingsTableSearch()
   const {
@@ -1968,9 +1977,9 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('name', {
         enableSorting: false,
-        header: 'Folder',
+        header: t`Folder`,
         id: 'folder',
-        meta: { ...settingsHeaderMeta.start, label: 'Folder' },
+        meta: { ...settingsHeaderMeta.start, label: t`Folder` },
         minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
@@ -1981,9 +1990,9 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('description', {
         enableSorting: false,
-        header: 'Description',
+        header: t`Description`,
         id: 'description',
-        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        meta: { ...settingsHeaderMeta.start, label: t`Description` },
         minSize: 40,
         size: 220,
         cell: ({ getValue }) => {
@@ -2000,29 +2009,33 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('storage', {
         enableSorting: false,
-        header: 'Storage',
+        header: t`Storage`,
         id: 'storage',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Storage',
+          label: t`Storage`,
         },
         minSize: 40,
         size: 120,
-        cell: ({ getValue }) => (
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '')
+          const label = value === 'Default' ? t`Default` : value
+          return (
           <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
-            {getValue()}
+            {label}
           </span>
-        ),
+          )
+        },
       }),
       columnHelper.accessor('documents', {
         enableSorting: false,
-        header: 'Documents',
+        header: t`Documents`,
         id: 'documents',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Documents',
+          label: t`Documents`,
         },
         minSize: 40,
         size: 110,
@@ -2034,12 +2047,12 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Status',
+          label: t`Status`,
         },
         minSize: 40,
         size: 110,
@@ -2055,16 +2068,16 @@ function useRepositoryTable(
                   : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
               ].join(' ')}
             >
-              {isActive ? 'Active' : 'Archived'}
+              {isActive ? t`Active` : t`Archived`}
             </span>
           )
         },
       }),
       columnHelper.accessor('createdAt', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'createdAt',
-        meta: { ...settingsHeaderMeta.start, label: 'Created' },
+        meta: { ...settingsHeaderMeta.start, label: t`Created` },
         minSize: 40,
         size: 145,
         cell: ({ getValue }) => {
@@ -2075,9 +2088,9 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('createdBy', {
         enableSorting: false,
-        header: 'Created By',
+        header: t`Created By`,
         id: 'createdBy',
-        meta: { ...settingsHeaderMeta.start, label: 'Created By' },
+        meta: { ...settingsHeaderMeta.start, label: t`Created By` },
         minSize: 40,
         size: 140,
         cell: ({ getValue }) => {
@@ -2120,15 +2133,15 @@ function useRepositoryTable(
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => onEditRepository(repository)}
                 />
                 <MenuItem
                   icon='lucide:shield'
-                  label='Security'
+                  label={t`Security`}
                   onClick={() => onSecurityRepository(repository)}
                 />
-                <MenuItem icon='lucide:settings' label='Settings' disabled />
+                <MenuItem icon='lucide:settings' label={t`Settings`} disabled />
               </Menu>
             </div>
           )
@@ -2216,6 +2229,7 @@ function WizardContent({
   ) => void
   setStorage: (nextStorage: string) => void
 }) {
+  const { t } = useLingui()
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
   const [newIsFolder, setNewIsFolder] = useState(false)
@@ -2287,30 +2301,30 @@ function WizardContent({
         </p> */}
 
         <InputText
-          label='Folder Name *'
-          placeholder='e.g. AP Invoices 2026'
+          label={t`Folder Name *`}
+          placeholder={t`e.g. AP Invoices 2026`}
           value={folderName}
           onChange={(value: string) => setFolderName(value)}
         />
 
         <InputTextarea
-          label='Description'
+          label={t`Description`}
           minRows={3}
-          placeholder='Describe the purpose of this folder...'
+          placeholder={t`Describe the purpose of this folder...`}
           value={description}
           onChange={setDescription}
         />
 
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
           <InputSelect
-            label='Folder Owner'
+            label={t`Folder Owner`}
             options={userOptions}
             value={folderOwner}
             onChange={(item: SelectOption | null) => setFolderOwner(item)}
           />
 
           <InputSelect
-            label='Folder Coordinator'
+            label={t`Folder Coordinator`}
             options={userOptions}
             value={folderCoordinator}
             onChange={(item: SelectOption | null) => setFolderCoordinator(item)}
@@ -2434,7 +2448,7 @@ function WizardContent({
               </label>
               <FieldNameWithIconInput
                 iconKey={String(newFieldIcon?.value || 'folder')}
-                placeholder='e.g. Cost Center'
+                placeholder={t`e.g. Cost Center`}
                 showIconPicker={newIsFolder}
                 size='md'
                 value={newFieldName}
@@ -2454,7 +2468,7 @@ function WizardContent({
               </label>
               <InputSelect
                 options={fieldTypeOptions}
-                placeholder='Field type'
+                placeholder={t`Field type`}
                 width='target'
                 classNames={{
                   input: cn(inputSharedClassNames.input, 'text-13'),
@@ -2491,7 +2505,7 @@ function WizardContent({
               <Button
                 className='h-9 w-full whitespace-nowrap lg:w-auto'
                 icon='lucide:plus'
-                label='Add Field'
+                label={t`Add Field`}
                 size='lg'
                 onClick={addField}
               />

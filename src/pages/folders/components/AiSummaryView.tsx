@@ -161,25 +161,7 @@ export function AiSummaryView({
         >
           ← {t`Back`}
         </Button>
-        <Button
-          className='h-9 px-4 text-[14px]'
-          disabled={loading || regenerating || !repositoryId || !itemId}
-          onClick={() => void loadSummary({ regenerate: true })}
-        >
-          <DynamicIcon
-            className={regenerating ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
-            name={regenerating ? 'loader' : 'refresh'}
-          />
-          {regenerating ? t`Regenerating...` : t`Regenerate`}
-        </Button>
-        <Button
-          className='h-9 px-4 text-[14px]'
-          disabled={!data || loading || regenerating}
-          onClick={() => void copySummary()}
-        >
-          <DynamicIcon className='h-4 w-4' name='copy' />
-          {t`Copy`}
-        </Button>
+       
         <Button
           className='h-9 px-4 text-[14px]'
           disabled={exporting || !data || loading || regenerating}
@@ -215,7 +197,7 @@ export function AiSummaryView({
                 </span>
                 <div>
                   <h2 className='text-[17px] leading-6 font-semibold text-gray-13'>
-                    {data.engineTitle || t`EZOFIS AI Engine`}
+                    {data.engineTitle || t`EZOFIS AI Summary`}
                   </h2>
                   <p className='text-[13px] leading-5 text-gray-10'>
                     {data.engineSubtitle}
@@ -261,12 +243,12 @@ export function AiSummaryView({
                         name='check'
                       />
                       <div>
-                        <p className='text-[13px] leading-5 text-gray-10'>
+                        {/* <p className='text-[13px] leading-5 text-gray-13'>
                           {fact.label}
-                        </p>
-                        <b className='text-[14px] leading-5 text-gray-13'>
+                        </p> */}
+                        <p className=' text-[14px] leading-5 text-gray-10'>
                           {fact.value}
-                        </b>
+                        </p>
                       </div>
                     </div>
                   ))}

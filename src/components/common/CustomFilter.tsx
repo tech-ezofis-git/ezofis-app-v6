@@ -208,15 +208,15 @@ export default function CustomFilter({
   useEffect(() => {
     const previous = previousFilterDropdownRef.current
     const next =
-      activeFilterDropdown && activeFilterDropdown !== 'more'
-        ? activeFilterDropdown
-        : null
+      activeFilterDropdown === 'more'
+        ? activeFilterGroup
+        : activeFilterDropdown || null
 
     if (previous === next) return
 
     previousFilterDropdownRef.current = next
     onFilterMenuOpenChange?.(next)
-  }, [activeFilterDropdown, onFilterMenuOpenChange])
+  }, [activeFilterDropdown, activeFilterGroup, onFilterMenuOpenChange])
 
   const updateFilterDropdownPosition = useCallback(() => {
     if (!activeFilterDropdown || activeFilterDropdown === 'more') {
@@ -536,7 +536,7 @@ export default function CustomFilter({
                   )
                 }
 
-                if (group.options && group.options.length > 0) {
+                if (group.options) {
                   return (
                     <CategoryFilterMenu
                       key={group.id}

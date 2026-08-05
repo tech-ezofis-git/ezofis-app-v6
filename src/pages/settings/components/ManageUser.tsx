@@ -11,6 +11,8 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import {
   createUser,
   deleteUser as deleteUserApi,
@@ -100,36 +102,62 @@ type StepKey = 'login' | 'business' | 'groups' | 'authentication' | 'review'
 
 type UserStatus = 'active' | 'inactive' | 'pending'
 
-const steps: Step[] = [
+const USER_SETUP_STEP_MSGS = [
   {
-    caption: 'Step 1',
-    description: 'Account credentials & identity',
-    key: 'login',
-    title: 'Login Details',
+    description: msg`Account credentials & identity`,
+    key: 'login' as const,
+    title: msg`Login Details`,
   },
   {
-    caption: 'Step 2',
-    description: 'Department & business hierarchy',
-    key: 'business',
-    title: 'Business Detail',
+    description: msg`Department & business hierarchy`,
+    key: 'business' as const,
+    title: msg`Business Detail`,
   },
   {
-    caption: 'Step 3',
-    description: 'Assign user access groups',
-    key: 'groups',
-    title: 'Group Assignment',
+    description: msg`Assign user access groups`,
+    key: 'groups' as const,
+    title: msg`Group Assignment`,
   },
   {
-    caption: 'Step 4',
-    description: 'Security & verification',
-    key: 'authentication',
-    title: 'Authentication',
+    description: msg`Security & verification`,
+    key: 'authentication' as const,
+    title: msg`Authentication`,
   },
   {
-    caption: 'Step 5',
-    description: 'Review & save profile',
-    key: 'review',
-    title: 'Review',
+    description: msg`Review & save profile`,
+    key: 'review' as const,
+    title: msg`Review`,
+  },
+]
+
+const STEP_CAPTION_MSGS = [
+  msg`Step 1`,
+  msg`Step 2`,
+  msg`Step 3`,
+  msg`Step 4`,
+  msg`Step 5`,
+]
+
+const LOGIN_OPTION_MSGS = [
+  {
+    description: msg`Email and password`,
+    title: msg`Password`,
+    value: 'Password' as const,
+  },
+  {
+    description: msg`Sign in with Google`,
+    title: msg`Google`,
+    value: 'GoogleSSO' as const,
+  },
+  {
+    description: msg`Sign in with Microsoft`,
+    title: msg`Microsoft`,
+    value: 'MS Entra ID' as const,
+  },
+  {
+    description: msg`Sign in with Active Directory`,
+    title: msg`Active Directory`,
+    value: 'LDAP/AD' as const,
   },
 ]
 
@@ -266,15 +294,19 @@ function LoginTypeIcon({
   }
 }
 
-function formatLoginTypeLabel(type: string) {
+function formatLoginTypeLabel(
+  type: string,
+  t?: (strings: TemplateStringsArray, ...values: any[]) => string,
+) {
+  const tr = t ?? ((strings: TemplateStringsArray) => strings.join(''))
   const normalized = String(type || '').trim().toLowerCase()
-  if (normalized === 'ezofis' || normalized === 'password') return 'Password'
+  if (normalized === 'ezofis' || normalized === 'password') return tr`Password`
   if (
     normalized === 'googlesso' ||
     normalized === 'google' ||
     normalized === 'google sso'
   ) {
-    return 'Google'
+    return tr`Google`
   }
   if (
     normalized === 'ms entra id' ||
@@ -282,7 +314,7 @@ function formatLoginTypeLabel(type: string) {
     normalized === 'entra' ||
     normalized === 'azuread'
   ) {
-    return 'Microsoft'
+    return tr`Microsoft`
   }
   if (
     normalized === 'ldap/ad' ||
@@ -290,38 +322,11 @@ function formatLoginTypeLabel(type: string) {
     normalized === 'activedirectory' ||
     normalized === 'active directory'
   ) {
-    return 'Active Directory'
+    return tr`Active Directory`
   }
   if (!type) return '—'
   return type
 }
-
-const loginOptions: LoginOption[] = [
-  {
-    description: 'Email and password',
-    icon: () => <LoginTypeIcon type='Password' />,
-    title: 'Password',
-    value: 'Password',
-  },
-  {
-    description: 'Sign in with Google',
-    icon: () => <LoginTypeIcon type='GoogleSSO' />,
-    title: 'Google',
-    value: 'GoogleSSO',
-  },
-  {
-    description: 'Sign in with Microsoft',
-    icon: () => <LoginTypeIcon type='MS Entra ID' />,
-    title: 'Microsoft',
-    value: 'MS Entra ID',
-  },
-  {
-    description: 'Sign in with Active Directory',
-    icon: () => <LoginTypeIcon type='LDAP/AD' />,
-    title: 'Active Directory',
-    value: 'LDAP/AD',
-  },
-]
 
 const userColumnHelper = createColumnHelper<AppUser>()
 
@@ -334,7 +339,10 @@ type ManageUserProps = {
   onBack?: () => void
 }
 
-export default function ManageUser({ onBack }: ManageUserProps) {
+export default function ManageUser({
+  onBack,
+}: ManageUserProps) {
+  const { i18n, t } = useLingui()
   const [groupOptions, setGroupOptions] = useState<SettingsOption[]>([])
   const [settingsGroups, setSettingsGroups] = useState<SettingsGroup[]>([])
   const [isLoadingGroups, setIsLoadingGroups] = useState(true)
@@ -649,7 +657,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         `${draftUser.firstName}.${draftUser.lastName}`.toLowerCase(),
     }
 
-    const validationMessage = getUserSetupValidationMessage(normalizedUser)
+    const validationMessage = getUserSetupValidationMessage(normalizedUser, t, i18n)
 
     if (validationMessage) {
       const nextStep =
@@ -795,9 +803,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         (row) => `${row.firstName} ${row.lastName}`,
         {
           enableSorting: false,
-          header: 'Name',
+          header: t`Name`,
           id: 'name',
-          meta: { ...settingsHeaderMeta.start, label: 'Name' },
+          meta: { ...settingsHeaderMeta.start, label: t`Name` },
           minSize: 40,
           size: 180,
           cell: ({ row }) => {
@@ -818,9 +826,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('email', {
         enableSorting: false,
-        header: 'Email',
+        header: t`Email`,
         id: 'email',
-        meta: { ...settingsHeaderMeta.start, label: 'Email' },
+        meta: { ...settingsHeaderMeta.start, label: t`Email` },
         minSize: 40,
         size: 180,
         cell: ({ getValue }) => (
@@ -835,7 +843,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('department', {
         enableSorting: false,
-        header: 'Department',
+        header: t`Department`,
         id: 'department',
         meta: { ...settingsHeaderMeta.start, label: 'Department' },
         minSize: 40,
@@ -848,12 +856,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('role', {
         enableSorting: false,
-        header: 'Role',
+        header: t`Role`,
         id: 'role',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Role',
+          label: t`Role`,
         },
         minSize: 40,
         size: 130,
@@ -866,12 +874,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Status',
+          label: t`Status`,
         },
         minSize: 40,
         size: 100,
@@ -880,13 +888,13 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('loginType', {
         enableSorting: false,
-        header: 'Login Type',
+        header: t`Login Type`,
         id: 'loginType',
         meta: {
           ...settingsHeaderMeta.start,
           className: '!px-2',
           disableEllipsis: true,
-          label: 'Login Type',
+          label: t`Login Type`,
         },
         maxSize: 156,
         minSize: 156,
@@ -894,7 +902,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         cell: ({ getValue }) => {
           const value = String(getValue() || '').trim()
           if (!value) return <span />
-          const label = formatLoginTypeLabel(value)
+          const label = formatLoginTypeLabel(value, t)
 
           return (
             <span className='inline-flex items-center gap-1.5 whitespace-nowrap'>
@@ -907,7 +915,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('lastLogin', {
         enableSorting: false,
-        header: 'Last Login',
+        header: t`Last Login`,
         id: 'lastLogin',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -921,7 +929,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       userColumnHelper.accessor('created', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'created',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -964,14 +972,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => openEditUser(user)}
                 />
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => deleteUser(user.id)}
                 />
               </Menu>
@@ -980,7 +988,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         },
       }),
     ],
-    [openEditUser, deleteUser],
+    [openEditUser, deleteUser, t, i18n.locale],
   )
   const {
     page,
@@ -1170,7 +1178,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         }}
         onChange={setDraftUser}
         onNext={() =>
-          setActiveStep((step) => Math.min(step + 1, steps.length - 1))
+          setActiveStep((step) => Math.min(step + 1, 4))
         }
         onSave={saveUser}
         onStepChange={setActiveStep}
@@ -1181,13 +1189,13 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     <main className='flex h-full flex-col bg-[var(--surface)]'>
       <ConfirmDialog
         opened={deletingUserId != null}
-        title='Delete User'
+        title={t`Delete User`}
         description={
           deletingUser
             ? `Are you sure you want to delete "${`${deletingUser.firstName} ${deletingUser.lastName}`.trim() || deletingUser.email}"? This action cannot be undone.`
             : 'Are you sure you want to delete this user? This action cannot be undone.'
         }
-        confirmLabel='Delete'
+        confirmLabel={t`Delete`}
         isConfirming={isDeletingUser}
         variant='danger'
         onCancel={cancelDeleteUser}
@@ -1196,7 +1204,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         }}
       />
       <section className='flex flex-1 flex-col'>
-        <SettingsPageHeader title='User Management' onBack={onBack} />
+        <SettingsPageHeader title={t`User Management`} onBack={onBack} />
 
         <div className='flex flex-1 flex-col overflow-hidden px-6 py-2 md:px-8'>
           <CustomFilter
@@ -1224,20 +1232,20 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             filters={[
               {
                 id: 'name',
-                label: 'Name',
+                label: t`Name`,
                 options: nameOptions,
                 searchable: true,
                 searchPlaceholder: 'Search name...',
               },
               {
                 id: 'email',
-                label: 'Email',
+                label: t`Email`,
                 options: emailOptions,
                 searchable: true,
                 searchPlaceholder: 'Search email...',
               },
-              { id: 'role', label: 'Role', options: roleOptions },
-              { id: 'status', label: 'Status', options: statusOptions },
+              { id: 'role', label: t`Role`, options: roleOptions },
+              { id: 'status', label: t`Status`, options: statusOptions },
             ]}
             moreFilters={[
               {
@@ -1277,7 +1285,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
               },
               {
                 id: 'loginType',
-                label: 'Login Type',
+                label: t`Login Type`,
                 options: loginTypeOptions,
               },
             ]}
@@ -1315,7 +1323,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             </div>
             <Pagination
               className='mt-4 shrink-0'
-              itemLabel='Users'
+              itemLabel={t`Users`}
               page={page}
               pageSize={pageSize}
               showPageNumbers={false}
@@ -1485,11 +1493,12 @@ function BusinessDetails({
   roleOptions: SettingsOption[]
   showErrors?: boolean
 }) {
+  const { t } = useLingui()
   return (
     <SettingsFormSection>
       <SettingsSelectField
         error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
-        label='Role'
+        label={t`Role`}
         options={roleOptions}
         placeholder={isLoadingRoles ? 'Loading roles...' : 'Select role'}
         value={user.role}
@@ -1502,15 +1511,15 @@ function BusinessDetails({
         <SettingsSelectField
           clearable
           creatable
-          label='Job Title'
+          label={t`Job Title`}
           options={jobTitleOptions}
-          placeholder='Select or type job title'
+          placeholder={t`Select or type job title`}
           value={user.jobTitle === '—' ? '' : user.jobTitle}
           onChange={(value) => onChange({ ...user, jobTitle: value })}
         />
 
         <EzTextField
-          label='Employee ID'
+          label={t`Employee ID`}
           placeholder='EMP-001'
           value={user.employeeId === '—' ? '' : user.employeeId}
           onChange={(value) => onChange({ ...user, employeeId: value })}
@@ -1518,9 +1527,9 @@ function BusinessDetails({
 
         <SettingsSelectField
           creatable
-          label='Department'
+          label={t`Department`}
           options={departments}
-          placeholder='Select or type department'
+          placeholder={t`Select or type department`}
           value={user.department}
           onChange={(value) => onChange({ ...user, department: value })}
         />
@@ -1528,18 +1537,18 @@ function BusinessDetails({
         <SettingsSelectField
           clearable
           creatable
-          label='Business Unit'
+          label={t`Business Unit`}
           options={businessUnitOptions}
-          placeholder='Select or type business unit'
+          placeholder={t`Select or type business unit`}
           value={user.businessUnit === '—' ? '' : user.businessUnit}
           onChange={(value) => onChange({ ...user, businessUnit: value })}
         />
 
         <SettingsSelectField
           clearable
-          label='Manager'
+          label={t`Manager`}
           options={managerOptions}
-          placeholder='Select'
+          placeholder={t`Select`}
           searchable
           value={user.manager}
           onChange={(value) => onChange({ ...user, manager: value })}
@@ -1548,9 +1557,9 @@ function BusinessDetails({
         <SettingsSelectField
           clearable
           creatable
-          label='Location'
+          label={t`Location`}
           options={locationOptions}
-          placeholder='Select or type location'
+          placeholder={t`Select or type location`}
           value={user.location === '—' ? '' : user.location}
           onChange={(value) => onChange({ ...user, location: value })}
         />
@@ -1633,23 +1642,36 @@ function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U'
 }
 
-function getPasswordRequirementError(password: string) {
+function getPasswordRequirementError(
+  password: string,
+  i18n: { _: (descriptor: any) => string },
+  t: (strings: TemplateStringsArray, ...values: any[]) => string,
+) {
   const unmet = requirementsConfig.find((req) => !req.regex.test(password))
-  return unmet ? `Password must meet: ${unmet.label}` : undefined
+  return unmet
+    ? t`Password must meet: ${i18n._(unmet.label)}`
+    : undefined
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-function getEmailValidationError(email: string) {
+function getEmailValidationError(
+  email: string,
+  t: (strings: TemplateStringsArray, ...values: any[]) => string,
+) {
   const trimmed = String(email || '').trim()
   if (!trimmed) return undefined
   if (!EMAIL_PATTERN.test(trimmed)) {
-    return 'Please enter a valid email address'
+    return t`Please enter a valid email address`
   }
   return undefined
 }
 
-function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
+function getMissingRequiredUserLabels(
+  user: DraftUser,
+  t: (strings: TemplateStringsArray, ...values: any[]) => string,
+  step?: number,
+) {
   if (step === 2) return []
 
   if (step === 3) {
@@ -1660,25 +1682,25 @@ function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
     )
 
     if (user.mfaEnabled && !hasValidMethod) {
-      return ['MFA Method']
+      return [t`MFA Method`]
     }
     return []
   }
 
   if (step === 1) {
-    return getMissingRequiredLabels([{ label: 'Role', value: user.role }])
+    return getMissingRequiredLabels([{ label: t`Role`, value: user.role }])
   }
 
   const loginFields = [
-    { label: 'First Name', value: user.firstName },
-    { label: 'Last Name', value: user.lastName },
-    { label: 'Email Address', value: user.email },
-    { label: 'Login Type', value: user.loginType },
+    { label: t`First Name`, value: user.firstName },
+    { label: t`Last Name`, value: user.lastName },
+    { label: t`Email Address`, value: user.email },
+    { label: t`Login Type`, value: user.loginType },
   ]
 
   if (user.loginType === 'Password' && user.resetPassword !== false) {
     loginFields.push({
-      label: user.resetPassword === true ? 'New Password' : 'Password',
+      label: user.resetPassword === true ? t`New Password` : t`Password`,
       value: user.password,
     })
   }
@@ -1689,7 +1711,7 @@ function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
 
   const missing = getMissingRequiredLabels([
     ...loginFields,
-    { label: 'Role', value: user.role },
+    { label: t`Role`, value: user.role },
   ])
 
   if (user.mfaEnabled) {
@@ -1699,21 +1721,26 @@ function getMissingRequiredUserLabels(user: DraftUser, step?: number) {
       method && !(method === 'Mobile OTP' && !hasPhone),
     )
     if (!hasValidMethod) {
-      missing.push('MFA Method')
+      missing.push(t`MFA Method`)
     }
   }
 
   return missing
 }
 
-function getUserSetupValidationMessage(user: DraftUser, step?: number) {
-  const missingLabels = getMissingRequiredUserLabels(user, step)
+function getUserSetupValidationMessage(
+  user: DraftUser,
+  t: (strings: TemplateStringsArray, ...values: any[]) => string,
+  i18n: { _: (descriptor: any) => string },
+  step?: number,
+) {
+  const missingLabels = getMissingRequiredUserLabels(user, t, step)
   if (missingLabels.length) {
     return getRequiredFieldErrorMessage(missingLabels)
   }
 
   if (step === undefined || step === 0) {
-    const emailError = getEmailValidationError(user.email)
+    const emailError = getEmailValidationError(user.email, t)
     if (emailError) return emailError
 
     if (
@@ -1721,7 +1748,7 @@ function getUserSetupValidationMessage(user: DraftUser, step?: number) {
       user.resetPassword !== false &&
       user.password
     ) {
-      return getPasswordRequirementError(user.password)
+      return getPasswordRequirementError(user.password, i18n, t)
     }
   }
 
@@ -1737,6 +1764,7 @@ function GroupAssignment({
   groupOptions: SettingsOption[]
   isLoadingGroups?: boolean
 }) {
+  const { t } = useLingui()
   const selectedGroups = useMemo(() => {
     return user.groups
       .map((groupName) => String(groupName || '').trim())
@@ -1765,7 +1793,7 @@ function GroupAssignment({
     <SettingsFormSection>
       <div className='space-y-2'>
         <InputSelectMultiple
-          label='Groups'
+          label={t`Groups`}
           options={groupOptions}
           placeholder={
             isLoadingGroups
@@ -1825,6 +1853,17 @@ function LoginDetails({
   isEditing?: boolean
   showErrors?: boolean
 }) {
+  const { i18n, t } = useLingui()
+  const loginOptions = useMemo(
+    () =>
+      LOGIN_OPTION_MSGS.map((opt) => ({
+        description: i18n._(opt.description),
+        icon: () => <LoginTypeIcon type={opt.value} />,
+        title: i18n._(opt.title),
+        value: opt.value,
+      })),
+    [i18n],
+  )
   const firstNameRef = useRef<HTMLInputElement>(null)
   const [showEmailFormatError, setShowEmailFormatError] = useState(false)
   const showPasswordField =
@@ -1855,16 +1894,16 @@ function LoginDetails({
             Boolean(showErrors),
             user.firstName,
           )}
-          label='First Name'
-          placeholder='Enter first name'
+          label={t`First Name`}
+          placeholder={t`Enter first name`}
           required
           value={user.firstName}
           onChange={(value) => onChange({ ...user, firstName: value })}
         />
 
         <EzTextField
-          label='Last Name'
-          placeholder='Enter last name'
+          label={t`Last Name`}
+          placeholder={t`Enter last name`}
           value={user.lastName}
           required
           error={getFieldRequiredError(
@@ -1878,7 +1917,7 @@ function LoginDetails({
 
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
-          label='Email Address'
+          label={t`Email Address`}
           placeholder='user@company.com'
           type='email'
           value={user.email}
@@ -1901,8 +1940,8 @@ function LoginDetails({
         />
 
         <EzTextField
-          label='Username'
-          placeholder='Enter username'
+          label={t`Username`}
+          placeholder={t`Enter username`}
           value={user.username}
           onChange={(value) => onChange({ ...user, username: value })}
         />
@@ -1910,13 +1949,13 @@ function LoginDetails({
 
       <div className='space-y-2'>
         <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-          Phone Number
+          {t`Phone Number`}
         </label>
         <div className='grid grid-cols-[120px_minmax(0,1fr)] gap-3'>
           <SettingsSelectField
             clearable
             options={countryDialCodeOptions}
-            placeholder='Code'
+            placeholder={t`Code`}
             searchable
             value={getCountrySelectValue(user.countryCode || '')}
             onChange={(value) =>
@@ -1927,7 +1966,7 @@ function LoginDetails({
             }
           />
           <InputText
-            placeholder='Enter phone number'
+            placeholder={t`Enter phone number`}
             type='tel'
             value={user.phoneNumber}
             onChange={(value) => {
@@ -1949,7 +1988,7 @@ function LoginDetails({
 
       <div className='space-y-2'>
         <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-          Login Type <span className='text-[var(--red-9)]'>*</span>
+          {t`Login Type`} <span className='text-[var(--red-9)]'>*</span>
         </label>
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           {loginOptions.map((opt) => {
@@ -2027,7 +2066,7 @@ function LoginDetails({
       {user.loginType === 'Password' && isEditing ? (
         <ToggleRow
           checked={Boolean(user.resetPassword)}
-          label='Reset password'
+          label={t`Reset password`}
           onChange={(checked) =>
             onChange({
               ...user,
@@ -2041,17 +2080,17 @@ function LoginDetails({
       {showPasswordField ? (
         <div className='space-y-3'>
           <EzPasswordField
-            label={isEditing ? 'New Password' : 'Password'}
+            label={isEditing ? t`New Password` : t`Password`}
             value={user.password}
             required
             error={
               getFieldRequiredError(
-                isEditing ? 'New Password' : 'Password',
+                isEditing ? t`New Password` : t`Password`,
                 Boolean(showErrors),
                 user.password,
               ) ||
               (showErrors && user.password
-                ? getPasswordRequirementError(user.password)
+                ? getPasswordRequirementError(user.password, i18n, t)
                 : undefined)
             }
             onChange={(value) => onChange({ ...user, password: value })}
@@ -2063,7 +2102,7 @@ function LoginDetails({
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <EzTextField
           disabled={user.loginType !== 'Password'}
-          label='Password Expiry (Days)'
+          label={t`Password Expiry (Days)`}
           placeholder='90'
           type='number'
           value={
@@ -2081,7 +2120,7 @@ function LoginDetails({
 
         <SettingsDateField
           disabled={user.loginType !== 'Password'}
-          label='Account Expiry Date'
+          label={t`Account Expiry Date`}
           minDate={dayjs().add(1, 'day').format('YYYY-MM-DD')}
           value={
             user.loginType === 'Password' ? user.accountExpiryDate : ''
@@ -2097,7 +2136,7 @@ function LoginDetails({
 
       <ToggleRow
         checked={user.forcePasswordReset}
-        label='Force password reset on first login'
+        label={t`Force password reset on first login`}
         onChange={(checked) =>
           onChange({ ...user, forcePasswordReset: checked })
         }
@@ -2107,6 +2146,7 @@ function LoginDetails({
 }
 
 function Review({ user }: { user: DraftUser }) {
+  const { t } = useLingui()
   return (
     <SettingsFormSection>
       <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
@@ -2116,30 +2156,30 @@ function Review({ user }: { user: DraftUser }) {
 
         <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
           <SummaryItem
-            label='Name'
+            label={t`Name`}
             value={`${user.firstName} ${user.lastName}`.trim() || '—'}
           />
-          <SummaryItem label='Email' value={user.email || '—'} />
+          <SummaryItem label={t`Email`} value={user.email || '—'} />
           <SummaryItem
-            label='Phone'
+            label={t`Phone`}
             value={
               user.phoneNumber
                 ? `${getDialCodeFromCountryValue(user.countryCode)} ${user.phoneNumber}`.trim()
                 : '—'
             }
           />
-          <SummaryItem label='Job Title' value={user.jobTitle || ''} />
-          <SummaryItem label='Manager' value={user.manager || ''} />
-          <SummaryItem label='Login' value={formatLoginTypeLabel(user.loginType)} />
-          <SummaryItem label='Department' value={user.department || ''} />
-          <SummaryItem label='Role' value={user.role || ''} />
-          <SummaryItem label='Location' value={user.location || ''} />
+          <SummaryItem label={t`Job Title`} value={user.jobTitle || ''} />
+          <SummaryItem label={t`Manager`} value={user.manager || ''} />
+          <SummaryItem label={t`Login`} value={formatLoginTypeLabel(user.loginType, t)} />
+          <SummaryItem label={t`Department`} value={user.department || ''} />
+          <SummaryItem label={t`Role`} value={user.role || ''} />
+          <SummaryItem label={t`Location`} value={user.location || ''} />
           <SummaryItem
-            label='Groups'
+            label={t`Groups`}
             value={user.groups.length ? user.groups.join(', ') : ''}
           />
           <SummaryItem
-            label='MFA'
+            label={t`MFA`}
             value={`${user.mfaEnabled ? 'Enabled' : 'Disabled'} (${user.mfaMethods.join(', ') || 'No methods'})`}
           />
         </div>
@@ -2149,6 +2189,7 @@ function Review({ user }: { user: DraftUser }) {
 }
 
 function StatusBadge({ status }: { status: UserStatus }) {
+  const { t } = useLingui()
   const className =
     status === 'active'
       ? 'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]'
@@ -2156,7 +2197,12 @@ function StatusBadge({ status }: { status: UserStatus }) {
         ? 'border-[var(--orange-5)] bg-[var(--orange-2)] text-[var(--orange-11)]'
         : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]'
 
-  const label = status.charAt(0).toUpperCase() + status.slice(1)
+  const label =
+    status === 'active'
+      ? t`Active`
+      : status === 'pending'
+        ? t`Pending`
+        : t`Inactive`
 
   return (
     <span
@@ -2268,11 +2314,24 @@ function UserSetup({
   onSave: () => void
   onStepChange: (step: number) => void
 }) {
+  const { i18n, t } = useLingui()
+  const steps = useMemo(
+    () =>
+      USER_SETUP_STEP_MSGS.map((step, index) => ({
+        caption: i18n._(STEP_CAPTION_MSGS[index]),
+        description: i18n._(step.description),
+        key: step.key,
+        title: i18n._(step.title),
+      })),
+    [i18n],
+  )
   const [showErrors, setShowErrors] = useState(false)
 
   const handleNext = () => {
     const validationMessage = getUserSetupValidationMessage(
       draftUser,
+      t,
+      i18n,
       activeStep,
     )
 
@@ -2290,7 +2349,7 @@ function UserSetup({
   }
 
   const handleSave = () => {
-    const validationMessage = getUserSetupValidationMessage(draftUser)
+    const validationMessage = getUserSetupValidationMessage(draftUser, t, i18n)
 
     if (validationMessage) {
       setShowErrors(true)
@@ -2310,6 +2369,8 @@ function UserSetup({
       for (let index = activeStep; index < step; index += 1) {
         const validationMessage = getUserSetupValidationMessage(
           draftUser,
+          t,
+          i18n,
           index,
         )
 
@@ -2341,7 +2402,7 @@ function UserSetup({
       description: s.description,
       icon: s.key === 'login' ? 'tabler:user' : s.key === 'business' ? 'tabler:building' : s.key === 'groups' ? 'tabler:users' : s.key === 'authentication' ? 'tabler:shield' : 'tabler:check',
     }))
-  }, [])
+  }, [steps])
 
   return (
     <SettingsWizardLayout
@@ -2353,11 +2414,11 @@ function UserSetup({
       onSave={handleSave}
       onCancel={onCancel}
       isSaving={isSaving}
-      saveLabel={editingUserId ? 'Update User' : 'Save User'}
-      moduleTitle='User Management'
-      setupTitle={editingUserId ? 'Edit User' : 'Create User'}
-      headerTitle={editingUserId ? 'Edit User Setup' : 'New User Setup'}
-      headerDescription='Configure user account details, business hierarchy, and permissions'
+      saveLabel={editingUserId ? t`Update User` : t`Save User`}
+      moduleTitle={msg`User Management`}
+      setupTitle={editingUserId ? msg`Edit User` : msg`Create User`}
+      headerTitle={editingUserId ? msg`Edit User Setup` : msg`New User Setup`}
+      headerDescription={msg`Configure user account details, business hierarchy, and permissions`}
     >
       {activeStep === 0 && (
         <LoginDetails

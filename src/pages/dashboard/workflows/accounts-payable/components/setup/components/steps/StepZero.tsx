@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -60,9 +61,9 @@ const StepZero = () => {
   return (
     <div className='flex h-full max-w-max flex-col gap-6 p-6 xl:px-8'>
       <Title
-        description='Get a quick overview of the setup process before connecting your tools.'
+        description={t`Get a quick overview of the setup process before connecting your tools.`}
         level={1}
-        title='Welcome to AP Automation Setup'
+        title={t`Welcome to AP Automation Setup`}
       />
 
       <div className='space-y-4'>
@@ -91,12 +92,12 @@ const StepZero = () => {
         <Button
           color='gray'
           icon='lucide:arrow-left'
-          label='Back'
+          label={t`Back`}
           variant='outline'
           onClick={() => setIsSetupStarted(false)}
         />
         <Button
-          label='Continue'
+          label={t`Continue`}
           suffixIcon='lucide:arrow-right'
           onClick={() => setStep(1)}
         />

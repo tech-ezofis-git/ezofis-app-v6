@@ -1,3 +1,4 @@
+import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import {
@@ -130,26 +131,25 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'assignments', label: 'User Assignments' },
 ]
 
-const roleSteps: CreateStep[] = [
+const ROLE_STEP_MSGS = [
   {
-    caption: 'Step 1',
-    description: 'Role name & user assignments',
-    key: 'details',
-    title: 'Role Details',
+    description: msg`Role name & user assignments`,
+    key: 'details' as const,
+    title: msg`Role Details`,
   },
   {
-    caption: 'Step 2',
-    description: 'Module access & privilege matrix',
-    key: 'permissions',
-    title: 'Permissions',
+    description: msg`Module access & privilege matrix`,
+    key: 'permissions' as const,
+    title: msg`Permissions`,
   },
   {
-    caption: 'Step 3',
-    description: 'Review & save role configuration',
-    key: 'review',
-    title: 'Review',
+    description: msg`Review & save role configuration`,
+    key: 'review' as const,
+    title: msg`Review`,
   },
 ]
+
+const ROLE_STEP_CAPTIONS = [msg`Step 1`, msg`Step 2`, msg`Step 3`]
 
 const ROLE_PERMISSION_PAGES: Array<{ key: string; name: string }> = [
   { key: 'dashboard', name: 'Dashboard' },
@@ -585,7 +585,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         permissionRows={newPermissionRows}
         roleName={newRoleName}
         selectedUsers={selectedUsers}
-        submitLabel={editingRoleId ? 'Update Role' : 'Save Role'}
+        submitLabel={editingRoleId ? t`Update Role` : t`Save Role`}
         userOptions={userOptions}
         onBack={() => setCreateStep((step) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
@@ -593,7 +593,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         onCreate={saveRole}
         onDescriptionChange={setNewRoleDescription}
         onNext={() =>
-          setCreateStep((step) => Math.min(step + 1, roleSteps.length - 1))
+          setCreateStep((step) => Math.min(step + 1, 2))
         }
         onRoleNameChange={setNewRoleName}
         onSelectedUsersChange={setSelectedUsers}
@@ -707,7 +707,7 @@ function CreatePermissionMatrix({
     () => [
       permissionColumnHelper.accessor('category', {
         enableSorting: false,
-        header: 'Category',
+        header: t`Category`,
         id: 'category',
         meta: settingsHeaderMeta.start,
         size: 360,
@@ -719,7 +719,7 @@ function CreatePermissionMatrix({
       }),
       permissionColumnHelper.display({
         enableSorting: false,
-        header: 'Access',
+        header: t`Access`,
         id: 'access',
         meta: settingsHeaderMeta.center,
         size: 140,
@@ -810,6 +810,7 @@ function CreateRolePage({
   onStepChange: (step: number) => void
   onTogglePermission: (categoryKey: string) => void
 }) {
+  const { i18n, t } = useLingui()
   const enabledCount = useMemo(
     () => countEnabledPermissions(permissionRows),
     [permissionRows],
@@ -889,13 +890,13 @@ function CreateRolePage({
   }
 
   const wizardSteps = useMemo(() => {
-    return roleSteps.map((s, idx) => ({
+    return ROLE_STEP_MSGS.map((step, idx) => ({
       id: idx,
-      label: s.title,
-      description: s.description,
-      icon: s.key === 'details' ? 'tabler:shield' : s.key === 'permissions' ? 'tabler:shield-check' : 'tabler:check',
+      label: i18n._(step.title),
+      description: i18n._(step.description),
+      icon: step.key === 'details' ? 'tabler:shield' : step.key === 'permissions' ? 'tabler:shield-check' : 'tabler:check',
     }))
-  }, [])
+  }, [i18n])
 
   return (
     <SettingsWizardLayout
@@ -908,35 +909,36 @@ function CreateRolePage({
       onCancel={onCancel}
       isSaving={isSaving}
       saveLabel={submitLabel}
-      moduleTitle='Roles & Permissions'
-      setupTitle={editingRoleId ? 'Edit Role' : 'Create Role'}
-      headerTitle={editingRoleId ? 'Edit Role Setup' : 'New Role Setup'}
-      headerDescription='Define role details, access scopes, and permission privilege matrices'
+      moduleTitle={msg`Roles & Permissions`}
+      setupTitle={editingRoleId ? msg`Edit Role` : msg`Create Role`}
+      headerTitle={editingRoleId ? msg`Edit Role Setup` : msg`New Role Setup`}
+      headerDescription={msg`Define role details, access scopes, and permission privilege matrices`}
     >
       {activeStep === 0 ? (
         <SettingsFormSection>
           <InputText
             autoFocus={!editingRoleId}
             error={getFieldRequiredError('Role Name', showErrors, roleName)}
-            label='Role Name *'
-            placeholder='e.g. AP Supervisor'
+            label={t`Role Name`}
+            required
+            placeholder={t`e.g. AP Supervisor`}
             value={roleName}
             onChange={onRoleNameChange}
           />
 
           <InputTextarea
-            label='Description'
+            label={t`Description`}
             minRows={5}
-            placeholder="Describe this role's responsibilities and scope..."
+            placeholder={t`Describe this role's responsibilities and scope...`}
             value={description}
             onChange={onDescriptionChange}
           />
 
           <div className='space-y-1'>
             <InputSelectMultiple
-              label='Select Users'
+              label={t`Select Users`}
               options={userOptions}
-              placeholder='Select users...'
+              placeholder={t`Select users...`}
               required
               value={selectedUsers}
               clearable
@@ -1333,7 +1335,7 @@ function PermissionMatrix({
     () => [
       permissionColumnHelper.accessor('category', {
         enableSorting: false,
-        header: 'Category',
+        header: t`Category`,
         id: 'category',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -1346,7 +1348,7 @@ function PermissionMatrix({
       }),
       permissionColumnHelper.display({
         enableSorting: false,
-        header: 'Access',
+        header: t`Access`,
         id: 'access',
         meta: settingsHeaderMeta.center,
         minSize: 40,
@@ -1432,6 +1434,7 @@ function RoleList({
   onEdit: (id: string) => void
   onReload: () => void | Promise<void>
 }) {
+  const { t } = useLingui()
   const tableSearchOptions = useSettingsTableSearch()
   const {
     page,
@@ -1480,9 +1483,9 @@ function RoleList({
       }),
       roleColumnHelper.accessor('name', {
         enableSorting: false,
-        header: 'Role',
+        header: t`Role`,
         id: 'role',
-        meta: { ...settingsHeaderMeta.start, label: 'Role' },
+        meta: { ...settingsHeaderMeta.start, label: t`Role` },
         minSize: 40,
         size: 180,
         cell: ({ getValue }) => (
@@ -1493,9 +1496,9 @@ function RoleList({
       }),
       roleColumnHelper.accessor('description', {
         enableSorting: false,
-        header: 'Description',
+        header: t`Description`,
         id: 'description',
-        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        meta: { ...settingsHeaderMeta.start, label: t`Description` },
         minSize: 40,
         size: 240,
         cell: ({ getValue }) => {
@@ -1512,12 +1515,12 @@ function RoleList({
       }),
       roleColumnHelper.accessor('users', {
         enableSorting: false,
-        header: 'Users',
+        header: t`Users`,
         id: 'users',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Users',
+          label: t`Users`,
         },
         minSize: 40,
         size: 100,
@@ -1529,12 +1532,12 @@ function RoleList({
       }),
       roleColumnHelper.accessor('permissionCount', {
         enableSorting: false,
-        header: 'Access Pages',
+        header: t`Access Pages`,
         id: 'accessPages',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Access Pages',
+          label: t`Access Pages`,
         },
         minSize: 40,
         size: 120,
@@ -1546,12 +1549,12 @@ function RoleList({
       }),
       roleColumnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Status',
+          label: t`Status`,
         },
         minSize: 40,
         size: 110,
@@ -1567,16 +1570,16 @@ function RoleList({
                   : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
               ].join(' ')}
             >
-              {isActive ? 'Active' : 'Inactive'}
+              {isActive ? t`Active` : t`Inactive`}
             </span>
           )
         },
       }),
       roleColumnHelper.accessor('createdAt', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'createdAt',
-        meta: { ...settingsHeaderMeta.start, label: 'Created' },
+        meta: { ...settingsHeaderMeta.start, label: t`Created` },
         minSize: 40,
         size: 145,
         cell: ({ getValue }) => {
@@ -1669,7 +1672,7 @@ function RoleList({
           filters={[
             {
               id: 'name',
-              label: 'Name',
+              label: t`Name`,
               options: roles
                 .map((r) => String(r.name || '').trim())
                 .filter(Boolean)
@@ -1695,7 +1698,7 @@ function RoleList({
             },
           ]}
           addButton={{
-            tooltip: 'Create Role',
+            tooltip: t`Create Role`,
             onClick: onCreate,
           }}
           showReset={
@@ -1732,7 +1735,7 @@ function RoleList({
           </div>
           <Pagination
             className='mt-4 shrink-0'
-            itemLabel='Roles'
+            itemLabel={t`Roles`}
             page={page}
             pageSize={pageSize}
             showPageNumbers={false}
@@ -1792,7 +1795,7 @@ function RoleTabSelect({
   return (
     <InputSelect
       options={roleOptions}
-      placeholder='Select role'
+      placeholder={t`Select role`}
       value={selectedRole}
       width={220}
       onChange={(option) => {

@@ -174,7 +174,8 @@ axiosCrypto.interceptors.response.use(
       store.resetAuthState()
       if (
         globalThis.window !== undefined &&
-        window.location.pathname !== '/sign-in'
+        window.location.pathname !== '/sign-in' &&
+        !window.location.pathname.startsWith('/sign-request')
       ) {
         window.location.href = '/sign-in'
       }
@@ -220,7 +221,8 @@ const handleResponseError = (error: AxiosError) => {
     store.resetAuthState()
     if (
       globalThis.window !== undefined &&
-      window.location.pathname !== '/sign-in'
+      window.location.pathname !== '/sign-in' &&
+      !window.location.pathname.startsWith('/sign-request')
     ) {
       window.location.href = '/sign-in'
     }

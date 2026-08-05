@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import Badge from '@/components/base/Badge'
 import Title from '@/components/base/Title'
 import cn from '@/utils/cn'
@@ -36,7 +37,7 @@ const LineItemsCards = ({ data }: Props) => {
 
   return (
     <div>
-      <Title className='mb-3' level={3} title='Line Items' />
+      <Title className='mb-3' level={3} title={t`Line Items`} />
 
       <div className='space-y-2'>
         {items.map((item: any) => (

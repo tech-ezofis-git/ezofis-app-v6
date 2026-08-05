@@ -1,4 +1,6 @@
+import type { MessageDescriptor } from '@lingui/core'
 import { useEffect, useMemo, useRef } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import Stepper from '@/components/base/Stepper'
 import Button from '@/components/base/button/Button'
 import cn from '@/utils/cn'
@@ -12,6 +14,8 @@ export type SettingsWizardStep = {
   clickable?: boolean
   disabled?: boolean
 }
+
+type Translatable = string | MessageDescriptor
 
 export type SettingsWizardLayoutProps = {
   activeStep: number
@@ -27,12 +31,21 @@ export type SettingsWizardLayoutProps = {
   isSaving?: boolean
   nextLabel?: string
   saveLabel?: string
-  moduleTitle?: string
-  setupTitle?: string
-  headerTitle: string
-  headerDescription?: string
+  moduleTitle?: Translatable
+  setupTitle?: Translatable
+  headerTitle: Translatable
+  headerDescription?: Translatable
   children: React.ReactNode
   className?: string
+}
+
+function resolveText(
+  value: Translatable | undefined,
+  i18n: { _: (descriptor: MessageDescriptor) => string },
+) {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  return i18n._(value)
 }
 
 export default function SettingsWizardLayout({
@@ -47,8 +60,8 @@ export default function SettingsWizardLayout({
   isBackDisabled = false,
   isLoading = false,
   isSaving = false,
-  nextLabel = 'Continue',
-  saveLabel = 'Save',
+  nextLabel,
+  saveLabel,
   moduleTitle,
   setupTitle,
   headerTitle,
@@ -56,16 +69,23 @@ export default function SettingsWizardLayout({
   children,
   className,
 }: SettingsWizardLayoutProps) {
+  const { i18n, t } = useLingui()
+  const resolvedNextLabel = nextLabel ?? t`Continue`
+  const resolvedSaveLabel = saveLabel ?? t`Save`
+  const resolvedHeaderTitle = resolveText(headerTitle, i18n)
+  const resolvedHeaderDescription = resolveText(headerDescription, i18n)
+  const resolvedModuleTitle = resolveText(moduleTitle, i18n)
+  const resolvedSetupTitle = resolveText(setupTitle, i18n)
   const isLastStep = activeStep === steps.length - 1
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const breadcrumbConfig = useMemo(() => {
-    if (!moduleTitle || !setupTitle) return { items: [] }
+    if (!resolvedModuleTitle || !resolvedSetupTitle) return { items: [] }
     return {
       items: [
-        { key: 'settings', label: 'Settings' },
-        { key: 'module', label: moduleTitle },
-        { label: setupTitle },
+        { key: 'settings', label: t`Settings` },
+        { key: 'module', label: resolvedModuleTitle },
+        { label: resolvedSetupTitle },
       ],
       onNavigate: (key: string) => {
         if (key === 'settings' || key === 'module') {
@@ -73,7 +93,14 @@ export default function SettingsWizardLayout({
         }
       },
     }
-  }, [moduleTitle, setupTitle, onCancel, onBack])
+  }, [
+    i18n.locale,
+    resolvedModuleTitle,
+    resolvedSetupTitle,
+    onCancel,
+    onBack,
+    t,
+  ])
 
   useSettingsTopbar(breadcrumbConfig)
 
@@ -92,7 +119,7 @@ export default function SettingsWizardLayout({
       clickable: s.clickable !== undefined ? s.clickable : idx <= activeStep,
       disabled: s.disabled !== undefined ? s.disabled : idx > activeStep,
     }))
-  }, [steps, activeStep])
+  }, [steps, activeStep, i18n.locale])
 
   return (
     <div
@@ -102,14 +129,17 @@ export default function SettingsWizardLayout({
       )}
     >
       {/* Top Header */}
-      <div className='mb-4 border-b border-gray-3 px-6 py-4 md:px-8'>
+      <div
+        className='mb-4 border-b border-gray-3 px-6 py-4 md:px-8'
+        key={i18n.locale}
+      >
         <div className='flex min-w-0 flex-col gap-1'>
           <h2 className='truncate text-18/6 font-semibold tracking-tight text-gray-13'>
-            {headerTitle}
+            {resolvedHeaderTitle}
           </h2>
-          {headerDescription ? (
+          {resolvedHeaderDescription ? (
             <p className='truncate text-13/5 text-gray-11'>
-              {headerDescription}
+              {resolvedHeaderDescription}
             </p>
           ) : null}
         </div>
@@ -148,7 +178,7 @@ export default function SettingsWizardLayout({
                     color='gray'
                     disabled={isBackDisabled || isLoading || isSaving}
                     icon='lucide:arrow-left'
-                    label='Back'
+                    label={t`Back`}
                     variant='outline'
                     onClick={onBack}
                   />
@@ -157,7 +187,7 @@ export default function SettingsWizardLayout({
                 {isLastStep ? (
                   <Button
                     disabled={isNextDisabled || isSaving || isLoading}
-                    label={isSaving ? 'Saving...' : saveLabel}
+                    label={isSaving ? t`Saving...` : resolvedSaveLabel}
                     loading={isSaving}
                     suffixIcon='tabler:arrow-right'
                     onClick={onSave}
@@ -165,7 +195,7 @@ export default function SettingsWizardLayout({
                 ) : (
                   <Button
                     disabled={isNextDisabled || isLoading || isSaving}
-                    label={nextLabel}
+                    label={resolvedNextLabel}
                     suffixIcon='tabler:arrow-right'
                     onClick={onNext}
                   />

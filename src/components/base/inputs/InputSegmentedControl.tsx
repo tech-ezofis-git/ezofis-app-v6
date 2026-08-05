@@ -21,40 +21,49 @@ export default function InputSegmentedControl({
   value,
   onChange,
 }: Props) {
+  const activeIndex = Math.max(
+    0,
+    options.findIndex((opt) => String(opt.id) === String(value.id)),
+  )
+  const count = Math.max(1, options.length)
+
   return (
-    <div className={cn('space-y-1.5', className)}>
-      {label && (
+    <div className={cn(label ? 'space-y-1.5' : undefined, className)}>
+      {label ? (
         <div className='text-[10px] font-bold tracking-wider text-gray-9 uppercase'>
           {label}
         </div>
-      )}
-      <div className='bg-gray-100/80 border-gray-200/50 relative flex h-10 items-center rounded-xl border p-1'>
-        {/* Animated Background Pill */}
+      ) : null}
+
+      <div
+        role='tablist'
+        aria-label={label}
+        className='relative flex h-9 w-full items-stretch rounded-full border border-gray-3 bg-gray-2 p-0.5'
+      >
         <motion.div
-          className='absolute z-0 h-8 rounded-lg bg-surface-raised shadow-sm'
+          aria-hidden
+          className='pointer-events-none absolute inset-y-0.5 rounded-full border border-gray-3 bg-surface-primary shadow-sm'
           initial={false}
-          layoutId='activePill'
-          transition={{ damping: 35, stiffness: 500, type: 'spring' }}
           animate={{
-            left: `${options.findIndex((opt) => opt.id === value.id) * (100 / options.length)}%`,
-            width: `${100 / options.length}%`,
+            left: `calc(${(activeIndex / count) * 100}% + 2px)`,
+            width: `calc(${100 / count}% - 4px)`,
           }}
-          style={{
-            margin: '0 4px',
-            width: `calc(${100 / options.length}% - 8px)`,
-          }}
+          transition={{ type: 'spring', stiffness: 420, damping: 32 }}
         />
 
         {options.map((option) => {
-          const isActive = option.id === value.id
+          const isActive = String(option.id) === String(value.id)
           return (
             <button
-              key={option.id}
+              key={String(option.id)}
+              type='button'
+              role='tab'
+              aria-selected={isActive}
               className={cn(
-                'relative z-10 flex-1 text-[13px] font-semibold transition-colors duration-300 outline-none',
+                'relative z-10 flex flex-1 items-center justify-center rounded-full px-2 text-[12px] font-semibold outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-primary-4',
                 isActive
-                  ? 'text-purple-9'
-                  : 'text-gray-500 hover:text-gray-800',
+                  ? 'text-primary-10'
+                  : 'text-gray-10 hover:text-gray-12',
               )}
               onClick={() => onChange(option)}
             >
