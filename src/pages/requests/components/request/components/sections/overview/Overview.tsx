@@ -1175,6 +1175,7 @@ const FormCard = ({
   options = [],
   poValue,
   score,
+  source,
   type = 'text',
   value,
   onChange,
@@ -1182,9 +1183,13 @@ const FormCard = ({
 }: any) => {
   const [isEditing, setIsEditing] = useState(false)
   const [localValue, setLocalValue] = useState(value)
+  const [userEdited, setUserEdited] = useState(false)
+  const [appliedSource, setAppliedSource] = useState<string | null>(null)
 
   useEffect(() => {
     setLocalValue(value)
+    setUserEdited(false)
+    setAppliedSource(null)
   }, [value])
 
   const isUsingPo =
@@ -1203,14 +1208,96 @@ const FormCard = ({
       ? 100
       : score
 
+  const activeSource = useMemo(() => {
+    if (
+      userEdited ||
+      (localValue !== value &&
+        localValue !== '-' &&
+        localValue !== '' &&
+        localValue !== null &&
+        localValue !== undefined)
+    ) {
+      return 'manual'
+    }
+    if (appliedSource) {
+      return appliedSource
+    }
+    if (isUsingPo) {
+      return 'po_master'
+    }
+    if (source) {
+      return source
+    }
+    const normKey = String(label || '').toLowerCase()
+    if (
+      normKey.includes('terms') ||
+      normKey.includes('due date') ||
+      normKey.includes('status') ||
+      normKey.includes('match')
+    ) {
+      return 'ai'
+    }
+    return 'ocr'
+  }, [userEdited, localValue, value, appliedSource, isUsingPo, source, label])
+
+  const renderSourceBadge = (src: string) => {
+    const norm = String(src || '').toLowerCase()
+    if (norm === 'manual') {
+      return (
+        <span
+          title='Source: Manual Entry'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--orange-4)] bg-[var(--orange-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--orange-10)] tracking-tight'
+        >
+          <Icon name='lucide:pencil' className='h-2.5 w-2.5' />
+          MANUAL
+        </span>
+      )
+    }
+    if (norm === 'po_master' || norm === 'po') {
+      return (
+        <span
+          title='Source: PO Master Database'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-4)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--blue-10)] tracking-tight'
+        >
+          <Icon name='lucide:briefcase' className='h-2.5 w-2.5' />
+          PO MASTER
+        </span>
+      )
+    }
+    if (norm === 'ai' || norm === 'ai_agent') {
+      return (
+        <span
+          title='Source: AI Agent'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--primary-4)] bg-[var(--primary-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--primary-10)] tracking-tight'
+        >
+          <AiBrandIcon className='size-[11px] shrink-0' />
+          AI
+        </span>
+      )
+    }
+    return (
+      <span
+        title='Source: OCR Extraction'
+        className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--gray-4)] bg-[var(--gray-2)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--gray-11)] tracking-tight'
+      >
+        <Icon name='lucide:scan' className='h-2.5 w-2.5' />
+        OCR
+      </span>
+    )
+  }
+
   const applySourceValue = (nextValue: unknown) => {
     setLocalValue(nextValue)
+    const isSwitchingToPo = !isUsingPo
+    setAppliedSource(isSwitchingToPo ? 'po_master' : 'ocr')
+    setUserEdited(false)
     onChange?.(nextValue)
   }
 
   const handleBlur = () => {
     setIsEditing(false)
     if (localValue !== value) {
+      setUserEdited(true)
       onChange?.(localValue)
     }
   }
@@ -1219,6 +1306,7 @@ const FormCard = ({
     if (e.key === 'Enter') handleBlur()
     if (e.key === 'Escape') {
       setLocalValue(value)
+      setUserEdited(false)
       setIsEditing(false)
     }
   }
@@ -1231,6 +1319,7 @@ const FormCard = ({
         value={localValue}
         onChange={(val: any) => {
           setLocalValue(val)
+          setUserEdited(true)
           onFocus?.(val)
         }}
       />
@@ -1258,6 +1347,7 @@ const FormCard = ({
               ? String(val.name)
               : String(val?.id || val?.name || '')
           setLocalValue(stringVal)
+          setUserEdited(true)
           onFocus?.(stringVal)
           onChange?.(stringVal)
           setTimeout(() => setIsEditing(false), 0)
@@ -1275,6 +1365,7 @@ const FormCard = ({
         onBlur={handleBlur}
         onChange={(e) => {
           setLocalValue(e.target.value)
+          setUserEdited(true)
           onFocus?.(e.target.value)
         }}
         onFocus={() => onFocus?.(localValue)}
@@ -1300,9 +1391,12 @@ const FormCard = ({
         </div>
         <div className='min-w-0 flex-1'>
           <div className='mb-0.5 flex items-center justify-between gap-2'>
-            <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
-              {label}
-            </p>
+            <div className='flex items-center gap-1.5 min-w-0 truncate'>
+              <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate'>
+                {label}
+              </p>
+              {renderSourceBadge(activeSource)}
+            </div>
             {effectiveScore !== undefined && effectiveScore !== null && (
               <span
                 className={cn(
@@ -1347,9 +1441,12 @@ const FormCard = ({
       </div>
       <div className='min-w-0 flex-1'>
         <div className='mb-0.5 flex items-center justify-between gap-2'>
-          <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
-            {label}
-          </p>
+          <div className='flex items-center gap-1.5 min-w-0 truncate'>
+            <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate'>
+              {label}
+            </p>
+            {renderSourceBadge(activeSource)}
+          </div>
           {effectiveScore !== undefined && effectiveScore !== null && (
             <span
               className={cn(
@@ -4572,6 +4669,25 @@ const Overview = (props: any) => {
                                   />
                                 )
                               })}
+                          <div className='col-span-2 mt-2 flex flex-wrap items-center justify-start gap-4 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)]/40 px-3 py-2 text-[10px] font-medium text-[var(--gray-11)]'>
+                            <span className='font-semibold text-[var(--gray-12)]'>Sources:</span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--gray-9)]' />
+                              OCR
+                            </span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--primary-9)]' />
+                              AI Agent
+                            </span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--blue-9)]' />
+                              PO Master
+                            </span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--orange-9)]' />
+                              Manual Entry
+                            </span>
+                          </div>
                         </div>
                       )}
                       {activeTab === 'line_items' && (
