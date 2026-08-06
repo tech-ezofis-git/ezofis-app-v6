@@ -260,7 +260,7 @@ export const mapAiSummaryResponse = (payload: {
     engineSubtitle: summary
       ? 'AI-generated document analysis'
       : 'No summary content returned',
-    engineTitle: 'EZOFIS AI Summary',
+    engineTitle: 'AI Summary',
     facts,
     insight,
     rawOutput,

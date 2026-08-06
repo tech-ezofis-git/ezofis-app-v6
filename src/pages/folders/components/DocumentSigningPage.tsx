@@ -1858,8 +1858,8 @@ export function DocumentSigningPage({
       first
         ? multi
           ? sequential
-            ? `Sequential: mark place(s) for ${first.name} first, then switch to the next signer.`
-            : `Select a signer below, then click the document to mark one or more places.`
+            ? t`Sequential: mark place(s) for ${first.name} first, then switch to the next signer.`
+            : t`Select a signer below, then click the document to mark one or more places.`
           : t`Click the document to mark one or more places for ${first.name}, then Send.`
         : t`Click on the document to mark signature places.`,
     )

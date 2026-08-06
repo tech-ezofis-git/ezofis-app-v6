@@ -463,7 +463,7 @@ export function SignRequestAssignForm({
             </div>
             {existingRequests.length === 0 ? (
               <p className='text-[12px] text-gray-9'>
-                No sign requests for this document yet.
+                {t`No sign requests for this document yet.`}
               </p>
             ) : (
               existingRequests.map((request) => (
@@ -532,8 +532,7 @@ export function SignRequestAssignForm({
           </div>
           <div className='space-y-3 px-4 py-3'>
             <p className='text-[12px] text-gray-10'>
-              Add a signer by name and email. They will receive the sign request
-              invite.
+              {t`Add a signer by name and email. They will receive the sign request invite.`}
             </p>
             <InputText
               label={t`Full name`}

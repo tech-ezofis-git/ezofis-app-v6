@@ -144,7 +144,7 @@ export default function SignRequestInvitePage({
         setError(
           toUiError(
             previewResult?.error,
-            'This sign request link is invalid.',
+            t`This sign request link is invalid.`,
           ),
         )
         setGate('error')

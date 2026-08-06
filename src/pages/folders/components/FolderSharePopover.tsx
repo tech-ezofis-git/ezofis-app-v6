@@ -55,10 +55,7 @@ type FolderSharePopoverProps = {
   ) => Promise<boolean>
 }
 
-const SIGNING_MODE_OPTIONS = [
-  { id: 'non-sequential', name: 'Non-sequential' },
-  { id: 'sequential', name: 'Sequential' },
-]
+
 
 const roleAction = (role: string) => {
   if (role === 'View') return 0
@@ -180,8 +177,15 @@ export default function FolderSharePopover({
     Record<string, { permission: string; user: any }>
   >({})
   const [selectedOrder, setSelectedOrder] = useState<string[]>([])
+  const signingModeOptions = useMemo(
+    () => [
+      { id: 'non-sequential', name: t`Non-sequential` },
+      { id: 'sequential', name: t`Sequential` },
+    ],
+    [t],
+  )
   const [signingModeOption, setSigningModeOption] = useState(
-    SIGNING_MODE_OPTIONS[0],
+    () => signingModeOptions[0],
   )
   const shareRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -374,7 +378,7 @@ export default function FolderSharePopover({
     setSelectedOrder([])
     setShareSearch('')
     setShareMessage('')
-    setSigningModeOption(SIGNING_MODE_OPTIONS[0])
+    setSigningModeOption(signingModeOptions[0])
     setOpenUserDropdown(null)
   }
 
@@ -844,8 +848,12 @@ export default function FolderSharePopover({
             {signOrderIds.length > 0 ? (
               <div className='space-y-3 border-t border-[var(--gray-2)] px-3 py-3'>
                 <InputSegmentedControl
-                  options={SIGNING_MODE_OPTIONS}
-                  value={signingModeOption}
+                  options={signingModeOptions}
+                  value={
+                    signingModeOptions.find(
+                      (opt) => opt.id === signingModeOption.id,
+                    ) || signingModeOptions[0]
+                  }
                   onChange={(option) =>
                     setSigningModeOption({
                       id: String(option.id),

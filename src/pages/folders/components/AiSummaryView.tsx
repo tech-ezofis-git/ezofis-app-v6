@@ -197,10 +197,18 @@ export function AiSummaryView({
                 </span>
                 <div>
                   <h2 className='text-[17px] leading-6 font-semibold text-gray-13'>
-                    {data.engineTitle || t`EZOFIS AI Summary`}
+                    {data.engineTitle === 'EZOFIS AI Summary' ||
+                    data.engineTitle === 'AI Summary' ||
+                    !data.engineTitle
+                      ? t`AI Summary`
+                      : data.engineTitle}
                   </h2>
                   <p className='text-[13px] leading-5 text-gray-10'>
-                    {data.engineSubtitle}
+                    {data.engineSubtitle === 'AI-generated document analysis'
+                      ? t`AI-generated document analysis`
+                      : data.engineSubtitle === 'No summary content returned'
+                        ? t`No summary content returned`
+                        : data.engineSubtitle}
                   </p>
                 </div>
               </div>
