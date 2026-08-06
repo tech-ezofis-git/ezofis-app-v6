@@ -317,7 +317,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     () =>
       consumptionByAgent.length > 0
         ? consumptionByAgent.reduce((sum, item) => sum + item.credits, 0)
-        : 84,
+        : 0,
     [consumptionByAgent],
   )
 
@@ -325,7 +325,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     () =>
       consumptionByActivity.length > 0
         ? consumptionByActivity.reduce((sum, item) => sum + item.credits, 0)
-        : 84,
+        : 0,
     [consumptionByActivity],
   )
 
@@ -730,7 +730,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               subtitle={t`Top agents by credit usage · ${periodSubtitle}`}
               title={t`Highest Credit Consumption`}
             >
-              <HighestConsumptionBarChart
+              <HighestConsumptionPieChart
                 data={highestConsumption.map((item) => ({
                   credits: item.credits,
                   name: item.name,
@@ -1025,96 +1025,119 @@ function formatPeriodSubtitle(
   return period.replaceAll('_', ' ')
 }
 
-function HighestConsumptionBarChart({
+const PIE_COLORS = [
+  'var(--blue-9)',   // Blue (33%)
+  'var(--cyan-9)',   // Cyan/Teal (25%)
+  'var(--yellow-9)', // Yellow/Gold (25%)
+  'var(--orange-9)', // Coral/Orange (17%)
+]
+
+const renderCustomizedLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}: any) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+  const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180))
+  const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180))
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill='white'
+      textAnchor='middle'
+      dominantBaseline='central'
+      fontSize={12}
+      fontWeight={600}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
+}
+
+function HighestConsumptionPieChart({
   data,
 }: {
   data: { credits: number; name: string }[]
 }) {
-  const { t } = useLingui()
   const chartData =
     data.length > 0
-      ? data.slice(0, 5)
-      : [
-          { name: 'AP Agent', credits: 79 },
-          { name: 'OCR Agent', credits: 20 },
-        ]
+      ? data.map((item, index) => ({
+          ...item,
+          color: PIE_COLORS[index % PIE_COLORS.length],
+        }))
+      : []
 
   const total = chartData.reduce((sum, item) => sum + item.credits, 0)
 
   if (chartData.length === 0) {
     return (
       <div className='flex h-[200px] items-center justify-center text-13 text-gray-10'>
-        {t`No consumption data for this period.`}
+        {`No consumption data for this period.`}
       </div>
     )
   }
 
-  const barColors = [
-    '#7C3AED', // Primary purple
-    '#C084FC', // Soft pastel purple
-    '#E9D5FF', // Light purple
-    '#F3E8FF',
-    '#F5F3FF',
-  ]
-
   return (
-    <div className='flex flex-col h-full justify-between'>
-      <div className='h-[160px] w-full mt-2'>
+    <div className='flex flex-col gap-2'>
+      <div className='h-[160px] w-full'>
         <ResponsiveContainer width='100%' height='100%'>
-          <BarChart
-            data={chartData}
-            layout='vertical'
-            margin={{ bottom: 0, left: 10, right: 70, top: 10 }}
-            barCategoryGap='25%'
-          >
-            <CartesianGrid horizontal={false} stroke='var(--gray-2)' strokeDasharray='3 3' />
-            <XAxis type='number' hide />
-            <YAxis
-              dataKey='name'
-              type='category'
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}
-              width={80}
-            />
+          <PieChart>
+            <Pie
+              data={chartData}
+              dataKey='credits'
+              nameKey='name'
+              cx='50%'
+              cy='50%'
+              outerRadius={75}
+              labelLine={false}
+              label={renderCustomizedLabel}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
             <Tooltip
-              cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-              formatter={(val: any) => [t`${formatNumber(val)} credits`, t`Usage`]}
               contentStyle={{
                 border: 'none',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 fontSize: '11px',
               }}
+              formatter={(val: any) => [`${formatNumber(val)} credits`, 'Usage']}
             />
-            <Bar
-              dataKey='credits'
-              radius={[10, 10, 10, 10]}
-              barSize={18}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={barColors[index % barColors.length]}
-                />
-              ))}
-              <LabelList
-                dataKey='credits'
-                position='right'
-                formatter={(value: any) => t`${value} credits`}
-                fill='var(--text-primary)'
-                fontSize={12}
-                fontWeight={700}
-                offset={10}
-              />
-            </Bar>
-          </BarChart>
+          </PieChart>
         </ResponsiveContainer>
       </div>
 
-      <div className='flex justify-between items-center border-t border-[var(--border-default)] pt-4 mt-4 text-13'>
-        <span className='text-text-secondary font-medium'>{t`Total credits used`}</span>
-        <span className='font-bold text-text-primary text-15'>{t`${formatNumber(total)} credits`}</span>
+      {/* Descriptions below */}
+      <div className='mt-2 grid grid-cols-2 gap-x-4 gap-y-2 pl-1'>
+        {chartData.map((item, index) => {
+          const pct = total > 0 ? ((item.credits / total) * 100).toFixed(0) : '0'
+          return (
+            <div key={index} className='flex items-center justify-between text-[11px] font-medium'>
+              <div className='flex items-center gap-2 min-w-0'>
+                <span
+                  className='size-2 rounded-full shrink-0'
+                  style={{ backgroundColor: item.color }}
+                />
+                <span
+                  className='truncate text-gray-10 font-semibold'
+                  title={item.name}
+                >
+                  {item.name}
+                </span>
+              </div>
+              <span className='font-bold text-gray-13 ml-2 shrink-0'>
+                {formatNumber(item.credits)} ({pct}%)
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -1180,7 +1203,6 @@ function UsageTimelineChart({
 }: {
   data: { credits: number; label: string }[]
 }) {
-  const { t } = useLingui()
   const chartData =
     data.length > 0
       ? data
@@ -1201,20 +1223,41 @@ function UsageTimelineChart({
   }
 
   return (
-    <ResponsiveContainer height={200} width='100%'>
+    <ResponsiveContainer height={180} width='100%'>
       <BarChart
         data={chartData}
-        margin={{ bottom: 0, left: 10, right: 10, top: 25 }}
+        margin={{ bottom: 0, left: -20, right: 10, top: 10 }}
       >
-        <CartesianGrid vertical={false} stroke='var(--gray-2)' strokeDasharray='3 3' />
+        <defs>
+          <linearGradient
+            id='creditTimelineGradient'
+            x1='0'
+            x2='0'
+            y1='0'
+            y2='1'
+          >
+            <stop offset='0%' stopColor='var(--purple-9)' stopOpacity={0.9} />
+            <stop
+              offset='100%'
+              stopColor='var(--purple-4)'
+              stopOpacity={0.4}
+            />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
         <XAxis
           axisLine={false}
           dataKey='label'
           dy={10}
-          tick={{ fill: 'var(--gray-10)', fontSize: 12, fontWeight: 550 }}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
           tickLine={false}
         />
-        <YAxis hide />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          dx={-10}
+        />
         <Tooltip
           cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
           formatter={(val: any) => [
@@ -1229,20 +1272,11 @@ function UsageTimelineChart({
           }}
         />
         <Bar
-          barSize={18}
+          barSize={16}
           dataKey='credits'
-          fill='#7C3AED'
-          radius={[10, 10, 0, 0]}
-        >
-          <LabelList
-            dataKey='credits'
-            position='top'
-            fill='var(--text-primary)'
-            fontSize={12}
-            fontWeight={700}
-            offset={8}
-          />
-        </Bar>
+          fill='url(#creditTimelineGradient)'
+          radius={[4, 4, 0, 0]}
+        />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -1490,21 +1524,7 @@ function CreditDistributionByActivityChart({
           ...item,
           color: item.color || DONUT_COLORS[index % DONUT_COLORS.length],
         }))
-      : [
-          {
-            name: 'Payment terms detection',
-            credits: 17,
-            color: 'var(--purple-9)',
-          },
-          { name: 'PO validation', credits: 17, color: 'var(--cyan-9)' },
-          { name: 'OCR from document', credits: 17, color: 'var(--pink-9)' },
-          {
-            name: 'Document classification',
-            credits: 17,
-            color: 'var(--orange-9)',
-          },
-          { name: 'Back order detection', credits: 16, color: 'var(--green-9)' },
-        ]
+      : []
 
   return (
     <div className='flex flex-row items-center gap-6 h-[180px]'>
