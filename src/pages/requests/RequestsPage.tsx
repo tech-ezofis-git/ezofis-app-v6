@@ -245,23 +245,14 @@ const RequestsPage = () => {
     setupStore.getState().setIsActivatingAutomation(false)
   }, [])
 
-  // Open new request after AP setup activation, once workflow data is loaded
+  // Open new request after AP setup activation
   useEffect(() => {
     if (!pendingOpenNewRequest) return
 
-    if (workflowLoadStatus === 'empty') {
-      setPendingOpenNewRequest(false)
-      return
-    }
-
-    if (selectedWorkflow?.id) {
-      openNewRequest('request')
-      setPendingOpenNewRequest(false)
-    }
+    openNewRequest('request')
+    setPendingOpenNewRequest(false)
   }, [
     pendingOpenNewRequest,
-    selectedWorkflow?.id,
-    workflowLoadStatus,
     openNewRequest,
     setPendingOpenNewRequest,
   ])

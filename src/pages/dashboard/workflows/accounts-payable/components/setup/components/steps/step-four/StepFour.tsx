@@ -738,16 +738,6 @@ const StepFour = () => {
 
       // Show celebratory success screen with flowers and sparkles
       setShowCelebration(true)
-
-      // Hold for 4.5 seconds to showcase the animation
-      await new Promise((resolve) => setTimeout(resolve, 4500))
-
-      apComplete(true)
-
-      setIsActivatingAutomation(true)
-      clearNavigationLock(false)
-      navigate({ replace: true, to: '/requests' })
-      closeSetup()
     } catch (e: any) {
       console.error(e)
       showToast({

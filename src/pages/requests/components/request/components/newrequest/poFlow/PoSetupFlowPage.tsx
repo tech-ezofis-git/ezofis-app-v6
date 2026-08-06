@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import * as XLSX from 'xlsx'
+import poMasterUrl from '@/assets/PO Master.xlsx?url'
 import formApi from '@/api/form/form'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -10,7 +11,7 @@ import {
   AnimateFadeIn,
   AnimateSlideUp,
 } from '@/components/common/animations'
-import ColumnMapping from '@/components/common/ColumnMapping'
+import ApColumnMapping from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ApColumnMapping'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -22,11 +23,13 @@ import {
   transformMappedRows,
 } from './utils/lineItemHelpers'
 import { LINE_ITEM_TEMPLATE_COLUMNS } from './utils/lineItemSchema'
+import { DEFAULT_FIELD_TYPES } from './utils/mappingFieldDefaults'
 import { SYSTEM_TEMPLATE_COLUMNS } from './utils/templateSchema'
 
 export type UploadState =
   | 'idle'
   | 'parsing'
+  | 'strategy'
   | 'processing'
   | 'ready'
   | 'lineItemMapping'
@@ -37,11 +40,45 @@ type Props = {
 }
 
 type StepState = 'waiting' | 'active' | 'done'
+type MasterDataChoice = 'demo' | 'file' | null
+export type ImportStrategy = 'replace' | 'append' | 'override' | null
 
 export default function PoSetupFlowPage({ onClose }: Props) {
   const { t } = useLingui()
   const { closeNewRequest, rawWorkflowData } = requestStore((state) => state)
   const tenantId = authUserStore.getState()?.session?.tenantId
+
+  // Cards describing each import strategy. Kept local to this file so the
+  // choice is easy to tweak without touching the ErpSystem onboarding step,
+  // which is a separate flow and intentionally left unchanged. Defined
+  // inside the component (rather than at module scope) so the `t` macro —
+  // which only works as a tagged template within a component — can be used
+  // directly instead of being invoked as a function on a plain string.
+  const STRATEGY_OPTIONS: {
+    value: Exclude<ImportStrategy, null>
+    icon: string
+    title: string
+    description: string
+  }[] = [
+    {
+      description: t`Clear all current PO master records and load only what's in this file.`,
+      icon: 'tabler:replace',
+      title: t`Replace existing data`,
+      value: 'replace',
+    },
+    {
+      description: t`Add every row from this file as new entries. Matching PO numbers may be added as duplicates.`,
+      icon: 'tabler:stack-2',
+      title: t`Append new records`,
+      value: 'append',
+    },
+    {
+      description: t`Update existing records field-by-field wherever this file has a newer value. New PO numbers are added.`,
+      icon: 'tabler:git-merge',
+      title: t`Override matching records`,
+      value: 'override',
+    },
+  ]
 
   const workflowId = rawWorkflowData?.id
   const wFormId =
@@ -61,16 +98,45 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
 
+  // PO Master Data source choice (demo vs upload) + import strategy
+  const [masterDataChoice, setMasterDataChoice] =
+    useState<MasterDataChoice>(null)
+  const [importStrategy, setImportStrategy] = useState<ImportStrategy>(null)
+  const [isLoadingDemoData, setIsLoadingDemoData] = useState(false)
+  // TODO: replace with a real check against the PO master API
+  // (e.g. GET /po-master/count) once the endpoint exists. Assuming records
+  // already exist is the safer default until that lands.
+  const [hasExistingMasterData] = useState(true)
+  const [existingMasterRecordCount] = useState(512)
+  // Holds the parsed file's headers/rowCount between the moment a file is
+  // selected and the moment the user confirms an import strategy, so the
+  // ingestion timeline can start immediately after.
+  const pendingParseRef = useRef<{
+    headers: string[]
+    rowCount: number
+    lineItemHeaders: string[]
+  } | null>(null)
+  // Guards the demo-data auto-confirm effect below so it only fires once per
+  // demo-data load, rather than re-triggering on every render where the
+  // mapping happens to still look complete.
+  const autoConfirmedDemoRef = useRef(false)
+
   // File details (Header)
   const [uploadedColumns, setUploadedColumns] = useState<string[]>([])
   const [rowCount, setRowCount] = useState<number | null>(null)
   const [mapping, setMapping] = useState<Record<string, string>>({})
+  const [fieldDataTypes, setFieldDataTypes] = useState<Record<string, string>>(
+    {},
+  )
   const [previewRows, setPreviewRows] = useState<any[]>([])
 
   // Line item details
   const [lineItemHeaders, setLineItemHeaders] = useState<string[]>([])
   const [lineItemRows, setLineItemRows] = useState<any[]>([])
   const [lineItemMapping, setLineItemMapping] = useState<
+    Record<string, string>
+  >({})
+  const [lineItemFieldDataTypes, setLineItemFieldDataTypes] = useState<
     Record<string, string>
   >({})
   const [groupingColumn, setGroupingColumn] = useState<string | null>(null)
@@ -81,7 +147,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   const [step3State, setStep3State] = useState<StepState>('waiting')
   const [step4State, setStep4State] = useState<StepState>('waiting')
   const [activeMappingTab, setActiveMappingTab] = useState<
-    'header' | 'lineItem'
+    'header' | 'lineItems'
   >('header')
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -178,7 +244,28 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     throw new Error(t`Unsupported file type. Please upload a CSV or XLSX file.`)
   }
 
-  // Starts the interactive pipeline
+  // Common step once a file's headers/rowCount are known: either send the
+  // user to the strategy screen (existing master data present) or straight
+  // into the ingestion timeline (first-ever import).
+  const routeAfterParse = (
+    headers: string[],
+    rowCountResult: number,
+    liHeaders: string[],
+  ) => {
+    pendingParseRef.current = {
+      headers,
+      lineItemHeaders: liHeaders,
+      rowCount: rowCountResult,
+    }
+    if (hasExistingMasterData) {
+      setUploadState('strategy')
+    } else {
+      setUploadState('processing')
+      runTimelineSimulation(headers, rowCountResult, liHeaders)
+    }
+  }
+
+  // Starts the interactive pipeline for a manually uploaded file
   const startPipeline = async (file: File) => {
     setUploadedFile(file)
     setUploadProgress(0)
@@ -204,8 +291,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
           setUploadProgress(100)
 
           setTimeout(() => {
-            setUploadState('processing')
-            runTimelineSimulation(
+            routeAfterParse(
               result.headers,
               result.rowCount,
               result.lineItemHeaders || [],
@@ -224,6 +310,81 @@ export default function PoSetupFlowPage({ onClose }: Props) {
         variant: 'error',
       })
     }
+  }
+
+  // Downloads the actual bundled PO Master demo file for reference — mirrors
+  // ErpSystem's `handleDownloadPredefinedMaster` for the "Use demo data"
+  // option on the AP onboarding step.
+  const handleDownloadPredefinedMaster = () => {
+    const link = document.createElement('a')
+    link.href = poMasterUrl
+    link.download = 'PO Master.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // "Continue with Demo Data" — loads the bundled PO Master file and, since
+  // it's already pre-mapped to the system schema (same assumption ErpSystem
+  // makes for its "Use demo data" option, which requires no field mapping at
+  // all), the mapping review screen is skipped automatically further below
+  // once auto-mapping resolves every required field.
+  const handleUseDemoData = async () => {
+    autoConfirmedDemoRef.current = false
+    setIsLoadingDemoData(true)
+    try {
+      const res = await fetch(poMasterUrl)
+      const blob = await res.blob()
+      const file = new File([blob], 'PO Master.xlsx', {
+        type:
+          blob.type ||
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+      setUploadedFile(file)
+
+      const result: any = await extractHeadersAndData(file)
+      setPreviewRows(result.previewRows || [])
+      setLineItemHeaders(result.lineItemHeaders || [])
+      setLineItemRows(result.lineItemRows || [])
+      setGroupingColumn(detectGroupingColumn(result.lineItemHeaders) || null)
+
+      routeAfterParse(
+        result.headers,
+        result.rowCount,
+        result.lineItemHeaders || [],
+      )
+    } catch (err: any) {
+      console.error(err)
+      showToast({
+        message: err.message || t`Failed to load demo data`,
+        variant: 'error',
+      })
+      setMasterDataChoice(null)
+    } finally {
+      setIsLoadingDemoData(false)
+    }
+  }
+
+  // Confirms the chosen import strategy and kicks off the ingestion timeline
+  const proceedFromStrategy = () => {
+    if (!pendingParseRef.current || !importStrategy) return
+    const { headers, rowCount: parsedRowCount, lineItemHeaders: liHeaders } =
+      pendingParseRef.current
+    setUploadState('processing')
+    runTimelineSimulation(headers, parsedRowCount, liHeaders)
+  }
+
+  // Resets everything back to the very first screen
+  const resetToStart = () => {
+    setUploadState('idle')
+    setUploadedFile(null)
+    setMasterDataChoice(null)
+    setImportStrategy(null)
+    pendingParseRef.current = null
+    autoConfirmedDemoRef.current = false
+    setMapping({})
+    setFieldDataTypes({})
+    setPreviewRows([])
   }
 
   // Simulation run for Stage 2 Ingestion timeline
@@ -260,25 +421,33 @@ export default function PoSetupFlowPage({ onClose }: Props) {
             // At 4600ms (1200ms later), Step 3 completes, mapping initialized
             setTimeout(() => {
               const initialMapping: Record<string, string> = {}
+              const initialFieldDataTypes: Record<string, string> = {}
 
               // Map system columns based on similarity
               systemColumns.forEach((col) => {
                 const match = findBestHeaderMatch(col.key, headers)
                 if (match) {
                   initialMapping[col.key] = match
+                  initialFieldDataTypes[col.key] =
+                    DEFAULT_FIELD_TYPES[col.key] || 'SHORT_TEXT'
                 }
               })
 
               const initialLineItemMapping: Record<string, string> = {}
+              const initialLineItemFieldDataTypes: Record<string, string> = {}
               LINE_ITEM_TEMPLATE_COLUMNS.forEach((col) => {
                 const match = findBestHeaderMatch(col.key, liHeaders)
                 if (match) {
                   initialLineItemMapping[col.key] = match
+                  initialLineItemFieldDataTypes[col.key] =
+                    DEFAULT_FIELD_TYPES[col.key] || 'SHORT_TEXT'
                 }
               })
 
               setMapping(initialMapping)
+              setFieldDataTypes(initialFieldDataTypes)
               setLineItemMapping(initialLineItemMapping)
+              setLineItemFieldDataTypes(initialLineItemFieldDataTypes)
               setStep3State('done')
 
               // At 5000ms (400ms later), transition to verify mappings UI
@@ -381,9 +550,13 @@ export default function PoSetupFlowPage({ onClose }: Props) {
     const payload = {
       file: file,
       formId: masterFormId ? String(masterFormId) : '',
+      // TODO: extend the UploadMasterFile API contract to accept
+      // `importStrategy` (replace | append | override) so the backend can
+      // apply the field-level merge/override logic described by the user.
+      importStrategy: hasExistingMasterData ? importStrategy : 'replace',
       instanceId: '',
       workflowId: workflowId ? String(workflowId) : '',
-    }
+    } as any
 
     try {
       const { data, error } = await formApi.uploadMasterFile(payload)
@@ -435,6 +608,38 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       setIsSubmitting(false)
     }
   }
+
+  // Demo data is guaranteed pre-mapped to the system schema — same
+  // assumption ErpSystem makes for "Use demo data", which requires no
+  // manual field mapping at all. Once auto-mapping resolves every required
+  // header and line-item field, skip the review screen and submit straight
+  // away instead of waiting on the user to click "Confirm & Ingest". If
+  // anything didn't auto-match, fall back to the normal manual review.
+  useEffect(() => {
+    if (
+      uploadState !== 'ready' ||
+      masterDataChoice !== 'demo' ||
+      autoConfirmedDemoRef.current
+    ) {
+      return
+    }
+
+    const isHeaderMappingComplete = systemColumns.every(
+      (col) => !col.required || !!mapping[col.key],
+    )
+    const hasLineItems = lineItemHeaders.length > 0
+    const isLineItemMappingComplete =
+      !hasLineItems ||
+      LINE_ITEM_TEMPLATE_COLUMNS.every(
+        (col) => !col.required || !!lineItemMapping[col.key],
+      )
+
+    if (groupingColumn && isHeaderMappingComplete && isLineItemMappingComplete) {
+      autoConfirmedDemoRef.current = true
+      handleManualConfirm()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadState, masterDataChoice])
 
   const handleDownload = async () => {
     if (isDownloading) return
@@ -507,117 +712,268 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                 </p>
               </AnimateSlideUp>
 
-              {/* Drop Zone / Selection state */}
-              <AnimateSlideUp className='w-full' delay={0.1}>
-                {uploadState === 'idle' ? (
-                  <div className='group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface-primary p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
-                    {/* Scan Animation effect */}
-                    <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
-                      <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-accent-soft/20 to-transparent' />
-                    </div>
-
+              {/* PO Master Data source choice */}
+              <AnimateSlideUp className='w-full' delay={0.05}>
+                <div className='mb-1.5'>
+                  <h2 className='text-[15px] font-bold text-gray-13'>
+                    {t`PO Master Data`}
+                  </h2>
+                  <p className='mt-0.5 text-xs font-medium text-gray-10'>
+                    {t`Import PO master records to validate invoices against approved purchase orders.`}
+                  </p>
+                </div>
+                <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                  <button
+                    aria-pressed={masterDataChoice === 'demo'}
+                    disabled={isLoadingDemoData}
+                    type='button'
+                    className={cn(
+                      'group relative flex min-h-[76px] w-full flex-row items-center gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200',
+                      isLoadingDemoData
+                        ? 'cursor-not-allowed opacity-70'
+                        : 'cursor-pointer',
+                      masterDataChoice === 'demo'
+                        ? 'border-green-9 bg-green-1 shadow-sm ring-2 ring-green-9/25'
+                        : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
+                    )}
+                    onClick={() => setMasterDataChoice('demo')}
+                  >
                     <div
                       className={cn(
-                        'relative z-10 flex min-h-[150px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-[1.5px] border-dashed border-border-default px-6 py-6 text-center transition-all duration-500 ease-out',
-                        isDragOver
-                          ? 'scale-[0.99] border-primary-9 bg-accent-soft/10 shadow-inner'
-                          : 'bg-surface-primary hover:border-primary-9 hover:bg-accent-soft/5',
+                        'flex size-9 shrink-0 items-center justify-center rounded-md p-1.5',
+                        masterDataChoice === 'demo'
+                          ? 'bg-white shadow-sm'
+                          : 'bg-gray-2 group-hover:bg-gray-3',
                       )}
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragLeave={() => setIsDragOver(false)}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        setIsDragOver(true)
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault()
-                        setIsDragOver(false)
-                        onFileChange(e.dataTransfer.files?.[0])
-                      }}
                     >
-                      <div className='flex size-14 items-center justify-center rounded-full bg-accent-soft transition-all duration-300 group-hover:scale-105'>
+                      {isLoadingDemoData ? (
                         <Icon
-                          className='size-6 text-primary-9'
-                          name='tabler:cloud-upload'
+                          className='size-5 animate-spin text-gray-10'
+                          name='tabler:loader-2'
                         />
+                      ) : (
+                        <Icon
+                          className={cn(
+                            'size-5',
+                            masterDataChoice === 'demo'
+                              ? 'text-green-11'
+                              : 'text-primary-11',
+                          )}
+                          name='tabler:database-search'
+                        />
+                      )}
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                      <div
+                        className={cn(
+                          'truncate text-14/5 font-medium',
+                          masterDataChoice === 'demo'
+                            ? 'text-green-11'
+                            : 'text-gray-13',
+                        )}
+                      >
+                        {t`Use demo data`}
                       </div>
-                      <div className='text-center'>
-                        <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
-                          {t`Drop your PO master file here, or`}{' '}
-                          <span className='font-medium text-primary-9 group-hover:underline'>
-                            {t`browse`}
-                          </span>
-                        </h3>
-                        <p className='mt-1.5 text-[12px] text-gray-8'>
-                          {t`Supports Excel (.xlsx, .xls) and CSV formats`}
-                        </p>
-                        <div className='mt-3 flex justify-center'>
-                          <button
-                            className='inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-primary-9 hover:text-primary-10 hover:underline'
-                            disabled={isDownloading}
-                            type='button'
-                            onClick={(e) => {
-                              e.stopPropagation() // Prevent triggering file input click
-                              handleDownload()
-                            }}
-                          >
-                            {isDownloading ? (
-                              <span className='size-3 animate-spin rounded-full border-2 border-primary-9 border-t-transparent' />
-                            ) : (
-                              <Icon
-                                className='size-3.5'
-                                name='tabler:download'
-                              />
-                            )}
-                            <span>
-                              {isDownloading
-                                ? t`Downloading...`
-                                : t`Download PO Template`}
+                      <p className='mt-0.5 line-clamp-2 text-12/4.5 text-pretty text-gray-10'>
+                        {t`Try the platform with sample invoices and records.`}
+                      </p>
+                    </div>
+                    {masterDataChoice === 'demo' && !isLoadingDemoData && (
+                      <div className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'>
+                        <Icon className='size-3 text-white' name='tabler:check' />
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    aria-pressed={masterDataChoice === 'file'}
+                    type='button'
+                    className={cn(
+                      'group relative flex min-h-[76px] w-full cursor-pointer flex-row items-center gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200',
+                      masterDataChoice === 'file'
+                        ? 'border-primary-9 bg-primary-1 shadow-sm ring-2 ring-primary-9/20'
+                        : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
+                    )}
+                    onClick={() => setMasterDataChoice('file')}
+                  >
+                    <div
+                      className={cn(
+                        'flex size-9 shrink-0 items-center justify-center rounded-md p-1.5',
+                        masterDataChoice === 'file'
+                          ? 'bg-white shadow-sm'
+                          : 'bg-gray-2 group-hover:bg-gray-3',
+                      )}
+                    >
+                      <Icon
+                        className='size-5 text-primary-11'
+                        name='tabler:table-import'
+                      />
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                      <div
+                        className={cn(
+                          'truncate text-14/5 font-medium',
+                          masterDataChoice === 'file'
+                            ? 'text-primary-12'
+                            : 'text-gray-13',
+                        )}
+                      >
+                        {t`Upload PO master file`}
+                      </div>
+                      <p className='mt-0.5 line-clamp-2 text-12/4.5 text-pretty text-gray-10'>
+                        {t`Import your records via CSV or Excel.`}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </AnimateSlideUp>
+
+              {/* Drop Zone / Selection state — only once "Upload PO master file" is chosen */}
+              {masterDataChoice === 'file' && (
+                <AnimateSlideUp className='w-full' delay={0.1}>
+                  {uploadState === 'idle' ? (
+                    <div className='group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface-primary p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
+                      {/* Scan Animation effect */}
+                      <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
+                        <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-accent-soft/20 to-transparent' />
+                      </div>
+
+                      <div
+                        className={cn(
+                          'relative z-10 flex min-h-[150px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-[1.5px] border-dashed border-border-default px-6 py-6 text-center transition-all duration-500 ease-out',
+                          isDragOver
+                            ? 'scale-[0.99] border-primary-9 bg-accent-soft/10 shadow-inner'
+                            : 'bg-surface-primary hover:border-primary-9 hover:bg-accent-soft/5',
+                        )}
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragLeave={() => setIsDragOver(false)}
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          setIsDragOver(true)
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          setIsDragOver(false)
+                          onFileChange(e.dataTransfer.files?.[0])
+                        }}
+                      >
+                        <div className='flex size-14 items-center justify-center rounded-full bg-accent-soft transition-all duration-300 group-hover:scale-105'>
+                          <Icon
+                            className='size-6 text-primary-9'
+                            name='tabler:cloud-upload'
+                          />
+                        </div>
+                        <div className='text-center'>
+                          <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
+                            {t`Drop your PO master file here, or`}{' '}
+                            <span className='font-medium text-primary-9 group-hover:underline'>
+                              {t`browse`}
                             </span>
-                          </button>
+                          </h3>
+                          <p className='mt-1.5 text-[12px] text-gray-8'>
+                            {t`Supports Excel (.xlsx, .xls) and CSV formats`}
+                          </p>
+                          <div className='mt-3 flex justify-center'>
+                            <button
+                              className='inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-primary-9 hover:text-primary-10 hover:underline'
+                              disabled={isDownloading}
+                              type='button'
+                              onClick={(e) => {
+                                e.stopPropagation() // Prevent triggering file input click
+                                handleDownload()
+                              }}
+                            >
+                              {isDownloading ? (
+                                <span className='size-3 animate-spin rounded-full border-2 border-primary-9 border-t-transparent' />
+                              ) : (
+                                <Icon
+                                  className='size-3.5'
+                                  name='tabler:download'
+                                />
+                              )}
+                              <span>
+                                {isDownloading
+                                  ? t`Downloading...`
+                                  : t`Download PO Template`}
+                              </span>
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <input
-                      accept={PO_ACCEPT}
-                      className='hidden'
-                      ref={fileInputRef}
-                      type='file'
-                      onChange={(e) => onFileChange(e.target.files?.[0])}
-                    />
-                  </div>
-                ) : (
-                  /* FILE PREVIEW CARD DURING PARSING */
-                  <div className='animate-in fade-in flex w-full flex-col gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs duration-300'>
-                    <div className='flex items-center gap-3'>
-                      <div className='flex size-10 items-center justify-center rounded-lg bg-green-3 text-green-11'>
-                        <Icon
-                          className='size-5 text-green-11'
-                          name='tabler:file-text'
+                      <input
+                        accept={PO_ACCEPT}
+                        className='hidden'
+                        ref={fileInputRef}
+                        type='file'
+                        onChange={(e) => onFileChange(e.target.files?.[0])}
+                      />
+                    </div>
+                  ) : (
+                    /* FILE PREVIEW CARD DURING PARSING */
+                    <div className='animate-in fade-in flex w-full flex-col gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs duration-300'>
+                      <div className='flex items-center gap-3'>
+                        <div className='flex size-10 items-center justify-center rounded-lg bg-green-3 text-green-11'>
+                          <Icon
+                            className='size-5 text-green-11'
+                            name='tabler:file-text'
+                          />
+                        </div>
+                        <div className='min-w-0 flex-1'>
+                          <h4 className='truncate text-[13px] font-medium text-gray-12'>
+                            {uploadedFile?.name}
+                          </h4>
+                          <p className='text-[11px] text-gray-8'>
+                            {uploadedFile
+                              ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
+                              : t`Processing...`}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
+                        <div
+                          className='h-full bg-primary-9 transition-all duration-150 ease-out'
+                          style={{ width: `${uploadProgress}%` }}
                         />
                       </div>
-                      <div className='min-w-0 flex-1'>
-                        <h4 className='truncate text-[13px] font-medium text-gray-12'>
-                          {uploadedFile?.name}
-                        </h4>
-                        <p className='text-[11px] text-gray-8'>
-                          {uploadedFile
-                            ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
-                            : t`Processing...`}
-                        </p>
-                      </div>
                     </div>
-                    {/* Progress bar */}
-                    <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
-                      <div
-                        className='h-full bg-primary-9 transition-all duration-150 ease-out'
-                        style={{ width: `${uploadProgress}%` }}
+                  )}
+                </AnimateSlideUp>
+              )}
+
+              {/* Demo data confirmation panel — mirrors the "Use demo data"
+                  card on the AP onboarding step (ErpSystem.tsx): download the
+                  reference file is optional, nothing is parsed or mapped
+                  until the user explicitly continues. */}
+              {masterDataChoice === 'demo' && (
+                <AnimateSlideUp className='w-full' delay={0.1}>
+                  <div className='w-full rounded-xl border border-border-default bg-surface-primary p-5 shadow-2xs'>
+                    <h3 className='text-15/5 font-semibold text-gray-13'>
+                      {t`PO Master File`}
+                    </h3>
+                    <p className='mt-1.5 mb-4 text-13/5.5 text-pretty text-gray-11'>
+                      {t`Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching.`}
+                    </p>
+                    <div className='flex flex-wrap items-center gap-2.5'>
+                      <Button
+                        icon='tabler:download'
+                        label={t`Download PO Master Demo Data`}
+                        size='sm'
+                        variant='outline'
+                        onClick={handleDownloadPredefinedMaster}
+                      />
+                      <Button
+                        icon='tabler:arrow-right'
+                        label={t`Continue with Demo Data`}
+                        loading={isLoadingDemoData}
+                        size='sm'
+                        onClick={handleUseDemoData}
                       />
                     </div>
                   </div>
-                )}
-              </AnimateSlideUp>
+                </AnimateSlideUp>
+              )}
 
               {/* Three Context Cards Grid */}
               <div className='w-full'>
@@ -681,471 +1037,574 @@ export default function PoSetupFlowPage({ onClose }: Props) {
         </AnimateFadeIn>
       )}
 
-      {/* SCREEN 2: INGESTION TIMELINE SCREEN */}
-      {(uploadState === 'processing' ||
-        uploadState === 'ready' ||
-        uploadState === 'lineItemMapping') && (
+      {/* SCREEN 1.5: IMPORT STRATEGY (only when existing PO master data was found) */}
+      {uploadState === 'strategy' && (
         <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
           {/* Header */}
           <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
             <button
               className='cursor-pointer rounded-md p-1.5 text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-12'
-              onClick={() => {
-                setUploadState('idle')
-                setUploadedFile(null)
-                setMapping({})
-                setPreviewRows([])
-              }}
+              onClick={resetToStart}
             >
               <Icon className='size-4' name='tabler:arrow-left' />
             </button>
             <div className='flex items-center gap-2'>
               <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
-                <Icon className='size-4' name='tabler:activity' />
+                <Icon className='size-4' name='tabler:git-merge' />
               </div>
               <h1 className='text-[16px] font-medium text-gray-12'>
-                {t`Ingestion timeline`}
+                {t`Import Strategy`}
               </h1>
             </div>
           </div>
 
-          {/* Timeline Layout */}
           <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
-            <AnimateSlideUp
-              className={cn(
-                'relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300',
-              )}
-            >
-              {/* STEP 1: FILE INGESTION & PARSING */}
-              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                {/* Line segment from Step 1 to Step 2 */}
-                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
-                <div
-                  className={cn(
-                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
-                    step1State === 'done' ? 'scale-y-100' : 'scale-y-0',
-                  )}
+            <div className='my-auto flex w-full max-w-[900px] flex-col gap-5 py-2'>
+              <AnimateSlideUp className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3.5 py-2.5 text-13 font-medium text-blue-11'>
+                <Icon className='size-4 shrink-0 text-blue-9' name='tabler:database' />
+                <span>
+                  <strong>
+                    {existingMasterRecordCount} {t`existing PO records`}
+                  </strong>{' '}
+                  {t`found in your PO Master data. Choose how`}{' '}
+                  {masterDataChoice === 'demo' ? t`the demo data` : t`this file`}{' '}
+                  {t`should be applied.`}
+                </span>
+              </AnimateSlideUp>
+
+              <AnimateSlideUp className='text-center' delay={0.05}>
+                <h1 className='text-xl font-bold tracking-tight text-gray-13'>
+                  {t`How should this data be applied?`}
+                </h1>
+                <p className='mx-auto mt-1 max-w-lg text-13 font-medium text-gray-10'>
+                  {t`Pick one import strategy. Nothing is saved until the next step confirms it.`}
+                </p>
+              </AnimateSlideUp>
+
+              <AnimateSlideUp
+                className='grid grid-cols-1 gap-3 sm:grid-cols-3'
+                delay={0.1}
+              >
+                {STRATEGY_OPTIONS.map((option) => {
+                  const isSelected = importStrategy === option.value
+                  return (
+                    <button
+                      aria-pressed={isSelected}
+                      key={option.value}
+                      type='button'
+                      className={cn(
+                        'group relative flex h-full flex-col gap-2.5 rounded-lg border px-4 py-4 text-left transition-all duration-200',
+                        isSelected
+                          ? 'border-green-9 bg-green-1 shadow-sm ring-2 ring-green-9/25'
+                          : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
+                      )}
+                      onClick={() => setImportStrategy(option.value)}
+                    >
+                      <div className='flex items-center justify-between'>
+                        <div
+                          className={cn(
+                            'flex size-9 items-center justify-center rounded-md p-1.5',
+                            isSelected
+                              ? 'bg-white shadow-sm'
+                              : 'bg-gray-2 group-hover:bg-gray-3',
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              'size-5',
+                              isSelected ? 'text-green-11' : 'text-primary-11',
+                            )}
+                            name={option.icon}
+                          />
+                        </div>
+                        {isSelected && (
+                          <div className='flex size-5 shrink-0 items-center justify-center rounded-full bg-green-9'>
+                            <Icon className='size-3 text-white' name='tabler:check' />
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        className={cn(
+                          'text-14/5 font-medium',
+                          isSelected ? 'text-green-11' : 'text-gray-13',
+                        )}
+                      >
+                        {option.title}
+                      </div>
+                      <p className='text-12/4.5 text-pretty text-gray-10'>
+                        {option.description}
+                      </p>
+                    </button>
+                  )
+                })}
+              </AnimateSlideUp>
+
+              <div className='flex items-center justify-between'>
+                <Button
+                  label={t`Back`}
+                  variant='outline'
+                  onClick={resetToStart}
                 />
-                <div className='flex items-start gap-4'>
+                <Button
+                  disabled={!importStrategy}
+                  label={t`Continue`}
+                  onClick={proceedFromStrategy}
+                />
+              </div>
+            </div>
+          </main>
+        </AnimateFadeIn>
+      )}
+
+      {/* SCREEN 2: INGESTION TIMELINE SCREEN */}
+      {(uploadState === 'processing' ||
+        uploadState === 'ready' ||
+        uploadState === 'lineItemMapping') && (
+          <AnimateFadeIn className='flex h-full w-full flex-col overflow-hidden'>
+            {/* Header */}
+            <div className='flex h-13 shrink-0 items-center gap-2 border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
+              <button
+                className='cursor-pointer rounded-md p-1.5 text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-12'
+                onClick={resetToStart}
+              >
+                <Icon className='size-4' name='tabler:arrow-left' />
+              </button>
+              <div className='flex items-center gap-2'>
+                <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
+                  <Icon className='size-4' name='tabler:activity' />
+                </div>
+                <h1 className='text-[16px] font-medium text-gray-12'>
+                  {t`Ingestion timeline`}
+                </h1>
+              </div>
+            </div>
+
+            {/* Timeline Layout */}
+            <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
+              <AnimateSlideUp
+                className={cn(
+                  'relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300',
+                )}
+              >
+                {/* STEP 1: FILE INGESTION & PARSING */}
+                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                  {/* Line segment from Step 1 to Step 2 */}
+                  <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
                   <div
                     className={cn(
-                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                      step1State === 'done'
-                        ? 'border border-green-9 bg-white text-green-9'
-                        : step1State === 'active'
-                          ? 'border-2 border-primary-9 bg-white text-primary-9'
-                          : 'border-2 border-gray-3 bg-white text-gray-4',
+                      'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                      step1State === 'done' ? 'scale-y-100' : 'scale-y-0',
                     )}
-                  >
-                    {step1State === 'done' ? (
-                      <Icon
-                        className='size-4 stroke-[3px]'
-                        name='tabler:check'
-                      />
-                    ) : step1State === 'active' ? (
-                      <Icon
-                        className='size-4 animate-spin'
-                        name='tabler:loader-2'
-                      />
-                    ) : (
-                      <Icon className='size-3.5' name='tabler:clock' />
-                    )}
-                  </div>
-                  <div className='flex-1'>
-                    <div className='flex items-center justify-between'>
-                      <h3 className='text-[13px] font-bold text-gray-12'>
+                  />
+                  <div className='flex items-start gap-4'>
+                    <div
+                      className={cn(
+                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                        step1State === 'done'
+                          ? 'border border-green-9 bg-white text-green-9'
+                          : step1State === 'active'
+                            ? 'border-2 border-primary-9 bg-white text-primary-9'
+                            : 'border-2 border-gray-3 bg-white text-gray-4',
+                      )}
+                    >
+                      {step1State === 'done' ? (
+                        <Icon
+                          className='size-4 stroke-[3px]'
+                          name='tabler:check'
+                        />
+                      ) : step1State === 'active' ? (
+                        <Icon
+                          className='size-4 animate-spin'
+                          name='tabler:loader-2'
+                        />
+                      ) : (
+                        <Icon className='size-3.5' name='tabler:clock' />
+                      )}
+                    </div>
+                    <div className='flex flex-1 items-center gap-2'>
+                      <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
                         {t`File Ingestion & Parsing`}
                       </h3>
                       {step1State === 'done' && (
-                        <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
+                        <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
                           {t`Completed in 0.4s`}
                         </span>
                       )}
                       {step1State === 'active' && (
-                        <span className='animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-primary-9'>
+                        <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
                           {t`In progress`}
                         </span>
                       )}
                     </div>
-                    <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
-                      {t`Ingesting raw file payload and validating structure.`}
-                    </p>
                   </div>
+                  <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                    {t`Ingesting raw file payload and validating structure.`}
+                  </p>
+
+                  {/* Step 1 Detail Card */}
+                  {(step1State === 'active' || step1State === 'done') && (
+                    <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`File Size`}</span>
+                        <span className='font-bold text-gray-12'>
+                          {uploadedFile
+                            ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
+                            : '32.4 KB'}
+                        </span>
+                      </div>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Format`}</span>
+                        <span className='font-bold text-gray-12'>
+                          {uploadedFile?.name.split('.').pop()?.toUpperCase() ||
+                            'XLSX'}
+                        </span>
+                      </div>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Rows Detected`}</span>
+                        <span className='font-bold text-gray-12'>
+                          {rowCount || 48} {t`rows`}
+                        </span>
+                      </div>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Sheets Used`}</span>
+                        <span className='font-bold text-gray-12'>{t`1 sheet`}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Step 1 Detail Card */}
-                {(step1State === 'active' || step1State === 'done') && (
-                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`File Size`}</span>
-                      <span className='font-bold text-gray-12'>
-                        {uploadedFile
-                          ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
-                          : '32.4 KB'}
-                      </span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Format`}</span>
-                      <span className='font-bold text-gray-12'>
-                        {uploadedFile?.name.split('.').pop()?.toUpperCase() ||
-                          'XLSX'}
-                      </span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Rows Detected`}</span>
-                      <span className='font-bold text-gray-12'>
-                        {rowCount || 48} {t`rows`}
-                      </span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Sheets Used`}</span>
-                      <span className='font-bold text-gray-12'>{t`1 sheet`}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* STEP 2: COLUMN & ROW EXTRACTION */}
-              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                {/* Line segment from Step 2 to Step 3 */}
-                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
-                <div
-                  className={cn(
-                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
-                    step2State === 'done' ? 'scale-y-100' : 'scale-y-0',
-                  )}
-                />
-                <div className='flex items-start gap-4'>
+                {/* STEP 2: COLUMN & ROW EXTRACTION */}
+                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                  {/* Line segment from Step 2 to Step 3 */}
+                  <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
                   <div
                     className={cn(
-                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                      step2State === 'done'
-                        ? 'border border-green-9 bg-white text-green-9'
-                        : step2State === 'active'
-                          ? 'border-2 border-primary-9 bg-white text-primary-9'
-                          : 'border-2 border-gray-3 bg-white text-gray-4',
+                      'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                      step2State === 'done' ? 'scale-y-100' : 'scale-y-0',
                     )}
-                  >
-                    {step2State === 'done' ? (
-                      <Icon
-                        className='size-4 stroke-[3px]'
-                        name='tabler:check'
-                      />
-                    ) : step2State === 'active' ? (
-                      <Icon
-                        className='size-4 animate-spin'
-                        name='tabler:loader-2'
-                      />
-                    ) : (
-                      <Icon className='size-3.5' name='tabler:clock' />
-                    )}
-                  </div>
-                  <div className='flex-1'>
-                    <div className='flex items-center justify-between'>
-                      <h3 className='text-[13px] font-bold text-gray-12'>
+                  />
+                  <div className='flex items-start gap-4'>
+                    <div
+                      className={cn(
+                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                        step2State === 'done'
+                          ? 'border border-green-9 bg-white text-green-9'
+                          : step2State === 'active'
+                            ? 'border-2 border-primary-9 bg-white text-primary-9'
+                            : 'border-2 border-gray-3 bg-white text-gray-4',
+                      )}
+                    >
+                      {step2State === 'done' ? (
+                        <Icon
+                          className='size-4 stroke-[3px]'
+                          name='tabler:check'
+                        />
+                      ) : step2State === 'active' ? (
+                        <Icon
+                          className='size-4 animate-spin'
+                          name='tabler:loader-2'
+                        />
+                      ) : (
+                        <Icon className='size-3.5' name='tabler:clock' />
+                      )}
+                    </div>
+                    <div className='flex flex-1 items-center gap-2'>
+                      <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
                         {t`Column & Row Extraction`}
                       </h3>
                       {step2State === 'done' && (
-                        <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
+                        <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
                           {t`Completed in 0.9s`}
                         </span>
                       )}
                       {step2State === 'active' && (
-                        <span className='animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-primary-9'>
+                        <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
                           {t`In progress`}
                         </span>
                       )}
                     </div>
-                    <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
-                      {t`Extracting grid fields and filtering metadata records.`}
-                    </p>
                   </div>
+                  <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                    {t`Extracting grid fields and filtering metadata records.`}
+                  </p>
+
+                  {/* Step 2 Detail Card */}
+                  {(step2State === 'active' || step2State === 'done') && (
+                    <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Columns Found`}</span>
+                        <span className='font-bold text-gray-12'>
+                          {uploadedColumns.length || 8} {t`columns`}
+                        </span>
+                      </div>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Empty Rows Skipped`}</span>
+                        <span className='font-bold text-gray-12'>{t`0 skipped`}</span>
+                      </div>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Header Row`}</span>
+                        <span className='font-bold text-gray-12'>{t`Row 1`}</span>
+                      </div>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Data Rows`}</span>
+                        <span className='font-bold text-gray-12'>
+                          {rowCount ? rowCount - 1 : 47} {t`rows`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Step 2 Detail Card */}
-                {(step2State === 'active' || step2State === 'done') && (
-                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Columns Found`}</span>
-                      <span className='font-bold text-gray-12'>
-                        {uploadedColumns.length || 8} {t`columns`}
-                      </span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Empty Rows Skipped`}</span>
-                      <span className='font-bold text-gray-12'>{t`0 skipped`}</span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Header Row`}</span>
-                      <span className='font-bold text-gray-12'>{t`Row 1`}</span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Data Rows`}</span>
-                      <span className='font-bold text-gray-12'>
-                        {rowCount ? rowCount - 1 : 47} {t`rows`}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* STEP 3: SCHEMA AUTO-MAPPING */}
-              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                {/* Line segment from Step 3 to Step 4 */}
-                <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
-                <div
-                  className={cn(
-                    'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
-                    step3State === 'done' ? 'scale-y-100' : 'scale-y-0',
-                  )}
-                />
-                <div className='flex items-start gap-4'>
+                {/* STEP 3: SCHEMA AUTO-MAPPING */}
+                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                  {/* Line segment from Step 3 to Step 4 */}
+                  <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
                   <div
                     className={cn(
-                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                      step3State === 'done'
-                        ? 'border border-green-9 bg-white text-green-9'
-                        : step3State === 'active'
-                          ? 'border-2 border-primary-9 bg-white text-primary-9'
-                          : 'border-2 border-gray-3 bg-white text-gray-4',
+                      'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                      step3State === 'done' ? 'scale-y-100' : 'scale-y-0',
                     )}
-                  >
-                    {step3State === 'done' ? (
-                      <Icon
-                        className='size-4 stroke-[3px]'
-                        name='tabler:check'
-                      />
-                    ) : step3State === 'active' ? (
-                      <Icon
-                        className='size-4 animate-spin'
-                        name='tabler:loader-2'
-                      />
-                    ) : (
-                      <Icon className='size-3.5' name='tabler:clock' />
-                    )}
-                  </div>
-                  <div className='flex-1'>
-                    <div className='flex items-center justify-between'>
-                      <h3 className='text-[13px] font-bold text-gray-12'>
+                  />
+                  <div className='flex items-start gap-4'>
+                    <div
+                      className={cn(
+                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                        step3State === 'done'
+                          ? 'border border-green-9 bg-white text-green-9'
+                          : step3State === 'active'
+                            ? 'border-2 border-primary-9 bg-white text-primary-9'
+                            : 'border-2 border-gray-3 bg-white text-gray-4',
+                      )}
+                    >
+                      {step3State === 'done' ? (
+                        <Icon
+                          className='size-4 stroke-[3px]'
+                          name='tabler:check'
+                        />
+                      ) : step3State === 'active' ? (
+                        <Icon
+                          className='size-4 animate-spin'
+                          name='tabler:loader-2'
+                        />
+                      ) : (
+                        <Icon className='size-3.5' name='tabler:clock' />
+                      )}
+                    </div>
+                    <div className='flex flex-1 items-center gap-2'>
+                      <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
                         {t`Schema Auto-Mapping`}
                       </h3>
                       {step3State === 'done' && (
-                        <span className='rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium text-green-9'>
+                        <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
                           {t`Completed`}
                         </span>
                       )}
                       {step3State === 'active' && (
-                        <span className='animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-primary-9'>
+                        <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
                           {t`In progress`}
                         </span>
                       )}
                     </div>
-                    <p className='mt-1.5 text-[11px] font-medium text-gray-8'>
-                      {t`Aligning CSV/XLSX headers with database mapping schema.`}
-                    </p>
                   </div>
-                </div>
+                  <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                    {t`Aligning CSV/XLSX headers with database mapping schema.`}
+                  </p>
 
-                {/* Step 3 Detail Card */}
-                {(step3State === 'active' || step3State === 'done') && (
-                  <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Fields Matched`}</span>
-                      <span className='font-bold text-gray-12'>
-                        {step3State === 'done'
-                          ? t`6 / 6 fields`
-                          : t`2 / 6 fields`}
-                      </span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>{t`Confidence Level`}</span>
-                      <span className='font-bold text-gray-12'>
-                        {t`91% average`}
-                      </span>
-                    </div>
-                    <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
-                      <span className='text-gray-11'>
-                        {t`Fields Needing Review`}
-                      </span>
-                      <span className='font-bold text-gray-12'>
-                        {step3State === 'done' ? t`0 fields` : t`4 fields`}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {uploadState === 'ready' && (
-                  <div className='mt-2 flex flex-col gap-4'>
-                    {!groupingColumn && (
-                      <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
-                        <Icon
-                          className='size-4 text-blue-9'
-                          name='tabler:info-circle'
-                        />
-                        <span className='font-medium'>
-                          {t`Line item info: PO Number column could not be matched.`}
+                  {/* Step 3 Detail Card */}
+                  {(step3State === 'active' || step3State === 'done') && (
+                    <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Fields Matched`}</span>
+                        <span className='font-bold text-gray-12'>
+                          {step3State === 'done'
+                            ? t`6 / 6 fields`
+                            : t`2 / 6 fields`}
                         </span>
                       </div>
-                    )}
-
-                    {/* Tab Switcher */}
-                    <div className='mb-0 flex justify-start gap-4'>
-                      <button
-                        type='button'
-                        className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
-                          activeMappingTab === 'header'
-                            ? 'border-primary-9 text-primary-9'
-                            : 'border-transparent text-gray-11 hover:text-gray-13'
-                        }`}
-                        onClick={() => setActiveMappingTab('header')}
-                      >
-                        <span>{t`Header Fields`}</span>
-                        <span
-                          className={`py-0.2 rounded-full px-1.5 text-11 ${
-                            activeMappingTab === 'header'
-                              ? 'bg-primary-2 text-primary-9'
-                              : 'bg-gray-2 text-gray-9'
-                          }`}
-                        >
-                          {Object.keys(mapping).length}/{systemColumns.length}
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>{t`Confidence Level`}</span>
+                        <span className='font-bold text-gray-12'>
+                          {t`91% average`}
                         </span>
-                      </button>
-                      <button
-                        type='button'
-                        className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${
-                          activeMappingTab === 'lineItem'
-                            ? 'border-primary-9 text-primary-9'
-                            : 'border-transparent text-gray-11 hover:text-gray-13'
-                        }`}
-                        onClick={() => setActiveMappingTab('lineItem')}
-                      >
-                        <span>{t`Line Items`}</span>
-                        <span
-                          className={`py-0.2 rounded-full px-1.5 text-11 ${
-                            activeMappingTab === 'lineItem'
-                              ? 'bg-primary-2 text-primary-9'
-                              : 'bg-gray-2 text-gray-9'
-                          }`}
-                        >
-                          {Object.keys(lineItemMapping).length}/
-                          {LINE_ITEM_TEMPLATE_COLUMNS.length}
-                        </span>
-                      </button>
-                    </div>
-
-                    {/* Content mapping box */}
-                    <div>
-                      {activeMappingTab === 'header' && (
-                        <div className='animate-in fade-in duration-300'>
-                          <ColumnMapping
-                            isConfirmLoading={false}
-                            key='header-mapping'
-                            mapping={mapping}
-                            previewRows={previewRows}
-                            showActionsRow={false}
-                            title={t`Header Mapping`}
-                            uploadedColumns={uploadedColumns}
-                            simple
-                            onChangeMapping={setMapping}
-                          />
+                      </div>
+                      {hasExistingMasterData && (
+                        <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                          <span className='text-gray-11'>{t`Strategy`}</span>
+                          <span className='font-bold text-gray-12 capitalize'>
+                            {importStrategy || '—'}
+                          </span>
                         </div>
                       )}
-                      {activeMappingTab === 'lineItem' && (
-                        <div className='animate-in fade-in duration-300'>
-                          <ColumnMapping
-                            autoScrollAndHighlight={false}
-                            isConfirmLoading={false}
-                            key='line-item-mapping'
-                            mapping={lineItemMapping}
-                            previewRows={lineItemRows}
-                            showActionsRow={false}
-                            showGrouping={false}
-                            templateSchema={LINE_ITEM_TEMPLATE_COLUMNS}
-                            title={t`Line Item Mapping`}
-                            uploadedColumns={lineItemHeaders}
-                            simple
-                            onChangeMapping={setLineItemMapping}
+                      <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                        <span className='text-gray-11'>
+                          {t`Fields Needing Review`}
+                        </span>
+                        <span className='font-bold text-gray-12'>
+                          {step3State === 'done' ? t`0 fields` : t`4 fields`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {uploadState === 'ready' && (
+                    <div className='mt-2 flex flex-col gap-4'>
+                      {!groupingColumn && (
+                        <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
+                          <Icon
+                            className='size-4 text-blue-9'
+                            name='tabler:info-circle'
                           />
+                          <span className='font-medium'>
+                            {t`Line item info: PO Number column could not be matched.`}
+                          </span>
                         </div>
                       )}
-                    </div>
-                    <div className='flex justify-end gap-3 pt-2'>
-                      <Button
-                        variant='outline'
-                        onClick={() => {
-                          setUploadState('idle')
-                          setUploadedFile(null)
-                          setMapping({})
-                          setPreviewRows([])
-                        }}
-                      >
-                        {t`Cancel`}
-                      </Button>
-                      <Button
-                        loading={isSubmitting}
-                        disabled={
-                          !groupingColumn ||
-                          systemColumns.some(
-                            (col) => col.required && !mapping[col.key],
-                          ) ||
-                          LINE_ITEM_TEMPLATE_COLUMNS.some(
-                            (col) => col.required && !lineItemMapping[col.key],
-                          )
-                        }
-                        onClick={handleManualConfirm}
-                      >
-                        {t`Confirm & Ingest`}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
 
-              {/* STEP 4: INGESTION & CONFIRMATION */}
-              <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
-                <div className='flex items-start gap-4'>
-                  <div
-                    className={cn(
-                      'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
-                      step4State === 'done'
-                        ? 'border border-green-9 bg-white text-green-9'
-                        : step4State === 'active'
-                          ? 'border-2 border-primary-9 bg-white text-primary-9'
-                          : 'border-2 border-gray-3 bg-white text-gray-4',
-                    )}
-                  >
-                    {step4State === 'done' ? (
-                      <Icon
-                        className='size-4 stroke-[3px]'
-                        name='tabler:check'
-                      />
-                    ) : step4State === 'active' ? (
-                      <Icon
-                        className='size-4 animate-spin'
-                        name='tabler:loader-2'
-                      />
-                    ) : (
-                      <Icon className='size-3.5' name='tabler:clock' />
-                    )}
-                  </div>
-                  <div className='flex-1'>
-                    <h3 className='text-[13px] font-bold text-gray-12'>
-                      {t`Ingestion & Confirmation`}
-                    </h3>
-                    <p className='mt-1.5 text-[11px] font-semibold text-gray-8'>
-                      {step4State === 'active'
-                        ? t`Finalizing record ingestion...`
-                        : step4State === 'done'
-                          ? t`Ingestion fully completed.`
-                          : t`Waiting for field verification`}
-                    </p>
+                      {/* Tab Switcher */}
+                      <div className='mb-0 flex justify-start gap-4'>
+                        <button
+                          type='button'
+                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${activeMappingTab === 'header'
+                              ? 'border-primary-9 text-primary-9'
+                              : 'border-transparent text-gray-11 hover:text-gray-13'
+                            }`}
+                          onClick={() => setActiveMappingTab('header')}
+                        >
+                          <span>{t`Header Fields`}</span>
+                          <span
+                            className={`py-0.2 rounded-full px-1.5 text-11 ${activeMappingTab === 'header'
+                                ? 'bg-primary-2 text-primary-9'
+                                : 'bg-gray-2 text-gray-9'
+                              }`}
+                          >
+                            {Object.keys(mapping).length}/{systemColumns.length}
+                          </span>
+                        </button>
+                        <button
+                          type='button'
+                          className={`flex cursor-pointer items-center gap-1.5 border-b-2 py-2 pr-2 pl-0 text-left text-13 font-semibold transition-all ${activeMappingTab === 'lineItems'
+                              ? 'border-primary-9 text-primary-9'
+                              : 'border-transparent text-gray-11 hover:text-gray-13'
+                            }`}
+                          onClick={() => setActiveMappingTab('lineItems')}
+                        >
+                          <span>{t`Line Items`}</span>
+                          <span
+                            className={`py-0.2 rounded-full px-1.5 text-11 ${activeMappingTab === 'lineItems'
+                                ? 'bg-primary-2 text-primary-9'
+                                : 'bg-gray-2 text-gray-9'
+                              }`}
+                          >
+                            {Object.keys(lineItemMapping).length}/
+                            {LINE_ITEM_TEMPLATE_COLUMNS.length}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Content mapping box */}
+                      <div>
+                        {activeMappingTab === 'header' && (
+                          <div className='animate-in fade-in duration-300'>
+                            <ApColumnMapping
+                              activeMappingTab='header'
+                              fieldDataTypes={fieldDataTypes}
+                              key='header-mapping'
+                              mapping={mapping}
+                              previewRows={previewRows}
+                              uploadedColumns={uploadedColumns}
+                              onUpdateMapping={(m, types) => {
+                                setMapping(m)
+                                setFieldDataTypes(types)
+                              }}
+                            />
+                          </div>
+                        )}
+                        {activeMappingTab === 'lineItems' && (
+                          <div className='animate-in fade-in duration-300'>
+                            <ApColumnMapping
+                              activeMappingTab='lineItems'
+                              fieldDataTypes={lineItemFieldDataTypes}
+                              key='line-item-mapping'
+                              mapping={lineItemMapping}
+                              previewRows={lineItemRows}
+                              uploadedColumns={lineItemHeaders}
+                              onUpdateMapping={(m, types) => {
+                                setLineItemMapping(m)
+                                setLineItemFieldDataTypes(types)
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className='flex justify-end gap-3 pt-2'>
+                        <Button variant='outline' onClick={resetToStart}>
+                          {t`Cancel`}
+                        </Button>
+                        <Button
+                          loading={isSubmitting}
+                          disabled={
+                            !groupingColumn ||
+                            systemColumns.some(
+                              (col) => col.required && !mapping[col.key],
+                            ) ||
+                            LINE_ITEM_TEMPLATE_COLUMNS.some(
+                              (col) => col.required && !lineItemMapping[col.key],
+                            )
+                          }
+                          onClick={handleManualConfirm}
+                        >
+                          {t`Confirm & Ingest`}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* STEP 4: INGESTION & CONFIRMATION */}
+                <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+                  <div className='flex items-start gap-4'>
+                    <div
+                      className={cn(
+                        'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                        step4State === 'done'
+                          ? 'border border-green-9 bg-white text-green-9'
+                          : step4State === 'active'
+                            ? 'border-2 border-primary-9 bg-white text-primary-9'
+                            : 'border-2 border-gray-3 bg-white text-gray-4',
+                      )}
+                    >
+                      {step4State === 'done' ? (
+                        <Icon
+                          className='size-4 stroke-[3px]'
+                          name='tabler:check'
+                        />
+                      ) : step4State === 'active' ? (
+                        <Icon
+                          className='size-4 animate-spin'
+                          name='tabler:loader-2'
+                        />
+                      ) : (
+                        <Icon className='size-3.5' name='tabler:clock' />
+                      )}
+                    </div>
+                    <div className='flex-1'>
+                      <h3 className='text-[13px] font-bold text-gray-12'>
+                        {t`Ingestion & Confirmation`}
+                      </h3>
+                      <p className='mt-1.5 text-[11px] font-semibold text-gray-8'>
+                        {step4State === 'active'
+                          ? t`Finalizing record ingestion...`
+                          : step4State === 'done'
+                            ? t`Ingestion fully completed.`
+                            : t`Waiting for field verification`}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </AnimateSlideUp>
-          </main>
-        </AnimateFadeIn>
-      )}
+              </AnimateSlideUp>
+            </main>
+          </AnimateFadeIn>
+        )}
 
       {/* COMPLETED SUCCESS SCREEN */}
       {uploadState === 'completed' && (
@@ -1210,6 +1669,16 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                       {systemColumns.length} {t`fields`}
                     </span>
                   </div>
+                  {hasExistingMasterData && (
+                    <div className='flex justify-between text-[12px]'>
+                      <span className='font-medium text-gray-8'>
+                        {t`Strategy Applied:`}
+                      </span>
+                      <span className='font-bold text-gray-12 capitalize'>
+                        {importStrategy}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 

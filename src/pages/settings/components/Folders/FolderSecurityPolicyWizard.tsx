@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
-  getFolderSecurity,
   putFolderSecurity,
   type FolderPermissionFlags,
   type FolderSecurityPolicy,
@@ -142,10 +141,18 @@ const SecurityWizardSkeleton = () => (
 export default function FolderSecurityPolicyWizard({
   folderName,
   repositoryId = '',
+  initialPolicy = null,
+  existingPolicies = [],
+  editingIndex = null,
+  onSaveSuccess,
   onClose,
 }: {
   folderName: string
   repositoryId?: string
+  initialPolicy?: FolderSecurityPolicy | null
+  existingPolicies?: FolderSecurityPolicy[]
+  editingIndex?: number | null
+  onSaveSuccess?: () => void
   onClose: () => void
 }) {
   const [step, setStep] = useState<Step>(0)
@@ -153,7 +160,6 @@ export default function FolderSecurityPolicyWizard({
   const [groups, setGroups] = useState<V6GroupItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isOpenRepo, setIsOpenRepo] = useState(false)
   const [accessError, setAccessError] = useState<string | null>(null)
 
   const [selectedPrincipals, setSelectedPrincipals] = useState<Principal[]>([])
@@ -161,117 +167,56 @@ export default function FolderSecurityPolicyWizard({
   const [permissionSearch, setPermissionSearch] = useState('')
   const [showSelectionError, setShowSelectionError] = useState(false)
 
-  const applySecurityData = useCallback(
-    (secData: any, userList: V6UserListItem[], groupList: V6GroupItem[]) => {
-      const policies = secData?.policies || []
-      if (policies.length === 0) {
-        setIsOpenRepo(true)
-        setSelectedPrincipals([])
-        setPermissions(DEFAULT_PERMISSIONS)
-      } else {
-        setIsOpenRepo(false)
-        const firstPolicy = policies[0]
-        const loadedPrincipals: Principal[] = []
-
-        ;(firstPolicy.userIds || []).forEach((uId: string) => {
-          const matched = userList.find((u) => u.id === uId)
-          loadedPrincipals.push({
-            id: uId,
-            name: matched ? (matched.displayName || `${matched.firstName} ${matched.lastName}`.trim()) : uId,
-            type: 'USER',
-          })
-        })
-
-        ;(firstPolicy.groupIds || []).forEach((gId: string) => {
-          const matched = groupList.find((g) => (g.id || g.groupId) === gId)
-          loadedPrincipals.push({
-            id: gId,
-            name: matched ? String(matched.name || matched.description || gId) : gId,
-            type: 'GROUP',
-          })
-        })
-
-        setSelectedPrincipals(loadedPrincipals)
-
-        if (firstPolicy.permissions) {
-          const pMap = firstPolicy.permissions
-          setPermissions(
-            DEFAULT_PERMISSIONS.map((p) => ({
-              ...p,
-              enabled: p.id === 'view' ? true : Boolean(pMap[p.id]),
-            })),
-          )
-        }
-      }
-    },
-    [],
-  )
-
   const loadDataRequestIdRef = useRef(0)
 
   const loadData = useCallback(async () => {
     const requestId = ++loadDataRequestIdRef.current
     setAccessError(null)
-
-    // Check Cache first
-    const cachedSec = await getFolderSecurity(repositoryId, true)
-    if (requestId !== loadDataRequestIdRef.current) return
-
-    const hasCache = Boolean(cachedSec.isFromCache && cachedSec.data)
-
-    if (hasCache) {
-      setIsLoading(false)
-    } else {
-      setIsLoading(true)
-    }
+    setIsLoading(true)
 
     const [uRes, gRes] = await Promise.all([getUsers(), getGroups()])
-    if (requestId !== loadDataRequestIdRef.current) {
-      return
-    }
-
-    if (uRes.canceled && gRes.canceled) {
-      return
-    }
+    if (requestId !== loadDataRequestIdRef.current) return
 
     const userList = uRes.canceled ? [] : uRes.data || []
     const groupList = gRes.canceled ? [] : gRes.data || []
     if (!uRes.canceled) setUsers(userList)
     if (!gRes.canceled) setGroups(groupList)
+    setIsLoading(false)
 
-    if (hasCache && cachedSec.data) {
-      applySecurityData(cachedSec.data, userList, groupList)
-    }
+    // Pre-fill initial policy if editing
+    if (initialPolicy) {
+      const loadedPrincipals: Principal[] = []
+      ;(initialPolicy.userIds || []).forEach((uId: string) => {
+        const matched = userList.find((u) => u.id === uId)
+        loadedPrincipals.push({
+          id: uId,
+          name: matched ? (matched.displayName || `${matched.firstName || ''} ${matched.lastName || ''}`.trim() || matched.email || uId) : uId,
+          type: 'USER',
+        })
+      })
 
-    // Background Revalidation
-    const secRes = await getFolderSecurity(repositoryId, false)
-    if (secRes.isCanceled || requestId !== loadDataRequestIdRef.current) {
-      if (requestId === loadDataRequestIdRef.current) {
-        setIsLoading(false)
+      ;(initialPolicy.groupIds || []).forEach((gId: string) => {
+        const matched = groupList.find((g) => (g.id || g.groupId) === gId)
+        loadedPrincipals.push({
+          id: gId,
+          name: matched ? String(matched.name || matched.description || gId) : gId,
+          type: 'GROUP',
+        })
+      })
+
+      setSelectedPrincipals(loadedPrincipals)
+
+      if (initialPolicy.permissions) {
+        const pMap = initialPolicy.permissions
+        setPermissions(
+          DEFAULT_PERMISSIONS.map((p) => ({
+            ...p,
+            enabled: p.id === 'view' ? true : Boolean(pMap[p.id]),
+          })),
+        )
       }
-      return
     }
-
-    if (secRes.status === 401) {
-      showToast({ message: 'Authentication required. Please log in again.', variant: 'error' })
-      setAccessError('Authentication required')
-    } else if (secRes.status === 403) {
-      const msg = 'You do not have access to view or edit folder security policies.'
-      showToast({ message: msg, variant: 'error' })
-      setAccessError(msg)
-    } else if (secRes.status === 404) {
-      showToast({ message: 'Repository not found.', variant: 'error' })
-      setAccessError('Repository not found')
-    } else if (secRes.error) {
-      showToast({ message: secRes.error, variant: 'error' })
-    } else if (secRes.data) {
-      applySecurityData(secRes.data, userList, groupList)
-    }
-
-    if (requestId === loadDataRequestIdRef.current) {
-      setIsLoading(false)
-    }
-  }, [repositoryId, applySecurityData])
+  }, [initialPolicy])
 
   useEffect(() => {
     void loadData()
@@ -472,9 +417,6 @@ export default function FolderSecurityPolicyWizard({
       return
     }
 
-    const userIds = selectedPrincipals.filter((p) => p.type === 'USER').map((p) => p.id)
-    const groupIds = selectedPrincipals.filter((p) => p.type === 'GROUP').map((p) => p.id)
-
     const permissionFlags: FolderPermissionFlags = {
       view: true,
       upload: false,
@@ -492,17 +434,25 @@ export default function FolderSecurityPolicyWizard({
       permissionFlags[p.id] = p.enabled
     })
 
-    const policyPayload: FolderSecurityPolicy = {
+    const newPolicyPayloads: FolderSecurityPolicy[] = selectedPrincipals.map((p) => ({
       folderId: null,
-      groupIds,
+      userIds: p.type === 'USER' ? [p.id] : [],
+      groupIds: p.type === 'GROUP' ? [p.id] : [],
       permissions: permissionFlags,
-      userIds,
+    }))
+
+    let updatedPolicies: FolderSecurityPolicy[] = []
+    if (editingIndex != null && editingIndex >= 0 && editingIndex < existingPolicies.length) {
+      updatedPolicies = existingPolicies.filter((_, idx) => idx !== editingIndex)
+      updatedPolicies.splice(editingIndex, 0, ...newPolicyPayloads)
+    } else {
+      updatedPolicies = [...existingPolicies, ...newPolicyPayloads]
     }
 
     setIsSaving(true)
     const res = await putFolderSecurity(repositoryId, {
       folderId: null,
-      policies: [policyPayload],
+      policies: updatedPolicies,
     })
     setIsSaving(false)
 
@@ -527,6 +477,7 @@ export default function FolderSecurityPolicyWizard({
     }
 
     showToast({ message: 'Folder security policy saved successfully.', variant: 'success' })
+    if (onSaveSuccess) onSaveSuccess()
     onClose()
   }
 
@@ -556,7 +507,7 @@ export default function FolderSecurityPolicyWizard({
         <div className="flex flex-col gap-4">
           <div>
             <h2 className="text-15 font-semibold text-gray-13">
-              Folder Security Policy
+              {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Policy'}
             </h2>
             <p className="mt-0.5 text-xs text-gray-11">
               Select at least one user or group who will receive access permissions for this folder.
@@ -807,12 +758,20 @@ export default function FolderSecurityPolicyWizard({
       <div className="mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3.5 md:px-8">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-15 font-semibold tracking-tight text-gray-13">
-            Folder Security Setup — {folderName}
+            {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Setup'} — {folderName}
           </h2>
           <p className="text-xs text-gray-11">
             Configure access policies and privileges for folder &quot;{folderName}&quot;
           </p>
         </div>
+        <Button
+          color="gray"
+          icon="tabler:x"
+          label="Cancel"
+          size="sm"
+          variant="outline"
+          onClick={onClose}
+        />
       </div>
 
       {/* Main Grid */}
