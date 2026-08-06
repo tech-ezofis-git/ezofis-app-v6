@@ -62,6 +62,7 @@ export function clearSecurityCache(repositoryId?: string) {
     const cleanRepoId = sanitizeGuid(repositoryId)
     memoryCache.delete(`folder_${cleanRepoId}`)
     memoryCache.delete(`doc_${cleanRepoId}`)
+    memoryCache.delete(`filter_fields_${cleanRepoId}`)
   } else {
     memoryCache.clear()
   }
@@ -228,28 +229,85 @@ export async function putDocumentSecurity(
   }
 }
 
-export async function getFilterFields() {
-  const cacheKey = 'filter_fields'
+export async function getFilterFields(repositoryId: string) {
+  const cleanRepoId = sanitizeGuid(repositoryId)
+  if (!cleanRepoId) {
+    return {
+      data: [] as string[],
+      error: 'Repository id is required',
+      isCanceled: false,
+      isFromCache: false,
+      status: 0,
+    }
+  }
+
+  const cacheKey = `filter_fields_${cleanRepoId}`
   if (memoryCache.has(cacheKey)) {
     const cached = memoryCache.get(cacheKey)!
     if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return { data: cached.data as string[], error: null, isCanceled: false, isFromCache: true, status: 200 }
+      return {
+        data: cached.data as string[],
+        error: null,
+        isCanceled: false,
+        isFromCache: true,
+        status: 200,
+      }
     }
   }
 
   try {
-    const { data, status } = await axiosV6.get<string[]>(
-      '/items/filter-fields',
+    const { data, status } = await axiosV6.get(
+      `/repositories/${cleanRepoId}/items/filter-fields`,
     )
-    const result = Array.isArray(data) ? data : []
+
+    const payload = data?.data ?? data
+    let result: string[] = []
+
+    if (Array.isArray(payload)) {
+      result = payload
+        .map((item) => {
+          if (typeof item === 'string') return item.trim()
+          return String(
+            item?.sqlColumnName || item?.name || item?.label || '',
+          ).trim()
+        })
+        .filter(Boolean)
+    } else if (Array.isArray(payload?.fields)) {
+      result = payload.fields
+        .map((field: { sqlColumnName?: string; name?: string; label?: string }) =>
+          String(field?.sqlColumnName || field?.name || field?.label || '').trim(),
+        )
+        .filter(Boolean)
+    }
+
+    result = Array.from(new Set(result))
+
     if (result.length > 0) {
       memoryCache.set(cacheKey, { data: result, timestamp: Date.now() })
     }
-    return { data: result, error: null, isCanceled: false, isFromCache: false, status }
+    return {
+      data: result,
+      error: null,
+      isCanceled: false,
+      isFromCache: false,
+      status,
+    }
   } catch (err: any) {
     if (isRequestCanceled(err)) {
-      return { data: [], error: null, isCanceled: true, isFromCache: false, status: 0 }
+      return {
+        data: [] as string[],
+        error: null,
+        isCanceled: true,
+        isFromCache: false,
+        status: 0,
+      }
     }
-    return { data: [], error: err.message, isCanceled: false, isFromCache: false, status: err.response?.status }
+    return {
+      data: [] as string[],
+      error: err.message,
+      isCanceled: false,
+      isFromCache: false,
+      status: err.response?.status,
+    }
   }
 }

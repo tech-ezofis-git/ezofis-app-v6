@@ -1,0 +1,69 @@
+src/hooks/useEmbedMode.ts(26,44): error TS2345: Argument of type '{ email?: string | undefined; connector?: string | undefined; connectorId?: string | undefined; connectorOAuth?: string | undefined; grant?: string | undefined; provider?: string | undefined; isnew?: string | ... 1 more ... | undefined; }' is not assignable to parameter of type 'string | Record<string, string> | URLSearchParams | string[][] | undefined'.
+  Type '{ email?: string | undefined; connector?: string | undefined; connectorId?: string | undefined; connectorOAuth?: string | undefined; grant?: string | undefined; provider?: string | undefined; isnew?: string | ... 1 more ... | undefined; }' is not assignable to type 'Record<string, string>'.
+    Property 'isnew' is incompatible with index signature.
+      Type 'string | boolean' is not assignable to type 'string'.
+        Type 'boolean' is not assignable to type 'string'.
+src/pages/dashboard/workflows/accounts-payable/components/Integrations.tsx(61,21): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx(780,14): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx(787,20): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx(814,22): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx(822,22): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx(824,22): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx(830,22): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx(832,22): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx(15,22): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx(16,16): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx(21,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx(30,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx(39,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx(48,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSettings.tsx(14,16): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSettings.tsx(19,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSettings.tsx(28,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSystem.tsx(128,26): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSystem.tsx(129,20): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSystem.tsx(170,26): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSystem.tsx(171,20): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSettings.tsx(14,16): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSettings.tsx(19,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSettings.tsx(28,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx(64,22): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx(66,16): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx(95,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx(100,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/WelcomeMessage.tsx(20,18): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/accounts-payable/components/setup/components/WelcomeMessage.tsx(25,20): error TS2304: Cannot find name 't'.
+src/pages/dashboard/workflows/shared/components/Header.tsx(2043,30): error TS2695: Left side of comma operator is unused and has no side effects.
+src/pages/dashboard/workflows/shared/components/Header.tsx(2043,30): error TS18007: JSX expressions may not use the comma operator. Did you mean to write an array?
+src/pages/dashboard/workflows/shared/components/Header.tsx(2043,53): error TS2353: Object literal may only specify known properties, and 'pct' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...>'.
+src/pages/folders/components/DocumentDetailsView.tsx(888,47): error TS2345: Argument of type 'Blob | null' is not assignable to parameter of type 'Blob | MediaSource'.
+  Type 'null' is not assignable to type 'Blob | MediaSource'.
+src/pages/mobile/features/auth/CompleteSetupScreen.tsx(240,23): error TS2322: Type 'MessageDescriptor' is not assignable to type 'ReactNode'.
+src/pages/requests/components/request/components/sections/overview/components/audit-trail/AuditTrail.tsx(37,48): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/discrepancies/Discrepancies.tsx(55,48): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx(62,16): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx(40,48): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx(23,48): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx(27,26): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx(30,26): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx(35,26): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx(38,26): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx(41,26): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx(45,49): error TS2304: Cannot find name 't'.
+src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx(49,48): error TS2304: Cannot find name 't'.
+src/pages/requests/components/RequestSummary.tsx(173,18): error TS2304: Cannot find name 't'.
+src/pages/requests/components/RequestSummary.tsx(183,18): error TS2304: Cannot find name 't'.
+src/pages/requests/components/RequestSummary.tsx(193,18): error TS2304: Cannot find name 't'.
+src/pages/requests/components/RequestSummary.tsx(204,18): error TS2304: Cannot find name 't'.
+src/pages/settings/components/ManageUser.tsx(1930,17): error TS2554: Expected 2 arguments, but got 1.
+src/pages/settings/components/RolesPermissions.tsx(588,38): error TS2304: Cannot find name 't'.
+src/pages/settings/components/RolesPermissions.tsx(588,55): error TS2304: Cannot find name 't'.
+src/pages/settings/components/RolesPermissions.tsx(710,17): error TS2304: Cannot find name 't'.
+src/pages/settings/components/RolesPermissions.tsx(722,17): error TS2304: Cannot find name 't'.
+src/pages/settings/components/RolesPermissions.tsx(1339,17): error TS2304: Cannot find name 't'.
+src/pages/settings/components/RolesPermissions.tsx(1352,17): error TS2304: Cannot find name 't'.
+src/pages/settings/components/RolesPermissions.tsx(1797,20): error TS2304: Cannot find name 't'.
+src/pages/sign-in/utils/redirectAfterLogin.ts(33,7): error TS2322: Type 'string' is not assignable to type '"/sign-in" | "/auth" | "/stories" | "/playground" | "/embed" | "/workflow-builder/$workflowId" | "/stories/typography" | "/stories/tooltip" | "/stories/toast" | "/stories/tabs" | ... 69 more ... | undefined'.
+src/pages/sign-in/utils/redirectAfterLogin.ts(43,7): error TS2322: Type 'string' is not assignable to type '"/sign-in" | "/auth" | "/stories" | "/playground" | "/embed" | "/workflow-builder/$workflowId" | "/stories/typography" | "/stories/tooltip" | "/stories/toast" | "/stories/tabs" | ... 69 more ... | undefined'.
+src/pages/sign-in/utils/redirectAfterLogin.ts(64,7): error TS2322: Type 'string' is not assignable to type '"/sign-in" | "/auth" | "/stories" | "/playground" | "/embed" | "/workflow-builder/$workflowId" | "/stories/typography" | "/stories/tooltip" | "/stories/toast" | "/stories/tabs" | ... 69 more ... | undefined'.
+src/pages/sign-in/utils/redirectAfterLogin.ts(77,37): error TS2322: Type 'string' is not assignable to type '"/sign-in" | "/auth" | "/stories" | "/playground" | "/embed" | "/workflow-builder/$workflowId" | "/stories/typography" | "/stories/tooltip" | "/stories/toast" | "/stories/tabs" | ... 69 more ... | undefined'.

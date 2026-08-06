@@ -247,8 +247,10 @@ export function isNumberColumnType(dataType?: string) {
     normalized === 'decimal' ||
     normalized === 'float' ||
     normalized === 'currency' ||
+    normalized === 'currency_amount' ||
     normalized === 'amount' ||
-    normalized.includes('number')
+    normalized.includes('number') ||
+    normalized.includes('currency')
   )
 }
 

@@ -392,6 +392,135 @@ export interface RepositoryItemWorkspaceDto {
   storageProviderId?: string
 }
 
+const EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES = new Set([
+  'FILE_UPLOAD',
+  'DYNAMIC_TABLE',
+  'TABLE',
+])
+
+export interface RepositoryItemFilterField {
+  name: string
+  sqlColumnName: string
+  dataType: string
+}
+
+export interface RepositoryItemFilterFieldsResponse {
+  fields: RepositoryItemFilterField[]
+}
+
+export const getRepositoryItemFilterFields = async (repositoryId: string) => {
+  const response: {
+    data: RepositoryItemFilterFieldsResponse | null
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      method: 'GET',
+      skipCancellation: true,
+      url: `/repositories/${repositoryId}/items/filter-fields`,
+    })
+
+    if (status !== 200) throw new Error('invalid status code')
+
+    const payload = unwrap(data) as RepositoryItemFilterFieldsResponse
+    const fields = Array.isArray(payload?.fields)
+      ? payload.fields.filter(
+          (field) =>
+            Boolean(field?.sqlColumnName || field?.name) &&
+            !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
+              String(field?.dataType || '').toUpperCase(),
+            ),
+        )
+      : []
+
+    response.data = { fields }
+  } catch (e: any) {
+    if (isRequestCanceled(e)) {
+      return response
+    }
+    console.error(e)
+    response.error =
+      e?.response?.data || e?.message || 'error fetching item filter fields'
+  }
+
+  return response
+}
+
+export interface RepositoryItemFacet {
+  value: string
+  count: number
+}
+
+export const getRepositoryItemFacets = async (payload: {
+  repositoryId: string
+  fieldName: string
+  limit?: number
+  scopeFilters?: Record<string, string | string[]>
+}) => {
+  const response: { data: RepositoryItemFacet[]; error: string } = {
+    data: [],
+    error: '',
+  }
+
+  const repositoryId = String(payload.repositoryId || '').trim()
+  const fieldName = String(payload.fieldName || '').trim()
+  if (!repositoryId || !fieldName) {
+    response.error = 'repositoryId and fieldName are required'
+    return response
+  }
+
+  try {
+    const params: Record<string, any> = {}
+    if (payload.limit != null) params.limit = payload.limit
+    if (payload.scopeFilters && Object.keys(payload.scopeFilters).length > 0) {
+      params.scopeFilters = JSON.stringify(payload.scopeFilters)
+    }
+
+    const { data, status } = await axiosV6({
+      method: 'GET',
+      params,
+      skipCancellation: true,
+      url: `/repositories/${repositoryId}/items/facets/${encodeURIComponent(fieldName)}`,
+    })
+
+    if (status !== 200) throw new Error('invalid status code')
+
+    const payloadData = unwrap(data)
+    const rows = Array.isArray(payloadData)
+      ? payloadData
+      : Array.isArray(payloadData?.facets)
+        ? payloadData.facets
+        : Array.isArray(payloadData?.data)
+          ? payloadData.data
+          : []
+
+    response.data = rows
+      .map((row: any) => {
+        const value = String(row?.value ?? '').trim()
+        if (!value) return null
+        const count = Number(row?.count)
+        return {
+          count: Number.isFinite(count) ? count : 0,
+          value,
+        } as RepositoryItemFacet
+      })
+      .filter(Boolean) as RepositoryItemFacet[]
+  } catch (e: any) {
+    if (isRequestCanceled(e)) {
+      return response
+    }
+    console.error(e)
+    response.error =
+      e?.response?.data || e?.message || 'error fetching item facets'
+  }
+
+  return response
+}
+
 export const getRepositoryItems = async (payload: RepositoryItemsQuery) => {
   const response: any = { data: null, error: '' }
 
@@ -728,6 +857,66 @@ export const getRepositoryItemComments = async (payload: {
   return response
 }
 
+export type RelatedDocumentItem = {
+  createdAtUtc?: string | null
+  documentType?: string | null
+  fileName?: string | null
+  fileSize?: number | null
+  fileType?: string | null
+  id: string
+  invoiceNumber?: string | null
+  matchCount?: number
+  matchedFields?: string[]
+  matchScore?: number
+  poNumber?: string | null
+  repositoryId: string
+  repositoryName?: string | null
+  supplier?: string | null
+}
+
+export type RelatedDocumentsResponse = {
+  data?: RelatedDocumentItem[]
+  match?: Record<string, string>
+  matchFields?: string[]
+  page?: number
+  pageSize?: number
+  sourceItemId?: string
+  sourceRepositoryId?: string
+  totalCount?: number
+}
+
+/** Folder-structure related docs (Related Docs tab). One call searches all repos. */
+export const getRepositoryItemRelated = async (payload: {
+  itemId: string
+  page?: number
+  pageSize?: number
+  repositoryId: string
+}) => {
+  const response: {
+    data: RelatedDocumentsResponse | null
+    error: unknown
+  } = { data: null, error: '' }
+
+  try {
+    const { data, status } = await axiosV6({
+      method: 'GET',
+      params: {
+        page: payload.page ?? 1,
+        pageSize: payload.pageSize ?? 50,
+      },
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/related`,
+    })
+
+    if (status !== 200) throw 'invalid status code'
+    response.data = unwrap(data) as RelatedDocumentsResponse
+  } catch (e: any) {
+    console.error(e)
+    response.error = e?.response?.data || 'error fetching related documents'
+  }
+
+  return response
+}
+
 export const addRepositoryItemComment = async (payload: {
   body: string
   itemId: string
@@ -847,18 +1036,31 @@ const inflightAiSummaryRequests = new Map<string, Promise<AiSummaryResult>>()
 
 const fetchRepositoryItemAiSummary = async (payload: {
   itemId: string
+  language?: string
   repositoryId: string
 }): Promise<AiSummaryResult> => {
   const response: AiSummaryResult = { data: null, error: '' }
 
   try {
+    const language = String(payload.language || '')
+      .trim()
+      .toLowerCase()
+    const languageQuery = language
+      ? `?language=${encodeURIComponent(language)}`
+      : ''
+
     const { data, status } = await axiosV6({
+      headers: language
+        ? {
+            'Accept-Language': language,
+          }
+        : undefined,
       method: 'POST',
       // AI generation can take a while on cache miss.
       timeout: 180_000,
       // Long-running; do not abort when React Strict Mode remounts.
       skipCancellation: true,
-      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/ai-summary`,
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/ai-summary${languageQuery}`,
     } as any)
 
     if (status < 200 || status >= 300) throw 'invalid status code'
@@ -914,9 +1116,13 @@ const fetchRepositoryItemAiSummary = async (payload: {
 export const getRepositoryItemAiSummary = async (payload: {
   force?: boolean
   itemId: string
+  language?: string
   repositoryId: string
 }) => {
-  const key = `${payload.repositoryId}:${payload.itemId}`
+  const language = String(payload.language || 'en')
+    .trim()
+    .toLowerCase() || 'en'
+  const key = `${payload.repositoryId}:${payload.itemId}:${language}`
 
   if (!payload.force) {
     const inflight = inflightAiSummaryRequests.get(key)
@@ -925,7 +1131,10 @@ export const getRepositoryItemAiSummary = async (payload: {
     inflightAiSummaryRequests.delete(key)
   }
 
-  const request = fetchRepositoryItemAiSummary(payload).finally(() => {
+  const request = fetchRepositoryItemAiSummary({
+    ...payload,
+    language,
+  }).finally(() => {
     // Only clear if this promise is still the active one for the key.
     if (inflightAiSummaryRequests.get(key) === request) {
       inflightAiSummaryRequests.delete(key)
@@ -937,6 +1146,7 @@ export const getRepositoryItemAiSummary = async (payload: {
 }
 ;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
 ;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
+;(authApiV6 as any).getRepositoryItemRelated = getRepositoryItemRelated
 ;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
 ;(authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
 ;(authApiV6 as any).uploadForOcr = uploadForOcr

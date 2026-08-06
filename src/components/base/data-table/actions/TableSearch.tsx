@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { useClickOutside } from '@mantine/hooks'
 import { type Table as TanstackTable } from '@tanstack/react-table'
@@ -127,7 +128,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
             isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0',
           )}
           placeholder={
-            selectedColumnLabel ? `Search ${selectedColumnLabel}` : 'Search'
+            selectedColumnLabel ? t`Search ${selectedColumnLabel}` : t`Search`
           }
           onChange={(e) => {
             setInputValue(e.target.value)
@@ -155,9 +156,9 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
           }
           onChange={() => setOpened(!opened)}
         >
-          <MenuLabel>Choose column</MenuLabel>
+          <MenuLabel>{t`Choose column`}</MenuLabel>
           <MenuItem
-            label='All'
+            label={t`All`}
             leftSection={
               <InputRadioIndicator
                 aria-label='Search in all'
@@ -186,7 +187,7 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
 
   if (!isExpanded) {
     return (
-      <Tooltip content='Search' position='top'>
+      <Tooltip content={t`Search`} position='top'>
         {searchContent}
       </Tooltip>
     )

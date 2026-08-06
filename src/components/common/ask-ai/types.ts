@@ -41,22 +41,35 @@ export type AskAiActionContext = {
   [key: string]: unknown
 }
 
+export type AskAiField = {
+  label: string
+  value: string | number
+}
+
+export type AskAiCard = {
+  fields?: AskAiField[]
+  subtitle?: string
+  title?: string
+}
+
 export type AskAiTextBlock =
   | {
       text: string
       type: 'paragraph'
     }
   | {
-      items: Array<{ label: string; value: string | number }>
+      items?: AskAiField[]
       title?: string
       type: 'bullets'
       variant?: 'dot' | string
     }
-  | {
-      fields: Array<{ label: string; value: string | number }>
-      subtitle?: string
-      title: string
+  | ({
       type: 'card'
+    } & AskAiCard)
+  | {
+      items?: AskAiCard[]
+      title?: string
+      type: 'cards'
     }
 
 export type AskAiAnswer = {

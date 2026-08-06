@@ -34,6 +34,12 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
   const search: any = useSearch({ strict: false })
   const shareToken = search?.shareToken
   const mailid = search?.email || search?.mailid || search?.mailId || ''
+  const redirectTo =
+    typeof search?.redirect === 'string'
+      ? search.redirect
+      : typeof search?.redirectTo === 'string'
+        ? search.redirectTo
+        : null
 
   const [email, setEmail] = useState(String(mailid || ''))
   const [password, setPassword] = useState('')
@@ -61,7 +67,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
   }, [shareToken])
 
   const handleLoggedNavigation = async () => {
-    await redirectAfterLogin({ navigate, shareTenantId })
+    await redirectAfterLogin({ navigate, redirectTo, shareTenantId })
   }
 
   const signInSocial = async (

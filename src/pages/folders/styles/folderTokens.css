@@ -231,16 +231,26 @@
 
   --surface-primary: white;
   --surface-secondary: var(--gray-2);
+  --surface-hover: var(--gray-2);
+  --surface-muted: var(--gray-2);
+
+  --text-primary: var(--gray-13);
+  --text-secondary: var(--gray-11);
+  --text-muted: var(--gray-9);
+
+  --border-default: var(--gray-3);
+  --border-strong: var(--gray-4);
+  --border-focus: var(--primary-8);
 
   --accent-primary: var(--primary-9);
   --accent-soft: var(--primary-3);
 
   --error-main: var(--red-9);
+  --success-main: var(--green-9);
   --success-subtle: var(--green-3);
 
   --surface: white;
   --surface-raised: white;
-  --surface-muted: var(--gray-2);
 }
 .ezofis-folder-shell {
   font-family:

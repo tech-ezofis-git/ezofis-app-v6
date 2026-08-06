@@ -1,16 +1,23 @@
 import Button from './Button'
+import cn from '@/utils/cn'
 
 interface Props {
+  className?: string
+  label?: string
   onClick: () => void
 }
 
-const GoogleButton = ({ onClick }: Props) => {
+const GoogleButton = ({
+  className,
+  label = 'Continue with Google',
+  onClick,
+}: Props) => {
   return (
     <Button
-      className='w-full justify-center gap-3'
+      className={cn('min-w-0 w-full justify-center gap-2', className)}
       color='gray'
       icon='logos:google-icon'
-      label='Continue with Google'
+      label={label}
       variant='outline'
       onClick={onClick}
     />

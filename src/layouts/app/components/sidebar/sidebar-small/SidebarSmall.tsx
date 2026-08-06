@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const SidebarSmall = ({ menus }: Props) => {
+  const { t } = useLingui()
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
   const openDemoForm = useRequestDemoStore((s) => s.openDemoForm)
 
@@ -45,12 +47,12 @@ const SidebarSmall = ({ menus }: Props) => {
         <div className='flex flex-col items-center gap-3'>
           {/* Request a Demo — highlighted while demo form is open */}
           <Tooltip
-            content='Automate Your Full AP Workflow — Request a Demo'
+            content={t`Automate Your Full AP Workflow — Request a Demo`}
             position='right'
           >
             <button
               aria-current={isDemoFormOpen ? 'page' : undefined}
-              aria-label='Request a Demo'
+              aria-label={t`Request a Demo`}
               className={cn(
                 'group relative flex size-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-2 active:scale-95',
                 isDemoFormOpen && 'bg-gray-3',

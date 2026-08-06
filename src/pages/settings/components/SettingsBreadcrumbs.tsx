@@ -34,7 +34,8 @@ export default function SettingsBreadcrumbs({ items, onNavigate }: Props) {
       case 'Playground API':
         return t`Playground API`
       case 'Accounts Payable':
-        return t`Accounts Payable`
+      case 'Accounts payable':
+        return label
       default:
         return label
     }

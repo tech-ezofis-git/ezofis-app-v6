@@ -17,6 +17,7 @@ import {
   folderApi,
   foldersToTreeNodes,
   getFolderContextFilters,
+  type RepositoryItemFilterField,
 } from '../api/folderApi'
 import {
   DEFAULT_FOLDER_PAGE_SIZE,
@@ -51,6 +52,9 @@ export function useFolderExplorer() {
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [files, setFiles] = useState<FileItem[]>([])
   const [fileColumns, setFileColumns] = useState<DynamicRepositoryColumn[]>([])
+  const [itemFilterFields, setItemFilterFields] = useState<
+    RepositoryItemFilterField[]
+  >([])
   const [filePage, setFilePage] = useState<RepositoryFilePage | undefined>()
   const [folderPage, setFolderPage] = useState<FolderPageMeta | undefined>()
   const [selectedFile, setSelectedFile] = useState('')
@@ -189,6 +193,7 @@ export function useFolderExplorer() {
     if (!decoded || decoded.kind === 'static') {
       loadedRepositoryIdRef.current = null
       setSelectedRepository(null)
+      setItemFilterFields([])
       return null
     }
 
@@ -201,11 +206,15 @@ export function useFolderExplorer() {
     }
 
     try {
-      const repository = await folderApi.getRepositoryFullData(repositoryId, {
-        force: options?.force,
-      })
+      const [repository, filterFieldsResult] = await Promise.all([
+        folderApi.getRepositoryFullData(repositoryId, {
+          force: options?.force,
+        }),
+        folderApi.getItemFilterFields(repositoryId).catch(() => []),
+      ])
       loadedRepositoryIdRef.current = repositoryId
       setSelectedRepository(repository as RepositoryDetail)
+      setItemFilterFields(filterFieldsResult)
       return repository
     } catch (exception: any) {
       const isCanceled =
@@ -217,6 +226,7 @@ export function useFolderExplorer() {
 
       loadedRepositoryIdRef.current = null
       setSelectedRepository(null)
+      setItemFilterFields([])
       setError(exception?.message || 'Unable to load repository details')
       return null
     }
@@ -609,6 +619,27 @@ export function useFolderExplorer() {
     })
   }, [activeFolder, viewMode])
 
+  const selectFolder = useCallback(
+    (id: string) => {
+      if (!id) {
+        setAppView('explorer')
+        return
+      }
+
+      // Always restore explorer selection (used after Upload / archive).
+      // Bypasses the loading guard in openFolder so grid tree + list
+      // repository dropdown keep the folder that was selected before upload.
+      setActiveFolder(id)
+      setAppView('explorer')
+
+      const path = findPathToNode(tree, id)
+      setExpandedIds((previous) =>
+        Array.from(new Set([...(path.length ? path : previous), id])),
+      )
+    },
+    [tree],
+  )
+
   const openFolder = async (id: string) => {
     if (loading || loadingPage) return
     if (id === activeFolder) {
@@ -620,13 +651,7 @@ export function useFolderExplorer() {
     // effect. Calling ensureTreeChildrenLoaded / loadSelectedRepository here
     // fired a duplicate browse/children request; axios aborted the first and
     // the aborted load cleared the explorer to an empty state.
-    setActiveFolder(id)
-    setAppView('explorer')
-
-    const path = findPathToNode(tree, id)
-    setExpandedIds((previous) =>
-      Array.from(new Set([...(path.length ? path : previous), id])),
-    )
+    selectFolder(id)
   }
 
   const toggleFolder = async (id: string) => {
@@ -899,6 +924,7 @@ export function useFolderExplorer() {
     folders,
     folderSearch,
     goBackInExplorer,
+    itemFilterFields,
     loading,
     loadingFolders,
     loadingPage,
@@ -909,6 +935,7 @@ export function useFolderExplorer() {
     openFolder,
     pageSize,
     refreshData,
+    selectFolder,
     refreshing,
     repositoryNodes,
     selectedFile,

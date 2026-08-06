@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -181,6 +182,7 @@ export default function CustomFilter({
   onSearchChange = () => {},
   onViewModeChange,
 }: CustomFilterProps) {
+  const { t } = useLingui()
   const [activeFilterDropdown, setActiveFilterDropdown] = useState<
     string | null
   >(null)
@@ -208,15 +210,15 @@ export default function CustomFilter({
   useEffect(() => {
     const previous = previousFilterDropdownRef.current
     const next =
-      activeFilterDropdown && activeFilterDropdown !== 'more'
-        ? activeFilterDropdown
-        : null
+      activeFilterDropdown === 'more'
+        ? activeFilterGroup
+        : activeFilterDropdown || null
 
     if (previous === next) return
 
     previousFilterDropdownRef.current = next
     onFilterMenuOpenChange?.(next)
-  }, [activeFilterDropdown, onFilterMenuOpenChange])
+  }, [activeFilterDropdown, activeFilterGroup, onFilterMenuOpenChange])
 
   const updateFilterDropdownPosition = useCallback(() => {
     if (!activeFilterDropdown || activeFilterDropdown === 'more') {
@@ -536,7 +538,7 @@ export default function CustomFilter({
                   )
                 }
 
-                if (group.options && group.options.length > 0) {
+                if (group.options) {
                   return (
                     <CategoryFilterMenu
                       key={group.id}
@@ -916,7 +918,7 @@ export default function CustomFilter({
             }}
           >
             <Tooltip
-              content='Search'
+              content={t`Search`}
               disabled={isSearchExpanded || !!searchQuery}
             >
               <div className='flex shrink-0 items-center gap-1.5'>
@@ -970,7 +972,7 @@ export default function CustomFilter({
 
         {viewMode && onViewModeChange && (
           <div className='ml-1 flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
-            <Tooltip content='Grid View' openDelay={500}>
+            <Tooltip content={t`Grid View`} openDelay={500}>
               <button
                 type='button'
                 className={cn(
@@ -984,7 +986,7 @@ export default function CustomFilter({
                 <Icon className='size-4' name='tabler:layout-grid' />
               </button>
             </Tooltip>
-            <Tooltip content='Table View' openDelay={500}>
+            <Tooltip content={t`Table View`} openDelay={500}>
               <button
                 type='button'
                 className={cn(

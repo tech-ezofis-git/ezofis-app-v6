@@ -20,7 +20,7 @@ import {
   generateFolderConfig,
   type FolderConfigField,
   type FolderConfigSuggestion,
-} from '@/services/ai/gemini'
+} from '@/services/ai/folderConfig'
 import cn from '@/utils/cn'
 import {
   BuilderTimelineStep,

@@ -177,7 +177,7 @@ export function CategoryFilterMenu({
       <div className='ez-scrollbar flex max-h-[220px] w-full flex-col gap-0.5 overflow-y-auto p-2'>
         {filteredOptions.length === 0 ? (
           <div className='px-2 py-2 text-12 text-text-muted'>
-            No options found.
+            {isLoading ? 'Loading...' : 'No options found.'}
           </div>
         ) : (
           filteredOptions.map((opt) => {

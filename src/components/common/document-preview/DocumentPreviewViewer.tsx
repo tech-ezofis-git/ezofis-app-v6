@@ -1,56 +1,288 @@
-import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
-import { searchPlugin } from '@react-pdf-viewer/search'
+import {
+  type DocumentLoadEvent,
+  Viewer,
+  Worker,
+} from '@react-pdf-viewer/core'
+import {
+  searchPlugin,
+  type HighlightArea,
+  type RenderHighlightsProps,
+} from '@react-pdf-viewer/search'
 import { FileText } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import BarLoader from '@/components/base/BarLoader'
+import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
+import {
+  buildFieldSearchKeywords,
+  getFieldDisplayValue,
+  getFieldSearchVariantStrings,
+} from '@/pages/folders/utils/fieldPdfSearch'
+import { resolveDocumentPreviewKind } from '@/pages/folders/utils/documentDetailsUtils'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
-const PDF_WORKER_URL =
-  'https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js'
+const PDF_WORKER_URL = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url,
+).toString()
+
+/**
+ * SpecialZoomLevel.PageWidth re-scales pages while they are still rendering,
+ * which makes @react-pdf-viewer 3.12 paint scanned pages as solid black
+ * (react-pdf-viewer#1293). Measure the first page instead and render once at a
+ * fixed scale.
+ */
+const PROBE_SCALE = 0.25
+const PAGE_WIDTH_GUTTER = 24
+const MIN_PAGE_SCALE = 0.1
+const MAX_PAGE_SCALE = 5
 
 type DocumentPreviewViewerProps = {
+  activeHighlightColor?: string
+  activeHighlightTerm?: string | null
   className?: string
   enableHighlight?: boolean
   fileName?: string
   fileUrl: string | null
+  /** Increment to force scroll to the active highlight term. */
+  focusRequestId?: number
+  /** Hex/CSS colors keyed by highlight term / search variant. */
+  highlightColors?: Record<string, string>
   highlightTerms?: string[]
   isImage?: boolean
   isLoading?: boolean
   isPdf?: boolean
+  onProbeComplete?: (matchedValues: string[]) => void
+  probeTerms?: string[]
   showScanOverlay?: boolean
 }
 
 type PdfViewerProps = {
+  activeHighlightColor?: string
+  activeHighlightTerm?: string | null
   fileUrl: string
+  focusRequestId?: number
+  highlightColors?: Record<string, string>
   highlightTerms?: string[]
+  onProbeComplete?: (matchedValues: string[]) => void
+  probeTerms?: string[]
+}
+
+const hexToRgba = (color: string, alpha: number) => {
+  const raw = String(color || '').trim()
+  if (raw.startsWith('rgba') || raw.startsWith('rgb')) return raw
+  const hex = raw.replace('#', '')
+  if (hex.length !== 3 && hex.length !== 6) {
+    return `color-mix(in srgb, ${raw} ${Math.round(alpha * 100)}%, transparent)`
+  }
+  const full =
+    hex.length === 3
+      ? hex
+          .split('')
+          .map((char) => `${char}${char}`)
+          .join('')
+      : hex
+  const r = Number.parseInt(full.slice(0, 2), 16)
+  const g = Number.parseInt(full.slice(2, 4), 16)
+  const b = Number.parseInt(full.slice(4, 6), 16)
+  if ([r, g, b].some((part) => Number.isNaN(part))) {
+    return `color-mix(in srgb, ${raw} ${Math.round(alpha * 100)}%, transparent)`
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+const normalizeHighlightKey = (value: string) =>
+  String(value || '')
+    .replace(/\\([.*+?^${}()|[\]\\])/g, '$1')
+    .replace(/\\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+
+const resolveHighlightColor = (
+  source: string,
+  colors: Record<string, string>,
+  textContent?: string,
+) => {
+  const candidates = [source, textContent || '']
+    .map(normalizeHighlightKey)
+    .filter(Boolean)
+
+  for (const candidate of candidates) {
+    const exact = Object.entries(colors).find(
+      ([term]) => normalizeHighlightKey(term) === candidate,
+    )?.[1]
+    if (exact) return exact
+  }
+
+  // Prefer the longest color key contained in the highlighted text/source.
+  let best: { color: string; length: number } | null = null
+  for (const [term, color] of Object.entries(colors)) {
+    const key = normalizeHighlightKey(term)
+    if (!key) continue
+    const hit = candidates.some(
+      (candidate) => candidate.includes(key) || key.includes(candidate),
+    )
+    if (!hit) continue
+    if (!best || key.length > best.length) {
+      best = { color, length: key.length }
+    }
+  }
+  return best?.color || null
+}
+
+const getScrollParent = (element: HTMLElement | null) => {
+  let node: HTMLElement | null = element
+  while (node && node !== document.body) {
+    const style = window.getComputedStyle(node)
+    const overflowY = style.overflowY
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      node.scrollHeight > node.clientHeight + 1
+    ) {
+      return node
+    }
+    node = node.parentElement
+  }
+  return null
+}
+
+const scrollElementIntoView = (element: HTMLElement) => {
+  const scrollParent =
+    getScrollParent(element) ||
+    element.closest('.rpv-core__inner-pages') ||
+    element.closest('.rpv-core__viewer')
+
+  if (scrollParent instanceof HTMLElement) {
+    const elementRect = element.getBoundingClientRect()
+    const parentRect = scrollParent.getBoundingClientRect()
+    const offset =
+      elementRect.top -
+      parentRect.top -
+      parentRect.height / 2 +
+      elementRect.height / 2
+    scrollParent.scrollBy({ top: offset, behavior: 'smooth' })
+    return
+  }
+
+  element.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center',
+    inline: 'nearest',
+  })
+}
+
+/** Merge same-line word fragments into one continuous box (fixes |__||__| look). */
+const isValidHighlightArea = (area: HighlightArea): boolean => {
+  const str = String(area.keywordStr || '').trim()
+  if (!str || str.length < 2) return false
+  if (/^[\s\-_=|.,:;]+$/.test(str)) return false
+
+  const { height, width } = area
+  // Drop ultra-thin wide boxes (table rules / line graphics in the text layer).
+  if (height < 0.3) return false
+  if (height < 0.55 && width > height * 6) return false
+  if (width < 0.08 && height > width * 4) return false
+
+  return true
+}
+
+const mergeHighlightAreas = (areas: HighlightArea[]): HighlightArea[] => {
+  const valid = areas.filter(isValidHighlightArea)
+  if (valid.length <= 1) return valid
+
+  const sorted = [...valid].sort((a, b) => {
+    if (a.top !== b.top) return a.top - b.top
+    return a.left - b.left
+  })
+
+  const merged: HighlightArea[] = []
+
+  for (const area of sorted) {
+    const last = merged[merged.length - 1]
+    if (!last) {
+      merged.push({ ...area })
+      continue
+    }
+
+    const sameKeyword =
+      normalizeHighlightKey(last.keywordStr) ===
+      normalizeHighlightKey(area.keywordStr)
+    const lineTolerance = Math.max(last.height, area.height) * 0.35
+    const sameLine =
+      Math.abs(last.top - area.top) <= lineTolerance &&
+      Math.abs(last.top + last.height - area.top - area.height) <=
+        lineTolerance * 1.5
+    const lastRight = last.left + last.width
+    const gap = area.left - lastRight
+    // Only merge direct word spacing — not across table cells.
+    const maxGap = Math.max(last.height, area.height) * 0.65
+    const adjacent = gap >= -0.5 && gap <= maxGap
+
+    if (sameKeyword && sameLine && adjacent) {
+      const right = Math.max(lastRight, area.left + area.width)
+      const top = Math.min(last.top, area.top)
+      const bottom = Math.max(last.top + last.height, area.top + area.height)
+      last.left = Math.min(last.left, area.left)
+      last.top = top
+      last.width = right - last.left
+      last.height = bottom - top
+      continue
+    }
+
+    merged.push({ ...area })
+  }
+
+  return merged
+}
+
+const applyHighlightStyles = (
+  element: HTMLElement,
+  color: string,
+  isActive: boolean,
+) => {
+  element.style.backgroundColor = hexToRgba(color, isActive ? 0.32 : 0.2)
+  element.style.outline = `2px solid ${color}`
+  element.style.border = 'none'
+  element.style.borderRadius = '2px'
+  element.style.mixBlendMode = 'multiply'
+  element.style.boxShadow = 'none'
 }
 
 export default function DocumentPreviewViewer({
+  activeHighlightColor,
+  activeHighlightTerm,
   className = '',
   enableHighlight = false,
   fileName,
   fileUrl,
+  focusRequestId = 0,
+  highlightColors = {},
   highlightTerms = [],
   isImage = false,
   isLoading = false,
   isPdf = false,
+  onProbeComplete,
+  probeTerms = [],
   showScanOverlay = false,
 }: DocumentPreviewViewerProps) {
+  // Trust explicit parent flags first so kind does not flip after mount.
+  const treatAsPdf = Boolean(isPdf)
+  const treatAsImage = !treatAsPdf && Boolean(isImage)
+  const resolvedKind = resolveDocumentPreviewKind(
+    treatAsPdf ? 'application/pdf' : treatAsImage ? 'image/*' : '',
+    fileName,
+  )
+  const treatAsTiff = treatAsImage && resolvedKind === 'tiff'
+  const treatAsRasterImage = treatAsImage && !treatAsTiff
+  const treatAsFallbackPdf = !treatAsPdf && !treatAsImage && resolvedKind === 'pdf'
+
   let content = null
 
   if (isLoading) {
-    content = (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-4 bg-[var(--gray-1)]'>
-        <BarLoader />
-        <p className='text-xs font-bold tracking-widest text-[var(--gray-10)] uppercase'>
-          Loading Preview...
-        </p>
-      </div>
-    )
+    content = <SkeletonDocumentPreview />
   } else if (!fileUrl) {
     content = (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 text-center'>
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
         <FileText className='text-[var(--primary-9)]' size={40} />
         <p className='text-sm font-semibold text-[var(--gray-13)]'>
           Preview not available
@@ -60,19 +292,38 @@ export default function DocumentPreviewViewer({
         ) : null}
       </div>
     )
-  } else if (isPdf) {
-    content = enableHighlight ? (
-      <PdfViewer
-        fileUrl={fileUrl}
-        highlightTerms={highlightTerms}
-        key={fileUrl}
-      />
-    ) : (
-      <SimplePdfViewer fileUrl={fileUrl} key={fileUrl} />
-    )
-  } else if (isImage) {
+  } else if (treatAsPdf || treatAsFallbackPdf) {
     content = (
-      <div className='flex h-full w-full items-center justify-center p-4'>
+      <PdfViewer
+        activeHighlightColor={activeHighlightColor}
+        activeHighlightTerm={activeHighlightTerm}
+        fileUrl={fileUrl}
+        focusRequestId={focusRequestId}
+        highlightColors={enableHighlight ? highlightColors : {}}
+        highlightTerms={enableHighlight ? highlightTerms : []}
+        key={fileUrl}
+        onProbeComplete={onProbeComplete}
+        probeTerms={probeTerms}
+      />
+    )
+  } else if (treatAsTiff) {
+    content = (
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
+        <FileText className='text-[var(--primary-9)]' size={40} />
+        <p className='text-sm font-semibold text-[var(--gray-13)]'>
+          TIFF preview is not supported in the browser
+        </p>
+        {fileName ? (
+          <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
+        ) : null}
+        <p className='max-w-sm text-xs text-[var(--gray-10)]'>
+          Download the file to view it, or upload a PDF / PNG / JPEG for in-app preview.
+        </p>
+      </div>
+    )
+  } else if (treatAsRasterImage) {
+    content = (
+      <div className='flex h-full w-full items-center justify-center bg-[var(--gray-1)] p-4'>
         <img
           alt={fileName || 'Document Preview'}
           className='max-h-full max-w-full object-contain'
@@ -82,17 +333,20 @@ export default function DocumentPreviewViewer({
     )
   } else {
     content = (
-      <div className='flex h-full flex-col items-center justify-center gap-2 text-center'>
+      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
         <FileText className='text-[var(--primary-9)]' size={40} />
         <p className='text-sm font-semibold text-[var(--gray-13)]'>
           Preview not available
         </p>
+        {fileName ? (
+          <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
+        ) : null}
       </div>
     )
   }
 
   return (
-    <div className={`relative h-full w-full overflow-hidden ${className}`}>
+    <div className={`relative h-full w-full overflow-hidden bg-[var(--gray-1)] ${className}`}>
       {content}
 
       {showScanOverlay && fileUrl ? (
@@ -108,68 +362,498 @@ export default function DocumentPreviewViewer({
   )
 }
 
-function PdfViewer({ fileUrl, highlightTerms = [] }: PdfViewerProps) {
-  const currentSearchPluginInstance = searchPlugin()
-  const searchPluginInstanceRef = useRef<ReturnType<
-    typeof searchPlugin
-  > | null>(null)
+function PdfViewer({
+  activeHighlightColor,
+  activeHighlightTerm,
+  fileUrl,
+  focusRequestId = 0,
+  highlightColors = {},
+  highlightTerms = [],
+  onProbeComplete,
+  probeTerms = [],
+}: PdfViewerProps) {
+  const colorsRef = useRef(highlightColors)
+  colorsRef.current = highlightColors
+  const activeTermRef = useRef(activeHighlightTerm)
+  activeTermRef.current = activeHighlightTerm
+  const highlightElementsRef = useRef<Map<string, HTMLElement[]>>(new Map())
 
-  if (!searchPluginInstanceRef.current) {
-    searchPluginInstanceRef.current = currentSearchPluginInstance
-  } else {
+  const onProbeCompleteRef = useRef(onProbeComplete)
+  onProbeCompleteRef.current = onProbeComplete
+
+  // searchPlugin uses React hooks internally — must run every render (not in useMemo).
+  const currentSearchPluginInstance = searchPlugin({
+    renderHighlights: (props: RenderHighlightsProps) => {
+      const areas = mergeHighlightAreas(props.highlightAreas)
+      return (
+        <>
+          {areas.map((area, index) => {
+            const source = String(area.keywordStr || '').trim()
+            const color =
+              resolveHighlightColor(source, colorsRef.current, source) ||
+              '#94a3b8'
+            const normalizedActive = normalizeHighlightKey(
+              String(activeTermRef.current || ''),
+            )
+            const isActive =
+              Boolean(normalizedActive) &&
+              (normalizeHighlightKey(source) === normalizedActive ||
+                normalizedActive.includes(normalizeHighlightKey(source)) ||
+                normalizeHighlightKey(source).includes(normalizedActive))
+
+            return (
+              <div
+                className='rpv-search__highlight'
+                data-highlight-source={source}
+                data-highlight-text={source}
+                data-index={index}
+                key={`${area.pageIndex}-${index}-${area.left.toFixed(2)}-${area.top.toFixed(2)}`}
+                ref={(element) => {
+                  if (!element) return
+                  applyHighlightStyles(element, color, isActive)
+                  const mapKey = normalizeHighlightKey(source)
+                  if (!mapKey) return
+                  const list = highlightElementsRef.current.get(mapKey) || []
+                  if (!list.includes(element)) {
+                    list.push(element)
+                    highlightElementsRef.current.set(mapKey, list)
+                  }
+                }}
+                style={{
+                  ...props.getCssProperties(area),
+                  position: 'absolute',
+                }}
+                title={source}
+              />
+            )
+          })}
+        </>
+      )
+    },
+  })
+  const searchPluginInstanceRef = useRef<ReturnType<typeof searchPlugin> | null>(
+    null,
+  )
+  if (searchPluginInstanceRef.current) {
     Object.assign(searchPluginInstanceRef.current, currentSearchPluginInstance)
+  } else {
+    searchPluginInstanceRef.current = { ...currentSearchPluginInstance }
   }
-
   const searchPluginInstance = searchPluginInstanceRef.current
-  const { clearHighlights, highlight } = currentSearchPluginInstance
 
   const [documentReady, setDocumentReady] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [probeDone, setProbeDone] = useState(false)
+  const [renderAttempt, setRenderAttempt] = useState(0)
+  const [pageScale, setPageScale] = useState<number | null>(null)
+  const blankRetryUsedRef = useRef(false)
+
+  const handleDocumentLoad = (event: DocumentLoadEvent) => {
+    setLoadError(null)
+
+    if (pageScale !== null) {
+      setDocumentReady(true)
+      return
+    }
+
+    const containerWidth = viewerContainerRef.current?.clientWidth ?? 0
+
+    if (!containerWidth) {
+      setPageScale(1)
+      return
+    }
+
+    event.doc
+      .getPage(1)
+      .then((page) => {
+        const pageWidth = page.getViewport({ scale: 1 }).width
+        const usableWidth = Math.max(containerWidth - PAGE_WIDTH_GUTTER, 1)
+        const nextScale = pageWidth > 0 ? usableWidth / pageWidth : 1
+
+        setPageScale(
+          Math.min(Math.max(nextScale, MIN_PAGE_SCALE), MAX_PAGE_SCALE),
+        )
+      })
+      .catch(() => setPageScale(1))
+  }
+  const [matchesVersion, setMatchesVersion] = useState(0)
   const lastHighlightKeyRef = useRef('')
+  const probeRunIdRef = useRef(0)
+  const matchesRef = useRef<
+    Array<{ pageIndex: number; source: string; startIndex: number }>
+  >([])
+  const viewerContainerRef = useRef<HTMLDivElement>(null)
 
   const highlightKey = useMemo(() => {
     return highlightTerms
-      .map((term) => String(term || '').trim())
-      .filter((term) => term && term !== '-')
-      .join('|')
+      .map((term) => getFieldDisplayValue(term))
+      .filter(Boolean)
+      .join('\u0001')
   }, [highlightTerms])
+
+  const colorsKey = useMemo(
+    () =>
+      Object.entries(highlightColors)
+        .map(([term, color]) => `${term}=${color}`)
+        .join('\u0001'),
+    [highlightColors],
+  )
+
+  const probeKey = useMemo(() => {
+    return probeTerms
+      .map((term) => getFieldDisplayValue(term))
+      .filter(Boolean)
+      .join('\u0001')
+  }, [probeTerms])
 
   useEffect(() => {
     setDocumentReady(false)
+    setLoadError(null)
+    setProbeDone(false)
     lastHighlightKeyRef.current = ''
-  }, [fileUrl])
+    matchesRef.current = []
+    highlightElementsRef.current = new Map()
+    probeRunIdRef.current += 1
+  }, [fileUrl, renderAttempt])
+
+  // Page canvases use a non-alpha 2d context, so a canvas that never received
+  // pixels paints solid black instead of staying transparent. Re-mount the
+  // document once when that happens so the pages render again.
+  useEffect(() => {
+    if (!documentReady || blankRetryUsedRef.current) return
+
+    const container = viewerContainerRef.current
+    if (!container) return
+
+    let cancelled = false
+
+    const isBlankCanvas = (canvas: HTMLCanvasElement) => {
+      const { height, width } = canvas
+      if (!width || !height) return false
+
+      const context = canvas.getContext('2d')
+      if (!context) return false
+
+      const samples = [0.2, 0.5, 0.8]
+
+      try {
+        for (const ratioY of samples) {
+          for (const ratioX of samples) {
+            const [red, green, blue] = context.getImageData(
+              Math.floor(width * ratioX),
+              Math.floor(height * ratioY),
+              1,
+              1,
+            ).data
+            if (red || green || blue) return false
+          }
+        }
+      } catch {
+        return false
+      }
+
+      return true
+    }
+
+    const retryWhenBlank = () => {
+      if (cancelled || blankRetryUsedRef.current) return
+
+      const canvases = Array.from(
+        container.querySelectorAll<HTMLCanvasElement>('canvas'),
+      ).filter((canvas) => !canvas.hidden && canvas.width && canvas.height)
+
+      if (!canvases.length || !canvases.every(isBlankCanvas)) return
+
+      blankRetryUsedRef.current = true
+      setRenderAttempt((previous) => previous + 1)
+    }
+
+    const timers = [
+      window.setTimeout(retryWhenBlank, 400),
+      window.setTimeout(retryWhenBlank, 1200),
+    ]
+
+    return () => {
+      cancelled = true
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [documentReady])
 
   useEffect(() => {
     if (!documentReady) return
-    if (lastHighlightKeyRef.current === highlightKey) return
-    lastHighlightKeyRef.current = highlightKey
+
+    if (!probeKey) {
+      setProbeDone(true)
+      onProbeCompleteRef.current?.([])
+      return
+    }
+
+    const runId = ++probeRunIdRef.current
+    let cancelled = false
+    const plugin = searchPluginInstanceRef.current
+
+    const runProbe = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      if (cancelled || runId !== probeRunIdRef.current || !plugin) return
+
+      const matched: string[] = []
+      const uniqueTerms = [
+        ...new Set(probeKey.split('\u0001').filter(Boolean)),
+      ]
+
+      for (const term of uniqueTerms) {
+        if (cancelled || runId !== probeRunIdRef.current) return
+        const keywords = buildFieldSearchKeywords(term)
+        if (!keywords.length) continue
+
+        let found = false
+        for (const keyword of keywords) {
+          if (cancelled || runId !== probeRunIdRef.current) return
+          try {
+            plugin.clearHighlights()
+            const matches = await plugin.highlight([keyword])
+            if (matches?.length > 0) {
+              found = true
+              break
+            }
+          } catch {
+            // Search plugin not ready yet for this term
+          }
+        }
+        if (found) matched.push(term)
+      }
+
+      if (cancelled || runId !== probeRunIdRef.current) return
+      try {
+        plugin.clearHighlights()
+      } catch {
+        // ignore
+      }
+      setProbeDone(true)
+      onProbeCompleteRef.current?.(matched)
+    }
+
+    void runProbe()
+
+    return () => {
+      cancelled = true
+    }
+  }, [documentReady, probeKey])
+
+  useEffect(() => {
+    if (!documentReady || !probeDone) return
+    const nextKey = `${highlightKey}::${colorsKey}`
+    if (lastHighlightKeyRef.current === nextKey) return
+    lastHighlightKeyRef.current = nextKey
+
+    const plugin = searchPluginInstanceRef.current
+    if (!plugin) return
+
+    let cancelled = false
+
+    const applyHighlights = async () => {
+      try {
+        highlightElementsRef.current = new Map()
+        if (!highlightKey) {
+          matchesRef.current = []
+          plugin.clearHighlights()
+          return
+        }
+        const keywords = highlightKey
+          .split('\u0001')
+          .flatMap((term) => {
+            const variants = buildFieldSearchKeywords(term)
+            if (!variants.length) return []
+            // Date variants only — amounts use the full phrase to avoid false hits.
+            if (/^\d{4}-\d{2}-\d{2}$/.test(term)) {
+              return variants
+            }
+            return [variants[0]]
+          })
+        if (!keywords.length) {
+          matchesRef.current = []
+          plugin.clearHighlights()
+          return
+        }
+        const matches = await plugin.highlight(keywords)
+        if (cancelled) return
+        matchesRef.current = (matches || []).map((match) => ({
+          pageIndex: match.pageIndex,
+          source: String(match.keyword?.source || ''),
+          startIndex: match.startIndex,
+        }))
+        setMatchesVersion((previous) => previous + 1)
+      } catch {
+        // Search plugin not ready yet
+      }
+    }
+
+    void applyHighlights()
+
+    return () => {
+      cancelled = true
+    }
+  }, [highlightKey, colorsKey, documentReady, probeDone])
+
+  useEffect(() => {
+    const container = viewerContainerRef.current
+    if (!container) return
+
+    const normalizedActive = normalizeHighlightKey(
+      String(activeHighlightTerm || ''),
+    )
+    const highlights = container.querySelectorAll('.rpv-search__highlight')
+
+    highlights.forEach((node) => {
+      const element = node as HTMLElement
+      const source = element.dataset.highlightSource || ''
+      const text = element.dataset.highlightText || element.textContent || ''
+      const color =
+        resolveHighlightColor(source, colorsRef.current, text) || '#94a3b8'
+      const isActive =
+        Boolean(normalizedActive) &&
+        (normalizeHighlightKey(source) === normalizedActive ||
+          normalizeHighlightKey(text) === normalizedActive ||
+          normalizeHighlightKey(text).includes(normalizedActive) ||
+          normalizedActive.includes(normalizeHighlightKey(text)))
+
+      applyHighlightStyles(element, color, isActive)
+    })
+  }, [activeHighlightTerm, focusRequestId, matchesVersion, colorsKey])
+
+  useEffect(() => {
+    if (!documentReady || !probeDone || !activeHighlightTerm) return
+    if (focusRequestId <= 0) return
+
+    const plugin = searchPluginInstanceRef.current
+    if (!plugin) return
+
+    const variants = new Set(
+      getFieldSearchVariantStrings(activeHighlightTerm).map((value) =>
+        normalizeHighlightKey(value),
+      ),
+    )
+    variants.add(normalizeHighlightKey(activeHighlightTerm))
+
+    const matchIndex = matchesRef.current.findIndex((match) => {
+      const source = normalizeHighlightKey(match.source)
+      if (!source) return false
+      if (variants.has(source)) return true
+      return [...variants].some(
+        (variant) => source.includes(variant) || variant.includes(source),
+      )
+    })
+
+    const findTargetElement = (): HTMLElement | null => {
+      const container = viewerContainerRef.current
+      const current = container?.querySelector(
+        '.rpv-search__highlight--current',
+      ) as HTMLElement | null
+      if (current) return current
+
+      for (const variant of variants) {
+        const elements = highlightElementsRef.current.get(variant)
+        if (elements?.[0]) return elements[0]
+      }
+
+      const allHighlights = container?.querySelectorAll(
+        '.rpv-search__highlight',
+      )
+      if (!allHighlights?.length) return null
+
+      for (const node of allHighlights) {
+        const element = node as HTMLElement
+        const source = normalizeHighlightKey(
+          element.dataset.highlightSource || '',
+        )
+        const text = normalizeHighlightKey(element.dataset.highlightText || '')
+        if (
+          (source && variants.has(source)) ||
+          (text && variants.has(text)) ||
+          [...variants].some(
+            (variant) =>
+              (text && (text.includes(variant) || variant.includes(text))) ||
+              (source &&
+                (source.includes(variant) || variant.includes(source))),
+          )
+        ) {
+          return element
+        }
+      }
+      return null
+    }
+
+    const scrollHighlightIntoView = () => {
+      const target = findTargetElement()
+      if (target) scrollElementIntoView(target)
+    }
 
     try {
-      if (!highlightKey) {
-        clearHighlights()
-        return
+      if (matchIndex >= 0) {
+        // jumpToMatch is 1-based
+        plugin.jumpToMatch(matchIndex + 1)
       }
-      highlight(highlightKey.split('|'))
     } catch {
-      // Search plugin not ready yet
+      // ignore
     }
-  }, [highlightKey, documentReady, clearHighlights, highlight])
+
+    const timer = window.setTimeout(scrollHighlightIntoView, 80)
+    const retryTimer = window.setTimeout(scrollHighlightIntoView, 220)
+    const lateTimer = window.setTimeout(scrollHighlightIntoView, 500)
+
+    return () => {
+      window.clearTimeout(timer)
+      window.clearTimeout(retryTimer)
+      window.clearTimeout(lateTimer)
+    }
+  }, [
+    activeHighlightTerm,
+    focusRequestId,
+    documentReady,
+    probeDone,
+    highlightKey,
+    matchesVersion,
+  ])
 
   return (
-    <Worker workerUrl={PDF_WORKER_URL}>
-      <Viewer
-        defaultScale={SpecialZoomLevel.PageWidth}
-        fileUrl={fileUrl}
-        plugins={[searchPluginInstance]}
-        onDocumentLoad={() => setDocumentReady(true)}
-      />
-    </Worker>
-  )
-}
+    <div
+      className='relative h-full min-h-[320px] w-full bg-[var(--gray-1)]'
+      ref={viewerContainerRef}
+    >
+      {!documentReady && !loadError ? (
+        <SkeletonDocumentPreview className='absolute inset-0 z-10' />
+      ) : null}
 
-function SimplePdfViewer({ fileUrl }: { fileUrl: string }) {
-  return (
-    <Worker workerUrl={PDF_WORKER_URL}>
-      <Viewer defaultScale={SpecialZoomLevel.PageWidth} fileUrl={fileUrl} />
-    </Worker>
+      {loadError ? (
+        <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
+          <FileText className='text-[var(--primary-9)]' size={40} />
+          <p className='text-sm font-semibold text-[var(--gray-13)]'>
+            Unable to display this document
+          </p>
+          <p className='text-xs text-[var(--gray-10)]'>{loadError}</p>
+        </div>
+      ) : null}
+
+      <div
+        className={`h-full w-full ${documentReady ? 'opacity-100' : 'opacity-0'}`}
+      >
+        <Worker
+          key={`${renderAttempt}-${pageScale ?? 'probe'}`}
+          workerUrl={PDF_WORKER_URL}
+        >
+          <Viewer
+            defaultScale={pageScale ?? PROBE_SCALE}
+            fileUrl={fileUrl}
+            plugins={[searchPluginInstance]}
+            renderError={() => (
+              <div className='flex h-full min-h-[320px] items-center justify-center bg-[var(--gray-1)] text-sm text-[var(--gray-11)]'>
+                Unable to display this document
+              </div>
+            )}
+            onDocumentLoad={handleDocumentLoad}
+          />
+        </Worker>
+      </div>
+    </div>
   )
 }

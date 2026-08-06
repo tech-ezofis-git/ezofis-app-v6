@@ -1,6 +1,7 @@
 import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useState } from 'react'
 import authApiV6 from '@/api/v6/auth'
 import Alert from '@/components/base/Alert'
@@ -22,6 +23,7 @@ interface Props {
 }
 
 const ShareSignInForm = ({ email, shareToken }: Props) => {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const { instance: msalInstance } = useMsal()
 
@@ -66,17 +68,23 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
   }, [shareToken])
 
   const handleLoggedNavigation = async () => {
-    await redirectAfterLogin({ navigate })
+    const searchParams =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search)
+        : null
+    const redirectTo =
+      searchParams?.get('redirect') || searchParams?.get('redirectTo') || null
+    await redirectAfterLogin({ navigate, redirectTo })
     setSubmitting(false)
   }
 
   const handlePasswordSetup = async () => {
     if (!password) {
-      setError('Password is required')
+      setError(t`Password is required`)
       return
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError(t`Passwords do not match`)
       return
     }
 
@@ -101,7 +109,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
   const handlePasswordLogin = async () => {
     if (!password) {
-      setError('Password is required')
+      setError(t`Password is required`)
       return
     }
 
@@ -110,7 +118,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
     // For password login, use normal login but tenant is resolved from share preview
     const shareCtx = authUserStore.getState().shareContext
     if (!shareCtx) {
-      setError('Missing share context')
+      setError(t`Missing share context`)
       setSubmitting(false)
       return
     }
@@ -131,7 +139,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
-    onError: () => setError('Google sign-in was cancelled or failed'),
+    onError: () => setError(t`Google sign-in was cancelled or failed`),
     onSuccess: async (tokenResponse) => {
       try {
         setSubmitting(true)
@@ -147,7 +155,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
         if (!gEmail || gEmail.toLowerCase() !== email.toLowerCase()) {
           throw new Error(
-            'Please login with the email address that the link was shared to.',
+            t`Please login with the email address that the link was shared to.`,
           )
         }
 
@@ -167,7 +175,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
           handleLoggedNavigation()
         }
       } catch (e: any) {
-        setError(e?.message ?? 'Google sign-in failed')
+        setError(e?.message ?? t`Google sign-in failed`)
         setSubmitting(false)
       }
     },
@@ -187,7 +195,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
       if (!msEmail || msEmail.toLowerCase() !== email.toLowerCase()) {
         throw new Error(
-          'Please login with the email address that the link was shared to.',
+          t`Please login with the email address that the link was shared to.`,
         )
       }
 
@@ -209,9 +217,9 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
     } catch (e: any) {
       const errorMsg = e?.message || ''
       if (errorMsg.includes('user_cancelled')) {
-        setError('Microsoft sign-in was cancelled.')
+        setError(t`Microsoft sign-in was cancelled.`)
       } else {
-        setError(errorMsg || 'Microsoft sign-in failed')
+        setError(errorMsg || t`Microsoft sign-in failed`)
       }
       setSubmitting(false)
     }
@@ -224,7 +232,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
           className='text-primary size-8 animate-spin'
           name='tabler:loader-2'
         />
-        <p className='text-gray-11'>Loading share details...</p>
+        <p className="text-gray-11">{t`Loading share details...`}</p>
       </div>
     )
   }
@@ -239,17 +247,19 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
 
   return (
     <>
-      <IconIllustrated icon='tabler:share' />
+      <IconIllustrated icon='tabler:user' />
       <Title
         className='text-center'
-        description={`Secure access to shared file for ${email}`}
+        description={t`Hi, Welcome back to EZOFIS`}
         level={1}
-        title='Access Shared File'
+        title={
+          showPasswordSetup ? t`Create access to continue` : t`Sign in to your account`
+        }
       />
 
       <div className='space-y-4'>
         <InputText
-          label='Email'
+          label={t`Email / Username`}
           leftSection={<Icon className='text-gray-8' name='tabler:mail' />}
           value={email}
           disabled
@@ -259,7 +269,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
         {showPasswordSetup && (
           <>
             <InputPassword
-              label='Create Password'
+              label={t`Password`}
               leftSection={<Icon className='text-gray-8' name='tabler:lock' />}
               value={password}
               showPlaceholder
@@ -269,7 +279,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
               }}
             />
             <InputPassword
-              label='Confirm Password'
+              label={t`Confirm Password`}
               value={confirmPassword}
               showPlaceholder
               leftSection={
@@ -282,7 +292,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
             />
             <Button
               className='w-full justify-center'
-              label='Set Password & Continue'
+              label={t`Sign In`}
               loading={submitting}
               size='lg'
               onClick={handlePasswordSetup}
@@ -293,7 +303,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
         {showPasswordLogin && (
           <>
             <InputPassword
-              label='Password'
+              label={t`Password`}
               leftSection={<Icon className='text-gray-8' name='tabler:lock' />}
               value={password}
               showPlaceholder
@@ -307,7 +317,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
             />
             <Button
               className='w-full justify-center'
-              label='Sign in'
+              label={t`Sign In`}
               loading={submitting}
               size='lg'
               onClick={handlePasswordLogin}
@@ -318,7 +328,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
         {error && <Alert className='mt-2' text={error} variant='primary' />}
 
         {(showGoogle || showMicrosoft) &&
-          (showPasswordSetup || showPasswordLogin) && <Divider label='Or' />}
+          (showPasswordSetup || showPasswordLogin) && <Divider label={t`Or`} />}
 
         <div className='space-y-3'>
           {showGoogle && <GoogleButton onClick={handleGoogleLogin} />}

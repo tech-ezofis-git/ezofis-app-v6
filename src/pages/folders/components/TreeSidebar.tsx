@@ -70,18 +70,18 @@ function TreeItem({
     <div>
       <div
         style={{ paddingLeft: `${8 + level * 22}px` }}
-        className={`group flex min-h-9 cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-none transition-all ${
+        className={`group flex min-h-9 cursor-pointer items-end gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-none transition-all ${
           isActive ? 'bg-blue-2 text-blue-11' : 'text-gray-12 hover:bg-gray-2'
         }`}
         onClick={handleNodeClick}
       >
         {/* Always reserve chevron width so folder icons share one vertical column */}
-        <div className='flex h-4 w-5 shrink-0 items-center justify-center'>
+        <div className='flex h-4 w-5 shrink-0 items-end justify-center'>
           {canExpand ? (
             <button
               title={isExpanded ? t`Collapse` : t`Expand`}
               type='button'
-              className='flex h-4 w-5 items-center justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
+              className='flex h-4 w-5 items-end justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
               onClick={handleChevronClick}
             >
               <DynamicIcon

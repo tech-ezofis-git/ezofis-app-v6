@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import Badge from '@/components/base/Badge'
 import Table from '@/components/base/table/Table'
 import Tbody from '@/components/base/table/Tbody'
@@ -14,6 +15,7 @@ interface Props {
 }
 
 const LineItems = ({ data }: Props) => {
+  const { t } = useLingui()
   // Transform the Agent 'debug' data into table rows
   const lineItems = useMemo(() => {
     const rawLines = data?.debug?.['Side-by-side Line Item matching'] || []
@@ -58,7 +60,7 @@ const LineItems = ({ data }: Props) => {
       <Title
         className='mb-4'
         level={3}
-        title='Line Items'
+        title={t`Line Items`}
         description=' 3-way match validation: Invoice vs Purchase Order (PO) vs Goods Receipt
         Note (GRN)'
       />

@@ -1,5 +1,6 @@
 import clsx, { type ClassValue } from 'clsx'
 import { useRef, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { twMerge } from 'tailwind-merge'
 import fileApi from '@/api/file/file'
 import { workflowsApiV6 } from '@/api/v6/workflows'
@@ -245,6 +246,7 @@ export default function Attachments({
   mockAiDocs,
   initialData,
 }: Props & { initialData?: any[] }) {
+  const { t } = useLingui()
   const targetInstanceId = instanceId || processId
   const {
     data: _files = [],
@@ -624,7 +626,7 @@ export default function Attachments({
 
                 <button
                   className='flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-8 opacity-0 transition-colors group-hover:opacity-100 hover:bg-gray-2 hover:text-blue-9'
-                  title='Download'
+                  title={t`Download`}
                   onClick={(e) => handleDownload(e, file)}
                 >
                   <Icon className='size-4' name='tabler:download' />

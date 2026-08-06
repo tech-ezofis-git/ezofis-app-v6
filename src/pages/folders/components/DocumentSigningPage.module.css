@@ -1,0 +1,101 @@
+.penCursor,
+.penCursor canvas {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%231a1a1a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E")
+      2 22,
+    crosshair !important;
+}
+
+.placementBox {
+  box-sizing: border-box;
+  border: 1.5px dashed #3e63dd;
+  background: rgba(62, 99, 221, 0.08);
+  border-radius: 4px;
+}
+
+.assignmentBox {
+  box-sizing: border-box;
+  border: 1.5px dashed #3e63dd;
+  background: rgba(62, 99, 221, 0.12);
+  border-radius: 4px;
+}
+
+.fieldBoxActive {
+  box-sizing: border-box;
+  border: 1.5px solid #3e63dd;
+  background: rgba(62, 99, 221, 0.14);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(62, 99, 221, 0.25);
+  cursor: pointer;
+}
+
+.fieldBoxMuted {
+  box-sizing: border-box;
+  border: 1.5px dashed #9aa4b2;
+  background: rgba(154, 164, 178, 0.18);
+  border-radius: 4px;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.fieldBoxSigned {
+  box-sizing: border-box;
+  border: 1.5px solid #30a46c;
+  background: rgba(48, 164, 108, 0.08);
+  border-radius: 4px;
+}
+
+.handle {
+  width: 8px !important;
+  height: 8px !important;
+  z-index: 40;
+  background: #3e63dd !important;
+  border: 2px solid #fff !important;
+  border-radius: 2px;
+}
+
+.handleTop,
+.handleBottom {
+  width: 16px !important;
+  height: 5px !important;
+  left: 50% !important;
+  margin-left: -8px;
+  border-radius: 999px;
+}
+
+.handleLeft,
+.handleRight {
+  width: 5px !important;
+  height: 16px !important;
+  top: 50% !important;
+  margin-top: -8px;
+  border-radius: 999px;
+}
+
+.guideLineX,
+.guideLineY {
+  position: absolute;
+  pointer-events: none;
+  z-index: 15;
+  background: #3e63dd;
+  opacity: 0.35;
+}
+
+.guideLineX {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.guideLineY {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .placementBox,
+  .assignmentBox {
+    transition: none;
+  }
+}

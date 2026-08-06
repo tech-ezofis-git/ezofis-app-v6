@@ -22,4 +22,15 @@ export default defineConfig({
       '@': resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      // Tailscale GPU OpenAI-compatible API (avoids browser CORS in dev)
+      '/qwen-proxy': {
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/qwen-proxy/, ''),
+        secure: true,
+        target: 'https://gpu-box.tail115a9a.ts.net',
+      },
+    },
+  },
 })

@@ -1,14 +1,15 @@
-import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
-import { LayoutGrid, List, RefreshCcw } from 'lucide-react'
-import { useMemo, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import CustomFilter, {
   type FilterDefinition,
   type FilterGroup,
+  type FilterOption,
 } from '@/components/common/CustomFilter'
-import Tooltip from '@/components/base/Tooltip'
-import type { DynamicRepositoryColumn } from '../api/folderApi'
-import { decodeRepositoryNodeId } from '../api/folderApi'
+import type {
+  DynamicRepositoryColumn,
+  RepositoryItemFilterField,
+} from '../api/folderApi'
+import { decodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import type { ExplorerView, FolderItem } from '../types/folderTypes'
 import type { ExplorerFilterMode, FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
 import {
@@ -22,47 +23,18 @@ import {
   matchesFieldKey,
   normalizeFieldKey,
 } from '../utils/repositoryFieldUtils'
-import { IconButton } from './Ui'
 
 type AnyFileItem = Record<string, any>
 
-const HIDDEN_FILTER_KEYS = new Set([
-  'storageproviderid',
-  'storageprovidercode',
-  'hasfilepath',
-  'filename',
-  'name',
-  '__name',
-  'id',
-  'fileversion',
-  'ocrpercent',
-  'workflowinstanceid',
-])
-
-/** Folder table filters — match Name, Date Modified columns. */
+/** Folder table filters — match Name, Date Modified columns (legacy client-side only). */
 const DEFAULT_FOLDER_FILTER_SPECS = [
-  { id: '__folderName', label: msg`Name` },
-  { id: '__folderModified', label: msg`Date Modified` },
+  { id: '__folderName' },
+  { id: '__folderModified' },
 ] as const
 
-/** Default file filters — same property keys as repository items. */
-const DEFAULT_FILE_FILTER_SPECS = [
-  {
-    id: 'status',
-    label: msg`Status`,
-    aliases: ['status', 'Status', '__status'],
-  },
-  {
-    id: 'supplier',
-    label: msg`Supplier`,
-    aliases: ['supplier', 'Supplier'],
-  },
-  {
-    id: 'documentType',
-    label: msg`Document Type`,
-    aliases: ['documentType', 'DocumentType'],
-  },
-] as const
+/** How many API filter fields show as always-visible pills; the rest go under More. */
+const DEFAULT_VISIBLE_ITEM_FILTER_COUNT = 3
+const DEFAULT_FACET_LIMIT = 100
 
 const normalizeKey = normalizeFieldKey
 
@@ -77,36 +49,38 @@ const isDateColumn = (dataType?: string) => {
   )
 }
 
-/** Prefer sqlColumnName / item property key that matches the sample payload. */
-const resolveFilterId = (
-  preferredId: string,
-  aliases: readonly string[],
-  fileColumns: DynamicRepositoryColumn[],
-  files: AnyFileItem[],
-) => {
-  const candidates = [preferredId, ...aliases]
-
-  const columnMatch = fileColumns.find((column) =>
-    candidates.some(
-      (candidate) =>
-        normalizeKey(column.key) === normalizeKey(candidate) ||
-        normalizeKey(column.label || '') === normalizeKey(candidate),
-    ),
-  )
-  if (columnMatch?.key) return columnMatch.key
-
-  const sampleFile = files[0]
-  if (sampleFile) {
-    const itemKey = Object.keys(sampleFile).find((key) =>
-      candidates.some(
-        (candidate) => normalizeKey(key) === normalizeKey(candidate),
-      ),
-    )
-    if (itemKey) return itemKey
+const isOptionListDataType = (dataType?: string) => {
+  const normalized = String(dataType || '')
+    .trim()
+    .toUpperCase()
+  if (!normalized) return true
+  if (isDateColumn(normalized)) return false
+  if (
+    normalized.includes('NUMBER') ||
+    normalized.includes('INT') ||
+    normalized.includes('FLOAT') ||
+    normalized.includes('DECIMAL') ||
+    normalized.includes('CURRENCY') ||
+    normalized.includes('AMOUNT')
+  ) {
+    return false
   }
-
-  return preferredId
+  return true
 }
+
+const toFacetFilterOptions = (
+  facets: Array<{ value: string; count?: number }>,
+): FilterOption[] =>
+  facets
+    .map((facet) => {
+      const value = String(facet.value || '').trim()
+      if (!value) return null
+      const count = Number(facet.count)
+      const label =
+        Number.isFinite(count) && count >= 0 ? `${value} (${count})` : value
+      return { label, value }
+    })
+    .filter((option): option is FilterOption => Boolean(option))
 
 const getFilterValue = (
   item: AnyFileItem,
@@ -225,6 +199,32 @@ const getFolderTableFilterValue = (folder: FolderItem, filterId: string) => {
 export const isFolderTableFilterId = (filterId: string) =>
   DEFAULT_FOLDER_FILTER_SPECS.some((spec) => spec.id === filterId)
 
+const buildScopeFiltersForFacets = (
+  activeFilters: Record<string, string>,
+  folderContextFilters: Record<string, string>,
+  excludeFilterId: string,
+) => {
+  const scope: Record<string, string | string[]> = {}
+  const normalizedExclude = normalizeKey(excludeFilterId)
+
+  Object.entries(folderContextFilters).forEach(([key, rawValue]) => {
+    const parts = splitFilterValues(rawValue)
+    if (!parts.length) return
+    scope[key] = parts.length === 1 ? parts[0] : parts
+  })
+
+  Object.entries(activeFilters).forEach(([key, rawValue]) => {
+    if (!String(rawValue || '').trim()) return
+    if (isFolderTableFilterId(key)) return
+    if (normalizeKey(key) === normalizedExclude) return
+    const parts = splitFilterValues(rawValue)
+    if (!parts.length) return
+    scope[key] = parts.length === 1 ? parts[0] : parts
+  })
+
+  return scope
+}
+
 export const matchesFolderTableFilters = (
   folder: FolderItem,
   filters: Record<string, string>,
@@ -279,7 +279,9 @@ type FolderFilterBarProps = {
   folderFilterOptionSource?: FolderItem[]
   folders?: FolderItem[]
   isBusy?: boolean
+  itemFilterFields?: RepositoryItemFilterField[]
   refreshing?: boolean
+  repositoryId?: string
   searchPlaceholder?: string
   searchQuery: string
   view: ExplorerView
@@ -296,7 +298,7 @@ export function FolderFilterBar({
   activeFilters,
   afterSearchActions,
   currentFolderGroupField = '',
-  fileColumns = [],
+  fileColumns: _fileColumns = [],
   files,
   filterMode = 'files',
   folderContextFilters = {},
@@ -304,6 +306,7 @@ export function FolderFilterBar({
   folderFilterOptionSource = [],
   folders = [],
   isBusy = false,
+  itemFilterFields = [],
   onFilterChange,
   onFilterMenuOpenChange,
   onRefresh,
@@ -311,16 +314,23 @@ export function FolderFilterBar({
   onSearchChange,
   onUpload,
   refreshing = false,
+  repositoryId = '',
   searchPlaceholder = 'Search files...',
   searchQuery,
   setView,
   view,
 }: FolderFilterBarProps) {
-  const { i18n, t } = useLingui()
+  const { t } = useLingui()
   const showFileFilters = filterMode === 'files' || filterMode === 'both'
   const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
   const folderBaseline =
     folderFilterOptionSource.length > 0 ? folderFilterOptionSource : folders
+  const useApiItemFilters = itemFilterFields.length > 0
+  const [facetOptionsByField, setFacetOptionsByField] = useState<
+    Record<string, FilterOption[]>
+  >({})
+  const [loadingFacetField, setLoadingFacetField] = useState<string | null>(null)
+  const facetRequestSeqRef = useRef(0)
 
   const isSavedFilter = (filterId: string) => {
     const direct = String(activeFilters[filterId] || '').trim()
@@ -352,17 +362,148 @@ export function FolderFilterBar({
     return getCachedFilterOptionsForId(filterOptionsCache, filterId)
   }
 
-  const resolvedFileDefaultFilters = useMemo(
+  const normalizedItemFilterFields = useMemo(
     () =>
-      DEFAULT_FILE_FILTER_SPECS.map((spec) => ({
-        ...spec,
-        id: resolveFilterId(spec.id, spec.aliases, fileColumns, files),
-        label: i18n._(spec.label),
-      })),
-    [fileColumns, files, i18n.locale],
+      itemFilterFields
+        .map((field) => {
+          const id = String(field.sqlColumnName || field.name || '').trim()
+          if (!id) return null
+          return {
+            id,
+            label: String(field.name || field.sqlColumnName || id).trim() || id,
+            dataType: String(field.dataType || '').trim(),
+          }
+        })
+        .filter(
+          (
+            field,
+          ): field is { id: string; label: string; dataType: string } =>
+            Boolean(field),
+        ),
+    [itemFilterFields],
   )
 
+  const loadFacetsForField = useCallback(
+    async (filterId: string) => {
+      const repoId = String(repositoryId || '').trim()
+      if (!repoId || !useApiItemFilters) return
+
+      const field = normalizedItemFilterFields.find(
+        (entry) => normalizeKey(entry.id) === normalizeKey(filterId),
+      )
+      if (!field || !isOptionListDataType(field.dataType)) return
+
+      const requestSeq = ++facetRequestSeqRef.current
+      setLoadingFacetField(field.id)
+
+      try {
+        const facets = await folderApi.getItemFacets(repoId, field.id, {
+          limit: DEFAULT_FACET_LIMIT,
+          scopeFilters: buildScopeFiltersForFacets(
+            activeFilters,
+            folderContextFilters,
+            field.id,
+          ),
+        })
+        if (requestSeq !== facetRequestSeqRef.current) return
+
+        setFacetOptionsByField((previous) => ({
+          ...previous,
+          [field.id]: toFacetFilterOptions(facets),
+        }))
+      } catch {
+        if (requestSeq !== facetRequestSeqRef.current) return
+        setFacetOptionsByField((previous) => ({
+          ...previous,
+          [field.id]: previous[field.id] || [],
+        }))
+      } finally {
+        if (requestSeq === facetRequestSeqRef.current) {
+          setLoadingFacetField(null)
+        }
+      }
+    },
+    [
+      activeFilters,
+      folderContextFilters,
+      normalizedItemFilterFields,
+      repositoryId,
+      useApiItemFilters,
+    ],
+  )
+
+  useEffect(() => {
+    setFacetOptionsByField({})
+    setLoadingFacetField(null)
+    facetRequestSeqRef.current += 1
+  }, [repositoryId])
+
+  // Prefetch facet options for the always-visible API filters.
+  useEffect(() => {
+    const repoId = String(repositoryId || '').trim()
+    if (!repoId || !useApiItemFilters) return
+
+    const visibleOptionFields = normalizedItemFilterFields
+      .filter((field) => isOptionListDataType(field.dataType))
+      .slice(0, DEFAULT_VISIBLE_ITEM_FILTER_COUNT)
+
+    let cancelled = false
+
+    const prefetch = async () => {
+      await Promise.all(
+        visibleOptionFields.map(async (field) => {
+          try {
+            const facets = await folderApi.getItemFacets(repoId, field.id, {
+              limit: DEFAULT_FACET_LIMIT,
+              scopeFilters: buildScopeFiltersForFacets(
+                {},
+                folderContextFilters,
+                field.id,
+              ),
+            })
+            if (cancelled) return
+            setFacetOptionsByField((previous) => ({
+              ...previous,
+              [field.id]: toFacetFilterOptions(facets),
+            }))
+          } catch {
+            // Keep prior options if prefetch fails; menu-open will retry.
+          }
+        }),
+      )
+    }
+
+    void prefetch()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    folderContextFilters,
+    normalizedItemFilterFields,
+    repositoryId,
+    useApiItemFilters,
+  ])
+
+  const getFacetOptionsForFilter = (filterId: string) => {
+    const direct = facetOptionsByField[filterId]
+    if (direct) return direct
+
+    const normalizedFilterId = normalizeKey(filterId)
+    const match = Object.entries(facetOptionsByField).find(
+      ([key]) => normalizeKey(key) === normalizedFilterId,
+    )
+    return match?.[1] || []
+  }
+
   const buildOptionsForFileFilter = (filterId: string) => {
+    if (useApiItemFilters) {
+      return withActiveFilterOption(
+        filterId,
+        getFacetOptionsForFilter(filterId),
+        activeFilters,
+      )
+    }
+
     const cachedOptions = getCachedOptionsForFilter(filterId)
     const siblingFilteredFiles = filterFolderFiles(
       files,
@@ -397,151 +538,94 @@ export function FolderFilterBar({
     )
   }
 
-  const buildOptionsForFolderFilter = (filterId: string) => {
-    const optionSource = filterFolders(
-      folderBaseline,
-      getSiblingFolderFilters(filterId),
-    )
-
-    return withActiveFilterOption(
-      filterId,
-      mergeUniqueOptions(
-        getCachedOptionsForFilter(filterId),
-        buildFolderTableFilterOptions(optionSource, filterId),
-        buildFilterOptionsFromFolders(optionSource, filterId),
-      ),
-      activeFilters,
-    )
+  const handleFilterMenuOpenChange = (id: string | null) => {
+    onFilterMenuOpenChange?.(id)
+    if (id) void loadFacetsForField(id)
   }
 
-  const buildFolderFilterDefinitions = (): FilterDefinition[] =>
-    DEFAULT_FOLDER_FILTER_SPECS.map((spec) => {
-      const label = i18n._(spec.label)
-      const searchPlaceholder =
-        spec.id === '__folderName'
-          ? t`Search name...`
-          : t`Search date modified...`
+  const buildApiItemFilterDefinitions = (): FilterDefinition[] => {
+    const visibleFields = normalizedItemFilterFields.slice(
+      0,
+      DEFAULT_VISIBLE_ITEM_FILTER_COUNT,
+    )
+
+    return visibleFields.map((field) => {
+      const useOptions = isOptionListDataType(field.dataType)
       return {
-        id: spec.id,
-        label,
-        options: buildOptionsForFolderFilter(spec.id),
-        searchable: true,
-        searchPlaceholder,
+        id: field.id,
+        label: field.label,
+        dataType: field.dataType,
+        options: useOptions ? buildOptionsForFileFilter(field.id) : [],
+        searchable: useOptions,
+        searchPlaceholder: `Search ${field.label.toLowerCase()}...`,
         width: 240,
       }
     })
-
-  const buildFileFilterDefinitions = (): FilterDefinition[] =>
-    resolvedFileDefaultFilters.map((spec) => {
-      const matchedColumn = fileColumns.find(
-        (column) =>
-          normalizeKey(column.key) === normalizeKey(spec.id) ||
-          normalizeKey(column.label || '') === normalizeKey(spec.label),
-      )
-
-      const label = matchedColumn?.label || spec.label
-      const searchPlaceholder =
-        spec.id === 'status' || normalizeKey(spec.id).includes('status')
-          ? t`Search status...`
-          : normalizeKey(spec.id).includes('supplier')
-            ? t`Search supplier...`
-            : t`Search document type...`
-
-      return {
-        id: spec.id,
-        label,
-        options: buildOptionsForFileFilter(spec.id),
-        searchable: true,
-        searchPlaceholder,
-        width: 240,
-      }
-    })
+  }
 
   const defaultFilters = useMemo<FilterDefinition[]>(() => {
-    const folderDefaultFilters = showFolderFilters
-      ? buildFolderFilterDefinitions()
-      : []
-    const fileDefaultFilters = showFileFilters ? buildFileFilterDefinitions() : []
+    // Prefer repository item filter-fields from V6 API over hardcoded defaults.
+    if (useApiItemFilters && (showFileFilters || showFolderFilters)) {
+      return buildApiItemFilterDefinitions()
+    }
 
-    if (filterMode === 'folders') return folderDefaultFilters
-    if (filterMode === 'files') return fileDefaultFilters
+    // No API fields yet — do not fall back to Name / Date Modified / Status pills.
+    return []
+  }, [
+    activeFilters,
+    currentFolderGroupField,
+    facetOptionsByField,
+    filterOptionsCache,
+    files,
+    filterMode,
+    folderContextFilters,
+    folderBaseline,
+    folders,
+    normalizedItemFilterFields,
+    showFileFilters,
+    showFolderFilters,
+    useApiItemFilters,
+  ])
 
-    if (filterMode === 'both') {
-      const folderIds = new Set(folderDefaultFilters.map((filter) => filter.id))
-      const fileOnlyFilters = fileDefaultFilters.filter(
-        (filter) => !folderIds.has(filter.id),
+  const moreFilters = useMemo<FilterGroup[]>(() => {
+    if (!showFolderFilters && !showFileFilters) return []
+
+    if (useApiItemFilters) {
+      const defaultIds = new Set(
+        defaultFilters.map((filter) => normalizeKey(filter.id)),
       )
-      return [...folderDefaultFilters, ...fileOnlyFilters]
+
+      return normalizedItemFilterFields
+        .filter((field) => !defaultIds.has(normalizeKey(field.id)))
+        .map((field) => {
+          const useOptions = isOptionListDataType(field.dataType)
+          return {
+            id: field.id,
+            label: field.label,
+            dataType: field.dataType,
+            options: useOptions ? buildOptionsForFileFilter(field.id) : undefined,
+            searchable: useOptions,
+            searchPlaceholder: `Search ${field.label.toLowerCase()}...`,
+          }
+        })
     }
 
     return []
   }, [
     activeFilters,
     currentFolderGroupField,
-    fileColumns,
-    filterOptionsCache,
-    files,
-    filterMode,
-    folderContextFilters,
-    folderBaseline,
-    folders,
-    i18n,
-    resolvedFileDefaultFilters,
-    showFileFilters,
-    showFolderFilters,
-    t,
-  ])
-
-  const moreFilters = useMemo<FilterGroup[]>(() => {
-    const defaultIds = new Set(
-      defaultFilters.map((filter) => normalizeKey(filter.id)),
-    )
-
-    const extraColumns = fileColumns.filter((column) => {
-      const key = normalizeKey(column.key)
-      if (HIDDEN_FILTER_KEYS.has(key) || defaultIds.has(key)) return false
-
-      if (filterMode === 'folders') return false
-
-      if (filterMode === 'files' || filterMode === 'both') {
-        return true
-      }
-
-      return false
-    })
-
-    if (!showFolderFilters && !showFileFilters) return []
-
-    return extraColumns.map((column) => {
-      const filterId = resolveFilterId(
-        column.key,
-        [column.key, column.label || ''],
-        fileColumns,
-        files,
-      )
-
-      return {
-        id: filterId,
-        label: column.label || column.key,
-        dataType: column.dataType,
-        options: isDateColumn(column.dataType)
-          ? undefined
-          : buildOptionsForFileFilter(filterId),
-      }
-    })
-  }, [
-    activeFilters,
-    currentFolderGroupField,
     defaultFilters,
-    fileColumns,
+    facetOptionsByField,
     filterOptionsCache,
     files,
     filterMode,
     folderContextFilters,
     folderBaseline,
     folders,
+    normalizedItemFilterFields,
     showFileFilters,
     showFolderFilters,
+    useApiItemFilters,
   ])
 
   const hasActiveFilters = Object.values(activeFilters).some(Boolean)
@@ -551,7 +635,7 @@ export function FolderFilterBar({
       activeFilters={activeFilters}
       afterSearchActions={afterSearchActions}
       filters={defaultFilters}
-      isLoading={isBusy}
+      isLoading={isBusy || Boolean(loadingFacetField)}
       moreFilters={moreFilters}
       multiSelect
       searchPlaceholder={
@@ -586,7 +670,7 @@ export function FolderFilterBar({
       viewMode={view === 'list' ? 'table' : 'grid'}
       onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}
       onFilterChange={onFilterChange}
-      onFilterMenuOpenChange={onFilterMenuOpenChange}
+      onFilterMenuOpenChange={handleFilterMenuOpenChange}
       onReset={onResetFilters}
       onSearchChange={onSearchChange}
     />

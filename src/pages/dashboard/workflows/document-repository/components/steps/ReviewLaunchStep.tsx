@@ -151,8 +151,8 @@ const ReviewLaunchStep = () => {
     return (
       <SuccessCelebration
         description='Your folder is ready. Documents can now be stored and organized with your configured fields and storage.'
-        loadingLabel='Opening Folders...'
-        title='DMS Folder Setup Successful!'
+        loadingLabel='Opening folders...'
+        title='DMS folder setup successful!'
       />
     )
   }
@@ -173,7 +173,7 @@ const ReviewLaunchStep = () => {
           />
           <Button
             disabled={isSaving}
-            label={isSaving ? 'Creating…' : 'Create Folder'}
+            label={isSaving ? 'Creating…' : 'Create folder'}
             loading={isSaving}
             suffixIcon='lucide:check'
             onClick={() => {

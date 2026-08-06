@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { Timeline } from '@mantine/core'
 import Title from '@/components/base/Title'
 
@@ -31,9 +32,10 @@ const auditTrail = [
 ]
 
 const AuditTrail = () => {
+  const { t } = useLingui()
   return (
     <div>
-      <Title className='mb-4' level={3} title='Audit Trail' />
+      <Title className='mb-4' level={3} title={t`Audit Trail`} />
 
       <Timeline
         bulletSize={8}

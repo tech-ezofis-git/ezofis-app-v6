@@ -17,10 +17,10 @@ import StorageStep from './steps/StorageStep'
 
 const steps = [
   {
-    description: 'Name your folder',
+    description: "Tell us what it's for",
     icon: 'tabler:folder',
     id: 1,
-    label: 'Name Folder',
+    label: 'Folder Basics',
   },
   {
     description: 'Set up document fields',
@@ -29,16 +29,16 @@ const steps = [
     label: 'Configure Fields',
   },
   {
-    description: 'Choose file storage',
+    description: 'Choose where files are stored',
     icon: 'tabler:cloud',
     id: 3,
     label: 'Choose Storage',
   },
   {
-    description: 'Check and finish',
+    description: 'Check and complete',
     icon: 'tabler:rocket',
     id: 4,
-    label: 'Review & Finish',
+    label: 'Review and Finish',
   },
 ]
 
@@ -96,11 +96,18 @@ const DocumentRepositorySteps = () => {
 
   const { bg, text } = getProgressStyles()
 
-  const formattedSteps = steps.map((item, idx) => ({
-    ...item,
-    clickable: idx <= step,
-    disabled: idx > step,
-  }))
+  const formattedSteps = steps.map((item, idx) => {
+    let status: 'active' | 'upcoming' | 'completed' = 'upcoming'
+    if (idx < step) status = 'completed'
+    else if (idx === step) status = 'active'
+
+    return {
+      ...item,
+      clickable: idx <= step,
+      disabled: idx > step,
+      status,
+    }
+  })
 
   return (
     <motion.div
@@ -114,7 +121,7 @@ const DocumentRepositorySteps = () => {
         <div className='mb-4 flex items-center justify-between border-b border-gray-3 px-6 py-4 md:px-8'>
           <div className='flex flex-col gap-1'>
             <h2 className='text-18/6 font-semibold tracking-tight text-gray-13'>
-              Set Up Your Folder
+              Set up your folder
             </h2>
             <p className='text-13/5 text-gray-11'>
               Create a place to store and organize your documents
@@ -128,7 +135,7 @@ const DocumentRepositorySteps = () => {
                 text,
               )}
             >
-              {progress}% Complete
+              {progress}% complete
             </span>
             <div className='h-1.5 w-32 overflow-hidden rounded-full bg-gray-3'>
               <motion.div

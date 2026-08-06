@@ -1,5 +1,5 @@
 import {
-  CHATBOT_API_BASE,
+  SEARCH_ENDPOINT,
   resolveChatbotAuth,
 } from '@/components/common/ask-ai/chatbotApi'
 
@@ -25,7 +25,7 @@ export type GlobalSearchHit = {
 export type GlobalSearchRequest = {
   actionFrom: string
   query: string
-  specificId: string
+  specificId: string | null
   tenantId: string
 }
 
@@ -39,11 +39,14 @@ export async function fetchGlobalSearch(
     throw new Error('Missing tenant. Sign in again, then retry search.')
   }
 
-  const response = await fetch(`${CHATBOT_API_BASE}/api/search`, {
+  const rawSpecificId = payload.specificId ? String(payload.specificId).trim() : ''
+  const specificId = rawSpecificId || null
+
+  const response = await fetch(SEARCH_ENDPOINT, {
     body: JSON.stringify({
       actionFrom: payload.actionFrom || 'Repository',
       query: payload.query,
-      specificId: payload.specificId || '',
+      specificId,
       tenantId,
     } satisfies GlobalSearchRequest),
     headers: {
