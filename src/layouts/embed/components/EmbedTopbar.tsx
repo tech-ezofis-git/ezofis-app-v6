@@ -13,6 +13,7 @@ interface EmbedTopbarProps {
   showActions?: boolean
   showAiBadge?: boolean
   hideLogoText?: boolean
+  showLogo?: boolean
 }
 
 export function EmbedTopbar({
@@ -21,6 +22,7 @@ export function EmbedTopbar({
   showActions = false,
   showAiBadge = false,
   hideLogoText = false,
+  showLogo = false,
 }: EmbedTopbarProps) {
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
 
@@ -62,8 +64,12 @@ export function EmbedTopbar({
   return (
     <header className='flex h-14 shrink-0 items-center justify-between border-b border-gray-3 bg-surface-primary pl-4 pr-6 shadow-2xs transition-colors duration-200'>
       <div className='flex items-center gap-3 min-w-0 overflow-hidden'>
-        <Logo hideText={hideLogoText} markClassName='size-6 shrink-0' />
-        <span className='h-4 w-px bg-gray-4 shrink-0' />
+        {showLogo && (
+          <>
+            <Logo hideText={hideLogoText} markClassName='size-6 shrink-0' />
+            <span className='h-4 w-px bg-gray-4 shrink-0' />
+          </>
+        )}
         {title ? (
           <span className='text-sm font-semibold tracking-tight text-gray-13 truncate'>
             {title}

@@ -259,7 +259,6 @@ export function FolderExplorer() {
 
     const items: SettingsBreadcrumbItem[] = [
       {
-        key: pathItems.length ? 'folders-root' : undefined,
         label: t`Folders`,
       },
       ...pathItems,
