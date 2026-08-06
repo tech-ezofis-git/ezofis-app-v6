@@ -72,12 +72,6 @@ export default function PoSetupFlowPage({ onClose }: Props) {
       title: t`Append new records`,
       value: 'append',
     },
-    {
-      description: t`Update existing records field-by-field wherever this file has a newer value. New PO numbers are added.`,
-      icon: 'tabler:git-merge',
-      title: t`Override matching records`,
-      value: 'override',
-    },
   ]
 
   const workflowId = rawWorkflowData?.id
@@ -120,6 +114,16 @@ export default function PoSetupFlowPage({ onClose }: Props) {
   // demo-data load, rather than re-triggering on every render where the
   // mapping happens to still look complete.
   const autoConfirmedDemoRef = useRef(false)
+  const columnMappingRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (uploadState === 'ready' && columnMappingRef.current) {
+      columnMappingRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    }
+  }, [uploadState])
 
   // File details (Header)
   const [uploadedColumns, setUploadedColumns] = useState<string[]>([])
@@ -1082,7 +1086,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
               </AnimateSlideUp>
 
               <AnimateSlideUp
-                className='grid grid-cols-1 gap-3 sm:grid-cols-3'
+                className='grid grid-cols-1 gap-3 sm:grid-cols-2'
                 delay={0.1}
               >
                 {STRATEGY_OPTIONS.map((option) => {
@@ -1447,7 +1451,7 @@ export default function PoSetupFlowPage({ onClose }: Props) {
                   )}
 
                   {uploadState === 'ready' && (
-                    <div className='mt-2 flex flex-col gap-4'>
+                    <div ref={columnMappingRef} className='mt-2 flex flex-col gap-4'>
                       {!groupingColumn && (
                         <div className='flex items-center gap-2 rounded-lg border border-blue-5 bg-blue-2 px-3 py-2 text-12 text-blue-11 shadow-xs'>
                           <Icon

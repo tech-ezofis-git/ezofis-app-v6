@@ -10,6 +10,7 @@ import showToast from '@/components/base/toast/showToast'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import Stepper from '@/components/base/Stepper'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
 import Alert from '@/components/base/Alert'
 import Icon from '@/components/base/icon/Icon'
@@ -370,6 +371,10 @@ export default function FolderSecurityPolicyWizard({
     setSelectedPrincipals([...selectedUsers, ...nextGroups])
   }
 
+  const [maxVisitedStep, setMaxVisitedStep] = useState<Step>(
+    editingIndex != null || initialPolicy != null ? 2 : 0,
+  )
+
   const ensurePrincipalSelection = () => {
     if (selectedPrincipals.length > 0) {
       setShowSelectionError(false)
@@ -393,6 +398,7 @@ export default function FolderSecurityPolicyWizard({
 
     setShowSelectionError(false)
     setStep(nextStep)
+    setMaxVisitedStep((prev) => Math.max(prev, nextStep) as Step)
   }
 
   const togglePermission = (id: keyof FolderPermissionFlags) => {
@@ -483,8 +489,8 @@ export default function FolderSecurityPolicyWizard({
 
   const formattedSteps = STEPPER_ITEMS.map((s, idx) => ({
     ...s,
-    clickable: idx <= step,
-    disabled: idx > step,
+    clickable: idx <= maxVisitedStep,
+    disabled: idx > maxVisitedStep,
   }))
 
   const renderStepContent = () => {
@@ -756,22 +762,24 @@ export default function FolderSecurityPolicyWizard({
     <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-gray-1">
       {/* Top Header */}
       <div className="mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3.5 md:px-8">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-15 font-semibold tracking-tight text-gray-13">
-            {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Setup'} — {folderName}
-          </h2>
-          <p className="text-xs text-gray-11">
-            Configure access policies and privileges for folder &quot;{folderName}&quot;
-          </p>
+        <div className="flex items-center gap-3">
+          <IconButton
+            ariaLabel="Back"
+            color="gray"
+            icon="lucide:arrow-left"
+            size="sm"
+            variant="ghost"
+            onClick={onClose}
+          />
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-15 font-semibold tracking-tight text-gray-13">
+              {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Setup'} — {folderName}
+            </h2>
+            <p className="text-xs text-gray-11">
+              Configure access policies and privileges for folder &quot;{folderName}&quot;
+            </p>
+          </div>
         </div>
-        <Button
-          color="gray"
-          icon="tabler:x"
-          label="Cancel"
-          size="sm"
-          variant="outline"
-          onClick={onClose}
-        />
       </div>
 
       {/* Main Grid */}

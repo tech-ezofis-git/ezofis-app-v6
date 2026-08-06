@@ -14,6 +14,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import Stepper from '@/components/base/Stepper'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
 import Alert from '@/components/base/Alert'
 import Icon from '@/components/base/icon/Icon'
@@ -464,10 +465,30 @@ export default function DocumentSecurityRuleWizard({
     onClose()
   }
 
+  const [maxVisitedStep, setMaxVisitedStep] = useState<Step>(
+    editingIndex != null || initialRule != null ? 2 : 0,
+  )
+
+  const goToStep = (nextStep: Step) => {
+    if (nextStep > 0 && nextStep > step) {
+      if (nextStep === 2 && selectedPrincipals.length === 0) {
+        showToast({
+          message: 'Select at least one user or group for target assignment.',
+          variant: 'error',
+        })
+        setStep(1)
+        return
+      }
+    }
+
+    setStep(nextStep)
+    setMaxVisitedStep((prev) => Math.max(prev, nextStep) as Step)
+  }
+
   const formattedSteps = STEPPER_ITEMS.map((s, idx) => ({
     ...s,
-    clickable: idx <= step,
-    disabled: idx > step,
+    clickable: idx <= maxVisitedStep,
+    disabled: idx > maxVisitedStep,
   }))
 
   const renderStepContent = () => {
@@ -897,22 +918,24 @@ export default function DocumentSecurityRuleWizard({
     <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-gray-1">
       {/* Top Header */}
       <div className="mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3.5 md:px-8">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-15 font-semibold tracking-tight text-gray-13">
-            {editingIndex != null ? 'Edit Document Security Rule' : 'Document Security Setup'} — {folderName}
-          </h2>
-          <p className="text-xs text-gray-11">
-            Configure metadata-based document security rules for folder &quot;{folderName}&quot;
-          </p>
+        <div className="flex items-center gap-3">
+          <IconButton
+            ariaLabel="Back"
+            color="gray"
+            icon="lucide:arrow-left"
+            size="sm"
+            variant="ghost"
+            onClick={onClose}
+          />
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-15 font-semibold tracking-tight text-gray-13">
+              {editingIndex != null ? 'Edit Document Security Rule' : 'Document Security Setup'} — {folderName}
+            </h2>
+            <p className="text-xs text-gray-11">
+              Configure metadata-based document security rules for folder &quot;{folderName}&quot;
+            </p>
+          </div>
         </div>
-        <Button
-          color="gray"
-          icon="tabler:x"
-          label="Cancel"
-          size="sm"
-          variant="outline"
-          onClick={onClose}
-        />
       </div>
 
       {/* Main Grid */}
@@ -923,7 +946,7 @@ export default function DocumentSecurityRuleWizard({
             active={step}
             orientation="vertical"
             steps={formattedSteps}
-            setActive={(newStep) => setStep(newStep as Step)}
+            setActive={(newStep) => goToStep(newStep as Step)}
           />
         </aside>
 
@@ -941,7 +964,7 @@ export default function DocumentSecurityRuleWizard({
                 label="Back"
                 size="sm"
                 variant="outline"
-                onClick={() => setStep((step - 1) as Step)}
+                onClick={() => goToStep((step - 1) as Step)}
               />
 
               {step === 2 ? (
@@ -961,7 +984,7 @@ export default function DocumentSecurityRuleWizard({
                   label="Continue"
                   size="sm"
                   suffixIcon="tabler:arrow-right"
-                  onClick={() => setStep((step + 1) as Step)}
+                  onClick={() => goToStep((step + 1) as Step)}
                 />
               )}
             </div>
