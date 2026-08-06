@@ -110,19 +110,43 @@ export default function DashboardCharts() {
   const getKpiConfig = (key: string) => {
     switch (key) {
       case 'total_outstanding':
-        return { color: 'border-t-primary-9', isGood: false }
+        return {
+          color: 'border-t-primary-9',
+          isGood: false,
+          label: t`Total Outstanding`,
+        }
       case 'total_paid':
-        return { color: 'border-t-success', isGood: true }
+        return {
+          color: 'border-t-success',
+          isGood: true,
+          label: t`Total Paid`,
+        }
       case 'pending_payments':
-        return { color: 'border-t-primary-9', isGood: true }
+        return {
+          color: 'border-t-primary-9',
+          isGood: true,
+          label: t`Pending Payments`,
+        }
       case 'due_today':
-        return { color: 'border-t-cyan-9', isGood: true }
+        return {
+          color: 'border-t-cyan-9',
+          isGood: true,
+          label: t`Due Today`,
+        }
       case 'overdue_amount':
-        return { color: 'border-t-red-9', isGood: false }
+        return {
+          color: 'border-t-red-9',
+          isGood: false,
+          label: t`Overdue`,
+        }
       case 'avg_processing_time':
-        return { color: 'border-t-primary-9', isGood: true }
+        return {
+          color: 'border-t-primary-9',
+          isGood: true,
+          label: t`Avg. Processing Time`,
+        }
       default:
-        return { color: 'border-t-primary-9', isGood: true }
+        return { color: 'border-t-primary-9', isGood: true, label: undefined }
     }
   }
   const [isCommandCenterExpanded, setIsCommandCenterExpanded] =
@@ -791,16 +815,16 @@ export default function DashboardCharts() {
           <div className='mb-4 flex items-center justify-between border-b border-border-default pb-3.5'>
             <div>
               <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                Invoices Drill-Down{' '}
+                {t`Invoices Drill-Down`}{' '}
                 <span className='text-primary-9'>· {activeDrill}</span>
               </h3>
               <p className='mt-0.5 font-inter text-11 text-text-muted'>
-                Showing records matching this metrics slice
+                {t`Showing records matching this metrics slice`}
               </p>
             </div>
             <button
               className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-all hover:bg-gray-2 hover:text-text-primary active:scale-95'
-              title='Close panel'
+              title={t`Close panel`}
               onClick={() => setActiveDrill(null)}
             >
               <X className='h-4 w-4' />
@@ -812,13 +836,13 @@ export default function DashboardCharts() {
                 <thead>
                   <tr className='text-10 border-b border-border-default bg-gray-2 font-semibold text-text-muted uppercase'>
                     {[
-                      'Invoice',
-                      'Supplier',
-                      'Department',
-                      'Amount',
-                      'Due Date',
-                      'Status',
-                      'Payment Method',
+                      t`Invoice`,
+                      t`Supplier`,
+                      t`Department`,
+                      t`Amount`,
+                      t`Due Date`,
+                      t`Status`,
+                      t`Payment Method`,
                     ].map((h) => (
                       <th className='p-3' key={h}>
                         {h}
@@ -867,13 +891,13 @@ export default function DashboardCharts() {
               </table>
               {drillInvoices.length > 50 && (
                 <div className='mt-3 text-center text-11 text-text-muted'>
-                  Showing first 50 of {drillInvoices.length} invoices.
+                  {t`Showing first 50 of ${drillInvoices.length} invoices.`}
                 </div>
               )}
             </div>
           ) : (
             <div className='py-6 text-center text-12 text-text-muted'>
-              No matching invoice records in this slice.
+{t`No matching invoice records in this slice.`}
             </div>
           )}
         </div>
@@ -890,10 +914,10 @@ export default function DashboardCharts() {
                 <div className='mb-4 flex items-center justify-between'>
                   <div>
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      AI-generated insights
+                      {t`AI-generated insights`}
                     </h3>
                     <div className='mt-0.5 font-inter text-11 text-text-muted'>
-                      Auto-updates with your filters — the ledger's margin notes
+                      {t`Auto-updates with your filters — the ledger's margin notes`}
                     </div>
                   </div>
                   <span className='text-10 flex items-center gap-1.5 rounded-full border border-orange-4 bg-transparent px-2 py-0.5 font-semibold text-orange-11'>
@@ -932,11 +956,11 @@ export default function DashboardCharts() {
               <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
                 <h3 className='font-poppins text-14 font-semibold text-text-primary'>
                   {dashboardData?.supplierRiskRadar?.title ||
-                    'Supplier Risk Radar'}
+                    t`Supplier Risk Radar`}
                 </h3>
                 <div className='mb-4 font-inter text-11 text-text-muted'>
                   {dashboardData?.supplierRiskRadar?.subtitle ||
-                    'Which vendors carry the most risk exposure?'}
+                    t`Which vendors carry the most risk exposure?`}
                 </div>
                 <div className='h-56'>
                   <ResponsiveContainer height='100%' width='100%'>
@@ -960,22 +984,22 @@ export default function DashboardCharts() {
                           )
                         })}
                       </Pie>
-                      <Tooltip formatter={(v: any) => [`${v}%`, 'Exposure']} />
+                      <Tooltip formatter={(v: any) => [`${v}%`, t`Exposure`]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
                 <div className='mt-2 flex justify-around font-inter text-11'>
                   <span className='flex items-center gap-1.5'>
                     <span className='bg-success h-2.5 w-2.5 rounded' />
-                    Low
+                    {t`Low`}
                   </span>
                   <span className='flex items-center gap-1.5'>
                     <span className='bg-warning h-2.5 w-2.5 rounded' />
-                    Medium
+                    {t`Medium`}
                   </span>
                   <span className='flex items-center gap-1.5'>
                     <span className='h-2.5 w-2.5 rounded bg-red-9' />
-                    High
+                    {t`High`}
                   </span>
                 </div>
               </div>
@@ -1728,10 +1752,10 @@ export default function DashboardCharts() {
                 <div className='mb-4 flex items-center justify-between'>
                   <div>
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      AI-generated insights
+                      {t`AI-generated insights`}
                     </h3>
                     <div className='mt-0.5 font-inter text-11 text-text-muted'>
-                      Auto-updates with your filters — the ledger's margin notes
+                      {t`Auto-updates with your filters — the ledger's margin notes`}
                     </div>
                   </div>
                   <span className='text-10 flex items-center gap-1.5 rounded-full border border-orange-9 bg-transparent px-2 py-0.5 font-semibold text-orange-9'>
@@ -1769,10 +1793,10 @@ export default function DashboardCharts() {
 
               <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
                 <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                  Duplicate invoice watch
+                  {t`Duplicate invoice watch`}
                 </h3>
                 <div className='mb-3 font-inter text-11 text-text-muted'>
-                  Double payments flagged by ledger algorithms
+                  {t`Double payments flagged by ledger algorithms`}
                 </div>
                 <div className='scrollbar flex max-h-[auto] flex-col gap-2 overflow-y-auto'>
                   {[
@@ -1845,16 +1869,16 @@ export default function DashboardCharts() {
               >
                 <div>
                   <h3 className='font-poppins text-14 font-semibold'>
-                    Today's Action Queue
+                    {t`Today's Action Queue`}
                   </h3>
                   <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                    Prioritized invoice items requiring attention today
+                    {t`Prioritized invoice items requiring attention today`}
                   </p>
                 </div>
                 <div className='flex flex-wrap items-center gap-6'>
                   <div className='flex flex-col gap-0.5 text-center md:text-right'>
                     <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                      Due Today
+                      {t`Due Today`}
                     </span>
                     <span className='text-15 font-semibold text-cyan-9'>
                       {fmtMoney(dueTodayValue)}
@@ -1862,7 +1886,7 @@ export default function DashboardCharts() {
                   </div>
                   <div className='flex flex-col gap-0.5 text-center md:text-right'>
                     <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                      Cash This Week
+                      {t`Cash This Week`}
                     </span>
                     <span className='text-15 font-semibold text-primary-9'>
                       $298.7K
@@ -1870,7 +1894,7 @@ export default function DashboardCharts() {
                   </div>
                   <div className='flex flex-col gap-0.5 text-center md:text-right'>
                     <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                      Queue Size
+                      {t`Queue Size`}
                     </span>
                     <span className='text-15 font-semibold text-primary-9'>
                       {
@@ -1879,7 +1903,7 @@ export default function DashboardCharts() {
                             (inv.status || '').toLowerCase() === 'pending',
                         ).length
                       }{' '}
-                      items
+                      {t`items`}
                     </span>
                   </div>
                   <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
@@ -1899,10 +1923,10 @@ export default function DashboardCharts() {
                     <div className='mb-4 flex items-center justify-between border-b border-border-default pb-3.5'>
                       <div>
                         <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                          AP workbench — prioritized queue
+                          {t`AP workbench — prioritized queue`}
                         </h3>
                         <div className='font-inter text-11 text-text-muted'>
-                          Overdue and due-soonest first — process top-down
+                          {t`Overdue and due-soonest first — process top-down`}
                         </div>
                       </div>
                       <span className='text-10 rounded-full bg-primary-3 px-3 py-0.5 font-semibold text-primary-9'>
@@ -1914,15 +1938,15 @@ export default function DashboardCharts() {
                         <thead>
                           <tr className='text-10 border-b border-border-default bg-gray-2 font-semibold text-text-muted uppercase'>
                             {[
-                              'Priority',
-                              'Invoice',
-                              'Supplier',
-                              'Department',
-                              'Amount',
-                              'Due Date',
-                              'Status',
-                              'Buyer',
-                              'Actions',
+                              t`Priority`,
+                              t`Invoice`,
+                              t`Supplier`,
+                              t`Department`,
+                              t`Amount`,
+                              t`Due Date`,
+                              t`Status`,
+                              t`Buyer`,
+                              t`Actions`,
                             ].map((h) => (
                               <th className='p-3' key={h}>
                                 {h}
@@ -2004,7 +2028,7 @@ export default function DashboardCharts() {
                                           setActiveDrill('Outstanding Payables')
                                         }}
                                       >
-                                        Action
+                                        {t`Action`}
                                       </button>
                                       <button
                                         className='cursor-pointer rounded p-1 text-text-secondary transition-colors hover:bg-gray-3'
@@ -2032,7 +2056,7 @@ export default function DashboardCharts() {
                                       <div className='grid grid-cols-2 gap-4 font-inter text-11 text-text-secondary md:grid-cols-4'>
                                         <div>
                                           <div className='font-semibold text-text-muted'>
-                                            PO Reference
+                                            {t`PO Reference`}
                                           </div>
                                           <div className='mt-0.5 font-mono text-text-primary'>
                                             {costCenter.replace('CC-', 'PO-')}
@@ -2040,7 +2064,7 @@ export default function DashboardCharts() {
                                         </div>
                                         <div>
                                           <div className='font-semibold text-text-muted'>
-                                            Cost Center
+                                            {t`Cost Center`}
                                           </div>
                                           <div className='mt-0.5 text-text-primary'>
                                             {costCenter}
@@ -2048,7 +2072,7 @@ export default function DashboardCharts() {
                                         </div>
                                         <div>
                                           <div className='font-semibold text-text-muted'>
-                                            Profit Center
+                                            {t`Profit Center`}
                                           </div>
                                           <div className='mt-0.5 text-text-primary'>
                                             {profitCenter}
@@ -2056,7 +2080,7 @@ export default function DashboardCharts() {
                                         </div>
                                         <div>
                                           <div className='font-semibold text-text-muted'>
-                                            Payment Channel
+                                            {t`Payment Channel`}
                                           </div>
                                           <div className='mt-0.5 text-text-primary'>
                                             {paymentMethod}
@@ -2065,13 +2089,13 @@ export default function DashboardCharts() {
                                       </div>
                                       <div className='mt-3 rounded border border-orange-3/30 bg-orange-2/30 p-2.5 font-inter text-11 text-orange-11'>
                                         <strong>
-                                          Ledger Verification Note:
+                                          {t`Ledger Verification Note:`}
                                         </strong>{' '}
-                                        Invoice matched against approved master
+                                        {t`Invoice matched against approved master`}
                                         list.{' '}
                                         {isDuplicate
-                                          ? 'ALERT: Potential duplicate invoice match. Review before release.'
-                                          : 'Standard SLA timeline. No pricing exceptions found.'}
+                                          ? t`ALERT: Potential duplicate invoice match. Review before release.`
+                                          : t`Standard SLA timeline. No pricing exceptions found.`}
                                       </div>
                                     </td>
                                   </tr>
@@ -2088,10 +2112,10 @@ export default function DashboardCharts() {
                   {isTodayActionExpanded && (
                     <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-5'>
                       <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                        Payment calendar
+                        {t`Payment calendar`}
                       </h3>
                       <div className='mb-4 font-inter text-11 text-text-muted'>
-                        Scheduled payments calendar heatmap
+                        {t`Scheduled payments calendar heatmap`}
                       </div>
                       <div className='grid grid-cols-7 gap-1 text-center font-inter'>
                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
@@ -2125,9 +2149,9 @@ export default function DashboardCharts() {
                               )}
                               title={
                                 isToday
-                                  ? 'Today'
+                                  ? t`Today`
                                   : isDue
-                                    ? 'Payment due date'
+                                    ? t`Payment due date`
                                     : ''
                               }
                             >
@@ -2139,11 +2163,11 @@ export default function DashboardCharts() {
                       <div className='text-10 mt-4 flex justify-center gap-4 font-inter text-text-muted'>
                         <span className='flex items-center gap-1.5'>
                           <span className='h-3 w-3 rounded bg-primary-9' />
-                          Today
+                          {t`Today`}
                         </span>
                         <span className='flex items-center gap-1.5'>
                           <span className='h-3 w-3 rounded bg-primary-3' />
-                          Payment Due
+                          {t`Payment Due`}
                         </span>
                       </div>
                     </div>
@@ -2153,10 +2177,10 @@ export default function DashboardCharts() {
                   {isTodayActionExpanded && (
                     <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-7'>
                       <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                        Cash required — next 7 days
+                        {t`Cash required — next 7 days`}
                       </h3>
                       <div className='mb-4 font-inter text-11 text-text-muted'>
-                        Daily cash requirements for approved invoices
+                        {t`Daily cash requirements for approved invoices`}
                       </div>
                       <div className='h-56'>
                         <ResponsiveContainer height='100%' width='100%'>
@@ -2172,7 +2196,7 @@ export default function DashboardCharts() {
                                 angle: -90,
                                 position: 'insideLeft',
                                 style: { fontSize: 10 },
-                                value: 'Cash required',
+                                value: t`Cash required`,
                               }}
                             />
                             <Tooltip
@@ -2200,16 +2224,16 @@ export default function DashboardCharts() {
             >
               <div>
                 <h3 className='font-poppins text-14 font-semibold'>
-                  Processing &amp; Bottlenecks
+                  {t`Processing & Bottlenecks`}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  Pipeline throughput efficiency and approval metrics
+                  {t`Pipeline throughput efficiency and approval metrics`}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Total Invoices
+                    {t`Total Invoices`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
                     266
@@ -2217,7 +2241,7 @@ export default function DashboardCharts() {
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Touchless Rate
+                    {t`Touchless Rate`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
                     44.0%
@@ -2225,10 +2249,10 @@ export default function DashboardCharts() {
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Avg Approval Days
+                    {t`Avg Approval Days`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
-                    6.1 days
+                    {t`6.1 days`}
                   </span>
                 </div>
                 <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
@@ -2245,35 +2269,35 @@ export default function DashboardCharts() {
               <div className='grid grid-cols-12 gap-5'>
                 <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
                   <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Invoice processing funnel
+                    {t`Invoice processing funnel`}
                   </h3>
                   <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Pipeline drops across lifecycle steps
+                    {t`Pipeline drops across lifecycle steps`}
                   </div>
                   <div className='flex flex-col gap-3.5 py-4'>
                     {[
                       {
                         pct: '100%',
-                        step: '1. Received',
-                        value: '266 inv',
+                        step: t`1. Received`,
+                        value: t`266 inv`,
                         width: '100%',
                       },
                       {
                         pct: '93%',
-                        step: '2. Extracted',
-                        value: '248 inv',
+                        step: t`2. Extracted`,
+                        value: t`248 inv`,
                         width: '93%',
                       },
                       {
                         pct: '79%',
-                        step: '3. Approved',
-                        value: '210 inv',
+                        step: t`3. Approved`,
+                        value: t`210 inv`,
                         width: '79%',
                       },
                       {
                         pct: '53%',
-                        step: '4. Posted',
-                        value: '142 inv',
+                        step: t`4. Posted`,
+                        value: t`142 inv`,
                         width: '53%',
                       },
                     ].map((bar) => (
@@ -2290,7 +2314,7 @@ export default function DashboardCharts() {
                             className='flex h-full items-center bg-gradient-to-r from-primary-9 to-primary-10 px-3 text-11 font-semibold text-white'
                             style={{ width: bar.width }}
                           >
-                            {bar.pct} conversion
+                            {t`${bar.pct} conversion`}
                           </div>
                         </div>
                       </div>
@@ -2301,10 +2325,10 @@ export default function DashboardCharts() {
                 {isProcessingExpanded && (
                   <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      Approval delay heat map
+                      {t`Approval delay heat map`}
                     </h3>
                     <div className='mb-4 font-inter text-11 text-text-muted'>
-                      Approver delay averages over weeks
+                      {t`Approver delay averages over weeks`}
                     </div>
                     <div className='mt-3 flex flex-col gap-2 font-inter'>
                       <div className='grid grid-cols-6 gap-1 text-center text-[10px] font-semibold text-text-muted'>
@@ -2354,10 +2378,10 @@ export default function DashboardCharts() {
                 {isProcessingExpanded && (
                   <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      Invoice status distribution
+                      {t`Invoice status distribution`}
                     </h3>
                     <div className='mb-4 font-inter text-11 text-text-muted'>
-                      Click a slice to open matching list
+                      {t`Click a slice to open matching list`}
                     </div>
                     <div className='h-48'>
                       <ResponsiveContainer height='100%' width='100%'>
@@ -2403,19 +2427,19 @@ export default function DashboardCharts() {
                     <div className='text-10 mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 font-inter text-text-muted'>
                       <span className='flex items-center gap-1.5'>
                         <span className='bg-success h-2 w-2 rounded' />
-                        Approved
+                        {t`Approved`}
                       </span>
                       <span className='flex items-center gap-1.5'>
                         <span className='h-2 w-2 rounded bg-indigo-9' />
-                        Pending
+                        {t`Pending`}
                       </span>
                       <span className='flex items-center gap-1.5'>
                         <span className='h-2 w-2 rounded bg-cyan-9' />
-                        Processing
+                        {t`Processing`}
                       </span>
                       <span className='flex items-center gap-1.5'>
                         <span className='h-2 w-2 rounded bg-gray-10' />
-                        Hold
+                        {t`Hold`}
                       </span>
                     </div>
                   </div>
@@ -2432,16 +2456,16 @@ export default function DashboardCharts() {
             >
               <div>
                 <h3 className='font-poppins text-14 font-semibold'>
-                  Supplier Follow-ups
+                  {t`Supplier Follow-ups`}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  Vendors needing prompt outreach or query resolution
+                  {t`Vendors needing prompt outreach or query resolution`}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Overdue Amount
+                    {t`Overdue Amount`}
                   </span>
                   <span className='text-15 font-semibold text-red-9'>
                     {fmtMoney(metrics.overdueAmount || 0)}
@@ -2449,7 +2473,7 @@ export default function DashboardCharts() {
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Duplicates Value
+                    {t`Duplicates Value`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
                     $84.2K
@@ -2457,10 +2481,10 @@ export default function DashboardCharts() {
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Suppliers to Chase
+                    {t`Suppliers to Chase`}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
-                    9 vendors
+                    {t`9 vendors`}
                   </span>
                 </div>
                 <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
@@ -2477,10 +2501,10 @@ export default function DashboardCharts() {
               {isSupplierFollowUpExpanded && (
                 <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
                   <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Outstanding payables by supplier
+                    {t`Outstanding payables by supplier`}
                   </h3>
                   <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Click a supplier's bar to drill down
+                    {t`Click a supplier's bar to drill down`}
                   </div>
                   <div className='h-60'>
                     <ResponsiveContainer height='100%' width='100%'>
@@ -2571,10 +2595,10 @@ export default function DashboardCharts() {
               {isSupplierFollowUpExpanded && (
                 <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
                   <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Monthly invoice trend
+                    {t`Monthly invoice trend`}
                   </h3>
                   <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Incoming workload volumes over the last 6 months
+                    {t`Incoming workload volumes over the last 6 months`}
                   </div>
                   <div className='h-56'>
                     <ResponsiveContainer height='100%' width='100%'>
@@ -2634,15 +2658,15 @@ export default function DashboardCharts() {
                       <Pie data={[{ name: 'Bank Transfer', value: 45 }, { name: 'ACH', value: 30 }, { name: 'Wire', value: 15 }, { name: 'Cheque', value: 10 }]} cx="50%" cy="50%" innerRadius={40} outerRadius={60} paddingAngle={3} dataKey="value">
                         {['#8300e6', '#5c21e6', '#19c1d4', '#847C93'].map((color, idx) => <Cell key={idx} fill={color} />)}
                       </Pie>
-                      <Tooltip formatter={(v) => [`${v}%`, 'Share']} />
+                      <Tooltip formatter={(v) => [`${v}%`, t`Share`]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="flex justify-around font-inter text-11 mt-1">
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-primary-9" />Transfer</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-indigo-9" />ACH</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-cyan-9" />Wire</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-gray-10" />Cheque</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-primary-9" />{t`Transfer`}</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-indigo-9" />{t`ACH`}</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-cyan-9" />{t`Wire`}</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded bg-gray-10" />{t`Cheque`}</span>
                 </div>
               </div> */}
             </div>

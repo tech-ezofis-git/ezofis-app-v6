@@ -8,6 +8,16 @@ type RedirectAfterLoginOptions = {
   shareTenantId?: string | null
   /** SPA navigate — avoids full reload blank screen after sign-in */
   navigate: (opts: NavigateOptions) => Promise<void> | void
+  /** Optional return path (e.g. sign-request invite URL) */
+  redirectTo?: string | null
+}
+
+const safeInternalRedirect = (value?: string | null): string | null => {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+  // Only allow same-app relative paths (block open redirects)
+  if (!raw.startsWith('/') || raw.startsWith('//')) return null
+  return raw
 }
 
 /**
@@ -17,8 +27,11 @@ type RedirectAfterLoginOptions = {
 export const redirectAfterLogin = async ({
   shareTenantId,
   navigate,
+  redirectTo,
 }: RedirectAfterLoginOptions) => {
-  let destination: NavigateOptions['to'] = '/requests'
+  const explicitRedirect = safeInternalRedirect(redirectTo)
+  let destination: NavigateOptions['to'] = (explicitRedirect ||
+    '/requests') as NavigateOptions['to']
 
   try {
     const res = await apiRouter.userSession()
@@ -27,7 +40,9 @@ export const redirectAfterLogin = async ({
       authUserStore.getState().session?.configuration
 
     const shareCtx = authUserStore.getState().shareContext
-    if (shareTenantId || shareCtx) {
+    if (explicitRedirect) {
+      destination = explicitRedirect as NavigateOptions['to']
+    } else if (shareTenantId || shareCtx) {
       if (shareCtx) {
         const currentSession = authUserStore.getState().session
         if (currentSession) {
@@ -46,11 +61,27 @@ export const redirectAfterLogin = async ({
     }
   } catch (err) {
     console.error('Failed to load session details:', err)
-    const shareCtx = authUserStore.getState().shareContext
-    destination = shareTenantId || shareCtx ? '/folders' : '/'
+    if (explicitRedirect) {
+      destination = explicitRedirect as NavigateOptions['to']
+    } else {
+      const shareCtx = authUserStore.getState().shareContext
+      destination = shareTenantId || shareCtx ? '/folders' : '/'
+    }
   }
 
   // Session already loaded — skip duplicate /userSession in AppLayout
   markUserSessionFetchedForRedirect()
+
+  if (typeof destination === 'string' && destination.includes('?')) {
+    const [pathname, query = ''] = destination.split('?')
+    const search = Object.fromEntries(new URLSearchParams(query).entries())
+    await navigate({
+      replace: true,
+      to: pathname as NavigateOptions['to'],
+      search,
+    })
+    return
+  }
+
   await navigate({ replace: true, to: destination })
 }

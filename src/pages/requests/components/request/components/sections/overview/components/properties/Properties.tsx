@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import Badge from '@/components/base/Badge'
 import Title from '@/components/base/Title'
 import { formatDatetime } from '@/utils/dayjs' // Assuming you have this
@@ -9,6 +10,7 @@ interface Props {
 }
 
 const Properties = ({ data }: Props) => {
+  const { t } = useLingui()
   console.log(data, 'this is overview')
   const score = Number(data?.score || 0)
   const paymentTerms = data?.payment_terms || {}
@@ -19,29 +21,29 @@ const Properties = ({ data }: Props) => {
 
   return (
     <div>
-      <Title className='mb-4' level={3} title='Properties' />
+      <Title className='mb-4' level={3} title={t`Properties`} />
 
       <div className='grid grid-cols-2 overflow-hidden rounded border border-gray-3'>
         {/* These would ideally come from the parent process object, using placeholders if missing in agentData */}
-        <Property title='Request No'>{data.reqNo || '-'}</Property>
+        <Property title={t`Request No`}>{data.reqNo || '-'}</Property>
 
         {/* Payment Terms Section */}
-        <Property title='Invoice Date'>
+        <Property title={t`Invoice Date`}>
           {paymentTerms.invoice_date
             ? formatDatetime(paymentTerms.invoice_date)
             : '-'}
         </Property>
-        <Property title='Due Date'>
+        <Property title={t`Due Date`}>
           {paymentTerms.due_date ? formatDatetime(paymentTerms.due_date) : '-'}
         </Property>
-        <Property title='Payment Terms'>{paymentTerms.raw || '-'}</Property>
+        <Property title={t`Payment Terms`}>{paymentTerms.raw || '-'}</Property>
 
         {/* AI Stats */}
-        <Property title='AI Confidence Score'>
+        <Property title={t`AI Confidence Score`}>
           <Badge color={scoreColor} label={`${score.toFixed(2)}%`} />
         </Property>
 
-        <Property className='border-b-0' title='AI Recommendation'>
+        <Property className='border-b-0' title={t`AI Recommendation`}>
           <Badge className='uppercase' color={scoreColor} label={decision} />
         </Property>
       </div>

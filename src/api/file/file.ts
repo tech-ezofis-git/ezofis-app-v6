@@ -25,12 +25,21 @@ const viewBinaryV6 = async (
   repositoryId: string,
   itemId: string,
   disposition: string = 'inline',
+  /** Bust browser/proxy cache after the signed file is rewritten server-side. */
+  cacheBust?: string | number,
 ) => {
   const response: any = { data: null, error: '' }
   try {
+    const bust =
+      cacheBust === undefined || cacheBust === null || cacheBust === ''
+        ? ''
+        : `&_=${encodeURIComponent(String(cacheBust))}`
     const { data, status } = await axiosV6.get(
-      `/repositories/${repositoryId}/items/${itemId}/file?disposition=${disposition}`,
+      `/repositories/${repositoryId}/items/${itemId}/file?disposition=${disposition}${bust}`,
       {
+        headers: cacheBust
+          ? { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+          : undefined,
         responseType: 'blob',
       },
     )

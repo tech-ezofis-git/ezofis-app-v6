@@ -10,6 +10,7 @@ import StepFive from './components/StepFive'
 import StepFour from './components/StepFour'
 import StepIndicator from './components/StepIndicator'
 import StepOne from './components/StepOne'
+import StepSeven from './components/StepSeven'
 import StepSix from './components/StepSix'
 import StepThree from './components/StepThree'
 import StepTwo from './components/StepTwo'
@@ -73,6 +74,7 @@ const OnBoardingPage = () => {
                     {step === 4 && <StepFour />}
                     {step === 5 && <StepFive />}
                     {step === 6 && <StepSix />}
+                    {step === 7 && <StepSeven />}
                   </AnimateEntrancePop>
                 </AnimatePresence>
               </div>

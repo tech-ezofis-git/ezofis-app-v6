@@ -1,5 +1,6 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import * as XLSX from 'xlsx'
 import apiRouter from '@/api/apiRouter'
 import { createRepository } from '@/api/createFolder'
@@ -515,6 +516,7 @@ const addCustomFieldsToPayloads = (
 }
 
 const StepFour = () => {
+  const { t } = useLingui()
   const emailSettings = setupStore((state) => state.emailSettings)
   const erpSettings = setupStore((state) => state.erpSettings)
   const storageSettings = setupStore((state) => state.storageSettings)
@@ -738,16 +740,6 @@ const StepFour = () => {
 
       // Show celebratory success screen with flowers and sparkles
       setShowCelebration(true)
-
-      // Hold for 4.5 seconds to showcase the animation
-      await new Promise((resolve) => setTimeout(resolve, 4500))
-
-      apComplete(true)
-
-      setIsActivatingAutomation(true)
-      clearNavigationLock(false)
-      navigate({ replace: true, to: '/requests' })
-      closeSetup()
     } catch (e: any) {
       console.error(e)
       showToast({
@@ -776,14 +768,14 @@ const StepFour = () => {
   return (
     <StepLayout
       description='Double-check your settings and activate your AI invoice automation. Your workflow is ready to begin processing.'
-      title='Review & Complete Setup'
+      title={t`Review & Complete Setup`}
       footer={
         <StepFooter>
           <Button
             color='gray'
             disabled={isSaving}
             icon='lucide:arrow-left'
-            label='Back'
+            label={t`Back`}
             variant='outline'
             onClick={() => setStep(2)}
           />
@@ -810,7 +802,7 @@ const StepFour = () => {
               icon='tabler:database'
               iconBg='bg-blue-1 dark:bg-blue-9/20'
               iconColor='text-blue-9 dark:text-blue-4'
-              label='Data Destination'
+              label={t`Data Destination`}
               subtitle='Connected & Verified'
               title={getErpName()}
             />
@@ -818,17 +810,17 @@ const StepFour = () => {
               icon='tabler:brain'
               iconBg='bg-purple-1 dark:bg-purple-9/20'
               iconColor='text-purple-9 dark:text-purple-4'
-              label='Intelligence Profile'
+              label={t`Intelligence Profile`}
               subtitle='99.8% Extraction Goal'
-              title='High Precision'
+              title={t`High Precision`}
             />
             <ProtocolCard
               icon='tabler:shield-check'
               iconBg='bg-green-1 dark:bg-green-9/20'
               iconColor='text-green-9 dark:text-green-4'
-              label='Security Protocol'
+              label={t`Security Protocol`}
               subtitle='AES-256 Encrypted'
-              title='SOC2 Compliant'
+              title={t`SOC2 Compliant`}
             />
           </div>
         </AnimateFadeIn>

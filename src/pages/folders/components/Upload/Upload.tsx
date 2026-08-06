@@ -348,10 +348,11 @@ export default function Upload({
   const isFieldsPhase =
     ocrStatus === 'complete' && exportStatus === 'idle' && Boolean(fileData)
 
+  // Revoke only after React has swapped the preview away from this URL,
+  // otherwise the viewer loses its source while it is still rendering it.
   useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
-    }
+    if (!previewUrl) return
+    return () => URL.revokeObjectURL(previewUrl)
   }, [previewUrl])
 
   const runOcrExtraction = useCallback(
@@ -408,8 +409,6 @@ export default function Upload({
 
     ocrRequestIdRef.current += 1
     lastFileSelectionRef.current = null
-
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
 
     setFileData(null)
     setPreviewUrl(null)
@@ -469,8 +468,6 @@ export default function Upload({
       const activeRepositoryId = String(
         repositoryId || repositoryData?.id || '',
       )
-
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
 
       setFileData(selectedFile)
       setPreviewUrl(URL.createObjectURL(selectedFile))
@@ -753,11 +750,11 @@ export default function Upload({
             <div className='flex w-full max-w-5xl flex-col items-center gap-5'>
               <AnimateSlideUp className='space-y-1 text-center'>
                 <h1 className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
-                  {t`Intelligent`}{' '}
-                  <span className='text-[var(--primary-9)]'>{t`AP Agent`}</span>
+                  {t`Upload`}{' '}
+                  <span className='text-[var(--primary-9)]'>{t`Files`}</span>
                 </h1>
                 <p className='mx-auto max-w-xl text-sm font-medium text-[var(--gray-10)]'>
-                  {t`Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility.`}
+                  {t`Upload documents securely, assign metadata, and organize files within your repository for efficient search and management.`}
                 </p>
               </AnimateSlideUp>
 
@@ -899,7 +896,6 @@ export default function Upload({
             const isDoneStep = step === 'Done'
             const showStepSpinner =
               (isAnalysisStep && isAnalyzing) ||
-              (isFieldsStep && isFieldsPhase) ||
               (isDoneStep && isExporting)
 
             return (

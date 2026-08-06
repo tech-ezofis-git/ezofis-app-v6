@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { type CSSProperties } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import cn from '@/utils/cn'
 
 // --- Helpers passed or redefined ---
@@ -101,6 +102,7 @@ export default function LineItemTable({
   lineItems,
   skeletonRows,
 }: LineItemTableProps) {
+  const { t } = useLingui()
   const allColumns: ColumnConfig[] = []
   if (isDynamicTable) {
     dynamicColumns.forEach((colKey, idx) => {
@@ -400,7 +402,7 @@ export default function LineItemTable({
               headerContent = handleAddItem ? (
                 <button
                   className='inline-flex cursor-pointer items-center justify-center rounded border border-[var(--primary-4)] bg-[var(--primary-2)] p-1 text-[var(--primary-11)] transition-all hover:bg-[var(--primary-3)] hover:text-[var(--primary-12)] active:scale-95'
-                  title='Add New Item'
+                  title={t`Add New Item`}
                   type='button'
                   onClick={handleAddItem}
                 >
@@ -507,7 +509,7 @@ export default function LineItemTable({
                       cellContent = handleRemoveItem ? (
                         <button
                           className='rounded p-1 text-[var(--red-9)] transition-all hover:bg-[var(--red-2)] hover:text-[var(--red-11)] active:scale-95'
-                          title='Remove Item'
+                          title={t`Remove Item`}
                           type='button'
                           onClick={() => handleRemoveItem(index)}
                         >

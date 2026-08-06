@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { useClickOutside } from '@mantine/hooks'
 import { useEffect, useRef, useState } from 'react'
@@ -12,10 +13,11 @@ type SettingsSearchInputProps = {
 }
 
 export default function SettingsSearchInput({
-  placeholder = 'Search',
+  placeholder,
   value,
   onChange,
 }: SettingsSearchInputProps) {
+  const defaultPlaceholder = placeholder || t`Search`
   const inputRef = useRef<HTMLInputElement>(null)
   const [focused, setFocused] = useState(false)
   const [inputValue, setInputValue] = useState(value)
@@ -69,7 +71,7 @@ export default function SettingsSearchInput({
       >
         <input
           ref={inputRef}
-          placeholder={placeholder}
+          placeholder={defaultPlaceholder}
           type='text'
           value={inputValue}
           className={cn(
@@ -88,7 +90,7 @@ export default function SettingsSearchInput({
 
   if (!isExpanded) {
     return (
-      <Tooltip content='Search' position='top'>
+      <Tooltip content={t`Search`} position='top'>
         {searchContent}
       </Tooltip>
     )

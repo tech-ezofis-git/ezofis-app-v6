@@ -118,22 +118,26 @@ export type FolderConfigSuggestion = {
   fields: FolderConfigField[]
   folderName: string
   reply: string
-  source?: 'gemini' | 'local'
+  source?: 'gemini' | 'qwen' | 'local'
 }
 
 const FOLDER_DATA_TYPES = [
   'SHORT_TEXT',
   'LONG_TEXT',
   'NUMBER',
+  'BOOLEAN',
   'DATE',
-  'DATE_TIME',
   'TIME',
-  'CURRENCY_AMOUNT',
+  'DATE_TIME',
   'SINGLE_SELECT',
-  'MULTI_SELECT',
-  'YES_NO_TOGGLE',
-  'EMAIL',
-  'PHONE_NUMBER',
+  'TABLE',
+  'BARCODE',
+  'OMR',
+  'CALCULATED',
+  'AUTO_GENERATED',
+  'LINK',
+  'CURRENCY_AMOUNT',
+  'DYNAMIC_TABLE',
 ] as const
 
 const isRetryableModelError = (error: unknown) => {
@@ -156,7 +160,9 @@ const isRetryableModelError = (error: unknown) => {
   )
 }
 
-const buildLocalFolderConfig = (prompt: string): FolderConfigSuggestion => {
+export const buildLocalFolderConfig = (
+  prompt: string,
+): FolderConfigSuggestion => {
   const text = prompt.toLowerCase()
 
   if (
@@ -446,7 +452,8 @@ export type FolderConfigReference = {
   name: string
 }
 
-export const generateFolderConfig = async (
+/** Hidden Gemini path — use generateFolderConfig from folderConfig.ts (provider switch). */
+export const generateFolderConfigViaGemini = async (
   prompt: string,
   history: Array<{ role: 'user' | 'assistant'; text: string }> = [],
   reference?: FolderConfigReference | null,
@@ -583,24 +590,24 @@ Return a practical folder setup for this use case.
     : new Error('Could not generate folder configuration')
 }
 
-function normalizeFolderDataType(value: string) {
+export function normalizeFolderDataType(value: string) {
   const normalized = String(value || '')
     .trim()
     .toUpperCase()
     .replace(/[\s-]+/g, '_')
 
   const aliases: Record<string, string> = {
+    BOOL: 'BOOLEAN',
     CURRENCY: 'CURRENCY_AMOUNT',
     DROPDOWN: 'SINGLE_SELECT',
-    EMAIL_ADDRESS: 'EMAIL',
     LONGTEXT: 'LONG_TEXT',
-    MULTISELECT: 'MULTI_SELECT',
-    PHONE: 'PHONE_NUMBER',
     SELECT: 'SINGLE_SELECT',
     SHORTTEXT: 'SHORT_TEXT',
     TEXT: 'SHORT_TEXT',
-    TOGGLE: 'YES_NO_TOGGLE',
-    YES_NO: 'YES_NO_TOGGLE',
+    TOGGLE: 'BOOLEAN',
+    URL: 'LINK',
+    YES_NO: 'BOOLEAN',
+    YES_NO_TOGGLE: 'BOOLEAN',
   }
 
   const mapped = aliases[normalized] || normalized

@@ -1,5 +1,6 @@
 import clsx, { type ClassValue } from 'clsx'
 import { useRef, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { twMerge } from 'tailwind-merge'
 import fileApi from '@/api/file/file'
 import { workflowsApiV6 } from '@/api/v6/workflows'
@@ -245,6 +246,7 @@ export default function Attachments({
   mockAiDocs,
   initialData,
 }: Props & { initialData?: any[] }) {
+  const { t } = useLingui()
   const targetInstanceId = instanceId || processId
   const {
     data: _files = [],
@@ -501,7 +503,7 @@ export default function Attachments({
 
       {/* Header Row (Small top-right button when attachments exist) */}
       {canUpload && !isLoading && files.length > 0 && (
-        <div className='mb-3 flex shrink-0 items-center justify-between'>
+        <div className='mt-2.5 mb-3 flex shrink-0 items-center justify-between'>
           <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)]'></h4>
           <button
             disabled={isUploading}
@@ -590,7 +592,11 @@ export default function Attachments({
                       </span>
                     )}
                   </div>
-                  <div className='mt-0.5 flex items-center gap-2'>
+                  <div className='mt-0.5 flex items-center gap-2 flex-wrap'>
+                    <span className='inline-flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
+                      <Icon name='tabler:folder' className='size-3 text-[var(--primary-9)]' />
+                      {(file as any).folderName || (file.isAiMatch ? 'Procurement Ledger' : 'Main Repository')}
+                    </span>
                     {file.isAiMatch ? (
                       <span className='text-[11px] text-[var(--gray-9)]'>
                         Added just now · from AI cross-reference
@@ -620,7 +626,7 @@ export default function Attachments({
 
                 <button
                   className='flex size-8 shrink-0 items-center justify-center rounded-lg text-gray-8 opacity-0 transition-colors group-hover:opacity-100 hover:bg-gray-2 hover:text-blue-9'
-                  title='Download'
+                  title={t`Download`}
                   onClick={(e) => handleDownload(e, file)}
                 >
                   <Icon className='size-4' name='tabler:download' />

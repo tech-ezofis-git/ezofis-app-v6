@@ -622,7 +622,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
-                  Credits consumed
+                  {t`Credits consumed`}
                 </div>
                 <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
                   {isLoading || isMasterLoading ? (
@@ -681,7 +681,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
-                  Top activity by credits
+                  {t`Top activity by credits`}
                 </div>
                 <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
                   {isLoading ? (
@@ -711,7 +711,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-cyan-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
-                  Peak usage period
+                  {t`Peak usage period`}
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
                   {isLoading ? (
@@ -734,7 +734,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-primary-9 bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
-                  Active AI agents
+                  {t`Active AI agents`}
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
                   {isLoading ? (
@@ -762,7 +762,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             <div className='cursor-pointer rounded-xl border border-t-[3px] border-[var(--border-default)] border-t-success bg-surface p-3.5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 flex flex-col justify-between min-h-[120px]'>
               <div>
                 <div className='text-8px font-poppins font-semibold text-gray-11 uppercase'>
-                  Forecast EOM usage
+                  {t`Forecast EOM usage`}
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
                   {isLoading ? (
@@ -802,19 +802,19 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
 
           {/* Dummy Charts Row */}
           <div className='mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4'>
-            <DummyChartCard title='Daily credit usage' subtitle='Last 14 days'>
+            <DummyChartCard title={t`Daily credit usage`} subtitle={t`Last 14 days`}>
               <DailyCreditUsageChart />
             </DummyChartCard>
 
-            <DummyChartCard title='Weekly credit consumption' subtitle='By agent, stacked'>
+            <DummyChartCard title={t`Weekly credit consumption`} subtitle={t`By agent, stacked`}>
               <WeeklyCreditConsumptionChart />
             </DummyChartCard>
 
-            <DummyChartCard title='Monthly credit trend' subtitle='Feb – Jul 2026'>
+            <DummyChartCard title={t`Monthly credit trend`} subtitle={t`Feb – Jul 2026`}>
               <MonthlyCreditTrendChart />
             </DummyChartCard>
 
-            <DummyChartCard title='Credit forecast' subtitle='Actual vs projected'>
+            <DummyChartCard title={t`Credit forecast`} subtitle={t`Actual vs projected`}>
               <CreditForecastChart />
             </DummyChartCard>
           </div>

@@ -10,13 +10,21 @@ import type {
   AskAiPageContext,
 } from './types'
 
-export const CHATBOT_API_BASE =
-  import.meta.env.VITE_CHATBOT_API_URL || 'http://52.172.32.88:7071'
+export const CHATBOT_API_BASE = (
+  import.meta.env.VITE_CHATBOT_API_URL ||
+  import.meta.env.VITE_V6_BASE_URL ||
+  'https://demo.ezofis.com/v6api/api'
+)
+  .trim()
+  .replace(/\/+$/, '')
+
+export const CHATBOT_ENDPOINT = `${CHATBOT_API_BASE}/repositories/assistant/chatbot`
+export const SEARCH_ENDPOINT = `${CHATBOT_API_BASE}/repositories/assistant/search`
 
 export type ChatbotRequestBody = {
   actionFrom: string
   message: string
-  specificId: string
+  specificId: string | null
   tenantId: string
   token: string
 }
@@ -35,10 +43,10 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
       typeof window === 'undefined'
         ? Buffer.from(padded, 'base64').toString('utf8')
         : decodeURIComponent(
-            Array.from(atob(padded))
-              .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`)
-              .join(''),
-          )
+          Array.from(atob(padded))
+            .map((c) => `%${c.charCodeAt(0).toString(16).padStart(2, '0')}`)
+            .join(''),
+        )
     return JSON.parse(json) as Record<string, unknown>
   } catch {
     return null
@@ -200,7 +208,7 @@ export async function postChatbotMessage(
     try {
       const { getSession, getTenants } = await import('@/api/v6/auth')
       await getSession()
-      ;({ accessToken, tenantId } = resolveChatbotAuth())
+        ; ({ accessToken, tenantId } = resolveChatbotAuth())
 
       if (!tenantId) {
         const store = authUserStore.getState()
@@ -238,21 +246,24 @@ export async function postChatbotMessage(
     )
   }
 
+  const specificId = String(pageContext.specificId || '').trim()
   const body: ChatbotRequestBody = {
     actionFrom: pageContext.actionFrom || 'Dashboard',
     message,
-    specificId: pageContext.specificId || '',
+    specificId: specificId || null,
     tenantId,
     token: accessToken.startsWith('Bearer ')
       ? accessToken
       : `Bearer ${accessToken}`,
   }
 
-  const response = await fetch(`${CHATBOT_API_BASE}/api/chatbot`, {
+  const response = await fetch(CHATBOT_ENDPOINT, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      Authorization: body.token,
+      'X-Tenant-Id': tenantId,
     },
     body: JSON.stringify(body),
   })

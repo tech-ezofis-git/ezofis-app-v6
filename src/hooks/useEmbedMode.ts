@@ -12,6 +12,7 @@ export interface EmbedModeState {
   sessionToken?: string
   hasTopbar: boolean
   hasActions: boolean
+  hasLogo: boolean
 }
 
 /**
@@ -20,16 +21,23 @@ export interface EmbedModeState {
   */
 export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
   const location = useLocation()
-  
+
   const isEmbedPath = location.pathname.startsWith('/embed')
-  
-  const searchParams = new URLSearchParams(location.search)
+
+  const searchParams = new URLSearchParams(
+    location.searchStr.startsWith('?')
+      ? location.searchStr.slice(1)
+      : location.searchStr,
+  )
   const isEmbedQuery = searchParams.get('embed') === 'true'
   const sessionToken = searchParams.get('session') ?? undefined
-  const hasTopbar =
-    searchParams.get('topbar') === 'true' || searchParams.get('brand') === 'true' || true
+  const hasTopbar = searchParams.get('topbar') !== 'false'
   const hasActions =
-    searchParams.get('actions') === 'true' || searchParams.get('showActions') === 'true'
+    searchParams.get('actions') === 'true' ||
+    searchParams.get('showActions') === 'true'
+  const hasLogo =
+    searchParams.get('logo') === 'true' ||
+    searchParams.get('showLogo') === 'true'
 
   const isEmbed = isEmbedPath || isEmbedQuery
 
@@ -38,6 +46,7 @@ export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
     sessionToken,
     hasTopbar,
     hasActions,
+    hasLogo,
   }
 }
 

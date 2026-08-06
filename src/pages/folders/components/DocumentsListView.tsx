@@ -11,7 +11,10 @@ import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
 import type { Option } from '@/types/option'
-import type { DynamicRepositoryColumn } from '../api/folderApi'
+import type {
+  DynamicRepositoryColumn,
+  RepositoryItemFilterField,
+} from '../api/folderApi'
 import type {
   ExplorerView,
   FileItem,
@@ -52,10 +55,12 @@ type DocumentsListViewProps = {
   filterOptionsCache?: FolderFilterOptionsCache
   folderFilterOptionSource?: FolderItem[]
   folders?: FolderItem[]
+  itemFilterFields?: RepositoryItemFilterField[]
   loading?: boolean
   loadingPage?: boolean
   refreshing?: boolean
   repositories?: TreeNode[]
+  repositoryId?: string
   searchQuery?: string
   view: ExplorerView
   onAiSummary: (id: string) => void
@@ -288,6 +293,7 @@ export function DocumentsListView({
   filterOptionsCache = {},
   folderFilterOptionSource = [],
   folders = [],
+  itemFilterFields = [],
   loading = false,
   loadingPage = false,
   onAiSummary,
@@ -308,6 +314,7 @@ export function DocumentsListView({
   onWorkflow,
   refreshing = false,
   repositories = [],
+  repositoryId = '',
   searchQuery: searchQueryProp = '',
   setView,
   view,
@@ -725,7 +732,9 @@ export function DocumentsListView({
           folderFilterOptionSource={folderFilterOptionSource}
           folders={folders}
           isBusy={isBusy}
+          itemFilterFields={itemFilterFields}
           refreshing={refreshing}
+          repositoryId={repositoryId}
           searchPlaceholder={t`Search invoice, supplier, PO...`}
           searchQuery={searchQuery}
           view={view}
@@ -882,11 +891,6 @@ export function DocumentsListView({
             icon='share'
             label={t`Share`}
             onClick={() => closeAndRun(() => onShare(openMenuId))}
-          />
-          <MenuItem
-            icon='clock'
-            label={t`Start Workflow`}
-            onClick={() => closeAndRun(() => onWorkflow(openMenuId))}
           />
 
           <div className='my-2 border-t border-gray-3' />

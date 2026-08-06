@@ -944,6 +944,228 @@ const hasComparableValue = (val: unknown) => {
   return normalized !== '' && normalized !== '-'
 }
 
+const AiRelatedDocsPromptBar = ({
+  onSearch,
+  supplierName,
+  initialText,
+}: {
+  onSearch: (prompt?: string) => void
+  supplierName?: string
+  initialText?: string
+  isComplete?: boolean
+}) => {
+  const defaultText = useMemo(() => {
+    if (initialText) return initialText
+    return supplierName
+      ? `Check for related purchase orders or invoices for ${supplierName}.`
+      : 'Check for related purchase orders or invoices for this supplier.'
+  }, [initialText, supplierName])
+
+  const [promptText, setPromptText] = useState(defaultText)
+  const [isFocused, setIsFocused] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    if (initialText) {
+      setPromptText(initialText)
+    }
+  }, [initialText])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      onSearch(promptText)
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-[var(--primary-3)] bg-[var(--surface-primary)] p-2 pl-3 shadow-xs border-l-4 border-l-[var(--primary-9)] transition-all duration-300 cursor-text',
+        isFocused
+          ? 'border-[var(--primary-5)] ring-2 ring-[var(--primary-4)]/25 shadow-md'
+          : 'hover:border-[var(--primary-4)]',
+      )}
+      onClick={() => textareaRef.current?.focus()}
+    >
+      <div className='flex flex-1 items-center gap-2.5 min-w-0'>
+        <AiBrandIcon className='size-4 shrink-0 text-[var(--primary-9)]' variant='outline-purple' />
+        <div className='flex-1 flex items-center min-w-0'>
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className='w-full resize-none border-none bg-transparent p-0 text-xs font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:outline-none focus:ring-0 leading-relaxed overflow-hidden caret-[var(--primary-9)]'
+            placeholder='Describe what related documents you want to find...'
+            value={promptText}
+            onChange={(e) => setPromptText(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+      </div>
+
+      <button
+        type='button'
+        className='relative inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-3 py-1.5 text-xs font-bold text-[var(--primary-9)] shadow-xs transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
+        onClick={(e) => {
+          e.stopPropagation()
+          onSearch(promptText)
+        }}
+      >
+        <Icon name='tabler:wand' className='h-3.5 w-3.5' />
+        Check for matches
+      </button>
+    </div>
+  )
+}
+
+const AiRelatedDocsCompleteCard = ({
+  supplierName,
+  data,
+  attachedDocs,
+  setAttachedDocs,
+  onSearch,
+}: {
+  supplierName?: string
+  data: any
+  attachedDocs: Record<string, boolean>
+  setAttachedDocs: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  onSearch: (prompt?: string) => void
+}) => {
+  const initialText = useMemo(
+    () => `Related documents for ${supplierName || 'Northern Suppliers'}`,
+    [supplierName],
+  )
+  const [text, setText] = useState(initialText)
+  const [isEditing, setIsEditing] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const isModified = text.trim() !== initialText.trim()
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      onSearch(text)
+    }
+  }
+
+  return (
+    <div className='mb-4 rounded-xl border border-[var(--primary-3)] border-l-4 border-l-[var(--primary-9)] bg-[var(--surface-primary)] p-3 shadow-xs transition-all hover:shadow-md animate-in fade-in zoom-in-95 duration-400 fill-mode-both'>
+      {/* Top Header Row: Editable Related Text + Matches Pill or Check for Matches Button */}
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 min-w-0'>
+        <div
+          className='flex flex-1 items-center gap-2.5 min-w-0 cursor-text'
+          onClick={() => textareaRef.current?.focus()}
+        >
+          <AiBrandIcon className='size-4 shrink-0 text-[var(--primary-9)]' variant='outline-purple' />
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className='w-full resize-none border-none bg-transparent p-0 text-xs font-bold text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:outline-none focus:ring-0 leading-relaxed overflow-hidden caret-[var(--primary-9)]'
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value)
+              setIsEditing(true)
+            }}
+            onFocus={() => setIsEditing(true)}
+            onBlur={() => {
+              if (!isModified) setIsEditing(false)
+            }}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+
+        <div className='flex items-center gap-2 shrink-0 self-end sm:self-center'>
+          {(isEditing || isModified) ? (
+            <button
+              type='button'
+              className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-3 py-1.5 text-xs font-bold text-[var(--primary-9)] shadow-xs transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
+              onClick={() => onSearch(text)}
+            >
+              <Icon name='tabler:wand' className='h-3.5 w-3.5' />
+              Check for matches
+            </button>
+          ) : (
+            <span className='rounded-full bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shrink-0'>
+              {data?.chips?.length ?? 0} matches
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Document Chips Row */}
+      <div className='flex flex-wrap items-center gap-2.5 pt-2.5 mt-2.5 border-t border-[var(--gray-3)]'>
+        {data?.chips?.map((rawChip: any, idx: number) => {
+          const chip = {
+            ...rawChip,
+            type: rawChip.type || (rawChip.id.includes('PO') ? 'PO' : 'INV'),
+            confidence: rawChip.confidence || (idx === 0 ? 92 : idx === 1 ? 88 : 74),
+            folderName:
+              rawChip.folderName ||
+              (rawChip.id.includes('PO') ? 'Procurement Ledger' : 'Vendor Archive'),
+          }
+          const isAttached = attachedDocs[chip.id]
+          return (
+            <div
+              className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-1.5 text-xs shadow-xs transition-all hover:scale-[1.02] hover:border-[var(--primary-4)] hover:bg-[var(--surface-primary)] hover:shadow-sm active:scale-98 animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both'
+              style={{ animationDelay: `${idx * 80}ms` }}
+              key={chip.id}
+            >
+              <div className='flex items-center gap-1.5 min-w-0'>
+                <Icon
+                  name='tabler:file-text'
+                  className='h-4 w-4 text-[var(--red-9)] shrink-0'
+                />
+                <button
+                  className='font-bold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate max-w-[130px] text-left transition-colors'
+                  title='View Document'
+                >
+                  {chip.id}.pdf
+                </button>
+              </div>
+
+              {/* Folder Name Badge */}
+              <span
+                className='flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'
+                title={`Folder: ${chip.folderName}`}
+              >
+                <Icon name='tabler:folder' className='h-3 w-3 text-[var(--primary-9)]' />
+                {chip.folderName}
+              </span>
+
+              <span className='text-[var(--gray-9)] tabular-nums text-xs font-medium shrink-0'>
+                {chip.confidence}%
+              </span>
+
+              <button
+                className={cn(
+                  'flex h-5 w-5 items-center justify-center rounded transition-all text-xs font-bold shrink-0 active:scale-90',
+                  isAttached
+                    ? 'bg-[var(--green-2)] text-[var(--green-9)]'
+                    : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]',
+                )}
+                title={isAttached ? 'Attached' : 'Attach to invoice'}
+                onClick={() =>
+                  setAttachedDocs((prev) => ({
+                    ...prev,
+                    [chip.id]: !prev[chip.id],
+                  }))
+                }
+              >
+                <Icon
+                  name={isAttached ? 'tabler:check' : 'tabler:plus'}
+                  className='h-3.5 w-3.5'
+                />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 const FormCard = ({
   highlight = false,
   icon: FieldIcon,
@@ -953,6 +1175,7 @@ const FormCard = ({
   options = [],
   poValue,
   score,
+  source,
   type = 'text',
   value,
   onChange,
@@ -960,9 +1183,13 @@ const FormCard = ({
 }: any) => {
   const [isEditing, setIsEditing] = useState(false)
   const [localValue, setLocalValue] = useState(value)
+  const [userEdited, setUserEdited] = useState(false)
+  const [appliedSource, setAppliedSource] = useState<string | null>(null)
 
   useEffect(() => {
     setLocalValue(value)
+    setUserEdited(false)
+    setAppliedSource(null)
   }, [value])
 
   const isUsingPo =
@@ -981,14 +1208,96 @@ const FormCard = ({
       ? 100
       : score
 
+  const activeSource = useMemo(() => {
+    if (
+      userEdited ||
+      (localValue !== value &&
+        localValue !== '-' &&
+        localValue !== '' &&
+        localValue !== null &&
+        localValue !== undefined)
+    ) {
+      return 'manual'
+    }
+    if (appliedSource) {
+      return appliedSource
+    }
+    if (isUsingPo) {
+      return 'po_master'
+    }
+    if (source) {
+      return source
+    }
+    const normKey = String(label || '').toLowerCase()
+    if (
+      normKey.includes('terms') ||
+      normKey.includes('due date') ||
+      normKey.includes('status') ||
+      normKey.includes('match')
+    ) {
+      return 'ai'
+    }
+    return 'ocr'
+  }, [userEdited, localValue, value, appliedSource, isUsingPo, source, label])
+
+  const renderSourceBadge = (src: string) => {
+    const norm = String(src || '').toLowerCase()
+    if (norm === 'manual') {
+      return (
+        <span
+          title='Source: Manual Entry'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--orange-4)] bg-[var(--orange-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--orange-10)] tracking-tight'
+        >
+          <Icon name='lucide:pencil' className='h-2.5 w-2.5' />
+          MANUAL
+        </span>
+      )
+    }
+    if (norm === 'po_master' || norm === 'po') {
+      return (
+        <span
+          title='Source: PO Master Database'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-4)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--blue-10)] tracking-tight'
+        >
+          <Icon name='lucide:briefcase' className='h-2.5 w-2.5' />
+          PO MASTER
+        </span>
+      )
+    }
+    if (norm === 'ai' || norm === 'ai_agent') {
+      return (
+        <span
+          title='Source: AI Agent'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--primary-4)] bg-[var(--primary-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--primary-10)] tracking-tight'
+        >
+          <AiBrandIcon className='size-[11px] shrink-0' />
+          AI
+        </span>
+      )
+    }
+    return (
+      <span
+        title='Source: OCR Extraction'
+        className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--gray-4)] bg-[var(--gray-2)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--gray-11)] tracking-tight'
+      >
+        <Icon name='lucide:scan' className='h-2.5 w-2.5' />
+        OCR
+      </span>
+    )
+  }
+
   const applySourceValue = (nextValue: unknown) => {
     setLocalValue(nextValue)
+    const isSwitchingToPo = !isUsingPo
+    setAppliedSource(isSwitchingToPo ? 'po_master' : 'ocr')
+    setUserEdited(false)
     onChange?.(nextValue)
   }
 
   const handleBlur = () => {
     setIsEditing(false)
     if (localValue !== value) {
+      setUserEdited(true)
       onChange?.(localValue)
     }
   }
@@ -997,6 +1306,7 @@ const FormCard = ({
     if (e.key === 'Enter') handleBlur()
     if (e.key === 'Escape') {
       setLocalValue(value)
+      setUserEdited(false)
       setIsEditing(false)
     }
   }
@@ -1009,6 +1319,7 @@ const FormCard = ({
         value={localValue}
         onChange={(val: any) => {
           setLocalValue(val)
+          setUserEdited(true)
           onFocus?.(val)
         }}
       />
@@ -1036,6 +1347,7 @@ const FormCard = ({
               ? String(val.name)
               : String(val?.id || val?.name || '')
           setLocalValue(stringVal)
+          setUserEdited(true)
           onFocus?.(stringVal)
           onChange?.(stringVal)
           setTimeout(() => setIsEditing(false), 0)
@@ -1053,6 +1365,7 @@ const FormCard = ({
         onBlur={handleBlur}
         onChange={(e) => {
           setLocalValue(e.target.value)
+          setUserEdited(true)
           onFocus?.(e.target.value)
         }}
         onFocus={() => onFocus?.(localValue)}
@@ -1078,9 +1391,12 @@ const FormCard = ({
         </div>
         <div className='min-w-0 flex-1'>
           <div className='mb-0.5 flex items-center justify-between gap-2'>
-            <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
-              {label}
-            </p>
+            <div className='flex items-center gap-1.5 min-w-0 truncate'>
+              <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate'>
+                {label}
+              </p>
+              {renderSourceBadge(activeSource)}
+            </div>
             {effectiveScore !== undefined && effectiveScore !== null && (
               <span
                 className={cn(
@@ -1125,9 +1441,12 @@ const FormCard = ({
       </div>
       <div className='min-w-0 flex-1'>
         <div className='mb-0.5 flex items-center justify-between gap-2'>
-          <p className='text-[10px] font-semibold text-[var(--gray-11)]'>
-            {label}
-          </p>
+          <div className='flex items-center gap-1.5 min-w-0 truncate'>
+            <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate'>
+              {label}
+            </p>
+            {renderSourceBadge(activeSource)}
+          </div>
           {effectiveScore !== undefined && effectiveScore !== null && (
             <span
               className={cn(
@@ -1802,7 +2121,7 @@ const Overview = (props: any) => {
   }
 
   // Related Documents Handler
-  const handleFindRelatedDocumentsClick = async () => {
+  const handleFindRelatedDocumentsClick = async (_customPrompt?: string) => {
     if (!docId) return
     try {
       setRelatedDocsState({ status: 'pending' })
@@ -4350,6 +4669,25 @@ const Overview = (props: any) => {
                                   />
                                 )
                               })}
+                          <div className='col-span-2 mt-2 flex flex-wrap items-center justify-start gap-4 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)]/40 px-3 py-2 text-[10px] font-medium text-[var(--gray-11)]'>
+                            <span className='font-semibold text-[var(--gray-12)]'>Sources:</span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--gray-9)]' />
+                              OCR
+                            </span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--primary-9)]' />
+                              AI Agent
+                            </span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--blue-9)]' />
+                              PO Master
+                            </span>
+                            <span className='inline-flex items-center gap-1.5'>
+                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--orange-9)]' />
+                              Manual Entry
+                            </span>
+                          </div>
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -4457,7 +4795,7 @@ const Overview = (props: any) => {
                                 className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
                                 name='tabler:loader-2'
                               />
-                              <p className='text-xs font-semibold text-[var(--gray-10)]'>
+                                  <p className='text-xs font-semibold text-[var(--gray-10)]'>
                                 {t`Loading Attachments...`}
                               </p>
                             </div>
@@ -4465,19 +4803,10 @@ const Overview = (props: any) => {
                             <>
                               {/* Related Documents Gated Section */}
                               {relatedDocsState.status === 'not_run' && (
-                                <div className='mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-both'>
-                                  <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiBrandIcon className='size-[16px] shrink-0' />
-                                    <span>Check for related purchase orders or invoices for this supplier.</span>
-                                  </div>
-                                  <button
-                                    className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shadow-sm transition-all hover:scale-[1.02] hover:animate-none hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
-                                    onClick={handleFindRelatedDocumentsClick}
-                                  >
-                                    <Icon name='tabler:wand' className='h-3.5 w-3.5' />
-                                    Check for matches
-                                  </button>
-                                </div>
+                                <AiRelatedDocsPromptBar
+                                  supplierName={supplierName}
+                                  onSearch={(prompt) => handleFindRelatedDocumentsClick(prompt)}
+                                />
                               )}
                               {relatedDocsState.status === 'pending' && (
                                 <div className='mb-3 flex items-center justify-between rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] opacity-70 animate-in fade-in duration-300'>
@@ -4490,78 +4819,14 @@ const Overview = (props: any) => {
                                 </div>
                               )}
                               {relatedDocsState.status === 'complete' && (
-                                <div className='mb-4 rounded-xl border border-[var(--gray-3)] border-l-4 border-l-[var(--primary-9)] bg-[var(--surface-primary)] p-3.5 shadow-sm transition-all hover:shadow-md animate-in fade-in zoom-in-95 duration-500 fill-mode-both'>
-                                  {/* Header row inside single card */}
-                                  <div className='mb-3 flex items-center justify-between'>
-                                    <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                      <AiBrandIcon className='size-4 shrink-0' variant='outline-purple' />
-                                      <span>
-                                        Related to{' '}
-                                        <strong className='font-bold text-[var(--gray-13)]'>
-                                          {supplierName || 'Nexus Industrial Solutions Ltd'}
-                                        </strong>
-                                      </span>
-                                    </div>
-                                    <span className='rounded-full bg-[var(--primary-2)] px-2.5 py-0.5 text-xs font-semibold text-[var(--primary-9)] shrink-0'>
-                                      {relatedDocsState.data?.chips?.length ?? 0} matches
-                                    </span>
-                                  </div>
-
-                                  {/* Document Chips inside the same card */}
-                                  <div className='flex flex-wrap items-center gap-2.5'>
-                                    {relatedDocsState.data?.chips?.map((rawChip: any, idx: number) => {
-                                      const chip = {
-                                        ...rawChip,
-                                        type: rawChip.type || (rawChip.id.includes('PO') ? 'PO' : 'INV'),
-                                        confidence: rawChip.confidence || (idx === 0 ? 92 : idx === 1 ? 88 : 74),
-                                      };
-                                      const isAttached = attachedDocs[chip.id];
-                                      return (
-                                        <div
-                                          className='flex items-center gap-2.5 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1.5 text-xs shadow-xs transition-all hover:scale-[1.02] hover:border-[var(--primary-4)] hover:bg-[var(--surface-primary)] hover:shadow-sm active:scale-98 animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both'
-                                          style={{ animationDelay: `${idx * 80}ms` }}
-                                          key={chip.id}
-                                        >
-                                          <div className='flex items-center gap-2'>
-                                            <Icon
-                                              name='tabler:file-text'
-                                              className='h-4 w-4 text-[var(--red-9)] shrink-0'
-                                            />
-                                            <button
-                                              className='font-bold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate max-w-[160px] text-left transition-colors'
-                                              title='View Document'
-                                            >
-                                              {chip.id}.pdf
-                                            </button>
-                                          </div>
-
-                                          <span className='text-[var(--gray-9)] tabular-nums text-xs font-medium shrink-0'>
-                                            {chip.confidence}%
-                                          </span>
-
-                                          <button
-                                            className={cn(
-                                              'flex h-5 w-5 items-center justify-center rounded transition-all text-xs font-bold shrink-0 active:scale-90',
-                                              isAttached
-                                                ? 'bg-[var(--green-2)] text-[var(--green-9)]'
-                                                : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]'
-                                            )}
-                                            title={isAttached ? 'Attached' : 'Attach to invoice'}
-                                            onClick={() =>
-                                              setAttachedDocs(prev => ({ ...prev, [chip.id]: !prev[chip.id] }))
-                                            }
-                                          >
-                                            <Icon
-                                              name={isAttached ? 'tabler:check' : 'tabler:plus'}
-                                              className='h-3.5 w-3.5'
-                                            />
-                                          </button>
-                                        </div>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                              )}
+                                 <AiRelatedDocsCompleteCard
+                                   supplierName={supplierName}
+                                   data={relatedDocsState.data}
+                                   attachedDocs={attachedDocs}
+                                   setAttachedDocs={setAttachedDocs}
+                                   onSearch={(prompt) => handleFindRelatedDocumentsClick(prompt)}
+                                 />
+                               )}
 
                               <Attachments
                                 enabled={true}

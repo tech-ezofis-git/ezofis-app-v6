@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
-  getDocumentSecurity,
   getFilterFields,
   putDocumentSecurity,
   type DocumentSecurityCondition,
@@ -15,6 +14,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import Stepper from '@/components/base/Stepper'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Divider from '@/components/base/Divider'
 import Alert from '@/components/base/Alert'
 import Icon from '@/components/base/icon/Icon'
@@ -61,21 +61,6 @@ const STEPPER_ITEMS = [
     id: 2,
     label: 'Review & Save',
   },
-]
-
-const DEFAULT_FIELDS = [
-  'Supplier',
-  'Department',
-  'DocumentType',
-  'Status',
-  'AiStatus',
-  'InvoiceNumber',
-  'PoNumber',
-  'FileName',
-  'Currency',
-  'Buyer',
-  'RiskLevel',
-  'Source',
 ]
 
 const OPERATOR_OPTIONS = [
@@ -179,16 +164,24 @@ const SecurityWizardSkeleton = () => (
 export default function DocumentSecurityRuleWizard({
   folderName,
   repositoryId = '',
+  initialRule = null,
+  existingRules = [],
+  editingIndex = null,
+  onSaveSuccess,
   onClose,
 }: {
   folderName: string
   repositoryId?: string
+  initialRule?: DocumentSecurityRule | null
+  existingRules?: DocumentSecurityRule[]
+  editingIndex?: number | null
+  onSaveSuccess?: () => void
   onClose: () => void
 }) {
   const [step, setStep] = useState<Step>(0)
   const [users, setUsers] = useState<V6UserListItem[]>([])
   const [groups, setGroups] = useState<V6GroupItem[]>([])
-  const [fieldOptions, setFieldOptions] = useState<string[]>(DEFAULT_FIELDS)
+  const [fieldOptions, setFieldOptions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [accessError, setAccessError] = useState<string | null>(null)
@@ -205,130 +198,71 @@ export default function DocumentSecurityRuleWizard({
   const [selectedPrincipals, setSelectedPrincipals] = useState<Principal[]>([])
   const [effectAction, setEffectAction] = useState<'hide' | 'grant'>('hide')
 
-  const applyDocumentSecurityData = useCallback(
-    (docSecData: any, userList: V6UserListItem[], groupList: V6GroupItem[]) => {
-      const loadedRules = docSecData?.rules || []
-      if (loadedRules.length > 0) {
-        const firstRule = loadedRules[0]
-        setEffectAction(firstRule.action === 'grant' ? 'grant' : 'hide')
-
-        const mappedRules: Rule[] = loadedRules.map((r: any, idx: number) => ({
-          id: `rule-${idx + 1}`,
-          matchType: r.match === 'any' ? 'any' : 'all',
-          conditions: (r.conditions || []).map((c: any, cIdx: number) => ({
-            id: `c-${idx + 1}-${cIdx + 1}`,
-            field: c.field || '',
-            operator: normalizeOperatorCode(c.op),
-            value: c.value || '',
-          })),
-        }))
-
-        setRules(mappedRules.length > 0 ? mappedRules : [
-          {
-            id: 'rule-1',
-            matchType: 'all',
-            conditions: [{ id: 'c-1', field: '', operator: 'equals', value: '' }],
-          },
-        ])
-
-        const loadedPrincipals: Principal[] = []
-          ; (firstRule.userIds || []).forEach((uId: string) => {
-            const matched = userList.find((u) => u.id === uId)
-            loadedPrincipals.push({
-              id: uId,
-              name: matched ? (matched.displayName || `${matched.firstName} ${matched.lastName}`.trim()) : uId,
-              type: 'USER',
-            })
-          })
-          ; (firstRule.groupIds || []).forEach((gId: string) => {
-            const matched = groupList.find((g) => (g.id || g.groupId) === gId)
-            loadedPrincipals.push({
-              id: gId,
-              name: matched ? String(matched.name || matched.description || gId) : gId,
-              type: 'GROUP',
-            })
-          })
-        setSelectedPrincipals(loadedPrincipals)
-      }
-    },
-    [],
-  )
-
   const loadDataRequestIdRef = useRef(0)
 
   const loadData = useCallback(async () => {
     const requestId = ++loadDataRequestIdRef.current
     setAccessError(null)
-
-    // Check cache
-    const cachedSec = await getDocumentSecurity(repositoryId, true)
-    if (requestId !== loadDataRequestIdRef.current) return
-
-    const hasCache = Boolean(cachedSec.isFromCache && cachedSec.data)
-
-    if (hasCache) {
-      setIsLoading(false)
-    } else {
-      setIsLoading(true)
-    }
+    setIsLoading(true)
 
     const [uRes, gRes, fieldsRes] = await Promise.all([
       getUsers(),
       getGroups(),
-      getFilterFields(),
+      getFilterFields(repositoryId),
     ])
 
-    if (requestId !== loadDataRequestIdRef.current) {
-      return
-    }
-
-    if (uRes.canceled && gRes.canceled) {
-      return
-    }
+    if (requestId !== loadDataRequestIdRef.current) return
 
     const userList = uRes.canceled ? [] : uRes.data || []
     const groupList = gRes.canceled ? [] : gRes.data || []
     if (!uRes.canceled) setUsers(userList)
     if (!gRes.canceled) setGroups(groupList)
 
-    if (fieldsRes.data && fieldsRes.data.length > 0) {
-      const mergedFields = Array.from(new Set([...fieldsRes.data, ...DEFAULT_FIELDS]))
-      setFieldOptions(mergedFields)
+    if (!fieldsRes.isCanceled) {
+      setFieldOptions(Array.isArray(fieldsRes.data) ? fieldsRes.data : [])
     }
 
-    if (hasCache && cachedSec.data) {
-      applyDocumentSecurityData(cachedSec.data, userList, groupList)
-    }
+    setIsLoading(false)
 
-    // Background Revalidation
-    const docSecRes = await getDocumentSecurity(repositoryId, false)
-    if (docSecRes.isCanceled || requestId !== loadDataRequestIdRef.current) {
-      if (requestId === loadDataRequestIdRef.current) {
-        setIsLoading(false)
-      }
-      return
-    }
+    // Pre-fill initialRule if editing
+    if (initialRule) {
+      setEffectAction(initialRule.action === 'grant' ? 'grant' : 'hide')
 
-    if (docSecRes.status === 401) {
-      showToast({ message: 'Authentication required. Please log in again.', variant: 'error' })
-      setAccessError('Authentication required')
-    } else if (docSecRes.status === 403) {
-      const msg = 'You do not have access to view or edit document security rules.'
-      showToast({ message: msg, variant: 'error' })
-      setAccessError(msg)
-    } else if (docSecRes.status === 404) {
-      showToast({ message: 'Repository not found.', variant: 'error' })
-      setAccessError('Repository not found')
-    } else if (docSecRes.error) {
-      showToast({ message: docSecRes.error, variant: 'error' })
-    } else if (docSecRes.data) {
-      applyDocumentSecurityData(docSecRes.data, userList, groupList)
-    }
+      setRules([
+        {
+          id: 'rule-1',
+          matchType: initialRule.match === 'any' ? 'any' : 'all',
+          conditions: (initialRule.conditions || []).map((c: DocumentSecurityCondition, cIdx: number) => ({
+            id: `c-${cIdx + 1}`,
+            field: c.field || '',
+            operator: normalizeOperatorCode(c.op),
+            value: c.value || '',
+          })),
+        },
+      ])
 
-    if (requestId === loadDataRequestIdRef.current) {
-      setIsLoading(false)
+      const loadedPrincipals: Principal[] = []
+      ;(initialRule.userIds || []).forEach((uId: string) => {
+        const matched = userList.find((u) => u.id === uId)
+        loadedPrincipals.push({
+          id: uId,
+          name: matched ? (matched.displayName || `${matched.firstName || ''} ${matched.lastName || ''}`.trim() || matched.email || uId) : uId,
+          type: 'USER',
+        })
+      })
+
+      ;(initialRule.groupIds || []).forEach((gId: string) => {
+        const matched = groupList.find((g) => (g.id || g.groupId) === gId)
+        loadedPrincipals.push({
+          id: gId,
+          name: matched ? String(matched.name || matched.description || gId) : gId,
+          type: 'GROUP',
+        })
+      })
+
+      setSelectedPrincipals(loadedPrincipals)
     }
-  }, [repositoryId, applyDocumentSecurityData])
+  }, [initialRule])
 
   useEffect(() => {
     void loadData()
@@ -477,23 +411,33 @@ export default function DocumentSecurityRuleWizard({
       }
     }
 
-    const userIds = selectedPrincipals.filter((p) => p.type === 'USER').map((p) => p.id)
-    const groupIds = selectedPrincipals.filter((p) => p.type === 'GROUP').map((p) => p.id)
+    const newRulePayloads: DocumentSecurityRule[] = []
+    selectedPrincipals.forEach((p) => {
+      rules.forEach((r) => {
+        newRulePayloads.push({
+          action: effectAction,
+          match: r.matchType,
+          conditions: r.conditions.map((c) => ({
+            field: c.field.trim(),
+            op: normalizeOperatorCode(c.operator),
+            value: c.value,
+          })),
+          userIds: p.type === 'USER' ? [p.id] : [],
+          groupIds: p.type === 'GROUP' ? [p.id] : [],
+        })
+      })
+    })
 
-    const payloadRules: DocumentSecurityRule[] = rules.map((r) => ({
-      action: effectAction,
-      conditions: r.conditions.map((c) => ({
-        field: c.field.trim(),
-        op: normalizeOperatorCode(c.operator),
-        value: c.value,
-      })),
-      groupIds,
-      match: r.matchType,
-      userIds,
-    }))
+    let updatedRules: DocumentSecurityRule[] = []
+    if (editingIndex != null && editingIndex >= 0 && editingIndex < existingRules.length) {
+      updatedRules = existingRules.filter((_, idx) => idx !== editingIndex)
+      updatedRules.splice(editingIndex, 0, ...newRulePayloads)
+    } else {
+      updatedRules = [...existingRules, ...newRulePayloads]
+    }
 
     setIsSaving(true)
-    const res = await putDocumentSecurity(repositoryId, { rules: payloadRules })
+    const res = await putDocumentSecurity(repositoryId, { rules: updatedRules })
     setIsSaving(false)
 
     if (res.isCanceled) return
@@ -517,13 +461,34 @@ export default function DocumentSecurityRuleWizard({
     }
 
     showToast({ message: 'Document security rules saved successfully.', variant: 'success' })
+    if (onSaveSuccess) onSaveSuccess()
     onClose()
+  }
+
+  const [maxVisitedStep, setMaxVisitedStep] = useState<Step>(
+    editingIndex != null || initialRule != null ? 2 : 0,
+  )
+
+  const goToStep = (nextStep: Step) => {
+    if (nextStep > 0 && nextStep > step) {
+      if (nextStep === 2 && selectedPrincipals.length === 0) {
+        showToast({
+          message: 'Select at least one user or group for target assignment.',
+          variant: 'error',
+        })
+        setStep(1)
+        return
+      }
+    }
+
+    setStep(nextStep)
+    setMaxVisitedStep((prev) => Math.max(prev, nextStep) as Step)
   }
 
   const formattedSteps = STEPPER_ITEMS.map((s, idx) => ({
     ...s,
-    clickable: idx <= step,
-    disabled: idx > step,
+    clickable: idx <= maxVisitedStep,
+    disabled: idx > maxVisitedStep,
   }))
 
   const renderStepContent = () => {
@@ -546,7 +511,7 @@ export default function DocumentSecurityRuleWizard({
         <div className="flex flex-col gap-4">
           <div>
             <h2 className="text-15 font-semibold text-gray-13">
-              Set up document security rules
+              {editingIndex != null ? 'Edit document security rule' : 'Set up document security rules'}
             </h2>
             <p className="mt-0.5 text-xs text-gray-11">
               Control document-level access by evaluating metadata fields.
@@ -557,9 +522,6 @@ export default function DocumentSecurityRuleWizard({
 
           {/* Rule Action Cards */}
           <div className="space-y-1.5">
-            {/* <label className="text-[11px] font-semibold text-gray-11">
-              Rule Action
-            </label> */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <button
                 type="button"
@@ -692,6 +654,8 @@ export default function DocumentSecurityRuleWizard({
                         <InputSelect
                           options={fieldSelectOptions}
                           placeholder="Select field..."
+                          searchable
+                          searchPlaceholder="Search fields..."
                           value={cond.field ? { id: cond.field, name: cond.field } : null}
                           onChange={(option) => updateCondition(rule.id, cond.id, 'field', option?.name || '')}
                         />
@@ -902,7 +866,7 @@ export default function DocumentSecurityRuleWizard({
             </div>
 
             <div className="space-y-2">
-              {rules.map((rule, idx) => {
+              {rules.map((rule) => {
                 const matchText = rule.matchType === 'all'
                   ? 'All conditions must match'
                   : 'Any condition can match'
@@ -954,13 +918,23 @@ export default function DocumentSecurityRuleWizard({
     <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-gray-1">
       {/* Top Header */}
       <div className="mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3.5 md:px-8">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-15 font-semibold tracking-tight text-gray-13">
-            Document Security Setup — {folderName}
-          </h2>
-          <p className="text-xs text-gray-11">
-            Configure metadata-based document security rules for folder &quot;{folderName}&quot;
-          </p>
+        <div className="flex items-center gap-3">
+          <IconButton
+            ariaLabel="Back"
+            color="gray"
+            icon="lucide:arrow-left"
+            size="sm"
+            variant="ghost"
+            onClick={onClose}
+          />
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-15 font-semibold tracking-tight text-gray-13">
+              {editingIndex != null ? 'Edit Document Security Rule' : 'Document Security Setup'} — {folderName}
+            </h2>
+            <p className="text-xs text-gray-11">
+              Configure metadata-based document security rules for folder &quot;{folderName}&quot;
+            </p>
+          </div>
         </div>
       </div>
 
@@ -972,7 +946,7 @@ export default function DocumentSecurityRuleWizard({
             active={step}
             orientation="vertical"
             steps={formattedSteps}
-            setActive={(newStep) => setStep(newStep as Step)}
+            setActive={(newStep) => goToStep(newStep as Step)}
           />
         </aside>
 
@@ -990,7 +964,7 @@ export default function DocumentSecurityRuleWizard({
                 label="Back"
                 size="sm"
                 variant="outline"
-                onClick={() => setStep((step - 1) as Step)}
+                onClick={() => goToStep((step - 1) as Step)}
               />
 
               {step === 2 ? (
@@ -1010,7 +984,7 @@ export default function DocumentSecurityRuleWizard({
                   label="Continue"
                   size="sm"
                   suffixIcon="tabler:arrow-right"
-                  onClick={() => setStep((step + 1) as Step)}
+                  onClick={() => goToStep((step + 1) as Step)}
                 />
               )}
             </div>

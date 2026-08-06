@@ -17,6 +17,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import {
   createMenu as createMenuApi,
   deleteMenu as deleteMenuApi,
@@ -125,7 +126,10 @@ const mapApiMenuToAppMenu = (menu: V6MenuItem): AppMenu => ({
   sortOrder: Number(menu.sortOrder ?? 0),
 })
 
-export default function MenuProfileManagement({ onBack }: MenuProps) {
+export default function MenuProfileManagement({
+  onBack,
+}: MenuProps) {
+  const { t } = useLingui()
   const [menus, setMenus] = useState<AppMenu[]>([])
   const [isLoadingMenus, setIsLoadingMenus] = useState(true)
   const [isLoadingMenuDetails, setIsLoadingMenuDetails] = useState(false)
@@ -342,10 +346,17 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
 
           return (
             <div className='min-w-0'>
-              <div className='truncate font-semibold text-[var(--gray-13)]'>
+              <button
+                className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-50'
+                disabled={isLoadingMenuDetails}
+                type='button'
+                onClick={() => {
+                  void openEditMenu(menu)
+                }}
+              >
                 {menu.label}
-              </div>
-              <div className='mt-1 truncate text-sm text-[var(--gray-10)]'>
+              </button>
+              <div className='mt-1 text-sm text-[var(--gray-10)]'>
                 {menu.key}
               </div>
             </div>
@@ -360,7 +371,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
         minSize: 160,
         size: 200,
         cell: ({ getValue }) => (
-          <span className='block max-w-full truncate font-mono text-sm text-[var(--gray-12)]'>
+          <span className='font-mono text-sm text-[var(--gray-12)]'>
             {getValue()}
           </span>
         ),
@@ -428,7 +439,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => {
                     void openEditMenu(menu)
                   }}
@@ -438,7 +449,7 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
                   disabled={menu.isSystem}
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => {
                     void deleteMenu(menu.id, menu.isSystem)
                   }}
@@ -510,13 +521,13 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
     <main className='flex h-full flex-col bg-[var(--surface)]'>
       <ConfirmDialog
         opened={Boolean(deletingMenuId)}
-        title='Delete Menu'
+        title={t`Delete Menu`}
         description={
           deletingMenu
             ? `Are you sure you want to delete "${deletingMenu.label}"? This action cannot be undone.`
             : 'Are you sure you want to delete this menu? This action cannot be undone.'
         }
-        confirmLabel='Delete'
+        confirmLabel={t`Delete`}
         isConfirming={isDeletingMenu}
         variant='danger'
         onCancel={cancelDeleteMenu}
@@ -526,8 +537,8 @@ export default function MenuProfileManagement({ onBack }: MenuProps) {
       />
       <section className='flex min-h-0 flex-1 flex-col'>
         <SettingsPageHeader
-          description='Manage navigation menus, routes, and display order across the platform.'
-          title='Menu & Profile Management'
+          description={t`Manage navigation menus, routes, and display order across the platform.`}
+          title={t`Menu & Profile Management`}
           toolbar={toolbar}
           actions={
             <SettingsHeaderAddButton
@@ -601,6 +612,7 @@ function MenuSetup({
   onSave: () => void
   onStepChange: (step: number) => void
 }) {
+  const { t } = useLingui()
   const [showErrors, setShowErrors] = useState(false)
 
   const getMissingLabels = (step = activeStep) => {
@@ -733,15 +745,15 @@ function MenuSetup({
         <SettingsFormSection>
           {editingMenuId ? (
             <InputText
-              label='Menu Key'
+              label={t`Menu Key`}
               value={formState.key}
               disabled
               onChange={() => undefined}
             />
           ) : (
             <InputText
-              label='Menu Key *'
-              placeholder='e.g. reports'
+              label={t`Menu Key *`}
+              placeholder={t`e.g. reports`}
               value={formState.key}
               error={getFieldRequiredError(
                 'Menu Key',
@@ -752,8 +764,8 @@ function MenuSetup({
             />
           )}
           <InputText
-            label='Label *'
-            placeholder='e.g. Reports'
+            label={t`Label *`}
+            placeholder={t`e.g. Reports`}
             value={formState.label}
             error={getFieldRequiredError(
               'Label',
@@ -768,8 +780,8 @@ function MenuSetup({
       {activeStep === 1 ? (
         <SettingsFormSection>
           <InputText
-            label='Route Path *'
-            placeholder='e.g. /reports'
+            label={t`Route Path *`}
+            placeholder={t`e.g. /reports`}
             value={formState.routePath}
             error={getFieldRequiredError(
               'Route Path',
@@ -781,7 +793,7 @@ function MenuSetup({
             }
           />
           <InputNumber
-            label='Sort Order *'
+            label={t`Sort Order *`}
             min={0}
             value={formState.sortOrder}
             error={
@@ -806,14 +818,14 @@ function MenuSetup({
               Menu Summary
             </h3>
             <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-              <SummaryItem label='Menu Key' value={formState.key || '—'} />
-              <SummaryItem label='Label' value={formState.label || '—'} />
+              <SummaryItem label={t`Menu Key`} value={formState.key || '—'} />
+              <SummaryItem label={t`Label`} value={formState.label || '—'} />
               <SummaryItem
-                label='Route Path'
+                label={t`Route Path`}
                 value={formState.routePath || '—'}
               />
               <SummaryItem
-                label='Sort Order'
+                label={t`Sort Order`}
                 value={String(formState.sortOrder)}
               />
             </div>

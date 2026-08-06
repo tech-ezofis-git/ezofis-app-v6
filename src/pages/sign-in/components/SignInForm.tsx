@@ -2,6 +2,7 @@ import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useSearch } from '@tanstack/react-router'
+import { useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
@@ -33,12 +34,19 @@ type TenantOption = {
 }
 
 const SignInForm = ({ onChangeView }: Props) => {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const { instance: msalInstance } = useMsal()
   console.log(onChangeView)
   const search: any = useSearch({ strict: false })
   const shareToken = search?.shareToken
   const mailid = search?.email || search?.mailid || search?.mailId || ''
+  const redirectTo =
+    typeof search?.redirect === 'string'
+      ? search.redirect
+      : typeof search?.redirectTo === 'string'
+        ? search.redirectTo
+        : null
 
   // === form / ui state ===
   const [email, setEmail] = useState(mailid)
@@ -133,7 +141,7 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   // === navigation after successful login ===
   const handleLoggedNavigation = async () => {
-    await redirectAfterLogin({ navigate, shareTenantId })
+    await redirectAfterLogin({ navigate, redirectTo, shareTenantId })
   }
 
   // === EMAIL + PASSWORD LOGIN (with tenant + social support) ===
@@ -222,7 +230,7 @@ const SignInForm = ({ onChangeView }: Props) => {
 
       if (status === 300 && Array.isArray(data)) {
         showToast({
-          message: 'User found with multiple tenant',
+          message: t`User found with multiple tenants`,
           variant: 'warning',
         })
         const mapped: TenantOption[] = data.map((tenant: any) => ({
@@ -234,14 +242,14 @@ const SignInForm = ({ onChangeView }: Props) => {
         setTenantList(mapped)
         setShowTenantListModal(true)
       } else {
-        showToast({ message: 'SuccessFully Logged in', variant: 'success' })
+        showToast({ message: t`Successfully logged in`, variant: 'success' })
         setShowTenantListModal(false)
         setTenantList([])
         await handleLoggedNavigation()
       }
     } catch (e: any) {
       console.error(e)
-      setError(e?.message ?? 'Unable to sign in')
+      setError(e?.message ?? t`Unable to sign in`)
     } finally {
       setLoading(false)
     }
@@ -253,11 +261,11 @@ const SignInForm = ({ onChangeView }: Props) => {
     setLoginType('')
 
     if (!email) {
-      setError('Email is required')
+      setError(t`Email is required`)
       return
     }
     if (!password) {
-      setError('Password is required')
+      setError(t`Password is required`)
       return
     }
 
@@ -271,7 +279,7 @@ const SignInForm = ({ onChangeView }: Props) => {
       setLoading(true)
 
       if (!email) {
-        setError('Email is required')
+        setError(t`Email is required`)
         setLoading(false)
         return
       }
@@ -293,7 +301,7 @@ const SignInForm = ({ onChangeView }: Props) => {
       }
     } catch (e: any) {
       console.error(e)
-      setError(e?.message ?? 'Error validating email')
+      setError(e?.message ?? t`Error validating email`)
       setLoading(false)
     }
   }
@@ -302,7 +310,7 @@ const SignInForm = ({ onChangeView }: Props) => {
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
     onError: () => {
-      setError('Google sign-in was cancelled or failed')
+      setError(t`Google sign-in was cancelled or failed`)
     },
     onSuccess: async (tokenResponse) => {
       try {
@@ -322,7 +330,7 @@ const SignInForm = ({ onChangeView }: Props) => {
 
         const gEmail: string = profile.email
         if (!gEmail) {
-          throw new Error('No email returned from Google')
+          throw new Error(t`No email returned from Google`)
         }
 
         setSocialEmail(gEmail)
@@ -333,7 +341,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         await signIn(undefined, true, gEmail, 'Google')
       } catch (e: any) {
         console.error(e)
-        setError(e?.message ?? 'Google sign-in failed')
+        setError(e?.message ?? t`Google sign-in failed`)
       } finally {
         setLoading(false)
       }
@@ -359,7 +367,7 @@ const SignInForm = ({ onChangeView }: Props) => {
       const msEmail = account?.username || ''
 
       if (!msEmail) {
-        throw new Error('No email returned from Microsoft')
+        throw new Error(t`No email returned from Microsoft`)
       }
 
       setSocialEmail(msEmail)
@@ -374,9 +382,9 @@ const SignInForm = ({ onChangeView }: Props) => {
         errorMsg.includes('user_cancelled') ||
         errorMsg.includes('User cancelled the flow')
       ) {
-        setError('Microsoft sign-in was cancelled.')
+        setError(t`Microsoft sign-in was cancelled.`)
       } else {
-        setError(errorMsg || 'Microsoft sign-in failed')
+        setError(errorMsg || t`Microsoft sign-in failed`)
       }
     } finally {
       setLoading(false)
@@ -405,10 +413,10 @@ const SignInForm = ({ onChangeView }: Props) => {
   const forgotPassword = () => navigate({ to: '/forgot-password' })
 
   // === derived welcome texts (matches Vue copy) ===
-  let welcomeDescription = 'Hi, Welcome!'
+  let welcomeDescription = t`Hi, Welcome!`
   if (!checkTenant) {
     const appName = isOnpremiseTenant ? 'APP' : 'EZOFIS'
-    welcomeDescription = `Hi, Welcome back to ${appName}`
+    welcomeDescription = t`Hi, Welcome back to ${appName}`
   }
 
   // Show tenant selection UI instead of sign-in form when tenant list is available
@@ -438,18 +446,17 @@ const SignInForm = ({ onChangeView }: Props) => {
               className='text-gray-9 transition-all duration-200 group-hover:-translate-x-1 group-hover:text-primary-11'
               name='tabler:arrow-left'
             />
-            <span>Back to Sign In</span>
+            <span>{t`Back to Sign In`}</span>
           </button>
         </AnimateSlideLeft>
 
         <AnimateSlideLeft delay={0.25} distance={30}>
           <div className='mb-6 text-sm leading-relaxed text-gray-12'>
-            It looks like{' '}
+            {t`It looks like`}{' '}
             <strong className='text-gray-13'>
               {socialLogged ? socialEmail : email}
             </strong>{' '}
-            is used with more than one account. Which account do you want to
-            use?
+            {t`is used with more than one account. Which account do you want to use?`}
           </div>
         </AnimateSlideLeft>
 
@@ -541,7 +548,7 @@ const SignInForm = ({ onChangeView }: Props) => {
             type='button'
             onClick={handleBackToSignIn}
           >
-            Sign in with a different email address
+            {t`Sign in with a different email address`}
           </button>
         </AnimateSlideLeft>
       </>
@@ -555,7 +562,7 @@ const SignInForm = ({ onChangeView }: Props) => {
         className='text-center'
         description={welcomeDescription}
         level={1}
-        title='Sign in to your account'
+        title={t`Sign in to your account`}
       />
 
       {/* This replaces Legend + checkEnv visual in Vue.
@@ -570,7 +577,7 @@ const SignInForm = ({ onChangeView }: Props) => {
               {/* Step 2: normal email/password login */}
               <div className='space-y-4'>
                 <InputText
-                  label='Email'
+                  label={t`Email`}
                   placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
@@ -586,7 +593,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                   }}
                 />
                 <InputPassword
-                  label='Password'
+                  label={t`Password`}
                   // size='lg'
                   value={password}
                   showPlaceholder
@@ -603,7 +610,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                 />
                 <Button
                   className='w-full justify-center'
-                  label='Sign in'
+                  label={t`Sign in`}
                   loading={loading}
                   size='lg'
                   onClick={validate}
@@ -618,7 +625,7 @@ const SignInForm = ({ onChangeView }: Props) => {
               {/* Step 1: email only + continue */}
               <div className='space-y-4'>
                 <InputText
-                  label='Email'
+                  label={t`Email`}
                   placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
@@ -635,7 +642,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                 />
                 <Button
                   className='w-full justify-center'
-                  label='Continue'
+                  label={t`Continue`}
                   loading={loading}
                   size='lg'
                   onClick={validateEmail}
@@ -655,8 +662,8 @@ const SignInForm = ({ onChangeView }: Props) => {
               <>
                 {/* AD Login: username + password */}
                 <InputText
-                  label='User name'
-                  placeholder='username'
+                  label={t`User name`}
+                  placeholder={t`username`}
                   // size='lg'
                   value={email}
                   leftSection={
@@ -671,7 +678,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                   }}
                 />
                 <InputPassword
-                  label='Password'
+                  label={t`Password`}
                   // size='lg'
                   value={password}
                   showPlaceholder
@@ -691,7 +698,7 @@ const SignInForm = ({ onChangeView }: Props) => {
               <>
                 {/* Regular login: Email / Username + password */}
                 <InputText
-                  label='Email / Username'
+                  label={t`Email / Username`}
                   placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
@@ -707,7 +714,7 @@ const SignInForm = ({ onChangeView }: Props) => {
                   }}
                 />
                 <InputPassword
-                  label='Password'
+                  label={t`Password`}
                   // size='lg'
                   value={password}
                   showPlaceholder
@@ -731,7 +738,7 @@ const SignInForm = ({ onChangeView }: Props) => {
             <div className='mt-3 flex items-center justify-between gap-4'>
               <InputCheckbox
                 checked={rememberMe}
-                label='Keep me logged in'
+                label={t`Keep me logged in`}
                 labelClassName='text-gray'
                 onChange={(v) => setRememberMe(Boolean(v))}
               />
@@ -741,14 +748,14 @@ const SignInForm = ({ onChangeView }: Props) => {
                 type='button'
                 onClick={forgotPassword}
               >
-                Forgot password?
+                {t`Forgot password?`}
               </button>
             </div>
           )}
 
           <Button
             className='mt-4 w-full justify-center'
-            label='Sign In'
+            label={t`Sign In`}
             loading={loading}
             size='lg'
             onClick={validate}
@@ -759,7 +766,7 @@ const SignInForm = ({ onChangeView }: Props) => {
           {/* Social section – Vue used <SocialAuths>, here we expose Google + Microsoft directly */}
           {!checkAdLogin && (
             <>
-              <Divider label='Or' />
+              <Divider label={t`Or`} />
               <div className='space-y-3'>
                 <GoogleButton onClick={handleGoogleLogin} />
                 <MicrosoftButton onClick={handleMicrosoftLogin} />

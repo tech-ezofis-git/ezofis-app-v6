@@ -11,6 +11,8 @@ import {
   useRef,
   useState,
 } from 'react'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import { createRepository, deleteRepository, updateRepository } from '@/api/createFolder'
 import { getRepositoryById, getRepositorys } from '@/api/v6/folder/folder'
@@ -290,8 +292,8 @@ const defaultFields: FieldRow[] = [
 
 const wizardSteps: WizardStepItem[] = [
   { description: 'Name & description', id: 1, title: 'Folder Details' },
-  { description: 'Storage provider', id: 2, title: 'Storage' },
-  { description: 'Metadata fields', id: 3, title: 'Fields' },
+  { description: 'Metadata fields', id: 2, title: 'Fields' },
+  { description: 'Storage provider', id: 3, title: 'Storage' },
   { description: 'Version strategy', id: 4, title: 'Versioning' },
   { description: 'ERP & sync mapping', id: 5, title: 'Integrations' },
 ]
@@ -453,18 +455,39 @@ const REPOSITORY_FIELD_DATA_TYPES = [
   'SHORT_TEXT',
   'LONG_TEXT',
   'NUMBER',
+  'BOOLEAN',
   'DATE',
-  'DATE_TIME',
   'TIME',
-  'CURRENCY_AMOUNT',
+  'DATE_TIME',
   'SINGLE_SELECT',
-  'MULTI_SELECT',
-  'YES_NO_TOGGLE',
-  'EMAIL',
-  'PHONE_NUMBER',
-  'URL',
-  'FILE_UPLOAD',
+  'TABLE',
+  'BARCODE',
+  'OMR',
+  'CALCULATED',
+  'AUTO_GENERATED',
+  'LINK',
+  'CURRENCY_AMOUNT',
+  'DYNAMIC_TABLE',
 ] as const
+
+const DATA_TYPE_LABELS: Record<string, string> = {
+  AUTO_GENERATED: 'Auto Generated',
+  BARCODE: 'Barcode',
+  BOOLEAN: 'Boolean',
+  CALCULATED: 'Calculated',
+  CURRENCY_AMOUNT: 'Currency Amount',
+  DATE: 'Date',
+  DATE_TIME: 'Date & Time',
+  DYNAMIC_TABLE: 'Dynamic Table',
+  LINK: 'Link',
+  LONG_TEXT: 'Long Text',
+  NUMBER: 'Number',
+  OMR: 'OMR',
+  SHORT_TEXT: 'Short Text',
+  SINGLE_SELECT: 'Single Select',
+  TABLE: 'Table',
+  TIME: 'Time',
+}
 
 const FOLDER_FIELD_ICON_KEYS = [
   'building',
@@ -501,6 +524,7 @@ const folderIconOptions: SelectOption[] = FOLDER_FIELD_ICON_KEYS.map((key) => ({
 }))
 
 const formatDataTypeLabel = (value: string) =>
+  DATA_TYPE_LABELS[value] ||
   value
     .replace(/_/g, ' ')
     .toLowerCase()
@@ -689,6 +713,7 @@ const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
+  const { t } = useLingui()
   // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
   //   null,
   // )
@@ -852,8 +877,8 @@ export default function DmsFolderConfiguration({
   )
 
   const statusOptions = [
-    { label: 'Active', value: 'active' },
-    { label: 'Archived', value: 'archived' },
+    { label: t`Active`, value: 'active' },
+    { label: t`Archived`, value: 'archived' },
   ]
 
   const openEditRepository = useCallback(async (repository: RepositoryRow) => {
@@ -1117,7 +1142,7 @@ export default function DmsFolderConfiguration({
   }
 
   const goNext = () => {
-    if (step === 2) {
+    if (step === 3) {
       const selectedStorageOption =
         storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
 
@@ -1144,7 +1169,7 @@ export default function DmsFolderConfiguration({
 
     if (isCloudStorageOption(selectedStorageOption) && !storageConnectorId) {
       setShowConnectorError(true)
-      setStep(2)
+      setStep(3)
       return
     }
 
@@ -1230,9 +1255,9 @@ export default function DmsFolderConfiguration({
           item.id === 1
             ? 'tabler:folder'
             : item.id === 2
-              ? 'tabler:database'
+              ? 'tabler:list-details'
               : item.id === 3
-                ? 'tabler:list-details'
+                ? 'tabler:cloud'
                 : item.id === 4
                   ? 'tabler:git-branch'
                   : 'tabler:api',
@@ -1538,6 +1563,7 @@ function FieldNameWithIconInput({
   onChange: (value: string) => void
   onIconChange?: (iconKey: string) => void
 }) {
+  const { t } = useLingui()
   const inputRef = useRef<HTMLInputElement>(null)
   const combobox = useCombobox({
     onDropdownClose: () => onSearch(''),
@@ -1591,7 +1617,7 @@ function FieldNameWithIconInput({
         }}
       >
         <ComboboxSearch
-          placeholder='Search icons'
+          placeholder={t`Search icons`}
           search={search}
           onSearch={onSearch}
         />
@@ -1646,6 +1672,7 @@ function FieldsTable({
   fieldTypeOptions: SelectOption[]
   setFields: Dispatch<SetStateAction<FieldRow[]>>
 }) {
+  const { t } = useLingui()
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -1818,6 +1845,8 @@ function FieldsTable({
               <InputSelect
                 classNames={{ input: 'h-8 text-12' }}
                 options={fieldTypeOptions}
+                searchable
+                searchPlaceholder='Search type'
                 width='target'
                 value={
                   fieldTypeOptions.find(
@@ -1840,7 +1869,7 @@ function FieldsTable({
       fieldColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Folder',
+        header: t`Folder`,
         id: 'folder',
         meta: settingsHeaderMeta.center,
         minSize: 72,
@@ -1954,7 +1983,7 @@ function FieldsTable({
         },
       }),
     ],
-    [editingRowId, fieldTypeOptions],
+    [editingRowId, fieldTypeOptions, t],
   )
 
   const table = useReactTable({
@@ -2147,6 +2176,7 @@ function useRepositoryTable(
     onSecurityRepository: (repository: RepositoryRow) => void
   },
 ) {
+  const { t } = useLingui()
   const columnHelper = createColumnHelper<RepositoryRow>()
   const tableSearchOptions = useSettingsTableSearch()
   const {
@@ -2180,22 +2210,26 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('name', {
         enableSorting: false,
-        header: 'Folder',
+        header: t`Folder`,
         id: 'folder',
-        meta: { ...settingsHeaderMeta.start, label: 'Folder' },
+        meta: { ...settingsHeaderMeta.start, label: t`Folder` },
         minSize: 40,
         size: 200,
-        cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)]'>
-            {String(getValue() || '')}
-          </span>
+        cell: ({ row }) => (
+          <button
+            className='max-w-full text-left text-sm font-semibold text-[var(--gray-13)] transition-colors hover:underline'
+            type='button'
+            onClick={() => onEditRepository(row.original)}
+          >
+            {String(row.original.name || '')}
+          </button>
         ),
       }),
       columnHelper.accessor('description', {
         enableSorting: false,
-        header: 'Description',
+        header: t`Description`,
         id: 'description',
-        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        meta: { ...settingsHeaderMeta.start, label: t`Description` },
         minSize: 40,
         size: 220,
         cell: ({ getValue }) => (
@@ -2206,29 +2240,33 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('storage', {
         enableSorting: false,
-        header: 'Storage',
+        header: t`Storage`,
         id: 'storage',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Storage',
+          label: t`Storage`,
         },
         minSize: 40,
         size: 120,
-        cell: ({ getValue }) => (
-          <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
-        ),
+        cell: ({ getValue }) => {
+          const value = String(getValue() || '')
+          const label = value === 'Default' ? t`Default` : value
+          return (
+            <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
+              {label}
+            </span>
+          )
+        },
       }),
       columnHelper.accessor('documents', {
         enableSorting: false,
-        header: 'Documents',
+        header: t`Documents`,
         id: 'documents',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Documents',
+          label: t`Documents`,
         },
         minSize: 40,
         size: 110,
@@ -2240,12 +2278,12 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Status',
+          label: t`Status`,
         },
         minSize: 40,
         size: 110,
@@ -2261,16 +2299,16 @@ function useRepositoryTable(
                   : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
               ].join(' ')}
             >
-              {isActive ? 'Active' : 'Archived'}
+              {isActive ? t`Active` : t`Archived`}
             </span>
           )
         },
       }),
       columnHelper.accessor('createdAt', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'createdAt',
-        meta: { ...settingsHeaderMeta.start, label: 'Created' },
+        meta: { ...settingsHeaderMeta.start, label: t`Created` },
         minSize: 40,
         size: 145,
         cell: ({ getValue }) => {
@@ -2281,9 +2319,9 @@ function useRepositoryTable(
       }),
       columnHelper.accessor('createdBy', {
         enableSorting: false,
-        header: 'Created By',
+        header: t`Created By`,
         id: 'createdBy',
-        meta: { ...settingsHeaderMeta.start, label: 'Created By' },
+        meta: { ...settingsHeaderMeta.start, label: t`Created By` },
         minSize: 40,
         size: 140,
         cell: ({ getValue }) => (
@@ -2323,12 +2361,12 @@ function useRepositoryTable(
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => onEditRepository(repository)}
                 />
                 <MenuItem
                   icon='lucide:shield'
-                  label='Security'
+                  label={t`Security`}
                   onClick={() => onSecurityRepository(repository)}
                 />
                 <MenuItem
@@ -2419,6 +2457,7 @@ function WizardContent({
   ) => void
   setStorage: (nextStorage: string) => void
 }) {
+  const { t } = useLingui()
   const [newFieldName, setNewFieldName] = useState('')
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
   const [newIsFolder, setNewIsFolder] = useState(false)
@@ -2435,6 +2474,7 @@ function WizardContent({
   >(null)
 
   const loadFieldTypes = useCallback(async () => {
+    const allowedTypes = new Set<string>(REPOSITORY_FIELD_DATA_TYPES)
     const types = new Set<string>(REPOSITORY_FIELD_DATA_TYPES)
     const response = await getRepositorys()
 
@@ -2442,7 +2482,9 @@ function WizardContent({
       response.data.forEach(
         (repository: { fields?: Array<{ dataType?: string }> }) => {
           ; (repository.fields || []).forEach((field) => {
-            if (field.dataType) types.add(field.dataType)
+            if (field.dataType && allowedTypes.has(field.dataType)) {
+              types.add(field.dataType)
+            }
           })
         },
       )
@@ -2452,7 +2494,7 @@ function WizardContent({
   }, [])
 
   useEffect(() => {
-    if (step !== 3) return
+    if (step !== 2) return
     void loadFieldTypes()
   }, [loadFieldTypes, step])
 
@@ -2490,16 +2532,16 @@ function WizardContent({
     return (
       <SettingsFormSection>
         <InputText
-          label='Folder Name *'
-          placeholder='e.g. AP Invoices 2026'
+          label={t`Folder Name *`}
+          placeholder={t`e.g. AP Invoices 2026`}
           value={folderName}
           onChange={(value: string) => setFolderName(value)}
         />
 
         <InputTextarea
-          label='Description'
+          label={t`Description`}
           minRows={3}
-          placeholder='Describe the purpose of this folder...'
+          placeholder={t`Describe the purpose of this folder...`}
           value={description}
           onChange={setDescription}
         />
@@ -2508,6 +2550,106 @@ function WizardContent({
   }
 
   if (step === 2) {
+    return (
+      <SettingsFormSection>
+        <div className='flex flex-col gap-3'>
+          <div>
+            <h3 className='mb-3 text-14/5 font-semibold text-gray-12'>
+              Folder Fields
+            </h3>
+
+            <div className='rounded-lg border border-gray-3 bg-surface p-4'>
+              <div className='flex flex-col gap-4'>
+                <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-end'>
+                  <div>
+                    <label className='mb-2 block text-13 font-medium text-gray-11'>
+                      Field Name
+                    </label>
+                    <FieldNameWithIconInput
+                      iconKey={String(newFieldIcon?.value || 'folder')}
+                      placeholder='e.g. Cost Center'
+                      showIconPicker={newIsFolder}
+                      size='md'
+                      value={newFieldName}
+                      onChange={setNewFieldName}
+                      onIconChange={(iconKey) => {
+                        const option = folderIconOptions.find(
+                          (item) => item.value === iconKey,
+                        )
+                        setNewFieldIcon(option || null)
+                      }}
+                    />
+                  </div>
+
+                  <InputSelect
+                    label='Type'
+                    options={fieldTypeOptions}
+                    placeholder='Field type'
+                    searchable
+                    searchPlaceholder='Search type'
+                    width='target'
+                    value={
+                      fieldTypeOptions.find(
+                        (option) => option.value === newFieldType,
+                      ) ||
+                      fieldTypeOptions[0] ||
+                      null
+                    }
+                    onChange={(selected) => {
+                      if (!selected) return
+                      setNewFieldType(String(selected.value || selected.name))
+                    }}
+                  />
+                </div>
+
+                <div className='flex flex-wrap items-center justify-between gap-3'>
+                  <div className='flex flex-wrap items-center gap-5'>
+                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                      <InputCheckbox
+                        checked={newIsFolder}
+                        onChange={(checked) => {
+                          const isFolder = Boolean(checked)
+                          setNewIsFolder(isFolder)
+                          if (isFolder) setNewIsMandatory(true)
+                        }}
+                      />
+                      Folder
+                    </label>
+
+                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                      <InputCheckbox
+                        checked={newIsFolder || newIsMandatory}
+                        disabled={newIsFolder}
+                        onChange={(checked) =>
+                          setNewIsMandatory(Boolean(checked))
+                        }
+                      />
+                      Mandatory
+                    </label>
+                  </div>
+
+                  <Button
+                    className='h-9'
+                    icon='lucide:plus'
+                    label='Add Field'
+                    onClick={addField}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <FieldsTable
+            fields={fields}
+            fieldTypeOptions={fieldTypeOptions}
+            setFields={setFields}
+          />
+        </div>
+      </SettingsFormSection>
+    )
+  }
+
+  if (step === 3) {
     const selectedStorage =
       storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
     const defaultStorage = storageOptions[0]
@@ -2596,104 +2738,6 @@ function WizardContent({
               onConnectorChange={onStorageConnectorChange}
             />
           ) : null}
-        </div>
-      </SettingsFormSection>
-    )
-  }
-
-  if (step === 3) {
-    return (
-      <SettingsFormSection>
-        <div className='flex flex-col gap-3'>
-          <div>
-            <h3 className='mb-3 text-14/5 font-semibold text-gray-12'>
-              Folder Fields
-            </h3>
-
-            <div className='rounded-lg border border-gray-3 bg-surface p-4'>
-              <div className='flex flex-col gap-4'>
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-end'>
-                  <div>
-                    <label className='mb-2 block text-13 font-medium text-gray-11'>
-                      Field Name
-                    </label>
-                    <FieldNameWithIconInput
-                      iconKey={String(newFieldIcon?.value || 'folder')}
-                      placeholder='e.g. Cost Center'
-                      showIconPicker={newIsFolder}
-                      size='md'
-                      value={newFieldName}
-                      onChange={setNewFieldName}
-                      onIconChange={(iconKey) => {
-                        const option = folderIconOptions.find(
-                          (item) => item.value === iconKey,
-                        )
-                        setNewFieldIcon(option || null)
-                      }}
-                    />
-                  </div>
-
-                  <InputSelect
-                    label='Type'
-                    options={fieldTypeOptions}
-                    placeholder='Field type'
-                    width='target'
-                    value={
-                      fieldTypeOptions.find(
-                        (option) => option.value === newFieldType,
-                      ) ||
-                      fieldTypeOptions[0] ||
-                      null
-                    }
-                    onChange={(selected) => {
-                      if (!selected) return
-                      setNewFieldType(String(selected.value || selected.name))
-                    }}
-                  />
-                </div>
-
-                <div className='flex flex-wrap items-center justify-between gap-3'>
-                  <div className='flex flex-wrap items-center gap-5'>
-                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
-                      <InputCheckbox
-                        checked={newIsFolder}
-                        onChange={(checked) => {
-                          const isFolder = Boolean(checked)
-                          setNewIsFolder(isFolder)
-                          if (isFolder) setNewIsMandatory(true)
-                        }}
-                      />
-                      Folder
-                    </label>
-
-                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
-                      <InputCheckbox
-                        checked={newIsFolder || newIsMandatory}
-                        disabled={newIsFolder}
-                        onChange={(checked) =>
-                          setNewIsMandatory(Boolean(checked))
-                        }
-                      />
-                      Mandatory
-                    </label>
-                  </div>
-
-                  <Button
-                    className='h-9'
-                    icon='lucide:plus'
-                    label='Add Field'
-                    onClick={addField}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <FieldsTable
-            fields={fields}
-            fieldTypeOptions={fieldTypeOptions}
-            setFields={setFields}
-          />
         </div>
       </SettingsFormSection>
     )

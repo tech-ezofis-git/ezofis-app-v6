@@ -138,7 +138,7 @@ const FormsPage = () => {
         size: 200,
         renderCell: (row: any) => (
           <span
-            className='cursor-pointer font-medium underline transition-colors hover:text-gray-13'
+            className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
             onClick={() =>
               navigate({
                 params: { formId: row.uid || row.id },

@@ -1,6 +1,8 @@
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import { Check, MoreHorizontal, UsersRound } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import {
   createGroup as createGroupApi,
   deleteGroup as deleteGroupApi,
@@ -55,24 +57,21 @@ type GroupStep = {
 
 type GroupStepKey = 'details' | 'members' | 'review'
 
-const groupSteps: GroupStep[] = [
+const GROUP_STEP_MSGS = [
   {
-    caption: 'Step 1',
-    description: 'Group name & description',
-    key: 'details',
-    title: 'Group Details',
+    description: msg`Group name & description`,
+    key: 'details' as const,
+    title: msg`Group Details`,
   },
   {
-    caption: 'Step 2',
-    description: 'Assign group members',
-    key: 'members',
-    title: 'Members',
+    description: msg`Assign group members`,
+    key: 'members' as const,
+    title: msg`Members`,
   },
   {
-    caption: 'Step 3',
-    description: 'Review & save group settings',
-    key: 'review',
-    title: 'Review',
+    description: msg`Review & save group settings`,
+    key: 'review' as const,
+    title: msg`Review`,
   },
 ]
 
@@ -87,14 +86,25 @@ const emptyGroup: SettingsGroup = {
   status: 'active',
 }
 
-const statusOptions = [
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
+const STATUS_OPTION_MSGS = [
+  { label: msg`Active`, value: 'active' },
+  { label: msg`Inactive`, value: 'inactive' },
 ]
 
 const groupColumnHelper = createColumnHelper<SettingsGroup>()
 
-export default function GroupManagement({ onBack }: { onBack?: () => void }) {
+export default function GroupManagement({
+  onBack,
+}: { onBack?: () => void }) {
+  const { i18n, t } = useLingui()
+  const statusOptions = useMemo(
+    () =>
+      STATUS_OPTION_MSGS.map((opt) => ({
+        label: i18n._(opt.label),
+        value: opt.value,
+      })),
+    [i18n],
+  )
   const [groups, setGroups] = useState<SettingsGroup[]>([])
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [userOptions, setUserOptions] = useState<SettingsOption[]>([])
@@ -262,7 +272,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     const groupName = draftGroup.name.trim()
     const users = selectedMembers.map((member) => String(member.id))
 
-    if (!groupName || !description || !users.length) return
+    if (!groupName || !users.length) return
 
     if (editingGroupId) {
       setIsSavingGroup(true)
@@ -332,39 +342,41 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         (row) => `${row.name} ${row.description}`,
         {
           enableSorting: false,
-          header: 'Group',
+          header: t`Group`,
           id: 'group',
-          meta: { ...settingsHeaderMeta.start, label: 'Group' },
+          meta: { ...settingsHeaderMeta.start, label: t`Group` },
           minSize: 40,
           size: 200,
           cell: ({ row }) => (
-            <div className='min-w-0 truncate font-semibold text-[var(--gray-13)]'>
+            <button
+              className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline'
+              type='button'
+              onClick={() => openEditGroup(row.original)}
+            >
               {row.original.name}
-            </div>
+            </button>
           ),
         },
       ),
       groupColumnHelper.accessor('description', {
         enableSorting: false,
-        header: 'Description',
+        header: t`Description`,
         id: 'description',
-        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        meta: { ...settingsHeaderMeta.start, label: t`Description` },
         minSize: 40,
         size: 200,
         cell: ({ getValue }) => (
-          <span className='block max-w-full truncate'>
-            {String(getValue() || '—')}
-          </span>
+          <span>{String(getValue() || '—')}</span>
         ),
       }),
       groupColumnHelper.display({
         enableSorting: false,
-        header: 'Members',
+        header: t`Members`,
         id: 'members',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Members',
+          label: t`Members`,
         },
         minSize: 40,
         size: 100,
@@ -376,12 +388,12 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
       }),
       groupColumnHelper.accessor('status', {
         enableSorting: false,
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         meta: {
           ...settingsHeaderMeta.start,
           disableEllipsis: true,
-          label: 'Status',
+          label: t`Status`,
         },
         minSize: 40,
         size: 100,
@@ -389,7 +401,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
       }),
       groupColumnHelper.accessor('created', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'created',
         meta: settingsHeaderMeta.start,
         minSize: 40,
@@ -432,14 +444,14 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => openEditGroup(group)}
                 />
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => deleteGroup(group.id)}
                 />
               </Menu>
@@ -448,7 +460,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         },
       }),
     ],
-    [deleteGroup, isLoadingGroupDetails, openEditGroup],
+    [deleteGroup, isLoadingGroupDetails, openEditGroup, t],
   )
 
   const {
@@ -498,7 +510,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
         onChange={setDraftGroup}
         onMembersChange={setSelectedMembers}
         onNext={() =>
-          setActiveStep((step) => Math.min(step + 1, groupSteps.length - 1))
+          setActiveStep((step) => Math.min(step + 1, 2))
         }
         onSave={saveGroup}
         onStepChange={setActiveStep}
@@ -510,13 +522,13 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
     <main className='flex h-full flex-col bg-[var(--surface)]'>
       <ConfirmDialog
         opened={deletingGroupId != null}
-        title='Delete Group'
+        title={t`Delete Group`}
         description={
           deletingGroup
             ? `Are you sure you want to delete "${deletingGroup.name}"? This action cannot be undone.`
             : 'Are you sure you want to delete this group? This action cannot be undone.'
         }
-        confirmLabel='Delete'
+        confirmLabel={t`Delete`}
         isConfirming={isDeletingGroup}
         variant='danger'
         onCancel={cancelDeleteGroup}
@@ -526,8 +538,8 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
       />
       <section className='flex min-h-0 flex-1 flex-col'>
         <SettingsPageHeader
-          description='Create logical groups to organize users by team, department, or function.'
-          title='Group Management'
+          description={t`Create logical groups to organize users by team, department, or function.`}
+          title={t`Group Management`}
           onBack={onBack}
         />
 
@@ -555,7 +567,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
             filters={[
               {
                 id: 'name',
-                label: 'Name',
+                label: t`Name`,
                 options: groups
                   .map((g) => String(g.name || '').trim())
                   .filter(Boolean)
@@ -564,7 +576,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
                 searchable: true,
                 searchPlaceholder: 'Search name...',
               },
-              { id: 'status', label: 'Status', options: statusOptions },
+              { id: 'status', label: t`Status`, options: statusOptions },
             ]}
             showReset={
               Object.keys(activeFilters).some((k) => activeFilters[k]) ||
@@ -600,7 +612,7 @@ export default function GroupManagement({ onBack }: { onBack?: () => void }) {
             </div>
             <Pagination
               className='mt-4 shrink-0'
-              itemLabel='Groups'
+              itemLabel={t`Groups`}
               page={page}
               pageSize={pageSize}
               showPageNumbers={false}
@@ -646,13 +658,13 @@ function GroupSetup({
   onSave: () => void
   onStepChange: (step: number) => void
 }) {
+  const { i18n, t } = useLingui()
   const [showErrors, setShowErrors] = useState(false)
 
   const getMissingLabels = (step = activeStep) => {
     if (step === 0) {
       return getMissingRequiredLabels([
         { label: 'Group Name', value: draftGroup.name },
-        { label: 'Description', value: draftGroup.description },
       ])
     }
 
@@ -664,7 +676,6 @@ function GroupSetup({
     return [
       ...getMissingRequiredLabels([
         { label: 'Group Name', value: draftGroup.name },
-        { label: 'Description', value: draftGroup.description },
       ]),
       ...(selectedMembers.length ? [] : ['Group Members']),
     ]
@@ -691,7 +702,7 @@ function GroupSetup({
 
     if (missingLabels.length) {
       setShowErrors(true)
-      if (missingLabels.includes('Group Name') || missingLabels.includes('Description')) {
+      if (missingLabels.includes('Group Name')) {
         onStepChange(0)
       } else if (missingLabels.includes('Group Members')) {
         onStepChange(1)
@@ -734,13 +745,13 @@ function GroupSetup({
   }
 
   const wizardSteps = useMemo(() => {
-    return groupSteps.map((s, idx) => ({
+    return GROUP_STEP_MSGS.map((step, idx) => ({
       id: idx,
-      label: s.title,
-      description: s.description,
-      icon: s.key === 'details' ? 'tabler:users' : s.key === 'members' ? 'tabler:user-plus' : 'tabler:check',
+      label: i18n._(step.title),
+      description: i18n._(step.description),
+      icon: step.key === 'details' ? 'tabler:users' : step.key === 'members' ? 'tabler:user-plus' : 'tabler:check',
     }))
-  }, [])
+  }, [i18n])
 
   return (
     <SettingsWizardLayout
@@ -753,18 +764,18 @@ function GroupSetup({
       onCancel={onCancel}
       onBackToSettings={onBack}
       isSaving={isSaving}
-      saveLabel={editingGroupId ? 'Update Group' : 'Save Group'}
-      moduleTitle='Group Management'
-      setupTitle={editingGroupId ? 'Edit Group' : 'Create Group'}
-      headerTitle={editingGroupId ? 'Edit Group Setup' : 'New Group Setup'}
-      headerDescription='Create and manage user group memberships for shared access control'
+      saveLabel={editingGroupId ? t`Update Group` : t`Save Group`}
+      moduleTitle={msg`Group Management`}
+      setupTitle={editingGroupId ? msg`Edit Group` : msg`Create Group`}
+      headerTitle={editingGroupId ? msg`Edit Group Setup` : msg`New Group Setup`}
+      headerDescription={msg`Create and manage user group memberships for shared access control`}
     >
       {activeStep === 0 ? (
         <SettingsFormSection>
           <InputText
             autoFocus={!editingGroupId}
-            label='Group Name *'
-            placeholder='e.g. Finance Team'
+            label={t`Group Name *`}
+            placeholder={t`e.g. Finance Team`}
             value={draftGroup.name}
             error={getFieldRequiredError(
               'Group Name',
@@ -774,15 +785,10 @@ function GroupSetup({
             onChange={(value) => onChange({ ...draftGroup, name: value })}
           />
           <InputTextarea
-            label='Description *'
+            label='Description'
             minRows={4}
-            placeholder='Describe the purpose of this group...'
+            placeholder={t`Describe the purpose of this group...`}
             value={draftGroup.description}
-            error={getFieldRequiredError(
-              'Description',
-              showErrors,
-              draftGroup.description,
-            )}
             onChange={(value) =>
               onChange({ ...draftGroup, description: value })
             }
@@ -830,20 +836,20 @@ function GroupSetup({
             </h3>
             <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
               <SummaryItem
-                label='Group Name'
+                label={t`Group Name`}
                 value={draftGroup.name || '—'}
               />
               <SummaryItem
-                label='Description'
+                label={t`Description`}
                 value={draftGroup.description || '—'}
               />
               <SummaryItem
-                label='Members'
+                label={t`Members`}
                 value={
                   selectedMembers.length
                     ? selectedMembers
-                        .map((member) => member.name)
-                        .join(', ')
+                      .map((member) => member.name)
+                      .join(', ')
                     : '—'
                 }
               />
@@ -862,16 +868,19 @@ function GroupStepIcon({ step }: { step: GroupStepKey }) {
 }
 
 function StatusBadge({ status }: { status: SettingsGroup['status'] }) {
+  const { t } = useLingui()
   const tone =
     status === 'active'
       ? 'border-[var(--green-6)] bg-[var(--green-2)] text-[var(--green-11)]'
       : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-11)]'
 
+  const label = status === 'active' ? t`Active` : t`Inactive`
+
   return (
     <span
       className={`inline-flex rounded-full border px-3 py-1 text-xs font-normal capitalize ${tone}`}
     >
-      {status}
+      {label}
     </span>
   )
 }

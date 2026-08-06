@@ -20,7 +20,7 @@ import {
   generateFolderConfig,
   type FolderConfigField,
   type FolderConfigSuggestion,
-} from '@/services/ai/gemini'
+} from '@/services/ai/folderConfig'
 import cn from '@/utils/cn'
 import {
   BuilderTimelineStep,
@@ -130,8 +130,8 @@ function phaseToStep(phase: ChatPhase): BuilderStepId {
   if (phase === 'welcome' || phase === 'name' || phase === 'details_ready') {
     return 1
   }
-  if (phase === 'storage') return 2
-  if (phase === 'fields' || phase === 'fields_ready') return 3
+  if (phase === 'fields' || phase === 'fields_ready') return 2
+  if (phase === 'storage') return 3
   if (phase === 'versioning') return 4
   if (phase === 'integrations') return 5
   return 6
@@ -316,19 +316,24 @@ function StorageBadge({ storage }: { storage: string }) {
   )
 }
 
-/** Same datatype control as AP onboarding column mapping. */
+/** Same datatype control as repository field configuration. */
 const FIELD_DATA_TYPES = [
   { icon: 'lucide:type', id: 'SHORT_TEXT', name: 'Short Text' },
   { icon: 'tabler:align-left', id: 'LONG_TEXT', name: 'Long Text' },
   { icon: 'tabler:numbers', id: 'NUMBER', name: 'Number' },
+  { icon: 'tabler:toggle-left', id: 'BOOLEAN', name: 'Boolean' },
   { icon: 'tabler:calendar', id: 'DATE', name: 'Date' },
+  { icon: 'tabler:clock-hour-4', id: 'TIME', name: 'Time' },
   { icon: 'tabler:clock', id: 'DATE_TIME', name: 'Date & Time' },
-  { icon: 'tabler:currency-dollar', id: 'CURRENCY_AMOUNT', name: 'Currency' },
-  { icon: 'tabler:list', id: 'SINGLE_SELECT', name: 'Dropdown' },
-  { icon: 'tabler:list-check', id: 'MULTI_SELECT', name: 'Multi Select' },
-  { icon: 'tabler:mail', id: 'EMAIL', name: 'Email' },
-  { icon: 'tabler:phone', id: 'PHONE_NUMBER', name: 'Phone' },
-  { icon: 'tabler:link', id: 'URL', name: 'Link' },
+  { icon: 'tabler:list', id: 'SINGLE_SELECT', name: 'Single Select' },
+  { icon: 'tabler:table', id: 'TABLE', name: 'Table' },
+  { icon: 'tabler:barcode', id: 'BARCODE', name: 'Barcode' },
+  { icon: 'tabler:circles', id: 'OMR', name: 'OMR' },
+  { icon: 'tabler:math-function', id: 'CALCULATED', name: 'Calculated' },
+  { icon: 'tabler:wand', id: 'AUTO_GENERATED', name: 'Auto Generated' },
+  { icon: 'tabler:link', id: 'LINK', name: 'Link' },
+  { icon: 'tabler:currency-dollar', id: 'CURRENCY_AMOUNT', name: 'Currency Amount' },
+  { icon: 'tabler:table-options', id: 'DYNAMIC_TABLE', name: 'Dynamic Table' },
 ] as const
 
 const formatDataTypeLabel = (value: string) => {
@@ -386,12 +391,26 @@ function FieldTypeInlineSelect({
 }) {
   const { t } = useLingui()
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const rootRef = useRef<HTMLDivElement>(null)
   const active =
     FIELD_DATA_TYPES.find((type) => type.id === value) || FIELD_DATA_TYPES[0]
 
+  const filteredTypes = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return FIELD_DATA_TYPES
+    return FIELD_DATA_TYPES.filter(
+      (type) =>
+        type.name.toLowerCase().includes(query) ||
+        type.id.toLowerCase().includes(query),
+    )
+  }, [search])
+
   useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setSearch('')
+      return
+    }
 
     const handlePointerDown = (event: MouseEvent) => {
       if (
@@ -434,29 +453,47 @@ function FieldTypeInlineSelect({
           className='animate-in fade-in zoom-in-95 absolute top-9 right-0 z-50 w-48 rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] py-1.5 shadow-xl duration-150'
           onClick={(event) => event.stopPropagation()}
         >
-          <div className='mb-1 border-b border-[var(--border-default)]/60 px-2.5 pb-1 text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase select-none'>
-            {t`Choose Datatype`}
+          <div className='mb-1 border-b border-[var(--border-default)]/60 px-2.5 pb-1.5'>
+            <div className='relative'>
+              <Icon
+                className='pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-[var(--gray-8)]'
+                name='lucide:search'
+              />
+              <input
+                autoFocus
+                className='h-8 w-full rounded-md border border-[var(--gray-3)] bg-[var(--gray-1)] pr-2 pl-7 text-[12px] text-[var(--gray-13)] outline-none placeholder:text-[var(--gray-8)] focus:border-[var(--primary-7)]'
+                placeholder={t`Search type`}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </div>
           </div>
           <div className='custom-scrollbar max-h-56 overflow-y-auto'>
-            {FIELD_DATA_TYPES.map((type) => (
-              <button
-                key={type.id}
-                type='button'
-                className={cn(
-                  'flex min-h-8 w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--gray-2)]',
-                  value === type.id
-                    ? 'bg-[var(--gray-2)] text-[var(--gray-13)]'
-                    : 'text-[var(--gray-12)] hover:text-[var(--gray-13)]',
-                )}
-                onClick={() => {
-                  onChange(type.id)
-                  setOpen(false)
-                }}
-              >
-                <Icon className='size-3.5 shrink-0' name={type.icon} />
-                <span className='truncate'>{type.name}</span>
-              </button>
-            ))}
+            {filteredTypes.length === 0 ? (
+              <p className='px-3 py-2 text-[12px] text-[var(--gray-9)]'>
+                {t`No types found`}
+              </p>
+            ) : (
+              filteredTypes.map((type) => (
+                <button
+                  key={type.id}
+                  type='button'
+                  className={cn(
+                    'flex min-h-8 w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--gray-2)]',
+                    value === type.id
+                      ? 'bg-[var(--gray-2)] text-[var(--gray-13)]'
+                      : 'text-[var(--gray-12)] hover:text-[var(--gray-13)]',
+                  )}
+                  onClick={() => {
+                    onChange(type.id)
+                    setOpen(false)
+                  }}
+                >
+                  <Icon className='size-3.5 shrink-0' name={type.icon} />
+                  <span className='truncate'>{type.name}</span>
+                </button>
+              ))
+            )}
           </div>
         </div>
       ) : null}
@@ -844,14 +881,14 @@ export default function AiFolderBuilder({
         title: t`Folder Details`,
       },
       {
-        description: t`Choose where documents in this folder will be stored and accessed.`,
+        description: t`Define metadata fields used for search, filtering, and folder structure.`,
         id: 2 as BuilderStepId,
-        title: t`Storage`,
+        title: t`Fields`,
       },
       {
-        description: t`Define metadata fields used for search, filtering, and folder structure.`,
+        description: t`Choose where documents in this folder will be stored and accessed.`,
         id: 3 as BuilderStepId,
-        title: t`Fields`,
+        title: t`Storage`,
       },
       {
         description: t`Decide how document revisions are tracked when files are updated.`,
@@ -1015,8 +1052,8 @@ export default function AiFolderBuilder({
     if (draft.folderName.trim() && draft.description.trim() && activeStep > 1) {
       done.add(1)
     }
-    if (draft.storage.trim() && activeStep > 2) done.add(2)
-    if (editableFields.length > 0 && activeStep > 3) done.add(3)
+    if (editableFields.length > 0 && activeStep > 2) done.add(2)
+    if (draft.storage.trim() && activeStep > 3) done.add(3)
     if (draft.versioning.trim() && activeStep > 4) done.add(4)
     if (draft.integrations.trim() && activeStep > 5) done.add(5)
     if (phase === 'ready') {
@@ -1194,7 +1231,7 @@ export default function AiFolderBuilder({
           t`Recommended ${fields.length} fields for “${answers.folderName}”. Adjust them below, then continue.`,
         undefined,
         'fields_ready',
-        3,
+        2,
       )
 
       if (suggestion.source === 'local') {
@@ -1208,7 +1245,7 @@ export default function AiFolderBuilder({
         error?.message ||
         t`Could not generate fields. Try Recommend fields again.`
       showToast({ message, variant: 'error' })
-      pushAssistant(message, fieldChips, 'fields', 3)
+      pushAssistant(message, fieldChips, 'fields', 2)
     } finally {
       setIsSending(false)
     }
@@ -1272,9 +1309,9 @@ export default function AiFolderBuilder({
       return
     }
     pushAssistant(
-      t`Select the storage provider where documents for this folder should be stored.`,
-      storageChips,
-      'storage',
+      t`How should documents be organized? Choose Recommend fields or another option.`,
+      fieldChips,
+      'fields',
       2,
     )
   }
@@ -1286,10 +1323,10 @@ export default function AiFolderBuilder({
       return
     }
     pushAssistant(
-      t`Which versioning strategy should apply when the same file is uploaded again?`,
-      versioningChips,
-      'versioning',
-      4,
+      t`Select the storage provider where documents for this folder should be stored.`,
+      storageChips,
+      'storage',
+      3,
     )
   }
 
@@ -1310,13 +1347,6 @@ export default function AiFolderBuilder({
     if (stepId === 1) {
       setPhase('details_ready')
     } else if (stepId === 2) {
-      pushAssistant(
-        t`Update the storage provider for this folder.`,
-        storageChips,
-        'storage',
-        2,
-      )
-    } else if (stepId === 3) {
       if (editableFields.length) {
         setPhase('fields_ready')
       } else {
@@ -1324,9 +1354,16 @@ export default function AiFolderBuilder({
           t`How should documents be organized? Choose Recommend fields or another option.`,
           fieldChips,
           'fields',
-          3,
+          2,
         )
       }
+    } else if (stepId === 3) {
+      pushAssistant(
+        t`Update the storage provider for this folder.`,
+        storageChips,
+        'storage',
+        3,
+      )
     } else if (stepId === 4) {
       pushAssistant(
         t`Update the versioning strategy for this folder.`,
@@ -1403,10 +1440,10 @@ export default function AiFolderBuilder({
         return
       }
       pushAssistant(
-        t`${(storageMeta as Record<string, any>)[storage]?.label || storage} selected. How should documents be organized? Choose Recommend fields to generate a starter set.`,
-        fieldChips,
-        'fields',
-        3,
+        t`Which versioning strategy should apply when the same file is uploaded again?`,
+        versioningChips,
+        'versioning',
+        4,
       )
       return
     }
@@ -1424,7 +1461,7 @@ export default function AiFolderBuilder({
         t`Generating recommended fields for this folder…`,
         undefined,
         'fields',
-        3,
+        2,
       )
       await generateFields(
         {
@@ -1573,7 +1610,7 @@ export default function AiFolderBuilder({
             <SparkIconLoading size={16} />
             {stepId === 1
               ? t`Generating description…`
-              : stepId === 3
+              : stepId === 2
                 ? t`Generating recommended fields…`
                 : t`Working…`}
           </div>
@@ -1667,7 +1704,7 @@ export default function AiFolderBuilder({
                     t`How should documents be organized? Choose Recommend fields or another option.`,
                     fieldChips,
                     'fields',
-                    3,
+                    2,
                   )
                 }}
               />

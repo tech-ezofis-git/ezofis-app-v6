@@ -4,6 +4,8 @@ import Icon from './icon/Icon'
 
 const MotionStep = motion.create(Base.Step)
 
+export type StepStatus = 'active' | 'upcoming' | 'completed'
+
 export interface Step {
   id: number
   label: string
@@ -12,6 +14,7 @@ export interface Step {
   disabled?: boolean
   icon?: string
   loading?: boolean
+  status?: StepStatus
 }
 
 interface Props {
@@ -19,6 +22,17 @@ interface Props {
   steps: Step[]
   orientation?: 'horizontal' | 'vertical'
   setActive: (step: number) => void
+}
+
+const resolveStatus = (
+  index: number,
+  active: number,
+  status?: StepStatus,
+): StepStatus => {
+  if (status) return status
+  if (index < active) return 'completed'
+  if (index === active) return 'active'
+  return 'upcoming'
 }
 
 const Stepper = ({
@@ -39,27 +53,33 @@ const Stepper = ({
         stepCompletedIcon: 'text-primary-11 [&>svg]:!size-3.5',
         stepDescription: 'text-xs/5 text-gray-10',
         stepIcon:
-          'border-0 bg-gray-3 text-13 font-semibold text-gray-11 data-[completed]:bg-primary-4 data-[progress]:bg-primary-9 data-[progress]:text-white',
+          'border border-gray-5 bg-transparent text-13 font-semibold text-gray-9 data-[completed]:border-transparent data-[completed]:bg-primary-4 data-[completed]:text-primary-11 data-[progress]:border-transparent data-[progress]:bg-primary-9 data-[progress]:text-white',
         stepLabel: 'm-0 text-13/6 font-medium text-gray-12',
         stepLoader: 'after:border-gray-11 after:border-t-transparent',
         verticalSeparator: 'rounded-full border-gray-3 bg-gray-3',
       }}
       onStepClick={setActive}
     >
-      {steps.map((step, index) => (
-        <MotionStep
-          allowStepSelect={step.clickable}
-          animate={{ opacity: 1, scale: 1 }}
-          description={step.description}
-          disabled={step.disabled}
-          icon={step.icon ? <Icon name={step.icon} /> : undefined}
-          initial={{ opacity: 0, scale: 0.5 }}
-          key={step.id}
-          label={step.label}
-          loading={step.loading}
-          transition={{ delay: index * 0.1, duration: 0.25 }}
-        />
-      ))}
+      {steps.map((step, index) => {
+        const status = resolveStatus(index, active, step.status)
+
+        return (
+          <MotionStep
+            allowStepSelect={step.clickable}
+            animate={{ opacity: 1, scale: 1 }}
+            completedIcon={<Icon name='lucide:check' />}
+            data-status={status}
+            description={step.description}
+            disabled={step.disabled}
+            icon={step.icon ? <Icon name={step.icon} /> : undefined}
+            initial={{ opacity: 0, scale: 0.5 }}
+            key={step.id}
+            label={step.label}
+            loading={step.loading}
+            transition={{ delay: index * 0.1, duration: 0.25 }}
+          />
+        )
+      })}
     </Base>
   )
 }

@@ -1,6 +1,7 @@
 import { useViewportSize } from '@mantine/hooks'
 import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import {
@@ -43,6 +44,7 @@ const items = [
 ]
 
 const Integrations = () => {
+  const { t } = useLingui()
   const { width } = useViewportSize()
   const [isLoading, setIsLoading] = useState(true)
 
@@ -57,7 +59,7 @@ const Integrations = () => {
   const animationVariants = [AnimateFadeIn, AnimateSlideUp, AnimateScale]
 
   return (
-    <Section title='Integrations'>
+    <Section title={t`Integrations`}>
       <div
         className={cn(
           'grid grid-cols-1 gap-4',

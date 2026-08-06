@@ -6,6 +6,7 @@ interface EmbedLayoutProps {
   children: ReactNode
   showTopbar?: boolean
   showActions?: boolean
+  showLogo?: boolean
   title?: string
   topbarActions?: ReactNode
   showAiBadge?: boolean
@@ -20,14 +21,16 @@ const EmbedLayout = ({
   children,
   showTopbar,
   showActions,
+  showLogo,
   title,
   topbarActions,
   showAiBadge,
   hideLogoText,
 }: EmbedLayoutProps) => {
-  const { hasActions, hasTopbar } = useEmbedMode()
+  const { hasActions, hasLogo, hasTopbar } = useEmbedMode()
   const renderTopbar = showTopbar ?? hasTopbar
   const renderActions = showActions ?? hasActions
+  const renderLogo = showLogo ?? hasLogo
 
   return (
     <div className='relative h-svh w-vw overflow-hidden bg-surface-secondary text-gray-13 antialiased'>
@@ -38,6 +41,7 @@ const EmbedLayout = ({
             hideLogoText={hideLogoText}
             showActions={renderActions}
             showAiBadge={showAiBadge}
+            showLogo={renderLogo}
             title={title}
           />
         )}

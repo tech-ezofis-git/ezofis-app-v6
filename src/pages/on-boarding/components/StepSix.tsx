@@ -1,10 +1,6 @@
-import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { savePreQuestions } from '@/api/apiRouter'
 import InputCheckboxCard from '@/components/base/inputs/InputCheckboxCard'
 import InputText from '@/components/base/inputs/InputText'
-import showToast from '@/components/base/toast/showToast'
-import authUserStore from '@/stores/authUserStore'
 import onBoardingStore from '../stores/onBoardingStore'
 import StepFooter from './StepFooter'
 import StepHeader from './StepHeader'
@@ -22,7 +18,6 @@ const businessChallenges = [
 ]
 
 const StepSix = () => {
-  const navigate = useNavigate()
   const answers = onBoardingStore((state) => state.answers)
   const setAnswer = onBoardingStore((state) => state.setAnswer)
 
@@ -58,7 +53,6 @@ const StepSix = () => {
 
   const [selectedIds, setSelectedIds] = useState<number[]>(initialOptionIds)
   const [otherText, setOtherText] = useState<string>(initialOtherText as string)
-  const [loading, setLoading] = useState(false)
 
   // Update answer in store
   const updateStoreAnswer = (ids: number[], text: string) => {
@@ -89,51 +83,6 @@ const StepSix = () => {
   const handleOtherChange = (val: string) => {
     setOtherText(val)
     updateStoreAnswer(selectedIds, val)
-  }
-
-  const handleSubmit = async () => {
-    try {
-      setLoading(true)
-
-      const answers = onBoardingStore.getState().answers
-      const formattedPayload = {
-        questions: Object.entries(answers).map(([qText, qAns]) => ({
-          answer: qAns,
-          question: qText,
-        })),
-      }
-
-      const userId = authUserStore.getState().session?.id
-      if (!userId) {
-        throw new Error('User session not found')
-      }
-
-      console.log(
-        'Sending onboarding answers payload to API:',
-        formattedPayload,
-      )
-
-      const response = await savePreQuestions(userId, formattedPayload)
-      if (response.error) {
-        showToast({ message: response.error, variant: 'error' })
-        return
-      }
-
-      showToast({
-        message: 'Onboarding completed successfully!',
-        variant: 'success',
-      })
-
-      navigate({ replace: true, to: '/' })
-    } catch (e: any) {
-      console.error(e)
-      showToast({
-        message: e?.message ?? 'Failed to save onboarding answers',
-        variant: 'error',
-      })
-    } finally {
-      setLoading(false)
-    }
   }
 
   const isInvalid =
@@ -171,11 +120,7 @@ const StepSix = () => {
         )}
       </div>
 
-      <StepFooter
-        disabled={isInvalid}
-        loading={loading}
-        onNext={handleSubmit}
-      />
+      <StepFooter disabled={isInvalid} />
     </>
   )
 }
