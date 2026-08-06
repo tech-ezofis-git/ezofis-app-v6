@@ -257,10 +257,9 @@ export const mapAiSummaryResponse = (payload: {
     confidence,
     creditConsumed: Boolean(payload.creditConsumed),
     documentId: payload.documentId || '',
-    engineSubtitle: summary
-      ? 'AI-generated document analysis'
-      : 'No summary content returned',
-    engineTitle: 'EZOFIS AI Summary',
+    // Leave chrome strings empty so the view can localize via Lingui.
+    engineSubtitle: '',
+    engineTitle: '',
     facts,
     insight,
     rawOutput,

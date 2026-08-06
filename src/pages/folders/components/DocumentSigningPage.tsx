@@ -1524,6 +1524,12 @@ export function DocumentSigningPage({
             throw new Error('Sign request context is missing')
           }
           setSavedOnce(true)
+          // Exit signing UI so the details view can show the refreshed file.
+          setShowPicker(false)
+          setActiveSignature(null)
+          setPlacements([])
+          setFieldSignatures({})
+          onBack?.()
         } catch (error) {
           console.error(error)
           notifySigningError(
@@ -1588,33 +1594,12 @@ export function DocumentSigningPage({
 
       if (onCompleteSigning) {
         await onCompleteSigning(payload)
-      } else if (repositoryId && itemId) {
-        // Default Path B: create single self-request (if needed) then submit signature
-        let requestId = String(signRequestId || '').trim()
-        if (!requestId) {
-          const email = String(signerEmail || '').trim()
-          const name = String(signerName || email || 'Signer').trim()
-          if (!email) {
-            throw new Error('Signer email is required to submit signature')
-          }
-          const created = await createSignRequest({
-            itemId,
-            message: t`Please sign this document`,
-            repositoryId,
-            signers: [{ email, name, order: 1 }],
-            signingMode: 'single',
-          })
-          if (created.error || !created.data?.signRequestId) {
-            throw new Error(
-              String(created.error || t`Unable to create sign request`),
-            )
-          }
-          requestId = created.data.signRequestId
-        }
-
+      } else if (signRequestId) {
+        // Submit only — never create `.../items/.../sign-requests` here.
+        // Creating sign requests is Share / invite-others only.
         for (const placement of payload) {
           const submitted = await submitSignRequest({
-            signRequestId: requestId,
+            signRequestId,
             signature: {
               height: placement.height,
               pageNumber: placement.pageNumber,
@@ -1630,10 +1615,18 @@ export function DocumentSigningPage({
           }
         }
       } else {
-        throw new Error('Signing API requires repository and item context')
+        throw new Error(
+          'No sign request to submit against. Use Share with Sign to invite first.',
+        )
       }
 
       setSavedOnce(true)
+      // Close the floating sign footer; parent refreshes the signed file.
+      setShowPicker(false)
+      setActiveSignature(null)
+      setPlacements([])
+      setFieldSignatures({})
+      onBack?.()
     } catch (error) {
       console.error(error)
       notifySigningError(

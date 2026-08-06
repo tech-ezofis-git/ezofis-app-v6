@@ -389,6 +389,8 @@ export function FolderExplorer() {
   }
 
   if (appView === 'aiSummary') {
+    console.log('appView === aiSummary', selectedFile,getSelectedFileRow(selectedFile))
+    const currentFileName = getSelectedFileRow(selectedFile)?.fileName
     return (
       <AiSummaryView
         itemId={selectedFile}
@@ -398,6 +400,7 @@ export function FolderExplorer() {
             '',
         )}
         onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
+        currentFileName={currentFileName}
       />
     )
   }

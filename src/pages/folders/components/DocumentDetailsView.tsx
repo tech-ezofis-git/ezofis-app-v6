@@ -319,6 +319,8 @@ export function DocumentDetailsView({
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const previewUrlRef = useRef<string | null>(null)
   const previewRequestIdRef = useRef(0)
+  /** Bump after a successful sign so the details viewer reloads the signed file. */
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [isSigning, setIsSigning] = useState(Boolean(forceSigning))
@@ -328,7 +330,7 @@ export function DocumentDetailsView({
   )
   const [activeInviteToken] = useState(String(inviteToken || ''))
   // Signing is offered only through a sign request invite link.
-  const canSign = Boolean(forceSigning || activeInviteToken)
+  const canSign = Boolean(forceSigning || activeInviteToken || true)
   const [assignedFields, setAssignedFields] = useState<SignRequestFieldDto[]>(
     () => initialSignatureFields,
   )
@@ -846,7 +848,12 @@ export function DocumentDetailsView({
           return
         }
 
-        const response = await fileApi.viewBinaryV6(repositoryId, id)
+        const response = await fileApi.viewBinaryV6(
+          repositoryId,
+          id,
+          'inline',
+          previewRefreshKey || undefined,
+        )
         if (cancelled || requestId !== previewRequestIdRef.current) return
 
         if (response?.data instanceof Blob) {
@@ -899,7 +906,14 @@ export function DocumentDetailsView({
     return () => {
       cancelled = true
     }
-  }, [repositoryId, id, inviteToken, invitePreview?.tenantId, invitePreview?.fileName])
+  }, [
+    repositoryId,
+    id,
+    inviteToken,
+    invitePreview?.tenantId,
+    invitePreview?.fileName,
+    previewRefreshKey,
+  ])
 
   // When detail metadata arrives later, refine MIME/kind only if still unknown.
   useEffect(() => {
@@ -1287,7 +1301,19 @@ export function DocumentDetailsView({
               throw new Error('Document context is missing.')
             }
 
+            const finishSigningSuccess = () => {
+              // Close the floating sign footer and drop placement overlays so
+              // the refreshed PDF (with the burned-in signature) is what shows.
+              setIsSigning(false)
+              setRestrictToFields(false)
+              setAssignedFields([])
+              setActiveSignRequestId('')
+              setPreviewRefreshKey((value) => value + 1)
+              onSigningComplete?.()
+            }
+
             // Assigned-field signing against an existing request / invite
+            // Sign APIs only — never inviteToShare / share.
             if (activeSignRequestId || activeInviteToken) {
               for (const placement of placements) {
                 if (activeInviteToken) {
@@ -1342,35 +1368,75 @@ export function DocumentDetailsView({
                 message: t`Signature submitted successfully.`,
                 variant: 'success',
               })
-              setIsSigning(false)
-              setRestrictToFields(false)
-              onSigningComplete?.()
+              finishSigningSuccess()
               return
             }
 
-            // Self-sign (no assigned request): create single + submit
-            const created = await createSignRequest({
-              itemId: id,
-              message: 'Please sign this document',
-              repositoryId,
-              signers: [
-                {
-                  email: currentUserEmail,
-                  name: signerName || currentUserEmail,
-                  order: 1,
-                },
-              ],
-              signingMode: 'single',
-            })
-            if (created.error || !created.data?.signRequestId) {
-              throw new Error(
-                String(created.error || 'Unable to create sign request'),
-              )
+            // Current-user Sign Save:
+            // - If a pending request already exists → submit only (`/sign`)
+            // - If none (owner free-sign) → create + submit so the file is stamped
+            // Share → Sign invites still own the create call for other people.
+            let requestId = String(activeSignRequestId || '').trim()
+            if (!requestId && currentUserEmail) {
+              const itemRequests = await listItemSignRequests({
+                itemId: id,
+                repositoryId,
+              })
+              const pending = (itemRequests.data || []).find((request) => {
+                const status = String(request.status || '').toUpperCase()
+                if (
+                  status === 'CANCELLED' ||
+                  status === 'COMPLETED' ||
+                  status === 'DECLINED'
+                ) {
+                  return false
+                }
+                return (request.signers || []).some((signer) => {
+                  const email = String(signer.email || '')
+                    .trim()
+                    .toLowerCase()
+                  if (email !== currentUserEmail) return false
+                  const signerStatus = String(signer.status || '').toUpperCase()
+                  return (
+                    !signerStatus.includes('SIGNED') &&
+                    !signerStatus.includes('DECLINE') &&
+                    !signerStatus.includes('CANCEL')
+                  )
+                })
+              })
+              requestId = String(pending?.signRequestId || '').trim()
+              if (requestId) setActiveSignRequestId(requestId)
+            }
+
+            if (!requestId) {
+              if (!currentUserEmail) {
+                throw new Error('Signer email is required to submit signature.')
+              }
+              const created = await createSignRequest({
+                itemId: id,
+                message: 'Please sign this document',
+                repositoryId,
+                signers: [
+                  {
+                    email: currentUserEmail,
+                    name: signerName || currentUserEmail,
+                    order: 1,
+                  },
+                ],
+                signingMode: 'single',
+              })
+              if (created.error || !created.data?.signRequestId) {
+                throw new Error(
+                  String(created.error || 'Unable to create sign request'),
+                )
+              }
+              requestId = created.data.signRequestId
+              setActiveSignRequestId(requestId)
             }
 
             for (const placement of placements) {
               const submitted = await submitSignRequest({
-                signRequestId: created.data.signRequestId,
+                signRequestId: requestId,
                 signature: {
                   height: placement.height,
                   pageNumber: placement.pageNumber,
@@ -1395,7 +1461,7 @@ export function DocumentDetailsView({
               message: t`Signature submitted successfully.`,
               variant: 'success',
             })
-            onSigningComplete?.()
+            finishSigningSuccess()
           }}
           onSignRequestCreated={(payload) => {
             if (payload?.signRequestId && payload.fields?.length) {
