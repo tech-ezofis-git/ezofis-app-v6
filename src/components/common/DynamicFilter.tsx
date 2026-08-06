@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { ChevronDown, Plus, Search, X } from 'lucide-react'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -97,6 +98,7 @@ export default function DynamicFilter({
   onSearchChange,
   onViewModeChange,
 }: DynamicFilterProps) {
+  const { t } = useLingui()
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [dropdownPos, setDropdownPos] = useState<{
     left: number
@@ -811,7 +813,7 @@ export default function DynamicFilter({
 
         {viewMode && onViewModeChange && (
           <div className='flex items-center gap-0.5 rounded-md border border-border-default p-0.5'>
-            <Tooltip content='Grid View'>
+            <Tooltip content={t`Grid View`}>
               <button
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded transition-colors',
@@ -824,7 +826,7 @@ export default function DynamicFilter({
                 <Icon className='h-4 w-4' name='lucide:layout-grid' />
               </button>
             </Tooltip>
-            <Tooltip content='Table View'>
+            <Tooltip content={t`Table View`}>
               <button
                 className={cn(
                   'flex h-7 w-7 items-center justify-center rounded transition-colors',

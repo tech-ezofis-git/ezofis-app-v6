@@ -1,9 +1,11 @@
+import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSidebarStore from '@/layouts/app/stores/useSidebarStore'
 import cn from '@/utils/cn'
 
 const SidebarCTA = () => {
+  const { t } = useLingui()
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
   const openDemoForm = useRequestDemoStore((s) => s.openDemoForm)
   const closeSidebar = useSidebarStore((s) => s.closeSidebar)
@@ -33,8 +35,7 @@ const SidebarCTA = () => {
 
       {/* Description */}
       <p className='mb-4 text-xs leading-relaxed text-primary-2 opacity-95'>
-        Streamline your Accounts Payable with intelligent PO matching, automated
-        invoice routing, and seamless integrations.
+        {t`Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations.`}
       </p>
 
       {/* CTA Button */}
@@ -50,7 +51,7 @@ const SidebarCTA = () => {
         onClick={handleRequestDemo}
       >
         <Icon className='size-3.5' name='lucide:calendar-check' />
-        Request a Demo
+        {t`Request a Demo`}
       </button>
     </div>
   )

@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { Link, useLocation } from '@tanstack/react-router'
 import type { Menu } from '@/layouts/app/types'
 import Icon from '@/components/base/icon/Icon'
@@ -12,6 +13,7 @@ interface Props extends Menu {
 }
 
 const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
+  const { t } = useLingui()
   const pathname = useLocation({
     select: (location) => location.pathname,
   })
@@ -27,7 +29,7 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
   return (
     <li key={label}>
       <Tooltip
-        content={isLinkDisabled ? `${label} (locked)` : label}
+        content={isLinkDisabled ? t`${label} (locked)` : label}
         openDelay={500}
         position='right'
       >

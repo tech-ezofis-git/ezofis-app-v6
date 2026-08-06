@@ -229,7 +229,8 @@ export function AiSummaryView({
     className='h-9 border-gray-3 px-4 text-[14px] shadow-sm'
     onClick={onBack}
   >
-    ← {t`Back`}
+    <DynamicIcon className='h-4 w-4' name='arrowLeft' />
+    {t`Back`}
   </Button>
 
   {/* Right side */}
@@ -463,6 +464,7 @@ function AiSummaryLoading({
               <div className='mt-2 flex items-center gap-2'>
                 {onBack ? (
                   <Button className='h-9 px-4' onClick={onBack}>
+                    <DynamicIcon className='h-4 w-4' name='arrowLeft' />
                     {t`Back`}
                   </Button>
                 ) : null}

@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import type { TooltipProps } from '@mantine/core'
 import IconButton from '@/components/base/button/IconButton'
 import Tooltip from '@/components/base/Tooltip'
@@ -8,16 +9,17 @@ interface Props {
 }
 
 const SidebarToggle = ({ tooltipPosition = 'bottom-start' }: Props) => {
+  const { t } = useLingui()
   const openSidebar = useSidebarStore((state) => state.openSidebar)
 
   return (
     <Tooltip
-      content='Toggle sidebar'
+      content={t`Toggle sidebar`}
       openDelay={500}
       position={tooltipPosition}
     >
       <IconButton
-        ariaLabel='toggle sidebar'
+        ariaLabel={t`Toggle sidebar`}
         color='gray'
         icon='tabler:menu-3'
         variant='ghost'
@@ -29,3 +31,4 @@ const SidebarToggle = ({ tooltipPosition = 'bottom-start' }: Props) => {
 
 SidebarToggle.displayName = 'SidebarToggle'
 export default SidebarToggle
+

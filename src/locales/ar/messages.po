@@ -100,6 +100,10 @@ msgstr "{fieldName} إلزامي."
 msgid "{fileType} Viewer"
 msgstr "عارض {fileType}"
 
+#: src/layouts/app/components/sidebar/sidebar-small/components/MenuItem.tsx:32
+msgid "{label} (locked)"
+msgstr ""
+
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:32
 msgid "{label} per page:"
 msgstr "{label} لكل صفحة:"
@@ -261,7 +265,6 @@ msgid "Account Expiry Date"
 msgstr "تاريخ انتهاء الحساب"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:980
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
 msgid "Accounts Payable"
 msgstr "الحسابات الدائنة"
 
@@ -418,7 +421,7 @@ msgstr "مُولَّد بالذكاء الاصطناعي"
 msgid "AI Insights"
 msgstr "رؤى الذكاء الاصطناعي"
 
-#: src/pages/folders/components/AiSummaryView.tsx:481
+#: src/pages/folders/components/AiSummaryView.tsx:483
 msgid "AI is analysing the document..."
 msgstr "الذكاء الاصطناعي يحلل المستند..."
 
@@ -426,11 +429,11 @@ msgstr "الذكاء الاصطناعي يحلل المستند..."
 msgid "AI Recommendation"
 msgstr ""
 
-#: src/pages/folders/components/AiSummaryView.tsx:385
+#: src/pages/folders/components/AiSummaryView.tsx:386
 msgid "AI Recommendations"
 msgstr "توصيات الذكاء الاصطناعي"
 
-#: src/pages/folders/components/AiSummaryView.tsx:275
+#: src/pages/folders/components/AiSummaryView.tsx:276
 #: src/pages/folders/components/DocumentDetailsView.tsx:1504
 #: src/pages/folders/components/DocumentDetailsView.tsx:1511
 #: src/pages/folders/components/DocumentsListView.tsx:887
@@ -442,7 +445,7 @@ msgstr "ملخص الذكاء الاصطناعي"
 msgid "AI summary regenerated."
 msgstr "تم إعادة إنشاء ملخص الذكاء الاصطناعي."
 
-#: src/pages/folders/components/AiSummaryView.tsx:280
+#: src/pages/folders/components/AiSummaryView.tsx:281
 msgid "AI-generated document analysis"
 msgstr ""
 
@@ -475,6 +478,7 @@ msgstr "قم بمحاذاة أعمدة ملفك مع الحقول الرئيسي
 msgid "Aligning CSV/XLSX headers with database mapping schema."
 msgstr "محاذاة رؤوس CSV/XLSX مع مخطط ربط قاعدة البيانات."
 
+#: src/components/base/data-table/actions/TableSearch.tsx:161
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:42
@@ -702,6 +706,10 @@ msgstr "يُحدَّث تلقائياً مع عوامل التصفية — مل�
 msgid "AUTO-VERIFIED"
 msgstr "تم التحقق تلقائياً"
 
+#: src/layouts/app/components/sidebar/sidebar-small/SidebarSmall.tsx:50
+msgid "Automate Your Full AP Workflow — Request a Demo"
+msgstr "قم بأتمتة سير عمل الحسابات الدائنة بالكامل — اطلب عرضاً توضيحياً"
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:630
 msgid "Automatically links file columns"
 msgstr "يربط أعمدة الملف تلقائياً"
@@ -726,8 +734,8 @@ msgstr "متوسط وقت المعالجة"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:90
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:165
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:96
-#: src/pages/folders/components/AiSummaryView.tsx:232
-#: src/pages/folders/components/AiSummaryView.tsx:466
+#: src/pages/folders/components/AiSummaryView.tsx:233
+#: src/pages/folders/components/AiSummaryView.tsx:468
 #: src/pages/folders/components/DocumentDetailsView.tsx:1234
 #: src/pages/folders/components/DocumentDetailsView.tsx:1496
 #: src/pages/folders/components/DocumentSigningPage.tsx:2634
@@ -781,7 +789,7 @@ msgstr "أساسي"
 msgid "Billing Terms"
 msgstr "شروط الفوترة"
 
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:45
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:46
 msgid "Breadcrumb"
 msgstr "مسار التنقل"
 
@@ -935,6 +943,10 @@ msgstr "هل غيرت رأيك؟"
 msgid "Choose a signature first, then tap your sign area."
 msgstr "اختر توقيعاً أولاً ثم اضغط على منطقة التوقيع."
 
+#: src/components/base/data-table/actions/TableSearch.tsx:159
+msgid "Choose column"
+msgstr "اختر العمود"
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2541
 msgid "Choose signature"
 msgstr "اختر توقيعاً"
@@ -1082,7 +1094,7 @@ msgstr "اكتمل في 0.4 ث"
 msgid "Completed in 0.9s"
 msgstr "اكتمل في 0.9 ث"
 
-#: src/pages/folders/components/AiSummaryView.tsx:348
+#: src/pages/folders/components/AiSummaryView.tsx:349
 msgid "Compliance & Risk Assessment"
 msgstr "تقييم الامتثال والمخاطر"
 
@@ -1090,7 +1102,7 @@ msgstr "تقييم الامتثال والمخاطر"
 msgid "Concentration of invoice liabilities"
 msgstr "تركز التزامات الفواتير"
 
-#: src/pages/folders/components/AiSummaryView.tsx:286
+#: src/pages/folders/components/AiSummaryView.tsx:287
 msgid "Confidence"
 msgstr "الثقة"
 
@@ -1618,7 +1630,7 @@ msgstr "معاينة المستند"
 msgid "Document signed"
 msgstr "تم توقيع المستند"
 
-#: src/pages/folders/components/AiSummaryView.tsx:296
+#: src/pages/folders/components/AiSummaryView.tsx:297
 msgid "Document Summary"
 msgstr "ملخص المستند"
 
@@ -2074,11 +2086,11 @@ msgstr "تصدير"
 msgid "Export CSV"
 msgstr "تصدير CSV"
 
-#: src/pages/folders/components/AiSummaryView.tsx:247
+#: src/pages/folders/components/AiSummaryView.tsx:248
 msgid "Export PDF"
 msgstr "تصدير PDF"
 
-#: src/pages/folders/components/AiSummaryView.tsx:247
+#: src/pages/folders/components/AiSummaryView.tsx:248
 #: src/pages/folders/components/Upload/Upload.tsx:955
 #: src/pages/folders/components/Upload/Upload.tsx:1163
 msgid "Exporting..."
@@ -2118,7 +2130,7 @@ msgstr "جاري استخراج الحقول..."
 msgid "Extracting grid fields and filtering metadata records."
 msgstr "جاري استخراج حقول الشبكة وتصفية سجلات البيانات الوصفية."
 
-#: src/pages/folders/components/AiSummaryView.tsx:484
+#: src/pages/folders/components/AiSummaryView.tsx:486
 msgid "Extracting metadata, checking duplicates, validating compliance"
 msgstr "جاري استخراج البيانات الوصفية والتحقق من التكرارات والتحقق من الامتثال"
 
@@ -2488,6 +2500,11 @@ msgstr "فشل تسجيل الدخول عبر Google"
 msgid "Google sign-in was cancelled or failed"
 msgstr "تم إلغاء تسجيل الدخول عبر Google أو فشل"
 
+#: src/components/common/CustomFilter.tsx:975
+#: src/components/common/DynamicFilter.tsx:816
+msgid "Grid View"
+msgstr "عرض الشبكة"
+
 #: src/pages/settings/components/GroupManagement.tsx:345
 #: src/pages/settings/components/GroupManagement.tsx:347
 msgid "Group"
@@ -2650,7 +2667,7 @@ msgstr "معالجة فورية للفواتير"
 #: src/pages/requests/components/buttons/UploadPoButton.tsx:14
 #: src/pages/requests/components/InboxList.tsx:1869
 msgid "Import PO Data"
-msgstr "Import PO Data"
+msgstr "استيراد بيانات أمر الشراء"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:472
 msgid "Import PO master records to validate invoices against approved purchase orders"
@@ -2944,7 +2961,7 @@ msgstr "3 موردين فقط يمثلون 19% من الالتزامات غير 
 msgid "Keep me logged in"
 msgstr "ابقني متصلاً"
 
-#: src/pages/folders/components/AiSummaryView.tsx:310
+#: src/pages/folders/components/AiSummaryView.tsx:311
 msgid "Key Facts Extracted"
 msgstr "حقائق رئيسية مستخرجة"
 
@@ -3589,7 +3606,7 @@ msgstr "لا توجد تعليقات لهذا المستند. أضف أول تع
 msgid "No comments found"
 msgstr "لم يتم العثور على تعليقات"
 
-#: src/pages/folders/components/AiSummaryView.tsx:377
+#: src/pages/folders/components/AiSummaryView.tsx:378
 msgid "No compliance assessment available."
 msgstr ""
 
@@ -3601,7 +3618,7 @@ msgstr "No consumption data for this period."
 msgid "No distribution data for this period."
 msgstr "No distribution data for this period."
 
-#: src/pages/folders/components/AiSummaryView.tsx:302
+#: src/pages/folders/components/AiSummaryView.tsx:303
 msgid "No document summary available."
 msgstr ""
 
@@ -3637,7 +3654,7 @@ msgstr "لم يُرجع Microsoft بريداً إلكترونياً"
 msgid "No integrations"
 msgstr "لا توجد تكاملات"
 
-#: src/pages/folders/components/AiSummaryView.tsx:336
+#: src/pages/folders/components/AiSummaryView.tsx:337
 msgid "No key facts extracted."
 msgstr ""
 
@@ -3674,7 +3691,7 @@ msgstr "لم يتم العثور على أمر شراء"
 msgid "No preview rows available in this file."
 msgstr "لا توجد صفوف معاينة في هذا الملف."
 
-#: src/pages/folders/components/AiSummaryView.tsx:400
+#: src/pages/folders/components/AiSummaryView.tsx:401
 msgid "No recommendations available."
 msgstr ""
 
@@ -3719,7 +3736,7 @@ msgstr "لم يُعيَّن موضع توقيع لحسابك على هذا ال�
 msgid "No signers"
 msgstr "لا يوجد موقّعون"
 
-#: src/pages/folders/components/AiSummaryView.tsx:281
+#: src/pages/folders/components/AiSummaryView.tsx:282
 msgid "No summary content returned"
 msgstr ""
 
@@ -3727,7 +3744,7 @@ msgstr ""
 #~ msgid "No summary content returned."
 #~ msgstr "لم يتم إرجاع محتوى الملخص."
 
-#: src/pages/folders/components/AiSummaryView.tsx:408
+#: src/pages/folders/components/AiSummaryView.tsx:409
 msgid "No supplier trend insight available."
 msgstr ""
 
@@ -4620,6 +4637,11 @@ msgstr "معرف المستودع مفقود. لا يمكن تشغيل OCR."
 msgid "Repository ID is missing. Cannot upload."
 msgstr "معرف المستودع مفقود. لا يمكن الرفع."
 
+#: src/layouts/app/components/sidebar/sidebar-large/components/SidebarCTA.tsx:54
+#: src/layouts/app/components/sidebar/sidebar-small/SidebarSmall.tsx:55
+msgid "Request a Demo"
+msgstr "اطلب عرضاً توضيحياً"
+
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:28
 msgid "Request No"
 msgstr ""
@@ -4695,7 +4717,7 @@ msgstr "Restore Entry"
 msgid "Result"
 msgstr "النتيجة"
 
-#: src/pages/folders/components/AiSummaryView.tsx:471
+#: src/pages/folders/components/AiSummaryView.tsx:473
 msgid "Retry"
 msgstr "إعادة المحاولة"
 
@@ -4754,7 +4776,7 @@ msgstr "راجع اتصالاتك وأكد إعدادك قبل التفعيل."
 msgid "Review your full folder setup, then apply it to create the repository."
 msgstr "راجع إعداد المجلد الكامل، ثم طبّقه لإنشاء المستودع."
 
-#: src/pages/folders/components/AiSummaryView.tsx:365
+#: src/pages/folders/components/AiSummaryView.tsx:366
 msgid "Reviewed"
 msgstr "تمت المراجعة"
 
@@ -4896,12 +4918,21 @@ msgstr "ربط المخطط تلقائياً"
 msgid "Schema Validation"
 msgstr "التحقق من المخطط"
 
+#: src/components/base/data-table/actions/TableSearch.tsx:131
+#: src/components/base/data-table/actions/TableSearch.tsx:190
+#: src/components/common/CustomFilter.tsx:921
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:188
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:206
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:210
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:9
+#: src/pages/settings/components/SettingsSearchInput.tsx:20
+#: src/pages/settings/components/SettingsSearchInput.tsx:93
 msgid "Search"
 msgstr "بحث"
+
+#: src/components/base/data-table/actions/TableSearch.tsx:131
+msgid "Search {selectedColumnLabel}"
+msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:243
 msgid "Search AI"
@@ -5514,6 +5545,10 @@ msgstr "تم تحديد التخزين. ستُحفظ المستندات هنا �
 msgid "Storage Settings"
 msgstr ""
 
+#: src/layouts/app/components/sidebar/sidebar-large/components/SidebarCTA.tsx:38
+msgid "Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations."
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:798
 msgid "Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility."
 msgstr "بسّط الحسابات الدائنة. عالج الفواتير تلقائياً وطابق أوامر الشراء واحصل على رؤية كاملة."
@@ -5588,7 +5623,7 @@ msgstr "اسم المورد"
 msgid "Supplier Risk Radar"
 msgstr "رادار مخاطر الموردين"
 
-#: src/pages/folders/components/AiSummaryView.tsx:406
+#: src/pages/folders/components/AiSummaryView.tsx:407
 msgid "Supplier Trend Insight"
 msgstr "رؤية اتجاه المورد"
 
@@ -5659,6 +5694,11 @@ msgstr "حقل النظام"
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3558
 msgid "System Response"
 msgstr "استجابة النظام"
+
+#: src/components/common/CustomFilter.tsx:989
+#: src/components/common/DynamicFilter.tsx:829
+msgid "Table View"
+msgstr "عرض الجدول"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1474
 msgid "Tap your highlighted sign area to place your signature."
@@ -5781,6 +5821,20 @@ msgstr "اليوم"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1598
 msgid "Today's Action Queue"
 msgstr "قائمة إجراءات اليوم"
+
+#: src/layouts/app/components/sidebar/sidebar-small/SidebarSmall.tsx:49
+msgid "Automate Your Full AP Workflow — Request a Demo"
+msgstr "قم بأتمتة سير عمل الحسابات الدائنة بالكامل — اطلب عرضاً توضيحياً"
+
+#: src/layouts/app/components/sidebar/sidebar-large/components/SidebarCTA.tsx:50
+#: src/layouts/app/components/sidebar/sidebar-small/SidebarSmall.tsx:55
+msgid "Request a Demo"
+msgstr "اطلب عرضاً توضيحياً"
+
+#: src/layouts/app/components/sidebar/SidebarToggle.tsx:17
+#: src/layouts/app/components/sidebar/SidebarToggle.tsx:22
+msgid "Toggle sidebar"
+msgstr "تبديل الشريط الجانبي"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1179
 msgid "Top 10 suppliers by invoice value"
@@ -5919,7 +5973,7 @@ msgstr "تعذر تنزيل الملف الموقع. حاول مرة أخرى."
 msgid "Unable to export PDF"
 msgstr ""
 
-#: src/pages/folders/components/AiSummaryView.tsx:459
+#: src/pages/folders/components/AiSummaryView.tsx:460
 msgid "Unable to load AI summary"
 msgstr ""
 
