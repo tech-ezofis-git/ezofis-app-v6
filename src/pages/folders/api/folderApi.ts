@@ -844,7 +844,7 @@ export const folderApi = {
   async getAiSummary(
     repositoryId: string,
     itemId: string,
-    options?: { force?: boolean },
+    options?: { force?: boolean; language?: string },
   ): Promise<AiSummaryData> {
     if (!repositoryId || !itemId) {
       throw new Error('Repository and item are required for AI summary.')
@@ -853,6 +853,7 @@ export const folderApi = {
     const result = await getRepositoryItemAiSummary({
       force: options?.force,
       itemId,
+      language: options?.language,
       repositoryId,
     })
 

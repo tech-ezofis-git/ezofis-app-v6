@@ -13,14 +13,16 @@ type AiSummaryViewProps = {
   itemId: string
   repositoryId: string
   onBack: () => void
+  currentFileName?: string
 }
 
 export function AiSummaryView({
   itemId,
   repositoryId,
   onBack,
+  currentFileName,
 }: AiSummaryViewProps) {
-  const { t } = useLingui()
+  const { i18n, t } = useLingui()
   const [data, setData] = useState<AiSummaryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
@@ -28,6 +30,8 @@ export function AiSummaryView({
   const ref = useRef<HTMLDivElement>(null)
   const [exporting, setExporting] = useState(false)
   const requestIdRef = useRef(0)
+  const locale = i18n.locale || 'en'
+  const prevLocaleRef = useRef<string | null>(null)
 
   const loadSummary = async (options?: { regenerate?: boolean }) => {
     if (!repositoryId || !itemId) {
@@ -48,6 +52,7 @@ export function AiSummaryView({
     try {
       const summary = await folderApi.getAiSummary(repositoryId, itemId, {
         force: isRegenerate,
+        language: locale,
       })
       if (requestId !== requestIdRef.current) return
 
@@ -85,9 +90,13 @@ export function AiSummaryView({
   }
 
   useEffect(() => {
-    void loadSummary()
+    const localeChanged =
+      prevLocaleRef.current !== null && prevLocaleRef.current !== locale
+    prevLocaleRef.current = locale
+    // Force regenerate when the UI language changes so AI content matches.
+    void loadSummary({ regenerate: localeChanged })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemId, repositoryId])
+  }, [itemId, repositoryId, locale])
 
   const copySummary = async () => {
     if (!data) return
@@ -110,22 +119,59 @@ export function AiSummaryView({
   }
 
   const exportPdf = async () => {
-    const element = ref.current
-    if (!element || exporting) return
+    const scrollContainer = ref.current
+    if (!scrollContainer || exporting) return
+
+    // Capture only the complete summary content, not the currently scrolled viewport.
+    const element = scrollContainer.querySelector<HTMLElement>('.print-area')
+    if (!element) return
+
+    const previousScrollTop = scrollContainer.scrollTop
+    const previousScrollLeft = scrollContainer.scrollLeft
 
     try {
       setExporting(true)
 
+      // Force capture to start from the top-left regardless of the user's scroll position.
+      scrollContainer.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+
+      // Allow the browser one frame to apply the scroll position before capture.
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      )
+
       const canvas = await html2canvas(element, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: 1.35,
         useCORS: true,
-        windowHeight: element.scrollHeight,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
         windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        onclone: (clonedDocument) => {
+          // Disable animation/transition effects in the exported copy.
+          const style = clonedDocument.createElement('style')
+          style.innerHTML = `
+            .print-area, .print-area * {
+              animation: none !important;
+              transition: none !important;
+            }
+          `
+          clonedDocument.head.appendChild(style)
+        },
       })
 
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF('p', 'mm', 'a4')
+      // JPEG keeps the exported PDF substantially smaller than PNG.
+      const imgData = canvas.toDataURL('image/jpeg', 0.72)
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      })
 
       const pageWidth = pdf.internal.pageSize.getWidth()
       const pageHeight = pdf.internal.pageSize.getHeight()
@@ -134,18 +180,41 @@ export function AiSummaryView({
       let heightLeft = imgHeight
       let position = 0
 
-      pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight)
+      pdf.addImage(imgData, 'JPEG', 0, position, pageWidth, imgHeight, undefined, 'FAST')
       heightLeft -= pageHeight
 
       while (heightLeft > 0) {
         position = heightLeft - imgHeight
         pdf.addPage()
-        pdf.addImage(imgData, 'PNG', 0, position, pageWidth, imgHeight)
+        pdf.addImage(
+          imgData,
+          'JPEG',
+          0,
+          position,
+          pageWidth,
+          imgHeight,
+          undefined,
+          'FAST',
+        )
         heightLeft -= pageHeight
       }
 
-      pdf.save('AI-Summary.pdf')
+      const baseName = (currentFileName || 'Document')
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[\\/:*?"<>|]/g, '-')
+        .trim()
+
+      pdf.save(`${baseName} AI Summary.pdf`)
+    } catch (err) {
+      console.error('Failed to export AI summary PDF', err)
+      showToast({ message: t`Unable to export PDF`, variant: 'error' })
     } finally {
+      // Restore the user's original scroll position after exporting.
+      scrollContainer.scrollTo({
+        top: previousScrollTop,
+        left: previousScrollLeft,
+        behavior: 'auto',
+      })
       setExporting(false)
     }
   }
@@ -154,27 +223,30 @@ export function AiSummaryView({
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-[14px] text-gray-11'>
-      <div className='no-print flex h-[60px] shrink-0 items-center gap-3 border-b border-gray-3 bg-surface-primary px-5'>
-        <Button
-          className='h-9 border-gray-3 px-4 text-[14px] shadow-sm'
-          onClick={onBack}
-        >
-          ← {t`Back`}
-        </Button>
-       
-        <Button
-          className='h-9 px-4 text-[14px]'
-          disabled={exporting || !data || loading || regenerating}
-          onClick={exportPdf}
-        >
-          {exporting ? (
-            <DynamicIcon className='h-4 w-4 animate-spin' name='loader' />
-          ) : (
-            <DynamicIcon className='h-4 w-4' name='download' />
-          )}
-          {exporting ? t`Exporting...` : t`Export PDF`}
-        </Button>
-      </div>
+     <div className='no-print flex h-[60px] shrink-0 items-center gap-3 border-b border-gray-3 bg-surface-primary px-5'>
+  {/* Left side */}
+  <Button
+    className='h-9 border-gray-3 px-4 text-[14px] shadow-sm'
+    onClick={onBack}
+  >
+    ← {t`Back`}
+  </Button>
+
+  {/* Right side */}
+  <Button
+    className='ml-auto h-9 px-4 text-[14px]'
+    disabled={exporting || !data || loading || regenerating}
+    onClick={exportPdf}
+  >
+    {exporting ? (
+      <DynamicIcon className='h-4 w-4 animate-spin' name='loader' />
+    ) : (
+      <DynamicIcon className='h-4 w-4' name='download' />
+    )}
+
+    {exporting ? t`Exporting...` : t`Export PDF`}
+  </Button>
+</div>
 
       {showLoading ? (
         <AiSummaryLoading />
@@ -204,11 +276,9 @@ export function AiSummaryView({
                       : data.engineTitle}
                   </h2>
                   <p className='text-[13px] leading-5 text-gray-10'>
-                    {data.engineSubtitle === 'AI-generated document analysis'
+                    {data.summary
                       ? t`AI-generated document analysis`
-                      : data.engineSubtitle === 'No summary content returned'
-                        ? t`No summary content returned`
-                        : data.engineSubtitle}
+                      : t`No summary content returned`}
                   </p>
                 </div>
               </div>
@@ -291,7 +361,9 @@ export function AiSummaryView({
                       />
                       <b className='text-[13px] leading-5'>{check.label}</b>
                       <span className='mt-2 inline-flex w-fit items-center rounded-full bg-green-9 px-2 py-1 text-[11px] leading-none font-bold whitespace-nowrap text-white'>
-                        {check.status}
+                        {/^reviewed$/i.test(check.status)
+                          ? t`Reviewed`
+                          : check.status}
                       </span>
                     </div>
                   ))}

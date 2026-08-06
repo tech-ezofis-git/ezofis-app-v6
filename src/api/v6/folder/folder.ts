@@ -1036,18 +1036,31 @@ const inflightAiSummaryRequests = new Map<string, Promise<AiSummaryResult>>()
 
 const fetchRepositoryItemAiSummary = async (payload: {
   itemId: string
+  language?: string
   repositoryId: string
 }): Promise<AiSummaryResult> => {
   const response: AiSummaryResult = { data: null, error: '' }
 
   try {
+    const language = String(payload.language || '')
+      .trim()
+      .toLowerCase()
+    const languageQuery = language
+      ? `?language=${encodeURIComponent(language)}`
+      : ''
+
     const { data, status } = await axiosV6({
+      headers: language
+        ? {
+            'Accept-Language': language,
+          }
+        : undefined,
       method: 'POST',
       // AI generation can take a while on cache miss.
       timeout: 180_000,
       // Long-running; do not abort when React Strict Mode remounts.
       skipCancellation: true,
-      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/ai-summary`,
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/ai-summary${languageQuery}`,
     } as any)
 
     if (status < 200 || status >= 300) throw 'invalid status code'
@@ -1103,9 +1116,13 @@ const fetchRepositoryItemAiSummary = async (payload: {
 export const getRepositoryItemAiSummary = async (payload: {
   force?: boolean
   itemId: string
+  language?: string
   repositoryId: string
 }) => {
-  const key = `${payload.repositoryId}:${payload.itemId}`
+  const language = String(payload.language || 'en')
+    .trim()
+    .toLowerCase() || 'en'
+  const key = `${payload.repositoryId}:${payload.itemId}:${language}`
 
   if (!payload.force) {
     const inflight = inflightAiSummaryRequests.get(key)
@@ -1114,7 +1131,10 @@ export const getRepositoryItemAiSummary = async (payload: {
     inflightAiSummaryRequests.delete(key)
   }
 
-  const request = fetchRepositoryItemAiSummary(payload).finally(() => {
+  const request = fetchRepositoryItemAiSummary({
+    ...payload,
+    language,
+  }).finally(() => {
     // Only clear if this promise is still the active one for the key.
     if (inflightAiSummaryRequests.get(key) === request) {
       inflightAiSummaryRequests.delete(key)
