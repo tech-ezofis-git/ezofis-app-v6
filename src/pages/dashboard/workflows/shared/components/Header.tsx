@@ -30,6 +30,15 @@ import CustomFilter from '@/components/common/CustomFilter'
 import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import { TODAY } from '@/pages/dashboard/utils/dashboardData'
 import cn from '@/utils/cn'
+import showToast from '@/components/base/toast/showToast'
+import { SkeletonCard } from '@/components/common/skeletons'
+
+function hasData(obj: any): boolean {
+  if (obj === null || obj === undefined) return false
+  if (Array.isArray(obj)) return obj.length > 0
+  if (typeof obj === 'object') return Object.keys(obj).length > 0
+  return true
+}
 
 function fmtMoney(v: number, currency = 'USD') {
   const sym =
@@ -58,6 +67,19 @@ const BulletIcon = () => (
     <circle cx='12' cy='12' fill='currentColor' r='3' />
   </svg>
 )
+
+const CHART_COLORS = [
+  '#7c5cff',
+  '#00bbd3',
+  '#e5484d',
+  '#d6409f',
+  '#8e4ec6',
+  '#1E8E6F',
+  '#ec9455',
+  '#3e63dd',
+  '#0f7a86',
+  '#847C93',
+]
 
 export default function DashboardCharts() {
   const { t } = useLingui()
@@ -170,6 +192,7 @@ export default function DashboardCharts() {
         setDashboardData(data)
       } else {
         console.error(res.error)
+        showToast({ message: res.error || t`Failed to load dashboard data`, variant: 'error' })
       }
       setIsLoading(false)
     }
@@ -266,11 +289,17 @@ export default function DashboardCharts() {
           (TODAY.getTime() - new Date(inv.dueDate).getTime()) /
             (1000 * 60 * 60 * 24),
         )
-        if (drillAgingBucket === '0-15d') return days >= 0 && days <= 15
-        if (drillAgingBucket === '16-30d') return days > 15 && days <= 30
-        if (drillAgingBucket === '31-45d') return days > 30 && days <= 45
-        if (drillAgingBucket === '46-60d') return days > 45 && days <= 60
-        if (drillAgingBucket === '60d+') return days > 60
+        const bucket = String(drillAgingBucket).toLowerCase().replace(/–/g, '-')
+        if (bucket.includes('current')) return days <= 0
+        if (bucket.includes('0-15d')) return days >= 0 && days <= 15
+        if (bucket.includes('16-30d')) return days > 15 && days <= 30
+        if (bucket.includes('31-45d')) return days > 30 && days <= 45
+        if (bucket.includes('46-60d')) return days > 45 && days <= 60
+        if (bucket.includes('60d+')) return days > 60
+        if (bucket.includes('1-30')) return days >= 1 && days <= 30
+        if (bucket.includes('31-60')) return days >= 31 && days <= 60
+        if (bucket.includes('61-90')) return days >= 61 && days <= 90
+        if (bucket.includes('90+')) return days > 90
         return true
       })
     }
@@ -302,98 +331,79 @@ export default function DashboardCharts() {
     }
   }
 
-  const aiInsightsList = React.useMemo(
-    () => [
-      {
-        node: (
-          <>
-            Outstanding overdue balances are{' '}
-            <span className='font-semibold text-[#1E8E6F]'>down 100%</span>{' '}
-            versus last month (<span className='font-semibold'>$0</span> now
-            outstanding past due).
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            Just <span className='font-semibold'>3 suppliers</span> account for{' '}
-            <span className='font-semibold'>19%</span> of unpaid liabilities,
-            led by{' '}
-            <span className='font-semibold'>Harbor Point Consulting</span> at
-            $686.5K.
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            Average approval time increased by{' '}
-            <span className='font-semibold text-[#B3261E]'>1.2 days</span> month
-            over month, now averaging{' '}
-            <span className='font-semibold'>6.1 days</span>.
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            <span className='font-semibold'>28 invoices</span> flagged as
-            potential duplicates — recommend review before release to avoid
-            double payment.
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            Payments due this week total{' '}
-            <span className='font-semibold'>$298.7K</span>,{' '}
-            <span className='font-semibold text-[#1E8E6F]'>
-              below last week by 67%
-            </span>
-            .
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            Profit margin decreased to{' '}
-            <span className='font-semibold'>12.9%</span>, pressured by higher
-            supplier expenses.
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            <span className='font-semibold'>Legal</span> has the longest
-            approval cycle in the current view, averaging{' '}
-            <span className='font-semibold'>8.0 days</span> per invoice.
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            <span className='font-semibold'>10 of 24 suppliers</span> now score
-            above 80% on-time delivery, reflecting steadier vendor performance.
-          </>
-        ),
-      },
-      {
-        node: (
-          <>
-            Projected cash requirement for the next 4 weeks is{' '}
-            <span className='font-semibold'>$755.7K</span> — plan liquidity
-            accordingly.
-          </>
-        ),
-      },
-    ],
-    [],
-  )
+  const aiInsightsList = React.useMemo(() => {
+    const list = dashboardData?.aiGeneratedInsights || dashboardData?.insights || []
+    return list.map((insight: any) => {
+      if (typeof insight === 'object' && insight !== null && 'node' in insight) {
+        return insight
+      }
+      return {
+        node: <span>{insight}</span>,
+      }
+    })
+  }, [dashboardData])
+
+  const profitabilityKpis = React.useMemo(() => {
+    return dashboardData?.profitabilityCashPosition?.kpis || []
+  }, [dashboardData])
+  const profitMarginKpi = React.useMemo(() => {
+    return profitabilityKpis.find((k: any) => k.key === 'profit_margin')
+  }, [profitabilityKpis])
+  const next4WeeksKpi = React.useMemo(() => {
+    return profitabilityKpis.find((k: any) => k.key === 'next_4_weeks_forecast')
+  }, [profitabilityKpis])
+  const peakWeekKpi = React.useMemo(() => {
+    return profitabilityKpis.find((k: any) => k.key === 'peak_week')
+  }, [profitabilityKpis])
+
+  const supplierRiskData = React.useMemo(() => {
+    return (
+      dashboardData?.supplier_concentration_risk ||
+      dashboardData?.supplierConcentrationRisk
+    )
+  }, [dashboardData])
+  const supplierRiskKpis = React.useMemo(() => {
+    return supplierRiskData?.kpis || []
+  }, [supplierRiskData])
+  const activeSuppliersKpi = React.useMemo(() => {
+    return supplierRiskKpis.find((k: any) => k.key === 'active_suppliers')
+  }, [supplierRiskKpis])
+  const highRiskSuppliersKpi = React.useMemo(() => {
+    return supplierRiskKpis.find((k: any) => k.key === 'high_risk_suppliers')
+  }, [supplierRiskKpis])
+  const top3ConcentrationKpi = React.useMemo(() => {
+    return supplierRiskKpis.find((k: any) => k.key === 'top3_concentration')
+  }, [supplierRiskKpis])
+
+  const agingOversightData = React.useMemo(() => {
+    return (
+      dashboardData?.aging_process_oversight ||
+      dashboardData?.agingProcessOversight
+    )
+  }, [dashboardData])
+  const agingOversightKpis = React.useMemo(() => {
+    return agingOversightData?.kpis || []
+  }, [agingOversightData])
+  const aging90PlusKpi = React.useMemo(() => {
+    return agingOversightKpis.find((k: any) => k.key === 'aging_90_plus')
+  }, [agingOversightKpis])
+  const criticalExceptionsKpi = React.useMemo(() => {
+    return agingOversightKpis.find((k: any) => k.key === 'critical_exceptions')
+  }, [agingOversightKpis])
+  const approvalRateKpi = React.useMemo(() => {
+    return agingOversightKpis.find((k: any) => k.key === 'approval_rate')
+  }, [agingOversightKpis])
+
+  const invoiceAgingData = React.useMemo(() => {
+    return (dashboardData?.invoiceAgingAnalysis?.buckets || []).map(
+      (bucket: any) => ({
+        name: bucket.label,
+        value: bucket.invoiceCount ?? bucket.amount ?? 0,
+        amount: bucket.amount ?? 0,
+        amountDisplay: bucket.amountDisplay || '',
+      }),
+    )
+  }, [dashboardData])
 
   const filterOptions = dashboardData?.filterOptions || {}
   const serverActiveFilters = dashboardData?.activeFilters || {}
@@ -658,8 +668,12 @@ export default function DashboardCharts() {
               {t`Total AP`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
-              {dashboardData?.header?.totalApDisplay ||
-                fmtMoney(metrics.totalAP || 0)}
+              {_isLoading ? (
+                <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+              ) : (
+                dashboardData?.header?.totalApDisplay ||
+                fmtMoney(metrics.totalAP || 0)
+              )}
             </span>
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
@@ -672,8 +686,12 @@ export default function DashboardCharts() {
                 metrics.overdueAmount > 0 ? 'text-red-9' : 'text-primary-9',
               )}
             >
-              {dashboardData?.header?.overdueDisplay ||
-                fmtMoney(metrics.overdueAmount || 0)}
+              {_isLoading ? (
+                <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+              ) : (
+                dashboardData?.header?.overdueDisplay ||
+                fmtMoney(metrics.overdueAmount || 0)
+              )}
             </span>
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
@@ -681,7 +699,11 @@ export default function DashboardCharts() {
               {t`Open Invoices`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
-              {dashboardData?.header?.openInvoices ?? metrics.openInvoices}
+              {_isLoading ? (
+                <span className='inline-block h-5 w-12 animate-pulse rounded bg-gray-3' />
+              ) : (
+                dashboardData?.header?.openInvoices ?? metrics.openInvoices
+              )}
             </span>
           </div>
           <div className='flex flex-col gap-0.5 text-center md:text-right'>
@@ -689,7 +711,11 @@ export default function DashboardCharts() {
               {t`DPO`}
             </span>
             <span className='text-15 font-semibold text-primary-9'>
-              {dashboardData?.header?.dpoDisplay || `${metrics.dpo}d`}
+              {_isLoading ? (
+                <span className='inline-block h-5 w-10 animate-pulse rounded bg-gray-3' />
+              ) : (
+                dashboardData?.header?.dpoDisplay || `${metrics.dpo}d`
+              )}
             </span>
           </div>
           <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
@@ -706,50 +732,56 @@ export default function DashboardCharts() {
       {/* 3. KPI STRIP */}
       {isCommandCenterExpanded && (
         <div className='animate-in fade-in grid grid-cols-1 gap-4 duration-300 sm:grid-cols-2 md:grid-cols-6'>
-          {(dashboardData?.kpis || []).map((kpi: any) => {
-            const config = getKpiConfig(kpi.key)
-            const trendVal =
-              kpi.changePercent !== null && kpi.changePercent !== undefined
-                ? `${kpi.changePercent > 0 ? '+' : ''}${kpi.changePercent}%`
-                : kpi.trend === 'flat'
-                  ? t`Flat`
-                  : kpi.trend
+          {_isLoading ? (
+            Array.from({ length: 6 }).map((_, idx) => (
+              <SkeletonCard key={idx} height='h-24' />
+            ))
+          ) : (
+            (dashboardData?.kpis || []).map((kpi: any) => {
+              const config = getKpiConfig(kpi.key)
+              const trendVal =
+                kpi.changePercent !== null && kpi.changePercent !== undefined
+                  ? `${kpi.changePercent > 0 ? '+' : ''}${kpi.changePercent}%`
+                  : kpi.trend === 'flat'
+                    ? t`Flat`
+                    : kpi.trend
 
-            return (
-              <div
-                key={kpi.key}
-                className={cn(
-                  'cursor-pointer rounded-lg border border-t-3 border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5',
-                  config.color,
-                  activeDrill === kpi.label &&
-                    'shadow-md ring-2 ring-primary-9/40',
-                )}
-                onClick={() => handleKpiClick(kpi.label)}
-              >
-                <div className='text-8 font-poppins font-semibold uppercase'>
-                  {kpi.label}
+              return (
+                <div
+                  key={kpi.key}
+                  className={cn(
+                    'cursor-pointer rounded-lg border border-t-3 border-border-default bg-surface p-4 shadow-xs transition-all hover:-translate-y-0.5',
+                    config.color,
+                    activeDrill === kpi.label &&
+                      'shadow-md ring-2 ring-primary-9/40',
+                  )}
+                  onClick={() => handleKpiClick(kpi.label)}
+                >
+                  <div className='text-8 font-poppins font-semibold uppercase'>
+                    {kpi.label}
+                  </div>
+                  <div className='mt-1.5 font-poppins text-18 font-semibold text-text-primary'>
+                    {kpi.displayValue}
+                  </div>
+                  <div className='mt-2 flex items-center gap-1.5 text-11 font-semibold'>
+                    <span
+                      className={cn(
+                        'rounded px-1.5 py-0.5',
+                        config.isGood
+                          ? 'bg-success-light text-success'
+                          : 'bg-red-2 text-red-11',
+                      )}
+                    >
+                      {trendVal}
+                    </span>
+                    <span className='font-inter font-normal text-text-muted'>
+                      vs last month
+                    </span>
+                  </div>
                 </div>
-                <div className='mt-1.5 font-poppins text-18 font-semibold text-text-primary'>
-                  {kpi.displayValue}
-                </div>
-                <div className='mt-2 flex items-center gap-1.5 text-11 font-semibold'>
-                  <span
-                    className={cn(
-                      'rounded px-1.5 py-0.5',
-                      config.isGood
-                        ? 'bg-success-light text-success'
-                        : 'bg-red-2 text-red-11',
-                    )}
-                  >
-                    {trendVal}
-                  </span>
-                  <span className='font-inter font-normal text-text-muted'>
-                    vs last month
-                  </span>
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       )}
 
@@ -864,21 +896,37 @@ export default function DashboardCharts() {
                       Auto-updates with your filters — the ledger's margin notes
                     </div>
                   </div>
-                  <span className='text-10 rounded border border-border-default bg-surface px-1.5 py-0.5 font-semibold text-text-muted'>
+                  <span className='text-10 flex items-center gap-1.5 rounded-full border border-orange-4 bg-transparent px-2 py-0.5 font-semibold text-orange-11'>
+                    <span className='h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-orange-9' />
                     LIVE
                   </span>
                 </div>
-                <ul className='flex flex-col'>
-                  {aiInsightsList.map((insight, idx) => (
-                    <li
-                      className='flex gap-3 border-b border-dashed border-border-default py-2.5 text-[13px] text-text-secondary first:pt-0 last:border-b-0 last:pb-0'
-                      key={idx}
-                    >
-                      <BulletIcon />
-                      <div>{insight.node}</div>
-                    </li>
-                  ))}
-                </ul>
+                {_isLoading ? (
+                  <div className='flex flex-col gap-3 py-2'>
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div className='flex items-center gap-3' key={idx}>
+                        <div className='h-4 w-4 shrink-0 rounded-full bg-gray-3 animate-pulse' />
+                        <div className='h-4 w-full rounded bg-gray-3 animate-pulse' />
+                      </div>
+                    ))}
+                  </div>
+                ) : aiInsightsList.length > 0 ? (
+                  <ul className='flex flex-col'>
+                    {aiInsightsList.map((insight: any, idx: number) => (
+                      <li
+                        className='flex gap-3 border-b border-dashed border-border-default py-2.5 text-[13px] text-text-secondary first:pt-0 last:border-b-0 last:pb-0'
+                        key={idx}
+                      >
+                        <BulletIcon />
+                        <div>{insight.node}</div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className='py-6 text-center text-12 text-text-muted'>
+                    No insights available
+                  </div>
+                )}
               </div>
 
               <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
@@ -944,35 +992,47 @@ export default function DashboardCharts() {
             >
               <div>
                 <h3 className='font-poppins text-14 font-semibold'>
-                  Profitability &amp; Cash Position
+                  {dashboardData?.profitabilityCashPosition?.title || 'Profitability & Cash Position'}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  Is payables growth eating margin · future liquidity needs
+                  {dashboardData?.profitabilityCashPosition?.subtitle || 'Is payables growth eating margin · future liquidity needs'}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Profit Margin
+                    {profitMarginKpi?.label || 'Profit Margin'}
                   </span>
                   <span className='text-15 font-semibold text-cyan-9'>
-                    12.9%
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-12 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      profitMarginKpi?.displayValue || 'No data available'
+                    )}
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Next 4 Weeks
+                    {next4WeeksKpi?.label || 'Next 4 Weeks'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
-                    $3.85M
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      next4WeeksKpi?.displayValue || 'No data available'
+                    )}
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Peak Week
+                    {peakWeekKpi?.label || 'Peak Week'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
-                    Week 3
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                     peakWeekKpi?.value ? peakWeekKpi?.displayValue : 'None'
+                    )}
                   </span>
                 </div>
                 <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
@@ -986,167 +1046,175 @@ export default function DashboardCharts() {
             </div>
 
             {isProfitabilityExpanded && (
-              <div className='grid grid-cols-12 gap-4'>
-                <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    {dashboardData?.profitVsApSpending?.title ||
-                      'Profit vs AP spending'}
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    {dashboardData?.profitVsApSpending?.subtitle ||
-                      'Dual axis spending trend comparison'}
-                  </div>
-                  <div className='h-64'>
-                    <ResponsiveContainer height='100%' width='100%'>
-                      <ComposedChart data={profitVsApData}>
-                        <CartesianGrid strokeDasharray='3 3' vertical={false} />
-                        <XAxis dataKey='name' tick={{ fontSize: 11 }} />
-                        <YAxis
-                          tick={{ fontSize: 11 }}
-                          yAxisId='left'
-                          label={{
-                            angle: -90,
-                            position: 'insideLeft',
-                            style: { fontSize: 10 },
-                            value: 'AP Amount',
-                          }}
-                        />
-                        <YAxis
-                          orientation='right'
-                          tick={{ fontSize: 11 }}
-                          yAxisId='right'
-                          label={{
-                            angle: 90,
-                            position: 'insideRight',
-                            style: { fontSize: 10 },
-                            value: 'Profit %',
-                          }}
-                        />
-                        <Tooltip
-                          formatter={(v: any, name?: string) =>
-                            name === 'Profit'
-                              ? [`${v}%`, name]
-                              : [fmtMoney(v), name || '']
-                          }
-                        />
-                        <Bar
-                          barSize={20}
-                          dataKey='AP'
-                          fill='#8300e6'
-                          radius={[4, 4, 0, 0]}
-                          yAxisId='left'
-                        />
-                        <Line
-                          dataKey='Profit'
-                          dot={{ r: 4 }}
-                          stroke='#19c1d4'
-                          strokeWidth={2.5}
-                          type='monotone'
-                          yAxisId='right'
-                        />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
+              !hasData(dashboardData?.profitabilityCashPosition) ? (
+                <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
+                  <p className='text-13 font-medium text-text-secondary'>
+                    No data available
+                  </p>
                 </div>
+              ) : (
+                <div className='grid grid-cols-12 gap-4'>
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      {dashboardData?.profitVsApSpending?.title ||
+                        'Profit vs AP spending'}
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      {dashboardData?.profitVsApSpending?.subtitle ||
+                        'Dual axis spending trend comparison'}
+                    </div>
+                    <div className='h-64'>
+                      <ResponsiveContainer height='100%' width='100%'>
+                        <ComposedChart data={profitVsApData}>
+                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <XAxis dataKey='name' tick={{ fontSize: 11 }} />
+                          <YAxis
+                            tick={{ fontSize: 11 }}
+                            yAxisId='left'
+                            label={{
+                              angle: -90,
+                              position: 'insideLeft',
+                              style: { fontSize: 10 },
+                              value: 'AP Amount',
+                            }}
+                          />
+                          <YAxis
+                            orientation='right'
+                            tick={{ fontSize: 11 }}
+                            yAxisId='right'
+                            label={{
+                              angle: 90,
+                              position: 'insideRight',
+                              style: { fontSize: 10 },
+                              value: 'Profit %',
+                            }}
+                          />
+                          <Tooltip
+                            formatter={(v: any, name?: string) =>
+                              name === 'Profit'
+                                ? [`${v}%`, name]
+                                : [fmtMoney(v), name || '']
+                            }
+                          />
+                          <Bar
+                            barSize={20}
+                            dataKey='AP'
+                            fill='#8300e6'
+                            radius={[4, 4, 0, 0]}
+                            yAxisId='left'
+                          />
+                          <Line
+                            dataKey='Profit'
+                            dot={{ r: 4 }}
+                            stroke='#19c1d4'
+                            strokeWidth={2.5}
+                            type='monotone'
+                            yAxisId='right'
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
 
-                <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    {dashboardData?.monthlyPaymentTrend?.title ||
-                      'Monthly payment trend'}
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    {dashboardData?.monthlyPaymentTrend?.subtitle ||
-                      'Cash leaving the building, month by month'}
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      {dashboardData?.monthlyPaymentTrend?.title ||
+                        'Monthly payment trend'}
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      {dashboardData?.monthlyPaymentTrend?.subtitle ||
+                        'Cash leaving the building, month by month'}
+                    </div>
+                    <div className='h-64'>
+                      <ResponsiveContainer height='100%' width='100%'>
+                        <AreaChart data={monthlyPaymentData}>
+                          <defs>
+                            <linearGradient
+                              id='paymentGrad'
+                              x1='0'
+                              x2='0'
+                              y1='0'
+                              y2='1'
+                            >
+                              <stop
+                                offset='5%'
+                                stopColor='#8300e6'
+                                stopOpacity={0.3}
+                              />
+                              <stop
+                                offset='95%'
+                                stopColor='#8300e6'
+                                stopOpacity={0.0}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <XAxis dataKey='name' tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
+                          <Area
+                            dataKey='value'
+                            fill='url(#paymentGrad)'
+                            fillOpacity={1}
+                            stroke='#8300e6'
+                            strokeWidth={2}
+                            type='monotone'
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
-                  <div className='h-64'>
-                    <ResponsiveContainer height='100%' width='100%'>
-                      <AreaChart data={monthlyPaymentData}>
-                        <defs>
-                          <linearGradient
-                            id='paymentGrad'
-                            x1='0'
-                            x2='0'
-                            y1='0'
-                            y2='1'
-                          >
-                            <stop
-                              offset='5%'
-                              stopColor='#8300e6'
-                              stopOpacity={0.3}
-                            />
-                            <stop
-                              offset='95%'
-                              stopColor='#8300e6'
-                              stopOpacity={0.0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray='3 3' vertical={false} />
-                        <XAxis dataKey='name' tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                        <Area
-                          dataKey='value'
-                          fill='url(#paymentGrad)'
-                          fillOpacity={1}
-                          stroke='#8300e6'
-                          strokeWidth={2}
-                          type='monotone'
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
 
-                <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs'>
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    {dashboardData?.cashFlowForecast?.title ||
-                      'Cash out forecast'}
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    {dashboardData?.cashFlowForecast?.subtitle ||
-                      'Liquidity projection and cash needs over next 10 weeks'}
-                  </div>
-                  <div className='h-56'>
-                    <ResponsiveContainer height='100%' width='100%'>
-                      <AreaChart data={cashFlowData}>
-                        <defs>
-                          <linearGradient
-                            id='forecastGrad'
-                            x1='0'
-                            x2='0'
-                            y1='0'
-                            y2='1'
-                          >
-                            <stop
-                              offset='5%'
-                              stopColor='#5c21e6'
-                              stopOpacity={0.25}
-                            />
-                            <stop
-                              offset='95%'
-                              stopColor='#5c21e6'
-                              stopOpacity={0.0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray='3 3' vertical={false} />
-                        <XAxis dataKey='name' tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                        <Area
-                          dataKey='value'
-                          fill='url(#forecastGrad)'
-                          fillOpacity={1}
-                          stroke='#5c21e6'
-                          strokeWidth={2}
-                          type='monotone'
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      {dashboardData?.cashFlowForecast?.title ||
+                        'Cash out forecast'}
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      {dashboardData?.cashFlowForecast?.subtitle ||
+                        'Liquidity projection and cash needs over next 10 weeks'}
+                    </div>
+                    <div className='h-56'>
+                      <ResponsiveContainer height='100%' width='100%'>
+                        <AreaChart data={cashFlowData}>
+                          <defs>
+                            <linearGradient
+                              id='forecastGrad'
+                              x1='0'
+                              x2='0'
+                              y1='0'
+                              y2='1'
+                            >
+                              <stop
+                                offset='5%'
+                                stopColor='#5c21e6'
+                                stopOpacity={0.25}
+                              />
+                              <stop
+                                offset='95%'
+                                stopColor='#5c21e6'
+                                stopOpacity={0.0}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <XAxis dataKey='name' tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
+                          <Area
+                            dataKey='value'
+                            fill='url(#forecastGrad)'
+                            fillOpacity={1}
+                            stroke='#5c21e6'
+                            strokeWidth={2}
+                            type='monotone'
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
 
@@ -1162,33 +1230,47 @@ export default function DashboardCharts() {
             >
               <div>
                 <h3 className='font-poppins text-14 font-semibold'>
-                  Supplier Concentration &amp; Risk
+                  {supplierRiskData?.title || 'Supplier Concentration & Risk'}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  Where spend concentrates · vendor risk exposure
+                  {supplierRiskData?.subtitle || 'Where spend concentrates · vendor risk exposure'}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Active Suppliers
+                    {activeSuppliersKpi?.label || 'Active Suppliers'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
-                    24
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-10 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      activeSuppliersKpi?.displayValue || 'No data available'
+                    )}
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    High Risk
+                    {highRiskSuppliersKpi?.label || 'High Risk'}
                   </span>
-                  <span className='text-15 font-semibold text-red-9'>3</span>
+                  <span className='text-15 font-semibold text-red-9'>
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-8 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      highRiskSuppliersKpi?.displayValue || 'No data available'
+                    )}
+                  </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Top-3 Concentration
+                    {top3ConcentrationKpi?.label || 'Top-3 Concentration'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
-                    44.0%
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      top3ConcentrationKpi?.displayValue || 'No data available'
+                    )}
                   </span>
                 </div>
                 <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
@@ -1202,168 +1284,260 @@ export default function DashboardCharts() {
             </div>
 
             {isSupplierConcentrationExpanded && (
-              <div className='grid grid-cols-12 gap-4'>
-                <div
-                  className={cn(
-                    'rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300',
-                    isCommandCenterExpanded
-                      ? 'col-span-12 lg:col-span-4'
-                      : 'col-span-12 lg:col-span-4',
-                  )}
-                >
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Top 10 suppliers by invoice value
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Concentration of invoice liabilities
-                  </div>
-                  <div className='h-60'>
-                    <ResponsiveContainer height='100%' width='100%'>
-                      <BarChart
-                        data={topSuppliersData}
-                        layout='vertical'
-                        margin={{ left: -10, right: 10 }}
-                      >
-                        <XAxis tick={{ fontSize: 10 }} type='number' />
-                        <YAxis
-                          dataKey='name'
-                          tick={{ fontSize: 10 }}
-                          type='category'
-                          width={90}
-                        />
-                        <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                        <Bar
-                          barSize={12}
-                          dataKey='value'
-                          fill='#8300e6'
-                          radius={[0, 4, 4, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+              !hasData(supplierRiskData) ? (
+                <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
+                  <p className='text-13 font-medium text-text-secondary'>
+                    No data available
+                  </p>
                 </div>
-
-                {isSupplierConcentrationExpanded && (
-                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
+              ) : (
+                <div className='grid grid-cols-12 gap-4'>
+                  <div
+                    className={cn(
+                      'rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300',
+                      isCommandCenterExpanded
+                        ? 'col-span-12 lg:col-span-4'
+                        : 'col-span-12 lg:col-span-4',
+                    )}
+                  >
                     <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                      Outstanding payables by supplier
+                      Top 10 suppliers by invoice value
                     </h3>
                     <div className='mb-4 font-inter text-11 text-text-muted'>
-                      Click a supplier's bar to drill down
+                      Concentration of invoice liabilities
                     </div>
                     <div className='h-60'>
                       <ResponsiveContainer height='100%' width='100%'>
-                        <BarChart
-                          data={outstandingSuppliersData}
-                          layout='vertical'
-                          margin={{ left: -10, right: 10 }}
-                        >
-                          <XAxis tick={{ fontSize: 10 }} type='number' />
-                          <YAxis
-                            dataKey='name'
-                            tick={{ fontSize: 10 }}
-                            type='category'
-                            width={90}
-                          />
-                          <Tooltip formatter={(v: any) => [fmtMoney(v)]} />
-                          <Bar
-                            barSize={12}
-                            className='cursor-pointer'
+                        <PieChart>
+                          <Pie
+                            data={topSuppliersData}
                             dataKey='value'
-                            fill='#5c21e6'
-                            radius={[0, 4, 4, 0]}
-                            onClick={(data: any) => {
-                              setDrillSupplier(data?.name ?? null)
-                              setActiveDrill('Outstanding Payables')
+                            nameKey='name'
+                            cx='50%'
+                            cy='50%'
+                            innerRadius={50}
+                            outerRadius={75}
+                            paddingAngle={2}
+                          >
+                            {topSuppliersData.map((_entry: any, idx: number) => (
+                              <Cell
+                                key={idx}
+                                fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }: any) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload
+                                return (
+                                  <div className='rounded-lg border border-border-default bg-surface p-2.5 shadow-md text-11'>
+                                    <div className='font-semibold text-text-primary'>{data.name}</div>
+                                    <div className='text-text-secondary mt-0.5'>{fmtMoney(data.value)}</div>
+                                  </div>
+                                )
+                              }
+                              return null
                             }}
                           />
-                        </BarChart>
+                        </PieChart>
                       </ResponsiveContainer>
                     </div>
-                  </div>
-                )}
-
-                <div
-                  className={cn(
-                    'rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300',
-                    isCommandCenterExpanded
-                      ? 'col-span-12 lg:col-span-4'
-                      : 'col-span-12 lg:col-span-4',
-                  )}
-                >
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Department-wise spend
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Tile size reflects share of AP expenses
-                  </div>
-                  <div className='grid h-48 grid-cols-2 gap-2'>
-                    {departmentSpendData.map((dept: any) => (
-                      <div
-                        key={dept.name}
-                        className={cn(
-                          'flex cursor-pointer flex-col justify-between rounded-lg p-2.5 transition-all hover:scale-[1.02]',
-                          dept.color,
-                        )}
-                        onClick={() => {
-                          setSearchQuery(dept.name)
-                          setActiveDrill('Department Spend')
-                        }}
-                      >
-                        <span className='text-10 font-inter font-semibold'>
-                          {dept.name}
-                        </span>
-                        <div className='mt-1 flex items-baseline justify-between'>
-                          <span className='font-poppins text-14 font-semibold'>
-                            {dept.amt}
-                          </span>
-                          <span className='text-9 font-inter opacity-80'>
-                            {dept.share}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className='text-10 mt-3 font-inter text-text-muted'>
-                    Click on a tile to filter workflow records.
-                  </div>
-                </div>
-
-                <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs'>
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Supplier geographic distribution
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Regional volume and spend exposure analysis
-                  </div>
-                  <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4'>
-                    {geographyData.map((tile: any) => (
-                      <div
-                        className='rounded-xl border border-border-default bg-gray-2 p-3'
-                        key={tile.region}
-                      >
-                        <div className='flex items-center justify-between font-inter text-12 font-semibold text-text-primary'>
-                          <span className='flex items-center gap-1.5'>
-                            <span className='text-16'>{tile.flag}</span>
-                            {tile.region}
-                          </span>
-                          <span>{tile.value}</span>
-                        </div>
-                        <div className='mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border-default'>
+                    <div className='mt-4 max-h-44 overflow-y-auto minimal-scrollbar space-y-1.5 pr-1'>
+                      {topSuppliersData.map((entry: any, idx: number) => {
+                        const color = CHART_COLORS[idx % CHART_COLORS.length]
+                        return (
                           <div
-                            className='h-full bg-primary-9'
-                            style={{ width: `${tile.pct}%` }}
-                          />
-                        </div>
-                        <div className='text-10 mt-2 flex justify-between font-inter text-text-muted'>
-                          <span>{tile.count}</span>
-                          <span>{tile.pct}% share</span>
-                        </div>
+                            key={idx}
+                            className='flex items-center justify-between text-11 py-0.5 hover:bg-surface-hover px-1 rounded transition-colors'
+                          >
+                            <div className='flex items-center gap-2 min-w-0 mr-2'>
+                              <span
+                                className='h-2.5 w-2.5 shrink-0 rounded-xs'
+                                style={{ backgroundColor: color }}
+                              />
+                              <span
+                                className='font-medium text-text-secondary truncate'
+                                title={entry.name}
+                              >
+                                {entry.name}
+                              </span>
+                            </div>
+                            <span className='font-semibold text-text-primary shrink-0'>
+                              {fmtMoney(entry.value)}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {isSupplierConcentrationExpanded && (
+                    <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
+                      <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                        Outstanding payables by supplier
+                      </h3>
+                      <div className='mb-4 font-inter text-11 text-text-muted'>
+                        Click a supplier's bar to drill down
                       </div>
-                    ))}
+                      <div className='h-60'>
+                        <ResponsiveContainer height='100%' width='100%'>
+                          <PieChart>
+                            <Pie
+                              data={outstandingSuppliersData}
+                              dataKey='value'
+                              nameKey='name'
+                              cx='50%'
+                              cy='50%'
+                              innerRadius={50}
+                              outerRadius={75}
+                              paddingAngle={2}
+                            >
+                              {outstandingSuppliersData.map((entry: any, idx: number) => (
+                                <Cell
+                                  key={idx}
+                                  className='cursor-pointer'
+                                  fill={CHART_COLORS[idx % CHART_COLORS.length]}
+                                  onClick={() => {
+                                    setDrillSupplier(entry?.name ?? null)
+                                    setActiveDrill('Outstanding Payables')
+                                  }}
+                                />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              content={({ active, payload }: any) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload
+                                  return (
+                                    <div className='rounded-lg border border-border-default bg-surface p-2.5 shadow-md text-11'>
+                                      <div className='font-semibold text-text-primary'>{data.name}</div>
+                                      <div className='text-text-secondary mt-0.5'>{fmtMoney(data.value)}</div>
+                                    </div>
+                                  )
+                                }
+                                return null
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className='mt-4 max-h-44 overflow-y-auto minimal-scrollbar space-y-1.5 pr-1'>
+                        {outstandingSuppliersData.map((entry: any, idx: number) => {
+                          const color = CHART_COLORS[idx % CHART_COLORS.length]
+                          return (
+                            <div
+                              key={idx}
+                              className='flex items-center justify-between text-11 py-0.5 hover:bg-surface-hover px-1 rounded transition-colors cursor-pointer'
+                              onClick={() => {
+                                setDrillSupplier(entry?.name ?? null)
+                                setActiveDrill('Outstanding Payables')
+                              }}
+                            >
+                              <div className='flex items-center gap-2 min-w-0 mr-2'>
+                                <span
+                                  className='h-2.5 w-2.5 shrink-0 rounded-xs'
+                                  style={{ backgroundColor: color }}
+                                />
+                                <span
+                                  className='font-medium text-text-secondary truncate'
+                                  title={entry.name}
+                                >
+                                  {entry.name}
+                                </span>
+                              </div>
+                              <span className='font-semibold text-text-primary shrink-0'>
+                                {fmtMoney(entry.value)}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={cn(
+                      'rounded-lg border border-border-default bg-surface p-5 shadow-xs transition-all duration-300',
+                      isCommandCenterExpanded
+                        ? 'col-span-12 lg:col-span-4'
+                        : 'col-span-12 lg:col-span-4',
+                    )}
+                  >
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      Department-wise spend
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      Tile size reflects share of AP expenses
+                    </div>
+                    <div className='grid h-48 grid-cols-2 gap-2'>
+                      {departmentSpendData.map((dept: any) => (
+                        <div
+                          key={dept.name}
+                          className={cn(
+                            'flex cursor-pointer flex-col justify-between rounded-lg p-2.5 transition-all hover:scale-[1.02]',
+                            dept.color,
+                          )}
+                          onClick={() => {
+                            setSearchQuery(dept.name)
+                            setActiveDrill('Department Spend')
+                          }}
+                        >
+                          <span className='text-10 font-inter font-semibold'>
+                            {dept.name}
+                          </span>
+                          <div className='mt-1 flex items-baseline justify-between'>
+                            <span className='font-poppins text-14 font-semibold'>
+                              {dept.amt}
+                            </span>
+                            <span className='text-9 font-inter opacity-80'>
+                              {dept.share}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className='text-10 mt-3 font-inter text-text-muted'>
+                      Click on a tile to filter workflow records.
+                    </div>
+                  </div>
+
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      Supplier geographic distribution
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      Regional volume and spend exposure analysis
+                    </div>
+                    <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4'>
+                      {geographyData.map((tile: any) => (
+                        <div
+                          className='rounded-xl border border-border-default bg-gray-2 p-3'
+                          key={tile.region}
+                        >
+                          <div className='flex items-center justify-between font-inter text-12 font-semibold text-text-primary'>
+                            <span className='flex items-center gap-1.5'>
+                              <span className='text-16'>{tile.flag}</span>
+                              {tile.region}
+                            </span>
+                            <span>{tile.value}</span>
+                          </div>
+                          <div className='mt-3 h-1.5 w-full overflow-hidden rounded-full bg-border-default'>
+                            <div
+                              className='h-full bg-primary-9'
+                              style={{ width: `${tile.pct}%` }}
+                            />
+                          </div>
+                          <div className='text-10 mt-2 flex justify-between font-inter text-text-muted'>
+                            <span>{tile.count}</span>
+                            <span>{tile.pct}% share</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
 
@@ -1377,33 +1551,47 @@ export default function DashboardCharts() {
             >
               <div>
                 <h3 className='font-poppins text-14 font-semibold'>
-                  Aging &amp; Process Oversight
+                  {agingOversightData?.title || 'Aging & Process Oversight'}
                 </h3>
                 <p className='mt-0.5 font-inter text-11 text-text-secondary'>
-                  Portfolio-level view of overdue exposure and approval cycles
+                  {agingOversightData?.subtitle || 'Portfolio-level view of overdue exposure and approval cycles'}
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-6'>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    90+ Days
+                    {aging90PlusKpi?.label || '90+ Days'}
                   </span>
                   <span className='text-15 font-semibold text-primary-9'>
-                    $1.24M
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      aging90PlusKpi?.displayValue || 'No data available'
+                    )}
                   </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Critical Exceptions
+                    {criticalExceptionsKpi?.label || 'Critical Exceptions'}
                   </span>
-                  <span className='text-15 font-semibold text-red-9'>4</span>
+                  <span className='text-15 font-semibold text-red-9'>
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-10 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      criticalExceptionsKpi?.displayValue || 'No data available'
+                    )}
+                  </span>
                 </div>
                 <div className='flex flex-col gap-0.5 text-center md:text-right'>
                   <span className='font-poppins text-[10px] font-medium tracking-wider text-text-secondary uppercase dark:text-gray-4'>
-                    Approval Rate
+                    {approvalRateKpi?.label || 'Approval Rate'}
                   </span>
                   <span className='text-success text-15 font-semibold'>
-                    94.2%
+                    {_isLoading ? (
+                      <span className='inline-block h-5 w-16 animate-pulse rounded bg-gray-3' />
+                    ) : (
+                      approvalRateKpi?.displayValue || 'No data available'
+                    )}
                   </span>
                 </div>
                 <div className='z-20 ml-2 rounded-lg p-1.5 text-text-secondary transition-colors'>
@@ -1417,106 +1605,116 @@ export default function DashboardCharts() {
             </div>
 
             {isSupplierFollowUpExpanded && (
-              <div className='grid grid-cols-12 gap-5'>
-                <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Invoice aging analysis
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Click a segment to drill into invoices
-                  </div>
-                  <div className='h-64'>
-                    <ResponsiveContainer height='100%' width='100%'>
-                      <BarChart
-                        margin={{ bottom: 10 }}
-                        data={[
-                          { name: '0–15d', value: 1842 },
-                          { name: '16–30d', value: 1205 },
-                          { name: '31–45d', value: 623 },
-                          { name: '46–60d', value: 298 },
-                          { name: '60d+', value: 134 },
-                        ]}
-                      >
-                        <CartesianGrid strokeDasharray='3 3' vertical={false} />
-                        <XAxis dataKey='name' tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip
-                          formatter={(v: any) => [`${v} Invoices`, 'Volume']}
-                        />
-                        <Bar
-                          barSize={24}
-                          className='cursor-pointer'
-                          dataKey='value'
-                          fill='#8300e6'
-                          radius={[4, 4, 0, 0]}
-                          onClick={(data: any) => {
-                            setDrillAgingBucket(data?.name ?? null)
-                            setActiveDrill('Aging Analysis')
-                          }}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+              !hasData(agingOversightData) ? (
+                <div className='flex flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 py-10 text-center'>
+                  <p className='text-13 font-medium text-text-secondary'>
+                    No data available
+                  </p>
                 </div>
-
-                <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
-                  <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Approval delay heat map
-                  </h3>
-                  <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Average days to approve by department · last 8 weeks
-                  </div>
-                  <div className='mt-3 flex flex-col gap-2 font-inter'>
-                    <div className='grid grid-cols-9 gap-1 text-center text-[10px] font-semibold text-text-muted'>
-                      <div></div>
-                      {['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'].map(
-                        (w) => (
-                          <div key={w}>{w}</div>
-                        ),
+              ) : (
+                <div className='grid grid-cols-12 gap-5'>
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      {dashboardData?.invoiceAgingAnalysis?.title || 'Invoice aging analysis'}
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      {dashboardData?.invoiceAgingAnalysis?.subtitle || 'Click a segment to drill into invoices'}
+                    </div>
+                    <div className='h-64'>
+                      {!hasData(dashboardData?.invoiceAgingAnalysis?.buckets) ? (
+                        <div className='flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 text-center'>
+                          <p className='text-12 font-medium text-text-secondary'>
+                            No records found
+                          </p>
+                        </div>
+                      ) : (
+                        <ResponsiveContainer height='100%' width='100%'>
+                          <BarChart
+                            margin={{ bottom: 10 }}
+                            data={invoiceAgingData}
+                          >
+                            <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                            <XAxis dataKey='name' tick={{ fontSize: 11 }} />
+                            <YAxis tick={{ fontSize: 11 }} />
+                            <Tooltip
+                              formatter={(v: any) => [`${v} Invoices`, 'Volume']}
+                            />
+                            <Bar
+                              barSize={24}
+                              className='cursor-pointer'
+                              dataKey='value'
+                              fill='#8300e6'
+                              radius={[4, 4, 0, 0]}
+                              onClick={(data: any) => {
+                                setDrillAgingBucket(data?.name ?? null)
+                                setActiveDrill('Aging Analysis')
+                              }}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
                       )}
                     </div>
-                    {[
-                      { cells: [2, 1, 3, 2, 4, 5, 2, 1], dept: 'IT' },
-                      { cells: [1, 2, 1, 1, 2, 1, 3, 1], dept: 'Finance' },
-                      { cells: [5, 4, 6, 8, 7, 5, 6, 5], dept: 'Marketing' },
-                      { cells: [3, 2, 4, 3, 3, 4, 2, 3], dept: 'Operations' },
-                      { cells: [4, 5, 3, 4, 5, 2, 4, 4], dept: 'HR' },
-                      { cells: [6, 7, 9, 8, 7, 6, 9, 8], dept: 'Legal' },
-                    ].map((row) => (
-                      <div
-                        className='grid grid-cols-9 items-center gap-1'
-                        key={row.dept}
-                      >
-                        <div className='pr-2 text-right text-11 font-semibold text-text-secondary'>
-                          {row.dept}
-                        </div>
-                        {row.cells.map((val, idx) => {
-                          let color = 'bg-[#F1E1FC]'
-                          if (val > 7) color = 'bg-[#643094] text-white'
-                          else if (val > 4) color = 'bg-[#8300e6] text-white'
-                          else if (val > 2)
-                            color = 'bg-[#EEE6FD] text-primary-9'
-                          return (
-                            <div
-                              key={idx}
-                              title={`${row.dept}: ${val} days`}
-                              className={cn(
-                                'flex h-8 items-center justify-center rounded text-11 font-semibold',
-                                color,
-                              )}
-                            >
-                              {val}d
-                            </div>
-                          )
-                        })}
-                      </div>
-                    ))}
                   </div>
-                  <div className='text-10 mt-3 font-inter text-text-muted'>
-                    Darker cells indicate longer processing bottlenecks.
+
+                  <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-6'>
+                    <h3 className='font-poppins text-14 font-semibold text-text-primary'>
+                      Approval delay heat map
+                    </h3>
+                    <div className='mb-4 font-inter text-11 text-text-muted'>
+                      Average days to approve by department · last 8 weeks
+                    </div>
+                    <div className='mt-3 flex flex-col gap-2 font-inter'>
+                      <div className='grid grid-cols-9 gap-1 text-center text-[10px] font-semibold text-text-muted'>
+                        <div></div>
+                        {['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'].map(
+                          (w) => (
+                            <div key={w}>{w}</div>
+                          ),
+                        )}
+                      </div>
+                      {[
+                        { cells: [2, 1, 3, 2, 4, 5, 2, 1], dept: 'IT' },
+                        { cells: [1, 2, 1, 1, 2, 1, 3, 1], dept: 'Finance' },
+                        { cells: [5, 4, 6, 8, 7, 5, 6, 5], dept: 'Marketing' },
+                        { cells: [3, 2, 4, 3, 3, 4, 2, 3], dept: 'Operations' },
+                        { cells: [4, 5, 3, 4, 5, 2, 4, 4], dept: 'HR' },
+                        { cells: [6, 7, 9, 8, 7, 6, 9, 8], dept: 'Legal' },
+                      ].map((row) => (
+                        <div
+                          className='grid grid-cols-9 items-center gap-1'
+                          key={row.dept}
+                        >
+                          <div className='pr-2 text-right text-11 font-semibold text-text-secondary'>
+                            {row.dept}
+                          </div>
+                          {row.cells.map((val, idx) => {
+                            let color = 'bg-[#F1E1FC]'
+                            if (val > 7) color = 'bg-[#643094] text-white'
+                            else if (val > 4) color = 'bg-[#8300e6] text-white'
+                            else if (val > 2)
+                              color = 'bg-[#EEE6FD] text-primary-9'
+                            return (
+                              <div
+                                key={idx}
+                                title={`${row.dept}: ${val} days`}
+                                className={cn(
+                                  'flex h-8 items-center justify-center rounded text-11 font-semibold',
+                                  color,
+                                )}
+                              >
+                                {val}d
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                    <div className='text-10 mt-3 font-inter text-text-muted'>
+                      Darker cells indicate longer processing bottlenecks.
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>
@@ -1536,21 +1734,37 @@ export default function DashboardCharts() {
                       Auto-updates with your filters — the ledger's margin notes
                     </div>
                   </div>
-                  <span className='text-10 rounded border border-border-default bg-surface px-1.5 py-0.5 font-semibold text-text-muted'>
+                  <span className='text-10 flex items-center gap-1.5 rounded-full border border-orange-9 bg-transparent px-2 py-0.5 font-semibold text-orange-9'>
+                    <span className='h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-orange-9' />
                     LIVE
                   </span>
                 </div>
-                <ul className='flex flex-col'>
-                  {aiInsightsList.map((insight, idx) => (
-                    <li
-                      className='flex gap-3 border-b border-dashed border-border-default py-2.5 text-[13px] text-text-secondary first:pt-0 last:border-b-0 last:pb-0'
-                      key={idx}
-                    >
-                      <BulletIcon />
-                      <div>{insight.node}</div>
-                    </li>
-                  ))}
-                </ul>
+                {_isLoading ? (
+                  <div className='flex flex-col gap-3 py-2'>
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div className='flex items-center gap-3' key={idx}>
+                        <div className='h-4 w-4 shrink-0 rounded-full bg-gray-3 animate-pulse' />
+                        <div className='h-4 w-full rounded bg-gray-3 animate-pulse' />
+                      </div>
+                    ))}
+                  </div>
+                ) : aiInsightsList.length > 0 ? (
+                  <ul className='flex flex-col'>
+                    {aiInsightsList.map((insight: any, idx: number) => (
+                      <li
+                        className='flex gap-3 border-b border-dashed border-border-default py-2.5 text-[13px] text-text-secondary first:pt-0 last:border-b-0 last:pb-0'
+                        key={idx}
+                      >
+                        <BulletIcon />
+                        <div>{insight.node}</div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className='py-6 text-center text-12 text-text-muted'>
+                    No insights available
+                  </div>
+                )}
               </div>
 
               <div className='col-span-12 rounded-lg border border-border-default bg-surface p-5 shadow-xs lg:col-span-4'>
@@ -2314,41 +2528,43 @@ export default function DashboardCharts() {
                   )}
                 >
                   <h3 className='font-poppins text-14 font-semibold text-text-primary'>
-                    Invoice aging analysis
+                    {dashboardData?.invoiceAgingAnalysis?.title || 'Invoice aging analysis'}
                   </h3>
                   <div className='mb-4 font-inter text-11 text-text-muted'>
-                    Click a segment to drill into aging details
+                    {dashboardData?.invoiceAgingAnalysis?.subtitle || 'Click a segment to drill into aging details'}
                   </div>
                   <div className='h-60'>
-                    <ResponsiveContainer height='100%' width='100%'>
-                      <BarChart
-                        data={[
-                          { name: '0–15d', value: 1842 },
-                          { name: '16–30d', value: 1205 },
-                          { name: '31–45d', value: 623 },
-                          { name: '46–60d', value: 298 },
-                          { name: '60d+', value: 134 },
-                        ]}
-                      >
-                        <CartesianGrid strokeDasharray='3 3' vertical={false} />
-                        <XAxis dataKey='name' tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip
-                          formatter={(v: any) => [`${v} Invoices`, 'Volume']}
-                        />
-                        <Bar
-                          barSize={20}
-                          className='cursor-pointer'
-                          dataKey='value'
-                          fill='#5c21e6'
-                          radius={[4, 4, 0, 0]}
-                          onClick={(data: any) => {
-                            setDrillAgingBucket(data?.name ?? null)
-                            setActiveDrill('Aging Analysis')
-                          }}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {!hasData(dashboardData?.invoiceAgingAnalysis?.buckets) ? (
+                      <div className='flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border-default bg-surface px-4 text-center'>
+                        <p className='text-12 font-medium text-text-secondary'>
+                          No records found
+                        </p>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer height='100%' width='100%'>
+                        <BarChart
+                          data={invoiceAgingData}
+                        >
+                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <XAxis dataKey='name' tick={{ fontSize: 11 }} />
+                          <YAxis tick={{ fontSize: 11 }} />
+                          <Tooltip
+                            formatter={(v: any) => [`${v} Invoices`, 'Volume']}
+                          />
+                          <Bar
+                            barSize={20}
+                            className='cursor-pointer'
+                            dataKey='value'
+                            fill='#5c21e6'
+                            radius={[4, 4, 0, 0]}
+                            onClick={(data: any) => {
+                              setDrillAgingBucket(data?.name ?? null)
+                              setActiveDrill('Aging Analysis')
+                            }}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
                   </div>
                 </div>
               )}

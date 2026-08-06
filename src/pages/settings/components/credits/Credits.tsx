@@ -25,6 +25,7 @@ import {
   type CreditsUsageBucket,
   type CreditsUsageTransaction,
   getCreditsUsage,
+  getCreditsMaster,
 } from '@/api/v6/billing'
 import IconButton from '@/components/base/button/IconButton'
 import TableExport from '@/components/base/data-table/actions/TableExport'
@@ -34,6 +35,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
 import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
+import Skeleton from '@/components/base/Skeleton'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -177,6 +179,25 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       }),
     [currentYear],
   )
+
+  const {
+    data: creditMaster,
+    isLoading: isMasterLoading,
+  } = useQuery({
+    queryKey: ['settings', 'credits-master', month.value, year.value],
+    queryFn: async () => {
+      const response = await getCreditsMaster({
+        allocationMonth: Number(month.value),
+        allocationYear: Number(year.value),
+      })
+
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      return response.data
+    },
+  })
 
   const {
     data: usage,
@@ -357,13 +378,24 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       ? usage.totalCreditsConsumed / usage.transactionCount
       : 0
 
-  const creditsUsed = usage?.totalCreditsConsumed ?? 0
+  const creditsUsed = creditMaster
+    ? creditMaster.overallConsumedCredit
+    : (usage?.totalCreditsConsumed ?? 0)
+
   const purchasedCredits = useMemo(() => {
+    if (creditMaster) return creditMaster.initialCredit
     // Ensure purchased is always larger than consumed (at least 100, and scales up in blocks of 100)
     return Math.max(100, Math.ceil((creditsUsed * 1.3) / 100) * 100)
-  }, [creditsUsed])
-  const remainingCredits = Math.max(0, purchasedCredits - creditsUsed)
-  const usagePercentage = Math.round((creditsUsed / purchasedCredits) * 100)
+  }, [creditsUsed, creditMaster])
+
+  const remainingCredits = creditMaster
+    ? creditMaster.balanceCredit
+    : Math.max(0, purchasedCredits - creditsUsed)
+
+  const usagePercentage = purchasedCredits > 0
+    ? Math.round((creditsUsed / purchasedCredits) * 100)
+    : 0
+
   const isRemainingLow = remainingCredits <= purchasedCredits * 0.2
 
   const dailyBurnRate = useMemo(() => {
@@ -593,35 +625,54 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   Credits consumed
                 </div>
                 <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
-                  <span className='font-poppins text-18 font-semibold text-text-primary'>
-                    {isLoading ? '—' : formatNumber(creditsUsed)}
-                  </span>
-                  <span className='text-12 text-text-muted font-normal'>
-                    of {isLoading ? '—' : formatNumber(purchasedCredits)}
-                  </span>
+                  {isLoading || isMasterLoading ? (
+                    <Skeleton className='h-6 w-28 rounded' />
+                  ) : (
+                    <>
+                      <span className='font-poppins text-18 font-semibold text-text-primary'>
+                        {formatNumber(creditsUsed)}
+                      </span>
+                      <span className='text-12 text-text-muted font-normal'>
+                        of {formatNumber(purchasedCredits)}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Progress and bottom details */}
               <div className='mt-2 flex flex-col gap-1.5'>
                 {/* Thin Horizontal Progress Bar */}
-                <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all duration-500',
-                      isRemainingLow ? 'bg-red-9' : 'bg-primary-9'
-                    )}
-                    style={{ width: isLoading ? '0%' : `${Math.min(100, usagePercentage)}%` }}
-                  />
-                </div>
+                {isLoading || isMasterLoading ? (
+                  <Skeleton className='h-1.5 w-full rounded-full' />
+                ) : (
+                  <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all duration-500',
+                        isRemainingLow ? 'bg-red-9' : 'bg-primary-9'
+                      )}
+                      style={{ width: `${Math.min(100, usagePercentage)}%` }}
+                    />
+                  </div>
+                )}
 
                 <div className='flex items-center justify-between text-11 text-text-secondary font-medium font-inter'>
-                  <span className={cn(isRemainingLow && 'text-red-9 font-bold')}>
-                    {isLoading ? '—' : `${formatNumber(remainingCredits)} remaining`}
-                  </span>
-                  <span>
-                    {isLoading ? '—' : `${usagePercentage}% used`}
-                  </span>
+                  {isLoading || isMasterLoading ? (
+                    <>
+                      <Skeleton className='h-3 w-16 rounded' />
+                      <Skeleton className='h-3 w-10 rounded' />
+                    </>
+                  ) : (
+                    <>
+                      <span className={cn(isRemainingLow && 'text-red-9 font-bold')}>
+                        {`${formatNumber(remainingCredits)} remaining`}
+                      </span>
+                      <span>
+                        {`${usagePercentage}% used`}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -633,16 +684,26 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   Top activity by credits
                 </div>
                 <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
-                  <span className='font-poppins text-18 font-semibold text-text-primary'>
-                    {isLoading ? '—' : `${formatNumber(topActivity?.creditsUsed ?? 0)}`}
-                  </span>
-                  <span className='text-12 text-text-muted font-normal'>
-                    credits
-                  </span>
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-20 rounded' />
+                  ) : (
+                    <>
+                      <span className='font-poppins text-18 font-semibold text-text-primary'>
+                        {formatNumber(topActivity?.creditsUsed ?? 0)}
+                      </span>
+                      <span className='text-12 text-text-muted font-normal'>
+                        credits
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className='mt-2 text-11 text-text-muted font-inter font-normal whitespace-nowrap overflow-hidden text-ellipsis' title={topActivity?.type}>
-                {isLoading ? '—' : (topActivity?.type ?? 'No activity recorded')}
+                {isLoading ? (
+                  <Skeleton className='h-3 w-32 rounded' />
+                ) : (
+                  (topActivity?.type ?? 'No activity recorded')
+                )}
               </div>
             </div>
 
@@ -653,11 +714,19 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   Peak usage period
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
-                  {isLoading ? '—' : (peakTimeline?.label ?? 'None')}
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-24 rounded' />
+                  ) : (
+                    (peakTimeline?.label ?? 'None')
+                  )}
                 </div>
               </div>
               <div className='mt-2 text-11 text-text-muted font-inter font-normal'>
-                {isLoading ? '—' : `${formatNumber(peakTimeline?.creditsUsed ?? 0)} credits, highest this period`}
+                {isLoading ? (
+                  <Skeleton className='h-3 w-36 rounded' />
+                ) : (
+                  `${formatNumber(peakTimeline?.creditsUsed ?? 0)} credits, highest this period`
+                )}
               </div>
             </div>
 
@@ -668,14 +737,24 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   Active AI agents
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
-                  {isLoading ? '—' : `${consumptionByAgent.length}`}
-                  <span className='ml-1 text-12 text-text-muted font-normal'>
-                    agents
-                  </span>
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-20 rounded' />
+                  ) : (
+                    <>
+                      {consumptionByAgent.length}
+                      <span className='ml-1 text-12 text-text-muted font-normal'>
+                        agents
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className='mt-2 text-11 text-text-muted font-inter font-normal whitespace-nowrap overflow-hidden text-ellipsis' title={consumptionByAgent.map(c => c.name).join(', ')}>
-                {isLoading ? '—' : (consumptionByAgent.map(c => c.name).join(', ') || 'No active agents')}
+                {isLoading ? (
+                  <Skeleton className='h-3 w-32 rounded' />
+                ) : (
+                  (consumptionByAgent.map(c => c.name).join(', ') || 'No active agents')
+                )}
               </div>
             </div>
 
@@ -686,22 +765,37 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   Forecast EOM usage
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
-                  {isLoading ? '—' : `${formatNumber(projectedMonthEndUsage)}`}
-                  <span className='ml-1 text-12 text-text-muted font-normal'>
-                    credits
-                  </span>
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-24 rounded' />
+                  ) : (
+                    <>
+                      {formatNumber(projectedMonthEndUsage)}
+                      <span className='ml-1 text-12 text-text-muted font-normal'>
+                        credits
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className='mt-2 flex flex-col gap-1'>
-                <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
-                  <div
-                    className='h-full rounded-full bg-primary-9 transition-all duration-500'
-                    style={{ width: isLoading ? '0%' : `${Math.min(100, usagePercentage)}%` }}
-                  />
-                </div>
-                <div className='text-11 text-text-muted font-inter font-normal mt-0.5'>
-                  {isLoading ? '—' : `${usagePercentage}% of ${formatNumber(purchasedCredits)} budget`}
-                </div>
+                {isLoading ? (
+                  <>
+                    <Skeleton className='h-1.5 w-full rounded-full' />
+                    <Skeleton className='h-3 w-28 rounded mt-1' />
+                  </>
+                ) : (
+                  <>
+                    <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
+                      <div
+                        className='h-full rounded-full bg-primary-9 transition-all duration-500'
+                        style={{ width: `${Math.min(100, usagePercentage)}%` }}
+                      />
+                    </div>
+                    <div className='text-11 text-text-muted font-inter font-normal mt-0.5'>
+                      {`${usagePercentage}% of ${formatNumber(purchasedCredits)} budget`}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -1203,6 +1297,7 @@ function UsageTimelineChart({
 }: {
   data: { credits: number; label: string }[]
 }) {
+  const { t } = useLingui()
   const chartData =
     data.length > 0
       ? data
