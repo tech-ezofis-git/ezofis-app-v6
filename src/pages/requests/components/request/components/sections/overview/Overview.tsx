@@ -933,10 +933,23 @@ const DetailReportView = ({
   )
 }
 
-const normalizeComparable = (val: unknown) =>
-  String(val ?? '')
+const normalizeComparable = (val: unknown) => {
+  const str = String(val ?? '')
     .toLowerCase()
     .trim()
+  if (!str || str === '-') return ''
+
+  // Strip common currency symbols, commas, and spaces for numeric comparison
+  const numericCleaned = str.replace(/[$€£¥₹,\s]/g, '')
+  if (/^-?\d+(\.\d+)?$/.test(numericCleaned)) {
+    const num = Number.parseFloat(numericCleaned)
+    if (!Number.isNaN(num)) {
+      return String(Number(num.toFixed(4)))
+    }
+  }
+
+  return str.replace(/\s+/g, ' ')
+}
 
 const hasComparableValue = (val: unknown) => {
   if (val === null || val === undefined) return false
@@ -1246,42 +1259,42 @@ const FormCard = ({
       return (
         <span
           title='Source: Manual Entry'
-          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--orange-4)] bg-[var(--orange-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--orange-10)] tracking-tight'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--orange-3)] bg-[var(--orange-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--orange-10)]'
         >
-          <Icon name='lucide:pencil' className='h-2.5 w-2.5' />
-          MANUAL
+          <Icon name='lucide:pencil' className='h-2.5 w-2.5 text-[var(--orange-9)]' />
+          <span>Manual</span>
         </span>
       )
     }
     if (norm === 'po_master' || norm === 'po') {
       return (
         <span
-          title='Source: PO Master Database'
-          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-4)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--blue-10)] tracking-tight'
+          title='Source: PO Master (ERP/Excel Data)'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-3)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--blue-10)]'
         >
-          <Icon name='lucide:briefcase' className='h-2.5 w-2.5' />
-          PO MASTER
+          <Icon name='lucide:database' className='h-2.5 w-2.5 text-[var(--blue-9)]' />
+          <span>PO Master</span>
         </span>
       )
     }
     if (norm === 'ai' || norm === 'ai_agent') {
       return (
         <span
-          title='Source: AI Agent'
-          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--primary-4)] bg-[var(--primary-1)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--primary-10)] tracking-tight'
+          title='Source: AI Inferred'
+          className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--primary-3)] bg-[var(--primary-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--primary-10)]'
         >
-          <AiBrandIcon className='size-[11px] shrink-0' />
-          AI
+          <AiBrandIcon className='size-[10px] shrink-0' />
+          <span>AI</span>
         </span>
       )
     }
     return (
       <span
-        title='Source: OCR Extraction'
-        className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--gray-4)] bg-[var(--gray-2)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--gray-11)] tracking-tight'
+        title='Source: OCR Document'
+        className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--teal-3)] bg-[var(--teal-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--teal-10)]'
       >
-        <Icon name='lucide:scan' className='h-2.5 w-2.5' />
-        OCR
+        <Icon name='lucide:scan-text' className='h-2.5 w-2.5 text-[var(--teal-9)]' />
+        <span>OCR</span>
       </span>
     )
   }
@@ -1391,26 +1404,37 @@ const FormCard = ({
         </div>
         <div className='min-w-0 flex-1'>
           <div className='mb-0.5 flex items-center justify-between gap-2'>
-            <div className='flex items-center gap-1.5 min-w-0 truncate'>
-              <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate'>
-                {label}
-              </p>
+            <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate min-w-0'>
+              {label}
+            </p>
+            <div className='flex items-center gap-1.5 shrink-0'>
+              {effectiveScore !== undefined && effectiveScore !== null && (
+                <span
+                  title={`Confidence Score: ${Math.round(Number(effectiveScore))}%`}
+                  className={cn(
+                    'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-normal transition-colors',
+                    Number(effectiveScore) >= 90
+                      ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-10)]'
+                      : Number(effectiveScore) >= 70
+                        ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]'
+                        : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-10)]',
+                  )}
+                >
+                  <Icon
+                    name={
+                      Number(effectiveScore) >= 90
+                        ? 'lucide:circle-check'
+                        : Number(effectiveScore) >= 70
+                          ? 'lucide:alert-circle'
+                          : 'lucide:alert-triangle'
+                    }
+                    className='h-2.5 w-2.5 shrink-0'
+                  />
+                  <span>{Math.round(Number(effectiveScore))}%</span>
+                </span>
+              )}
               {renderSourceBadge(activeSource)}
             </div>
-            {effectiveScore !== undefined && effectiveScore !== null && (
-              <span
-                className={cn(
-                  'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
-                  Number(effectiveScore) >= 90
-                    ? 'bg-[var(--green-1)] text-[var(--green-9)]'
-                    : Number(effectiveScore) >= 70
-                      ? 'bg-[var(--orange-1)] text-[var(--orange-9)]'
-                      : 'bg-[var(--red-1)] text-[var(--red-9)]',
-                )}
-              >
-                {Math.round(Number(effectiveScore))}%
-              </span>
-            )}
           </div>
           <div className='animate-in fade-in zoom-in-95 duration-200'>
             {inputElement}
@@ -1441,26 +1465,37 @@ const FormCard = ({
       </div>
       <div className='min-w-0 flex-1'>
         <div className='mb-0.5 flex items-center justify-between gap-2'>
-          <div className='flex items-center gap-1.5 min-w-0 truncate'>
-            <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate'>
-              {label}
-            </p>
+          <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate min-w-0'>
+            {label}
+          </p>
+          <div className='flex items-center gap-1.5 shrink-0'>
+            {effectiveScore !== undefined && effectiveScore !== null && (
+              <span
+                title={`Confidence Score: ${Math.round(Number(effectiveScore))}%`}
+                className={cn(
+                  'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-normal transition-colors',
+                  Number(effectiveScore) >= 90
+                    ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-10)]'
+                    : Number(effectiveScore) >= 70
+                      ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]'
+                      : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-10)]',
+                )}
+              >
+                <Icon
+                  name={
+                    Number(effectiveScore) >= 90
+                      ? 'lucide:circle-check'
+                      : Number(effectiveScore) >= 70
+                        ? 'lucide:alert-circle'
+                        : 'lucide:alert-triangle'
+                  }
+                  className='h-2.5 w-2.5 shrink-0'
+                />
+                <span>{Math.round(Number(effectiveScore))}%</span>
+              </span>
+            )}
             {renderSourceBadge(activeSource)}
           </div>
-          {effectiveScore !== undefined && effectiveScore !== null && (
-            <span
-              className={cn(
-                'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
-                Number(effectiveScore) >= 90
-                  ? 'bg-[var(--green-1)] text-[var(--green-9)]'
-                  : Number(effectiveScore) >= 70
-                    ? 'bg-[var(--orange-1)] text-[var(--orange-9)]'
-                    : 'bg-[var(--red-1)] text-[var(--red-9)]',
-              )}
-            >
-              {Math.round(Number(effectiveScore))}%
-            </span>
-          )}
         </div>
         {isLoading ? (
           <div className='mt-1 h-4 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
@@ -4669,25 +4704,6 @@ const Overview = (props: any) => {
                                   />
                                 )
                               })}
-                          <div className='col-span-2 mt-2 flex flex-wrap items-center justify-start gap-4 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)]/40 px-3 py-2 text-[10px] font-medium text-[var(--gray-11)]'>
-                            <span className='font-semibold text-[var(--gray-12)]'>Sources:</span>
-                            <span className='inline-flex items-center gap-1.5'>
-                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--gray-9)]' />
-                              OCR
-                            </span>
-                            <span className='inline-flex items-center gap-1.5'>
-                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--primary-9)]' />
-                              AI Agent
-                            </span>
-                            <span className='inline-flex items-center gap-1.5'>
-                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--blue-9)]' />
-                              PO Master
-                            </span>
-                            <span className='inline-flex items-center gap-1.5'>
-                              <span className='h-1.5 w-1.5 rounded-full bg-[var(--orange-9)]' />
-                              Manual Entry
-                            </span>
-                          </div>
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -4795,7 +4811,7 @@ const Overview = (props: any) => {
                                 className='mb-2 size-8 animate-spin text-[var(--primary-9)]'
                                 name='tabler:loader-2'
                               />
-                                  <p className='text-xs font-semibold text-[var(--gray-10)]'>
+                              <p className='text-xs font-semibold text-[var(--gray-10)]'>
                                 {t`Loading Attachments...`}
                               </p>
                             </div>
@@ -4819,14 +4835,14 @@ const Overview = (props: any) => {
                                 </div>
                               )}
                               {relatedDocsState.status === 'complete' && (
-                                 <AiRelatedDocsCompleteCard
-                                   supplierName={supplierName}
-                                   data={relatedDocsState.data}
-                                   attachedDocs={attachedDocs}
-                                   setAttachedDocs={setAttachedDocs}
-                                   onSearch={(prompt) => handleFindRelatedDocumentsClick(prompt)}
-                                 />
-                               )}
+                                <AiRelatedDocsCompleteCard
+                                  supplierName={supplierName}
+                                  data={relatedDocsState.data}
+                                  attachedDocs={attachedDocs}
+                                  setAttachedDocs={setAttachedDocs}
+                                  onSearch={(prompt) => handleFindRelatedDocumentsClick(prompt)}
+                                />
+                              )}
 
                               <Attachments
                                 enabled={true}

@@ -127,9 +127,7 @@ async function generateFolderConfigViaQwen(
   reference?: FolderConfigReference | null,
 ): Promise<FolderConfigSuggestion> {
   if (!isQwenConfigured()) {
-    const local = buildLocalFolderConfig(prompt)
-    local.reply = `${local.reply} (Local fallback — set VITE_QWEN_API_KEY for GPU Qwen.)`
-    return local
+    return buildLocalFolderConfig(prompt)
   }
 
   const messages = [
@@ -158,13 +156,7 @@ async function generateFolderConfigViaQwen(
     return normalizeSuggestion(result, 'qwen')
   } catch (error) {
     console.error('Qwen folder config failed, using local fallback:', error)
-    const local = buildLocalFolderConfig(prompt)
-    const detail =
-      error instanceof Error && error.message
-        ? ` ${error.message}`
-        : ''
-    local.reply = `${local.reply} (Qwen unavailable — used local fallback.${detail})`
-    return local
+    return buildLocalFolderConfig(prompt)
   }
 }
 

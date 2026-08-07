@@ -459,9 +459,7 @@ export const generateFolderConfigViaGemini = async (
   reference?: FolderConfigReference | null,
 ): Promise<FolderConfigSuggestion> => {
   if (!API_KEY) {
-    const local = buildLocalFolderConfig(prompt)
-    local.reply = `${local.reply} (Local fallback — set VITE_GEMINI_API_KEY for live AI.)`
-    return local
+    return buildLocalFolderConfig(prompt)
   }
 
   const referenceHint = reference
@@ -580,9 +578,7 @@ Return a practical folder setup for this use case.
   }
 
   if (isRetryableModelError(lastError)) {
-    const local = buildLocalFolderConfig(prompt)
-    local.reply = `${local.reply} Gemini models were unavailable or rate-limited, so this used the local fallback.`
-    return local
+    return buildLocalFolderConfig(prompt)
   }
 
   throw lastError instanceof Error

@@ -1165,13 +1165,6 @@ export default function AiFolderBuilder({
         'details_ready',
         1,
       )
-
-      if (suggestion.source === 'local') {
-        showToast({
-          message: t`Gemini unavailable — used local description fallback.`,
-          variant: 'warning',
-        })
-      }
     } catch (error: any) {
       const message =
         error?.message ||
@@ -1233,13 +1226,6 @@ export default function AiFolderBuilder({
         'fields_ready',
         2,
       )
-
-      if (suggestion.source === 'local') {
-        showToast({
-          message: t`Gemini unavailable — used local fields fallback.`,
-          variant: 'warning',
-        })
-      }
     } catch (error: any) {
       const message =
         error?.message ||
@@ -1280,12 +1266,6 @@ export default function AiFolderBuilder({
         'details_ready',
         1,
       )
-      if (suggestion.source === 'local') {
-        showToast({
-          message: t`Gemini unavailable — used local folder setup fallback.`,
-          variant: 'warning',
-        })
-      }
     } catch (error: any) {
       const message =
         error?.message ||
