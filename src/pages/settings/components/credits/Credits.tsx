@@ -25,6 +25,7 @@ import {
   type CreditsUsageBucket,
   type CreditsUsageTransaction,
   getCreditsUsage,
+  getCreditsMaster,
 } from '@/api/v6/billing'
 import IconButton from '@/components/base/button/IconButton'
 import TableExport from '@/components/base/data-table/actions/TableExport'
@@ -34,6 +35,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
 import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
+import Skeleton from '@/components/base/Skeleton'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -179,6 +181,25 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
   )
 
   const {
+    data: creditMaster,
+    isLoading: isMasterLoading,
+  } = useQuery({
+    queryKey: ['settings', 'credits-master', month.value, year.value],
+    queryFn: async () => {
+      const response = await getCreditsMaster({
+        allocationMonth: Number(month.value),
+        allocationYear: Number(year.value),
+      })
+
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      return response.data
+    },
+  })
+
+  const {
     data: usage,
     isFetching,
     isLoading,
@@ -317,7 +338,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     () =>
       consumptionByAgent.length > 0
         ? consumptionByAgent.reduce((sum, item) => sum + item.credits, 0)
-        : 84,
+        : 0,
     [consumptionByAgent],
   )
 
@@ -325,7 +346,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     () =>
       consumptionByActivity.length > 0
         ? consumptionByActivity.reduce((sum, item) => sum + item.credits, 0)
-        : 84,
+        : 0,
     [consumptionByActivity],
   )
 
@@ -357,13 +378,24 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       ? usage.totalCreditsConsumed / usage.transactionCount
       : 0
 
-  const creditsUsed = usage?.totalCreditsConsumed ?? 0
+  const creditsUsed = creditMaster
+    ? creditMaster.overallConsumedCredit
+    : (usage?.totalCreditsConsumed ?? 0)
+
   const purchasedCredits = useMemo(() => {
+    if (creditMaster) return creditMaster.initialCredit
     // Ensure purchased is always larger than consumed (at least 100, and scales up in blocks of 100)
     return Math.max(100, Math.ceil((creditsUsed * 1.3) / 100) * 100)
-  }, [creditsUsed])
-  const remainingCredits = Math.max(0, purchasedCredits - creditsUsed)
-  const usagePercentage = Math.round((creditsUsed / purchasedCredits) * 100)
+  }, [creditsUsed, creditMaster])
+
+  const remainingCredits = creditMaster
+    ? creditMaster.balanceCredit
+    : Math.max(0, purchasedCredits - creditsUsed)
+
+  const usagePercentage = purchasedCredits > 0
+    ? Math.round((creditsUsed / purchasedCredits) * 100)
+    : 0
+
   const isRemainingLow = remainingCredits <= purchasedCredits * 0.2
 
   const dailyBurnRate = useMemo(() => {
@@ -593,35 +625,54 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   {t`Credits consumed`}
                 </div>
                 <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
-                  <span className='font-poppins text-18 font-semibold text-text-primary'>
-                    {isLoading ? '—' : formatNumber(creditsUsed)}
-                  </span>
-                  <span className='text-12 text-text-muted font-normal'>
-                    of {isLoading ? '—' : formatNumber(purchasedCredits)}
-                  </span>
+                  {isLoading || isMasterLoading ? (
+                    <Skeleton className='h-6 w-28 rounded' />
+                  ) : (
+                    <>
+                      <span className='font-poppins text-18 font-semibold text-text-primary'>
+                        {formatNumber(creditsUsed)}
+                      </span>
+                      <span className='text-12 text-text-muted font-normal'>
+                        of {formatNumber(purchasedCredits)}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* Progress and bottom details */}
               <div className='mt-2 flex flex-col gap-1.5'>
                 {/* Thin Horizontal Progress Bar */}
-                <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all duration-500',
-                      isRemainingLow ? 'bg-red-9' : 'bg-primary-9'
-                    )}
-                    style={{ width: isLoading ? '0%' : `${Math.min(100, usagePercentage)}%` }}
-                  />
-                </div>
+                {isLoading || isMasterLoading ? (
+                  <Skeleton className='h-1.5 w-full rounded-full' />
+                ) : (
+                  <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all duration-500',
+                        isRemainingLow ? 'bg-red-9' : 'bg-primary-9'
+                      )}
+                      style={{ width: `${Math.min(100, usagePercentage)}%` }}
+                    />
+                  </div>
+                )}
 
                 <div className='flex items-center justify-between text-11 text-text-secondary font-medium font-inter'>
-                  <span className={cn(isRemainingLow && 'text-red-9 font-bold')}>
-                    {isLoading ? '—' : `${formatNumber(remainingCredits)} remaining`}
-                  </span>
-                  <span>
-                    {isLoading ? '—' : `${usagePercentage}% used`}
-                  </span>
+                  {isLoading || isMasterLoading ? (
+                    <>
+                      <Skeleton className='h-3 w-16 rounded' />
+                      <Skeleton className='h-3 w-10 rounded' />
+                    </>
+                  ) : (
+                    <>
+                      <span className={cn(isRemainingLow && 'text-red-9 font-bold')}>
+                        {`${formatNumber(remainingCredits)} remaining`}
+                      </span>
+                      <span>
+                        {`${usagePercentage}% used`}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -633,16 +684,26 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   {t`Top activity by credits`}
                 </div>
                 <div className='mt-1 font-poppins flex items-baseline gap-1.5'>
-                  <span className='font-poppins text-18 font-semibold text-text-primary'>
-                    {isLoading ? '—' : `${formatNumber(topActivity?.creditsUsed ?? 0)}`}
-                  </span>
-                  <span className='text-12 text-text-muted font-normal'>
-                    credits
-                  </span>
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-20 rounded' />
+                  ) : (
+                    <>
+                      <span className='font-poppins text-18 font-semibold text-text-primary'>
+                        {formatNumber(topActivity?.creditsUsed ?? 0)}
+                      </span>
+                      <span className='text-12 text-text-muted font-normal'>
+                        credits
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className='mt-2 text-11 text-text-muted font-inter font-normal whitespace-nowrap overflow-hidden text-ellipsis' title={topActivity?.type}>
-                {isLoading ? '—' : (topActivity?.type ?? t`No activity recorded`)}
+                {isLoading ? (
+                  <Skeleton className='h-3 w-32 rounded' />
+                ) : (
+                  (topActivity?.type ?? 'No activity recorded')
+                )}
               </div>
             </div>
 
@@ -653,11 +714,19 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   {t`Peak usage period`}
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
-                  {isLoading ? '—' : (peakTimeline?.label ?? 'None')}
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-24 rounded' />
+                  ) : (
+                    (peakTimeline?.label ?? 'None')
+                  )}
                 </div>
               </div>
               <div className='mt-2 text-11 text-text-muted font-inter font-normal'>
-                {isLoading ? '—' : `${formatNumber(peakTimeline?.creditsUsed ?? 0)} credits, highest this period`}
+                {isLoading ? (
+                  <Skeleton className='h-3 w-36 rounded' />
+                ) : (
+                  `${formatNumber(peakTimeline?.creditsUsed ?? 0)} credits, highest this period`
+                )}
               </div>
             </div>
 
@@ -668,14 +737,24 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   {t`Active AI agents`}
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
-                  {isLoading ? '—' : `${consumptionByAgent.length}`}
-                  <span className='ml-1 text-12 text-text-muted font-normal'>
-                    agents
-                  </span>
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-20 rounded' />
+                  ) : (
+                    <>
+                      {consumptionByAgent.length}
+                      <span className='ml-1 text-12 text-text-muted font-normal'>
+                        agents
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className='mt-2 text-11 text-text-muted font-inter font-normal whitespace-nowrap overflow-hidden text-ellipsis' title={consumptionByAgent.map(c => c.name).join(', ')}>
-                {isLoading ? '—' : (consumptionByAgent.map(c => c.name).join(', ') || 'No active agents')}
+                {isLoading ? (
+                  <Skeleton className='h-3 w-32 rounded' />
+                ) : (
+                  (consumptionByAgent.map(c => c.name).join(', ') || 'No active agents')
+                )}
               </div>
             </div>
 
@@ -686,22 +765,37 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   {t`Forecast EOM usage`}
                 </div>
                 <div className='mt-1 font-poppins text-18 font-semibold text-text-primary'>
-                  {isLoading ? '—' : `${formatNumber(projectedMonthEndUsage)}`}
-                  <span className='ml-1 text-12 text-text-muted font-normal'>
-                    credits
-                  </span>
+                  {isLoading ? (
+                    <Skeleton className='h-6 w-24 rounded' />
+                  ) : (
+                    <>
+                      {formatNumber(projectedMonthEndUsage)}
+                      <span className='ml-1 text-12 text-text-muted font-normal'>
+                        credits
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className='mt-2 flex flex-col gap-1'>
-                <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
-                  <div
-                    className='h-full rounded-full bg-primary-9 transition-all duration-500'
-                    style={{ width: isLoading ? '0%' : `${Math.min(100, usagePercentage)}%` }}
-                  />
-                </div>
-                <div className='text-11 text-text-muted font-inter font-normal mt-0.5'>
-                  {isLoading ? '—' : `${usagePercentage}% of ${formatNumber(purchasedCredits)} budget`}
-                </div>
+                {isLoading ? (
+                  <>
+                    <Skeleton className='h-1.5 w-full rounded-full' />
+                    <Skeleton className='h-3 w-28 rounded mt-1' />
+                  </>
+                ) : (
+                  <>
+                    <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
+                      <div
+                        className='h-full rounded-full bg-primary-9 transition-all duration-500'
+                        style={{ width: `${Math.min(100, usagePercentage)}%` }}
+                      />
+                    </div>
+                    <div className='text-11 text-text-muted font-inter font-normal mt-0.5'>
+                      {`${usagePercentage}% of ${formatNumber(purchasedCredits)} budget`}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -730,7 +824,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               subtitle={t`Top agents by credit usage · ${periodSubtitle}`}
               title={t`Highest Credit Consumption`}
             >
-              <HighestConsumptionBarChart
+              <HighestConsumptionPieChart
                 data={highestConsumption.map((item) => ({
                   credits: item.credits,
                   name: item.name,
@@ -1025,96 +1119,119 @@ function formatPeriodSubtitle(
   return period.replaceAll('_', ' ')
 }
 
-function HighestConsumptionBarChart({
+const PIE_COLORS = [
+  'var(--blue-9)',   // Blue (33%)
+  'var(--cyan-9)',   // Cyan/Teal (25%)
+  'var(--yellow-9)', // Yellow/Gold (25%)
+  'var(--orange-9)', // Coral/Orange (17%)
+]
+
+const renderCustomizedLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+}: any) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+  const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180))
+  const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180))
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill='white'
+      textAnchor='middle'
+      dominantBaseline='central'
+      fontSize={12}
+      fontWeight={600}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
+}
+
+function HighestConsumptionPieChart({
   data,
 }: {
   data: { credits: number; name: string }[]
 }) {
-  const { t } = useLingui()
   const chartData =
     data.length > 0
-      ? data.slice(0, 5)
-      : [
-          { name: 'AP Agent', credits: 79 },
-          { name: 'OCR Agent', credits: 20 },
-        ]
+      ? data.map((item, index) => ({
+          ...item,
+          color: PIE_COLORS[index % PIE_COLORS.length],
+        }))
+      : []
 
   const total = chartData.reduce((sum, item) => sum + item.credits, 0)
 
   if (chartData.length === 0) {
     return (
       <div className='flex h-[200px] items-center justify-center text-13 text-gray-10'>
-        {t`No consumption data for this period.`}
+        {`No consumption data for this period.`}
       </div>
     )
   }
 
-  const barColors = [
-    '#7C3AED', // Primary purple
-    '#C084FC', // Soft pastel purple
-    '#E9D5FF', // Light purple
-    '#F3E8FF',
-    '#F5F3FF',
-  ]
-
   return (
-    <div className='flex flex-col h-full justify-between'>
-      <div className='h-[160px] w-full mt-2'>
+    <div className='flex flex-col gap-2'>
+      <div className='h-[160px] w-full'>
         <ResponsiveContainer width='100%' height='100%'>
-          <BarChart
-            data={chartData}
-            layout='vertical'
-            margin={{ bottom: 0, left: 10, right: 70, top: 10 }}
-            barCategoryGap='25%'
-          >
-            <CartesianGrid horizontal={false} stroke='var(--gray-2)' strokeDasharray='3 3' />
-            <XAxis type='number' hide />
-            <YAxis
-              dataKey='name'
-              type='category'
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: 'var(--text-primary)', fontSize: 13, fontWeight: 600 }}
-              width={80}
-            />
+          <PieChart>
+            <Pie
+              data={chartData}
+              dataKey='credits'
+              nameKey='name'
+              cx='50%'
+              cy='50%'
+              outerRadius={75}
+              labelLine={false}
+              label={renderCustomizedLabel}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
             <Tooltip
-              cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-              formatter={(val: any) => [t`${formatNumber(val)} credits`, t`Usage`]}
               contentStyle={{
                 border: 'none',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 fontSize: '11px',
               }}
+              formatter={(val: any) => [`${formatNumber(val)} credits`, 'Usage']}
             />
-            <Bar
-              dataKey='credits'
-              radius={[10, 10, 10, 10]}
-              barSize={18}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={barColors[index % barColors.length]}
-                />
-              ))}
-              <LabelList
-                dataKey='credits'
-                position='right'
-                formatter={(value: any) => t`${value} credits`}
-                fill='var(--text-primary)'
-                fontSize={12}
-                fontWeight={700}
-                offset={10}
-              />
-            </Bar>
-          </BarChart>
+          </PieChart>
         </ResponsiveContainer>
       </div>
 
-      <div className='flex justify-between items-center border-t border-[var(--border-default)] pt-4 mt-4 text-13'>
-        <span className='text-text-secondary font-medium'>{t`Total credits used`}</span>
-        <span className='font-bold text-text-primary text-15'>{t`${formatNumber(total)} credits`}</span>
+      {/* Descriptions below */}
+      <div className='mt-2 grid grid-cols-2 gap-x-4 gap-y-2 pl-1'>
+        {chartData.map((item, index) => {
+          const pct = total > 0 ? ((item.credits / total) * 100).toFixed(0) : '0'
+          return (
+            <div key={index} className='flex items-center justify-between text-[11px] font-medium'>
+              <div className='flex items-center gap-2 min-w-0'>
+                <span
+                  className='size-2 rounded-full shrink-0'
+                  style={{ backgroundColor: item.color }}
+                />
+                <span
+                  className='truncate text-gray-10 font-semibold'
+                  title={item.name}
+                >
+                  {item.name}
+                </span>
+              </div>
+              <span className='font-bold text-gray-13 ml-2 shrink-0'>
+                {formatNumber(item.credits)} ({pct}%)
+              </span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -1201,20 +1318,41 @@ function UsageTimelineChart({
   }
 
   return (
-    <ResponsiveContainer height={200} width='100%'>
+    <ResponsiveContainer height={180} width='100%'>
       <BarChart
         data={chartData}
-        margin={{ bottom: 0, left: 10, right: 10, top: 25 }}
+        margin={{ bottom: 0, left: -20, right: 10, top: 10 }}
       >
-        <CartesianGrid vertical={false} stroke='var(--gray-2)' strokeDasharray='3 3' />
+        <defs>
+          <linearGradient
+            id='creditTimelineGradient'
+            x1='0'
+            x2='0'
+            y1='0'
+            y2='1'
+          >
+            <stop offset='0%' stopColor='var(--purple-9)' stopOpacity={0.9} />
+            <stop
+              offset='100%'
+              stopColor='var(--purple-4)'
+              stopOpacity={0.4}
+            />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke='var(--gray-3)' strokeDasharray='3 3' />
         <XAxis
           axisLine={false}
           dataKey='label'
           dy={10}
-          tick={{ fill: 'var(--gray-10)', fontSize: 12, fontWeight: 550 }}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
           tickLine={false}
         />
-        <YAxis hide />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: 'var(--gray-10)', fontSize: 11, fontWeight: 550 }}
+          dx={-10}
+        />
         <Tooltip
           cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
           formatter={(val: any) => [
@@ -1229,20 +1367,11 @@ function UsageTimelineChart({
           }}
         />
         <Bar
-          barSize={18}
+          barSize={16}
           dataKey='credits'
-          fill='#7C3AED'
-          radius={[10, 10, 0, 0]}
-        >
-          <LabelList
-            dataKey='credits'
-            position='top'
-            fill='var(--text-primary)'
-            fontSize={12}
-            fontWeight={700}
-            offset={8}
-          />
-        </Bar>
+          fill='url(#creditTimelineGradient)'
+          radius={[4, 4, 0, 0]}
+        />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -1490,21 +1619,7 @@ function CreditDistributionByActivityChart({
           ...item,
           color: item.color || DONUT_COLORS[index % DONUT_COLORS.length],
         }))
-      : [
-          {
-            name: 'Payment terms detection',
-            credits: 17,
-            color: 'var(--purple-9)',
-          },
-          { name: 'PO validation', credits: 17, color: 'var(--cyan-9)' },
-          { name: 'OCR from document', credits: 17, color: 'var(--pink-9)' },
-          {
-            name: 'Document classification',
-            credits: 17,
-            color: 'var(--orange-9)',
-          },
-          { name: 'Back order detection', credits: 16, color: 'var(--green-9)' },
-        ]
+      : []
 
   return (
     <div className='flex flex-row items-center gap-6 h-[180px]'>

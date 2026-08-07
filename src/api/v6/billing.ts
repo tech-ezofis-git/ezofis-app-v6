@@ -224,6 +224,73 @@ export const getCreditsUsage = async (payload: CreditsUsageRequest = {}) => {
   return response
 }
 
+export type CreditsMasterRequest = {
+  allocationMonth?: number
+  allocationYear?: number
+  creditType?: string
+}
+
+export type CreditsMasterResponse = {
+  id: number
+  tenantId: string
+  allocationMonth: number
+  allocationYear: number
+  creditType: string
+  initialCredit: number
+  balanceCredit: number
+  remarks?: string | null
+  status: string
+  overallConsumedCredit: number
+  validFromDate: string
+  validToDate?: string | null
+  carryForwardCredit?: number | null
+  topUpBalanceCredit?: number | null
+  extraConsumedCredit?: number | null
+  monthlyBalance: number
+}
+
+export const getCreditsMaster = async (payload: CreditsMasterRequest = {}) => {
+  const response: {
+    data: CreditsMasterResponse | null
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+
+    const params: Record<string, any> = {}
+    if (payload.allocationMonth !== undefined) params.allocationMonth = payload.allocationMonth
+    if (payload.allocationYear !== undefined) params.allocationYear = payload.allocationYear
+    if (payload.creditType !== undefined) params.creditType = payload.creditType
+
+    const { data, status } = await axiosV6({
+      params,
+      headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
+      method: 'GET',
+      url: '/billing/credits/master',
+    })
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = getV6ApiErrorMessage(
+      e?.response?.data,
+      'Failed to load credit master',
+    )
+  }
+
+  return response
+}
+
 export default {
   getCreditsUsage,
+  getCreditsMaster,
 }
