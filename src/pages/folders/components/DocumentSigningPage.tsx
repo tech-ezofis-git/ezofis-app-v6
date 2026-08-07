@@ -85,6 +85,17 @@ export interface SignatureAssignment {
   height: number
 }
 
+export interface DocumentSigningActionRef {
+  save: () => Promise<void>
+}
+
+export interface DocumentSigningState {
+  canSave: boolean
+  isSaving: boolean
+  hasPlacements: boolean
+  workspaceMode: 'create' | 'assign'
+}
+
 export interface DocumentSigningPageProps {
   documentUrl: string
   documentName?: string
@@ -118,6 +129,10 @@ export interface DocumentSigningPageProps {
    * (even if the signing layer was already mounted in overlay-only mode).
    */
   openPickerKey?: number
+  actionRef?:
+    | RefObject<DocumentSigningActionRef | null>
+    | React.MutableRefObject<DocumentSigningActionRef | null>
+  onStateChange?: (state: DocumentSigningState) => void
   onBack?: () => void
   onSaveSignature?: (
     signature: Omit<SavedSignature, 'id'>,
@@ -446,6 +461,8 @@ export function DocumentSigningPage({
   onCompleteSigning,
   onSaveAssignment,
   onSignRequestCreated,
+  actionRef,
+  onStateChange,
 }: DocumentSigningPageProps) {
   const { t } = useLingui()
   const isInline = mode === 'inline'
@@ -1281,6 +1298,53 @@ export function DocumentSigningPage({
     setHistoryTick((value) => value + 1)
   }
 
+  useEffect(() => {
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      const target = event.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+
+      const isMac =
+        typeof navigator !== 'undefined' &&
+        /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+      const modifier = isMac ? event.metaKey : event.ctrlKey
+
+      if (!modifier) return
+
+      const key = event.key.toLowerCase()
+
+      if (key === 'z') {
+        if (event.shiftKey) {
+          if (canRedo) {
+            event.preventDefault()
+            redoPlacement()
+          }
+        } else {
+          if (canUndo) {
+            event.preventDefault()
+            undoPlacement()
+          }
+        }
+      } else if (key === 'y') {
+        if (canRedo) {
+          event.preventDefault()
+          redoPlacement()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [canUndo, canRedo])
+
   const handleCompleteSigning = async () => {
     if (!layerHost) return
     const surfaceWidth = layerHost.offsetWidth
@@ -1639,6 +1703,14 @@ export function DocumentSigningPage({
     }
   }
 
+  useEffect(() => {
+    if (actionRef) {
+      ;(actionRef as React.MutableRefObject<DocumentSigningActionRef | null>).current = {
+        save: handleCompleteSigning,
+      }
+    }
+  })
+
   const handleDownloadSigned = async () => {
     if (!documentUrl || !layerHost || downloading) return
     setDownloading(true)
@@ -1982,6 +2054,36 @@ export function DocumentSigningPage({
       isFieldForCurrentSigner(field, currentSignerEmail) &&
       Boolean(fieldSignatures[fieldKey(field, index)]),
   ).length
+
+  useEffect(() => {
+    const canSave = !(
+      (fieldSigning
+        ? myFilledFieldCount === 0
+        : workspaceMode === 'create'
+          ? placements.length === 0
+          : assignments.length === 0) ||
+      completing ||
+      isLoading
+    )
+    onStateChange?.({
+      canSave,
+      isSaving: completing,
+      hasPlacements:
+        placements.length > 0 ||
+        assignments.length > 0 ||
+        (fieldSigning && myFilledFieldCount > 0),
+      workspaceMode,
+    })
+  }, [
+    fieldSigning,
+    myFilledFieldCount,
+    workspaceMode,
+    placements.length,
+    assignments.length,
+    completing,
+    isLoading,
+    onStateChange,
+  ])
 
   const placementOverlayNodes = (
     <>
@@ -2545,7 +2647,7 @@ export function DocumentSigningPage({
                   </button>
                 </Tooltip>
 
-                <Tooltip content='Undo' position='top'>
+                <Tooltip content='Undo (Ctrl+Z)' position='top'>
                   <button
                     type='button'
                     className={iconButtonClass}
@@ -2557,33 +2659,17 @@ export function DocumentSigningPage({
                   </button>
                 </Tooltip>
 
-                <button
-                  type='button'
-                  className={primaryButtonClass}
-                  disabled={
-                    (fieldSigning
-                      ? myFilledFieldCount === 0
-                      : workspaceMode === 'create'
-                        ? placements.length === 0
-                        : assignments.length === 0) ||
-                    completing ||
-                    isLoading
-                  }
-                  onClick={() => void handleCompleteSigning()}
-                >
-                  {completing ? (
-                    <Loader2 className='h-3.5 w-3.5 animate-spin' />
-                  ) : workspaceMode === 'assign' ? (
-                    <Send className='h-3.5 w-3.5' />
-                  ) : (
-                    <CheckCircle2 className='h-3.5 w-3.5' />
-                  )}
-                  {completing
-                    ? 'Saving...'
-                    : workspaceMode === 'assign'
-                      ? t`Send`
-                      : 'Save'}
-                </button>
+                <Tooltip content='Redo (Ctrl+Y / Ctrl+Shift+Z)' position='top'>
+                  <button
+                    type='button'
+                    className={iconButtonClass}
+                    aria-label={t`Redo`}
+                    disabled={!canRedo}
+                    onClick={redoPlacement}
+                  >
+                    <Redo2 className='h-4 w-4' />
+                  </button>
+                </Tooltip>
 
                 {savedOnce && workspaceMode === 'create' ? (
                   <Tooltip content='Download' position='top'>

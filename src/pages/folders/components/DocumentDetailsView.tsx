@@ -1,4 +1,4 @@
-import { ArrowLeft, PenLine } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Loader2, PenLine } from 'lucide-react'
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
@@ -35,6 +35,8 @@ import {
 } from '../utils/signRequestFieldsStorage'
 import {
   DocumentSigningPage,
+  type DocumentSigningActionRef,
+  type DocumentSigningState,
   type SavedSignature,
 } from './DocumentSigningPage'
 import FolderSharePopover from './FolderSharePopover'
@@ -342,6 +344,13 @@ export function DocumentDetailsView({
   const [sharedRoles, setSharedRoles] = useState<Record<string, string>>({})
   const documentSurfaceRef = useRef<HTMLDivElement | null>(null)
   const signTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const signingActionRef = useRef<DocumentSigningActionRef | null>(null)
+  const [signingState, setSigningState] = useState<DocumentSigningState>({
+    canSave: false,
+    isSaving: false,
+    hasPlacements: false,
+    workspaceMode: 'create',
+  })
   const signingResolvedForRef = useRef('')
   const [relatedDocs, setRelatedDocs] = useState<RelatedDoc[]>([])
   const [relatedDocsLoading, setRelatedDocsLoading] = useState(false)
@@ -1252,6 +1261,8 @@ export function DocumentDetailsView({
           openPickerKey={signPickerKey}
           pickerAnchorRef={signTriggerRef}
           externalSurfaceRef={documentSurfaceRef}
+          actionRef={signingActionRef}
+          onStateChange={setSigningState}
           documentUrl={previewUrl}
           documentName={data.fileName}
           isImage={isImagePreview}
@@ -1651,6 +1662,34 @@ export function DocumentDetailsView({
                 className={`h-4 w-4 ${isSigning ? 'text-primary-9' : 'text-violet-9'}`}
               />
               <span>{t`Sign`}</span>
+            </button>
+          ) : null}
+          {isSigning && (signingState.hasPlacements || signingState.canSave) ? (
+            <button
+              type='button'
+              aria-label={t`Submit`}
+              className='inline-flex h-8 items-center justify-center gap-2 rounded-lg bg-primary-9 px-3.5 text-[13px] font-semibold text-white transition-all hover:bg-primary-10 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+              disabled={
+                !signingState.canSave ||
+                signingState.isSaving ||
+                isPreviewLoading
+              }
+              onClick={() => {
+                void signingActionRef.current?.save()
+              }}
+            >
+              {signingState.isSaving ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <CheckCircle2 className='h-4 w-4' />
+              )}
+              <span>
+                {signingState.isSaving
+                  ? t`Submitting...`
+                  : signingState.workspaceMode === 'assign'
+                    ? t`Send`
+                    : t`Submit`}
+              </span>
             </button>
           ) : null}
         </div>
