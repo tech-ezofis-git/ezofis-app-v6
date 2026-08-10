@@ -96,9 +96,6 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
-const getAvatarColor = (_str?: string) => {
-  return 'bg-[var(--primary-3)] text-[var(--primary-9)] font-semibold'
-}
 
 const SecurityWizardSkeleton = () => (
   <div className="flex flex-col gap-4 animate-in fade-in duration-300">
@@ -301,7 +298,7 @@ export default function FolderSecurityPolicyWizard({
       (opt) => String(opt.id || opt.value || '') !== SELECT_ALL_OPTION_ID,
     )
 
-    if (hasAll) {
+    if (hasAll && !allUsersSelected) {
       setShowSelectionError(false)
       setSelectedPrincipals([
         ...userOptions.map((opt) => ({
@@ -314,7 +311,7 @@ export default function FolderSecurityPolicyWizard({
       return
     }
 
-    if (allUsersSelected && withoutAll.length === 0) {
+    if (allUsersSelected && (!hasAll || withoutAll.length === 0)) {
       setShowSelectionError(false)
       setSelectedPrincipals([...selectedGroups])
       return
@@ -342,7 +339,7 @@ export default function FolderSecurityPolicyWizard({
       (opt) => String(opt.id || opt.value || '') !== SELECT_ALL_OPTION_ID,
     )
 
-    if (hasAll) {
+    if (hasAll && !allGroupsSelected) {
       setShowSelectionError(false)
       setSelectedPrincipals([
         ...selectedUsers,
@@ -355,7 +352,7 @@ export default function FolderSecurityPolicyWizard({
       return
     }
 
-    if (allGroupsSelected && withoutAll.length === 0) {
+    if (allGroupsSelected && (!hasAll || withoutAll.length === 0)) {
       setShowSelectionError(false)
       setSelectedPrincipals([...selectedUsers])
       return
@@ -545,7 +542,10 @@ export default function FolderSecurityPolicyWizard({
                     searchable
                     value={
                       allUsersSelected
-                        ? [{ id: SELECT_ALL_OPTION_ID, name: 'All' }]
+                        ? [
+                            { id: SELECT_ALL_OPTION_ID, name: 'All' },
+                            ...selectedUsers.map((p) => ({ id: p.id, name: p.name })),
+                          ]
                         : selectedUsers.map((p) => ({ id: p.id, name: p.name }))
                     }
                     onChange={(value) => onSelectedUsersChange(value as any[])}
@@ -567,7 +567,10 @@ export default function FolderSecurityPolicyWizard({
                     searchable
                     value={
                       allGroupsSelected
-                        ? [{ id: SELECT_ALL_OPTION_ID, name: 'All' }]
+                        ? [
+                            { id: SELECT_ALL_OPTION_ID, name: 'All' },
+                            ...selectedGroups.map((p) => ({ id: p.id, name: p.name })),
+                          ]
                         : selectedGroups.map((p) => ({ id: p.id, name: p.name }))
                     }
                     onChange={(value) => onSelectedGroupsChange(value as any[])}
@@ -717,16 +720,13 @@ export default function FolderSecurityPolicyWizard({
                 <div className="flex flex-wrap gap-2">
                   {selectedPrincipals.map((p) => {
                     const initials = getInitials(p.name)
-                    const avatarBg = getAvatarColor(p.name)
 
                     return (
                       <span
                         key={p.id}
-                        className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1 text-xs font-medium text-gray-13"
+                        className="inline-flex h-8 items-center gap-2 rounded-lg border border-primary-4/60 bg-gradient-to-r from-primary-3/70 to-primary-2/90 px-2.5 py-1 text-xs font-semibold text-gray-13 shadow-2xs"
                       >
-                        <span
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold shadow-2xs ${avatarBg}`}
-                        >
+                        <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs">
                           {initials}
                         </span>
                         {p.name}

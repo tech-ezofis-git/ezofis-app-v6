@@ -63,9 +63,6 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
-const getAvatarColor = (_str?: string) => {
-  return 'bg-[var(--primary-3)] text-[var(--primary-9)] font-semibold'
-}
 
 export default function FolderSecurity({
   folderName,
@@ -409,15 +406,12 @@ export default function FolderSecurity({
             <div className='flex flex-wrap items-center gap-3 py-1'>
               {displayed.map((item) => {
                 const initials = getInitials(item.name)
-                const avatarBg = getAvatarColor(item.name)
                 return (
                   <div
-                    className='flex items-center gap-2.5'
+                    className='flex items-center gap-2'
                     key={`${item.type}-${item.id}`}
                   >
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-2xs ${avatarBg}`}
-                    >
+                    <div className='flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
                       {initials}
                     </div>
                     <span className='text-xs font-semibold text-gray-13'>
@@ -557,15 +551,12 @@ export default function FolderSecurity({
             <div className='flex flex-wrap items-center gap-3 py-1'>
               {displayed.map((item) => {
                 const initials = getInitials(item.name)
-                const avatarBg = getAvatarColor(item.name)
                 return (
                   <div
-                    className='flex items-center gap-2.5'
+                    className='flex items-center gap-2'
                     key={`${item.type}-${item.id}`}
                   >
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-2xs ${avatarBg}`}
-                    >
+                    <div className='flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
                       {initials}
                     </div>
                     <span className='text-xs font-semibold text-gray-13'>
