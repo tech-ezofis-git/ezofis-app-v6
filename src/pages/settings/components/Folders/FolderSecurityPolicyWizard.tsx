@@ -96,21 +96,8 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
-const getAvatarColor = (str: string) => {
-  const colors = [
-    'bg-[var(--violet-9)] text-white',
-    'bg-[var(--blue-9)] text-white',
-    'bg-[var(--green-9)] text-white',
-    'bg-[var(--orange-9)] text-white',
-    'bg-[var(--pink-9)] text-white',
-    'bg-[var(--cyan-9)] text-white',
-    'bg-[var(--teal-9)] text-white',
-    'bg-[var(--indigo-9)] text-white',
-  ]
-  let hash = 0
-  for (let i = 0; i < str.length; i++)
-    hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
+const getAvatarColor = (_str?: string) => {
+  return 'bg-[var(--primary-3)] text-[var(--primary-9)] font-semibold'
 }
 
 const SecurityWizardSkeleton = () => (

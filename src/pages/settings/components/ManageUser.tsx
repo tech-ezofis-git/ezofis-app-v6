@@ -294,36 +294,58 @@ function LoginTypeIcon({
   }
 }
 
+const LOGIN_TYPE_LABELS = {
+  password: msg`Password`,
+  google: msg`Google`,
+  microsoft: msg`Microsoft`,
+  activeDirectory: msg`Active Directory`,
+}
+
 function formatLoginTypeLabel(
   type: string,
-  t?: (strings: TemplateStringsArray, ...values: any[]) => string,
+  i18nOrT?: any,
 ) {
-  const tr = t ?? ((strings: TemplateStringsArray) => strings.join(''))
   const normalized = String(type || '').trim().toLowerCase()
-  if (normalized === 'ezofis' || normalized === 'password') return tr`Password`
-  if (
+  let msgDescriptor: any = null
+
+  if (normalized === 'ezofis' || normalized === 'password') {
+    msgDescriptor = LOGIN_TYPE_LABELS.password
+  } else if (
     normalized === 'googlesso' ||
     normalized === 'google' ||
     normalized === 'google sso'
   ) {
-    return tr`Google`
-  }
-  if (
+    msgDescriptor = LOGIN_TYPE_LABELS.google
+  } else if (
     normalized === 'ms entra id' ||
     normalized === 'microsoft' ||
     normalized === 'entra' ||
-    normalized === 'azuread'
+    normalized === 'azuread' ||
+    normalized === 'ms_entra_id'
   ) {
-    return tr`Microsoft`
-  }
-  if (
+    msgDescriptor = LOGIN_TYPE_LABELS.microsoft
+  } else if (
     normalized === 'ldap/ad' ||
     normalized === 'ldap' ||
     normalized === 'activedirectory' ||
-    normalized === 'active directory'
+    normalized === 'active directory' ||
+    normalized === 'active_directory'
   ) {
-    return tr`Active Directory`
+    msgDescriptor = LOGIN_TYPE_LABELS.activeDirectory
   }
+
+  if (msgDescriptor) {
+    if (i18nOrT) {
+      if (typeof i18nOrT._ === 'function') {
+        return i18nOrT._(msgDescriptor)
+      }
+      if (typeof i18nOrT === 'function') {
+        return i18nOrT(msgDescriptor)
+      }
+    }
+    return msgDescriptor.id || msgDescriptor.message || 'Password'
+  }
+
   if (!type) return '—'
   return type
 }

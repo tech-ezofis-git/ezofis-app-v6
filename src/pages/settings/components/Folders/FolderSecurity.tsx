@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createColumnHelper, getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import { createColumnHelper, getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/api/v6/folder/security'
 import showToast from '@/components/base/toast/showToast'
 import DataTable from '@/components/base/data-table/DataTable'
+import Pagination from '@/components/base/pagination/Pagination'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Menu from '@/components/base/menu/Menu'
@@ -22,6 +23,10 @@ import Divider from '@/components/base/Divider'
 import useSettingsTopbar from '../../hooks/useSettingsTopbar'
 import DocumentSecurityRuleWizard from './DocumentSecurityRuleWizard'
 import FolderSecurityPolicyWizard from './FolderSecurityPolicyWizard'
+import {
+  settingsTableCoreOptions,
+  useSettingsTablePagination,
+} from '../../helpers/settingsDataTable'
 
 export type FolderSecurityProps = {
   folderName: string
@@ -58,21 +63,8 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
-const getAvatarColor = (str: string) => {
-  const colors = [
-    'bg-[var(--violet-9)] text-white',
-    'bg-[var(--blue-9)] text-white',
-    'bg-[var(--green-9)] text-white',
-    'bg-[var(--orange-9)] text-white',
-    'bg-[var(--pink-9)] text-white',
-    'bg-[var(--cyan-9)] text-white',
-    'bg-[var(--teal-9)] text-white',
-    'bg-[var(--indigo-9)] text-white',
-  ]
-  let hash = 0
-  for (let i = 0; i < str.length; i++)
-    hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
+const getAvatarColor = (_str?: string) => {
+  return 'bg-[var(--primary-3)] text-[var(--primary-9)] font-semibold'
 }
 
 export default function FolderSecurity({
@@ -96,6 +88,27 @@ export default function FolderSecurity({
   const [isLoadingRules, setIsLoadingRules] = useState(true)
   const [editingRuleIndex, setEditingRuleIndex] = useState<number | null>(null)
   const [isRuleWizardOpen, setIsRuleWizardOpen] = useState(false)
+
+  // Table pagination
+  const {
+    page: policyPage,
+    pageSize: policyPageSize,
+    pagination: policyPagination,
+    paginationModel: policyPaginationModel,
+    onPageChange: onPolicyPageChange,
+    onPageSizeChange: onPolicyPageSizeChange,
+    onPaginationChange: onPolicyPaginationChange,
+  } = useSettingsTablePagination(10)
+
+  const {
+    page: rulePage,
+    pageSize: rulePageSize,
+    pagination: rulePagination,
+    paginationModel: rulePaginationModel,
+    onPageChange: onRulePageChange,
+    onPageSizeChange: onRulePageSizeChange,
+    onPaginationChange: onRulePaginationChange,
+  } = useSettingsTablePagination(10)
 
   const breadcrumbConfig = useMemo(
     () => ({
@@ -323,26 +336,23 @@ export default function FolderSecurity({
           const extraCount = allItems.length - maxDisplay
 
           return (
-            <div className="flex flex-wrap items-center gap-1.5 py-1">
+            <div className="flex flex-wrap items-center gap-3 py-1">
               {displayed.map((item) => {
                 const initials = getInitials(item.name)
                 const avatarBg = getAvatarColor(item.name)
                 return (
-                  <span
-                    key={`${item.type}-${item.id}`}
-                    className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-surface-muted px-2 py-0.5 text-xs font-medium text-gray-13"
-                  >
-                    <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${avatarBg}`}
+                  <div key={`${item.type}-${item.id}`} className="flex items-center gap-2.5">
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-2xs ${avatarBg}`}
                     >
                       {initials}
-                    </span>
-                    {item.name}
-                  </span>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-13">{item.name}</span>
+                  </div>
                 )
               })}
               {extraCount > 0 && (
-                <span className="inline-flex rounded-md border border-[var(--border-default)] bg-surface-muted px-2 py-0.5 text-xs font-medium text-gray-11">
+                <span className="text-xs font-medium text-gray-11">
                   +{extraCount} more
                 </span>
               )}
@@ -358,29 +368,14 @@ export default function FolderSecurity({
         header: 'Granted Permissions',
         cell: (info) => {
           const perms = info.getValue() || {}
-          const enabledKeys = (Object.keys(perms) as Array<keyof FolderPermissionFlags>).filter(
+          const count = (Object.keys(perms) as Array<keyof FolderPermissionFlags>).filter(
             (k) => perms[k],
-          )
-
-          const maxDisplay = 4
-          const displayed = enabledKeys.slice(0, maxDisplay)
-          const extraCount = enabledKeys.length - maxDisplay
+          ).length
 
           return (
-            <div className="flex flex-wrap items-center gap-1.5 py-1">
-              {displayed.map((key) => (
-                <span
-                  key={key}
-                  className="inline-flex items-center gap-1 rounded-md border border-primary-4 bg-primary-2 px-2 py-0.5 text-[11px] font-semibold text-primary-11"
-                >
-                  {PERMISSION_NAMES[key] || key}
-                </span>
-              ))}
-              {extraCount > 0 && (
-                <span className="inline-flex rounded-md border border-[var(--border-default)] bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-gray-11">
-                  +{extraCount} more
-                </span>
-              )}
+            <div className="flex items-center gap-1.5 py-1">
+              <Icon name="tabler:lock" className="size-4 text-gray-11 shrink-0" />
+              <span className="text-xs font-semibold text-gray-13">{count}</span>
             </div>
           )
         },
@@ -431,10 +426,16 @@ export default function FolderSecurity({
   )
 
   const policyTable = useReactTable({
+    ...settingsTableCoreOptions,
+    ...policyPaginationModel,
     data: policies,
     columns: policyColumns,
-    getCoreRowModel: getCoreRowModel(),
+    state: {
+      pagination: policyPagination,
+    },
+    getFilteredRowModel: getFilteredRowModel(),
     getRowId: (_, index) => String(index),
+    onPaginationChange: onPolicyPaginationChange,
   })
 
   // Rule Table Columns
@@ -460,28 +461,28 @@ export default function FolderSecurity({
           const extraCount = allItems.length - maxDisplay
 
           return (
-            <div className="flex flex-wrap items-center gap-1.5 py-1">
+            <div className="flex flex-wrap items-center gap-3 py-1">
               {displayed.map((item) => {
                 const initials = getInitials(item.name)
                 const avatarBg = getAvatarColor(item.name)
                 return (
-                  <span
-                    key={`${item.type}-${item.id}`}
-                    className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-default)] bg-surface-muted px-2 py-0.5 text-xs font-medium text-gray-13"
-                  >
-                    <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${avatarBg}`}
+                  <div key={`${item.type}-${item.id}`} className="flex items-center gap-2.5">
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-2xs ${avatarBg}`}
                     >
                       {initials}
-                    </span>
-                    {item.name}
-                  </span>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-13">{item.name}</span>
+                  </div>
                 )
               })}
               {extraCount > 0 && (
-                <span className="inline-flex rounded-md border border-[var(--border-default)] bg-surface-muted px-2 py-0.5 text-xs font-medium text-gray-11">
+                <span className="text-xs font-medium text-gray-11">
                   +{extraCount} more
                 </span>
+              )}
+              {allItems.length === 0 && (
+                <span className="text-xs italic text-gray-10">No users or groups assigned</span>
               )}
             </div>
           )
@@ -522,21 +523,12 @@ export default function FolderSecurity({
         header: 'Conditions',
         cell: (info) => {
           const conds = info.getValue() || []
-          const match = info.row.original.match
-          const joinText = match === 'any' ? ' OR ' : ' AND '
+          const count = conds.length
 
           return (
-            <div className="flex flex-wrap items-center gap-1 text-xs text-gray-12 py-1">
-              {conds.map((c: any, idx: number) => (
-                <span key={idx} className="inline-flex items-center gap-1">
-                  {idx > 0 && <span className="text-[10px] font-bold text-gray-9">{joinText}</span>}
-                  <span className="rounded bg-surface-muted px-1.5 py-0.5 border border-[var(--border-default)]">
-                    <strong className="font-semibold text-gray-13">{c.field || 'Field'}</strong>{' '}
-                    <span className="text-gray-10">{c.op}</span>{' '}
-                    {c.value && <strong className="font-semibold text-primary-11">&quot;{c.value}&quot;</strong>}
-                  </span>
-                </span>
-              ))}
+            <div className="flex items-center gap-1.5 py-1">
+              <Icon name="tabler:square-check" className="size-4 text-gray-11 shrink-0" />
+              <span className="text-xs font-semibold text-gray-13">{count}</span>
             </div>
           )
         },
@@ -587,10 +579,16 @@ export default function FolderSecurity({
   )
 
   const ruleTable = useReactTable({
+    ...settingsTableCoreOptions,
+    ...rulePaginationModel,
     data: rules,
     columns: ruleColumns,
-    getCoreRowModel: getCoreRowModel(),
+    state: {
+      pagination: rulePagination,
+    },
+    getFilteredRowModel: getFilteredRowModel(),
     getRowId: (_, index) => String(index),
+    onPaginationChange: onRulePaginationChange,
   })
 
   // If Wizard is open for Folder Security
@@ -663,7 +661,7 @@ export default function FolderSecurity({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  Folder Security Policies ({policies.length})
+                  Folder Security Policies
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
                   Manage access policies and privileges for folder &quot;{folderName}&quot;
@@ -695,13 +693,24 @@ export default function FolderSecurity({
                 stickyHeader
               />
             </div>
+
+            <Pagination
+              className="mt-4 shrink-0"
+              itemLabel="Policies"
+              page={policyPage}
+              pageSize={policyPageSize}
+              showPageNumbers={false}
+              totalItems={policyTable.getFilteredRowModel().rows.length}
+              onPageChange={onPolicyPageChange}
+              onPageSizeChange={onPolicyPageSizeChange}
+            />
           </div>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  Document Security Rules ({rules.length})
+                  Document Security Rules
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
                   Manage document-level access rules evaluated against document metadata for folder &quot;{folderName}&quot;
@@ -733,6 +742,17 @@ export default function FolderSecurity({
                 stickyHeader
               />
             </div>
+
+            <Pagination
+              className="mt-4 shrink-0"
+              itemLabel="Rules"
+              page={rulePage}
+              pageSize={rulePageSize}
+              showPageNumbers={false}
+              totalItems={ruleTable.getFilteredRowModel().rows.length}
+              onPageChange={onRulePageChange}
+              onPageSizeChange={onRulePageSizeChange}
+            />
           </div>
         )}
       </div>
