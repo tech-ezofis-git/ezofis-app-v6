@@ -42,19 +42,6 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'document', label: 'Document Security' },
 ]
 
-const PERMISSION_NAMES: Record<keyof FolderPermissionFlags, string> = {
-  view: 'View',
-  upload: 'Upload',
-  download: 'Download',
-  print: 'Print',
-  delete: 'Delete',
-  editMetadata: 'Edit Metadata',
-  editDocument: 'Edit Document',
-  checkOut: 'Check Out',
-  checkIn: 'Check In',
-  sendForSignature: 'Send for Signature',
-}
-
 const getInitials = (name: string) => {
   if (!name) return '?'
   const clean = name.replace(/^(User:|Group:)\s*/i, '').trim()
