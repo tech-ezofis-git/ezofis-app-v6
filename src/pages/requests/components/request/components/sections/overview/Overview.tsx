@@ -1121,56 +1121,60 @@ const AiRelatedDocsCompleteCard = ({
           const isAttached = attachedDocs[chip.id]
           return (
             <div
-              className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-1.5 text-xs shadow-xs transition-all hover:scale-[1.02] hover:border-[var(--primary-4)] hover:bg-[var(--surface-primary)] hover:shadow-sm active:scale-98 animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both'
+              className='flex items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-2 text-xs shadow-xs transition-all hover:scale-[1.02] hover:border-[var(--primary-4)] hover:bg-[var(--surface-primary)] hover:shadow-sm active:scale-98 animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both'
               style={{ animationDelay: `${idx * 80}ms` }}
               key={chip.id}
             >
-              <div className='flex items-center gap-1.5 min-w-0'>
+              <div className='flex items-center gap-2 min-w-0'>
                 <Icon
                   name='tabler:file-text'
-                  className='h-4 w-4 text-[var(--red-9)] shrink-0'
+                  className='h-4 w-4 text-[var(--red-9)] shrink-0 mt-0.5 self-start'
                 />
-                <button
-                  className='font-bold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate max-w-[130px] text-left transition-colors'
-                  title='View Document'
-                >
-                  {chip.id}.pdf
-                </button>
+                <div className='flex flex-col min-w-0 gap-0.5'>
+                  <button
+                    className='font-bold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate max-w-[150px] text-left transition-colors'
+                    title='View Document'
+                  >
+                    {chip.id}.pdf
+                  </button>
+
+                  {/* Folder Name Badge below file name */}
+                  <span
+                    className='inline-flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0 w-fit'
+                    title={`Folder: ${chip.folderName}`}
+                  >
+                    <Icon name='tabler:folder' className='h-3 w-3 text-[var(--primary-9)]' />
+                    {chip.folderName}
+                  </span>
+                </div>
               </div>
 
-              {/* Folder Name Badge */}
-              <span
-                className='flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'
-                title={`Folder: ${chip.folderName}`}
-              >
-                <Icon name='tabler:folder' className='h-3 w-3 text-[var(--primary-9)]' />
-                {chip.folderName}
-              </span>
+              <div className='flex items-center gap-2 shrink-0'>
+                <span className='text-[var(--gray-9)] tabular-nums text-xs font-medium shrink-0'>
+                  {chip.confidence}%
+                </span>
 
-              <span className='text-[var(--gray-9)] tabular-nums text-xs font-medium shrink-0'>
-                {chip.confidence}%
-              </span>
-
-              <button
-                className={cn(
-                  'flex h-5 w-5 items-center justify-center rounded transition-all text-xs font-bold shrink-0 active:scale-90',
-                  isAttached
-                    ? 'bg-[var(--green-2)] text-[var(--green-9)]'
-                    : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]',
-                )}
-                title={isAttached ? 'Attached' : 'Attach to invoice'}
-                onClick={() =>
-                  setAttachedDocs((prev) => ({
-                    ...prev,
-                    [chip.id]: !prev[chip.id],
-                  }))
-                }
-              >
-                <Icon
-                  name={isAttached ? 'tabler:check' : 'tabler:plus'}
-                  className='h-3.5 w-3.5'
-                />
-              </button>
+                <button
+                  className={cn(
+                    'flex h-6 w-6 items-center justify-center rounded transition-all text-xs font-bold shrink-0 active:scale-90',
+                    isAttached
+                      ? 'bg-[var(--green-2)] text-[var(--green-9)]'
+                      : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]',
+                  )}
+                  title={isAttached ? 'Attached' : 'Attach to invoice'}
+                  onClick={() =>
+                    setAttachedDocs((prev) => ({
+                      ...prev,
+                      [chip.id]: !prev[chip.id],
+                    }))
+                  }
+                >
+                  <Icon
+                    name={isAttached ? 'tabler:check' : 'tabler:plus'}
+                    className='h-3.5 w-3.5'
+                  />
+                </button>
+              </div>
             </div>
           )
         })}
@@ -1408,32 +1412,38 @@ const FormCard = ({
               {label}
             </p>
             <div className='flex items-center gap-1.5 shrink-0'>
-              {effectiveScore !== undefined && effectiveScore !== null && (
-                <span
-                  title={`Confidence Score: ${Math.round(Number(effectiveScore))}%`}
-                  className={cn(
-                    'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-normal transition-colors',
-                    Number(effectiveScore) >= 90
-                      ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-10)]'
-                      : Number(effectiveScore) >= 70
-                        ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]'
-                        : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-10)]',
+              {isLoading ? (
+                <div className='h-3.5 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+              ) : (
+                <>
+                  {effectiveScore !== undefined && effectiveScore !== null && (
+                    <span
+                      title={`Confidence Score: ${Math.round(Number(effectiveScore))}%`}
+                      className={cn(
+                        'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-normal transition-colors',
+                        Number(effectiveScore) >= 90
+                          ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-10)]'
+                          : Number(effectiveScore) >= 70
+                            ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]'
+                            : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-10)]',
+                      )}
+                    >
+                      <Icon
+                        name={
+                          Number(effectiveScore) >= 90
+                            ? 'lucide:circle-check'
+                            : Number(effectiveScore) >= 70
+                              ? 'lucide:alert-circle'
+                              : 'lucide:alert-triangle'
+                        }
+                        className='h-2.5 w-2.5 shrink-0'
+                      />
+                      <span>{Math.round(Number(effectiveScore))}%</span>
+                    </span>
                   )}
-                >
-                  <Icon
-                    name={
-                      Number(effectiveScore) >= 90
-                        ? 'lucide:circle-check'
-                        : Number(effectiveScore) >= 70
-                          ? 'lucide:alert-circle'
-                          : 'lucide:alert-triangle'
-                    }
-                    className='h-2.5 w-2.5 shrink-0'
-                  />
-                  <span>{Math.round(Number(effectiveScore))}%</span>
-                </span>
+                  {renderSourceBadge(activeSource)}
+                </>
               )}
-              {renderSourceBadge(activeSource)}
             </div>
           </div>
           <div className='animate-in fade-in zoom-in-95 duration-200'>
@@ -1469,32 +1479,38 @@ const FormCard = ({
             {label}
           </p>
           <div className='flex items-center gap-1.5 shrink-0'>
-            {effectiveScore !== undefined && effectiveScore !== null && (
-              <span
-                title={`Confidence Score: ${Math.round(Number(effectiveScore))}%`}
-                className={cn(
-                  'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-normal transition-colors',
-                  Number(effectiveScore) >= 90
-                    ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-10)]'
-                    : Number(effectiveScore) >= 70
-                      ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]'
-                      : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-10)]',
+            {isLoading ? (
+              <div className='h-3.5 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
+            ) : (
+              <>
+                {effectiveScore !== undefined && effectiveScore !== null && (
+                  <span
+                    title={`Confidence Score: ${Math.round(Number(effectiveScore))}%`}
+                    className={cn(
+                      'inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-normal transition-colors',
+                      Number(effectiveScore) >= 90
+                        ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-10)]'
+                        : Number(effectiveScore) >= 70
+                          ? 'border-[var(--orange-3)] bg-[var(--orange-1)] text-[var(--orange-10)]'
+                          : 'border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-10)]',
+                    )}
+                  >
+                    <Icon
+                      name={
+                        Number(effectiveScore) >= 90
+                          ? 'lucide:circle-check'
+                          : Number(effectiveScore) >= 70
+                            ? 'lucide:alert-circle'
+                            : 'lucide:alert-triangle'
+                      }
+                      className='h-2.5 w-2.5 shrink-0'
+                    />
+                    <span>{Math.round(Number(effectiveScore))}%</span>
+                  </span>
                 )}
-              >
-                <Icon
-                  name={
-                    Number(effectiveScore) >= 90
-                      ? 'lucide:circle-check'
-                      : Number(effectiveScore) >= 70
-                        ? 'lucide:alert-circle'
-                        : 'lucide:alert-triangle'
-                  }
-                  className='h-2.5 w-2.5 shrink-0'
-                />
-                <span>{Math.round(Number(effectiveScore))}%</span>
-              </span>
+                {renderSourceBadge(activeSource)}
+              </>
             )}
-            {renderSourceBadge(activeSource)}
           </div>
         </div>
         {isLoading ? (
