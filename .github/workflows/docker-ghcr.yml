@@ -51,6 +51,15 @@ jobs:
           push: true
           tags: ${{ steps.meta-app.outputs.tags }}
           labels: ${{ steps.meta-app.outputs.labels }}
+          # Vite env vars baked into the bundle. Override via repository
+          # variables (Settings > Secrets and variables > Actions > Variables).
+          # VITE_V6_BASE_URL=/api targets the API container behind the nginx
+          # proxy in the multi-container Azure Web App.
+          build-args: |
+            VITE_BASE_URL=${{ vars.VITE_BASE_URL || 'https://demoapp.ezofis.com' }}
+            VITE_V6_BASE_URL=${{ vars.VITE_V6_BASE_URL || '/api' }}
+            VITE_POSTHOG_HOST=${{ vars.VITE_POSTHOG_HOST || 'https://us.i.posthog.com' }}
+            VITE_POSTHOG_KEY=${{ vars.VITE_POSTHOG_KEY || 'phc_disabled_placeholder' }}
 
   build-and-push-api:
     name: Build & Push Back-End (api)
