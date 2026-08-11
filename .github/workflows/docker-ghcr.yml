@@ -1,0 +1,100 @@
+name: Build & Push Docker Images to GHCR
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'api/**'
+      - '.github/workflows/docker-ghcr.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_APP: ghcr.io/tech-ezofis-git/ezofis-app-v6/app
+  IMAGE_API: ghcr.io/tech-ezofis-git/ezofis-app-v6/api
+
+jobs:
+  build-and-push-app:
+    name: Build & Push Front-End (app)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for App
+        id: meta-app
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_APP }}
+          tags: |
+            type=raw,value=latest,enable=true
+            type=sha,format=short
+
+      - name: Build and push App Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          push: true
+          tags: ${{ steps.meta-app.outputs.tags }}
+          labels: ${{ steps.meta-app.outputs.labels }}
+
+  build-and-push-api:
+    name: Build & Push Back-End (api)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if api/Dockerfile exists
+        id: check_api
+        run: |
+          if [ -f "./api/Dockerfile" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract metadata (tags, labels) for API
+        if: steps.check_api.outputs.exists == 'true'
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_API }}
+          tags: |
+            type=raw,value=latest,enable=true
+            type=sha,format=short
+
+      - name: Build and push API Docker image
+        if: steps.check_api.outputs.exists == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}

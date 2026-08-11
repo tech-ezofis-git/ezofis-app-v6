@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    image: ghcr.io/tech-ezofis-git/ezofis-app-v6/app:latest
+    ports:
+      - "80:80"
+    restart: always
+
+  api:
+    image: ghcr.io/tech-ezofis-git/ezofis-app-v6/api:latest
+    ports:
+      - "5000:5000"
+    restart: always
