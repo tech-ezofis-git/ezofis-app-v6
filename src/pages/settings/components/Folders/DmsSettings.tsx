@@ -1070,7 +1070,7 @@ export default function DmsFolderConfiguration({
     setShowAiBuilder(true)
   }
 
-  const handleAiBuilderApply = (payload: {
+  const handleAiBuilderApply = async (payload: {
     description: string
     fields: Array<{
       dataType: string
@@ -1084,6 +1084,12 @@ export default function DmsFolderConfiguration({
     storage?: string
     versioning?: string
   }) => {
+    const trimmedName = payload.folderName.trim()
+    if (!trimmedName) {
+      showToast({ message: 'Folder name is required.', variant: 'error' })
+      return
+    }
+
     const mappedFields = payload.fields.map((field, index) => {
       const includeInFolderStructure = Boolean(field.includeInFolderStructure)
 
@@ -1101,28 +1107,77 @@ export default function DmsFolderConfiguration({
       }
     })
 
-    setFolderName(payload.folderName)
-    setDescription(payload.description)
-    setFields(
+    const finalFields =
       mappedFields.length > 0
         ? recalculateFieldHierarchy(mappedFields)
-        : defaultFields,
-    )
+        : defaultFields
+
+    setFolderName(trimmedName)
+    setDescription(payload.description)
+    setFields(finalFields)
+
+    const targetStorage = payload.storage || storage
+    const selectedStorageOption =
+      storageOptions.find(
+        (item) =>
+          item.id === targetStorage ||
+          item.title.toLowerCase() === targetStorage.toLowerCase(),
+      ) ?? storageOptions[0]
+
     if (payload.storage) {
       setStorage(payload.storage)
-      setStorageConnectorId(null)
-      setStorageConnectorLabel(null)
     }
     if (payload.versioning) {
       setVersioning(payload.versioning)
     }
-    setShowAiBuilder(false)
-    setStep(1)
-    setShowWizard(true)
-    showToast({
-      message: 'AI folder setup applied. Review and finish configuration.',
-      variant: 'success',
-    })
+
+    const apiPayload = {
+      description: payload.description.trim(),
+      fields: finalFields.map((field, index) => ({
+        dataType: field.dataType,
+        iconKey: field.iconKey,
+        includeInFolderStructure: field.includeInFolderStructure,
+        isMandatory: field.isMandatory,
+        level: field.level,
+        name: field.fieldName,
+        orderId: field.orderId ?? index + 1,
+      })),
+      name: trimmedName,
+      storageDrive: null,
+      storageProviderCode: selectedStorageOption.storageProviderCode,
+      storageProviderId:
+        selectedStorageOption.storageProviderCode === 'EZOFIS'
+          ? undefined
+          : storageConnectorId || undefined,
+    }
+
+    try {
+      setIsSavingRepository(true)
+      const response = await createRepository(apiPayload)
+
+      if (response.error) {
+        showToast({
+          message: `Failed to create folder: ${response.error}`,
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({
+        message: 'Folder created successfully.',
+        variant: 'success',
+      })
+      await loadRepositories()
+      setShowAiBuilder(false)
+      closeWizard()
+    } catch (error: any) {
+      showToast({
+        message: `Failed to create folder: ${error?.message || 'Unknown error'}`,
+        variant: 'error',
+      })
+    } finally {
+      setIsSavingRepository(false)
+    }
   }
 
   const handleStorageChange = (nextStorage: string) => {
