@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Loader2, PenLine } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Loader2, PenLine, ScanText } from 'lucide-react'
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
@@ -151,20 +151,7 @@ const formatRelatedFileSize = (bytes?: number | null) => {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
 }
 
-const FIELD_INDICATOR_COLORS = [
-  '#16a34a',
-  '#22c55e',
-  '#a855f7',
-  '#1d4ed8',
-  '#eab308',
-  '#0d9488',
-  '#ec4899',
-  '#f97316',
-  '#6366f1',
-  '#0891b2',
-  '#84cc16',
-  '#e11d48',
-]
+const PRIMARY_HIGHLIGHT_COLOR = 'var(--primary-9)'
 
 const formatLineItemHeader = (key: string) =>
   String(key || '')
@@ -1206,17 +1193,7 @@ export function DocumentDetailsView({
   }
 
   const infoCards = useMemo(() => {
-    const cards = buildInfoCards(data, t)
-    let colorIndex = 0
-    return cards.map((card) => ({
-      ...card,
-      rows: card.rows.map((row) => {
-        const color =
-          FIELD_INDICATOR_COLORS[colorIndex % FIELD_INDICATOR_COLORS.length]
-        colorIndex += 1
-        return { ...row, color }
-      }),
-    }))
+    return buildInfoCards(data, t)
   }, [data, t])
 
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null)
@@ -1264,59 +1241,9 @@ export function DocumentDetailsView({
           }
         }
       }
-
-      for (const card of cards) {
-        for (const row of card.rows) {
-          const value = getFieldDisplayValue(row.value)
-          if (value && matchedSet.has(value)) {
-            return `${card.id}:${row.label}`
-          }
-        }
-      }
       return null
     })
   }, [])
-
-  const fieldHighlightTerms = useMemo(() => {
-    const terms: string[] = []
-    const seen = new Set<string>()
-    for (const card of infoCards) {
-      for (const row of card.rows) {
-        const value = getFieldDisplayValue(row.value)
-        if (!value || !matchedFieldValues.has(value) || seen.has(value)) continue
-        seen.add(value)
-        terms.push(value)
-      }
-    }
-    return terms
-  }, [infoCards, matchedFieldValues])
-
-  const fieldHighlightColors = useMemo(() => {
-    const map: Record<string, string> = {}
-    for (const card of infoCards) {
-      for (const row of card.rows) {
-        const value = getFieldDisplayValue(row.value)
-        if (!value || !matchedFieldValues.has(value) || !row.color) continue
-        if (!map[value]) map[value] = row.color
-        for (const variant of getFieldSearchVariantStrings(value)) {
-          if (!map[variant]) map[variant] = row.color
-        }
-      }
-    }
-    return map
-  }, [infoCards, matchedFieldValues])
-
-  const activeHighlightColor = useMemo(() => {
-    if (!activeFieldKey) return undefined
-    for (const card of infoCards) {
-      for (const row of card.rows) {
-        const rowKey = `${card.id}:${row.label}`
-        if (rowKey !== activeFieldKey) continue
-        return row.color
-      }
-    }
-    return undefined
-  }, [activeFieldKey, infoCards])
 
   const activeHighlightTerm = useMemo(() => {
     if (!activeFieldKey) return null
@@ -1330,6 +1257,27 @@ export function DocumentDetailsView({
     }
     return null
   }, [activeFieldKey, infoCards, matchedFieldValues])
+
+  const activeHighlightColor = useMemo(() => {
+    if (!activeFieldKey) return undefined
+    return PRIMARY_HIGHLIGHT_COLOR
+  }, [activeFieldKey])
+
+  const fieldHighlightTerms = useMemo(() => {
+    if (!activeHighlightTerm) return []
+    return [activeHighlightTerm]
+  }, [activeHighlightTerm])
+
+  const fieldHighlightColors = useMemo(() => {
+    if (!activeHighlightTerm) return {}
+    const map: Record<string, string> = {
+      [activeHighlightTerm]: PRIMARY_HIGHLIGHT_COLOR,
+    }
+    for (const variant of getFieldSearchVariantStrings(activeHighlightTerm)) {
+      map[variant] = PRIMARY_HIGHLIGHT_COLOR
+    }
+    return map
+  }, [activeHighlightTerm])
   const lineItems = Array.isArray(data?.lineItems) ? data.lineItems : []
   const hasLineItems = lineItems.length > 0
   const lineItemColumns = useMemo(
@@ -2341,14 +2289,16 @@ export function DocumentDetailsView({
                     {card.rows.map((row) => {
                       const rowKey = `${card.id}:${row.label}`
                       const fieldValue = getFieldDisplayValue(row.value)
-                      const hasPdfMatch =
-                        fieldValue && matchedFieldValues.has(fieldValue)
+                      const hasPdfMatch = Boolean(
+                        fieldValue && matchedFieldValues.has(fieldValue),
+                      )
                       const isActive = activeFieldKey === rowKey
+                      const displayVal = toDisplayValue(row.value)
                       return (
                         <button
                           type='button'
-                          className={`flex w-full items-center gap-2 border-b border-gray-3 px-3 py-2.5 text-left transition-colors last:border-0 ${
-                            isActive ? 'bg-gray-2' : 'hover:bg-gray-1'
+                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${
+                            isActive ? 'bg-gray-2 ring-1 ring-primary-5/30 z-10' : 'hover:bg-gray-1'
                           } ${hasPdfMatch ? '' : 'cursor-default'}`}
                           key={rowKey}
                           onClick={() => {
@@ -2357,27 +2307,38 @@ export function DocumentDetailsView({
                             setFieldFocusRequestId((previous) => previous + 1)
                           }}
                         >
-                          <span className='flex h-5 w-2 shrink-0 items-center justify-center'>
+                          {/* 1. OCR Icon Only with Tooltip */}
+                          <span className='flex h-5 w-5 shrink-0 items-center justify-center pt-0.5'>
                             {hasPdfMatch ? (
-                              <span
-                                aria-hidden
-                                className={`rounded-full transition-all ${
-                                  isActive ? 'h-4 w-1.5' : 'h-3 w-1'
-                                }`}
-                                style={{
-                                  backgroundColor: row.color || '#94a3b8',
-                                }}
-                              />
+                              <Tooltip content={t`Source: OCR Document`} position='top'>
+                                <span
+                                  className='inline-flex h-5 w-5 items-center justify-center rounded border border-[var(--teal-3)] bg-[var(--teal-1)] text-[var(--teal-9)] shadow-2xs transition-all hover:scale-105'
+                                >
+                                  <ScanText className='h-3 w-3' />
+                                </span>
+                              </Tooltip>
                             ) : null}
                           </span>
-                          <span className='flex min-w-0 flex-1 items-start justify-between gap-3'>
-                            <span className='text-[13px] text-gray-10'>
+
+                          {/* 2. Label */}
+                          <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
+                            <span
+                              className='block truncate text-left group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words'
+                              title={row.label}
+                            >
                               {row.label}
                             </span>
-                            <b className='max-w-[58%] text-right text-[13px] font-semibold break-words text-gray-13'>
-                              {row.value}
+                          </div>
+
+                          {/* 3. Value (1 line truncated default, expands inline to next lines on hover) */}
+                          <div className='ml-auto max-w-[50%] min-w-0 shrink-0 text-right overflow-hidden group-hover:max-w-[65%] group-hover:overflow-visible transition-all pt-0.5'>
+                            <b
+                              className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words group-hover:text-left'
+                              title={displayVal}
+                            >
+                              {displayVal}
                             </b>
-                          </span>
+                          </div>
                         </button>
                       )
                     })}
