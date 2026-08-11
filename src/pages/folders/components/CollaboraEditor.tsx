@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion } from 'motion/react'
-import { Loader2, ScanLine, X } from 'lucide-react'
+import { ArrowLeft, Loader2, ScanLine } from 'lucide-react'
 import {
   buildViewerUrl,
   buildWopiSrc,
@@ -9,6 +9,7 @@ import {
   uploadDocumentToCollabora,
 } from '@/api/collabora/collabora'
 import showToast from '@/components/base/toast/showToast'
+import { Button, PrimaryButton } from './Ui'
 
 interface CollaboraEditorProps {
   fileBlob: Blob
@@ -146,32 +147,27 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
 
   return (
     <div className='relative flex h-full w-full flex-col bg-gray-1'>
-      <div className='flex items-center justify-between border-b border-gray-3 bg-white px-3 py-2'>
+      <div className='flex h-[60px] shrink-0 items-center justify-between gap-2 border-b border-gray-3 bg-surface-primary px-5'>
+        <Button
+          className='h-8 border-transparent px-3 text-[13px] shadow-none'
+          type='button'
+          onClick={onClose}
+        >
+          <ArrowLeft size={12} /> {t`Back`}
+        </Button>
+
         <span className='truncate text-[13px] font-semibold text-gray-12'>
           {fileName}
         </span>
-        <div className='flex items-center gap-2'>
-          <button
-            className='inline-flex h-8 items-center justify-center gap-2 rounded-lg bg-primary-9 px-3.5 text-[13px] font-semibold text-white transition-all hover:bg-primary-10 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-            disabled={isLoading || isSaving || loadError}
-            type='button'
-            onClick={handleSave}
-          >
-            {isSaving ? (
-              <Loader2 className='h-4 w-4 animate-spin' />
-            ) : (
-              t`Save`
-            )}
-          </button>
-          <button
-            aria-label={t`Close`}
-            className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-3 hover:text-gray-13 active:scale-95'
-            type='button'
-            onClick={onClose}
-          >
-            <X className='h-4 w-4' />
-          </button>
-        </div>
+
+        <PrimaryButton
+          className='h-8 px-3.5 text-[13px]'
+          disabled={isLoading || isSaving || loadError}
+          type='button'
+          onClick={handleSave}
+        >
+          {isSaving ? <Loader2 className='h-4 w-4 animate-spin' /> : t`Save`}
+        </PrimaryButton>
       </div>
 
       <div className='relative min-h-0 flex-1'>

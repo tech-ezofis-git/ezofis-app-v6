@@ -14,6 +14,7 @@ import {
   type SignRequestFieldDto,
   type SignRequestInvitePreview,
 } from '@/api/v6/folder/signRequest'
+import Modal from '@/components/base/Modal'
 import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
@@ -1830,23 +1831,12 @@ export function DocumentDetailsView({
 
               <div
                 className={`ez-detail-scroll overflow-hidden bg-gray-1 ${
-                  isSigning || assignedFields.length > 0 || isEditingDoc
+                  isSigning || assignedFields.length > 0
                     ? 'h-[min(72vh,820px)]'
                     : 'h-[560px]'
                 }`}
               >
-                {isEditingDoc && previewBlobRef.current ? (
-                  <CollaboraEditor
-                    fileBlob={previewBlobRef.current}
-                    fileName={data.fileName}
-                    fileType={
-                      getFileExtension(data.fileName) ||
-                      getFileExtension(data.fileType)
-                    }
-                    onClose={handleCollaboraClose}
-                    onSave={handleCollaboraSave}
-                  />
-                ) : hasValidFileUrl || isPreviewLoading ? (
+                {hasValidFileUrl || isPreviewLoading ? (
                   <div
                     ref={documentSurfaceRef}
                     className='relative h-full min-h-full w-full'
@@ -2285,6 +2275,21 @@ export function DocumentDetailsView({
           ) : null}
         </div>
       </div>
+
+      <Modal fullScreen opened={isEditingDoc} onClose={handleCollaboraClose}>
+        {isEditingDoc && previewBlobRef.current ? (
+          <CollaboraEditor
+            fileBlob={previewBlobRef.current}
+            fileName={data.fileName}
+            fileType={
+              getFileExtension(data.fileName) ||
+              getFileExtension(data.fileType)
+            }
+            onClose={handleCollaboraClose}
+            onSave={handleCollaboraSave}
+          />
+        ) : null}
+      </Modal>
     </div>
   )
 }
