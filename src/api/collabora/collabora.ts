@@ -8,6 +8,18 @@ const COLLABORA_API_URL = String(
   import.meta.env?.VITE_COLLABORA_API_URL || '',
 ).replace(/\/$/, '')
 
+/**
+ * Host used to build WOPISrc — fetched by the Collabora Online server
+ * itself, not the browser. In local dev, Collabora usually runs in Docker,
+ * where "localhost" resolves to the container, not the host machine, so
+ * this must point at host.docker.internal instead of VITE_COLLABORA_API_URL.
+ * In production both are the same public URL, so this var is optional and
+ * falls back to VITE_COLLABORA_API_URL.
+ */
+const COLLABORA_WOPI_HOST_URL = String(
+  import.meta.env?.VITE_COLLABORA_WOPI_HOST_URL || COLLABORA_API_URL,
+).replace(/\/$/, '')
+
 const COLLABORA_VIEWER_URL_RAW = String(
   import.meta.env?.VITE_COLLABORA_VIEWER_URL || '',
 )
@@ -43,7 +55,7 @@ export const uploadDocumentToCollabora = async (
 }
 
 export const buildWopiSrc = (fileId: string) =>
-  `${COLLABORA_API_URL}/wopi/files/${fileId}`
+  `${COLLABORA_WOPI_HOST_URL}/wopi/files/${fileId}`
 
 export const buildViewerUrl = ({
   accessToken,
