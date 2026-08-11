@@ -45,6 +45,8 @@ import {
 
 type Step = 0 | 1 | 2
 
+type RuleStage = 'choose' | 'form'
+
 const STEPPER_ITEMS = [
   {
     description: 'Name and describe this policy',
@@ -126,6 +128,9 @@ export default function FolderRetentionPolicyWizard({
   const [step, setStep] = useState<Step>(0)
   const [isSaving, setIsSaving] = useState(false)
   const [isGeneratingConditions, setIsGeneratingConditions] = useState(false)
+  const [ruleStage, setRuleStage] = useState<RuleStage>(
+    initialPolicy ? 'form' : 'choose',
+  )
   const [policy, setPolicy] = useState<RetentionPolicy>(
     initialPolicy || buildDefaultPolicy(),
   )
@@ -168,15 +173,18 @@ export default function FolderRetentionPolicyWizard({
     }))
 
   const generateRuleWithAi = () => {
+    if (!policy.action) return
+    const action = policy.action
+
     setIsGeneratingConditions(true)
     setTimeout(() => {
-      const trigger = suggestTriggerForAction(policy.action)
+      const trigger = suggestTriggerForAction(action)
 
       const statusField = RETENTION_FIELDS.find((f) => f.key === 'status')
       const guessValue =
-        policy.action === 'permanent_delete'
+        action === 'permanent_delete'
           ? 'Terminated'
-          : policy.action === 'soft_delete'
+          : action === 'soft_delete'
             ? 'Expired'
             : 'Expired'
 
@@ -200,6 +208,7 @@ export default function FolderRetentionPolicyWizard({
         triggerField: trigger.triggerField,
       })
       setIsGeneratingConditions(false)
+      setRuleStage('form')
       showToast({
         message:
           'AI suggested a trigger and conditions from your folder metadata — review before activating.',
@@ -208,10 +217,27 @@ export default function FolderRetentionPolicyWizard({
     }, AI_GENERATION_DURATION_MS)
   }
 
+  const chooseAction = (action: RetentionAction) => {
+    updatePolicy({ action, aiGenerated: false })
+  }
+
+  const chooseManual = () => setRuleStage('form')
+
+  const chooseAi = () => {
+    generateRuleWithAi()
+  }
+
   const goToStep = (nextStep: Step) => {
     if (nextStep > step && step === 0 && !policy.name.trim()) {
       showToast({
         message: 'Enter a policy name to continue.',
+        variant: 'error',
+      })
+      return
+    }
+    if (nextStep > step && step === 1 && ruleStage !== 'form') {
+      showToast({
+        message: 'Choose a destination action and how to build the rule to continue.',
         variant: 'error',
       })
       return
@@ -322,35 +348,43 @@ export default function FolderRetentionPolicyWizard({
                   Define Retention Rule
                 </h2>
                 <p className='mt-0.5 text-xs text-gray-11'>
-                  Set the action to take, the trigger, and any additional
-                  conditions.
+                  {ruleStage === 'choose' && !policy.action &&
+                    'Choose what should happen to matching documents.'}
+                  {ruleStage === 'choose' && policy.action &&
+                    'Choose how to set up the trigger and conditions.'}
+                  {ruleStage === 'form' &&
+                    'Set the trigger and any additional conditions.'}
                 </p>
               </div>
-              {policy.aiGenerated ? (
-                <span className='inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11'>
-                  <AiBrandIcon className='size-3.5' variant='outline-purple' />
-                  AI Suggested
-                </span>
-              ) : (
-                <button
-                  className='inline-flex min-w-0 shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11 transition hover:bg-primary-3 disabled:opacity-70'
-                  disabled={isGeneratingConditions}
-                  type='button'
-                  onClick={generateRuleWithAi}
-                >
-                  {isGeneratingConditions ? (
-                    <>
-                      <PulsingAiIcon className='size-3.5' />
-                      <span className='truncate'>{aiStatusWord}</span>
-                    </>
-                  ) : (
-                    <>
-                      <AiBrandIcon className='size-3.5' variant='outline-purple' />
-                      Generate with AI
-                    </>
-                  )}
-                </button>
-              )}
+              {ruleStage === 'form' &&
+                (policy.aiGenerated ? (
+                  <span className='inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11'>
+                    <AiBrandIcon className='size-3.5' variant='outline-purple' />
+                    AI Suggested
+                  </span>
+                ) : (
+                  <button
+                    className='inline-flex min-w-0 shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11 transition hover:bg-primary-3 disabled:opacity-70'
+                    disabled={isGeneratingConditions}
+                    type='button'
+                    onClick={generateRuleWithAi}
+                  >
+                    {isGeneratingConditions ? (
+                      <>
+                        <PulsingAiIcon className='size-3.5' />
+                        <span className='truncate'>{aiStatusWord}</span>
+                      </>
+                    ) : (
+                      <>
+                        <AiBrandIcon
+                          className='size-3.5'
+                          variant='outline-purple'
+                        />
+                        Generate with AI
+                      </>
+                    )}
+                  </button>
+                ))}
             </div>
 
             <Divider />
@@ -364,34 +398,66 @@ export default function FolderRetentionPolicyWizard({
                   id: a.id,
                   name: a.name,
                 }))}
-                value={{
-                  id: policy.action,
-                  name: actionMeta(policy.action).name,
-                }}
+                placeholder='Select an action...'
+                value={
+                  policy.action
+                    ? { id: policy.action, name: actionMeta(policy.action).name }
+                    : null
+                }
                 onChange={(opt) =>
-                  opt &&
-                  updatePolicy({
-                    action: opt.id as RetentionAction,
-                    aiGenerated: false,
-                  })
+                  opt && chooseAction(opt.id as RetentionAction)
                 }
               />
-              <div
-                className={cn(
-                  'flex items-start gap-2 rounded-md px-3 py-2 text-xs leading-relaxed',
-                  policy.action === 'permanent_delete'
-                    ? 'bg-red-2 text-red-11'
-                    : 'bg-surface-muted text-gray-11',
-                )}
-              >
-                <Icon
-                  className='mt-0.5 size-3.5 shrink-0'
-                  name={actionMeta(policy.action).icon}
-                />
-                {actionMeta(policy.action).description}
-              </div>
+
+              {policy.action && ruleStage === 'choose' && (
+                <div className='space-y-2 border-t border-[var(--border-default)] pt-3'>
+                  <p className='text-13 leading-relaxed text-gray-12'>
+                    How should the trigger and conditions be set up? Choose{' '}
+                    <b className='font-semibold text-gray-13'>
+                      Build with AI
+                    </b>{' '}
+                    or build them manually.
+                  </p>
+
+                  <div className='flex max-w-full flex-wrap items-center gap-2'>
+                    <button
+                      className='inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-surface px-3.5 py-2 text-[12px] font-semibold whitespace-nowrap text-gray-12 transition hover:border-primary-6 hover:bg-primary-2 hover:text-primary-11 active:bg-primary-3 disabled:opacity-50'
+                      disabled={isGeneratingConditions}
+                      type='button'
+                      onClick={chooseAi}
+                    >
+                      <AiBrandIcon
+                        className='size-3.5'
+                        variant='outline-purple'
+                      />
+                      Build with AI
+                    </button>
+                    <button
+                      className='inline-flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-surface px-3.5 py-2 text-[12px] font-semibold whitespace-nowrap text-gray-12 transition hover:border-primary-6 hover:bg-primary-2/30 disabled:opacity-50'
+                      disabled={isGeneratingConditions}
+                      type='button'
+                      onClick={chooseManual}
+                    >
+                      <Icon
+                        className='size-3.5 text-gray-11'
+                        name='tabler:pencil'
+                      />
+                      Build Manually
+                    </button>
+                  </div>
+
+                  {isGeneratingConditions && (
+                    <div className='flex items-center gap-1.5 text-xs font-medium text-primary-11'>
+                      <PulsingAiIcon className='size-3.5' />
+                      {aiStatusWord}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
+            {ruleStage === 'form' && (
+              <>
             <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
               <div className='text-15 font-semibold text-gray-13'>
                 Retention trigger
@@ -604,6 +670,8 @@ export default function FolderRetentionPolicyWizard({
                 onChange={(v) => updatePolicy({ notifyOwner: Boolean(v) })}
               />
             </div>
+              </>
+            )}
           </div>
         </AnimateScale>
       )}
