@@ -1,5 +1,9 @@
+import React, { useEffect, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { motion, AnimatePresence } from 'motion/react'
+import { getRepositorys } from '@/api/v6/folder/folder'
 import Button from '@/components/base/button/Button'
+import InputSelect from '@/components/base/inputs/InputSelect'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import cn from '@/utils/cn'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
@@ -11,6 +15,8 @@ import {
   openDmsSetupPreview,
 } from './workflows/setupPreview'
 import DashboardCharts from './workflows/shared/components/Header'
+import useDashboardStore from './stores/useDashboardStore'
+import DashboardAiBuilder from './components/DashboardAiBuilder'
 
 const DashboardPage = () => {
   const { t } = useLingui()
@@ -20,6 +26,88 @@ const DashboardPage = () => {
   const isApSetUpCompleted = setupStore((state) => state.isApSetUpCompleted)
   const isSetupStarted = setupStore((state) => state.isSetupStarted)
   const isDmsSetupStarted = useDmsSetupStore((state) => state.isSetupStarted)
+
+  const repositoryId = useDashboardStore((state) => state.repositoryId)
+  const setRepositoryId = useDashboardStore((state) => state.setRepositoryId)
+
+  const [repositoryOptions, setRepositoryOptions] = useState<
+    Array<{ label: string; value: string }>
+  >([])
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const loadRepos = async () => {
+      setIsLoadingRepos(true)
+      try {
+        const res = await getRepositorys()
+        if (!active || res?.canceled || !res?.data) return
+        const list = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.items)
+            ? res.data.items
+            : Array.isArray(res.data?.repositories)
+              ? res.data.repositories
+              : []
+        const mapped = list
+          .map((item: any) => {
+            const id = String(item?.id || item?.repositoryId || item?.value || '')
+            const label = String(
+              item?.name || item?.repositoryName || item?.title || item?.label || id,
+            )
+            return { label, value: id }
+          })
+          .filter((opt: any) => Boolean(opt.value && opt.label))
+        if (active) {
+          setRepositoryOptions(mapped)
+          // Default selection for Accounts Payable if not explicitly set
+          if (!repositoryId || repositoryId === 'ap') {
+            const apOpt = mapped.find((opt: any) => /accounts payable/i.test(opt.label) || opt.value === 'ap')
+            if (apOpt) {
+              setRepositoryId(apOpt.value)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load repositories for header:', err)
+      } finally {
+        if (active) setIsLoadingRepos(false)
+      }
+    }
+    void loadRepos()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const selectOptions = repositoryOptions.map((opt) => ({
+    id: opt.value,
+    name: opt.label,
+    value: opt.value,
+  }))
+
+  const defaultApOption =
+    selectOptions.find(
+      (opt) => /accounts payable/i.test(opt.name) || opt.value === 'ap',
+    ) || (selectOptions.length > 0 ? selectOptions[0] : null)
+
+  const selectedOption =
+    selectOptions.find(
+      (opt) => opt.value === repositoryId || String(opt.id) === repositoryId,
+    ) || defaultApOption
+
+  const selectedRepo = repositoryOptions.find(
+    (opt) => opt.value === repositoryId || opt.label === repositoryId,
+  )
+  const selectedRepoName = selectedRepo
+    ? selectedRepo.label
+    : selectedOption?.name || repositoryId || 'Accounts Payable'
+
+  const isApDashboard =
+    !repositoryId ||
+    /accounts payable/i.test(selectedRepoName) ||
+    selectedRepoName.toLowerCase() === 'ap' ||
+    repositoryId === 'ap'
 
   if (isActivatingAutomation) {
     return (
@@ -51,23 +139,57 @@ const DashboardPage = () => {
                     {t`Connect email, ERP, and storage to start invoice processing.`}
                   </p>
                 </div>
-                <Button
-                  label={t`Get Started`}
-                  size='md'
-                  suffixIcon='lucide:arrow-right'
-                  onClick={openApSetupPreview}
-                />
+                <div className='flex items-center gap-3'>
+                  <div className='w-[190px] sm:w-[220px]'>
+                    <InputSelect
+                      disabled={isLoadingRepos}
+                      options={selectOptions}
+                      placeholder={t`Repository`}
+                      searchable
+                      value={selectedOption}
+                      onChange={(selected) =>
+                        setRepositoryId(
+                          selected?.value || String(selected?.id || ''),
+                        )
+                      }
+                    />
+                  </div>
+                  <Button
+                    label={t`Get Started`}
+                    size='md'
+                    suffixIcon='lucide:arrow-right'
+                    onClick={openApSetupPreview}
+                  />
+                </div>
               </div>
             </AnimateFadeIn>
           )}
 
-          {isApSetUpCompleted && !isSetupStarted && (
-            <AnimateSlideUp delay={0.1}>
-              <DashboardCharts />
-            </AnimateSlideUp>
-          )}
-
-          <AccountsPayable />
+          <AnimatePresence mode='wait'>
+            <motion.div
+              key={repositoryId || selectedOption?.value || 'ap'}
+              initial={{ opacity: 0, y: 12, scale: 0.99 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.99 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {isApDashboard ? (
+                <>
+                  {isApSetUpCompleted && !isSetupStarted && (
+                    <AnimateSlideUp delay={0.1}>
+                      <DashboardCharts />
+                    </AnimateSlideUp>
+                  )}
+                  <AccountsPayable />
+                </>
+              ) : (
+                <DashboardAiBuilder
+                  repositoryId={repositoryId}
+                  repositoryName={selectedRepoName || 'Custom Repository'}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </>
       )}
     </div>

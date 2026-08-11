@@ -6,6 +6,7 @@ type DashboardState = {
   drillStatus: string | null
   drillSupplier: string | null
   invoiceStatus: string
+  repositoryId: string
   role: 'management' | 'ap'
   searchQuery: string
   supplierCategory: string
@@ -18,6 +19,7 @@ type DashboardState = {
   setDrillStatus: (status: string | null) => void
   setDrillSupplier: (supplier: string | null) => void
   setInvoiceStatus: (status: string) => void
+  setRepositoryId: (repositoryId: string) => void
   setRole: (role: 'management' | 'ap') => void
   setSearchQuery: (query: string) => void
   setSupplierCategory: (category: string) => void
@@ -30,6 +32,7 @@ const useDashboardStore = create<DashboardState>()((set) => ({
   drillStatus: null,
   drillSupplier: null,
   invoiceStatus: '',
+  repositoryId: 'ap',
   role: 'management',
   searchQuery: '',
   supplierCategory: '',
@@ -42,6 +45,7 @@ const useDashboardStore = create<DashboardState>()((set) => ({
       drillStatus: null,
       drillSupplier: null,
       invoiceStatus: '',
+      repositoryId: '',
       searchQuery: '',
       supplierCategory: '',
       timeframe: 'month',
@@ -54,6 +58,7 @@ const useDashboardStore = create<DashboardState>()((set) => ({
   setDrillSupplier: (drillSupplier) =>
     set({ drillAgingBucket: null, drillStatus: null, drillSupplier }),
   setInvoiceStatus: (invoiceStatus) => set({ invoiceStatus }),
+  setRepositoryId: (repositoryId) => set({ repositoryId }),
   setRole: (role) =>
     set({
       drillAgingBucket: null,
