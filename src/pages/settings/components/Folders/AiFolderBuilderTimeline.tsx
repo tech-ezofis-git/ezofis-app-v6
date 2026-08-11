@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
-import Icon from '@/components/base/icon/Icon'
+import { Check } from 'lucide-react'
 import cn from '@/utils/cn'
 
 export type TimelineStepStatus = 'active' | 'completed' | 'upcoming'
@@ -12,8 +12,9 @@ const STEP_GAP_PX = 16
 const HEADER_ALIGN_PX = 16
 
 function trackColor(state: TimelineConnectorState) {
-  if (state === 'completed' || state === 'loading') return 'bg-[var(--green-4)]'
-  return 'bg-[var(--gray-4)]'
+  if (state === 'completed') return 'bg-green-6 w-[2px]'
+  if (state === 'loading') return 'bg-gray-3 w-[2px]'
+  return 'bg-gray-3 w-[2px]'
 }
 
 function StepCircle({
@@ -36,16 +37,16 @@ function StepCircle({
       ) : null}
       <span
         className={cn(
-          'relative flex size-8 items-center justify-center rounded-full text-[12px] font-bold',
+          'relative flex size-8 items-center justify-center rounded-full text-[12px] font-bold transition-all',
           isCompleted
-            ? 'bg-[var(--green-2)] text-[var(--green-10)]'
+            ? 'bg-green-6 text-white shadow-xs border border-green-6'
             : isActive
-              ? 'bg-primary-10 text-white shadow-[0_0_0_4px_rgba(106,76,240,0.18)]'
-              : 'bg-[var(--gray-3)] text-[var(--gray-10)]',
+              ? 'bg-primary-9 text-white shadow-[0_0_0_4px_rgba(106,76,240,0.25)]'
+              : 'bg-gray-200 text-gray-7 border border-gray-3',
         )}
       >
         {isCompleted ? (
-          <Icon className='size-3.5 text-[var(--green-10)]' name='lucide:check' />
+          <Check className='size-4 text-white stroke-[3]' />
         ) : (
           stepId
         )}
@@ -72,15 +73,15 @@ function ConnectorTrack({
   return (
     <div
       className={cn(
-        'relative w-[2px] shrink-0',
+        'relative shrink-0 flex justify-center',
         fixedHeight == null && 'min-h-0 flex-1',
         className,
       )}
       style={fixedHeight != null ? { height: fixedHeight } : undefined}
     >
       <div
-        className={cn('absolute inset-x-0 top-0', trackColor(state))}
-        style={{ bottom: extendGap ? -STEP_GAP_PX : 0 }}
+        className={cn('absolute inset-x-0 top-0 mx-auto', trackColor(state))}
+        style={{ bottom: extendGap ? -56 : 0 }}
       />
     </div>
   )
@@ -109,16 +110,14 @@ export function BuilderTimelineStep({
 }) {
   const isActive = status === 'active'
   const isCompleted = status === 'completed'
-  const showBody = Boolean(
-    ((isCompleted || isActive) && summary) || (isActive && children),
-  )
+  const showBody = Boolean((isCompleted && summary) || (isActive && children))
   const hasBottomConnector = bottomConnectorState !== 'hidden'
 
   return (
-    <div>
-      <div className='flex gap-4'>
+    <div className='relative overflow-visible'>
+      <div className='flex gap-4 overflow-visible'>
         {/* Timeline — stage aligned to card header; line only between stages */}
-        <div className='flex w-8 shrink-0 flex-col items-center self-stretch overflow-visible'>
+        <div className='relative z-20 flex w-8 shrink-0 flex-col items-center self-stretch overflow-visible'>
           {showTopConnector ? (
             <ConnectorTrack
               fixedHeight={HEADER_ALIGN_PX}
@@ -166,7 +165,7 @@ export function BuilderTimelineStep({
               <h2 className='text-[15px] font-semibold text-[var(--gray-13)]'>
                 {title}
               </h2>
-              {!isCompleted && !summary && (
+              {!isCompleted && (
                 <p className='mt-0.5 text-[12px] text-[var(--gray-11)]'>
                   {description}
                 </p>
@@ -174,12 +173,14 @@ export function BuilderTimelineStep({
             </div>
           </div>
 
-          {(isCompleted || isActive) && summary ? (
+          {/* Render summary ONLY when step is completed */}
+          {isCompleted && summary ? (
             <div className='px-5 py-4'>{summary}</div>
           ) : null}
 
+          {/* Render interactive editing form ONLY when step is active */}
           {isActive && children ? (
-            <div className='space-y-4 px-5 py-5'>{children}</div>
+            <div className='p-5'>{children}</div>
           ) : null}
         </motion.section>
       </div>

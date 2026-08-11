@@ -31,7 +31,7 @@ export interface RetentionField {
 export type RetentionFieldType = 'select' | 'text' | 'date'
 
 export interface RetentionPolicy {
-  action: RetentionAction
+  action: RetentionAction | ''
   aiGenerated: boolean
   conditions: RetentionCondition[]
   createdOn: string
@@ -130,7 +130,7 @@ export const fieldLabel = (key: string) =>
 export const opLabel = (op: string) =>
   OPERATOR_OPTIONS.find((o) => o.id === op)?.name || 'Equals'
 
-export const actionMeta = (action: RetentionAction) =>
+export const actionMeta = (action: RetentionAction | '') =>
   ACTION_OPTIONS.find((a) => a.id === action) || ACTION_OPTIONS[0]
 
 const MOCK_FILE_TEMPLATES: Array<{
@@ -318,7 +318,7 @@ export const emptyCondition = (field: string): RetentionCondition => ({
 })
 
 export const buildDefaultPolicy = (triggerField = ''): RetentionPolicy => ({
-  action: 'archive',
+  action: '',
   aiGenerated: false,
   conditions: [],
   createdOn: new Date().toISOString(),
