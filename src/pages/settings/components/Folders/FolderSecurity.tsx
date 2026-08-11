@@ -34,6 +34,7 @@ import {
   useSettingsTablePagination,
 } from '../../helpers/settingsDataTable'
 import useSettingsTopbar from '../../hooks/useSettingsTopbar'
+import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import DocumentSecurityRuleWizard from './DocumentSecurityRuleWizard'
 import FolderRetention from './FolderRetention'
 import FolderRetentionPolicyWizard from './FolderRetentionPolicyWizard'
@@ -514,6 +515,15 @@ export default function FolderSecurity({
     onPaginationChange: onPolicyPaginationChange,
   })
 
+  const { rowSize: policyRowSize, onRowSizeChange: onPolicyRowSizeChange } =
+    useSettingsTableToolbar({
+      isReLoading: isLoadingPolicies,
+      table: policyTable,
+      onReload: () => {
+        void loadFolderPolicies()
+      },
+    })
+
   // Rule Table Columns
   const ruleColumnHelper = useMemo(
     () => createColumnHelper<DocumentSecurityRule>(),
@@ -687,6 +697,15 @@ export default function FolderSecurity({
     onPaginationChange: onRulePaginationChange,
   })
 
+  const { rowSize: ruleRowSize, onRowSizeChange: onRuleRowSizeChange } =
+    useSettingsTableToolbar({
+      isReLoading: isLoadingRules,
+      table: ruleTable,
+      onReload: () => {
+        void loadDocumentRules()
+      },
+    })
+
   // If Wizard is open for Folder Security
   if (activeTab === 'folder' && isPolicyWizardOpen) {
     const initialPolicy =
@@ -773,7 +792,7 @@ export default function FolderSecurity({
       </div>
 
       {/* Main Content Area */}
-      <div className='min-h-0 flex-1 overflow-y-auto p-4 md:p-6'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-6'>
         {activeTab === 'retention' ? (
           <FolderRetention
             folderName={folderName}
@@ -783,7 +802,7 @@ export default function FolderSecurity({
             onEditPolicy={handleEditRetentionPolicy}
           />
         ) : activeTab === 'folder' ? (
-          <div className='flex flex-col gap-4'>
+          <div className='flex min-h-0 flex-1 flex-col gap-4'>
             <div className='flex items-center justify-between'>
               <div>
                 <h2 className='text-15 font-semibold text-gray-13'>
@@ -804,36 +823,40 @@ export default function FolderSecurity({
 
             <Divider />
 
-            <div className='overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
-              <DataTable
-                emptyDescription="No folder security policies found. Click 'Add Policy' to configure access rules."
-                emptyIcon='tabler:shield'
-                emptyTitle='No Security Policies'
-                isLoading={isLoadingPolicies}
-                isReLoading={isLoadingPolicies}
-                table={policyTable}
-                hideActionBar
-                hideGrouping
-                stickyHeader
-                onReload={() => {
-                  void loadFolderPolicies()
-                }}
+            <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+              <div className='min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
+                <DataTable
+                  emptyDescription="No folder security policies found. Click 'Add Policy' to configure access rules."
+                  emptyIcon='tabler:shield'
+                  emptyTitle='No Security Policies'
+                  isLoading={isLoadingPolicies}
+                  isReLoading={isLoadingPolicies}
+                  rowSize={policyRowSize}
+                  table={policyTable}
+                  hideActionBar
+                  hideGrouping
+                  stickyHeader
+                  onReload={() => {
+                    void loadFolderPolicies()
+                  }}
+                  onRowSizeChange={onPolicyRowSizeChange}
+                />
+              </div>
+
+              <Pagination
+                className='mt-4 shrink-0'
+                itemLabel='Policies'
+                page={policyPage}
+                pageSize={policyPageSize}
+                showPageNumbers={false}
+                totalItems={policyTable.getFilteredRowModel().rows.length}
+                onPageChange={onPolicyPageChange}
+                onPageSizeChange={onPolicyPageSizeChange}
               />
             </div>
-
-            <Pagination
-              className='mt-4 shrink-0'
-              itemLabel='Policies'
-              page={policyPage}
-              pageSize={policyPageSize}
-              showPageNumbers={false}
-              totalItems={policyTable.getFilteredRowModel().rows.length}
-              onPageChange={onPolicyPageChange}
-              onPageSizeChange={onPolicyPageSizeChange}
-            />
           </div>
         ) : (
-          <div className='flex flex-col gap-4'>
+          <div className='flex min-h-0 flex-1 flex-col gap-4'>
             <div className='flex items-center justify-between'>
               <div>
                 <h2 className='text-15 font-semibold text-gray-13'>
@@ -854,33 +877,37 @@ export default function FolderSecurity({
 
             <Divider />
 
-            <div className='overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
-              <DataTable
-                emptyDescription="No document security rules found. Click 'Add Document Rule' to set up metadata rules."
-                emptyIcon='tabler:adjustments'
-                emptyTitle='No Document Rules'
-                isLoading={isLoadingRules}
-                isReLoading={isLoadingRules}
-                table={ruleTable}
-                hideActionBar
-                hideGrouping
-                stickyHeader
-                onReload={() => {
-                  void loadDocumentRules()
-                }}
+            <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+              <div className='min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
+                <DataTable
+                  emptyDescription="No document security rules found. Click 'Add Document Rule' to set up metadata rules."
+                  emptyIcon='tabler:adjustments'
+                  emptyTitle='No Document Rules'
+                  isLoading={isLoadingRules}
+                  isReLoading={isLoadingRules}
+                  rowSize={ruleRowSize}
+                  table={ruleTable}
+                  hideActionBar
+                  hideGrouping
+                  stickyHeader
+                  onReload={() => {
+                    void loadDocumentRules()
+                  }}
+                  onRowSizeChange={onRuleRowSizeChange}
+                />
+              </div>
+
+              <Pagination
+                className='mt-4 shrink-0'
+                itemLabel='Rules'
+                page={rulePage}
+                pageSize={rulePageSize}
+                showPageNumbers={false}
+                totalItems={ruleTable.getFilteredRowModel().rows.length}
+                onPageChange={onRulePageChange}
+                onPageSizeChange={onRulePageSizeChange}
               />
             </div>
-
-            <Pagination
-              className='mt-4 shrink-0'
-              itemLabel='Rules'
-              page={rulePage}
-              pageSize={rulePageSize}
-              showPageNumbers={false}
-              totalItems={ruleTable.getFilteredRowModel().rows.length}
-              onPageChange={onRulePageChange}
-              onPageSizeChange={onRulePageSizeChange}
-            />
           </div>
         )}
       </div>

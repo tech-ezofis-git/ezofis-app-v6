@@ -18,6 +18,7 @@ import {
   settingsTableCoreOptions,
   useSettingsTablePagination,
 } from '../../helpers/settingsDataTable'
+import useSettingsTableToolbar from '../useSettingsTableToolbar'
 import {
   actionMeta,
   fieldLabel,
@@ -214,8 +215,14 @@ export default function FolderRetention({
     onPaginationChange,
   })
 
+  const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
+    isReLoading: false,
+    table,
+    onReload: () => {},
+  })
+
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex min-h-0 flex-1 flex-col gap-4'>
       <div className='flex items-center justify-between'>
         <div>
           <h2 className='text-15 font-semibold text-gray-13'>
@@ -237,30 +244,34 @@ export default function FolderRetention({
 
       <Divider />
 
-      <div className='overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
-        <DataTable
-          emptyDescription="No retention policies configured yet. Click 'Create Policy' to set up the trigger, action, and conditions."
-          emptyIcon='tabler:clock-hour-4'
-          emptyTitle='No Retention Policies'
-          isReLoading={false}
-          table={table}
-          hideActionBar
-          hideGrouping
-          stickyHeader
-          onReload={() => {}}
+      <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
+        <div className='min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
+          <DataTable
+            emptyDescription="No retention policies configured yet. Click 'Create Policy' to set up the trigger, action, and conditions."
+            emptyIcon='tabler:clock-hour-4'
+            emptyTitle='No Retention Policies'
+            isReLoading={false}
+            rowSize={rowSize}
+            table={table}
+            hideActionBar
+            hideGrouping
+            stickyHeader
+            onReload={() => {}}
+            onRowSizeChange={onRowSizeChange}
+          />
+        </div>
+
+        <Pagination
+          className='mt-4 shrink-0'
+          itemLabel='Policies'
+          page={page}
+          pageSize={pageSize}
+          showPageNumbers={false}
+          totalItems={table.getFilteredRowModel().rows.length}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
         />
       </div>
-
-      <Pagination
-        className='mt-4 shrink-0'
-        itemLabel='Policies'
-        page={page}
-        pageSize={pageSize}
-        showPageNumbers={false}
-        totalItems={table.getFilteredRowModel().rows.length}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-      />
     </div>
   )
 }
