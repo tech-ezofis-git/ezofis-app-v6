@@ -32,8 +32,8 @@ export type RetentionFieldType = 'select' | 'text' | 'date'
 
 export interface RetentionPolicy {
   action: RetentionAction
+  aiGenerated: boolean
   conditions: RetentionCondition[]
-  conditionsGeneratedByAi: boolean
   createdOn: string
   description: string
   durationUnit: RetentionDurationUnit
@@ -111,6 +111,18 @@ export const OPERATOR_OPTIONS = [
   { id: 'greater_than', name: 'Greater Than' },
   { id: 'less_than', name: 'Less Than' },
 ]
+
+const SUGGESTED_TRIGGER_BY_ACTION: Record<
+  RetentionAction,
+  { durationUnit: RetentionDurationUnit; durationValue: number; triggerField: string }
+> = {
+  archive: { durationUnit: 'days', durationValue: 180, triggerField: 'lastActivityDate' },
+  permanent_delete: { durationUnit: 'days', durationValue: 365, triggerField: 'expiryDate' },
+  soft_delete: { durationUnit: 'days', durationValue: 90, triggerField: 'expiryDate' },
+}
+
+export const suggestTriggerForAction = (action: RetentionAction) =>
+  SUGGESTED_TRIGGER_BY_ACTION[action]
 
 export const fieldLabel = (key: string) =>
   RETENTION_FIELDS.find((f) => f.key === key)?.label || key
@@ -305,12 +317,10 @@ export const emptyCondition = (field: string): RetentionCondition => ({
   value: '',
 })
 
-export const buildDefaultPolicy = (
-  triggerField = 'effectiveDate',
-): RetentionPolicy => ({
+export const buildDefaultPolicy = (triggerField = ''): RetentionPolicy => ({
   action: 'archive',
+  aiGenerated: false,
   conditions: [],
-  conditionsGeneratedByAi: false,
   createdOn: new Date().toISOString(),
   description: '',
   durationUnit: 'days',
@@ -330,8 +340,8 @@ export const seedPolicies = (folderName: string): RetentionPolicy[] => {
   return [
     {
       action: 'archive',
+      aiGenerated: false,
       conditions: [{ field: 'status', op: 'equals', value: 'Expired' }],
-      conditionsGeneratedByAi: false,
       createdOn: created.toISOString(),
       description: `Move ${label.toLowerCase()} records to the archive once they are marked Expired and past the retention window.`,
       durationUnit: 'days',

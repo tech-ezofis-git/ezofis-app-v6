@@ -1,5 +1,5 @@
-import { AnimatePresence } from 'motion/react'
-import { useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useMemo, useState } from 'react'
 import Accordion from '@/components/base/accordion/Accordion'
 import AccordionItem from '@/components/base/accordion/AccordionItem'
 import Button from '@/components/base/button/Button'
@@ -35,6 +35,7 @@ import {
   OPERATOR_OPTIONS,
   reasonText,
   RETENTION_FIELDS,
+  suggestTriggerForAction,
   type RetentionAction,
   type RetentionCondition,
   type RetentionDurationUnit,
@@ -69,6 +70,46 @@ const TRIGGER_FIELD_OPTIONS = RETENTION_FIELDS.filter((f) =>
   DATE_FIELD_KEYS.includes(f.key),
 )
 
+const AI_GENERATION_STATUS_WORDS = [
+  'Analyzing folder metadata…',
+  'Reviewing available fields…',
+  'Choosing the best trigger field…',
+  'Drafting suggested conditions…',
+]
+
+const AI_GENERATION_DURATION_MS = 2200
+
+const useAiStatusWord = (active: boolean) => {
+  const [statusIndex, setStatusIndex] = useState(0)
+
+  useEffect(() => {
+    if (!active) {
+      setStatusIndex(0)
+      return
+    }
+    const timer = window.setInterval(() => {
+      setStatusIndex((prev) => (prev + 1) % AI_GENERATION_STATUS_WORDS.length)
+    }, AI_GENERATION_DURATION_MS / AI_GENERATION_STATUS_WORDS.length)
+    return () => window.clearInterval(timer)
+  }, [active])
+
+  return AI_GENERATION_STATUS_WORDS[statusIndex]
+}
+
+const PulsingAiIcon = ({ className = 'size-4' }: { className?: string }) => (
+  <motion.div
+    animate={{
+      opacity: [0.55, 1, 0.55],
+      rotate: [0, 8, -8, 0],
+      scale: [0.92, 1.1, 0.92],
+    }}
+    className='inline-flex shrink-0 text-primary-9'
+    transition={{ duration: 1.4, ease: 'easeInOut', repeat: Infinity }}
+  >
+    <AiBrandIcon className={className} variant='outline-purple' />
+  </motion.div>
+)
+
 export default function FolderRetentionPolicyWizard({
   editingIndex = null,
   folderName,
@@ -88,6 +129,7 @@ export default function FolderRetentionPolicyWizard({
   const [policy, setPolicy] = useState<RetentionPolicy>(
     initialPolicy || buildDefaultPolicy(),
   )
+  const aiStatusWord = useAiStatusWord(isGeneratingConditions)
 
   const mockDocuments = useMemo(
     () => buildMockDocuments(folderName),
@@ -107,7 +149,6 @@ export default function FolderRetentionPolicyWizard({
       conditions: prev.conditions.map((c, i) =>
         i === idx ? { ...c, ...patch } : c,
       ),
-      conditionsGeneratedByAi: false,
     }))
 
   const addCondition = () => {
@@ -117,7 +158,6 @@ export default function FolderRetentionPolicyWizard({
     setPolicy((prev) => ({
       ...prev,
       conditions: [...prev.conditions, emptyCondition(fallback.key)],
-      conditionsGeneratedByAi: false,
     }))
   }
 
@@ -125,12 +165,13 @@ export default function FolderRetentionPolicyWizard({
     setPolicy((prev) => ({
       ...prev,
       conditions: prev.conditions.filter((_, i) => i !== idx),
-      conditionsGeneratedByAi: false,
     }))
 
-  const generateConditionsWithAi = () => {
+  const generateRuleWithAi = () => {
     setIsGeneratingConditions(true)
     setTimeout(() => {
+      const trigger = suggestTriggerForAction(policy.action)
+
       const statusField = RETENTION_FIELDS.find((f) => f.key === 'status')
       const guessValue =
         policy.action === 'permanent_delete'
@@ -140,25 +181,31 @@ export default function FolderRetentionPolicyWizard({
             : 'Expired'
 
       const otherField = RETENTION_FIELDS.find(
-        (f) => f.key !== policy.triggerField && f.key !== 'status',
+        (f) => f.key !== trigger.triggerField && f.key !== 'status',
       )
 
-      const suggested: RetentionCondition[] = statusField
+      const suggestedConditions: RetentionCondition[] = statusField
         ? [{ field: statusField.key, op: 'equals', value: guessValue }]
         : otherField
           ? [emptyCondition(otherField.key)]
           : []
 
-      if (suggested.length) {
-        updatePolicy({ conditions: suggested, conditionsGeneratedByAi: true })
-      }
+      updatePolicy({
+        aiGenerated: true,
+        conditions: suggestedConditions.length
+          ? suggestedConditions
+          : policy.conditions,
+        durationUnit: trigger.durationUnit,
+        durationValue: trigger.durationValue,
+        triggerField: trigger.triggerField,
+      })
       setIsGeneratingConditions(false)
       showToast({
         message:
-          'AI suggested conditions from your folder metadata — review the values before activating.',
+          'AI suggested a trigger and conditions from your folder metadata — review before activating.',
         variant: 'success',
       })
-    }, 650)
+    }, AI_GENERATION_DURATION_MS)
   }
 
   const goToStep = (nextStep: Step) => {
@@ -279,23 +326,37 @@ export default function FolderRetentionPolicyWizard({
                   conditions.
                 </p>
               </div>
-              <button
-                className='inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11 transition hover:bg-primary-3 disabled:opacity-50'
-                disabled={isGeneratingConditions}
-                type='button'
-                onClick={generateConditionsWithAi}
-              >
-                <AiBrandIcon className='size-3.5' variant='outline-purple' />
-                {isGeneratingConditions
-                  ? 'Generating…'
-                  : 'Generate  with AI'}
-              </button>
+              {policy.aiGenerated ? (
+                <span className='inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11'>
+                  <AiBrandIcon className='size-3.5' variant='outline-purple' />
+                  AI Suggested
+                </span>
+              ) : (
+                <button
+                  className='inline-flex min-w-0 shrink-0 items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1.5 text-[11px] font-semibold text-primary-11 transition hover:bg-primary-3 disabled:opacity-70'
+                  disabled={isGeneratingConditions}
+                  type='button'
+                  onClick={generateRuleWithAi}
+                >
+                  {isGeneratingConditions ? (
+                    <>
+                      <PulsingAiIcon className='size-3.5' />
+                      <span className='truncate'>{aiStatusWord}</span>
+                    </>
+                  ) : (
+                    <>
+                      <AiBrandIcon className='size-3.5' variant='outline-purple' />
+                      Generate with AI
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             <Divider />
 
             <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
-              <div className='text-xs font-semibold tracking-wide text-primary-11 uppercase'>
+              <div className='text-15 font-semibold text-gray-13'>
                 Destination action
               </div>
               <InputSelect
@@ -308,7 +369,11 @@ export default function FolderRetentionPolicyWizard({
                   name: actionMeta(policy.action).name,
                 }}
                 onChange={(opt) =>
-                  opt && updatePolicy({ action: opt.id as RetentionAction })
+                  opt &&
+                  updatePolicy({
+                    action: opt.id as RetentionAction,
+                    aiGenerated: false,
+                  })
                 }
               />
               <div
@@ -328,7 +393,7 @@ export default function FolderRetentionPolicyWizard({
             </div>
 
             <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
-              <div className='text-xs font-semibold tracking-wide text-primary-11 uppercase'>
+              <div className='text-15 font-semibold text-gray-13'>
                 Retention trigger
               </div>
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
@@ -338,6 +403,7 @@ export default function FolderRetentionPolicyWizard({
                     id: f.key,
                     name: f.label,
                   }))}
+                  placeholder='Select a field...'
                   value={
                     policy.triggerField
                       ? {
@@ -377,7 +443,9 @@ export default function FolderRetentionPolicyWizard({
               <div className='rounded-md bg-surface-muted px-3 py-2 text-xs leading-relaxed text-gray-11'>
                 Preview: documents where{' '}
                 <b className='text-gray-13'>
-                  {fieldLabel(policy.triggerField)}
+                  {policy.triggerField
+                    ? fieldLabel(policy.triggerField)
+                    : 'a trigger field'}
                 </b>{' '}
                 is more than{' '}
                 <b className='text-gray-13'>
@@ -390,16 +458,8 @@ export default function FolderRetentionPolicyWizard({
 
             <div className='space-y-3 rounded-lg border border-[var(--border-default)] bg-surface p-4 shadow-2xs'>
               <div className='flex items-center justify-between'>
-                <div className='flex items-center gap-2'>
-                  <div className='text-xs font-semibold tracking-wide text-primary-11 uppercase'>
-                    Additional conditions
-                  </div>
-                  {policy.conditionsGeneratedByAi && (
-                    <span className='inline-flex items-center gap-1 rounded-md bg-primary-2 px-1.5 py-0.5 text-[10px] font-semibold text-primary-11'>
-                      <AiBrandIcon className='size-3' variant='outline-purple' />
-                      AI suggested
-                    </span>
-                  )}
+                <div className='text-15 font-semibold text-gray-13'>
+                  Additional conditions
                 </div>
                 <div className='flex items-center gap-1.5'>
                   <span className='text-[10px] font-medium text-gray-10'>
@@ -602,10 +662,10 @@ export default function FolderRetentionPolicyWizard({
                   <Icon className='size-3.5 text-primary-9' name='tabler:list-check' />
                   How this policy behaves
                 </div>
-                {policy.conditionsGeneratedByAi && (
+                {policy.aiGenerated && (
                   <span className='inline-flex items-center gap-1 rounded-md bg-primary-2 px-1.5 py-0.5 text-[10px] font-semibold text-primary-11'>
                     <AiBrandIcon className='size-3' variant='outline-purple' />
-                    Conditions suggested by AI
+                    Suggested by AI
                   </span>
                 )}
               </div>
