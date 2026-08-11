@@ -19,7 +19,11 @@ import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import showToast from '@/components/base/toast/showToast'
-import { persistEditedDocumentToRepository } from '@/api/v6/folder/folder'
+import {
+  getRepositoryById,
+  persistEditedDocumentToRepository,
+  type RepositoryFieldDto,
+} from '@/api/v6/folder/folder'
 import CollaboraEditor from './CollaboraEditor'
 import authUserStore from '@/stores/authUserStore'
 import { formatUtcToLocalDate, formatUtcToLocalDateTime } from '@/utils/utcDate'
@@ -1107,17 +1111,62 @@ export function DocumentDetailsView({
     return metadata
   }
 
-  const handleCollaboraSave = async (blob: Blob) => {
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 7: handleCollaboraSave called in DocumentDetailsView. Blob size:', blob?.size, 'type:', blob?.type)
-    setIsEditingDoc(false)
-    const metadata = extractMetadataFromDetail(data)
-    const fileName = data?.fileName || 'edited_document.pdf'
+  const repositoryFieldsRef = useRef<RepositoryFieldDto[] | null>(null)
 
+  /**
+   * The upload-archive endpoint matches a new file to an existing item (and
+   * versions it) by its repository field VALUES — the same mechanism the
+   * working Upload flow (Upload.tsx buildUploadMetadata) uses, keyed by each
+   * field's sqlColumnName, not by the display label shown in the details
+   * panel. Re-key the label/value pairs we already have against the
+   * repository's real field schema so the backend can actually match them.
+   */
+  const buildSaveMetadata = async (): Promise<Record<string, string>> => {
+    const labelValues = extractMetadataFromDetail(data)
+
+    if (!repositoryFieldsRef.current) {
+      const { data: repoData } = await getRepositoryById(repositoryId)
+      repositoryFieldsRef.current = repoData?.fields || []
+    }
+
+    const fields: RepositoryFieldDto[] = repositoryFieldsRef.current || []
+    if (!fields.length) return labelValues
+
+    const normalize = (value: string) =>
+      value.trim().toLowerCase().replace(/\s+/g, '')
+
+    const metadata: Record<string, string> = {}
+    for (const field of fields) {
+      const key = field.sqlColumnName || field.name
+      if (!key) continue
+      const match = Object.entries(labelValues).find(
+        ([label]) => normalize(label) === normalize(field.name || ''),
+      )
+      if (match) {
+        metadata[key] = match[1]
+      }
+    }
+
+    return Object.keys(metadata).length ? metadata : labelValues
+  }
+
+  const handleCollaboraSave = async (blob: Blob) => {
+    setIsEditingDoc(false)
+
+    // Verification logging
+    const head = new Uint8Array(await blob.slice(0, 8).arrayBuffer())
     // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 8: Extracted metadata:', metadata, 'FileName:', fileName)
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 9: Invoking persistEditedDocumentToRepository...')
+    console.log(
+      '[verify] header:',
+      String.fromCharCode(...head),
+      'size:',
+      blob.size,
+      'type:',
+      blob.type,
+    )
+
+    const metadata = await buildSaveMetadata()
+    const fileName = data?.fileName || 'edited_document.pdf'
 
     const { data: resData, error } = await persistEditedDocumentToRepository(
       repositoryId,
@@ -1126,9 +1175,6 @@ export function DocumentDetailsView({
       fileName,
       metadata,
     )
-
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 10: persistEditedDocumentToRepository completed. Result:', { resData, error })
 
     if (error) {
       const detail =
