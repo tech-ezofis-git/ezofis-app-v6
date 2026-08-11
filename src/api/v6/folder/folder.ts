@@ -1021,22 +1021,41 @@ export const UploadFiles = async (repositoryId: string, formData: FormData) => {
 }
 
 /**
- * Placeholder for writing a Collabora-edited file back into a V6 repository
- * item. No backend endpoint exists yet (only reading via viewBinaryV6, and
- * the unrelated upload-archive endpoint). This stub keeps the edit/save UI
- * flow demoable now; swap the body for a real request once the endpoint
- * exists — callers don't need to change.
+ * Uploads a Collabora-edited document back into a V6 repository
+ * using the UploadFiles binary multipart form API.
  */
 export const persistEditedDocumentToRepository = async (
   repositoryId: string,
   itemId: string,
-  _blob: Blob,
+  blob: Blob,
+  fileName?: string,
+  metadata?: Record<string, string>,
 ) => {
-  console.warn(
-    '[collabora] persistEditedDocumentToRepository is not wired to a backend endpoint yet.',
-    { itemId, repositoryId },
-  )
-  return { data: null, error: 'not-implemented' as const }
+  // eslint-disable-next-line no-console
+  console.log('[collabora-debug] STEP 9a: Inside persistEditedDocumentToRepository. RepId:', repositoryId, 'ItemId:', itemId)
+  try {
+    const formData = new FormData()
+    const name = fileName || 'edited_document.pdf'
+    formData.append('file', blob, name)
+    if (metadata && Object.keys(metadata).length > 0) {
+      formData.append('metadata', JSON.stringify(metadata))
+    }
+    formData.append('itemId', itemId)
+
+    // eslint-disable-next-line no-console
+    console.log('[collabora-debug] STEP 9b: Calling UploadFiles with FormData (file name:', name, 'size:', blob.size, 'metadata keys:', metadata ? Object.keys(metadata) : 0, ')...')
+    const res = await UploadFiles(repositoryId, formData)
+    // eslint-disable-next-line no-console
+    console.log('[collabora-debug] STEP 9c: UploadFiles returned response:', res)
+    return res
+  } catch (e: any) {
+    // eslint-disable-next-line no-console
+    console.error('[collabora-debug] STEP 9-ERROR: Failed to persist edited document:', e)
+    return {
+      data: null,
+      error: e?.response?.data || e?.message || 'Error persisting document edits',
+    }
+  }
 }
 
 export interface AiSummaryApiResponse {

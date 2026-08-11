@@ -20,10 +20,12 @@ const Modal = ({
   onClose,
 }: Props) => {
   const classNames = {
-    body: 'p-0',
+    body: cn('p-0', fullScreen && 'h-full flex-1 flex flex-col min-h-0'),
     content: cn(
       'bg-surface shadow-md',
-      fullScreen ? 'rounded-none' : 'rounded-lg',
+      fullScreen
+        ? 'h-screen w-screen max-w-none rounded-none flex flex-col min-h-0'
+        : 'rounded-lg',
     ),
     overlay: 'bg-[var(--overlay-backdrop)]',
   }

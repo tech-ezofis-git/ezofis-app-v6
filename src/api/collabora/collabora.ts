@@ -74,11 +74,28 @@ export const downloadEditedDocument = async (
   fileId: string,
   fileType: string,
 ): Promise<Blob> => {
-  const path =
-    fileType === 'pdf'
-      ? `/files/${fileId}/pdf`
-      : `/wopi/files/${fileId}/contents`
+  const isPdf = String(fileType || '').toLowerCase() === 'pdf'
+  const primaryPath = isPdf
+    ? `/files/${fileId}/pdf`
+    : `/wopi/files/${fileId}/contents`
+  const fallbackPath = `/wopi/files/${fileId}/contents`
 
-  const { data } = await collaboraAxios.get(path, { responseType: 'blob' })
-  return data
+  // eslint-disable-next-line no-console
+  console.log('[collabora-debug] GET', primaryPath, 'from collaboraAxios baseURL:', COLLABORA_API_URL)
+  try {
+    const { data } = await collaboraAxios.get(primaryPath, { responseType: 'blob' })
+    // eslint-disable-next-line no-console
+    console.log('[collabora-debug] GET', primaryPath, 'success, blob size:', data?.size)
+    return data
+  } catch (err) {
+    if (primaryPath !== fallbackPath) {
+      // eslint-disable-next-line no-console
+      console.warn('[collabora-debug] GET', primaryPath, 'failed, trying fallback:', fallbackPath)
+      const { data } = await collaboraAxios.get(fallbackPath, { responseType: 'blob' })
+      // eslint-disable-next-line no-console
+      console.log('[collabora-debug] GET fallback', fallbackPath, 'success, blob size:', data?.size)
+      return data
+    }
+    throw err
+  }
 }

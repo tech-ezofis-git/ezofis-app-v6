@@ -1077,18 +1077,74 @@ export function DocumentDetailsView({
     setIsEditingDoc(false)
   }
 
+  const extractMetadataFromDetail = (detail: WorkspaceDocumentDetail | null): Record<string, string> => {
+    const metadata: Record<string, string> = {}
+    if (!detail) return metadata
+
+    if (Array.isArray(detail.DetailsRow)) {
+      for (const section of detail.DetailsRow) {
+        if (Array.isArray(section.fields)) {
+          for (const field of section.fields) {
+            const key = field?.key || field?.label
+            if (key && field?.value !== undefined && field?.value !== null && field?.value !== '') {
+              metadata[key] = String(field.value)
+            }
+          }
+        }
+      }
+    }
+
+    if (Object.keys(metadata).length === 0 && Array.isArray(detail.infoCards)) {
+      for (const card of detail.infoCards) {
+        for (const row of card.rows) {
+          if (row.label && row.value && row.value !== '-') {
+            metadata[row.label] = row.value
+          }
+        }
+      }
+    }
+
+    return metadata
+  }
+
   const handleCollaboraSave = async (blob: Blob) => {
+    // eslint-disable-next-line no-console
+    console.log('[collabora-debug] STEP 7: handleCollaboraSave called in DocumentDetailsView. Blob size:', blob?.size, 'type:', blob?.type)
     setIsEditingDoc(false)
-    const { error } = await persistEditedDocumentToRepository(
+    const metadata = extractMetadataFromDetail(data)
+    const fileName = data?.fileName || 'edited_document.pdf'
+
+    // eslint-disable-next-line no-console
+    console.log('[collabora-debug] STEP 8: Extracted metadata:', metadata, 'FileName:', fileName)
+    // eslint-disable-next-line no-console
+    console.log('[collabora-debug] STEP 9: Invoking persistEditedDocumentToRepository...')
+
+    const { data: resData, error } = await persistEditedDocumentToRepository(
       repositoryId,
       id,
       blob,
+      fileName,
+      metadata,
     )
+
+    // eslint-disable-next-line no-console
+    console.log('[collabora-debug] STEP 10: persistEditedDocumentToRepository completed. Result:', { resData, error })
+
     if (error) {
+      const detail =
+        typeof error === 'string'
+          ? error
+          : (error as any)?.message || t`Failed to save document edits`
       showToast({
-        message: t`Saving edits back to the repository isn't available yet.`,
-        variant: 'warning',
+        message: t`Error updating document: ${detail}`,
+        variant: 'error',
       })
+    } else {
+      showToast({
+        message: t`Document updated successfully.`,
+        variant: 'success',
+      })
+      setPreviewRefreshKey((previous) => previous + 1)
     }
   }
 
