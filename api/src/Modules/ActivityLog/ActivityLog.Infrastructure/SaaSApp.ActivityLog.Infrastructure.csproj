@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SaaSApp.ActivityLog.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Postgres (new) -->
+    <PackageReference Include="Npgsql" Version="8.0.9" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ActivityLog.Application\SaaSApp.ActivityLog.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\MultiTenancy\SaaSApp.MultiTenancy.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PHASE 4: points at the ported Postgres script now; the SQL Server version at
+         scripts\CreateActivityLogSchema.sql is left on disk (untouched) but no longer embedded.
+         This is a resource swap, not a package removal, so it is fine to do outside Phase 9. -->
+    <EmbeddedResource Include="..\..\..\..\scripts\postgres\CreateActivityLogSchema.sql" Link="CreateActivityLogSchema.sql" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SaaSApp.Dms.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Postgres (new) -->
+    <PackageReference Include="Npgsql" Version="8.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Dms.Domain\SaaSApp.Dms.Domain.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\MultiTenancy\SaaSApp.MultiTenancy.csproj" />
+  </ItemGroup>
+
+</Project>
