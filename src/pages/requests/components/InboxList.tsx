@@ -1903,7 +1903,13 @@ const InboxList: React.FC<InboxListProps> = ({
               <DataTable
                 actions={[]}
                 component={selectedItem}
-                emptyPage='requests'
+                emptyPage={
+                  activeTab === 'Exceptions'
+                    ? 'requests-exceptions'
+                    : activeTab === 'Processed'
+                      ? 'requests-processed'
+                      : 'requests'
+                }
                 hideActionBar={true}
                 hideExport={true}
                 hideFilters={true}
@@ -1917,7 +1923,11 @@ const InboxList: React.FC<InboxListProps> = ({
                 // onRowSizeChange={setRowSize}
                 stickyHeader={true}
                 table={table}
-                onEmptyPrimaryAction={() => openNewRequest('request')}
+                onEmptyPrimaryAction={
+                  activeTab === 'Inbox' || !activeTab
+                    ? () => openNewRequest('request')
+                    : undefined
+                }
                 onReload={onRefresh}
               />
             </div>

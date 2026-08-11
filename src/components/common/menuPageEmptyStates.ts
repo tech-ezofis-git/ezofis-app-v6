@@ -1,7 +1,12 @@
 import type { ComponentProps } from 'react'
 import type EmptyState from '@/components/base/EmptyState'
 
-export type MenuPage = 'workflows' | 'forms' | 'requests'
+export type MenuPage =
+  | 'workflows'
+  | 'forms'
+  | 'requests'
+  | 'requests-exceptions'
+  | 'requests-processed'
 
 export type MenuPageEmptyStateConfig = Record<
   MenuPage,
@@ -59,6 +64,46 @@ export const MENU_PAGE_EMPTY_STATES: MenuPageEmptyStateConfig = {
         'We could not find a workflow for your account. Complete AP setup or contact your administrator if this continues.',
       icon: 'lucide:folder-search',
       title: 'No workflow found',
+    },
+  },
+  'requests-exceptions': {
+    filtered: {
+      description:
+        'No exceptions match your current search or filters. Try different keywords or clear filters.',
+      icon: 'lucide:folder-search',
+      title: 'No matching exceptions',
+    },
+    initial: {
+      description:
+        'Requests flagged with issues will appear here for your review.',
+      icon: 'tabler:alert-triangle',
+      title: 'No exceptions',
+    },
+    unavailable: {
+      description:
+        'Exceptions are unavailable right now. Refresh the page or contact your administrator.',
+      icon: 'lucide:folder-search',
+      title: 'Exceptions unavailable',
+    },
+  },
+  'requests-processed': {
+    filtered: {
+      description:
+        'No processed requests match your current search or filters. Try different keywords or clear filters.',
+      icon: 'lucide:folder-search',
+      title: 'No matching processed requests',
+    },
+    initial: {
+      description:
+        'Completed and approved requests will appear here once they have been fully processed.',
+      icon: 'tabler:circle-check',
+      title: 'No processed requests',
+    },
+    unavailable: {
+      description:
+        'Processed requests are unavailable right now. Refresh the page or contact your administrator.',
+      icon: 'lucide:folder-search',
+      title: 'Processed requests unavailable',
     },
   },
   workflows: {

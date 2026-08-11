@@ -1416,14 +1416,21 @@ const GridView = <TData,>({
       </div>
     )
   } else if (allItems.length === 0) {
+    const emptyPage =
+      activeTab === 'Exceptions'
+        ? 'requests-exceptions'
+        : activeTab === 'Processed'
+          ? 'requests-processed'
+          : 'requests'
     content = (
       <ListEmptyState
         containerClassName='py-12'
-        page='requests'
+        page={emptyPage}
         table={table as TanstackTable<any>}
-        onPrimaryAction={onNewRequest}
+        onPrimaryAction={activeTab === 'Inbox' || !activeTab ? onNewRequest : undefined}
       />
     )
+
   } else {
     content = (
       <div className='flex flex-col gap-2.5 px-2 pt-3 pb-4'>
