@@ -1020,6 +1020,25 @@ export const UploadFiles = async (repositoryId: string, formData: FormData) => {
   return response
 }
 
+/**
+ * Placeholder for writing a Collabora-edited file back into a V6 repository
+ * item. No backend endpoint exists yet (only reading via viewBinaryV6, and
+ * the unrelated upload-archive endpoint). This stub keeps the edit/save UI
+ * flow demoable now; swap the body for a real request once the endpoint
+ * exists — callers don't need to change.
+ */
+export const persistEditedDocumentToRepository = async (
+  repositoryId: string,
+  itemId: string,
+  _blob: Blob,
+) => {
+  console.warn(
+    '[collabora] persistEditedDocumentToRepository is not wired to a backend endpoint yet.',
+    { itemId, repositoryId },
+  )
+  return { data: null, error: 'not-implemented' as const }
+}
+
 export interface AiSummaryApiResponse {
   creditConsumed?: boolean
   output?: string

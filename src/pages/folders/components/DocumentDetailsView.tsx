@@ -18,10 +18,13 @@ import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import showToast from '@/components/base/toast/showToast'
+import { persistEditedDocumentToRepository } from '@/api/v6/folder/folder'
+import CollaboraEditor from './CollaboraEditor'
 import authUserStore from '@/stores/authUserStore'
 import { formatUtcToLocalDate, formatUtcToLocalDateTime } from '@/utils/utcDate'
 import { folderApi } from '../api/folderApi'
 import {
+  getFileExtension,
   resolveDocumentPreviewKind,
   resolvePreviewMimeType,
   sniffBlobMimeType,
@@ -321,6 +324,8 @@ export function DocumentDetailsView({
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
   const previewUrlRef = useRef<string | null>(null)
   const previewRequestIdRef = useRef(0)
+  const previewBlobRef = useRef<Blob | null>(null)
+  const [isEditingDoc, setIsEditingDoc] = useState(false)
   /** Bump after a successful sign so the details viewer reloads the signed file. */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -831,6 +836,7 @@ export function DocumentDetailsView({
             tenantId: invitePreview?.tenantId,
           })
           if (cancelled || requestId !== previewRequestIdRef.current) return
+          previewBlobRef.current = null
           if (inviteFile.error || !(inviteFile.data instanceof Blob)) {
             setFileLoadFailed(true)
             replacePreviewUrl(null)
@@ -884,18 +890,21 @@ export function DocumentDetailsView({
             mimeType,
             fileNameHint || fileTypeHint,
           )
+          previewBlobRef.current = typedBlob
           replacePreviewUrl(nextUrl)
           setPreviewMimeType(mimeType)
           setPreviewKind(kind === 'unsupported' && !mimeType ? null : kind)
           return
         }
 
+        previewBlobRef.current = null
         setFileLoadFailed(true)
         replacePreviewUrl(null)
         setPreviewKind(null)
         setPreviewMimeType(null)
       } catch {
         if (!cancelled && requestId === previewRequestIdRef.current) {
+          previewBlobRef.current = null
           setFileLoadFailed(true)
           replacePreviewUrl(null)
           setPreviewKind(null)
@@ -1055,6 +1064,31 @@ export function DocumentDetailsView({
     }
 
     printWindow.addEventListener('load', triggerPrint, { once: true })
+  }
+
+  const isEditableDocType = useMemo(() => {
+    const ext =
+      getFileExtension(data?.fileName) || getFileExtension(data?.fileType)
+    return Boolean(ext && ['docx', 'xlsx', 'pptx', 'pdf'].includes(ext))
+  }, [data?.fileType, data?.fileName])
+
+  const handleCollaboraClose = () => {
+    setIsEditingDoc(false)
+  }
+
+  const handleCollaboraSave = async (blob: Blob) => {
+    setIsEditingDoc(false)
+    const { error } = await persistEditedDocumentToRepository(
+      repositoryId,
+      id,
+      blob,
+    )
+    if (error) {
+      showToast({
+        message: t`Saving edits back to the repository isn't available yet.`,
+        variant: 'warning',
+      })
+    }
   }
 
   const infoCards = useMemo(() => {
@@ -1741,6 +1775,24 @@ export function DocumentDetailsView({
                 </div>
 
                 <div className='flex shrink-0 items-center gap-1.5'>
+                  {isEditableDocType ? (
+                    <Tooltip content={t`Edit`} position='top'>
+                      <button
+                        aria-label={t`Edit`}
+                        className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                        disabled={
+                          !previewBlobRef.current ||
+                          isPreviewLoading ||
+                          isSigning
+                        }
+                        type='button'
+                        onClick={() => setIsEditingDoc(true)}
+                      >
+                        <DynamicIcon className='h-4 w-4' name='edit' />
+                      </button>
+                    </Tooltip>
+                  ) : null}
+
                   <Tooltip content={t`Print`} position='top'>
                     <button
                       aria-label={t`Print`}
@@ -1778,12 +1830,23 @@ export function DocumentDetailsView({
 
               <div
                 className={`ez-detail-scroll overflow-hidden bg-gray-1 ${
-                  isSigning || assignedFields.length > 0
+                  isSigning || assignedFields.length > 0 || isEditingDoc
                     ? 'h-[min(72vh,820px)]'
                     : 'h-[560px]'
                 }`}
               >
-                {hasValidFileUrl || isPreviewLoading ? (
+                {isEditingDoc && previewBlobRef.current ? (
+                  <CollaboraEditor
+                    fileBlob={previewBlobRef.current}
+                    fileName={data.fileName}
+                    fileType={
+                      getFileExtension(data.fileName) ||
+                      getFileExtension(data.fileType)
+                    }
+                    onClose={handleCollaboraClose}
+                    onSave={handleCollaboraSave}
+                  />
+                ) : hasValidFileUrl || isPreviewLoading ? (
                   <div
                     ref={documentSurfaceRef}
                     className='relative h-full min-h-full w-full'
