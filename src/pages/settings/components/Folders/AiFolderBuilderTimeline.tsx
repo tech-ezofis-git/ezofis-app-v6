@@ -81,7 +81,7 @@ function ConnectorTrack({
     >
       <div
         className={cn('absolute inset-x-0 top-0 mx-auto', trackColor(state))}
-        style={{ bottom: extendGap ? -56 : 0 }}
+        style={{ bottom: extendGap ? -STEP_GAP_PX : 0 }}
       />
     </div>
   )
