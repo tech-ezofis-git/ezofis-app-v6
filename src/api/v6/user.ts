@@ -245,17 +245,35 @@ export const deleteUser = async (id: string) => {
 }
 
 const extractUserItems = (data: unknown): V6UserListItem[] => {
-  if (!data) return []
-  if (Array.isArray(data)) return data as V6UserListItem[]
+  let list: V6UserListItem[] = []
 
-  if (typeof data === 'object' && data !== null) {
-    const record = data as Record<string, unknown>
-    if (Array.isArray(record.items)) {
-      return record.items as V6UserListItem[]
+  if (data) {
+    if (Array.isArray(data)) {
+      list = data as V6UserListItem[]
+    } else if (typeof data === 'object' && data !== null) {
+      const record = data as Record<string, unknown>
+      if (Array.isArray(record.items)) {
+        list = record.items as V6UserListItem[]
+      } else if (Array.isArray(record.users)) {
+        list = record.users as V6UserListItem[]
+      } else if (Array.isArray(record.data)) {
+        list = record.data as V6UserListItem[]
+      }
     }
   }
 
-  return []
+  return list.filter((user) => {
+    const email = String(user.email || '').toLowerCase().trim()
+    const displayName = String(user.displayName || '').toLowerCase().trim()
+    const firstName = String(user.firstName || '').toLowerCase().trim()
+    const lastName = String(user.lastName || '').toLowerCase().trim()
+    const fullName = `${firstName} ${lastName}`.trim()
+
+    if (email === 'pilot@ezofis.com') return false
+    if (displayName.includes('ap agent pilot')) return false
+    if (fullName.includes('ap agent pilot')) return false
+    return true
+  })
 }
 
 const extractRoleItems = (data: unknown): V6RoleItem[] => {

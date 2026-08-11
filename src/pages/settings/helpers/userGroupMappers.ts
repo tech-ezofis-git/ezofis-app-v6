@@ -93,11 +93,13 @@ const mapAuthStrategyToLoginType = (authStrategy: string) => {
     case 'microsoft':
     case 'entra':
     case 'azuread':
+    case 'ms_entra_id':
       return 'MS Entra ID'
     case 'ldap/ad':
     case 'ldap':
     case 'activedirectory':
     case 'active directory':
+    case 'active_directory':
       return 'LDAP/AD'
     case 'ezofis':
     case 'password':

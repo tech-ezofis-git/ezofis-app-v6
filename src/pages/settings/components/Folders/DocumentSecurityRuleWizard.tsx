@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence } from 'motion/react'
+import {
+  AnimateFadeIn,
+  AnimateScale,
+  AnimateSlideUp,
+} from '@/components/common/animations'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
@@ -112,22 +118,6 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
-const getAvatarColor = (str: string) => {
-  const colors = [
-    'bg-[var(--violet-9)] text-white',
-    'bg-[var(--blue-9)] text-white',
-    'bg-[var(--green-9)] text-white',
-    'bg-[var(--orange-9)] text-white',
-    'bg-[var(--pink-9)] text-white',
-    'bg-[var(--cyan-9)] text-white',
-    'bg-[var(--teal-9)] text-white',
-    'bg-[var(--indigo-9)] text-white',
-  ]
-  let hash = 0
-  for (let i = 0; i < str.length; i++)
-    hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
-}
 
 const SecurityWizardSkeleton = () => (
   <div className="flex flex-col gap-4 animate-in fade-in duration-300">
@@ -179,6 +169,17 @@ export default function DocumentSecurityRuleWizard({
   onClose: () => void
 }) {
   const [step, setStep] = useState<Step>(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        behavior: 'smooth',
+        top: 0,
+      })
+    }
+  }, [step])
+
   const [users, setUsers] = useState<V6UserListItem[]>([])
   const [groups, setGroups] = useState<V6GroupItem[]>([])
   const [fieldOptions, setFieldOptions] = useState<string[]>([])
@@ -506,412 +507,411 @@ export default function DocumentSecurityRuleWizard({
       )
     }
 
-    if (step === 0) {
-      return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-15 font-semibold text-gray-13">
-              {editingIndex != null ? 'Edit document security rule' : 'Set up document security rules'}
-            </h2>
-            <p className="mt-0.5 text-xs text-gray-11">
-              Control document-level access by evaluating metadata fields.
-            </p>
-          </div>
+    return (
+      <AnimatePresence initial={false} mode="wait">
+        {step === 0 && (
+          <AnimateSlideUp delay={0.1} key="doc-rule-step-0">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-15 font-semibold text-gray-13">
+                  {editingIndex != null ? 'Edit document security rule' : 'Set up document security rules'}
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-11">
+                  Control document-level access by evaluating metadata fields.
+                </p>
+              </div>
 
-          <Divider />
+              <Divider />
 
-          {/* Rule Action Cards */}
-          <div className="space-y-1.5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              <button
-                type="button"
-                onClick={() => setEffectAction('grant')}
-                className={cn(
-                  'relative flex items-start gap-2.5 p-3 rounded-lg border text-left transition',
-                  effectAction === 'grant'
-                    ? 'border-primary-8 bg-primary-2 ring-1 ring-primary-8'
-                    : 'border-[var(--border-default)] bg-surface hover:bg-surface-muted',
-                )}
-              >
-                {effectAction === 'grant' && (
-                  <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-9 text-white">
-                    <Icon name="tabler:check" className="size-2.5" />
-                  </span>
-                )}
-                <Icon name="tabler:eye" className={cn('size-4 mt-0.5 shrink-0', effectAction === 'grant' ? 'text-primary-9' : 'text-gray-10')} />
-                <div>
-                  <div className={cn('text-xs font-semibold', effectAction === 'grant' ? 'text-primary-11' : 'text-gray-13')}>
-                    Show Documents
-                  </div>
-                  <div className="text-[11px] text-gray-10 mt-0.5">
-                    Show matching documents to target users.
-                  </div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setEffectAction('hide')}
-                className={cn(
-                  'relative flex items-start gap-2.5 p-3 rounded-lg border text-left transition',
-                  effectAction === 'hide'
-                    ? 'border-primary-8 bg-primary-2 ring-1 ring-primary-8'
-                    : 'border-[var(--border-default)] bg-surface hover:bg-surface-muted',
-                )}
-              >
-                {effectAction === 'hide' && (
-                  <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-9 text-white">
-                    <Icon name="tabler:check" className="size-2.5" />
-                  </span>
-                )}
-                <Icon name="tabler:eye-off" className={cn('size-4 mt-0.5 shrink-0', effectAction === 'hide' ? 'text-primary-9' : 'text-gray-10')} />
-                <div>
-                  <div className={cn('text-xs font-semibold', effectAction === 'hide' ? 'text-primary-11' : 'text-gray-13')}>
-                    Hide Documents
-                  </div>
-                  <div className="text-[11px] text-gray-10 mt-0.5">
-                    Hide matching documents from target users.
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Rule Cards */}
-          {rules.map((rule, rIndex) => {
-            const duplicateFields = Array.from(
-              new Set(
-                rule.conditions
-                  .map((c) => c.field)
-                  .filter(Boolean)
-                  .filter((f, idx, arr) => arr.indexOf(f) !== idx),
-              ),
-            )
-            const warnKey = `${rule.id}-${duplicateFields.join('-')}`
-
-            return (
-              <div
-                key={rule.id}
-                className="rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs space-y-3"
-              >
-                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-13">
-                    <Icon name="tabler:adjustments" className="size-3.5 text-primary-9" />
-                    Document Rule {rIndex + 1}
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-medium text-gray-10">Match:</span>
-                      <div className="flex items-center bg-gray-3 p-0.5 rounded-md text-[11px] font-medium">
-                        <Tooltip content="Match ALL conditions (AND logic)" position="top">
-                          <button
-                            type="button"
-                            onClick={() => toggleMatchType(rule.id, 'all')}
-                            className={cn(
-                              'px-2 py-0.5 rounded transition text-[11px] font-semibold',
-                              rule.matchType === 'all'
-                                ? 'bg-primary-9 text-white'
-                                : 'text-gray-11 hover:text-gray-12',
-                            )}
-                          >
-                            All
-                          </button>
-                        </Tooltip>
-
-                        <Tooltip content="Match ANY condition (OR logic)" position="top">
-                          <button
-                            type="button"
-                            onClick={() => toggleMatchType(rule.id, 'any')}
-                            className={cn(
-                              'px-2 py-0.5 rounded transition text-[11px] font-semibold',
-                              rule.matchType === 'any'
-                                ? 'bg-primary-9 text-white'
-                                : 'text-gray-11 hover:text-gray-12',
-                            )}
-                          >
-                            Any
-                          </button>
-                        </Tooltip>
+              {/* Rule Action Cards */}
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setEffectAction('grant')}
+                    className={cn(
+                      'relative flex items-start gap-2.5 p-3 rounded-lg border text-left transition',
+                      effectAction === 'grant'
+                        ? 'border-primary-8 bg-primary-2 ring-1 ring-primary-8'
+                        : 'border-[var(--border-default)] bg-surface hover:bg-surface-muted',
+                    )}
+                  >
+                    {effectAction === 'grant' && (
+                      <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-9 text-white">
+                        <Icon name="tabler:check" className="size-2.5" />
+                      </span>
+                    )}
+                    <Icon name="tabler:eye" className={cn('size-4 mt-0.5 shrink-0', effectAction === 'grant' ? 'text-primary-9' : 'text-gray-10')} />
+                    <div>
+                      <div className={cn('text-xs font-semibold', effectAction === 'grant' ? 'text-primary-11' : 'text-gray-13')}>
+                        Show Documents
+                      </div>
+                      <div className="text-[11px] text-gray-10 mt-0.5">
+                        Show matching documents to target users.
                       </div>
                     </div>
-                    {rules.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => deleteRule(rule.id)}
-                        className="text-gray-9 hover:text-red-500 transition p-1"
-                        title="Delete Rule"
-                      >
-                        <Icon name="tabler:trash" className="size-3.5" />
-                      </button>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEffectAction('hide')}
+                    className={cn(
+                      'relative flex items-start gap-2.5 p-3 rounded-lg border text-left transition',
+                      effectAction === 'hide'
+                        ? 'border-primary-8 bg-primary-2 ring-1 ring-primary-8'
+                        : 'border-[var(--border-default)] bg-surface hover:bg-surface-muted',
                     )}
+                  >
+                    {effectAction === 'hide' && (
+                      <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-9 text-white">
+                        <Icon name="tabler:check" className="size-2.5" />
+                      </span>
+                    )}
+                    <Icon name="tabler:eye-off" className={cn('size-4 mt-0.5 shrink-0', effectAction === 'hide' ? 'text-primary-9' : 'text-gray-10')} />
+                    <div>
+                      <div className={cn('text-xs font-semibold', effectAction === 'hide' ? 'text-primary-11' : 'text-gray-13')}>
+                        Hide Documents
+                      </div>
+                      <div className="text-[11px] text-gray-10 mt-0.5">
+                        Hide matching documents from target users.
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Rule Cards */}
+              {rules.map((rule, rIndex) => {
+                const duplicateFields = Array.from(
+                  new Set(
+                    rule.conditions
+                      .map((c) => c.field)
+                      .filter(Boolean)
+                      .filter((f, idx, arr) => arr.indexOf(f) !== idx),
+                  ),
+                )
+                const warnKey = `${rule.id}-${duplicateFields.join('-')}`
+
+                return (
+                  <div
+                    key={rule.id}
+                    className="rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs space-y-3"
+                  >
+                    <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-13">
+                        <Icon name="tabler:adjustments" className="size-3.5 text-primary-9" />
+                        Document Rule {rIndex + 1}
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-medium text-gray-10">Match:</span>
+                          <div className="flex items-center bg-gray-3 p-0.5 rounded-md text-[11px] font-medium">
+                            <Tooltip content="Match ALL conditions (AND logic)" position="top">
+                              <button
+                                type="button"
+                                onClick={() => toggleMatchType(rule.id, 'all')}
+                                className={cn(
+                                  'px-2 py-0.5 rounded transition text-[11px] font-semibold',
+                                  rule.matchType === 'all'
+                                    ? 'bg-primary-9 text-white'
+                                    : 'text-gray-11 hover:text-gray-12',
+                                )}
+                              >
+                                All
+                              </button>
+                            </Tooltip>
+
+                            <Tooltip content="Match ANY condition (OR logic)" position="top">
+                              <button
+                                type="button"
+                                onClick={() => toggleMatchType(rule.id, 'any')}
+                                className={cn(
+                                  'px-2 py-0.5 rounded transition text-[11px] font-semibold',
+                                  rule.matchType === 'any'
+                                    ? 'bg-primary-9 text-white'
+                                    : 'text-gray-11 hover:text-gray-12',
+                                )}
+                              >
+                                Any
+                              </button>
+                            </Tooltip>
+                          </div>
+                        </div>
+                        {rules.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => deleteRule(rule.id)}
+                            className="text-gray-9 hover:text-red-500 transition p-1"
+                            title="Delete Rule"
+                          >
+                            <Icon name="tabler:trash" className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {rule.conditions.map((cond) => (
+                        <div key={cond.id} className="flex items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <InputSelect
+                              options={fieldSelectOptions}
+                              placeholder="Select field..."
+                              searchable
+                              searchPlaceholder="Search fields..."
+                              value={cond.field ? { id: cond.field, name: cond.field } : null}
+                              onChange={(option) => updateCondition(rule.id, cond.id, 'field', option?.name || '')}
+                            />
+                          </div>
+
+                          <div className="w-36 shrink-0">
+                            <InputSelect
+                              options={OPERATOR_OPTIONS}
+                              placeholder="Equals"
+                              value={OPERATOR_OPTIONS.find((op) => op.id === normalizeOperatorCode(cond.operator)) || OPERATOR_OPTIONS[0]}
+                              onChange={(option) => updateCondition(rule.id, cond.id, 'operator', String(option?.id || 'equals'))}
+                            />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            {cond.operator === 'isempty' || cond.operator === 'isnotempty' ? (
+                              <div className="h-9 rounded-md border border-[var(--border-default)] bg-surface-muted px-3 py-2 text-xs text-gray-10 italic">
+                                N/A (No value needed)
+                              </div>
+                            ) : (
+                              <InputText
+                                placeholder="Value..."
+                                value={cond.value}
+                                onChange={(val) => updateCondition(rule.id, cond.id, 'value', val)}
+                              />
+                            )}
+                          </div>
+
+                          {rule.conditions.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => deleteCondition(rule.id, cond.id)}
+                              className="text-gray-9 hover:text-red-500 transition p-1 shrink-0"
+                            >
+                              <Icon name="tabler:trash" className="size-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {duplicateFields.length > 0 && !dismissedWarnings[warnKey] && (
+                      <div className="flex items-center justify-between rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1.5 text-xs font-medium text-gray-11 transition">
+                        <div className="flex items-center gap-1.5">
+                          <Icon name="tabler:alert-triangle" className="size-3.5 shrink-0 text-amber-500" />
+                          <span>Multiple conditions set on field ({duplicateFields.join(', ')}).</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDismissedWarnings((prev) => ({ ...prev, [warnKey]: true }))}
+                          className="text-gray-9 hover:text-gray-12 p-0.5 transition rounded"
+                          title="Dismiss"
+                        >
+                          <Icon name="tabler:x" className="size-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => addCondition(rule.id)}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary-9 hover:text-primary-10 transition pt-0.5"
+                    >
+                      <Icon name="tabler:plus" className="size-3.5" /> Add condition
+                    </button>
                   </div>
+                )
+              })}
+
+              <button
+                type="button"
+                onClick={addRule}
+                className="w-full py-2.5 rounded-lg border border-dashed border-primary-8 bg-primary-2 text-primary-9 hover:bg-primary-3 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+              >
+                <Icon name="tabler:plus" className="size-3.5" /> Add Document Rule
+              </button>
+            </div>
+          </AnimateSlideUp>
+        )}
+
+        {step === 1 && (
+          <AnimateScale delay={0.1} key="doc-rule-step-1">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-15 font-semibold text-gray-13">
+                  Target Users & Groups
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-11">
+                  Select users or groups who will be subject to this document security rule ({effectAction === 'hide' ? 'Hide Documents' : 'Show Documents'}).
+                </p>
+              </div>
+
+              <Divider />
+
+              <div className="space-y-3">
+                <InputSelectMultiple
+                  className="bg-surface"
+                  label="Select Users & Groups *"
+                  options={principalOptions}
+                  placeholder={isLoading ? 'Loading users & groups...' : 'Select users or groups...'}
+                  value={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
+                  onChange={(value) => onSelectedPrincipalsChange(value as any[])}
+                />
+                <SettingsSelectedChips
+                  items={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
+                  onRemove={(id) => onSelectedPrincipalsChange(selectedPrincipals.filter((p) => p.id !== id))}
+                />
+
+                {selectedPrincipals.length > 0 ? (
+                  <Alert
+                    text={`${selectedPrincipals.length} target user/group(s) assigned. Click Continue to review and save rules.`}
+                    variant="green"
+                  />
+                ) : null}
+              </div>
+            </div>
+          </AnimateScale>
+        )}
+
+        {step === 2 && (
+          <AnimateFadeIn delay={0.1} key="doc-rule-step-2">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-15 font-semibold text-gray-13">
+                  Review & Save Document Security Rules
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-11">
+                  Verify your security rules before applying settings.
+                </p>
+              </div>
+
+              <Divider />
+
+              {/* Compact 3-Column Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
+                  <div className="text-[11px] font-medium text-gray-11">Repository</div>
+                  <div className="text-13 font-semibold text-gray-13 truncate mt-0.5 flex items-center gap-1.5">
+                    <Icon name="tabler:folder" className="size-3.5 text-primary-9" /> {folderName}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
+                  <div className="text-[11px] font-medium text-gray-11">Target Users & Groups</div>
+                  <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
+                    <Icon name="tabler:users" className="size-3.5 text-primary-9" /> {selectedPrincipals.length}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
+                  <div className="text-[11px] font-medium text-gray-11">Rule Action</div>
+                  <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
+                    <Icon name={effectAction === 'hide' ? 'tabler:eye-off' : 'tabler:eye'} className="size-3.5 text-primary-9" /> {effectAction === 'hide' ? 'Hide Documents' : 'Show Documents'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Target Users Section */}
+              <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-2xs space-y-2">
+                <div className="text-xs font-semibold text-gray-12 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Icon name="tabler:users" className="size-3.5 text-primary-9" /> Target Users ({selectedPrincipals.length})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPrincipals.map((p) => {
+                    const initials = getInitials(p.name)
+
+                    return (
+                      <span
+                        key={p.id}
+                        className="inline-flex h-8 items-center gap-2 rounded-lg border border-primary-4/60 bg-gradient-to-r from-primary-3/70 to-primary-2/90 px-2.5 py-1 text-xs font-semibold text-gray-13 shadow-2xs"
+                      >
+                        <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs">
+                          {initials}
+                        </span>
+                        {p.name}
+                      </span>
+                    )
+                  })}
+                  {selectedPrincipals.length === 0 && (
+                    <span className="text-xs italic text-gray-10">No target users assigned</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Configured Document Rules Summary Card */}
+              <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2.5">
+                  <div className="text-xs font-semibold text-gray-12 flex items-center gap-1.5">
+                    <Icon name="tabler:shield" className="size-3.5 text-primary-9" />
+                    How Documents Will Be Protected
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-md border border-primary-4 bg-primary-2 px-2 py-0.5 text-[11px] font-semibold text-primary-11">
+                    {effectAction === 'hide' ? (
+                      <>
+                        <Icon name="tabler:eye-off" className="size-3 text-primary-9" /> Hide Documents
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="tabler:eye" className="size-3 text-primary-9" /> Show Documents
+                      </>
+                    )}
+                  </span>
                 </div>
 
                 <div className="space-y-2">
-                  {rule.conditions.map((cond) => (
-                    <div key={cond.id} className="flex items-center gap-2">
-                      <div className="flex-1 min-w-0">
-                        <InputSelect
-                          options={fieldSelectOptions}
-                          placeholder="Select field..."
-                          searchable
-                          searchPlaceholder="Search fields..."
-                          value={cond.field ? { id: cond.field, name: cond.field } : null}
-                          onChange={(option) => updateCondition(rule.id, cond.id, 'field', option?.name || '')}
-                        />
-                      </div>
+                  {rules.map((rule) => {
+                    const matchText = rule.matchType === 'all'
+                      ? 'All conditions must match'
+                      : 'Any condition can match'
 
-                      <div className="w-36 shrink-0">
-                        <InputSelect
-                          options={OPERATOR_OPTIONS}
-                          placeholder="Equals"
-                          value={OPERATOR_OPTIONS.find((op) => op.id === normalizeOperatorCode(cond.operator)) || OPERATOR_OPTIONS[0]}
-                          onChange={(option) => updateCondition(rule.id, cond.id, 'operator', String(option?.id || 'equals'))}
-                        />
-                      </div>
+                    return (
+                      <div key={rule.id} className="rounded-md border border-[var(--border-default)] bg-surface-muted p-2.5 space-y-2">
+                        <div className="text-xs text-gray-12 flex items-center justify-between font-medium">
+                          <span className="flex items-center gap-1.5 font-semibold">
+                            {effectAction === 'hide' ? (
+                              <Icon name="tabler:eye-off" className="size-3.5 text-primary-9" />
+                            ) : (
+                              <Icon name="tabler:eye" className="size-3.5 text-primary-9" />
+                            )}
+                            Documents will be {effectAction === 'hide' ? 'hidden' : 'shown'} when:
+                          </span>
+                          <span className="text-[10px] font-semibold text-primary-11 bg-primary-3 px-2 py-0.5 rounded">
+                            {matchText}
+                          </span>
+                        </div>
 
-                      <div className="flex-1 min-w-0">
-                        {cond.operator === 'isempty' || cond.operator === 'isnotempty' ? (
-                          <div className="h-9 rounded-md border border-[var(--border-default)] bg-surface-muted px-3 py-2 text-xs text-gray-10 italic">
-                            N/A (No value needed)
-                          </div>
-                        ) : (
-                          <InputText
-                            placeholder="Value..."
-                            value={cond.value}
-                            onChange={(val) => updateCondition(rule.id, cond.id, 'value', val)}
-                          />
-                        )}
-                      </div>
+                        <div className="space-y-1 pl-1.5">
+                          {rule.conditions.map((c) => {
+                            const opText = formatOperatorLabel(c.operator)
+                            const valText = c.value ? `"${c.value}"` : 'any value'
 
-                      {rule.conditions.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => deleteCondition(rule.id, cond.id)}
-                          className="text-gray-9 hover:text-red-500 transition p-1 shrink-0"
-                        >
-                          <Icon name="tabler:trash" className="size-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                            return (
+                              <div key={c.id} className="flex items-center gap-1.5 text-xs text-gray-12 font-normal">
+                                <Icon name="tabler:check" className="size-3.5 text-green-9 shrink-0" />
+                                <span>
+                                  <strong className="font-semibold text-gray-13">{c.field || 'Field'}</strong> {opText} <strong className="font-semibold text-primary-11">{valText}</strong>
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-
-                {duplicateFields.length > 0 && !dismissedWarnings[warnKey] && (
-                  <div className="flex items-center justify-between rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1.5 text-xs font-medium text-gray-11 transition">
-                    <div className="flex items-center gap-1.5">
-                      <Icon name="tabler:alert-triangle" className="size-3.5 shrink-0 text-amber-500" />
-                      <span>Multiple conditions set on field ({duplicateFields.join(', ')}).</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setDismissedWarnings((prev) => ({ ...prev, [warnKey]: true }))}
-                      className="text-gray-9 hover:text-gray-12 p-0.5 transition rounded"
-                      title="Dismiss"
-                    >
-                      <Icon name="tabler:x" className="size-3.5" />
-                    </button>
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => addCondition(rule.id)}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary-9 hover:text-primary-10 transition pt-0.5"
-                >
-                  <Icon name="tabler:plus" className="size-3.5" /> Add condition
-                </button>
-              </div>
-            )
-          })}
-
-          <button
-            type="button"
-            onClick={addRule}
-            className="w-full py-2.5 rounded-lg border border-dashed border-primary-8 bg-primary-2 text-primary-9 hover:bg-primary-3 text-xs font-semibold transition flex items-center justify-center gap-1.5"
-          >
-            <Icon name="tabler:plus" className="size-3.5" /> Add Document Rule
-          </button>
-        </div>
-      )
-    }
-
-    if (step === 1) {
-      return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-15 font-semibold text-gray-13">
-              Target Users & Groups
-            </h2>
-            <p className="mt-0.5 text-xs text-gray-11">
-              Select users or groups who will be subject to this document security rule ({effectAction === 'hide' ? 'Hide Documents' : 'Show Documents'}).
-            </p>
-          </div>
-
-          <Divider />
-
-          <div className="space-y-3">
-            <InputSelectMultiple
-              className="bg-surface"
-              label="Select Users & Groups *"
-              options={principalOptions}
-              placeholder={isLoading ? 'Loading users & groups...' : 'Select users or groups...'}
-              value={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
-              onChange={(value) => onSelectedPrincipalsChange(value as any[])}
-            />
-            <SettingsSelectedChips
-              items={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
-              onRemove={(id) => onSelectedPrincipalsChange(selectedPrincipals.filter((p) => p.id !== id))}
-            />
-
-            {selectedPrincipals.length > 0 ? (
-              <Alert
-                text={`${selectedPrincipals.length} target user/group(s) assigned. Click Continue to review and save rules.`}
-                variant="green"
-              />
-            ) : null}
-          </div>
-        </div>
-      )
-    }
-
-    if (step === 2) {
-      return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-15 font-semibold text-gray-13">
-              Review & Save Document Security Rules
-            </h2>
-            <p className="mt-0.5 text-xs text-gray-11">
-              Verify your security rules before applying settings.
-            </p>
-          </div>
-
-          <Divider />
-
-          {/* Compact 3-Column Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-              <div className="text-[11px] font-medium text-gray-11">Repository</div>
-              <div className="text-13 font-semibold text-gray-13 truncate mt-0.5 flex items-center gap-1.5">
-                <Icon name="tabler:folder" className="size-3.5 text-primary-9" /> {folderName}
               </div>
             </div>
-
-            <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-              <div className="text-[11px] font-medium text-gray-11">Target Users</div>
-              <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
-                <Icon name="tabler:users" className="size-3.5 text-primary-9" /> {selectedPrincipals.length} {selectedPrincipals.length === 1 ? 'User' : 'Users'}
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-              <div className="text-[11px] font-medium text-gray-11">Document Rules</div>
-              <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
-                <Icon name="tabler:adjustments" className="size-3.5 text-primary-9" /> {rules.length} {rules.length === 1 ? 'Rule' : 'Rules'}
-              </div>
-            </div>
-          </div>
-
-          {/* Target Users Section */}
-          <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-2xs space-y-2">
-            <div className="text-xs font-semibold text-gray-12 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Icon name="tabler:users" className="size-3.5 text-primary-9" /> Target Users ({selectedPrincipals.length})
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {selectedPrincipals.map((p) => {
-                const initials = getInitials(p.name)
-                const avatarBg = getAvatarColor(p.name)
-
-                return (
-                  <span
-                    key={p.id}
-                    className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1 text-xs font-medium text-gray-13"
-                  >
-                    <span
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold shadow-2xs ${avatarBg}`}
-                    >
-                      {initials}
-                    </span>
-                    {p.name}
-                  </span>
-                )
-              })}
-              {selectedPrincipals.length === 0 && (
-                <span className="text-xs italic text-gray-10">No target users assigned</span>
-              )}
-            </div>
-          </div>
-
-          {/* Configured Document Rules Summary Card */}
-          <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2.5">
-              <div className="text-xs font-semibold text-gray-12 flex items-center gap-1.5">
-                <Icon name="tabler:shield" className="size-3.5 text-primary-9" />
-                How Documents Will Be Protected
-              </div>
-              <span className="inline-flex items-center gap-1 rounded-md border border-primary-4 bg-primary-2 px-2 py-0.5 text-[11px] font-semibold text-primary-11">
-                {effectAction === 'hide' ? (
-                  <>
-                    <Icon name="tabler:eye-off" className="size-3 text-primary-9" /> Hide Documents
-                  </>
-                ) : (
-                  <>
-                    <Icon name="tabler:eye" className="size-3 text-primary-9" /> Show Documents
-                  </>
-                )}
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              {rules.map((rule) => {
-                const matchText = rule.matchType === 'all'
-                  ? 'All conditions must match'
-                  : 'Any condition can match'
-
-                return (
-                  <div key={rule.id} className="rounded-md border border-[var(--border-default)] bg-surface-muted p-2.5 space-y-2">
-                    <div className="text-xs text-gray-12 flex items-center justify-between font-medium">
-                      <span className="flex items-center gap-1.5 font-semibold">
-                        {effectAction === 'hide' ? (
-                          <Icon name="tabler:eye-off" className="size-3.5 text-primary-9" />
-                        ) : (
-                          <Icon name="tabler:eye" className="size-3.5 text-primary-9" />
-                        )}
-                        Documents will be {effectAction === 'hide' ? 'hidden' : 'shown'} when:
-                      </span>
-                      <span className="text-[10px] font-semibold text-primary-11 bg-primary-3 px-2 py-0.5 rounded">
-                        {matchText}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1 pl-1.5">
-                      {rule.conditions.map((c) => {
-                        const opText = formatOperatorLabel(c.operator)
-                        const valText = c.value ? `"${c.value}"` : 'any value'
-
-                        return (
-                          <div key={c.id} className="flex items-center gap-1.5 text-xs text-gray-12 font-normal">
-                            <Icon name="tabler:check" className="size-3.5 text-green-9 shrink-0" />
-                            <span>
-                              <strong className="font-semibold text-gray-13">{c.field || 'Field'}</strong> {opText} <strong className="font-semibold text-primary-11">{valText}</strong>
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    return null
+          </AnimateFadeIn>
+        )}
+      </AnimatePresence>
+    )
   }
 
   return (
@@ -951,7 +951,7 @@ export default function DocumentSecurityRuleWizard({
         </aside>
 
         {/* Content Area */}
-        <div className="col-span-1 h-full w-full overflow-y-auto">
+        <div className="col-span-1 h-full w-full overflow-y-auto" ref={scrollContainerRef}>
           <div className="mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10">
             {renderStepContent()}
 

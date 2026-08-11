@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence } from 'motion/react'
+import {
+  AnimateFadeIn,
+  AnimateScale,
+  AnimateSlideUp,
+} from '@/components/common/animations'
 import cn from '@/utils/cn'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
@@ -90,22 +96,6 @@ const getInitials = (name: string) => {
   return clean.slice(0, 2).toUpperCase()
 }
 
-const getAvatarColor = (str: string) => {
-  const colors = [
-    'bg-[var(--violet-9)] text-white',
-    'bg-[var(--blue-9)] text-white',
-    'bg-[var(--green-9)] text-white',
-    'bg-[var(--orange-9)] text-white',
-    'bg-[var(--pink-9)] text-white',
-    'bg-[var(--cyan-9)] text-white',
-    'bg-[var(--teal-9)] text-white',
-    'bg-[var(--indigo-9)] text-white',
-  ]
-  let hash = 0
-  for (let i = 0; i < str.length; i++)
-    hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  return colors[Math.abs(hash) % colors.length]
-}
 
 const SecurityWizardSkeleton = () => (
   <div className="flex flex-col gap-4 animate-in fade-in duration-300">
@@ -157,6 +147,17 @@ export default function FolderSecurityPolicyWizard({
   onClose: () => void
 }) {
   const [step, setStep] = useState<Step>(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        behavior: 'smooth',
+        top: 0,
+      })
+    }
+  }, [step])
+
   const [users, setUsers] = useState<V6UserListItem[]>([])
   const [groups, setGroups] = useState<V6GroupItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -297,7 +298,7 @@ export default function FolderSecurityPolicyWizard({
       (opt) => String(opt.id || opt.value || '') !== SELECT_ALL_OPTION_ID,
     )
 
-    if (hasAll) {
+    if (hasAll && !allUsersSelected) {
       setShowSelectionError(false)
       setSelectedPrincipals([
         ...userOptions.map((opt) => ({
@@ -310,7 +311,7 @@ export default function FolderSecurityPolicyWizard({
       return
     }
 
-    if (allUsersSelected && withoutAll.length === 0) {
+    if (allUsersSelected && (!hasAll || withoutAll.length === 0)) {
       setShowSelectionError(false)
       setSelectedPrincipals([...selectedGroups])
       return
@@ -338,7 +339,7 @@ export default function FolderSecurityPolicyWizard({
       (opt) => String(opt.id || opt.value || '') !== SELECT_ALL_OPTION_ID,
     )
 
-    if (hasAll) {
+    if (hasAll && !allGroupsSelected) {
       setShowSelectionError(false)
       setSelectedPrincipals([
         ...selectedUsers,
@@ -351,7 +352,7 @@ export default function FolderSecurityPolicyWizard({
       return
     }
 
-    if (allGroupsSelected && withoutAll.length === 0) {
+    if (allGroupsSelected && (!hasAll || withoutAll.length === 0)) {
       setShowSelectionError(false)
       setSelectedPrincipals([...selectedUsers])
       return
@@ -508,254 +509,258 @@ export default function FolderSecurityPolicyWizard({
       )
     }
 
-    if (step === 0) {
-      return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-15 font-semibold text-gray-13">
-              {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Policy'}
-            </h2>
-            <p className="mt-0.5 text-xs text-gray-11">
-              Select at least one user or group who will receive access permissions for this folder.
-            </p>
-          </div>
+    return (
+      <AnimatePresence initial={false} mode="wait">
+        {step === 0 && (
+          <AnimateSlideUp delay={0.1} key="policy-step-0">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-15 font-semibold text-gray-13">
+                  {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Policy'}
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-11">
+                  Select at least one user or group who will receive access permissions for this folder.
+                </p>
+              </div>
 
-          <Divider />
+              <Divider />
 
-          <div className="space-y-4">
-            {showSelectionError && selectedPrincipals.length === 0 ? (
-              <Alert
-                text="Select at least one user or group to continue."
-                variant="red"
-              />
-            ) : null}
+              <div className="space-y-4">
+                {showSelectionError && selectedPrincipals.length === 0 ? (
+                  <Alert
+                    text="Select at least one user or group to continue."
+                    variant="red"
+                  />
+                ) : null}
 
-            <div className="space-y-3">
-              <InputSelectMultiple
-                clearable
-                label="Select Users"
-                options={userDropdownOptions}
-                placeholder={isLoading ? 'Loading users...' : 'Search and select users...'}
-                searchable
-                value={
-                  allUsersSelected
-                    ? [{ id: SELECT_ALL_OPTION_ID, name: 'All' }]
-                    : selectedUsers.map((p) => ({ id: p.id, name: p.name }))
-                }
-                onChange={(value) => onSelectedUsersChange(value as any[])}
-              />
-              <SettingsSelectedChips
-                items={selectedUsers.map((p) => ({ id: p.id, name: p.name }))}
-                onRemove={(id) =>
-                  onSelectedUsersChange(selectedUsers.filter((p) => p.id !== id))
-                }
-              />
+                <div className="space-y-3">
+                  <InputSelectMultiple
+                    clearable
+                    label="Select Users"
+                    options={userDropdownOptions}
+                    placeholder={isLoading ? 'Loading users...' : 'Search and select users...'}
+                    searchable
+                    value={
+                      allUsersSelected
+                        ? [
+                            { id: SELECT_ALL_OPTION_ID, name: 'All' },
+                            ...selectedUsers.map((p) => ({ id: p.id, name: p.name })),
+                          ]
+                        : selectedUsers.map((p) => ({ id: p.id, name: p.name }))
+                    }
+                    onChange={(value) => onSelectedUsersChange(value as any[])}
+                  />
+                  <SettingsSelectedChips
+                    items={selectedUsers.map((p) => ({ id: p.id, name: p.name }))}
+                    onRemove={(id) =>
+                      onSelectedUsersChange(selectedUsers.filter((p) => p.id !== id))
+                    }
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <InputSelectMultiple
+                    clearable
+                    label="Select Groups"
+                    options={groupDropdownOptions}
+                    placeholder={isLoading ? 'Loading groups...' : 'Search and select groups...'}
+                    searchable
+                    value={
+                      allGroupsSelected
+                        ? [
+                            { id: SELECT_ALL_OPTION_ID, name: 'All' },
+                            ...selectedGroups.map((p) => ({ id: p.id, name: p.name })),
+                          ]
+                        : selectedGroups.map((p) => ({ id: p.id, name: p.name }))
+                    }
+                    onChange={(value) => onSelectedGroupsChange(value as any[])}
+                  />
+                  <SettingsSelectedChips
+                    items={selectedGroups.map((p) => ({ id: p.id, name: p.name }))}
+                    onRemove={(id) =>
+                      onSelectedGroupsChange(selectedGroups.filter((p) => p.id !== id))
+                    }
+                  />
+                </div>
+              </div>
             </div>
+          </AnimateSlideUp>
+        )}
 
-            <div className="space-y-3">
-              <InputSelectMultiple
-                clearable
-                label="Select Groups"
-                options={groupDropdownOptions}
-                placeholder={isLoading ? 'Loading groups...' : 'Search and select groups...'}
-                searchable
-                value={
-                  allGroupsSelected
-                    ? [{ id: SELECT_ALL_OPTION_ID, name: 'All' }]
-                    : selectedGroups.map((p) => ({ id: p.id, name: p.name }))
-                }
-                onChange={(value) => onSelectedGroupsChange(value as any[])}
-              />
-              <SettingsSelectedChips
-                items={selectedGroups.map((p) => ({ id: p.id, name: p.name }))}
-                onRemove={(id) =>
-                  onSelectedGroupsChange(selectedGroups.filter((p) => p.id !== id))
-                }
-              />
-            </div>
-          </div>
-        </div>
-      )
-    }
+        {step === 1 && (
+          <AnimateScale delay={0.1} key="policy-step-1">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-15 font-semibold text-gray-13">
+                  Configure permissions
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-11">
+                  Enable or disable granular action privileges for selected users and groups.
+                </p>
+              </div>
 
-    if (step === 1) {
-      const enabledCount = permissions.filter((p) => p.enabled).length
-      const filteredPermissions = permissions.filter(
-        (p) =>
-          p.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
-          p.description.toLowerCase().includes(permissionSearch.toLowerCase()),
-      )
+              <Divider />
 
-      return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-15 font-semibold text-gray-13">
-              Configure permissions
-            </h2>
-            <p className="mt-0.5 text-xs text-gray-11">
-              Enable or disable granular action privileges for selected users and groups.
-            </p>
-          </div>
+              <div className="rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs overflow-hidden">
+                <div className="px-4 py-2.5 bg-surface-muted border-b border-[var(--border-default)] flex justify-between items-center">
+                  <span className="text-xs font-semibold text-gray-13">Permissions Matrix</span>
+                  <SettingsSearchInput
+                    placeholder="Search permissions..."
+                    value={permissionSearch}
+                    onChange={setPermissionSearch}
+                  />
+                </div>
 
-          <Divider />
-
-          <div className="rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs overflow-hidden">
-            <div className="px-4 py-2.5 bg-surface-muted border-b border-[var(--border-default)] flex justify-between items-center">
-              <span className="text-xs font-semibold text-gray-13">Permissions Matrix</span>
-              <SettingsSearchInput
-                placeholder="Search permissions..."
-                value={permissionSearch}
-                onChange={setPermissionSearch}
-              />
-            </div>
-
-            <div className="divide-y divide-[var(--border-default)] max-h-[360px] overflow-y-auto ez-scrollbar">
-              {filteredPermissions.length === 0 ? (
-                <div className="p-4 text-center text-xs text-gray-10">No matching permissions found</div>
-              ) : (
-                filteredPermissions.map((p) => (
-                  <div key={p.id} className="px-4 py-2.5 grid grid-cols-[160px_1fr_80px] items-center gap-3 hover:bg-surface-muted transition-colors">
-                    <div className="text-xs font-semibold text-gray-13">
-                      {p.name}
-                    </div>
-                    <div className="text-xs text-gray-10 leading-normal">{p.description}</div>
-                    <div className="flex justify-center items-center">
-                      {p.id === 'view' ? (
-                        <span className="inline-flex bg-primary-3 text-primary-11 px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide align-middle">
-                          Mandatory
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          className={cn(
-                            'relative inline-flex h-5 w-9 rounded-full shadow-2xs transition align-middle',
-                            p.enabled ? 'bg-primary-9' : 'bg-gray-4',
+                <div className="divide-y divide-[var(--border-default)] max-h-[360px] overflow-y-auto ez-scrollbar">
+                  {permissions.filter(
+                    (p) =>
+                      p.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
+                      p.description.toLowerCase().includes(permissionSearch.toLowerCase()),
+                  ).length === 0 ? (
+                    <div className="p-4 text-center text-xs text-gray-10">No matching permissions found</div>
+                  ) : (
+                    permissions.filter(
+                      (p) =>
+                        p.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
+                        p.description.toLowerCase().includes(permissionSearch.toLowerCase()),
+                    ).map((p) => (
+                      <div key={p.id} className="px-4 py-2.5 grid grid-cols-[160px_1fr_80px] items-center gap-3 hover:bg-surface-muted transition-colors">
+                        <div className="text-xs font-semibold text-gray-13">
+                          {p.name}
+                        </div>
+                        <div className="text-xs text-gray-10 leading-normal">{p.description}</div>
+                        <div className="flex justify-center items-center">
+                          {p.id === 'view' ? (
+                            <span className="inline-flex bg-primary-3 text-primary-11 px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide align-middle">
+                              Mandatory
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              className={cn(
+                                'relative inline-flex h-5 w-9 rounded-full shadow-2xs transition align-middle',
+                                p.enabled ? 'bg-primary-9' : 'bg-gray-4',
+                              )}
+                              onClick={() => togglePermission(p.id)}
+                            >
+                              <span
+                                className={cn(
+                                  'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition',
+                                  p.enabled ? 'left-4.5' : 'left-0.5',
+                                )}
+                              />
+                            </button>
                           )}
-                          onClick={() => togglePermission(p.id)}
-                        >
-                          <span
-                            className={cn(
-                              'absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition',
-                              p.enabled ? 'left-4.5' : 'left-0.5',
-                            )}
-                          />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
 
-            <div className="px-4 py-2 bg-surface-muted border-t border-[var(--border-default)] flex items-center justify-between text-xs">
-              <span className="text-gray-10 font-medium">
-                {enabledCount} of {permissions.length} permissions enabled
-              </span>
-              <button
-                type="button"
-                onClick={toggleAllPermissions}
-                className="text-primary-9 font-semibold hover:text-primary-10 transition"
-              >
-                {enabledCount === permissions.length ? 'Deselect All' : 'Select All'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (step === 2) {
-      const enabledPermissions = permissions.filter((p) => p.enabled)
-
-      return (
-        <div className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-15 font-semibold text-gray-13">
-              Review & Save Policy
-            </h2>
-            <p className="mt-0.5 text-xs text-gray-11">
-              Verify policy details before saving restrictions.
-            </p>
-          </div>
-
-          <Divider />
-
-          {/* Compact 3-Column Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-              <div className="text-[11px] font-medium text-gray-11">Repository</div>
-              <div className="text-13 font-semibold text-gray-13 truncate mt-0.5 flex items-center gap-1.5">
-                <Icon name="tabler:folder" className="size-3.5 text-primary-9" /> {folderName}
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-              <div className="text-[11px] font-medium text-gray-11">Users & Groups</div>
-              <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
-                <Icon name="tabler:users" className="size-3.5 text-primary-9" /> {selectedPrincipals.length}
-              </div>
-            </div>
-
-            <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-              <div className="text-[11px] font-medium text-gray-11">Permissions</div>
-              <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
-                <Icon name="tabler:lock" className="size-3.5 text-primary-9" /> {enabledPermissions.length}
-              </div>
-            </div>
-          </div>
-
-          {/* Users & Groups with Initials Avatars */}
-          <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-2xs space-y-2">
-            <div className="text-xs font-semibold text-gray-12 flex items-center justify-between">
-              <span>Assigned Users & Groups ({selectedPrincipals.length})</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {selectedPrincipals.map((p) => {
-                const initials = getInitials(p.name)
-                const avatarBg = getAvatarColor(p.name)
-
-                return (
-                  <span
-                    key={p.id}
-                    className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1 text-xs font-medium text-gray-13"
-                  >
-                    <span
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold shadow-2xs ${avatarBg}`}
-                    >
-                      {initials}
-                    </span>
-                    {p.name}
+                <div className="px-4 py-2 bg-surface-muted border-t border-[var(--border-default)] flex items-center justify-between text-xs">
+                  <span className="text-gray-10 font-medium">
+                    {permissions.filter((p) => p.enabled).length} of {permissions.length} permissions enabled
                   </span>
-                )
-              })}
-              {selectedPrincipals.length === 0 && (
-                <span className="text-xs italic text-gray-10">No users or groups selected</span>
-              )}
+                  <button
+                    type="button"
+                    onClick={toggleAllPermissions}
+                    className="text-primary-9 font-semibold hover:text-primary-10 transition"
+                  >
+                    {permissions.filter((p) => p.enabled).length === permissions.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          </AnimateScale>
+        )}
 
-          {/* Granted Permissions as Chips with Icons */}
-          <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs space-y-2.5">
-            <div className="text-xs font-semibold text-gray-12">
-              Granted Permissions ({enabledPermissions.length})
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {enabledPermissions.map((p) => (
-                <span key={p.id} className="inline-flex items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1 text-xs font-semibold text-primary-11 shadow-2xs">
-                  <Icon name={PERMISSION_ICON_MAP[p.id]} className="size-3.5 text-primary-9" />
-                  {p.name}
-                </span>
-              ))}
-              {enabledPermissions.length === 0 && (
-                <span className="text-xs italic text-gray-10">No permissions granted</span>
-              )}
-            </div>
-          </div>
-        </div>
-      )
-    }
+        {step === 2 && (
+          <AnimateFadeIn delay={0.1} key="policy-step-2">
+            <div className="flex flex-col gap-4">
+              <div>
+                <h2 className="text-15 font-semibold text-gray-13">
+                  Review & Save Policy
+                </h2>
+                <p className="mt-0.5 text-xs text-gray-11">
+                  Verify policy details before saving restrictions.
+                </p>
+              </div>
 
-    return null
+              <Divider />
+
+              {/* Compact 3-Column Summary Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
+                  <div className="text-[11px] font-medium text-gray-11">Repository</div>
+                  <div className="text-13 font-semibold text-gray-13 truncate mt-0.5 flex items-center gap-1.5">
+                    <Icon name="tabler:folder" className="size-3.5 text-primary-9" /> {folderName}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
+                  <div className="text-[11px] font-medium text-gray-11">Users & Groups</div>
+                  <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
+                    <Icon name="tabler:users" className="size-3.5 text-primary-9" /> {selectedPrincipals.length}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
+                  <div className="text-[11px] font-medium text-gray-11">Permissions</div>
+                  <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
+                    <Icon name="tabler:lock" className="size-3.5 text-primary-9" /> {permissions.filter((p) => p.enabled).length}
+                  </div>
+                </div>
+              </div>
+
+              {/* Users & Groups with Initials Avatars */}
+              <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-2xs space-y-2">
+                <div className="text-xs font-semibold text-gray-12 flex items-center justify-between">
+                  <span>Assigned Users & Groups ({selectedPrincipals.length})</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedPrincipals.map((p) => {
+                    const initials = getInitials(p.name)
+
+                    return (
+                      <span
+                        key={p.id}
+                        className="inline-flex h-8 items-center gap-2 rounded-lg border border-primary-4/60 bg-gradient-to-r from-primary-3/70 to-primary-2/90 px-2.5 py-1 text-xs font-semibold text-gray-13 shadow-2xs"
+                      >
+                        <span className="flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs">
+                          {initials}
+                        </span>
+                        {p.name}
+                      </span>
+                    )
+                  })}
+                  {selectedPrincipals.length === 0 && (
+                    <span className="text-xs italic text-gray-10">No users or groups selected</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Granted Permissions as Chips with Icons */}
+              <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs space-y-2.5">
+                <div className="text-xs font-semibold text-gray-12">
+                  Granted Permissions ({permissions.filter((p) => p.enabled).length})
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {permissions.filter((p) => p.enabled).map((p) => (
+                    <span key={p.id} className="inline-flex items-center gap-1.5 rounded-md border border-primary-4 bg-primary-2 px-2.5 py-1 text-xs font-semibold text-primary-11 shadow-2xs">
+                      <Icon name={PERMISSION_ICON_MAP[p.id]} className="size-3.5 text-primary-9" />
+                      {p.name}
+                    </span>
+                  ))}
+                  {permissions.filter((p) => p.enabled).length === 0 && (
+                    <span className="text-xs italic text-gray-10">No permissions granted</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </AnimateFadeIn>
+        )}
+      </AnimatePresence>
+    )
   }
 
   return (
@@ -795,7 +800,7 @@ export default function FolderSecurityPolicyWizard({
         </aside>
 
         {/* Content Area */}
-        <div className="col-span-1 h-full w-full overflow-y-auto">
+        <div className="col-span-1 h-full w-full overflow-y-auto" ref={scrollContainerRef}>
           <div className="mx-auto w-full max-w-3xl px-6 py-5 pb-10 md:px-8 lg:px-10">
             {renderStepContent()}
 
