@@ -6,10 +6,36 @@ import axios, {
 import authUserStore from '../stores/authUserStore'
 import { decrypt, encrypt } from '../utils/crypto'
 
-// Environment variable handling (Vite uses import.meta.env, CRA uses process.env)
-const API_URL = import.meta.env?.VITE_BASE_URL || process.env.REACT_APP_API_URL
-const V6_API_URL =
-  import.meta.env?.VITE_V6_BASE_URL || 'https://demo.ezofis.com/v6api/api'
+// Dynamic Base URL Resolution based on environment and hostname
+export const getApiBaseUrl = (): string => {
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.hostname?.includes('cloud.ezofis.com')
+  ) {
+    return 'https://cloud.ezofis.com/api'
+  }
+  return (
+    import.meta.env?.VITE_BASE_URL ||
+    process.env.REACT_APP_API_URL ||
+    'https://demo.ezofis.com/v6api/api'
+  )
+}
+
+export const getV6ApiBaseUrl = (): string => {
+  if (
+    typeof window !== 'undefined' &&
+    window.location?.hostname?.includes('cloud.ezofis.com')
+  ) {
+    return 'https://cloud.ezofis.com/api'
+  }
+  return (
+    import.meta.env?.VITE_V6_BASE_URL ||
+    'https://demo.ezofis.com/v6api/api'
+  )
+}
+
+const API_URL = getApiBaseUrl()
+const V6_API_URL = getV6ApiBaseUrl()
 
 // --- 1. Standard Axios Instance (No Crypto) ---
 export const _axios = axios.create({

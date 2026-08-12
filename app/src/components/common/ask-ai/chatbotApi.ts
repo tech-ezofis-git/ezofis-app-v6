@@ -1,3 +1,4 @@
+import { getV6ApiBaseUrl } from '@/api/axios'
 import authUserStore from '@/stores/authUserStore'
 import {
   getFromLocalStorage,
@@ -12,8 +13,7 @@ import type {
 
 export const CHATBOT_API_BASE = (
   import.meta.env.VITE_CHATBOT_API_URL ||
-  import.meta.env.VITE_V6_BASE_URL ||
-  'https://demo.ezofis.com/v6api/api'
+  getV6ApiBaseUrl()
 )
   .trim()
   .replace(/\/+$/, '')
