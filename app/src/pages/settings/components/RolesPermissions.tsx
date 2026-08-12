@@ -22,6 +22,7 @@ import {
 import { createPortal } from 'react-dom'
 import {
   createRole as createRoleApi,
+  deleteRole as deleteRoleApi,
   getMenus,
   getRoleById,
   getRoles,
@@ -45,6 +46,8 @@ import DropdownMenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
+import { AnimatePresence } from 'motion/react'
+import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
@@ -242,6 +245,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [deletingRoleId, setDeletingRoleId] = useState<string | number | null>(
     null,
   )
+  const [isDeletingRole, setIsDeletingRole] = useState(false)
   const userOptions: Option[] = useMemo(() => {
     return mapUsersToOptions(
       users.map((user) => ({
@@ -282,13 +286,30 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   }
 
   const cancelDeleteRole = () => {
+    if (isDeletingRole) return
     setDeletingRoleId(null)
   }
 
-  const confirmDeleteRole = () => {
+  const confirmDeleteRole = async () => {
     if (deletingRoleId == null) return
-    setRoles((current) => current.filter((role) => role.id !== deletingRoleId))
-    setDeletingRoleId(null)
+
+    setIsDeletingRole(true)
+    setIsLoadingRoles(true)
+    try {
+      const response = await deleteRoleApi(String(deletingRoleId))
+
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
+
+      showToast({ message: 'Role deleted successfully', variant: 'success' })
+      setDeletingRoleId(null)
+      await loadRoles()
+    } finally {
+      setIsDeletingRole(false)
+      setIsLoadingRoles(false)
+    }
   }
 
   const loadRolesRequestIdRef = useRef(0)
@@ -615,9 +636,12 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
             : 'Are you sure you want to delete this role? This action cannot be undone.'
         }
         confirmLabel='Delete'
+        isConfirming={isDeletingRole}
         variant='danger'
         onCancel={cancelDeleteRole}
-        onConfirm={confirmDeleteRole}
+        onConfirm={() => {
+          void confirmDeleteRole()
+        }}
       />
       <RoleList
         isLoading={isLoadingRoles}
@@ -892,13 +916,16 @@ function CreateRolePage({
   }
 
   const wizardSteps = useMemo(() => {
+    const isEditMode = editingRoleId !== null
     return ROLE_STEP_MSGS.map((step, idx) => ({
       id: idx,
       label: i18n._(step.title),
       description: i18n._(step.description),
       icon: step.key === 'details' ? 'tabler:shield' : step.key === 'permissions' ? 'tabler:shield-check' : 'tabler:check',
+      clickable: isEditMode ? true : undefined,
+      disabled: isEditMode ? false : undefined,
     }))
-  }, [i18n])
+  }, [i18n, editingRoleId])
 
   return (
     <SettingsWizardLayout
@@ -914,94 +941,120 @@ function CreateRolePage({
       saveLabel={submitLabel}
       moduleTitle={msg`Roles & Permissions`}
       setupTitle={editingRoleId ? msg`Edit Role` : msg`Create Role`}
-      headerTitle={editingRoleId ? msg`Edit Role Setup` : msg`New Role Setup`}
-      headerDescription={msg`Define role details, access scopes, and permission privilege matrices`}
+      headerTitle={ROLE_STEP_MSGS[activeStep]?.title}
+      headerDescription={ROLE_STEP_MSGS[activeStep]?.description}
     >
-      {activeStep === 0 ? (
-        <SettingsFormSection>
-          <InputText
-            autoFocus={!editingRoleId}
-            error={getFieldRequiredError('Role Name', showErrors, roleName)}
-            label={t`Role Name`}
-            required
-            placeholder={t`e.g. AP Supervisor`}
-            value={roleName}
-            onChange={onRoleNameChange}
-          />
+      <AnimatePresence mode='wait' initial={false}>
+        {activeStep === 0 && (
+          <AnimateFadeIn key='step-0' className='flex flex-col gap-6 md:gap-7'>
+            <SettingsFormSection>
+              <AnimateFadeIn delay={0.1}>
+                <InputText
+                  autoFocus={!editingRoleId}
+                  error={getFieldRequiredError('Role Name', showErrors, roleName)}
+                  label={t`Role Name`}
+                  required
+                  placeholder={t`e.g. AP Supervisor`}
+                  value={roleName}
+                  onChange={onRoleNameChange}
+                />
+              </AnimateFadeIn>
 
-          <InputTextarea
-            label={t`Description`}
-            minRows={5}
-            placeholder={t`Describe this role's responsibilities and scope...`}
-            value={description}
-            onChange={onDescriptionChange}
-          />
+              <AnimateFadeIn delay={0.15}>
+                <InputTextarea
+                  label={t`Description`}
+                  minRows={5}
+                  placeholder={t`Describe this role's responsibilities and scope...`}
+                  value={description}
+                  onChange={onDescriptionChange}
+                />
+              </AnimateFadeIn>
 
-          <div className='space-y-1'>
-            <InputSelectMultiple
-              label={t`Select Users`}
-              options={userOptions}
-              placeholder={t`Select users...`}
-              required
-              value={selectedUsers}
-              clearable
-              searchable
-              error={
-                showErrors && !selectedUsers.length
-                  ? 'Please fill the required field: Select Users'
-                  : undefined
-              }
-              onChange={(value) =>
-                onSelectedUsersChange((value || []) as Option[])
-              }
-            />
-            <SettingsSelectedChips
-              className='mt-0'
-              items={selectedUsers}
-              onRemove={(id) =>
-                onSelectedUsersChange(
-                  selectedUsers.filter((user) => user.id !== id),
-                )
-              }
-            />
-          </div>
-        </SettingsFormSection>
-      ) : null}
+              <AnimateFadeIn delay={0.2}>
+                <div className='space-y-1'>
+                  <InputSelectMultiple
+                    label={t`Select Users`}
+                    options={userOptions}
+                    placeholder={t`Select users...`}
+                    required
+                    value={selectedUsers}
+                    clearable
+                    searchable
+                    error={
+                      showErrors && !selectedUsers.length
+                        ? 'Please fill the required field: Select Users'
+                        : undefined
+                    }
+                    onChange={(value) =>
+                      onSelectedUsersChange((value || []) as Option[])
+                    }
+                  />
+                  <SettingsSelectedChips
+                    className='mt-0'
+                    items={selectedUsers}
+                    onRemove={(id) =>
+                      onSelectedUsersChange(
+                        selectedUsers.filter((user) => user.id !== id),
+                      )
+                    }
+                  />
+                </div>
+              </AnimateFadeIn>
+            </SettingsFormSection>
+          </AnimateFadeIn>
+        )}
 
-      {activeStep === 1 ? (
-        <SettingsFormSection>
-          <CreatePermissionMatrix
-            rows={permissionRows}
-            onToggle={onTogglePermission}
-          />
-        </SettingsFormSection>
-      ) : null}
+        {activeStep === 1 && (
+          <AnimateFadeIn key='step-1' className='flex flex-col gap-6 md:gap-7'>
+            <SettingsFormSection>
+              <AnimateFadeIn delay={0.1}>
+                <CreatePermissionMatrix
+                  rows={permissionRows}
+                  onToggle={onTogglePermission}
+                />
+              </AnimateFadeIn>
+            </SettingsFormSection>
+          </AnimateFadeIn>
+        )}
 
-      {activeStep === 2 ? (
-        <SettingsFormSection>
-          <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
-            <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-              Role Summary
-            </h3>
-            <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-              <SummaryItem label='Role Name' value={roleName || '—'} />
-              <SummaryItem
-                label='Permissions'
-                value={`${enabledCount} enabled`}
-              />
-              <SummaryItem label='Description' value={description || '—'} />
-              <SummaryItem
-                label='Users'
-                value={
-                  selectedUsers.length
-                    ? selectedUsers.map((user) => user.name).join(', ')
-                    : '—'
-                }
-              />
-            </div>
-          </div>
-        </SettingsFormSection>
-      ) : null}
+        {activeStep === 2 && (
+          <AnimateFadeIn key='step-2' className='flex flex-col gap-6 md:gap-7'>
+            <SettingsFormSection>
+              <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+                <AnimateFadeIn delay={0.1}>
+                  <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+                    Role Summary
+                  </h3>
+                </AnimateFadeIn>
+                <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+                  <AnimateFadeIn delay={0.15}>
+                    <SummaryItem label='Role Name' value={roleName || '—'} />
+                  </AnimateFadeIn>
+                  <AnimateFadeIn delay={0.18}>
+                    <SummaryItem
+                      label='Permissions'
+                      value={`${enabledCount} enabled`}
+                    />
+                  </AnimateFadeIn>
+                  <AnimateFadeIn delay={0.21}>
+                    <SummaryItem label='Description' value={description || '—'} />
+                  </AnimateFadeIn>
+                  <AnimateFadeIn delay={0.24}>
+                    <SummaryItem
+                      label='Users'
+                      value={
+                        selectedUsers.length
+                          ? selectedUsers.map((user) => user.name).join(', ')
+                          : '—'
+                      }
+                    />
+                  </AnimateFadeIn>
+                </div>
+              </div>
+            </SettingsFormSection>
+          </AnimateFadeIn>
+        )}
+      </AnimatePresence>
     </SettingsWizardLayout>
   )
 }

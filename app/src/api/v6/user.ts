@@ -504,6 +504,38 @@ export const updateRole = async (
   return response
 }
 
+export const deleteRole = async (roleId: string) => {
+  const response: {
+    data: unknown
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+
+    const { data, status } = await axiosV6({
+      headers: tenantId ? { 'X-Tenant-Id': tenantId } : undefined,
+      method: 'DELETE',
+      url: `/Users/roles/${roleId}`,
+    })
+
+    if (status !== 200 && status !== 204) throw new Error('invalid status code')
+    response.data = data
+  } catch (error: any) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      error?.response?.data,
+      'Failed to delete role',
+    )
+  }
+
+  return response
+}
+
 export const getGroups = async () => {
   const response: {
     canceled?: boolean
@@ -891,6 +923,7 @@ export const usersApiV6 = {
   createUser,
   deleteGroup,
   deleteMenu,
+  deleteRole,
   deleteUser,
   updateGroup,
   updateMenu,

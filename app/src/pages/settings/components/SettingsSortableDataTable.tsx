@@ -47,6 +47,7 @@ type SettingsSortableDataTableProps<TData> = {
     newIndex: number,
     rows: TData[],
   ) => boolean
+  disabled?: boolean | ((row: TData) => boolean)
 }
 
 export default function SettingsSortableDataTable<TData>({
@@ -60,6 +61,7 @@ export default function SettingsSortableDataTable<TData>({
   onRowMouseEnter,
   onRowMouseLeave,
   onValidateReorder,
+  disabled,
 }: SettingsSortableDataTableProps<TData>) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -167,20 +169,28 @@ export default function SettingsSortableDataTable<TData>({
               </Thead>
 
               <Tbody>
-                {rows.map((row) => (
-                  <SortableDataRow
-                    dragColumnId={dragColumnId}
-                    key={row.id}
-                    row={row}
-                    rowClassName={rowClassName}
-                    selectedRowId={selectedRowId}
-                    table={table}
-                    getRowClassName={getRowClassName}
-                    onRowClick={onRowClick}
-                    onRowMouseEnter={onRowMouseEnter}
-                    onRowMouseLeave={onRowMouseLeave}
-                  />
-                ))}
+                {rows.map((row) => {
+                  const isDragDisabled =
+                    typeof disabled === 'function'
+                      ? disabled(row.original)
+                      : Boolean(disabled)
+
+                  return (
+                    <SortableDataRow
+                      dragColumnId={dragColumnId}
+                      key={row.id}
+                      row={row}
+                      rowClassName={rowClassName}
+                      selectedRowId={selectedRowId}
+                      table={table}
+                      getRowClassName={getRowClassName}
+                      onRowClick={onRowClick}
+                      onRowMouseEnter={onRowMouseEnter}
+                      onRowMouseLeave={onRowMouseLeave}
+                      disabled={isDragDisabled}
+                    />
+                  )
+                })}
               </Tbody>
             </Table>
           </SortableContext>
@@ -200,6 +210,7 @@ function SortableDataRow<TData>({
   onRowClick,
   onRowMouseEnter,
   onRowMouseLeave,
+  disabled,
 }: {
   dragColumnId: string
   row: Row<TData>
@@ -210,6 +221,7 @@ function SortableDataRow<TData>({
   onRowClick?: (rowId: string) => void
   onRowMouseEnter?: (rowId: string) => void
   onRowMouseLeave?: () => void
+  disabled?: boolean
 }) {
   const {
     attributes,
@@ -219,7 +231,7 @@ function SortableDataRow<TData>({
     transition,
     setActivatorNodeRef,
     setNodeRef,
-  } = useSortable({ id: row.id })
+  } = useSortable({ id: row.id, disabled })
 
   return (
     <tr
@@ -250,16 +262,20 @@ function SortableDataRow<TData>({
         >
           {cell.column.id === dragColumnId ? (
             <div className='flex justify-center'>
-              <button
-                aria-label='Drag to reorder'
-                className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
-                ref={setActivatorNodeRef}
-                type='button'
-                {...attributes}
-                {...listeners}
-              >
-                <GripVertical size={16} />
-              </button>
+              {!disabled ? (
+                <button
+                  aria-label='Drag to reorder'
+                  className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
+                  ref={setActivatorNodeRef}
+                  type='button'
+                  {...attributes}
+                  {...listeners}
+                >
+                  <GripVertical size={16} />
+                </button>
+              ) : (
+                <GripVertical size={16} className='text-gray-4 opacity-40' />
+              )}
             </div>
           ) : (
             flexRender(cell.column.columnDef.cell, cell.getContext())

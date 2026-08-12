@@ -44,6 +44,8 @@ import {
 import SettingsFormSection from './SettingsFormSection'
 import SettingsPageHeader from './SettingsPageHeader'
 import SettingsSelectedChips from './SettingsSelectedChips'
+import { AnimatePresence } from 'motion/react'
+import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 import { formatDatetime } from '@/utils/dayjs'
@@ -745,13 +747,16 @@ function GroupSetup({
   }
 
   const wizardSteps = useMemo(() => {
+    const isEditMode = editingGroupId !== null
     return GROUP_STEP_MSGS.map((step, idx) => ({
       id: idx,
       label: i18n._(step.title),
       description: i18n._(step.description),
       icon: step.key === 'details' ? 'tabler:users' : step.key === 'members' ? 'tabler:user-plus' : 'tabler:check',
+      clickable: isEditMode ? true : undefined,
+      disabled: isEditMode ? false : undefined,
     }))
-  }, [i18n])
+  }, [i18n, editingGroupId])
 
   return (
     <SettingsWizardLayout
@@ -767,96 +772,118 @@ function GroupSetup({
       saveLabel={editingGroupId ? t`Update Group` : t`Save Group`}
       moduleTitle={msg`Group Management`}
       setupTitle={editingGroupId ? msg`Edit Group` : msg`Create Group`}
-      headerTitle={editingGroupId ? msg`Edit Group Setup` : msg`New Group Setup`}
-      headerDescription={msg`Create and manage user group memberships for shared access control`}
+      headerTitle={GROUP_STEP_MSGS[activeStep]?.title}
+      headerDescription={GROUP_STEP_MSGS[activeStep]?.description}
     >
-      {activeStep === 0 ? (
-        <SettingsFormSection>
-          <InputText
-            autoFocus={!editingGroupId}
-            label={t`Group Name *`}
-            placeholder={t`e.g. Finance Team`}
-            value={draftGroup.name}
-            error={getFieldRequiredError(
-              'Group Name',
-              showErrors,
-              draftGroup.name,
-            )}
-            onChange={(value) => onChange({ ...draftGroup, name: value })}
-          />
-          <InputTextarea
-            label='Description'
-            minRows={4}
-            placeholder={t`Describe the purpose of this group...`}
-            value={draftGroup.description}
-            onChange={(value) =>
-              onChange({ ...draftGroup, description: value })
-            }
-          />
-        </SettingsFormSection>
-      ) : null}
+      <AnimatePresence mode='wait' initial={false}>
+        {activeStep === 0 && (
+          <AnimateFadeIn key='step-0' className='flex flex-col gap-6 md:gap-7'>
+            <SettingsFormSection>
+              <AnimateFadeIn delay={0.1}>
+                <InputText
+                  autoFocus={!editingGroupId}
+                  label={t`Group Name *`}
+                  placeholder={t`e.g. Finance Team`}
+                  value={draftGroup.name}
+                  error={getFieldRequiredError(
+                    'Group Name',
+                    showErrors,
+                    draftGroup.name,
+                  )}
+                  onChange={(value) => onChange({ ...draftGroup, name: value })}
+                />
+              </AnimateFadeIn>
+              <AnimateFadeIn delay={0.15}>
+                <InputTextarea
+                  label='Description'
+                  minRows={4}
+                  placeholder={t`Describe the purpose of this group...`}
+                  value={draftGroup.description}
+                  onChange={(value) =>
+                    onChange({ ...draftGroup, description: value })
+                  }
+                />
+              </AnimateFadeIn>
+            </SettingsFormSection>
+          </AnimateFadeIn>
+        )}
 
-      {activeStep === 1 ? (
-        <SettingsFormSection>
-          <div className='flex flex-col gap-2'>
-            <InputSelectMultiple
-              label='Group Members *'
-              options={userOptions}
-              placeholder='Search and select users...'
-              value={selectedMembers}
-              clearable
-              searchable
-              error={
-                showErrors && !selectedMembers.length
-                  ? 'Please fill the required field: Group Members'
-                  : undefined
-              }
-              onChange={(value) =>
-                onMembersChange((value || []) as SettingsOption[])
-              }
-            />
-            <SettingsSelectedChips
-              className='mt-0'
-              items={selectedMembers}
-              onRemove={(id) =>
-                onMembersChange(
-                  selectedMembers.filter((member) => member.id !== id),
-                )
-              }
-            />
-          </div>
-        </SettingsFormSection>
-      ) : null}
+        {activeStep === 1 && (
+          <AnimateFadeIn key='step-1' className='flex flex-col gap-6 md:gap-7'>
+            <SettingsFormSection>
+              <AnimateFadeIn delay={0.1}>
+                <div className='flex flex-col gap-2'>
+                  <InputSelectMultiple
+                    label='Group Members *'
+                    options={userOptions}
+                    placeholder='Search and select users...'
+                    value={selectedMembers}
+                    clearable
+                    searchable
+                    error={
+                      showErrors && !selectedMembers.length
+                        ? 'Please fill the required field: Group Members'
+                        : undefined
+                    }
+                    onChange={(value) =>
+                      onMembersChange((value || []) as SettingsOption[])
+                    }
+                  />
+                  <SettingsSelectedChips
+                    className='mt-0'
+                    items={selectedMembers}
+                    onRemove={(id) =>
+                      onMembersChange(
+                        selectedMembers.filter((member) => member.id !== id),
+                      )
+                    }
+                  />
+                </div>
+              </AnimateFadeIn>
+            </SettingsFormSection>
+          </AnimateFadeIn>
+        )}
 
-      {activeStep === 2 ? (
-        <SettingsFormSection>
-          <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
-            <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-              Group Summary
-            </h3>
-            <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-              <SummaryItem
-                label={t`Group Name`}
-                value={draftGroup.name || '—'}
-              />
-              <SummaryItem
-                label={t`Description`}
-                value={draftGroup.description || '—'}
-              />
-              <SummaryItem
-                label={t`Members`}
-                value={
-                  selectedMembers.length
-                    ? selectedMembers
-                      .map((member) => member.name)
-                      .join(', ')
-                    : '—'
-                }
-              />
-            </div>
-          </div>
-        </SettingsFormSection>
-      ) : null}
+        {activeStep === 2 && (
+          <AnimateFadeIn key='step-2' className='flex flex-col gap-6 md:gap-7'>
+            <SettingsFormSection>
+              <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
+                <AnimateFadeIn delay={0.1}>
+                  <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+                    Group Summary
+                  </h3>
+                </AnimateFadeIn>
+                <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
+                  <AnimateFadeIn delay={0.15}>
+                    <SummaryItem
+                      label={t`Group Name`}
+                      value={draftGroup.name || '—'}
+                    />
+                  </AnimateFadeIn>
+                  <AnimateFadeIn delay={0.18}>
+                    <SummaryItem
+                      label={t`Description`}
+                      value={draftGroup.description || '—'}
+                    />
+                  </AnimateFadeIn>
+                  <AnimateFadeIn delay={0.21}>
+                    <SummaryItem
+                      label={t`Members`}
+                      value={
+                        selectedMembers.length
+                          ? selectedMembers
+                            .map((member) => member.name)
+                            .join(', ')
+                          : '—'
+                      }
+                    />
+                  </AnimateFadeIn>
+                </div>
+              </div>
+            </SettingsFormSection>
+          </AnimateFadeIn>
+        )}
+      </AnimatePresence>
     </SettingsWizardLayout>
   )
 }

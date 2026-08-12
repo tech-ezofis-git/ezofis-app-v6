@@ -36,6 +36,8 @@ import Icon from '@/components/base/icon/Icon'
 import PasswordRequirements, {
   requirementsConfig,
 } from '@/layouts/auth/components/PasswordRequirements'
+import { AnimatePresence } from 'motion/react'
+import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
@@ -1375,120 +1377,124 @@ function Authentication({
 
   return (
     <SettingsFormSection>
-      <div className='flex items-center justify-between gap-4 rounded-[12px] border border-[var(--border-default)] bg-surface p-3.5'>
-        <div className='min-w-0'>
-          <div className='text-xs font-semibold text-[var(--gray-13)]'>
-            Multi-Factor Authentication
+      <AnimateFadeIn delay={0.1}>
+        <div className='flex items-center justify-between gap-4 rounded-[12px] border border-[var(--border-default)] bg-surface p-3.5'>
+          <div className='min-w-0'>
+            <div className='text-xs font-semibold text-[var(--gray-13)]'>
+              Multi-Factor Authentication
+            </div>
+            <p className='mt-0.5 text-xs text-[var(--gray-11)]'>
+              Require additional verification for sign-in
+            </p>
           </div>
-          <p className='mt-0.5 text-xs text-[var(--gray-11)]'>
-            Require additional verification for sign-in
-          </p>
+          <Switch
+            checked={user.mfaEnabled}
+            onChange={(checked) => {
+              if (!checked) {
+                onChange({ ...user, mfaEnabled: false, mfaMethods: [] })
+                return
+              }
+
+              const current = user.mfaMethods[0]
+              const nextMethod =
+                current === 'Mobile OTP' && !hasPhoneNumber
+                  ? mfaMethodOptions[0].value
+                  : current || mfaMethodOptions[0].value
+
+              onChange({
+                ...user,
+                mfaEnabled: true,
+                mfaMethods: [nextMethod],
+              })
+            }}
+          />
         </div>
-        <Switch
-          checked={user.mfaEnabled}
-          onChange={(checked) => {
-            if (!checked) {
-              onChange({ ...user, mfaEnabled: false, mfaMethods: [] })
-              return
-            }
-
-            const current = user.mfaMethods[0]
-            const nextMethod =
-              current === 'Mobile OTP' && !hasPhoneNumber
-                ? mfaMethodOptions[0].value
-                : current || mfaMethodOptions[0].value
-
-            onChange({
-              ...user,
-              mfaEnabled: true,
-              mfaMethods: [nextMethod],
-            })
-          }}
-        />
-      </div>
+      </AnimateFadeIn>
 
       {user.mfaEnabled ? (
-        <div className='space-y-2'>
-          <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-            MFA Method <span className='text-[var(--red-9)]'>*</span>
-          </label>
-          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'>
-            {mfaMethodOptions.map((opt) => {
-              const isMobileOtp = opt.value === 'Mobile OTP'
-              const isDisabled = isMobileOtp && !hasPhoneNumber
-              const isSelected = selectedMethod === opt.value
-              const MethodIcon = opt.icon
+        <AnimateFadeIn delay={0.15}>
+          <div className='space-y-2'>
+            <label className='block text-xs font-semibold text-[var(--gray-13)]'>
+              MFA Method <span className='text-[var(--red-9)]'>*</span>
+            </label>
+            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'>
+              {mfaMethodOptions.map((opt) => {
+                const isMobileOtp = opt.value === 'Mobile OTP'
+                const isDisabled = isMobileOtp && !hasPhoneNumber
+                const isSelected = selectedMethod === opt.value
+                const MethodIcon = opt.icon
 
-              return (
-                <button
-                  key={opt.value}
-                  type='button'
-                  disabled={isDisabled}
-                  title={
-                    isDisabled
-                      ? 'Add a phone number in Login Details to enable Mobile OTP'
-                      : undefined
-                  }
-                  className={[
-                    'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
-                    isDisabled
-                      ? 'cursor-not-allowed border-[var(--border-default)] bg-[var(--gray-2)] opacity-60'
-                      : 'cursor-pointer',
-                    !isDisabled && isSelected
-                      ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
-                      : '',
-                    !isDisabled && !isSelected
-                      ? 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]'
-                      : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => {
-                    if (isDisabled) return
-                    onChange({
-                      ...user,
-                      mfaMethods: [opt.value],
-                    })
-                  }}
-                >
-                  <div
+                return (
+                  <button
+                    key={opt.value}
+                    type='button'
+                    disabled={isDisabled}
+                    title={
+                      isDisabled
+                        ? 'Add a phone number in Login Details to enable Mobile OTP'
+                        : undefined
+                    }
                     className={[
-                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
-                      isSelected
-                        ? 'border-[var(--primary-9)] bg-surface'
-                        : 'border-[var(--gray-7)] bg-surface',
-                    ].join(' ')}
+                      'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
+                      isDisabled
+                        ? 'cursor-not-allowed border-[var(--border-default)] bg-[var(--gray-2)] opacity-60'
+                        : 'cursor-pointer',
+                      !isDisabled && isSelected
+                        ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
+                        : '',
+                      !isDisabled && !isSelected
+                        ? 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]'
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onClick={() => {
+                      if (isDisabled) return
+                      onChange({
+                        ...user,
+                        mfaMethods: [opt.value],
+                      })
+                    }}
                   >
-                    {isSelected ? (
-                      <div className='h-2 w-2 rounded-full bg-[var(--primary-9)]' />
-                    ) : null}
-                  </div>
-
-                  <MethodIcon
-                    className={cn(
-                      'size-4 shrink-0',
-                      isDisabled ? 'text-[var(--gray-8)]' : opt.iconClassName,
-                    )}
-                  />
-
-                  <div className='min-w-0 flex-1'>
-                    <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
-                      {opt.title}
+                    <div
+                      className={[
+                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                        isSelected
+                          ? 'border-[var(--primary-9)] bg-surface'
+                          : 'border-[var(--gray-7)] bg-surface',
+                      ].join(' ')}
+                    >
+                      {isSelected ? (
+                        <div className='h-2 w-2 rounded-full bg-[var(--primary-9)]' />
+                      ) : null}
                     </div>
-                    {isDisabled ? (
-                      <div className='mt-0.5 text-[11px] text-[var(--gray-10)]'>
-                        Requires phone number
+
+                    <MethodIcon
+                      className={cn(
+                        'size-4 shrink-0',
+                        isDisabled ? 'text-[var(--gray-8)]' : opt.iconClassName,
+                      )}
+                    />
+
+                    <div className='min-w-0 flex-1'>
+                      <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
+                        {opt.title}
                       </div>
-                    ) : null}
-                  </div>
-                </button>
-              )
-            })}
+                      {isDisabled ? (
+                        <div className='mt-0.5 text-[11px] text-[var(--gray-10)]'>
+                          Requires phone number
+                        </div>
+                      ) : null}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            {methodError ? (
+              <p className='text-xs text-[var(--red-9)]'>{methodError}</p>
+            ) : null}
           </div>
-          {methodError ? (
-            <p className='text-xs text-[var(--red-9)]'>{methodError}</p>
-          ) : null}
-        </div>
+        </AnimateFadeIn>
       ) : null}
     </SettingsFormSection>
   )
@@ -1516,73 +1522,87 @@ function BusinessDetails({
   const { t } = useLingui()
   return (
     <SettingsFormSection>
-      <SettingsSelectField
-        error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
-        label={t`Role`}
-        options={roleOptions}
-        placeholder={isLoadingRoles ? 'Loading roles...' : 'Select role'}
-        value={user.role}
-        required
-        searchable
-        onChange={(value) => onChange({ ...user, role: value })}
-      />
+      <AnimateFadeIn delay={0.1}>
+        <SettingsSelectField
+          error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
+          label={t`Role`}
+          options={roleOptions}
+          placeholder={isLoadingRoles ? 'Loading roles...' : 'Select role'}
+          value={user.role}
+          required
+          searchable
+          onChange={(value) => onChange({ ...user, role: value })}
+        />
+      </AnimateFadeIn>
 
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-        <SettingsSelectField
-          clearable
-          creatable
-          label={t`Job Title`}
-          options={jobTitleOptions}
-          placeholder={t`Select or type job title`}
-          value={user.jobTitle === '—' ? '' : user.jobTitle}
-          onChange={(value) => onChange({ ...user, jobTitle: value })}
-        />
+        <AnimateFadeIn delay={0.15}>
+          <SettingsSelectField
+            clearable
+            creatable
+            label={t`Job Title`}
+            options={jobTitleOptions}
+            placeholder={t`Select or type job title`}
+            value={user.jobTitle === '—' ? '' : user.jobTitle}
+            onChange={(value) => onChange({ ...user, jobTitle: value })}
+          />
+        </AnimateFadeIn>
 
-        <EzTextField
-          label={t`Employee ID`}
-          placeholder='EMP-001'
-          value={user.employeeId === '—' ? '' : user.employeeId}
-          onChange={(value) => onChange({ ...user, employeeId: value })}
-        />
+        <AnimateFadeIn delay={0.2}>
+          <EzTextField
+            label={t`Employee ID`}
+            placeholder='EMP-001'
+            value={user.employeeId === '—' ? '' : user.employeeId}
+            onChange={(value) => onChange({ ...user, employeeId: value })}
+          />
+        </AnimateFadeIn>
 
-        <SettingsSelectField
-          creatable
-          label={t`Department`}
-          options={departments}
-          placeholder={t`Select or type department`}
-          value={user.department}
-          onChange={(value) => onChange({ ...user, department: value })}
-        />
+        <AnimateFadeIn delay={0.25}>
+          <SettingsSelectField
+            creatable
+            label={t`Department`}
+            options={departments}
+            placeholder={t`Select or type department`}
+            value={user.department}
+            onChange={(value) => onChange({ ...user, department: value })}
+          />
+        </AnimateFadeIn>
 
-        <SettingsSelectField
-          clearable
-          creatable
-          label={t`Business Unit`}
-          options={businessUnitOptions}
-          placeholder={t`Select or type business unit`}
-          value={user.businessUnit === '—' ? '' : user.businessUnit}
-          onChange={(value) => onChange({ ...user, businessUnit: value })}
-        />
+        <AnimateFadeIn delay={0.3}>
+          <SettingsSelectField
+            clearable
+            creatable
+            label={t`Business Unit`}
+            options={businessUnitOptions}
+            placeholder={t`Select or type business unit`}
+            value={user.businessUnit === '—' ? '' : user.businessUnit}
+            onChange={(value) => onChange({ ...user, businessUnit: value })}
+          />
+        </AnimateFadeIn>
 
-        <SettingsSelectField
-          clearable
-          label={t`Manager`}
-          options={managerOptions}
-          placeholder={t`Select`}
-          searchable
-          value={user.manager}
-          onChange={(value) => onChange({ ...user, manager: value })}
-        />
+        <AnimateFadeIn delay={0.35}>
+          <SettingsSelectField
+            clearable
+            label={t`Manager`}
+            options={managerOptions}
+            placeholder={t`Select`}
+            searchable
+            value={user.manager}
+            onChange={(value) => onChange({ ...user, manager: value })}
+          />
+        </AnimateFadeIn>
 
-        <SettingsSelectField
-          clearable
-          creatable
-          label={t`Location`}
-          options={locationOptions}
-          placeholder={t`Select or type location`}
-          value={user.location === '—' ? '' : user.location}
-          onChange={(value) => onChange({ ...user, location: value })}
-        />
+        <AnimateFadeIn delay={0.4}>
+          <SettingsSelectField
+            clearable
+            creatable
+            label={t`Location`}
+            options={locationOptions}
+            placeholder={t`Select or type location`}
+            value={user.location === '—' ? '' : user.location}
+            onChange={(value) => onChange({ ...user, location: value })}
+          />
+        </AnimateFadeIn>
       </div>
     </SettingsFormSection>
   )
@@ -1811,52 +1831,56 @@ function GroupAssignment({
 
   return (
     <SettingsFormSection>
-      <div className='space-y-2'>
-        <InputSelectMultiple
-          label={t`Groups`}
-          options={groupOptions}
-          placeholder={
-            isLoadingGroups
-              ? 'Loading groups...'
-              : 'Search and select groups...'
-          }
-          value={selectedGroups}
-          clearable
-          searchable
-          onChange={(value) =>
-            onChange({
-              ...user,
-              groups: (value || []).map(
-                (option) => option.value || option.name || String(option.id),
-              ),
-            })
-          }
-        />
-        <SettingsSelectedChips
-          className='mt-0'
-          items={selectedGroups}
-          onRemove={(id) => {
-            const removed = selectedGroups.find(
-              (option) => String(option.id) === String(id),
-            )
-            if (!removed) return
+      <AnimateFadeIn delay={0.1}>
+        <div className='space-y-2'>
+          <InputSelectMultiple
+            label={t`Groups`}
+            options={groupOptions}
+            placeholder={
+              isLoadingGroups
+                ? 'Loading groups...'
+                : 'Search and select groups...'
+            }
+            value={selectedGroups}
+            clearable
+            searchable
+            onChange={(value) =>
+              onChange({
+                ...user,
+                groups: (value || []).map(
+                  (option) => option.value || option.name || String(option.id),
+                ),
+              })
+            }
+          />
+          <SettingsSelectedChips
+            className='mt-0'
+            items={selectedGroups}
+            onRemove={(id) => {
+              const removed = selectedGroups.find(
+                (option) => String(option.id) === String(id),
+              )
+              if (!removed) return
 
-            onChange({
-              ...user,
-              groups: user.groups.filter(
-                (groupName) =>
-                  groupName !== removed.name &&
-                  groupName !== removed.value &&
-                  groupName !== String(removed.id),
-              ),
-            })
-          }}
-        />
-      </div>
-      {!isLoadingGroups && !groupOptions.length ? (
-        <div className='rounded-[10px] border border-dashed border-[var(--border-default)] bg-surface px-5 py-8 text-center text-sm text-[var(--gray-10)]'>
-          No groups available from the API yet.
+              onChange({
+                ...user,
+                groups: user.groups.filter(
+                  (groupName) =>
+                    groupName !== removed.name &&
+                    groupName !== removed.value &&
+                    groupName !== String(removed.id),
+                ),
+              })
+            }}
+          />
         </div>
+      </AnimateFadeIn>
+      {!isLoadingGroups && !groupOptions.length ? (
+        <AnimateFadeIn delay={0.15}>
+          <div className='rounded-[10px] border border-dashed border-[var(--border-default)] bg-surface px-5 py-8 text-center text-sm text-[var(--gray-10)]'>
+            No groups available from the API yet.
+          </div>
+        </AnimateFadeIn>
       ) : null}
     </SettingsFormSection>
   )
@@ -1905,262 +1929,284 @@ function LoginDetails({
 
   return (
     <SettingsFormSection>
-      <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-        <InputText
-          ref={firstNameRef}
-          autoFocus={Boolean(autoFocusFirstName)}
-          error={getFieldRequiredError(
-            'First Name',
-            Boolean(showErrors),
-            user.firstName,
-          )}
-          label={t`First Name`}
-          placeholder={t`Enter first name`}
-          required
-          value={user.firstName}
-          onChange={(value) => onChange({ ...user, firstName: value })}
-        />
-
-        <EzTextField
-          label={t`Last Name`}
-          placeholder={t`Enter last name`}
-          value={user.lastName}
-          required
-          error={getFieldRequiredError(
-            'Last Name',
-            Boolean(showErrors),
-            user.lastName,
-          )}
-          onChange={(value) => onChange({ ...user, lastName: value })}
-        />
-      </div>
-
-      <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-        <EzTextField
-          label={t`Email Address`}
-          placeholder='user@company.com'
-          type='email'
-          value={user.email}
-          required
-          error={
-            getFieldRequiredError(
-              'Email Address',
+      <AnimateFadeIn delay={0.1}>
+        <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
+          <InputText
+            ref={firstNameRef}
+            autoFocus={Boolean(autoFocusFirstName)}
+            error={getFieldRequiredError(
+              'First Name',
               Boolean(showErrors),
-              user.email,
-            ) ||
-            (showEmailFormatError
-              ? getEmailValidationError(user.email, t)
-              : undefined)
-          }
-          onBlur={() => setShowEmailFormatError(true)}
-          onChange={(value) => {
-            setShowEmailFormatError(false)
-            onChange({ ...user, email: value })
-          }}
-        />
+              user.firstName,
+            )}
+            label={t`First Name`}
+            placeholder={t`Enter first name`}
+            required
+            value={user.firstName}
+            onChange={(value) => onChange({ ...user, firstName: value })}
+          />
 
-        <EzTextField
-          label={t`Username`}
-          placeholder={t`Enter username`}
-          value={user.username}
-          onChange={(value) => onChange({ ...user, username: value })}
-        />
-      </div>
+          <EzTextField
+            label={t`Last Name`}
+            placeholder={t`Enter last name`}
+            value={user.lastName}
+            required
+            error={getFieldRequiredError(
+              'Last Name',
+              Boolean(showErrors),
+              user.lastName,
+            )}
+            onChange={(value) => onChange({ ...user, lastName: value })}
+          />
+        </div>
+      </AnimateFadeIn>
 
-      <div className='space-y-2'>
-        <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-          {t`Phone Number`}
-        </label>
-        <div className='grid grid-cols-[120px_minmax(0,1fr)] gap-3'>
-          <SettingsSelectField
-            clearable
-            options={countryDialCodeOptions}
-            placeholder={t`Code`}
-            searchable
-            value={getCountrySelectValue(user.countryCode || '')}
-            onChange={(value) =>
+      <AnimateFadeIn delay={0.15}>
+        <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
+          <EzTextField
+            label={t`Email Address`}
+            placeholder='user@company.com'
+            type='email'
+            value={user.email}
+            required
+            disabled={isEditing}
+            error={
+              getFieldRequiredError(
+                'Email Address',
+                Boolean(showErrors),
+                user.email,
+              ) ||
+              (showEmailFormatError
+                ? getEmailValidationError(user.email, t)
+                : undefined)
+            }
+            onBlur={() => setShowEmailFormatError(true)}
+            onChange={(value) => {
+              setShowEmailFormatError(false)
+              onChange({ ...user, email: value })
+            }}
+          />
+
+          <EzTextField
+            label={t`Username`}
+            placeholder={t`Enter username`}
+            value={user.username}
+            disabled={isEditing}
+            onChange={(value) => onChange({ ...user, username: value })}
+          />
+        </div>
+      </AnimateFadeIn>
+
+      <AnimateFadeIn delay={0.2}>
+        <div className='space-y-2'>
+          <label className='block text-xs font-semibold text-[var(--gray-13)]'>
+            {t`Phone Number`}
+          </label>
+          <div className='grid grid-cols-[120px_minmax(0,1fr)] gap-3'>
+            <SettingsSelectField
+              clearable
+              options={countryDialCodeOptions}
+              placeholder={t`Code`}
+              searchable
+              value={getCountrySelectValue(user.countryCode || '')}
+              onChange={(value) =>
+                onChange({
+                  ...user,
+                  countryCode: value || '',
+                })
+              }
+            />
+            <InputText
+              placeholder={t`Enter phone number`}
+              type='tel'
+              value={user.phoneNumber}
+              onChange={(value) => {
+                const nextPhone = value.replace(/[^\d\s()-]/g, '')
+                const nextUser = { ...user, phoneNumber: nextPhone }
+
+                if (
+                  !nextPhone.trim() &&
+                  nextUser.mfaMethods[0] === 'Mobile OTP'
+                ) {
+                  nextUser.mfaMethods = ['Email OTP']
+                }
+
+                onChange(nextUser)
+              }}
+            />
+          </div>
+        </div>
+      </AnimateFadeIn>
+
+      <AnimateFadeIn delay={0.25}>
+        <div className='space-y-2'>
+          <label className='block text-xs font-semibold text-[var(--gray-13)]'>
+            {t`Login Type`} <span className='text-[var(--red-9)]'>*</span>
+          </label>
+          <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+            {loginOptions.map((opt) => {
+              const isSelected = user.loginType === opt.value
+
+              return (
+                <button
+                  key={opt.value}
+                  type='button'
+                  disabled={isEditing}
+                  className={[
+                    'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
+                    isEditing
+                      ? 'cursor-not-allowed border-[var(--border-default)] bg-[var(--gray-2)] opacity-60'
+                      : 'cursor-pointer',
+                    !isEditing && isSelected
+                      ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
+                      : '',
+                    !isEditing && !isSelected
+                      ? 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]'
+                      : '',
+                    isEditing && isSelected
+                      ? 'border-[var(--primary-8)] bg-[var(--primary-2)]/50 shadow-sm ring-1 ring-[var(--primary-8)]/50'
+                      : '',
+                  ].join(' ')}
+                  onClick={() => {
+                    if (isEditing) return
+                    const nextUser = { ...user, loginType: opt.value }
+
+                    if (opt.value === 'Password') {
+                      Object.assign(
+                        nextUser,
+                        syncExpiryFromDays(nextUser.passwordExpiryDays || 90),
+                      )
+                    }
+
+                    onChange(nextUser)
+                  }}
+                >
+                  <div
+                    className={[
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                      isSelected
+                        ? 'border-[var(--primary-9)] bg-surface'
+                        : 'border-[var(--gray-7)] bg-surface',
+                    ].join(' ')}
+                  >
+                    {isSelected && (
+                      <div className='h-2 w-2 rounded-full bg-[var(--primary-9)]' />
+                    )}
+                  </div>
+
+                  {opt.icon()}
+
+                  <div className='min-w-0 flex-1'>
+                    <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
+                      {opt.title}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          {getFieldRequiredError(
+            'Login Type',
+            Boolean(showErrors),
+            user.loginType,
+          ) ? (
+            <p className='text-xs text-[var(--red-9)]'>
+              {getFieldRequiredError(
+                'Login Type',
+                Boolean(showErrors),
+                user.loginType,
+              )}
+            </p>
+          ) : null}
+        </div>
+      </AnimateFadeIn>
+
+      {user.loginType === 'Password' && isEditing ? (
+        <AnimateFadeIn delay={0.3}>
+          <ToggleRow
+            checked={Boolean(user.resetPassword)}
+            label={t`Reset password`}
+            onChange={(checked) =>
               onChange({
                 ...user,
-                countryCode: value || '',
+                password: checked ? user.password : '',
+                resetPassword: checked,
               })
             }
           />
-          <InputText
-            placeholder={t`Enter phone number`}
-            type='tel'
-            value={user.phoneNumber}
-            onChange={(value) => {
-              const nextPhone = value.replace(/[^\d\s()-]/g, '')
-              const nextUser = { ...user, phoneNumber: nextPhone }
-
-              if (
-                !nextPhone.trim() &&
-                nextUser.mfaMethods[0] === 'Mobile OTP'
-              ) {
-                nextUser.mfaMethods = ['Email OTP']
-              }
-
-              onChange(nextUser)
-            }}
-          />
-        </div>
-      </div>
-
-      <div className='space-y-2'>
-        <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-          {t`Login Type`} <span className='text-[var(--red-9)]'>*</span>
-        </label>
-        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4'>
-          {loginOptions.map((opt) => {
-            const isSelected = user.loginType === opt.value
-
-            return (
-              <button
-                key={opt.value}
-                type='button'
-                className={[
-                  'flex cursor-pointer items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
-                  isSelected
-                    ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
-                    : 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]',
-                ].join(' ')}
-                onClick={() => {
-                  const nextUser = { ...user, loginType: opt.value }
-
-                  if (opt.value === 'Password') {
-                    Object.assign(
-                      nextUser,
-                      syncExpiryFromDays(nextUser.passwordExpiryDays || 90),
-                    )
-                    if (isEditing) {
-                      nextUser.resetPassword = false
-                      nextUser.password = ''
-                    }
-                  } else if (isEditing) {
-                    nextUser.resetPassword = false
-                    nextUser.password = ''
-                  }
-
-                  onChange(nextUser)
-                }}
-              >
-                <div
-                  className={[
-                    'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
-                    isSelected
-                      ? 'border-[var(--primary-9)] bg-surface'
-                      : 'border-[var(--gray-7)] bg-surface',
-                  ].join(' ')}
-                >
-                  {isSelected && (
-                    <div className='h-2 w-2 rounded-full bg-[var(--primary-9)]' />
-                  )}
-                </div>
-
-                {opt.icon()}
-
-                <div className='min-w-0 flex-1'>
-                  <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
-                    {opt.title}
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-        {getFieldRequiredError(
-          'Login Type',
-          Boolean(showErrors),
-          user.loginType,
-        ) ? (
-          <p className='text-xs text-[var(--red-9)]'>
-            {getFieldRequiredError(
-              'Login Type',
-              Boolean(showErrors),
-              user.loginType,
-            )}
-          </p>
-        ) : null}
-      </div>
-
-      {user.loginType === 'Password' && isEditing ? (
-        <ToggleRow
-          checked={Boolean(user.resetPassword)}
-          label={t`Reset password`}
-          onChange={(checked) =>
-            onChange({
-              ...user,
-              password: checked ? user.password : '',
-              resetPassword: checked,
-            })
-          }
-        />
+        </AnimateFadeIn>
       ) : null}
 
       {showPasswordField ? (
-        <div className='space-y-3'>
-          <EzPasswordField
-            label={isEditing ? t`New Password` : t`Password`}
-            value={user.password}
-            required
-            error={
-              getFieldRequiredError(
-                isEditing ? t`New Password` : t`Password`,
-                Boolean(showErrors),
-                user.password,
-              ) ||
-              (showErrors && user.password
-                ? getPasswordRequirementError(user.password, i18n, t)
-                : undefined)
-            }
-            onChange={(value) => onChange({ ...user, password: value })}
-          />
-          <PasswordRequirements password={user.password} />
-        </div>
+        <AnimateFadeIn delay={0.35}>
+          <div className='space-y-3'>
+            <EzPasswordField
+              label={isEditing ? t`New Password` : t`Password`}
+              value={user.password}
+              required
+              error={
+                getFieldRequiredError(
+                  isEditing ? t`New Password` : t`Password`,
+                  Boolean(showErrors),
+                  user.password,
+                ) ||
+                (showErrors && user.password
+                  ? getPasswordRequirementError(user.password, i18n, t)
+                  : undefined)
+              }
+              onChange={(value) => onChange({ ...user, password: value })}
+            />
+            <PasswordRequirements password={user.password} />
+          </div>
+        </AnimateFadeIn>
       ) : null}
 
-      <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-        <EzTextField
-          disabled={user.loginType !== 'Password'}
-          label={t`Password Expiry (Days)`}
-          placeholder='90'
-          type='number'
-          value={
-            user.loginType === 'Password'
-              ? String(user.passwordExpiryDays)
-              : ''
-          }
-          onChange={(value) =>
-            onChange({
-              ...user,
-              ...syncExpiryFromDays(Number(value)),
-            })
+      <AnimateFadeIn delay={0.4}>
+        <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
+          <EzTextField
+            disabled={user.loginType !== 'Password'}
+            label={t`Password Expiry (Days)`}
+            placeholder='90'
+            type='number'
+            value={
+              user.loginType === 'Password'
+                ? String(user.passwordExpiryDays)
+                : ''
+            }
+            onChange={(value) =>
+              onChange({
+                ...user,
+                ...syncExpiryFromDays(Number(value)),
+              })
+            }
+          />
+
+          <SettingsDateField
+            disabled={user.loginType !== 'Password'}
+            label={t`Account Expiry Date`}
+            minDate={dayjs().add(1, 'day').format('YYYY-MM-DD')}
+            value={
+              user.loginType === 'Password' ? user.accountExpiryDate : ''
+            }
+            onChange={(value) =>
+              onChange({
+                ...user,
+                ...syncExpiryFromDate(value),
+              })
+            }
+          />
+        </div>
+      </AnimateFadeIn>
+
+      <AnimateFadeIn delay={0.45}>
+        <ToggleRow
+          checked={user.forcePasswordReset}
+          label={t`Force password reset on first login`}
+          onChange={(checked) =>
+            onChange({ ...user, forcePasswordReset: checked })
           }
         />
-
-        <SettingsDateField
-          disabled={user.loginType !== 'Password'}
-          label={t`Account Expiry Date`}
-          minDate={dayjs().add(1, 'day').format('YYYY-MM-DD')}
-          value={
-            user.loginType === 'Password' ? user.accountExpiryDate : ''
-          }
-          onChange={(value) =>
-            onChange({
-              ...user,
-              ...syncExpiryFromDate(value),
-            })
-          }
-        />
-      </div>
-
-      <ToggleRow
-        checked={user.forcePasswordReset}
-        label={t`Force password reset on first login`}
-        onChange={(checked) =>
-          onChange({ ...user, forcePasswordReset: checked })
-        }
-      />
+      </AnimateFadeIn>
     </SettingsFormSection>
   )
 }
@@ -2170,38 +2216,62 @@ function Review({ user }: { user: DraftUser }) {
   return (
     <SettingsFormSection>
       <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
-        <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-          User Summary
-        </h3>
+        <AnimateFadeIn delay={0.1}>
+          <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
+            User Summary
+          </h3>
+        </AnimateFadeIn>
 
         <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
-          <SummaryItem
-            label={t`Name`}
-            value={`${user.firstName} ${user.lastName}`.trim() || '—'}
-          />
-          <SummaryItem label={t`Email`} value={user.email || '—'} />
-          <SummaryItem
-            label={t`Phone`}
-            value={
-              user.phoneNumber
-                ? `${getDialCodeFromCountryValue(user.countryCode)} ${user.phoneNumber}`.trim()
-                : '—'
-            }
-          />
-          <SummaryItem label={t`Job Title`} value={user.jobTitle || ''} />
-          <SummaryItem label={t`Manager`} value={user.manager || ''} />
-          <SummaryItem label={t`Login`} value={formatLoginTypeLabel(user.loginType, t)} />
-          <SummaryItem label={t`Department`} value={user.department || ''} />
-          <SummaryItem label={t`Role`} value={user.role || ''} />
-          <SummaryItem label={t`Location`} value={user.location || ''} />
-          <SummaryItem
-            label={t`Groups`}
-            value={user.groups.length ? user.groups.join(', ') : ''}
-          />
-          <SummaryItem
-            label={t`MFA`}
-            value={`${user.mfaEnabled ? 'Enabled' : 'Disabled'} (${user.mfaMethods.join(', ') || 'No methods'})`}
-          />
+          <AnimateFadeIn delay={0.15}>
+            <SummaryItem
+              label={t`Name`}
+              value={`${user.firstName} ${user.lastName}`.trim() || '—'}
+            />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.18}>
+            <SummaryItem label={t`Email`} value={user.email || '—'} />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.21}>
+            <SummaryItem
+              label={t`Phone`}
+              value={
+                user.phoneNumber
+                  ? `${getDialCodeFromCountryValue(user.countryCode)} ${user.phoneNumber}`.trim()
+                  : '—'
+              }
+            />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.24}>
+            <SummaryItem label={t`Job Title`} value={user.jobTitle || ''} />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.27}>
+            <SummaryItem label={t`Manager`} value={user.manager || ''} />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.3}>
+            <SummaryItem label={t`Login`} value={formatLoginTypeLabel(user.loginType, t)} />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.33}>
+            <SummaryItem label={t`Department`} value={user.department || ''} />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.36}>
+            <SummaryItem label={t`Role`} value={user.role || ''} />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.39}>
+            <SummaryItem label={t`Location`} value={user.location || ''} />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.42}>
+            <SummaryItem
+              label={t`Groups`}
+              value={user.groups.length ? user.groups.join(', ') : ''}
+            />
+          </AnimateFadeIn>
+          <AnimateFadeIn delay={0.45}>
+            <SummaryItem
+              label={t`MFA`}
+              value={`${user.mfaEnabled ? 'Enabled' : 'Disabled'} (${user.mfaMethods.join(', ') || 'No methods'})`}
+            />
+          </AnimateFadeIn>
         </div>
       </div>
     </SettingsFormSection>
@@ -2416,13 +2486,16 @@ function UserSetup({
   }
 
   const wizardSteps = useMemo(() => {
+    const isEditMode = editingUserId !== null
     return steps.map((s, idx) => ({
       id: idx,
       label: s.title,
       description: s.description,
       icon: s.key === 'login' ? 'tabler:user' : s.key === 'business' ? 'tabler:building' : s.key === 'groups' ? 'tabler:users' : s.key === 'authentication' ? 'tabler:shield' : 'tabler:check',
+      clickable: isEditMode ? true : undefined,
+      disabled: isEditMode ? false : undefined,
     }))
-  }, [steps])
+  }, [steps, editingUserId])
 
   return (
     <SettingsWizardLayout
@@ -2438,47 +2511,61 @@ function UserSetup({
       saveLabel={editingUserId ? t`Update User` : t`Save User`}
       moduleTitle={msg`User Management`}
       setupTitle={editingUserId ? msg`Edit User` : msg`Create User`}
-      headerTitle={editingUserId ? msg`Edit User Setup` : msg`New User Setup`}
-      headerDescription={msg`Configure user account details, business hierarchy, and permissions`}
+      headerTitle={USER_SETUP_STEP_MSGS[activeStep]?.title}
+      headerDescription={USER_SETUP_STEP_MSGS[activeStep]?.description}
     >
-      {activeStep === 0 && (
-        <LoginDetails
-          autoFocusFirstName={!editingUserId}
-          isEditing={Boolean(editingUserId)}
-          showErrors={showErrors}
-          user={draftUser}
-          onChange={onChange}
-        />
-      )}
-      {activeStep === 1 && (
-        <BusinessDetails
-          businessUnitOptions={businessUnitOptions}
-          isLoadingRoles={isLoadingRoles}
-          jobTitleOptions={jobTitleOptions}
-          locationOptions={locationOptions}
-          managerOptions={managerOptions}
-          roleOptions={roleOptions}
-          showErrors={showErrors}
-          user={draftUser}
-          onChange={onChange}
-        />
-      )}
-      {activeStep === 2 && (
-        <GroupAssignment
-          groupOptions={groupOptions}
-          isLoadingGroups={isLoadingGroups}
-          user={draftUser}
-          onChange={onChange}
-        />
-      )}
-      {activeStep === 3 && (
-        <Authentication
-          showErrors={showErrors}
-          user={draftUser}
-          onChange={onChange}
-        />
-      )}
-      {activeStep === 4 && <Review user={draftUser} />}
+      <AnimatePresence mode='wait' initial={false}>
+        {activeStep === 0 && (
+          <AnimateFadeIn key='step-0' className='flex flex-col gap-6 md:gap-7'>
+            <LoginDetails
+              autoFocusFirstName={!editingUserId}
+              isEditing={Boolean(editingUserId)}
+              showErrors={showErrors}
+              user={draftUser}
+              onChange={onChange}
+            />
+          </AnimateFadeIn>
+        )}
+        {activeStep === 1 && (
+          <AnimateFadeIn key='step-1' className='flex flex-col gap-6 md:gap-7'>
+            <BusinessDetails
+              businessUnitOptions={businessUnitOptions}
+              isLoadingRoles={isLoadingRoles}
+              jobTitleOptions={jobTitleOptions}
+              locationOptions={locationOptions}
+              managerOptions={managerOptions}
+              roleOptions={roleOptions}
+              showErrors={showErrors}
+              user={draftUser}
+              onChange={onChange}
+            />
+          </AnimateFadeIn>
+        )}
+        {activeStep === 2 && (
+          <AnimateFadeIn key='step-2' className='flex flex-col gap-6 md:gap-7'>
+            <GroupAssignment
+              groupOptions={groupOptions}
+              isLoadingGroups={isLoadingGroups}
+              user={draftUser}
+              onChange={onChange}
+            />
+          </AnimateFadeIn>
+        )}
+        {activeStep === 3 && (
+          <AnimateFadeIn key='step-3' className='flex flex-col gap-6 md:gap-7'>
+            <Authentication
+              showErrors={showErrors}
+              user={draftUser}
+              onChange={onChange}
+            />
+          </AnimateFadeIn>
+        )}
+        {activeStep === 4 && (
+          <AnimateFadeIn key='step-4' className='flex flex-col gap-6 md:gap-7'>
+            <Review user={draftUser} />
+          </AnimateFadeIn>
+        )}
+      </AnimatePresence>
     </SettingsWizardLayout>
   )
 }
