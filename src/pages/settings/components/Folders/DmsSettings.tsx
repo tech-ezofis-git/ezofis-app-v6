@@ -58,6 +58,8 @@ import SettingsPageHeader, {
   type SettingsAddAction,
   SettingsHeaderAddButton,
 } from '../SettingsPageHeader'
+import { AnimatePresence } from 'motion/react'
+import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from '../SettingsWizardLayout'
 import SettingsSortableDataTable from '../SettingsSortableDataTable'
 import useSettingsTableToolbar from '../useSettingsTableToolbar'
@@ -721,6 +723,7 @@ export default function DmsFolderConfiguration({
     null,
   )
   const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(null)
+  const [originalFieldIds, setOriginalFieldIds] = useState<Set<string>>(new Set())
   const [deletingRepositoryId, setDeletingRepositoryId] = useState<string | null>(
     null,
   )
@@ -919,13 +922,13 @@ export default function DmsFolderConfiguration({
       setDescription(
         String(details.description || repository.description || ''),
       )
-      setFields(
-        mapApiFieldsToFieldRows(
-          Array.isArray(details.fields)
-            ? (details.fields as Array<Record<string, unknown>>)
-            : undefined,
-        ),
+      const mappedFields = mapApiFieldsToFieldRows(
+        Array.isArray(details.fields)
+          ? (details.fields as Array<Record<string, unknown>>)
+          : undefined,
       )
+      setFields(mappedFields)
+      setOriginalFieldIds(new Set(mappedFields.map((field) => field.id)))
       setStorage(storageOption.id)
       setShowConnectorError(false)
 
@@ -1043,6 +1046,7 @@ export default function DmsFolderConfiguration({
   const closeWizard = () => {
     setShowWizard(false)
     setEditingRepositoryId(null)
+    setOriginalFieldIds(new Set())
     setStep(1)
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
@@ -1177,16 +1181,22 @@ export default function DmsFolderConfiguration({
 
     const payload = {
       description,
-      fields: fields.map((field, index) => ({
-        ...(isEditing ? { id: field.id } : {}),
-        dataType: field.dataType,
-        iconKey: field.iconKey,
-        includeInFolderStructure: field.includeInFolderStructure,
-        isMandatory: field.isMandatory,
-        level: field.level,
-        name: field.fieldName,
-        orderId: field.orderId ?? index + 1,
-      })),
+      fields: fields.map((field, index) => {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(field.id)
+        const isExistingRecord = originalFieldIds.has(field.id)
+        const includeId = isEditing && isUuid && isExistingRecord
+
+        return {
+          ...(includeId ? { id: field.id } : {}),
+          dataType: field.dataType,
+          iconKey: field.iconKey,
+          includeInFolderStructure: field.includeInFolderStructure,
+          isMandatory: field.isMandatory,
+          level: field.level,
+          name: field.fieldName,
+          orderId: field.orderId ?? index + 1,
+        }
+      }),
       name: trimmedName,
       storageDrive: null,
       storageProviderCode: selectedStorageOption.storageProviderCode,
@@ -1245,25 +1255,26 @@ export default function DmsFolderConfiguration({
     },
   })
 
-  const formattedWizardSteps = useMemo(
-    () =>
-      wizardSteps.map((item) => ({
-        id: item.id - 1,
-        label: item.title,
-        description: item.description,
-        icon:
-          item.id === 1
-            ? 'tabler:folder'
-            : item.id === 2
-              ? 'tabler:list-details'
-              : item.id === 3
-                ? 'tabler:cloud'
-                : item.id === 4
-                  ? 'tabler:git-branch'
-                  : 'tabler:api',
-      })),
-    [],
-  )
+  const formattedWizardSteps = useMemo(() => {
+    const isEditMode = editingRepositoryId !== null
+    return wizardSteps.map((item) => ({
+      id: item.id - 1,
+      label: item.title,
+      description: item.description,
+      icon:
+        item.id === 1
+          ? 'tabler:folder'
+          : item.id === 2
+            ? 'tabler:list-details'
+            : item.id === 3
+              ? 'tabler:cloud'
+              : item.id === 4
+                ? 'tabler:git-branch'
+                : 'tabler:api',
+      clickable: isEditMode ? true : undefined,
+      disabled: isEditMode ? false : undefined,
+    }))
+  }, [editingRepositoryId])
 
   if (securityRepository) {
     return (
@@ -1304,33 +1315,35 @@ export default function DmsFolderConfiguration({
         saveLabel={editingRepositoryId ? 'Update' : 'Save'}
         moduleTitle='Folder Configuration'
         setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
-        headerTitle={
-          editingRepositoryId ? 'Edit Folder Setup' : 'New Folder Setup'
-        }
-        headerDescription='Configure repository storage, metadata fields, versioning, and integrations'
+        headerTitle={wizardSteps[step - 1]?.title}
+        headerDescription={wizardSteps[step - 1]?.description}
       >
-        <WizardContent
-          description={description}
-          displayMode={displayMode}
-          editingRepositoryId={editingRepositoryId}
-          fields={fields}
-          folderName={folderName}
-          onBack={onBack}
-          setStep={setStep}
-          showConnectorError={showConnectorError}
-          step={step}
-          storage={storage}
-          storageConnectorId={storageConnectorId}
-          storageConnectorLabel={storageConnectorLabel}
-          versioning={versioning}
-          setDescription={setDescription}
-          setDisplayMode={setDisplayMode}
-          setFields={setFields}
-          setFolderName={setFolderName}
-          setStorage={handleStorageChange}
-          setVersioning={setVersioning}
-          onStorageConnectorChange={handleStorageConnectorChange}
-        />
+        <AnimatePresence mode='wait' initial={false}>
+          <AnimateFadeIn key={step} className='flex flex-col gap-6 md:gap-7'>
+            <WizardContent
+              description={description}
+              displayMode={displayMode}
+              editingRepositoryId={editingRepositoryId}
+              fields={fields}
+              folderName={folderName}
+              onBack={onBack}
+              setStep={setStep}
+              showConnectorError={showConnectorError}
+              step={step}
+              storage={storage}
+              storageConnectorId={storageConnectorId}
+              storageConnectorLabel={storageConnectorLabel}
+              versioning={versioning}
+              setDescription={setDescription}
+              setDisplayMode={setDisplayMode}
+              setFields={setFields}
+              setFolderName={setFolderName}
+              setStorage={handleStorageChange}
+              setVersioning={setVersioning}
+              onStorageConnectorChange={handleStorageConnectorChange}
+            />
+          </AnimateFadeIn>
+        </AnimatePresence>
       </SettingsWizardLayout>
     )
   }
@@ -1544,6 +1557,7 @@ function FieldNameTreeCell({
 
 function FieldNameWithIconInput({
   autoFocus,
+  disabled,
   iconKey = 'folder',
   placeholder,
   showIconPicker,
@@ -1554,6 +1568,7 @@ function FieldNameWithIconInput({
   onIconChange,
 }: {
   autoFocus?: boolean
+  disabled?: boolean
   iconKey?: string
   placeholder?: string
   showIconPicker: boolean
@@ -1604,6 +1619,7 @@ function FieldNameWithIconInput({
         <button
           aria-label='Select field icon'
           className='flex h-full w-full items-center justify-center text-gray-11'
+          disabled={disabled}
           type='button'
           onClick={() => combobox.toggleDropdown()}
         >
@@ -1646,6 +1662,7 @@ function FieldNameWithIconInput({
       classNames={{
         input: cn(inputSharedClassNames.input, heightClass),
       }}
+      disabled={disabled}
       leftSection={leftSection}
       leftSectionPointerEvents='auto'
       leftSectionWidth={32}
@@ -1667,10 +1684,12 @@ function FieldsTable({
   fields,
   fieldTypeOptions,
   setFields,
+  isEditing,
 }: {
   fields: FieldRow[]
   fieldTypeOptions: SelectOption[]
   setFields: Dispatch<SetStateAction<FieldRow[]>>
+  isEditing?: boolean
 }) {
   const { t } = useLingui()
   const [editingRowId, setEditingRowId] = useState<string | null>(null)
@@ -1772,6 +1791,7 @@ function FieldsTable({
               !row.original.isFileNameField
             const nameInput = (
               <FieldNameWithIconInput
+                disabled={Boolean(isEditing)}
                 iconKey={getFieldIconKey(
                   row.original,
                   row.original.isFileNameField,
@@ -1892,6 +1912,7 @@ function FieldsTable({
             <div className='flex justify-center'>
               <InputCheckbox
                 checked={Boolean(row.original.includeInFolderStructure)}
+                disabled={isEditing}
                 onChange={(checked) => toggleFolder(rowId, Boolean(checked))}
               />
             </div>
@@ -1973,6 +1994,7 @@ function FieldsTable({
               <IconButton
                 ariaLabel='Delete field'
                 color='gray'
+                disabled={Boolean(isEditing && row.original.includeInFolderStructure)}
                 icon='lucide:trash-2'
                 size='sm'
                 variant='ghost'
@@ -2045,6 +2067,7 @@ function FieldsTable({
       }
       onReorder={handleReorder}
       onValidateReorder={handleValidateReorder}
+      disabled={(row) => Boolean(isEditing && row.includeInFolderStructure)}
     />
   )
 }
@@ -2531,20 +2554,24 @@ function WizardContent({
   if (step === 1) {
     return (
       <SettingsFormSection>
-        <InputText
-          label={t`Folder Name *`}
-          placeholder={t`e.g. AP Invoices 2026`}
-          value={folderName}
-          onChange={(value: string) => setFolderName(value)}
-        />
+        <AnimateFadeIn delay={0.1}>
+          <InputText
+            label={t`Folder Name *`}
+            placeholder={t`e.g. AP Invoices 2026`}
+            value={folderName}
+            onChange={(value: string) => setFolderName(value)}
+          />
+        </AnimateFadeIn>
 
-        <InputTextarea
-          label={t`Description`}
-          minRows={3}
-          placeholder={t`Describe the purpose of this folder...`}
-          value={description}
-          onChange={setDescription}
-        />
+        <AnimateFadeIn delay={0.15}>
+          <InputTextarea
+            label={t`Description`}
+            minRows={3}
+            placeholder={t`Describe the purpose of this folder...`}
+            value={description}
+            onChange={setDescription}
+          />
+        </AnimateFadeIn>
       </SettingsFormSection>
     )
   }
@@ -2554,96 +2581,104 @@ function WizardContent({
       <SettingsFormSection>
         <div className='flex flex-col gap-3'>
           <div>
-            <h3 className='mb-3 text-14/5 font-semibold text-gray-12'>
-              Folder Fields
-            </h3>
+            <AnimateFadeIn delay={0.1}>
+              <h3 className='mb-3 text-14/5 font-semibold text-gray-12'>
+                Folder Fields
+              </h3>
+            </AnimateFadeIn>
 
-            <div className='rounded-lg border border-gray-3 bg-surface p-4'>
-              <div className='flex flex-col gap-4'>
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-end'>
-                  <div>
-                    <label className='mb-2 block text-13 font-medium text-gray-11'>
-                      Field Name
-                    </label>
-                    <FieldNameWithIconInput
-                      iconKey={String(newFieldIcon?.value || 'folder')}
-                      placeholder='e.g. Cost Center'
-                      showIconPicker={newIsFolder}
-                      size='md'
-                      value={newFieldName}
-                      onChange={setNewFieldName}
-                      onIconChange={(iconKey) => {
-                        const option = folderIconOptions.find(
-                          (item) => item.value === iconKey,
-                        )
-                        setNewFieldIcon(option || null)
+            <AnimateFadeIn delay={0.15}>
+              <div className='rounded-lg border border-gray-3 bg-surface p-4'>
+                <div className='flex flex-col gap-4'>
+                  <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-end'>
+                    <div>
+                      <label className='mb-2 block text-13 font-medium text-gray-11'>
+                        Field Name
+                      </label>
+                      <FieldNameWithIconInput
+                        iconKey={String(newFieldIcon?.value || 'folder')}
+                        placeholder='e.g. Cost Center'
+                        showIconPicker={newIsFolder}
+                        size='md'
+                        value={newFieldName}
+                        onChange={setNewFieldName}
+                        onIconChange={(iconKey) => {
+                          const option = folderIconOptions.find(
+                            (item) => item.value === iconKey,
+                          )
+                          setNewFieldIcon(option || null)
+                        }}
+                      />
+                    </div>
+
+                    <InputSelect
+                      label='Type'
+                      options={fieldTypeOptions}
+                      placeholder='Field type'
+                      searchable
+                      searchPlaceholder='Search type'
+                      width='target'
+                      value={
+                        fieldTypeOptions.find(
+                          (option) => option.value === newFieldType,
+                        ) ||
+                        fieldTypeOptions[0] ||
+                        null
+                      }
+                      onChange={(selected) => {
+                        if (!selected) return
+                        setNewFieldType(String(selected.value || selected.name))
                       }}
                     />
                   </div>
 
-                  <InputSelect
-                    label='Type'
-                    options={fieldTypeOptions}
-                    placeholder='Field type'
-                    searchable
-                    searchPlaceholder='Search type'
-                    width='target'
-                    value={
-                      fieldTypeOptions.find(
-                        (option) => option.value === newFieldType,
-                      ) ||
-                      fieldTypeOptions[0] ||
-                      null
-                    }
-                    onChange={(selected) => {
-                      if (!selected) return
-                      setNewFieldType(String(selected.value || selected.name))
-                    }}
-                  />
-                </div>
+                  <div className='flex flex-wrap items-center justify-between gap-3'>
+                    <div className='flex flex-wrap items-center gap-5'>
+                      <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                        <InputCheckbox
+                          checked={newIsFolder}
+                          disabled={Boolean(editingRepositoryId)}
+                          onChange={(checked) => {
+                            const isFolder = Boolean(checked)
+                            setNewIsFolder(isFolder)
+                            if (isFolder) setNewIsMandatory(true)
+                          }}
+                        />
+                        Folder
+                      </label>
 
-                <div className='flex flex-wrap items-center justify-between gap-3'>
-                  <div className='flex flex-wrap items-center gap-5'>
-                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
-                      <InputCheckbox
-                        checked={newIsFolder}
-                        onChange={(checked) => {
-                          const isFolder = Boolean(checked)
-                          setNewIsFolder(isFolder)
-                          if (isFolder) setNewIsMandatory(true)
-                        }}
-                      />
-                      Folder
-                    </label>
+                      <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
+                        <InputCheckbox
+                          checked={newIsFolder || newIsMandatory}
+                          disabled={newIsFolder}
+                          onChange={(checked) =>
+                            setNewIsMandatory(Boolean(checked))
+                          }
+                        />
+                        Mandatory
+                      </label>
+                    </div>
 
-                    <label className='flex h-9 cursor-pointer items-center gap-2 text-13 font-medium text-gray-12'>
-                      <InputCheckbox
-                        checked={newIsFolder || newIsMandatory}
-                        disabled={newIsFolder}
-                        onChange={(checked) =>
-                          setNewIsMandatory(Boolean(checked))
-                        }
-                      />
-                      Mandatory
-                    </label>
+                    <Button
+                      className='h-9'
+                      icon='lucide:plus'
+                      label='Add Field'
+                      onClick={addField}
+                    />
                   </div>
-
-                  <Button
-                    className='h-9'
-                    icon='lucide:plus'
-                    label='Add Field'
-                    onClick={addField}
-                  />
                 </div>
               </div>
-            </div>
+            </AnimateFadeIn>
           </div>
 
-          <FieldsTable
-            fields={fields}
-            fieldTypeOptions={fieldTypeOptions}
-            setFields={setFields}
-          />
+          <AnimateFadeIn delay={0.2}>
+            <FieldsTable
+              fields={fields}
+              fieldTypeOptions={fieldTypeOptions}
+              setFields={setFields}
+              isEditing={Boolean(editingRepositoryId)}
+            />
+          </AnimateFadeIn>
         </div>
       </SettingsFormSection>
     )
@@ -2661,82 +2696,88 @@ function WizardContent({
     return (
       <SettingsFormSection>
         <div className='space-y-6'>
-          <div>
-            <SectionHeader
-              description='Use built-in secure storage for folder documents.'
-              title='Default Storage'
-            />
-            <BrandCard
-              checked={storage === defaultStorage.id}
-              connected={storage === defaultStorage.id}
-              description={defaultStorage.description}
-              logo={defaultStorage.logo}
-              name={defaultStorage.title}
-              value={defaultStorage.id}
-              onClick={() => setStorage(defaultStorage.id)}
-            />
-          </div>
+          <AnimateFadeIn delay={0.1}>
+            <div>
+              <SectionHeader
+                description='Use built-in secure storage for folder documents.'
+                title='Default Storage'
+              />
+              <BrandCard
+                checked={storage === defaultStorage.id}
+                connected={storage === defaultStorage.id}
+                description={defaultStorage.description}
+                logo={defaultStorage.logo}
+                name={defaultStorage.title}
+                value={defaultStorage.id}
+                onClick={() => setStorage(defaultStorage.id)}
+              />
+            </div>
+          </AnimateFadeIn>
 
           <OrDivider />
 
-          <div>
-            <SectionHeader
-              description='Connect your provider to securely store and manage folder documents.'
-              title='Cloud Integrations'
-            />
-            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-              {cloudStorageOptions.map((item) => {
-                const isSelected = storage === item.id
-                const isDisabled = item.comingSoon
+          <AnimateFadeIn delay={0.15}>
+            <div>
+              <SectionHeader
+                description='Connect your provider to securely store and manage folder documents.'
+                title='Cloud Integrations'
+              />
+              <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                {cloudStorageOptions.map((item) => {
+                  const isSelected = storage === item.id
+                  const isDisabled = item.comingSoon
 
-                return (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      isDisabled && 'pointer-events-none opacity-60',
-                    )}
-                  >
-                    <BrandCard
-                      checked={isSelected}
-                      connected={
-                        isSelected &&
-                        Boolean(storageConnectorId) &&
-                        !isDisabled
-                      }
-                      description={
-                        isDisabled
-                          ? 'Coming soon'
-                          : isSelected && storageConnectorId
-                            ? storageConnectorLabel || 'Connected'
-                            : item.description
-                      }
-                      icon={item.icon}
-                      logo={item.logo}
-                      name={item.title}
-                      value={item.id}
-                      onClick={() => {
-                        if (!isDisabled) setStorage(item.id)
-                      }}
-                    />
-                  </div>
-                )
-              })}
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        isDisabled && 'pointer-events-none opacity-60',
+                      )}
+                    >
+                      <BrandCard
+                        checked={isSelected}
+                        connected={
+                          isSelected &&
+                          Boolean(storageConnectorId) &&
+                          !isDisabled
+                        }
+                        description={
+                          isDisabled
+                            ? 'Coming soon'
+                            : isSelected && storageConnectorId
+                              ? storageConnectorLabel || 'Connected'
+                              : item.description
+                        }
+                        icon={item.icon}
+                        logo={item.logo}
+                        name={item.title}
+                        value={item.id}
+                        onClick={() => {
+                          if (!isDisabled) setStorage(item.id)
+                        }}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          </AnimateFadeIn>
 
           {isCloudSelected ? (
-            <FolderStorageConnectorPanel
-              connectorId={storageConnectorId}
-              connectorLabel={storageConnectorLabel}
-              error={
-                showConnectorError
-                  ? 'Please fill the required field: Connector'
-                  : undefined
-              }
-              option={selectedStorage}
-              required
-              onConnectorChange={onStorageConnectorChange}
-            />
+            <AnimateFadeIn delay={0.2}>
+              <FolderStorageConnectorPanel
+                connectorId={storageConnectorId}
+                connectorLabel={storageConnectorLabel}
+                error={
+                  showConnectorError
+                    ? 'Please fill the required field: Connector'
+                    : undefined
+                }
+                option={selectedStorage}
+                required
+                onConnectorChange={onStorageConnectorChange}
+              />
+            </AnimateFadeIn>
           ) : null}
         </div>
       </SettingsFormSection>
@@ -2753,105 +2794,109 @@ function WizardContent({
     return (
       <SettingsFormSection>
         <div className='flex flex-col gap-6'>
-          <div>
-            <h3 className='text-14/5 font-semibold text-gray-12'>
-              Version Strategy
-            </h3>
-            <p className='mt-1 text-13 text-gray-11'>
-              Choose how document versions are managed in this folder.
-            </p>
+          <AnimateFadeIn delay={0.1}>
+            <div>
+              <h3 className='text-14/5 font-semibold text-gray-12'>
+                Version Strategy
+              </h3>
+              <p className='mt-1 text-13 text-gray-11'>
+                Choose how document versions are managed in this folder.
+              </p>
 
-            <div className='mt-3 grid grid-cols-1 gap-3'>
-              {versionOptions.map((item) => {
-                const isSelected = versioning === item.id
+              <div className='mt-3 grid grid-cols-1 gap-3'>
+                {versionOptions.map((item) => {
+                  const isSelected = versioning === item.id
 
-                return (
-                  <button
-                    key={item.id}
-                    type='button'
-                    className={cn(
-                      'flex w-full items-start gap-3 rounded-[12px] border p-3.5 text-left transition',
-                      isSelected
-                        ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
-                        : 'border-gray-3 bg-surface hover:border-primary-5',
-                    )}
-                    onClick={() => setVersioning(item.id)}
-                  >
-                    <span
+                  return (
+                    <button
+                      key={item.id}
+                      type='button'
                       className={cn(
-                        'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                        'flex w-full items-start gap-3 rounded-[12px] border p-3.5 text-left transition',
                         isSelected
-                          ? 'border-primary-9 bg-surface'
-                          : 'border-gray-7 bg-surface',
+                          ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
+                          : 'border-gray-3 bg-surface hover:border-primary-5',
                       )}
+                      onClick={() => setVersioning(item.id)}
                     >
-                      {isSelected ? (
-                        <span className='h-2 w-2 rounded-full bg-primary-9' />
-                      ) : null}
-                    </span>
+                      <span
+                        className={cn(
+                          'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                          isSelected
+                            ? 'border-primary-9 bg-surface'
+                            : 'border-gray-7 bg-surface',
+                        )}
+                      >
+                        {isSelected ? (
+                          <span className='h-2 w-2 rounded-full bg-primary-9' />
+                        ) : null}
+                      </span>
 
-                    <div className='min-w-0 flex-1'>
-                      <div className='text-13 font-medium text-gray-12'>
-                        {item.title}
+                      <div className='min-w-0 flex-1'>
+                        <div className='text-13 font-medium text-gray-12'>
+                          {item.title}
+                        </div>
+                        <div className='mt-0.5 text-13 text-gray-11'>
+                          {item.subtitle}
+                        </div>
+                        <code className='mt-2 block truncate rounded-md bg-gray-2 px-2 py-1.5 text-12 text-gray-11'>
+                          {item.sample}
+                        </code>
                       </div>
-                      <div className='mt-0.5 text-13 text-gray-11'>
-                        {item.subtitle}
-                      </div>
-                      <code className='mt-2 block truncate rounded-md bg-gray-2 px-2 py-1.5 text-12 text-gray-11'>
-                        {item.sample}
-                      </code>
-                    </div>
-                  </button>
-                )
-              })}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          </AnimateFadeIn>
 
-          <div>
-            <h3 className='text-14/5 font-semibold text-gray-12'>
-              Display Settings
-            </h3>
-            <p className='mt-1 text-13 text-gray-11'>
-              Control which versions users see by default.
-            </p>
+          <AnimateFadeIn delay={0.15}>
+            <div>
+              <h3 className='text-14/5 font-semibold text-gray-12'>
+                Display Settings
+              </h3>
+              <p className='mt-1 text-13 text-gray-11'>
+                Control which versions users see by default.
+              </p>
 
-            <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3'>
-              {displayOptions.map((item) => {
-                const isSelected = displayMode === item
+              <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3'>
+                {displayOptions.map((item) => {
+                  const isSelected = displayMode === item
 
-                return (
-                  <button
-                    key={item}
-                    type='button'
-                    className={cn(
-                      'flex w-full items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
-                      isSelected
-                        ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
-                        : 'border-gray-3 bg-surface hover:border-primary-5',
-                    )}
-                    onClick={() => setDisplayMode(item)}
-                  >
-                    <span
+                  return (
+                    <button
+                      key={item}
+                      type='button'
                       className={cn(
-                        'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                        'flex w-full items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
                         isSelected
-                          ? 'border-primary-9 bg-surface'
-                          : 'border-gray-7 bg-surface',
+                          ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
+                          : 'border-gray-3 bg-surface hover:border-primary-5',
                       )}
+                      onClick={() => setDisplayMode(item)}
                     >
-                      {isSelected ? (
-                        <span className='h-2 w-2 rounded-full bg-primary-9' />
-                      ) : null}
-                    </span>
+                      <span
+                        className={cn(
+                          'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition',
+                          isSelected
+                            ? 'border-primary-9 bg-surface'
+                            : 'border-gray-7 bg-surface',
+                        )}
+                      >
+                        {isSelected ? (
+                          <span className='h-2 w-2 rounded-full bg-primary-9' />
+                        ) : null}
+                      </span>
 
-                    <span className='min-w-0 text-13 font-medium text-gray-12'>
-                      {item}
-                    </span>
-                  </button>
-                )
-              })}
+                      <span className='min-w-0 text-13 font-medium text-gray-12'>
+                        {item}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          </AnimateFadeIn>
         </div>
       </SettingsFormSection>
     )
@@ -2861,118 +2906,42 @@ function WizardContent({
     return (
       <SettingsFormSection>
         <div>
-          <h3 className='text-14/5 font-semibold text-gray-12'>
-            Integrations
-          </h3>
-          <p className='mt-1 text-13 text-gray-11'>
-            Optionally connect an ERP or business system to sync folder fields.
-          </p>
+          <AnimateFadeIn delay={0.1}>
+            <h3 className='text-14/5 font-semibold text-gray-12'>
+              Integrations
+            </h3>
+            <p className='mt-1 text-13 text-gray-11'>
+              Optionally connect an ERP or business system to sync folder fields.
+            </p>
+          </AnimateFadeIn>
 
           <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2'>
-            {integrations.map((item) => {
+            {integrations.map((item, idx) => {
               const isSelected = selectedIntegration === item.id
               const isConnected = connectedIntegrationId === item.id
               const canConnect = item.id !== 'None'
 
               return (
-                <div
-                  key={item.id}
-                  className={cn(
-                    'rounded-[12px] border p-3.5 transition',
-                    isSelected
-                      ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
-                      : isConnected
-                        ? 'border-green-8 bg-green-1'
-                        : 'border-gray-3 bg-surface hover:border-primary-5',
-                  )}
-                >
-                  <div className='flex items-start gap-3'>
-                    <button
-                      type='button'
-                      className={cn(
-                        'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition',
-                        isSelected || isConnected
-                          ? 'bg-surface shadow-sm'
-                          : 'bg-gray-2',
-                      )}
-                      onClick={() => {
-                        setSelectedIntegration(item.id)
-                        if (item.id === 'None') {
-                          setConnectedIntegrationId(null)
-                        }
-                      }}
-                    >
-                      <Icon
-                        className={cn(
-                          'size-4',
-                          isConnected
-                            ? 'text-green-11'
-                            : isSelected
-                              ? 'text-primary-9'
-                              : 'text-gray-11',
-                        )}
-                        name={item.icon}
-                      />
-                    </button>
-
-                    <div className='min-w-0 flex-1'>
-                      <div className='flex items-center justify-between gap-2'>
-                        <button
-                          type='button'
-                          className='min-w-0 truncate text-left text-13 font-medium text-gray-12'
-                          onClick={() => {
-                            setSelectedIntegration(item.id)
-                            if (item.id === 'None') {
-                              setConnectedIntegrationId(null)
-                            }
-                          }}
-                        >
-                          {item.title}
-                        </button>
-
-                        {canConnect ? (
-                          <button
-                            type='button'
-                            className={cn(
-                              'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium transition',
-                              isConnected
-                                ? 'bg-green-3 text-green-11'
-                                : 'bg-primary-3 text-primary-11 hover:bg-primary-4',
-                            )}
-                            onClick={() => {
-                              if (isConnected) {
-                                setConnectedIntegrationId(null)
-                                if (selectedIntegration === item.id) {
-                                  setSelectedIntegration('None')
-                                }
-                                return
-                              }
-                              setSelectedIntegration(item.id)
-                              setConnectedIntegrationId(item.id)
-                            }}
-                          >
-                            <Icon
-                              className='size-3.5'
-                              name={
-                                isConnected ? 'lucide:check' : 'lucide:link-2'
-                              }
-                            />
-                            {isConnected ? 'Connected' : 'Connect'}
-                          </button>
-                        ) : (
-                          <span
-                            aria-hidden
-                            className='inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium opacity-0'
-                          >
-                            <Icon className='size-3.5' name='lucide:link-2' />
-                            Connect
-                          </span>
-                        )}
-                      </div>
-
+                <AnimateFadeIn key={item.id} delay={0.15 + idx * 0.05}>
+                  <div
+                    className={cn(
+                      'rounded-[12px] border p-3.5 transition',
+                      isSelected
+                        ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
+                        : isConnected
+                          ? 'border-green-8 bg-green-1'
+                          : 'border-gray-3 bg-surface hover:border-primary-5',
+                    )}
+                  >
+                    <div className='flex items-start gap-3'>
                       <button
                         type='button'
-                        className='mt-0.5 w-full text-left text-12 text-gray-11'
+                        className={cn(
+                          'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition',
+                          isSelected || isConnected
+                            ? 'bg-surface shadow-sm'
+                            : 'bg-gray-2',
+                        )}
                         onClick={() => {
                           setSelectedIntegration(item.id)
                           if (item.id === 'None') {
@@ -2980,11 +2949,90 @@ function WizardContent({
                           }
                         }}
                       >
-                        {item.description}
+                        <Icon
+                          className={cn(
+                            'size-4',
+                            isConnected
+                              ? 'text-green-11'
+                              : isSelected
+                                ? 'text-primary-9'
+                                : 'text-gray-11',
+                          )}
+                          name={item.icon}
+                        />
                       </button>
+
+                      <div className='min-w-0 flex-1'>
+                        <div className='flex items-center justify-between gap-2'>
+                          <button
+                            type='button'
+                            className='min-w-0 truncate text-left text-13 font-medium text-gray-12'
+                            onClick={() => {
+                              setSelectedIntegration(item.id)
+                              if (item.id === 'None') {
+                                setConnectedIntegrationId(null)
+                              }
+                            }}
+                          >
+                            {item.title}
+                          </button>
+
+                          {canConnect ? (
+                            <button
+                              type='button'
+                              className={cn(
+                                'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium transition',
+                                isConnected
+                                  ? 'bg-green-3 text-green-11'
+                                  : 'bg-primary-3 text-primary-11 hover:bg-primary-4',
+                              )}
+                              onClick={() => {
+                                if (isConnected) {
+                                  setConnectedIntegrationId(null)
+                                  if (selectedIntegration === item.id) {
+                                    setSelectedIntegration('None')
+                                  }
+                                  return
+                                }
+                                setSelectedIntegration(item.id)
+                                setConnectedIntegrationId(item.id)
+                              }}
+                            >
+                              <Icon
+                                className='size-3.5'
+                                name={
+                                  isConnected ? 'lucide:check' : 'lucide:link-2'
+                                }
+                              />
+                              {isConnected ? 'Connected' : 'Connect'}
+                            </button>
+                          ) : (
+                            <span
+                              aria-hidden
+                              className='inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium opacity-0'
+                            >
+                              <Icon className='size-3.5' name='lucide:link-2' />
+                              Connect
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          type='button'
+                          className='mt-0.5 w-full text-left text-12 text-gray-11'
+                          onClick={() => {
+                            setSelectedIntegration(item.id)
+                            if (item.id === 'None') {
+                              setConnectedIntegrationId(null)
+                            }
+                          }}
+                        >
+                          {item.description}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </AnimateFadeIn>
               )
             })}
           </div>
