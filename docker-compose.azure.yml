@@ -11,16 +11,14 @@ services:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/api:latest
     restart: always
 
-  # agents + redis temporarily disabled until DATABASE_URL is configured.
-  # When agents crashes on startup, Azure marks the whole multi-container
-  # site unhealthy and stops the .NET API too.
-  # agents:
-  #   image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
-  #   restart: always
-  #   environment:
-  #     REDIS_URL: redis://redis:6379/0
-  #   depends_on:
-  #     - redis
-  # redis:
-  #   image: redis:7-alpine
-  #   restart: always
+  agents:
+    image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
+    restart: always
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    restart: always
