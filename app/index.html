@@ -1,0 +1,61 @@
+<!doctype html>
+<html
+  lang="en"
+  dir="ltr"
+  data-mantine-color-scheme="light"
+  suppressHydrationWarning
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.svg" />
+    <meta name="theme-color" content="#7C5CFF" />
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('mantine-color-scheme-value')
+          var preference =
+            stored === 'light' || stored === 'dark' || stored === 'auto'
+              ? stored
+              : 'auto'
+          var resolved =
+            preference !== 'auto'
+              ? preference
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.setAttribute(
+            'data-mantine-color-scheme',
+            resolved,
+          )
+          document.documentElement.setAttribute(
+            'data-theme-preference',
+            preference,
+          )
+          document.documentElement.setAttribute('data-resolved-theme', resolved)
+          document.documentElement.style.colorScheme = resolved
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta)
+            meta.setAttribute(
+              'content',
+              resolved === 'dark' ? '#121113' : '#7C5CFF',
+            )
+        } catch (e) {}
+      })()
+    </script>
+    <meta
+      name="description"
+      content="Web site created using create-tsrouter-app"
+    />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>EZOFIS | AI Workflow Automation</title>
+  </head>
+
+  <body
+    class="scrollbar bg-surface font-inter text-13 text-gray-11 selection:bg-primary-9 selection:text-white"
+  >
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

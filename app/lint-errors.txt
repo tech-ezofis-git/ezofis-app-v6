@@ -1,0 +1,669 @@
+
+> lint
+> eslint . --fix
+
+
+E:\EZOFIS\V6\App\V6\src\api\auth.ts
+   22:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   23:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  177:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  178:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  205:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  224:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  225:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  252:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  264:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  265:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  287:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  288:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  310:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  311:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  333:66  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  334:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  351:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  363:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  364:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  391:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  403:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  404:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  425:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  437:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  438:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  459:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  471:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  502:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  503:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  530:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\axios.ts
+  36:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:18  error  'parseError' is defined but never used    @typescript-eslint/no-unused-vars
+
+E:\EZOFIS\V6\App\V6\src\api\connector.ts
+  18:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\file\file.ts
+  10:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\folders\folders.ts
+   5:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  69:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  81:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\folders\queries.ts
+  16:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\form\form.ts
+    4:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   26:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   27:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   40:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   41:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   61:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  100:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\form\queries.ts
+   57:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\requests\requests.ts
+    3:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    4:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   20:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   48:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   64:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  187:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:72  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  215:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  229:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  245:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  260:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  294:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  309:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  340:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  375:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  409:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  424:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  440:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  458:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  491:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  506:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  506:65  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  536:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  570:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  588:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  603:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  668:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  668:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  681:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  695:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  709:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  739:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  753:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  783:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  831:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  845:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  859:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\user.ts
+   4:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\api\workflow\workflow.ts
+  3:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  4:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\BarLoader.tsx
+  43:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\data-table\DataTable.tsx
+   23:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\data-table\TableActionBar.tsx
+  35:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\data-table\helpers\transformColumns.tsx
+  15:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\icon\Icon.tsx
+  18:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\inputs\InputText.tsx
+  18:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\inputs\password\InputPassword.tsx
+  17:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\base\inputs\select\Combobox.tsx
+  54:8  warning  React Hook useEffect has a missing dependency: 'comboboxStore'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\EZOFIS\V6\App\V6\src\components\common\ask-ai\stores\useAskAIStore.ts
+  9:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\common\file-sheet\FileSheet.tsx
+  156:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\components\common\file-upload\FIleUpload.tsx
+  84:55  warning  React Hook useImperativeHandle has a missing dependency: 'open'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\EZOFIS\V6\App\V6\src\features\builder\components\FieldSidebar.tsx
+  51:6  warning  React Hook useEffect has missing dependencies: 'activeField' and 'form'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\EZOFIS\V6\App\V6\src\features\builder\components\Page.tsx
+  23:24  warning  Should be ${variable}, not ${object.property} or ${myFunction()}  lingui/no-expression-in-message
+  59:31  warning  Should be ${variable}, not ${object.property} or ${myFunction()}  lingui/no-expression-in-message
+
+E:\EZOFIS\V6\App\V6\src\helpers\new-field.ts
+   4:12  error  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  47:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\dashboard\workflows\accounts-payable\components\Overview.tsx
+  204:9  warning  The 'lineItems' logical expression could make the dependencies of useEffect Hook (at line 232) change on every render. To fix this, wrap the initialization of 'lineItems' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\FormBuilderPage.tsx
+  13:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\form\AddFieldInline.tsx
+  339:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\form\AddPageInline.tsx
+  88:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\form\Page.tsx
+  279:4  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\form\PublishModal.tsx
+  172:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\form\PublishSidebar.tsx
+  164:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\form\QuestionCard.tsx
+  12:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\preview\LivePreview.tsx
+  302:9   error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  330:9   error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  596:7   error  Unexpected lexical declaration in case block  no-case-declarations
+  606:36  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  624:38  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\build\components\settings\FieldSettings.tsx
+   99:6   warning  React Hook useEffect has a missing dependency: 'activeQuestion'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  138:14  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  679:25  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  716:44  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  739:69  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  756:69  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  793:16  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\components\settings\components\WelcomeThankYouSettings.tsx
+  110:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\form-builder\store\formStore.ts
+    9:12  error  'e' is defined but never used             @typescript-eslint/no-unused-vars
+   39:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   61:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   62:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   71:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  310:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  311:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  400:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  646:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  650:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  653:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  655:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  657:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  659:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\forms\components\Table.tsx
+   25:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   63:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   83:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   94:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  243:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  312:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\RequestsPage.tsx
+   44:32  error    Unexpected any. Specify a different type                                                                                                                        @typescript-eslint/no-explicit-any
+   68:55  error    Unexpected any. Specify a different type                                                                                                                        @typescript-eslint/no-explicit-any
+  116:14  error    'error' is defined but never used                                                                                                                               @typescript-eslint/no-unused-vars
+  141:9   error    Expected an assignment or function call and instead saw an expression                                                                                           @typescript-eslint/no-unused-expressions
+  146:6   warning  React Hook useEffect has missing dependencies: 'handleGetAllRequestMetaById', 'refetch', and 'stopRefresh'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  165:6   warning  React Hook useEffect has missing dependencies: 'activeTab' and 'setRequestListTab'. Either include them or remove the dependency array                          react-hooks/exhaustive-deps
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\GridView.tsx
+   84:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  122:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  185:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  213:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  263:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  348:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  399:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  401:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  419:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  489:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\InboxList.tsx
+   22:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   32:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   37:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   39:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:54  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  169:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  212:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  234:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\SummaryCard.tsx
+   24:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  171:24  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\SummaryMetric.tsx
+    8:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   10:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\columns\components\DTModelTable.tsx
+  12:10  error    Unexpected any. Specify a different type                                                                                                                                                  @typescript-eslint/no-explicit-any
+  16:9   warning  The 'safeRows' conditional could make the dependencies of useMemo Hook (at line 28) change on every render. To fix this, wrap the initialization of 'safeRows' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\columns\components\DynamicTableCell.tsx
+  16:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\columns\components\DynamicTableModal.tsx
+  21:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\columns\components\FileUploadCell.tsx
+  13:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:8   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\columns\components\RequestRowActionsMenu.tsx
+   8:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  35:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:75  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:75  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\columns\useDynamicColumns.tsx
+   37:60  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  156:22  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  157:17  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  170:27  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  178:21  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  197:27  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  203:45  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  213:27  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  219:48  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  229:27  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  235:50  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  245:27  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  251:47  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  265:33  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  277:33  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  292:33  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  307:43  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  308:18  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  310:52  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  311:18  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  323:31  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  327:32  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  341:31  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  414:22  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  423:23  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\Request.tsx
+   32:10  error    Unexpected any. Specify a different type                                                                                                                                                                    @typescript-eslint/no-explicit-any
+   68:9   warning  The 'agentDataList' logical expression could make the dependencies of useMemo Hook (at line 101) change on every render. To fix this, wrap the initialization of 'agentDataList' in its own useMemo() Hook  react-hooks/exhaustive-deps
+   89:6   warning  React Hook useEffect has missing dependencies: 'activeTab', 'agentDataList', and 'selectedAgentId'. Either include them or remove the dependency array                                                      react-hooks/exhaustive-deps
+   97:6   warning  React Hook useEffect has a missing dependency: 'agentDataList'. Either include it or remove the dependency array                                                                                            react-hooks/exhaustive-deps
+  100:35  error    Unexpected any. Specify a different type                                                                                                                                                                    @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\Footer.tsx
+  4:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\Header.tsx
+  16:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\newrequest\FileUpload.tsx
+   45:44  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+   54:64  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+   67:6   warning  React Hook useEffect has missing dependencies: 'handleCreateRequest', 'isSubmitting', 'pollingActive', and 'pollingProcessId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+   71:6   warning  React Hook useEffect has a missing dependency: 'handleFolderFetch'. Either include it or remove the dependency array                                                               react-hooks/exhaustive-deps
+   91:45  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+   96:25  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+  103:25  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+  208:26  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+  213:19  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+  213:30  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+  218:49  error    Unexpected any. Specify a different type                                                                                                                                           @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\newrequest\ProcessingScreen.tsx
+   44:28  error    Unexpected any. Specify a different type                                                                                  @typescript-eslint/no-explicit-any
+  159:6   warning  React Hook useEffect has a missing dependency: 'loadingPhrases.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\newrequest\poFlow\PoSetupFlowPage.tsx
+   20:41  error  Unexpected empty object pattern           no-empty-pattern
+   93:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:14  error  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  310:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  322:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\newrequest\poFlow\steps\Step1TemplateUpload.tsx
+  104:14  error  'error' is defined but never used         @typescript-eslint/no-unused-vars
+  272:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\attachment\Attachments.tsx
+  67:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\comment\Comments.tsx
+   16:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   18:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   19:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   45:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   97:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  303:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  325:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  329:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\history\History.tsx
+  33:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\overview\Overview.tsx
+    81:16  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+    85:20  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   121:4   error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   205:52  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   220:6   warning  React Hook useEffect has a missing dependency: 'selectedFile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   226:75  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   252:14  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   855:45  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   856:47  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  1207:56  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  1213:55  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\overview\components\discrepancies\Discrepancies.tsx
+   7:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\overview\components\line-items\LineItems.tsx
+   13:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\overview\components\line-items\LineItemsCards.tsx
+   7:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\overview\components\properties\Properties.tsx
+  8:9  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\components\request\components\sections\overview\components\properties\PropertiesCards.tsx
+  6:9  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\hooks\useAttachments.ts
+  29:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\hooks\useComments.ts
+  23:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\hooks\useFormMetaData.ts
+  17:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\hooks\useHistory.ts
+  15:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\hooks\useInboxData.ts
+   25:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   65:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   92:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   95:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  100:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\hooks\useRequestDetails.ts
+  37:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\stores\useRequestStore.ts
+  12:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\types.ts
+  37:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\utils\dynamicTable.utils.ts
+   3:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   8:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  26:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  51:66  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  77:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  81:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\requests\utils\workflow.utils.ts
+  23:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\reset-password\ResetPasswordPage.tsx
+  95:14  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  95:21  error  Empty block statement              no-empty
+
+E:\EZOFIS\V6\App\V6\src\pages\sign-in\components\SignInForm.tsx
+  144:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  192:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  206:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  258:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  298:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  334:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  538:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\sign-up\components\SignUpForm.tsx
+   71:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\sign-up\components\VerifyEmailForm.tsx
+  44:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  82:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\AddNodeMenu.tsx
+  182:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\PropertiesPanel.tsx
+   74:6   warning  React Hook useEffect has a missing dependency: 'node'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  464:43  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\WorkflowBuilder.tsx
+  211:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\WorkflowSettings.tsx
+   95:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  100:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  121:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  125:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\nodes\CustomNode.tsx
+  48:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\settings\APAgentSettingsPanel.tsx
+   66:49  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+   77:33  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+   93:44  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+   96:54  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+   99:52  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  102:44  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  105:52  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  173:55  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  187:47  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  199:41  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  204:40  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  210:40  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  220:40  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  236:32  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  254:43  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  280:6   warning  React Hook useEffect has missing dependencies: 'invoiceType.name', 'poMatching.name', and 'vendorMustExist'. Either include them or remove the dependency array                                    react-hooks/exhaustive-deps
+  296:6   warning  React Hook useEffect has missing dependencies: 'getMasterOption', 'glSource', 'invoiceMaster', 'matterSource', 'poMaster', and 'vendorSource'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  751:32  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+  972:50  error    Unexpected any. Specify a different type                                                                                                                                                           @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\settings\EmailSettingsPanel.tsx
+   37:49  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+   87:37  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  115:13  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  127:6   warning  React Hook useEffect has a missing dependency: 'updateNodeData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  158:47  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  185:6   warning  React Hook useEffect has a missing dependency: 'queryClient'. Either include it or remove the dependency array     react-hooks/exhaustive-deps
+  576:50  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\settings\FTPAgentSettingsPanel.tsx
+   31:49  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+   33:47  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+   68:37  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+   88:6   warning  React Hook useEffect has a missing dependency: 'path'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  110:67  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+  183:22  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+  541:50  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\settings\ManualUserSettingsPanel.tsx
+   31:31  error    Unexpected any. Specify a different type                                                                                                                                     @typescript-eslint/no-explicit-any
+   33:26  error    Unexpected any. Specify a different type                                                                                                                                     @typescript-eslint/no-explicit-any
+   40:33  error    Unexpected any. Specify a different type                                                                                                                                     @typescript-eslint/no-explicit-any
+   42:27  error    Unexpected any. Specify a different type                                                                                                                                     @typescript-eslint/no-explicit-any
+   52:49  error    Unexpected any. Specify a different type                                                                                                                                     @typescript-eslint/no-explicit-any
+   69:47  error    Unexpected any. Specify a different type                                                                                                                                     @typescript-eslint/no-explicit-any
+  107:6   warning  React Hook useEffect has missing dependencies: 'isGroupEnabled', 'isUserEnabled', 'selectedGroups', and 'selectedUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  237:50  error    Unexpected any. Specify a different type                                                                                                                                     @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\pages\workflows\components\settings\OCRAgentSettingsPanel.tsx
+   59:49  error    Unexpected any. Specify a different type                                                                                                                    @typescript-eslint/no-explicit-any
+   62:56  error    Unexpected any. Specify a different type                                                                                                                    @typescript-eslint/no-explicit-any
+   81:47  error    Unexpected any. Specify a different type                                                                                                                    @typescript-eslint/no-explicit-any
+   98:47  error    Unexpected any. Specify a different type                                                                                                                    @typescript-eslint/no-explicit-any
+  142:6   warning  React Hook useEffect has missing dependencies: 'assistantInput?.name', 'fieldExtraction', and 'region'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  359:29  error    Unexpected any. Specify a different type                                                                                                                    @typescript-eslint/no-explicit-any
+  373:50  error    Unexpected any. Specify a different type                                                                                                                    @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\routes\stories\badge.tsx
+  67:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\EZOFIS\V6\App\V6\src\routes\stories\colors.tsx
+  37:7  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+E:\EZOFIS\V6\App\V6\src\services\ai\gemini.ts
+  79:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 478 problems (452 errors, 26 warnings)
+

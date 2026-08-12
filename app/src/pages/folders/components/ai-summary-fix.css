@@ -1,0 +1,47 @@
+@keyframes ez-progress {
+  0% {
+    width: 0%;
+    transform: translateX(-20%);
+  }
+  50% {
+    width: 72%;
+    transform: translateX(20%);
+  }
+  100% {
+    width: 100%;
+    transform: translateX(0);
+  }
+}
+
+.ez-ai-progress {
+  animation: ez-progress 1.2s ease-in-out infinite;
+}
+
+.ez-ai-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-6) transparent;
+}
+
+.ez-ai-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ez-ai-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ez-ai-scroll::-webkit-scrollbar-thumb {
+  background: var(--gray-6);
+  border-radius: 999px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+}

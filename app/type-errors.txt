@@ -1,0 +1,65 @@
+
+> type-check
+> tsc -b
+
+src/components/base/inputs/InputSelectAsync.tsx(32,9): error TS2322: Type '(value: Option[]) => void' is not assignable to type '(value: { id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]'.
+      Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }'.
+        Types of property 'id' are incompatible.
+          Type 'string | number' is not assignable to type 'number'.
+            Type 'string' is not assignable to type 'number'.
+src/components/base/inputs/InputSelectMultipleAsync.tsx(19,8): error TS2322: Type '{ loading: boolean; options: { id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]; ref: ForwardedRef<HTMLButtonElement>; ... 26 more ...; rightSectionIcon?: string | undefined; }' is not assignable to type 'Props'.
+  Types of property 'onChange' are incompatible.
+    Type '(value: { id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]) => void' is not assignable to type '(value: { id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]) => void'.
+      Types of parameters 'value' and 'value' are incompatible.
+        Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]'.
+          Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }'.
+            Types of property 'id' are incompatible.
+              Type 'string | number' is not assignable to type 'number'.
+                Type 'string' is not assignable to type 'number'.
+src/components/base/inputs/select/ComboboxOptions.tsx(80,42): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/pages/form-builder/components/build/components/form/Page.tsx(1,22): error TS6133: 'Button' is declared but its value is never read.
+src/pages/form-builder/components/build/components/form/Page.tsx(5,69): error TS6133: 'QuestionType' is declared but its value is never read.
+src/pages/form-builder/components/build/components/form/Page.tsx(155,39): error TS6133: 'isLastInRow' is declared but its value is never read.
+src/pages/form-builder/components/build/components/preview/LivePreview.tsx(489,14): error TS2678: Type '"PHONE"' is not comparable to type 'QuestionType'.
+src/pages/form-builder/components/build/components/preview/LivePreview.tsx(491,14): error TS2678: Type '"CURRENCY"' is not comparable to type 'QuestionType'.
+src/pages/form-builder/components/build/components/preview/LivePreview.tsx(541,14): error TS2678: Type '"CHOICES"' is not comparable to type 'QuestionType'.
+src/pages/form-builder/components/build/components/preview/LivePreview.tsx(542,14): error TS2678: Type '"CHECKBOX"' is not comparable to type 'QuestionType'.
+src/pages/form-builder/components/build/components/preview/LivePreview.tsx(543,14): error TS2678: Type '"DROPDOWN"' is not comparable to type 'QuestionType'.
+src/pages/form-builder/components/build/components/preview/LivePreview.tsx(553,33): error TS2367: This comparison appears to be unintentional because the types 'QuestionType' and '"CHOICES"' have no overlap.
+src/pages/form-builder/components/common/Header.tsx(1,18): error TS6133: 'Group' is declared but its value is never read.
+src/pages/form-builder/components/settings/components/HeaderFooterSettings.tsx(7,9): error TS2339: Property 'showHeaderFooter' does not exist on type 'FormStore'.
+src/pages/form-builder/components/settings/components/HeaderFooterSettings.tsx(7,27): error TS2339: Property 'headerText' does not exist on type 'FormStore'.
+src/pages/form-builder/components/settings/components/HeaderFooterSettings.tsx(7,39): error TS2339: Property 'footerText' does not exist on type 'FormStore'.
+src/pages/form-builder/components/settings/components/HeaderFooterSettings.tsx(7,51): error TS2339: Property 'setHeaderFooter' does not exist on type 'FormStore'.
+src/pages/requests/RequestsPage.tsx(139,35): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'Number'.
+  Type 'string' is not assignable to type 'Number'.
+src/pages/requests/RequestsPage.tsx(144,53): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'Number'.
+  Type 'string' is not assignable to type 'Number'.
+src/pages/workflows/components/PropertiesPanel.tsx(15,1): error TS6133: 'authUserStore' is declared but its value is never read.
+src/pages/workflows/components/PropertiesPanel.tsx(66,17): error TS2304: Cannot find name 'setConnectionOptions'.
+src/pages/workflows/components/PropertiesPanel.tsx(66,38): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/pages/workflows/components/PropertiesPanel.tsx(77,17): error TS2304: Cannot find name 'setIsCreatingConnection'.
+src/pages/workflows/components/PropertiesPanel.tsx(78,17): error TS2304: Cannot find name 'setIsConnectionOpen'.
+src/pages/workflows/components/PropertiesPanel.tsx(79,17): error TS2304: Cannot find name 'setNewConnectionName'.
+src/pages/workflows/components/PropertiesPanel.tsx(80,17): error TS2304: Cannot find name 'setIsConnecting'.
+src/pages/workflows/components/settings/EmailSettingsPanel.tsx(42,31): error TS6133: 'setConnectionOptions' is declared but its value is never read.
+src/pages/workflows/components/settings/FTPAgentSettingsPanel.tsx(216,35): error TS2339: Property 'id' does not exist on type 'string'.
+src/pages/workflows/components/settings/OCRAgentSettingsPanel.tsx(297,33): error TS2322: Type 'string | number' is not assignable to type 'number | null'.
+  Type 'string' is not assignable to type 'number'.
+src/pages/workflows/components/WorkflowBuilder.tsx(98,41): error TS2339: Property 'sourceHandle' does not exist on type '{ id: string; source: string; target: string; type: string; }'.
+src/pages/workflows/components/WorkflowBuilder.tsx(99,41): error TS2339: Property 'targetHandle' does not exist on type '{ id: string; source: string; target: string; type: string; }'.
+src/pages/workflows/components/WorkflowBuilder.tsx(111,43): error TS2339: Property 'sourceHandle' does not exist on type '{ id: string; source: string; target: string; type: string; }'.
+src/pages/workflows/components/WorkflowBuilder.tsx(111,81): error TS2339: Property 'targetHandle' does not exist on type '{ id: string; source: string; target: string; type: string; }'.
+src/routes/stories/input-select-multiple.tsx(192,19): error TS2322: Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }[]'.
+  Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }'.
+    Types of property 'id' are incompatible.
+      Type 'string | number' is not assignable to type 'number'.
+        Type 'string' is not assignable to type 'number'.
+src/routes/stories/input-select.tsx(314,19): error TS2322: Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; } | null' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; } | null'.
+  Type '{ id: string | number; name: string; description?: string | undefined; disabled?: boolean | undefined; }' is not assignable to type '{ id: number; name: string; description?: string | undefined; disabled?: boolean | undefined; }'.
+    Types of property 'id' are incompatible.
+      Type 'string | number' is not assignable to type 'number'.
+        Type 'string' is not assignable to type 'number'.

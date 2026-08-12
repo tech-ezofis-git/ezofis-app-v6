@@ -1,0 +1,73 @@
+@layer mantine {
+  /* Mantine overlays & popovers inherit app surface tokens */
+  .mantine-Modal-overlay,
+  .mantine-Drawer-overlay {
+    background-color: var(--overlay-backdrop) !important;
+  }
+
+  .mantine-Popover-dropdown,
+  .mantine-Menu-dropdown,
+  .mantine-Select-dropdown,
+  .mantine-Combobox-dropdown,
+  .mantine-DatePicker-dropdown,
+  .mantine-TimeInput-dropdown {
+    background-color: var(--surface-raised) !important;
+    border-color: var(--border-default) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  .mantine-Notification-root {
+    background-color: var(--surface-raised) !important;
+    border-color: var(--border-default) !important;
+  }
+
+  .mantine-Notification-title {
+    color: var(--gray-13);
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 24px;
+  }
+
+  .mantine-Notification-description {
+    color: var(--gray-11);
+    font-weight: normal;
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .mantine-Notification-closeButton {
+    color: var(--gray-11);
+  }
+
+  .mantine-Notification-closeButton:hover {
+    color: var(--gray-12);
+    background-color: var(--gray-4);
+  }
+
+  .mantine-Notification-icon {
+    background-color: transparent;
+  }
+
+  input[readonly]:not([disabled]) {
+    border-style: dashed;
+  }
+}
+
+.sparkline-chart {
+  @media (prefers-color-scheme: light) {
+    --chart-color: var(--mantine-color-orange-8);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    --chart-color: var(--mantine-color-lime-4);
+  }
+
+  /* Support for Mantine's manual theme switching */
+  [data-mantine-color-scheme='light'] & {
+    --chart-color: var(--mantine-color-orange-8);
+  }
+
+  [data-mantine-color-scheme='dark'] & {
+    --chart-color: var(--mantine-color-lime-4);
+  }
+}

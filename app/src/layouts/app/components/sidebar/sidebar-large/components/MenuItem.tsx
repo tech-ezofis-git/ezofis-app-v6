@@ -1,0 +1,65 @@
+import { Link, useLocation } from '@tanstack/react-router'
+import type { Menu } from '@/layouts/app/types'
+import Icon from '@/components/base/icon/Icon'
+import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
+import cn from '@/utils/cn'
+
+interface Props extends Menu {
+  iconClassName?: string
+  onClick: () => void
+}
+
+const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
+  const pathname = useLocation({
+    select: (location) => location.pathname,
+  })
+  const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
+  const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
+  const isActive = !isDemoFormOpen && pathname === route
+  const isNavigationLocked = useSetupStore(
+    (state) =>
+      state.restrictNavigationUntilApSetup && !state.isApSetUpCompleted,
+  )
+  const isLinkDisabled = isNavigationLocked && route !== '/'
+
+  const handleClick = () => {
+    // Close demo even when already on this route (pathname won't change).
+    closeDemoForm()
+    if (route === '/') {
+      exitSetupToDashboard()
+    }
+    onClick()
+  }
+
+  return (
+    <li key={label} onClick={isLinkDisabled ? undefined : handleClick}>
+      <Link
+        tabIndex={isLinkDisabled ? -1 : undefined}
+        to={route}
+        className={cn(
+          'flex h-9 items-center gap-2 rounded px-2 font-medium text-gray-12 transition-colors hover:bg-gray-2 hover:text-gray-13 focus-visible:bg-gray-2 focus-visible:outline-0',
+          isActive && 'bg-gray-3',
+          isLinkDisabled && 'pointer-events-none cursor-not-allowed opacity-40',
+        )}
+      >
+        <Icon
+          name={icon}
+          className={cn(
+            'transition-colors',
+            isActive
+              ? 'text-primary-11'
+              : 'text-gray-11 group-hover:text-gray-12',
+            iconClassName,
+          )}
+        />
+
+        <div className='leading-5'>{label}</div>
+      </Link>
+    </li>
+  )
+}
+
+MenuItem.displayName = 'MenuItem'
+export default MenuItem

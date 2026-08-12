@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SaaSApp.Repository.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Postgres (new) -->
+    <PackageReference Include="Npgsql" Version="8.0.9" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Hangfire.Core" Version="1.8.14" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+    <PackageReference Include="PDFsharp" Version="6.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Repository.Application\SaaSApp.Repository.Application.csproj" />
+    <ProjectReference Include="..\..\BlobStorage\SaaSApp.BlobStorage.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\MultiTenancy\SaaSApp.MultiTenancy.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Catalog\SaaSApp.Catalog.csproj" />
+    <ProjectReference Include="..\..\Users\Users.Infrastructure\SaaSApp.Users.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Phase 9: SQL Server original dropped from the embedded resources (RepositorySchemaService.cs
+         only ever loaded the Postgres-ported version at runtime, per the Link name below, unchanged
+         from Phase 4/8). The original SQL Server script stays on disk untouched at scripts\. -->
+    <EmbeddedResource Include="..\..\..\..\scripts\postgres\CreateRepositorySchema.sql" Link="CreateRepositorySchema.postgres.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Assets\ezofis-logo-mark.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
