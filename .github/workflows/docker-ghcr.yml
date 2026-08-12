@@ -60,6 +60,8 @@ jobs:
             VITE_V6_BASE_URL=${{ vars.VITE_V6_BASE_URL || '/api' }}
             VITE_POSTHOG_HOST=${{ vars.VITE_POSTHOG_HOST || 'https://us.i.posthog.com' }}
             VITE_POSTHOG_KEY=${{ vars.VITE_POSTHOG_KEY || 'phc_disabled_placeholder' }}
+            VITE_GOOGLE_CLIENT_ID=${{ vars.VITE_GOOGLE_CLIENT_ID || 'disabled-placeholder.apps.googleusercontent.com' }}
+            VITE_MSAL_CLIENT_ID_DEFAULT=${{ vars.VITE_MSAL_CLIENT_ID_DEFAULT || '00000000-0000-0000-0000-000000000000' }}
 
   build-and-push-api:
     name: Build & Push Back-End (api)
