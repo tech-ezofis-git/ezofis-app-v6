@@ -75,7 +75,7 @@
   .sidebar { padding: 16px; height: fit-content; position: sticky; top: 20px; }
   .sidebar h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 0 0 10px; }
   .sidebar label { display: block; font-size: 12px; color: var(--text-secondary); margin: 14px 0 4px; }
-  .sidebar input[type=text], .sidebar input[type=password] {
+  .sidebar input[type=text], .sidebar input[type=password], .sidebar select {
     width: 100%; padding: 8px 10px; font-size: 13px; font-family: inherit;
     border: 1px solid var(--border-default); border-radius: var(--radius-sm);
     color: var(--text-primary); background: var(--surface-secondary);
@@ -178,15 +178,25 @@
     </div>
 
     <h2 style="margin-top:20px">Model &amp; Connection</h2>
-    <label for="llmModel">Model</label>
-    <input type="text" id="llmModel" placeholder="gpt-4.1-mini" />
+    <label for="llmPreset">Model</label>
+    <select id="llmPreset"></select>
+    <div class="field-hint" id="llmPresetHint"></div>
 
-    <label for="llmApiBase">API base <span style="font-weight:400">(optional — custom/self-hosted/Azure endpoint)</span></label>
-    <input type="text" id="llmApiBase" placeholder="https://your-endpoint/v1" />
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-size:13px;color:var(--text-secondary)">Advanced (manual override)</summary>
+      <label for="llmModel" style="margin-top:10px">Model string</label>
+      <input type="text" id="llmModel" placeholder="azure/gpt-4.1-mini" />
 
-    <label for="llmApiKey">API key <span style="font-weight:400">(optional)</span></label>
-    <input type="password" id="llmApiKey" placeholder="leave blank to keep current" />
-    <div class="field-hint" id="llmKeyHint"></div>
+      <label for="llmApiBase">API base</label>
+      <input type="text" id="llmApiBase" placeholder="https://your-resource.openai.azure.com" />
+
+      <label for="llmApiVersion">API version</label>
+      <input type="text" id="llmApiVersion" placeholder="2025-01-01-preview" />
+
+      <label for="llmApiKey">API key <span style="font-weight:400">(optional)</span></label>
+      <input type="password" id="llmApiKey" placeholder="leave blank to keep current" />
+      <div class="field-hint" id="llmKeyHint"></div>
+    </details>
 
     <div class="row" style="margin-top:10px">
       <button class="btn-primary" id="llmSaveBtn" style="flex:1">Save</button>
@@ -239,37 +249,95 @@ document.getElementById('newSessionBtn').addEventListener('click', () => {
 });
 
 // --- Model & Connection panel -------------------------------------------
+const llmPresetSelect = document.getElementById('llmPreset');
+const llmPresetHint = document.getElementById('llmPresetHint');
 const llmModelInput = document.getElementById('llmModel');
 const llmApiBaseInput = document.getElementById('llmApiBase');
+const llmApiVersionInput = document.getElementById('llmApiVersion');
 const llmApiKeyInput = document.getElementById('llmApiKey');
 const llmKeyHint = document.getElementById('llmKeyHint');
 const llmStatus = document.getElementById('llmStatus');
 const llmSaveBtn = document.getElementById('llmSaveBtn');
 const llmTestBtn = document.getElementById('llmTestBtn');
 
+let llmPresets = [];
+
 function setLlmStatus(kind, text) {
   llmStatus.className = 'llm-status ' + kind;
   llmStatus.textContent = text;
 }
 
-async function loadLlmConfig() {
+function fillPresetSelect(presets, selectedId) {
+  llmPresetSelect.innerHTML = '';
+  presets.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.region ? `${p.label} — ${p.region}` : p.label;
+    llmPresetSelect.appendChild(opt);
+  });
+  if (selectedId) llmPresetSelect.value = selectedId;
+}
+
+function updatePresetHint(presetId) {
+  const p = llmPresets.find(x => x.id === presetId);
+  if (!p) {
+    llmPresetHint.textContent = '';
+    return;
+  }
+  llmPresetHint.textContent = [
+    p.model_version ? `version ${p.model_version}` : null,
+    p.api_version ? `api ${p.api_version}` : null,
+    p.api_base || null,
+  ].filter(Boolean).join(' · ');
+}
+
+async function loadLlmPresetsAndConfig() {
   try {
-    const res = await fetch('/console/llm-config');
-    const data = await res.json();
+    const [presetsRes, configRes] = await Promise.all([
+      fetch('/console/llm-presets'),
+      fetch('/console/llm-config'),
+    ]);
+    const presetsData = await presetsRes.json();
+    const data = await configRes.json();
+    llmPresets = presetsData.presets || [];
+    const selected = data.preset_id || presetsData.default_preset_id || (llmPresets[0] && llmPresets[0].id);
+    fillPresetSelect(llmPresets, selected);
+    updatePresetHint(selected);
     llmModelInput.value = data.model || '';
     llmApiBaseInput.value = data.api_base || '';
+    llmApiVersionInput.value = data.api_version || '';
     llmKeyHint.textContent = data.has_api_key
-      ? 'A key is currently set server-side.'
-      : 'No key set — relying on a provider env var (e.g. OPENAI_API_KEY) in .env.';
+      ? 'A key is currently set server-side (from the selected preset).'
+      : 'No key set — relying on a provider env var in .env.';
   } catch (e) {
+    llmPresetHint.textContent = 'Could not load model presets.';
     llmKeyHint.textContent = 'Could not load current config.';
   }
 }
-loadLlmConfig();
+loadLlmPresetsAndConfig();
+
+llmPresetSelect.addEventListener('change', () => {
+  updatePresetHint(llmPresetSelect.value);
+  const p = llmPresets.find(x => x.id === llmPresetSelect.value);
+  if (p) {
+    llmModelInput.value = p.model || '';
+    llmApiBaseInput.value = p.api_base || '';
+    llmApiVersionInput.value = p.api_version || '';
+  }
+});
 
 async function saveLlmConfig() {
-  const payload = { model: llmModelInput.value.trim(), api_base: llmApiBaseInput.value.trim() };
-  if (llmApiKeyInput.value.trim()) payload.api_key = llmApiKeyInput.value.trim();
+  // Prefer preset switch — applies model/base/key/version server-side.
+  const payload = llmPresetSelect.value
+    ? { preset_id: llmPresetSelect.value }
+    : {
+        model: llmModelInput.value.trim(),
+        api_base: llmApiBaseInput.value.trim(),
+        api_version: llmApiVersionInput.value.trim(),
+      };
+  if (!payload.preset_id && llmApiKeyInput.value.trim()) {
+    payload.api_key = llmApiKeyInput.value.trim();
+  }
   llmSaveBtn.disabled = true;
   try {
     const res = await fetch('/console/llm-config', {
@@ -279,7 +347,7 @@ async function saveLlmConfig() {
     if (res.ok) {
       setLlmStatus('ok', `Saved — model "${data.model}"${data.api_base ? ' @ ' + data.api_base : ''}.`);
       llmApiKeyInput.value = '';
-      loadLlmConfig();
+      await loadLlmPresetsAndConfig();
     } else {
       setLlmStatus('fail', 'Save failed: ' + (data.detail || res.status));
     }

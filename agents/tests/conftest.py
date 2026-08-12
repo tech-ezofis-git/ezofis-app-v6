@@ -40,6 +40,13 @@ class _IsolatedFakeRedis:
 def client(monkeypatch):
     monkeypatch.setattr(main_module, "Redis", _IsolatedFakeRedis)
 
+    # Azure preset keys for Test Console — never real secrets in tests.
+    monkeypatch.setenv("AZURE_SOUTH_INDIA_API_KEY", "test-south-india-key")
+    monkeypatch.setenv("AZURE_EAST_US_API_KEY", "test-east-us-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
     fake_db_pool = FakeDBPool()
 
     async def fake_create_pool(*args, **kwargs):
@@ -50,3 +57,5 @@ def client(monkeypatch):
     with TestClient(main_module.app) as test_client:
         test_client.fake_db_pool = fake_db_pool
         yield test_client
+
+    get_settings.cache_clear()
