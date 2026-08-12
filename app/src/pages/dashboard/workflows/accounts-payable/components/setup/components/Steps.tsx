@@ -211,8 +211,7 @@ const Steps = () => {
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      // Changed h-full to flex-1 to work well within flex container
-      className='flex min-h-0 w-full flex-1 flex-col overflow-hidden'
+      className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden'
       exit={{ opacity: 0, y: 20 }}
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -251,7 +250,7 @@ const Steps = () => {
         </div>
       </AnimateSlideRight>
       <div className='grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[290px_1fr]'>
-        <AnimateSlideUp delay={0.2}>
+        <AnimateSlideUp className='h-full' delay={0.2}>
           <div className='hidden h-full border-r border-gray-3 bg-gray-1/30 pt-3 pr-2 pb-3 pl-3.5 xl:block'>
             <Stepper
               active={step}
@@ -263,7 +262,7 @@ const Steps = () => {
         </AnimateSlideUp>
 
         <div
-          className='col-span-1 h-full w-full overflow-y-auto'
+          className='col-span-1 h-full min-h-0 w-full overflow-y-auto scrollbar'
           ref={scrollContainerRef}
         >
           <div className='mx-auto w-full max-w-3xl px-6 pb-12 md:px-8 lg:px-10'>

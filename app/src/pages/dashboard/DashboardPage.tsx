@@ -167,6 +167,10 @@ const DashboardPage = () => {
 
           <AnimatePresence mode='wait'>
             <motion.div
+              className={cn(
+                'min-h-0 flex-1',
+                (isSetupStarted || isDmsSetupStarted) && 'h-full flex flex-col',
+              )}
               key={repositoryId || selectedOption?.value || 'ap'}
               initial={{ opacity: 0, y: 12, scale: 0.99 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
