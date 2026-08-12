@@ -60,14 +60,27 @@ export const buildWopiSrc = (fileId: string) =>
 export const buildViewerUrl = ({
   accessToken,
   wopiSrc,
+  postMessageOrigin,
 }: {
   accessToken: string
   wopiSrc: string
+  postMessageOrigin?: string
 }) => {
   const viewerUrl = withScheme(COLLABORA_VIEWER_URL_RAW)
-  return `${viewerUrl}?WOPISrc=${encodeURIComponent(wopiSrc)}&access_token=${encodeURIComponent(
-    accessToken,
-  )}&ui=compact&permission=edit`
+  const origin =
+    postMessageOrigin ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
+  const originParam = origin
+    ? `&PostMessageOrigin=${encodeURIComponent(origin)}`
+    : ''
+
+  return (
+    `${viewerUrl}?WOPISrc=${encodeURIComponent(wopiSrc)}` +
+    `&access_token=${encodeURIComponent(accessToken)}` +
+    `&ui_defaults=UIMode=classic;TextRuler=false;TextSidebar=false` +
+    `&permission=edit` +
+    originParam
+  )
 }
 
 export const downloadEditedDocument = async (
@@ -75,27 +88,36 @@ export const downloadEditedDocument = async (
   fileType: string,
 ): Promise<Blob> => {
   const isPdf = String(fileType || '').toLowerCase() === 'pdf'
-  const primaryPath = isPdf
-    ? `/files/${fileId}/pdf`
-    : `/wopi/files/${fileId}/contents`
-  const fallbackPath = `/wopi/files/${fileId}/contents`
 
-  // eslint-disable-next-line no-console
-  console.log('[collabora-debug] GET', primaryPath, 'from collaboraAxios baseURL:', COLLABORA_API_URL)
-  try {
-    const { data } = await collaboraAxios.get(primaryPath, { responseType: 'blob' })
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] GET', primaryPath, 'success, blob size:', data?.size)
+  if (!isPdf) {
+    const { data } = await collaboraAxios.get(
+      `/wopi/files/${fileId}/contents`,
+      { responseType: 'blob' },
+    )
     return data
-  } catch (err) {
-    if (primaryPath !== fallbackPath) {
-      // eslint-disable-next-line no-console
-      console.warn('[collabora-debug] GET', primaryPath, 'failed, trying fallback:', fallbackPath)
-      const { data } = await collaboraAxios.get(fallbackPath, { responseType: 'blob' })
-      // eslint-disable-next-line no-console
-      console.log('[collabora-debug] GET fallback', fallbackPath, 'success, blob size:', data?.size)
-      return data
-    }
-    throw err
   }
+
+  const { data } = await collaboraAxios.get(`/files/${fileId}/pdf`, {
+    responseType: 'blob',
+  })
+  return data
+}
+
+export const fetchUpdatedPdfBlob = async (
+  fileId: string,
+  minVersion: number,
+  attempts = 12,
+): Promise<{ blob: Blob; version: number }> => {
+  for (let i = 0; i < attempts; i++) {
+    const { data } = await collaboraAxios.get(`/files/${fileId}/pdf-base64`)
+    if (data.version > minVersion) {
+      const bytes = Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0))
+      return {
+        blob: new Blob([bytes], { type: 'application/pdf' }),
+        version: data.version,
+      }
+    }
+    await new Promise((r) => setTimeout(r, 1500))
+  }
+  throw new Error('Updated PDF did not appear in time')
 }

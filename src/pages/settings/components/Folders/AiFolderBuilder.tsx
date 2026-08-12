@@ -21,6 +21,7 @@ import {
   type FolderConfigField,
   type FolderConfigSuggestion,
 } from '@/services/ai/folderConfig'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import cn from '@/utils/cn'
 import {
   BuilderTimelineStep,
@@ -191,10 +192,10 @@ function TypewriterText({
 
 function AiSparkleIcon({ size = 14 }: { size?: number }) {
   return (
-    <Icon
-      className='shrink-0 text-primary-9'
-      name='tabler:sparkles'
+    <AiBrandIcon
+      className='shrink-0'
       style={{ height: size, width: size }}
+      variant='outline-purple'
     />
   )
 }
@@ -1567,12 +1568,12 @@ export default function AiFolderBuilder({
     const iconGutter = 'pl-[28px]'
 
     return (
-      <>
+      <div className='space-y-4'>
         {questionMessage ? (
           <div className='space-y-3'>
             <div className='flex items-start gap-2 text-[13px] leading-relaxed text-[var(--gray-12)]'>
-              <span className='mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-3 text-primary-9'>
-                <Icon className='size-3' name='lucide:bot' />
+              <span className='mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-3'>
+                <AiBrandIcon className='size-3.5 shrink-0' variant='outline-purple' />
               </span>
               <div className='min-w-0 flex-1'>
                 <TypewriterText
@@ -1722,7 +1723,7 @@ export default function AiFolderBuilder({
             />
           </div>
         ) : null}
-      </>
+      </div>
     )
   }
 
@@ -1747,14 +1748,14 @@ export default function AiFolderBuilder({
         </div>
       </div>
     ),
-    2: draft.storage ? <StorageBadge storage={draft.storage} /> : null,
-    3: (
+    2: (
       <p className='text-[12px] text-[var(--gray-11)]'>
         {editableFields.length
           ? t`${editableFields.length} fields configured`
           : t`Fields pending`}
       </p>
     ),
+    3: draft.storage ? <StorageBadge storage={draft.storage} /> : null,
     4: (
       <span className='rounded-full bg-[var(--gray-2)] px-2.5 py-1 text-[11px] font-medium text-[var(--gray-11)]'>
         {draft.versioning}
@@ -1798,25 +1799,6 @@ export default function AiFolderBuilder({
             size='sm'
             variant='subtle'
             onClick={() => editFromReview(1)}
-          />
-        </div>
-
-        <div className='flex items-start justify-between gap-3 border-t border-[var(--gray-3)] pt-4'>
-          <div>
-            <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
-              {t`Storage`}
-            </p>
-            <div className='mt-2'>
-              <StorageBadge storage={draft.storage} />
-            </div>
-          </div>
-          <Button
-            color='gray'
-            icon='lucide:pencil'
-            label={t`Edit`}
-            size='sm'
-            variant='subtle'
-            onClick={() => editFromReview(2)}
           />
         </div>
 
@@ -1938,6 +1920,25 @@ export default function AiFolderBuilder({
                     )
                   })}
               </div>
+            </div>
+          </div>
+          <Button
+            color='gray'
+            icon='lucide:pencil'
+            label={t`Edit`}
+            size='sm'
+            variant='subtle'
+            onClick={() => editFromReview(2)}
+          />
+        </div>
+
+        <div className='flex items-start justify-between gap-3 border-t border-[var(--gray-3)] pt-4'>
+          <div>
+            <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
+              {t`Storage`}
+            </p>
+            <div className='mt-2'>
+              <StorageBadge storage={draft.storage} />
             </div>
           </div>
           <Button

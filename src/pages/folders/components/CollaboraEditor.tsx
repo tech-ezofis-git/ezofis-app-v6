@@ -6,6 +6,7 @@ import {
   buildViewerUrl,
   buildWopiSrc,
   downloadEditedDocument,
+  fetchUpdatedPdfBlob,
   uploadDocumentToCollabora,
 } from '@/api/collabora/collabora'
 import showToast from '@/components/base/toast/showToast'
@@ -36,6 +37,7 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const fileIdRef = useRef<string | null>(null)
+  const versionRef = useRef<number>(1)
 
   useEffect(() => {
     let cancelled = false
@@ -52,6 +54,7 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
         if (cancelled) return
 
         fileIdRef.current = fileId
+        versionRef.current = 1
         const wopiSrc = buildWopiSrc(fileId)
         const url = buildViewerUrl({ accessToken: token, wopiSrc })
         // eslint-disable-next-line no-console
@@ -98,11 +101,6 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
     // eslint-disable-next-line no-console
     console.log('[collabora-debug] Sending postMessage to iframe window:', str)
     iframeWindow.postMessage(str, '*')
-    try {
-      iframeWindow.postMessage(message, '*')
-    } catch {
-      // ignore object postMessage clone errors if any
-    }
   }, [])
 
   const handleIframeLoad = () => {
@@ -162,17 +160,25 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
 
         if (isSuccess && fileIdRef.current) {
           try {
-            // eslint-disable-next-line no-console
-            console.log('[collabora-debug] STEP 4: Downloading edited document for fileId:', fileIdRef.current, 'fileType:', fileType)
-            const editedBlob = await downloadEditedDocument(
-              fileIdRef.current,
-              fileType,
-            )
-            // eslint-disable-next-line no-console
-            console.log('[collabora-debug] STEP 5: Downloaded edited blob. Size:', editedBlob?.size, 'type:', editedBlob?.type)
-            // eslint-disable-next-line no-console
-            console.log('[collabora-debug] STEP 6: Invoking onSave callback with blob...')
-            onSave(editedBlob)
+            const isPdf = String(fileType || '').toLowerCase() === 'pdf'
+            if (isPdf) {
+              // eslint-disable-next-line no-console
+              console.log('[collabora-debug] Fetching updated PDF blob version >', versionRef.current)
+              const { blob, version } = await fetchUpdatedPdfBlob(
+                fileIdRef.current,
+                versionRef.current,
+              )
+              versionRef.current = version
+              onSave(blob)
+            } else {
+              // eslint-disable-next-line no-console
+              console.log('[collabora-debug] STEP 4: Downloading edited document for fileId:', fileIdRef.current, 'fileType:', fileType)
+              const editedBlob = await downloadEditedDocument(
+                fileIdRef.current,
+                fileType,
+              )
+              onSave(editedBlob)
+            }
           } catch (error) {
             // eslint-disable-next-line no-console
             console.error('[collabora-debug] ERROR: Failed to download edited document:', error)
@@ -203,70 +209,24 @@ const CollaboraEditor: React.FC<CollaboraEditorProps> = ({
   }, [fileType, onSave, postToCollabora, t])
 
   const handleSave = async () => {
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 1: Save button clicked in top bar! fileId:', fileIdRef.current, 'fileType:', fileType)
+    if (!fileIdRef.current) return
     setIsSaving(true)
 
-    if (!fileIdRef.current) {
-      // eslint-disable-next-line no-console
-      console.warn('[collabora-debug] No fileIdRef found!')
-      setIsSaving(false)
-      return
-    }
-
-    const normalizedType = String(fileType || '').toLowerCase()
-
-    // For PDF files or non-office files, Collabora Online is in viewer mode and does not emit Action_Save_Resp.
-    // Download the document blob directly from the Collabora WOPI service and proceed with save.
-    if (normalizedType === 'pdf') {
-      // eslint-disable-next-line no-console
-      console.log('[collabora-debug] STEP 2 (PDF Mode): Direct download from Collabora container for fileId:', fileIdRef.current)
-      try {
-        const editedBlob = await downloadEditedDocument(fileIdRef.current, fileType)
-        // eslint-disable-next-line no-console
-        console.log('[collabora-debug] STEP 5: Successfully retrieved PDF blob. Size:', editedBlob?.size, 'bytes. Invoking onSave...')
-        onSave(editedBlob)
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[collabora-debug] ERROR: Failed to download PDF blob:', err)
-        showToast({
-          message: t`Couldn't retrieve the document file.`,
-          variant: 'error',
-        })
-      } finally {
-        setIsSaving(false)
-      }
-      return
-    }
-
-    // For docx / xlsx / pptx editable files, post Action_Save to Collabora iframe:
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 2: Posting Action_Save to Collabora iframe...')
-    postToCollabora({ MessageId: 'Action_Save', Values: { Notify: true, DontSaveIfUnmodified: false } })
+    // All types go through Collabora's save. PDFs are edited as ODG
+    // server-side and emit Action_Save_Resp like any other document.
+    postToCollabora({
+      MessageId: 'Action_Save',
+      Values: { Notify: true, DontSaveIfUnmodified: false },
+    })
 
     if (saveTimeoutRef.current) window.clearTimeout(saveTimeoutRef.current)
-    saveTimeoutRef.current = window.setTimeout(async () => {
-      // eslint-disable-next-line no-console
-      console.warn('[collabora-debug] Action_Save_Resp timeout (3s). Triggering automatic direct download fallback...')
-      try {
-        if (fileIdRef.current) {
-          const editedBlob = await downloadEditedDocument(fileIdRef.current, fileType)
-          // eslint-disable-next-line no-console
-          console.log('[collabora-debug] Fallback download successful! Blob size:', editedBlob?.size, 'bytes. Invoking onSave...')
-          onSave(editedBlob)
-          return
-        }
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[collabora-debug] Direct download fallback failed:', err)
-      } finally {
-        setIsSaving(false)
-      }
+    saveTimeoutRef.current = window.setTimeout(() => {
+      setIsSaving(false)
       showToast({
         message: t`Save request timed out inside the document editor.`,
         variant: 'error',
       })
-    }, 3000)
+    }, 30000)
   }
 
   return (

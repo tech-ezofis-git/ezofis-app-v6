@@ -1138,30 +1138,22 @@ export function DocumentDetailsView({
   }
 
   const handleCollaboraSave = async (blob: Blob) => {
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 7: handleCollaboraSave called in DocumentDetailsView. Blob size:', blob?.size, 'type:', blob?.type)
-
-    // DIAGNOSTIC: open the exact blob we're about to upload, so we can visually
-    // confirm it reflects the Collabora edit before it ever reaches the backend.
-    const debugBlobUrl = URL.createObjectURL(blob)
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] Edited blob object URL (opened in new tab):', debugBlobUrl)
-    window.open(debugBlobUrl, '_blank')
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      // eslint-disable-next-line no-console
-      console.log('[collabora-debug] Edited blob as base64 (first 200 chars):', String(reader.result).slice(0, 200))
-    }
-    reader.readAsDataURL(blob)
-
     setIsEditingDoc(false)
+
+    // Verification logging
+    const head = new Uint8Array(await blob.slice(0, 8).arrayBuffer())
+    // eslint-disable-next-line no-console
+    console.log(
+      '[verify] header:',
+      String.fromCharCode(...head),
+      'size:',
+      blob.size,
+      'type:',
+      blob.type,
+    )
+
     const metadata = await buildSaveMetadata()
     const fileName = data?.fileName || 'edited_document.pdf'
-
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 8: Extracted metadata:', metadata, 'FileName:', fileName)
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 9: Invoking persistEditedDocumentToRepository...')
 
     const { data: resData, error } = await persistEditedDocumentToRepository(
       repositoryId,
@@ -1170,9 +1162,6 @@ export function DocumentDetailsView({
       fileName,
       metadata,
     )
-
-    // eslint-disable-next-line no-console
-    console.log('[collabora-debug] STEP 10: persistEditedDocumentToRepository completed. Result:', { resData, error })
 
     if (error) {
       const detail =
