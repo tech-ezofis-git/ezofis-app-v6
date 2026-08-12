@@ -109,3 +109,20 @@ jobs:
           push: true
           tags: ${{ steps.meta-api.outputs.tags }}
           labels: ${{ steps.meta-api.outputs.labels }}
+
+  # The Azure Web App pulls :latest only on (re)start, so restart it after new
+  # images are pushed. Credentials: AZURE_CREDENTIALS repo secret (service
+  # principal scoped to rg-v6).
+  restart-webapp:
+    name: Restart Azure Web App
+    runs-on: ubuntu-latest
+    needs: [build-and-push-app, build-and-push-api]
+    if: always() && (needs.build-and-push-app.result == 'success' || needs.build-and-push-api.result == 'success')
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Restart web app to pull new images
+        run: az webapp restart --resource-group rg-v6 --name ezofis-app-v6
