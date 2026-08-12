@@ -9,17 +9,17 @@ caught here and re-raised as LLMAdapterError — a safe, generic error the
 caller can show to API clients without leaking the provider's raw exception
 (which can include request/response fragments) or a stack trace.
 
-Custom endpoints + runtime reconfiguration: `api_base`/`api_key` (from
-Settings at startup, or via `configure()` afterward) route calls at a
-specific base URL with a specific key instead of a standard provider's
-default routing — e.g. a self-hosted OpenAI-compatible server, or an
-Azure OpenAI resource exposing its `/openai/v1` surface (Bearer auth,
-`model` in the body — not the classic `api-key` header + `?api-version=`
-Azure protocol). `configure()` exists specifically for the Test Console
-(GET/POST /console/llm-config, app/main.py): every agent/ResponseComposer
-already holds a reference to the ONE shared LLMAdapter instance built in
-main.py's lifespan, so mutating it here takes effect for every subsequent
-call with no rewiring needed and no app restart.
+Custom endpoints + runtime reconfiguration: `api_base`/`api_key`/
+`api_version` (from Settings at startup, or via `configure()` afterward)
+route calls at a specific base URL with a specific key instead of a
+standard provider's default routing — e.g. a self-hosted OpenAI-compatible
+server, or classic Azure OpenAI (`azure/<deployment>` + `api_version` +
+resource `api_base`). `configure()` exists specifically for the Test
+Console (GET/POST /console/llm-config, app/main.py): every
+agent/ResponseComposer already holds a reference to the ONE shared
+LLMAdapter instance built in main.py's lifespan, so mutating it here
+takes effect for every subsequent call with no rewiring needed and no
+app restart.
 """
 import logging
 from typing import Optional
@@ -41,25 +41,43 @@ class LLMAdapter:
         self._model = settings.llm_model
         self._api_base = settings.llm_api_base or None
         self._api_key = settings.llm_api_key or None
+        self._api_version: Optional[str] = None
+        self._preset_id: Optional[str] = None
 
     def configure(
-        self, *, model: Optional[str] = None, api_base: Optional[str] = None, api_key: Optional[str] = None
+        self,
+        *,
+        model: Optional[str] = None,
+        api_base: Optional[str] = None,
+        api_key: Optional[str] = None,
+        api_version: Optional[str] = None,
+        preset_id: Optional[str] = None,
     ) -> None:
         """Runtime reconfiguration — see module docstring. Each argument
         only changes something if explicitly passed a non-None value;
-        pass an empty string to explicitly CLEAR api_base/api_key (e.g.
-        switching back to a standard provider that reads its key from the
-        environment). Never logs `api_key`'s value — only whether one is
-        now set (see `describe()`)."""
+        pass an empty string to explicitly CLEAR api_base/api_key/
+        api_version/preset_id (e.g. switching back to a standard provider
+        that reads its key from the environment). Never logs `api_key`'s
+        value — only whether one is now set (see `describe()`)."""
         if model is not None and model != "":
             self._model = model
         if api_base is not None:
             self._api_base = api_base or None
         if api_key is not None:
             self._api_key = api_key or None
+        if api_version is not None:
+            self._api_version = api_version or None
+        if preset_id is not None:
+            self._preset_id = preset_id or None
         logger.info(
             "llm_adapter_reconfigured",
-            extra={"model": self._model, "api_base": self._api_base, "has_api_key": bool(self._api_key)},
+            extra={
+                "model": self._model,
+                "api_base": self._api_base,
+                "api_version": self._api_version,
+                "preset_id": self._preset_id,
+                "has_api_key": bool(self._api_key),
+            },
         )
 
     def describe(self) -> dict:
@@ -67,7 +85,13 @@ class LLMAdapter:
         `api_key` value itself, only whether one is set (used by GET
         /console/llm-config so the Test Console can show current state
         without ever echoing a secret back)."""
-        return {"model": self._model, "api_base": self._api_base, "has_api_key": bool(self._api_key)}
+        return {
+            "model": self._model,
+            "api_base": self._api_base,
+            "api_version": self._api_version,
+            "preset_id": self._preset_id,
+            "has_api_key": bool(self._api_key),
+        }
 
     async def chat_completion(self, messages: list[dict[str, str]]) -> dict:
         """Call the configured LLM with a list of {role, content} messages.
@@ -76,12 +100,11 @@ class LLMAdapter:
         Raises LLMAdapterError on any provider failure.
         """
         model = self._model
-        # A custom api_base with a bare model name (no "provider/" prefix)
-        # is routed through LiteLLM's generic OpenAI-compatible client —
-        # exactly the wire format a self-hosted server or Azure OpenAI's
-        # /openai/v1 surface both speak (Bearer auth, model name in the
-        # body). A model the caller already prefixed (e.g. "azure/...",
-        # "anthropic/...") is left alone.
+        # Classic Azure (`azure/...`) keeps its prefix. A custom api_base
+        # with a bare model name (no "provider/" prefix) is routed through
+        # LiteLLM's generic OpenAI-compatible client — exactly the wire
+        # format a self-hosted server or Azure OpenAI's /openai/v1 surface
+        # both speak (Bearer auth, model name in the body).
         if self._api_base and "/" not in model:
             model = f"openai/{model}"
 
@@ -90,6 +113,8 @@ class LLMAdapter:
             kwargs["api_base"] = self._api_base
         if self._api_key:
             kwargs["api_key"] = self._api_key
+        if self._api_version:
+            kwargs["api_version"] = self._api_version
 
         try:
             response = await litellm.acompletion(**kwargs)
