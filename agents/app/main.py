@@ -139,6 +139,12 @@ from app.knowledge.hybrid_search import HybridSearch
 from app.knowledge.vector_store import VectorStore, VectorStoreUnavailableError
 from app.llm.adapter import LLMAdapter, LLMAdapterError
 from app.llm.embedding_adapter import EmbeddingAdapter, EmbeddingAdapterError
+from app.llm.model_presets import (
+    DEFAULT_PRESET_ID,
+    apply_preset,
+    get_preset,
+    list_presets_public,
+)
 from app.models.chat import ChatRequest, ChatResponse
 from app.models.pending_action import ConfirmActionResponse
 from app.tools.fetch_document import FETCH_DOCUMENT_SCHEMA, make_fetch_document_handler
@@ -210,6 +216,10 @@ async def lifespan(app: FastAPI):
     db_pool = await asyncpg.create_pool(settings.database_url)
 
     llm_adapter = LLMAdapter(settings)
+    # Prefer a hardcoded Azure preset when .env has no custom endpoint —
+    # the Test Console can switch presets at runtime via /console/llm-config.
+    if not settings.llm_api_base:
+        apply_preset(llm_adapter, DEFAULT_PRESET_ID)
     embedding_adapter = EmbeddingAdapter(settings)
     ezofis_client = EzofisClient()
     context_manager = ContextManager(redis_client, settings.session_ttl_seconds, ezofis_client)
@@ -338,14 +348,25 @@ async def console() -> HTMLResponse:
 
 class LLMConfigUpdate(BaseModel):
     """Body for POST /console/llm-config. Every field is optional — only
-    the fields you send are changed (see LLMAdapter.configure). Send an
-    empty string for `api_base`/`api_key` to explicitly clear it (e.g.
-    switching back to a standard provider that reads its key from the
-    environment)."""
+    the fields you send are changed (see LLMAdapter.configure). Send
+    `preset_id` to apply a hardcoded Azure preset (model + base + key +
+    api_version) from app/llm/model_presets.py. Send an empty string for
+    `api_base`/`api_key`/`api_version` to explicitly clear it."""
 
+    preset_id: Optional[str] = None
     model: Optional[str] = None
     api_base: Optional[str] = None
     api_key: Optional[str] = None
+    api_version: Optional[str] = None
+
+
+@app.get("/console/llm-presets")
+async def get_llm_presets() -> dict:
+    """Hardcoded Azure OpenAI deployments the Test Console can switch
+    between. Never includes API keys — those stay server-side in
+    model_presets.py and are applied when POST /console/llm-config sends
+    a preset_id."""
+    return {"presets": list_presets_public(), "default_preset_id": DEFAULT_PRESET_ID}
 
 
 @app.get("/console/llm-config")
@@ -364,10 +385,20 @@ async def update_llm_config(payload: LLMConfigUpdate, request: Request) -> dict:
     """Runtime model/endpoint reconfiguration from the Test Console — see
     LLMAdapter.configure's docstring for why this takes effect for every
     agent immediately, no app restart needed. In-memory only: a restart
-    reverts to whatever LLM_MODEL/LLM_API_BASE/LLM_API_KEY are in `.env`.
+    reverts to the default preset (or .env if LLM_API_BASE is set).
     Never logs the submitted api_key's value (see LLMAdapter.configure)."""
     llm_adapter: LLMAdapter = request.app.state.llm_adapter
-    llm_adapter.configure(model=payload.model, api_base=payload.api_base, api_key=payload.api_key)
+    if payload.preset_id is not None and payload.preset_id != "":
+        if get_preset(payload.preset_id) is None:
+            raise HTTPException(status_code=400, detail=f"Unknown preset_id: {payload.preset_id}")
+        apply_preset(llm_adapter, payload.preset_id)
+        return llm_adapter.describe()
+    llm_adapter.configure(
+        model=payload.model,
+        api_base=payload.api_base,
+        api_key=payload.api_key,
+        api_version=payload.api_version,
+    )
     return llm_adapter.describe()
 
 
