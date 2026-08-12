@@ -22,3 +22,7 @@ ezofis-app-v6/
 
 ### Back-End (`/api`)
 - **API Services**: Maintained by the Back-End engineering team.
+
+### Agents (/agents)
+- Synced from [AIorchestrator](https://github.com/tech-ezofis-git/AIorchestrator)
+- Console UI: /console  Chat API: POST /chat`r
