@@ -1,7 +1,7 @@
 import { Divider, Rating, Skeleton, Stack, Tooltip } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import type { Column } from '@/components/base/data-table/types'
 import type { Question } from '@/pages/form-builder/store/formStore'
@@ -23,6 +23,8 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
 import Modal from '@/components/base/Modal'
 import Pagination from '@/components/base/pagination/Pagination'
 import Tab from '@/components/base/tabs/Tab'
@@ -148,6 +150,570 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
       values,
     }
   })
+}
+
+// Helper for case-insensitive and normalized key lookup in line item row objects
+const getRowVal = (row: Record<string, any>, candidateKeys: string[]) => {
+  if (!row || typeof row !== 'object') return undefined
+  const normMap = Object.keys(row).reduce((acc, k) => {
+    acc[k.toLowerCase().replace(/[^a-z0-9]/g, '')] = row[k]
+    return acc
+  }, {} as Record<string, any>)
+
+  for (const key of candidateKeys) {
+    const norm = key.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (normMap[norm] !== undefined && normMap[norm] !== null && normMap[norm] !== '') {
+      return normMap[norm]
+    }
+  }
+  return undefined
+}
+
+// Sub-component for Inline Expansion Line Item Form (Flat-Focus UI compliant: no drawers, no popups, no modals)
+const FormLineItemInlineEditor = ({
+  columns,
+  initialRow,
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  columns: { id: string; label: string }[]
+  initialRow: Record<string, any> | null
+  isOpen: boolean
+  onClose: () => void
+  onSave: (row: Record<string, any>, addAnother?: boolean) => void
+}) => {
+  const { t } = useLingui()
+  const [formData, setFormData] = useState<Record<string, any>>({})
+  const [isDirty, setIsDirty] = useState(false)
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+  const firstInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(initialRow ? { ...initialRow } : {})
+      setIsDirty(false)
+      setShowCloseConfirm(false)
+      setTimeout(() => {
+        if (firstInputRef.current) {
+          firstInputRef.current.focus()
+        }
+      }, 100)
+    }
+  }, [isOpen, initialRow])
+
+  if (!isOpen) return null
+
+  const handleFieldChange = (colId: string, val: any) => {
+    setFormData((prev) => {
+      const next = { ...prev, [colId]: val }
+      // Auto-calculate Extended / Total if Quantity and Unit Cost are present
+      const qtyKey = columns.find((c) =>
+        ['qty', 'quantity', 'count'].includes(
+          c.id.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        ),
+      )?.id
+      const priceKey = columns.find((c) =>
+        ['price', 'unitcost', 'unitprice', 'cost', 'rate'].includes(
+          c.id.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        ),
+      )?.id
+      const extendedKey = columns.find((c) =>
+        ['extended', 'total', 'amount', 'linetotal'].includes(
+          c.id.toLowerCase().replace(/[^a-z0-9]/g, ''),
+        ),
+      )?.id
+
+      if (extendedKey && (colId === qtyKey || colId === priceKey)) {
+        const q =
+          parseFloat(
+            String(colId === qtyKey ? val : next[qtyKey || ''] || 0),
+          ) || 0
+        const p =
+          parseFloat(
+            String(colId === priceKey ? val : next[priceKey || ''] || 0),
+          ) || 0
+        if (q > 0 && p > 0) {
+          next[extendedKey] = (q * p).toFixed(2)
+        }
+      }
+      return next
+    })
+    setIsDirty(true)
+  }
+
+  const handleAttemptClose = () => {
+    if (isDirty) {
+      setShowCloseConfirm(true)
+    } else {
+      onClose()
+    }
+  }
+
+  const isEditMode = !!initialRow
+
+  return (
+    <div className='animate-in fade-in slide-in-from-top-3 duration-300 rounded-xl border border-accent-soft bg-surface-primary p-5 shadow-xs space-y-4 my-3 font-inter'>
+      {/* Header */}
+      <div className='flex items-center justify-between border-b border-gray-2 pb-3'>
+        <div className='flex items-center gap-2.5'>
+          <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
+            <Icon
+              className='size-4'
+              name={isEditMode ? 'lucide:pencil' : 'lucide:plus'}
+            />
+          </div>
+          <div>
+            <h4 className='text-xs font-bold text-gray-13'>
+              {isEditMode ? t`Edit Line Item` : t`Add Line Item`}
+            </h4>
+            <p className='text-[11px] text-gray-7'>
+              {t`Enter itemized quantity, pricing, and specs inline below.`}
+            </p>
+          </div>
+        </div>
+        <IconButton
+          color='gray'
+          icon='lucide:x'
+          size='xs'
+          variant='ghost'
+          onClick={handleAttemptClose}
+        />
+      </div>
+
+      {/* Unsaved Changes Confirmation Warning */}
+      {showCloseConfirm && (
+        <div className='flex items-center justify-between gap-4 rounded-lg border border-amber-3 bg-amber-2 p-3 text-amber-11 shadow-xs'>
+          <div className='flex items-center gap-2 text-xs font-semibold'>
+            <Icon
+              className='size-4 shrink-0 text-amber-9'
+              name='lucide:triangle-alert'
+            />
+            <span>Unsaved changes will be lost. Discard changes?</span>
+          </div>
+          <div className='flex items-center gap-2'>
+            <Button
+              color='gray'
+              size='xs'
+              variant='outline'
+              onClick={() => setShowCloseConfirm(false)}
+            >
+              Keep Editing
+            </Button>
+            <Button
+              color='red'
+              size='xs'
+              variant='solid'
+              onClick={onClose}
+            >
+              Discard
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Fields Grid */}
+      <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+        {columns.map((col, idx) => {
+          const normId = col.id.toLowerCase().replace(/[^a-z0-9]/g, '')
+          const isLongText =
+            normId.includes('description') ||
+            normId.includes('note') ||
+            normId.includes('comment') ||
+            normId.includes('spec')
+
+          const isNumber =
+            normId.includes('qty') ||
+            normId.includes('quantity') ||
+            normId.includes('cost') ||
+            normId.includes('price') ||
+            normId.includes('tax') ||
+            normId.includes('extended') ||
+            normId.includes('amount') ||
+            normId.includes('rate')
+
+          const val = formData[col.id] ?? ''
+
+          return (
+            <div
+              className={cn(
+                'flex flex-col gap-1',
+                isLongText ? 'col-span-1 sm:col-span-2' : 'col-span-1',
+              )}
+              key={col.id}
+            >
+              <label className='block text-xs font-bold text-gray-12'>
+                {col.label}
+                {(idx === 0 ||
+                  normId.includes('item') ||
+                  normId.includes('part')) && (
+                  <span className='ml-1 font-bold text-red-9'>*</span>
+                )}
+              </label>
+
+              {isLongText ? (
+                <InputTextarea
+                  ref={idx === 0 ? (firstInputRef as any) : undefined}
+                  placeholder={`Enter ${col.label.toLowerCase()}...`}
+                  value={val}
+                  onChange={(text) => handleFieldChange(col.id, text)}
+                />
+              ) : isNumber ? (
+                <InputNumber
+                  ref={idx === 0 ? (firstInputRef as any) : undefined}
+                  placeholder='0.00'
+                  value={val}
+                  onChange={(num) => handleFieldChange(col.id, num)}
+                />
+              ) : (
+                <InputText
+                  ref={idx === 0 ? (firstInputRef as any) : undefined}
+                  placeholder={`Enter ${col.label.toLowerCase()}...`}
+                  value={val}
+                  onChange={(text) => handleFieldChange(col.id, text)}
+                />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Inline Footer Toolbar */}
+      <div className='flex items-center justify-between border-t border-gray-2 pt-3'>
+        <Button
+          color='gray'
+          label={t`Cancel`}
+          size='sm'
+          variant='outline'
+          onClick={handleAttemptClose}
+        />
+        <div className='flex items-center gap-2'>
+          {!isEditMode && (
+            <Button
+              color='gray'
+              icon='lucide:plus-circle'
+              label={t`Save & Add Another`}
+              size='sm'
+              variant='outline'
+              onClick={() => {
+                onSave(formData, true)
+                setFormData({})
+                setIsDirty(false)
+                if (firstInputRef.current) firstInputRef.current.focus()
+              }}
+            />
+          )}
+          <Button
+            color='primary'
+            icon='lucide:check'
+            label={isEditMode ? t`Save Changes` : t`Save Line Item`}
+            size='sm'
+            variant='solid'
+            onClick={() => onSave(formData, false)}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Sub-component for rendering line items / table fields inside entry creation/editing
+const FormLineItemsEditor = ({
+  field,
+  getFieldLabel,
+  onChange,
+  value,
+}: {
+  field: Question
+  getFieldLabel: (key: string) => string
+  onChange: (val: string) => void
+  value: any
+}) => {
+  const { t } = useLingui()
+  const [isInlineOpen, setIsInlineOpen] = useState(false)
+  const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null)
+  const [highlightedRowIndex, setHighlightedRowIndex] = useState<number | null>(null)
+
+  // Parse existing data
+  const rows: any[] = useMemo(() => {
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string' && value.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(value)
+        if (Array.isArray(parsed)) return parsed
+      } catch (e) {
+        console.error('Failed to parse line items JSON:', e)
+      }
+    }
+    return []
+  }, [value])
+
+  // Determine columns
+  const columns = useMemo(() => {
+    const tableCols =
+      field.settings?.specific?.tableColumns ||
+      field.settings?.specific?.columns
+    if (Array.isArray(tableCols) && tableCols.length > 0) {
+      return tableCols.map((c: any) => ({
+        id: c.id || c.name || c.key,
+        label: c.name || c.label || getFieldLabel(c.id || c.name || c.key),
+      }))
+    }
+    if (rows.length > 0 && typeof rows[0] === 'object' && rows[0] !== null) {
+      return Object.keys(rows[0]).map((k) => ({
+        id: k,
+        label: getFieldLabel(k),
+      }))
+    }
+    // Default fallback columns for line items table
+    return [
+      { id: 'item', label: 'Item Name' },
+      { id: 'description', label: 'Description' },
+      { id: 'qty', label: 'Quantity' },
+      { id: 'price', label: 'Unit Price' },
+      { id: 'total', label: 'Total Amount' },
+    ]
+  }, [field, rows, getFieldLabel])
+
+  const handleOpenAdd = () => {
+    setEditingRowIndex(null)
+    setIsInlineOpen(true)
+  }
+
+  const handleOpenEdit = (rIdx: number) => {
+    setEditingRowIndex(rIdx)
+    setIsInlineOpen(true)
+  }
+
+  const handleSaveInlineRow = (savedRow: Record<string, any>, addAnother?: boolean) => {
+    let updatedRows: any[] = []
+    let targetIdx = 0
+
+    if (editingRowIndex !== null) {
+      updatedRows = rows.map((row, idx) => (idx === editingRowIndex ? savedRow : row))
+      targetIdx = editingRowIndex
+    } else {
+      updatedRows = [...rows, savedRow]
+      targetIdx = updatedRows.length - 1
+    }
+
+    onChange(JSON.stringify(updatedRows))
+
+    // Highlight row briefly
+    setHighlightedRowIndex(targetIdx)
+    setTimeout(() => setHighlightedRowIndex(null), 2500)
+
+    if (!addAnother) {
+      setIsInlineOpen(false)
+      setEditingRowIndex(null)
+    }
+  }
+
+  const handleDeleteRow = (rowIndex: number) => {
+    const updated = rows.filter((_, idx) => idx !== rowIndex)
+    onChange(JSON.stringify(updated))
+  }
+
+  // Calculate financial totals using case-insensitive key lookups
+  const totals = useMemo(() => {
+    let subtotal = 0
+    let totalTaxAmount = 0
+
+    rows.forEach((row) => {
+      const extVal = getRowVal(row, [
+        'extended',
+        'line total',
+        'total amount',
+        'total',
+        'amount',
+      ])
+      let rowVal = 0
+
+      if (extVal !== undefined) {
+        rowVal = parseFloat(String(extVal).replace(/[^0-9.-]+/g, '')) || 0
+      } else {
+        const qtyVal = getRowVal(row, [
+          'quantity',
+          'qty',
+          'count',
+          'units',
+          'unit',
+        ])
+        const priceVal = getRowVal(row, [
+          'unit cost',
+          'unitcost',
+          'unit price',
+          'unitprice',
+          'price',
+          'cost',
+          'rate',
+        ])
+        const q = parseFloat(String(qtyVal || 0)) || 0
+        const p = parseFloat(String(priceVal || 0)) || 0
+        rowVal = q * p
+      }
+
+      subtotal += rowVal
+
+      const taxVal = getRowVal(row, [
+        'tax',
+        'tax percentage',
+        'taxpercentage',
+        'tax percent',
+        'taxpercent',
+        'tax rate',
+        'taxrate',
+      ])
+      const taxPct =
+        parseFloat(String(taxVal || 0).replace(/[^0-9.-]+/g, '')) || 0
+
+      if (taxPct > 0) {
+        totalTaxAmount += rowVal * (taxPct / 100)
+      }
+    })
+
+    const grandTotal = subtotal + totalTaxAmount
+    return { grandTotal, subtotal, taxAmount: totalTaxAmount }
+  }, [rows])
+
+  return (
+    <div className='space-y-3 rounded-xl border border-gray-2 bg-gray-50/40 p-4 font-inter'>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2.5'>
+          <div className='flex size-6 items-center justify-center rounded bg-accent-soft/20 text-accent-primary'>
+            <Icon className='size-3.5' name='lucide:table' />
+          </div>
+          <span className='text-xs font-bold text-gray-12'>
+            Line Items ({rows.length} {rows.length === 1 ? 'item' : 'items'})
+          </span>
+          <Badge color='gray' label={`${columns.length} columns`} />
+        </div>
+        <Button
+          color='primary'
+          icon='lucide:plus'
+          label={t`Add Line Item`}
+          size='xs'
+          variant='solid'
+          onClick={handleOpenAdd}
+        />
+      </div>
+
+      {/* Inline Expansion Form Card (Flat-Focus UI rule compliant) */}
+      <FormLineItemInlineEditor
+        columns={columns}
+        initialRow={editingRowIndex !== null ? rows[editingRowIndex] : null}
+        isOpen={isInlineOpen}
+        onClose={() => {
+          setIsInlineOpen(false)
+          setEditingRowIndex(null)
+        }}
+        onSave={handleSaveInlineRow}
+      />
+
+      {rows.length === 0 ? (
+        <div className='flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-3 bg-white py-8 text-center'>
+          <div className='mb-2 flex size-10 items-center justify-center rounded-full bg-gray-2 text-gray-7'>
+            <Icon className='size-5' name='lucide:shopping-bag' />
+          </div>
+          <p className='text-xs font-semibold text-gray-11'>No line items added</p>
+          <p className='mt-0.5 text-[11px] text-gray-7'>
+            Click &quot;Add Line Item&quot; to include itemized goods and pricing.
+          </p>
+        </div>
+      ) : (
+        <div className='overflow-hidden rounded-xl border border-gray-2 bg-white shadow-xs'>
+          <div className='custom-scrollbar max-h-[340px] overflow-x-auto overflow-y-auto'>
+            <table className='w-full border-collapse text-left text-xs'>
+              <thead>
+                <tr className='sticky top-0 z-10 border-b border-gray-2 bg-gray-50/95 backdrop-blur-xs'>
+                  {columns.map((col) => (
+                    <th
+                      className='p-2.5 font-bold whitespace-nowrap text-gray-11'
+                      key={col.id}
+                    >
+                      {col.label}
+                    </th>
+                  ))}
+                  <th className='w-20 p-2.5 text-center font-bold text-gray-11'>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, rIdx) => {
+                  const isHighlighted = highlightedRowIndex === rIdx
+                  return (
+                    <tr
+                      className={cn(
+                        'border-b border-gray-1 transition-colors hover:bg-gray-50/60 last:border-0',
+                        isHighlighted ? 'bg-accent-soft/20 animate-pulse' : '',
+                      )}
+                      key={rIdx}
+                    >
+                      {columns.map((col) => (
+                        <td className='p-2.5 font-medium whitespace-nowrap text-gray-12' key={col.id}>
+                          {row[col.id] !== undefined && row[col.id] !== null && String(row[col.id]).trim() !== '' ? (
+                            String(row[col.id])
+                          ) : (
+                            <span className='text-gray-5'>—</span>
+                          )}
+                        </td>
+                      ))}
+                      <td className='p-2 text-center'>
+                        <div className='flex items-center justify-center gap-1'>
+                          <IconButton
+                            color='gray'
+                            icon='lucide:pencil'
+                            size='sm'
+                            title={t`Edit Line Item`}
+                            variant='ghost'
+                            onClick={() => handleOpenEdit(rIdx)}
+                          />
+                          <IconButton
+                            color='red'
+                            icon='lucide:trash-2'
+                            size='sm'
+                            title={t`Delete Row`}
+                            variant='ghost'
+                            onClick={() => handleDeleteRow(rIdx)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table Financial Summary Footer */}
+          <div className='flex flex-wrap items-center justify-between border-t border-gray-2 bg-gray-50/60 px-4 py-3 text-xs'>
+            <span className='text-[11px] font-medium text-gray-7'>
+              Showing {rows.length} line {rows.length === 1 ? 'item' : 'items'}
+            </span>
+            <div className='flex items-center gap-6 font-mono'>
+              <div className='flex items-center gap-2'>
+                <span className='text-gray-8'>Subtotal:</span>
+                <span className='font-bold text-gray-12'>
+                  {totals.subtotal.toFixed(2)}
+                </span>
+              </div>
+              <div className='flex items-center gap-2'>
+                <span className='text-gray-8'>Tax Amount:</span>
+                <span className='font-bold text-gray-12'>
+                  {totals.taxAmount.toFixed(2)}
+                </span>
+              </div>
+              <div className='flex items-center gap-2 rounded-lg bg-accent-soft/20 px-2.5 py-1 text-xs font-bold text-accent-primary'>
+                <span>Grand Total:</span>
+                <span>{totals.grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 const FormEntriesPage = () => {
@@ -377,11 +943,7 @@ const FormEntriesPage = () => {
 
   // Slide-in pane toggle functions
   const openNewEntry = () => {
-    const initial: Record<string, any> = {}
-    fields.forEach((f: Question) => {
-      initial[f.id] = f.settings?.specific?.defaultValue || ''
-    })
-    setEditValues(initial)
+    setEditValues({})
     setSelectedEntry(null)
     setIsAddOpen(true)
   }
@@ -694,55 +1256,58 @@ const FormEntriesPage = () => {
         isDisplayColumn: true,
         label: t`Actions`,
         showMenu: false,
-        size: 80,
+        size: 40,
         renderCell: (row: any) => (
           <div
-            className='flex items-center justify-end gap-1.5'
+            className='flex items-center justify-center'
             onClick={(e) => e.stopPropagation()}
           >
-            {tabValue === 'Browse' ? (
-              <>
-                <Tooltip label={t`Edit Entry`}>
-                  <IconButton
-                    color='gray'
+            <Menu
+              position='bottom-end'
+              width={180}
+              target={
+                <IconButton
+                  color='gray'
+                  icon='lucide:more-vertical'
+                  variant='ghost'
+                />
+              }
+            >
+              {tabValue === 'Browse' ? (
+                <>
+                  <MenuItem
                     icon='lucide:pencil'
-                    variant='ghost'
+                    label={t`Edit`}
                     onClick={() => openEditEntry(row)}
                   />
-                </Tooltip>
-                <Tooltip label={t`Move to Trash`}>
-                  <IconButton
-                    color='red'
+                  <MenuItem
                     icon='lucide:trash-2'
-                    variant='ghost'
+                    iconClass='text-red-11'
+                    label={t`Move to Trash`}
                     onClick={() =>
                       setDeletingEntry({ id: row.id, type: 'trash' })
                     }
                   />
-                </Tooltip>
-              </>
-            ) : (
-              <>
-                <Tooltip label={t`Restore Entry`}>
-                  <IconButton
-                    color='green'
+                </>
+              ) : (
+                <>
+                  <MenuItem
                     icon='lucide:rotate-ccw'
-                    variant='ghost'
+                    iconClass='text-green-11'
+                    label={t`Restore`}
                     onClick={() => handleRestore(row.id)}
                   />
-                </Tooltip>
-                <Tooltip label={t`Permanent Delete`}>
-                  <IconButton
-                    color='red'
+                  <MenuItem
                     icon='lucide:trash-2'
-                    variant='ghost'
+                    iconClass='text-red-11'
+                    label={t`Delete Permanently`}
                     onClick={() =>
                       setDeletingEntry({ id: row.id, type: 'permanent' })
                     }
                   />
-                </Tooltip>
-              </>
-            )}
+                </>
+              )}
+            </Menu>
           </div>
         ),
       },
@@ -849,6 +1414,36 @@ const FormEntriesPage = () => {
     return dynamicFilters.filter((f) => f.id !== nameFieldFilter?.id)
   }, [dynamicFilters, nameFieldFilter])
 
+  const getColumnSpan = (size?: string) => {
+    switch (size) {
+      case 'col-6':
+        return 'col-span-12 md:col-span-6'
+      case 'col-4':
+        return 'col-span-12 md:col-span-4'
+      case 'col-3':
+        return 'col-span-12 md:col-span-3'
+      default:
+        return 'col-span-12'
+    }
+  }
+
+  const requiredProgress = useMemo(() => {
+    const requiredFields = fields.filter(
+      (f: Question) => f.settings?.validation?.fieldRule === 'REQUIRED',
+    )
+    if (requiredFields.length === 0)
+      return { completed: 0, percent: 100, total: 0 }
+    let completed = 0
+    requiredFields.forEach((f: Question) => {
+      const val = editValues[f.id]
+      if (val !== undefined && val !== null && String(val).trim() !== '') {
+        completed++
+      }
+    })
+    const percent = Math.round((completed / requiredFields.length) * 100)
+    return { completed, percent, total: requiredFields.length }
+  }, [fields, editValues])
+
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
     return (
@@ -894,10 +1489,10 @@ const FormEntriesPage = () => {
 
   if (isPanelOpen) {
     return (
-      <div className='bg-gray-50/10 flex h-full flex-col font-inter'>
-        {/* Form Header */}
-        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-white px-6 py-4'>
-          <div className='flex min-w-0 items-center gap-3'>
+      <div className='bg-gray-50/20 flex h-full flex-col font-inter'>
+        {/* Compact Enterprise Form Banner Header */}
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-2 bg-white px-8 py-3.5 shadow-xs'>
+          <div className='flex min-w-0 items-center gap-3.5'>
             <IconButton
               color='gray'
               icon='lucide:arrow-left'
@@ -905,7 +1500,7 @@ const FormEntriesPage = () => {
               variant='ghost'
               onClick={closeSidebar}
             />
-            <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft/10 text-accent-primary'>
+            <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-soft/15 text-accent-primary'>
               <Icon
                 height={18}
                 name={isAddOpen ? 'lucide:file-plus-2' : 'lucide:file-edit'}
@@ -913,16 +1508,451 @@ const FormEntriesPage = () => {
               />
             </div>
             <div className='flex min-w-0 flex-col'>
-              <h3 className='truncate text-[14px] font-extrabold text-gray-13'>
-                {isAddOpen ? t`New Form Entry` : selectedEntry?.id}
-              </h3>
-              <p className='truncate text-[10px] font-semibold tracking-wider text-gray-7 uppercase'>
+              <div className='flex items-center gap-2.5'>
+                <h3 className='truncate text-sm font-extrabold text-gray-13'>
+                  {isAddOpen ? t`New Form Entry` : selectedEntry?.id}
+                </h3>
+                <Badge
+                  color={isAddOpen ? 'orange' : 'green'}
+                  label={isAddOpen ? t`Draft` : t`Submitted`}
+                />
+              </div>
+              <p className='truncate text-[11px] font-medium text-gray-7'>
                 {isAddOpen
-                  ? t`Submit answers to form`
-                  : t`Modify submitted answers`}
+                  ? t`Complete required form information using the metadata-driven enterprise canvas below.`
+                  : t`Modify existing form response answers and save changes.`}
               </p>
             </div>
           </div>
+          <div className='flex items-center gap-2 text-xs text-gray-8'>
+            <Icon className='size-3.5 text-gray-6' name='lucide:shield-check' />
+            <span>Encrypted ERP System Session</span>
+          </div>
+        </div>
+
+        {/* Scrollable Form Body with ~80% Width Container */}
+        <div className='custom-scrollbar flex-1 overflow-y-auto bg-gray-50/40 px-6 py-6'>
+          <div className='mx-auto w-full max-w-[1200px] space-y-6'>
+            {panels.map((panel: any, pIdx: number) => {
+              const panelTitle =
+                panel.settings?.title || t`Section ${pIdx + 1}`
+              const panelDescription = panel.settings?.description || ''
+              const renderableFields = (panel.fields || []).filter(
+                (f: any) =>
+                  !['HEADING', 'DIVIDER'].includes(
+                    (f.type || '').toUpperCase(),
+                  ),
+              )
+
+              if (renderableFields.length === 0) return null
+
+              return (
+                <div
+                  className='rounded-2xl border border-gray-2 bg-white p-6 shadow-xs transition-shadow hover:shadow-md'
+                  key={panel.id || `panel_${pIdx}`}
+                >
+                  {/* Block Card Header */}
+                  <div className='mb-5 flex items-center justify-between border-b border-gray-2 pb-3.5'>
+                    <div className='flex items-center gap-3'>
+                      <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
+                        <Icon className='size-4' name='lucide:layers' />
+                      </div>
+                      <div>
+                        <h4 className='text-sm font-bold text-gray-12'>
+                          {panelTitle}
+                        </h4>
+                        {panelDescription && (
+                          <p className='text-[11px] text-gray-7'>
+                            {panelDescription}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Badge
+                      color='gray'
+                      label={`${renderableFields.length} ${
+                        renderableFields.length === 1 ? 'field' : 'fields'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Block Fields Layout using 12-column grid */}
+                  <div className='grid grid-cols-12 gap-x-6 gap-y-4'>
+                    {renderableFields.map((field: Question) => {
+                      const type = (field.type || 'SHORT_TEXT').toUpperCase()
+                      const val = editValues[field.id] ?? ''
+                      const isFieldRequired =
+                        field.settings?.validation?.fieldRule === 'REQUIRED'
+                      const isReadOnly = (field.settings?.specific as any)
+                        ?.isReadOnly
+                      const colSpan = getColumnSpan(
+                        field.settings?.general?.size,
+                      )
+
+                      return (
+                        <div
+                          className={cn('flex flex-col justify-start', colSpan)}
+                          key={field.id}
+                        >
+                          {/* Label / Required Indicators */}
+                          <div className='mb-1.5 flex items-center justify-between'>
+                            <label className='block text-xs font-bold text-gray-12'>
+                              {field.label || 'Untitled Question'}
+                              {isFieldRequired && (
+                                <span
+                                  className='ml-1 font-bold text-red-9'
+                                  title='Required field'
+                                >
+                                  *
+                                </span>
+                              )}
+                            </label>
+                            {isReadOnly && (
+                              <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
+                                Auto-calculated
+                              </span>
+                            )}
+                          </div>
+
+                          {field.settings?.general?.description && (
+                            <p className='mb-1.5 text-[11px] text-gray-7'>
+                              {field.settings.general.description}
+                            </p>
+                          )}
+
+                          {/* Form Input Control */}
+                          {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
+                            <div className='bg-gray-50/50 flex max-w-xs items-center justify-between rounded-xl border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
+                              <span className='text-xs font-semibold text-gray-11'>
+                                Consent / Enable
+                              </span>
+                              <InputSwitch
+                                checked={val === 'Yes'}
+                                onChange={(checked) =>
+                                  handleFieldChange(
+                                    field.id,
+                                    checked ? 'Yes' : 'No',
+                                  )
+                                }
+                              />
+                            </div>
+                          ) : type === 'DATE' ? (
+                            <InputDate
+                              placeholder={
+                                field.settings?.general?.placeholder
+                              }
+                              value={val ? val : null}
+                              onChange={(dateString) =>
+                                handleFieldChange(field.id, dateString)
+                              }
+                            />
+                          ) : type === 'NUMBER' || type === 'COUNTER' ? (
+                            <InputNumber
+                              placeholder={
+                                field.settings?.general?.placeholder
+                              }
+                              value={val}
+                              onChange={(num) =>
+                                handleFieldChange(field.id, num)
+                              }
+                            />
+                          ) : type === 'CURRENCY_AMOUNT' ? (
+                            <div className='max-w-xs'>
+                              <InputNumber
+                                placeholder={
+                                  field.settings?.general?.placeholder || '0.00'
+                                }
+                                value={val}
+                                onChange={(num) =>
+                                  handleFieldChange(field.id, num)
+                                }
+                              />
+                            </div>
+                          ) : type === 'RATING' ? (
+                            <div className='py-1'>
+                              <Rating
+                                color='yellow'
+                                count={field.settings?.specific?.iconCount || 5}
+                                size='md'
+                                value={Number(val || 0)}
+                                onChange={(v) => handleFieldChange(field.id, v)}
+                              />
+                            </div>
+                          ) : type === 'OPINION_SCALE' ? (
+                            <div className='flex flex-wrap gap-1 py-1'>
+                              {Array.from({ length: 11 }).map((_, i) => {
+                                const isSelected =
+                                  Number(val) === i && val !== ''
+                                return (
+                                  <button
+                                    className={cn(
+                                      'size-8 rounded-lg border text-xs font-bold transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
+                                      isSelected
+                                        ? 'border-accent-primary bg-accent-primary text-white'
+                                        : 'border-gray-3 bg-white text-gray-12',
+                                    )}
+                                    key={i}
+                                    type='button'
+                                    onClick={() =>
+                                      handleFieldChange(field.id, i)
+                                    }
+                                  >
+                                    {i}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          ) : type === 'SINGLE_CHOICE' ? (
+                            (() => {
+                              const optString =
+                                field.settings?.specific?.customOptions ||
+                                'Option A,Option B,Option C'
+                              const delimiter =
+                                field.settings?.specific
+                                  ?.separateOptionsUsing === 'COMMA'
+                                  ? ','
+                                  : '\n'
+                              const opts = optString
+                                .split(delimiter)
+                                .map((o: any) => o.trim())
+                                .filter(Boolean)
+
+                              return (
+                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                                  {opts.map((opt: string) => {
+                                    const isSelected = val === opt
+                                    return (
+                                      <button
+                                        className={cn(
+                                          'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
+                                          isSelected
+                                            ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
+                                            : 'border-gray-2 bg-white text-gray-12',
+                                        )}
+                                        key={opt}
+                                        type='button'
+                                        onClick={() =>
+                                          handleFieldChange(field.id, opt)
+                                        }
+                                      >
+                                        <div className='flex size-4 shrink-0 items-center justify-center rounded-full border border-gray-3'>
+                                          {isSelected && (
+                                            <div className='size-2 rounded-full bg-accent-primary' />
+                                          )}
+                                        </div>
+                                        <span className='text-xs'>{opt}</span>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              )
+                            })()
+                          ) : type === 'MULTIPLE_CHOICE' ? (
+                            (() => {
+                              const optString =
+                                field.settings?.specific?.customOptions ||
+                                'Option A,Option B,Option C'
+                              const delimiter =
+                                field.settings?.specific
+                                  ?.separateOptionsUsing === 'COMMA'
+                                  ? ','
+                                  : '\n'
+                              const opts = optString
+                                .split(delimiter)
+                                .map((o: any) => o.trim())
+                                .filter(Boolean)
+
+                              const selectedList = Array.isArray(val)
+                                ? val
+                                : val
+                                  ? String(val).split(',')
+                                  : []
+
+                              const toggleOpt = (opt: string) => {
+                                const next = selectedList.includes(opt)
+                                  ? selectedList.filter((x) => x !== opt)
+                                  : [...selectedList, opt]
+                                handleFieldChange(field.id, next.join(','))
+                              }
+
+                              return (
+                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                                  {opts.map((opt: string) => {
+                                    const isSelected =
+                                      selectedList.includes(opt)
+                                    return (
+                                      <button
+                                        className={cn(
+                                          'flex items-center gap-2.5 rounded-lg border px-3 py-2 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
+                                          isSelected
+                                            ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
+                                            : 'border-gray-2 bg-white text-gray-12',
+                                        )}
+                                        key={opt}
+                                        type='button'
+                                        onClick={() => toggleOpt(opt)}
+                                      >
+                                        <div className='flex size-4 shrink-0 items-center justify-center rounded border border-gray-3'>
+                                          {isSelected && (
+                                            <Icon
+                                              className='size-3 text-accent-primary'
+                                              name='lucide:check'
+                                            />
+                                          )}
+                                        </div>
+                                        <span className='text-xs'>{opt}</span>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              )
+                            })()
+                          ) : type === 'SINGLE_SELECT' ||
+                            type === 'MULTI_SELECT' ? (
+                            (() => {
+                              const optString =
+                                field.settings?.specific?.customOptions ||
+                                'Option A,Option B,Option C'
+                              const delimiter =
+                                field.settings?.specific
+                                  ?.separateOptionsUsing === 'COMMA'
+                                  ? ','
+                                  : '\n'
+                              const opts = optString
+                                .split(delimiter)
+                                .map((o: any) => o.trim())
+                                .filter(Boolean)
+                                .map((o: string) => ({ id: o, name: o }))
+
+                              const selectedOpt = val
+                                ? { id: val, name: val }
+                                : null
+
+                              return (
+                                <InputSelect
+                                  options={opts}
+                                  placeholder={
+                                    field.settings?.general?.placeholder
+                                  }
+                                  value={selectedOpt}
+                                  onChange={(opt) =>
+                                    handleFieldChange(
+                                      field.id,
+                                      opt ? opt.id : '',
+                                    )
+                                  }
+                                />
+                              )
+                            })()
+                          ) : type === 'FILE_UPLOAD' ||
+                            type === 'IMAGE_UPLOAD' ? (
+                            <div className='bg-gray-50/60 flex items-center justify-between rounded-xl border border-gray-2 p-3.5'>
+                              <div className='flex items-center gap-3'>
+                                <div className='flex size-9 items-center justify-center rounded-lg bg-gray-2 text-gray-8'>
+                                  <Icon
+                                    className='size-4.5'
+                                    name='lucide:upload-cloud'
+                                  />
+                                </div>
+                                <div>
+                                  <span className='block text-xs font-bold text-gray-12'>
+                                    Upload Document / Attachment
+                                  </span>
+                                  <span className='block text-[10px] text-gray-7'>
+                                    PDF, PNG, JPG, or DOCX up to 10MB
+                                  </span>
+                                </div>
+                              </div>
+                              <Button
+                                color='gray'
+                                icon='lucide:upload'
+                                label={t`Choose File`}
+                                size='xs'
+                                variant='outline'
+                                onClick={() =>
+                                  showToast({
+                                    message:
+                                      'File picker simulated successfully',
+                                  })
+                                }
+                              />
+                            </div>
+                          ) : type === 'LONG_TEXT' ? (
+                            <InputTextarea
+                              placeholder={
+                                field.settings?.general?.placeholder
+                              }
+                              value={val}
+                              onChange={(text) =>
+                                handleFieldChange(field.id, text)
+                              }
+                            />
+                          ) : type === 'LINE_ITEM' ||
+                            type === 'TABLE' ||
+                            type === 'DYNAMIC_TABLE' ||
+                            (typeof val === 'string' &&
+                              val.trim().startsWith('[') &&
+                              val.trim().endsWith(']')) ||
+                            Array.isArray(val) ? (
+                            <FormLineItemsEditor
+                              field={field}
+                              getFieldLabel={getFieldLabel}
+                              value={val}
+                              onChange={(newVal) =>
+                                handleFieldChange(field.id, newVal)
+                              }
+                            />
+                          ) : (
+                            <InputText
+                              placeholder={
+                                field.settings?.general?.placeholder
+                              }
+                              value={val}
+                              onChange={(text) =>
+                                handleFieldChange(field.id, text)
+                              }
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+
+            {panels.length === 0 && (
+              <div className='rounded-2xl border border-dashed border-gray-3 bg-white py-16 text-center text-xs text-gray-7 shadow-xs'>
+                This form currently has no input fields defined.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sticky Action Footer Bar */}
+        <div className='sticky bottom-0 z-20 flex shrink-0 flex-wrap items-center justify-between border-t border-gray-2 bg-white/95 px-8 py-3.5 backdrop-blur-md shadow-lg'>
+          {/* Progress Bar & Required Metric */}
+          <div className='flex items-center gap-4 min-w-[280px]'>
+            <div className='flex flex-col gap-1 flex-1'>
+              <div className='flex items-center justify-between text-xs font-semibold text-gray-11'>
+                <span>Form Progress</span>
+                <span className='font-bold text-gray-13'>
+                  {requiredProgress.percent}%
+                </span>
+              </div>
+              <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
+                <div
+                  className='h-full bg-accent-primary transition-all duration-300'
+                  style={{ width: `${requiredProgress.percent}%` }}
+                />
+              </div>
+            </div>
+            <span className='text-[11px] font-medium text-gray-8 whitespace-nowrap'>
+              {requiredProgress.completed}/{requiredProgress.total} required
+            </span>
+          </div>
+
+          {/* Action Buttons */}
           <div className='flex items-center gap-3'>
             <Button
               color='gray'
@@ -931,327 +1961,25 @@ const FormEntriesPage = () => {
               onClick={closeSidebar}
             />
             <Button
+              color='gray'
+              icon='lucide:file-text'
+              label={t`Save Draft`}
+              variant='outline'
+              onClick={() => {
+                showToast({
+                  message: 'Form draft saved successfully',
+                  variant: 'success',
+                })
+                closeSidebar()
+              }}
+            />
+            <Button
               color='primary'
-              icon='lucide:save'
-              label={isAddOpen ? t`Submit` : t`Save Changes`}
+              icon={isAddOpen ? 'lucide:send' : 'lucide:check'}
+              label={isAddOpen ? t`Submit Form` : t`Save Changes`}
               variant='solid'
               onClick={handleSaveEntry}
             />
-          </div>
-        </div>
-
-        {/* Scrollable Form Body (similar to Form Builder style) */}
-        <div className='custom-scrollbar flex-1 overflow-y-auto bg-[var(--gray-2)]/30 px-6 py-8'>
-          <div className='mx-auto w-full max-w-[800px] space-y-6 rounded-2xl border border-[var(--gray-3)] bg-white p-8 shadow-md'>
-            {fields.map((field: Question) => {
-              const type = (field.type || 'SHORT_TEXT').toUpperCase()
-              const val = editValues[field.id] ?? ''
-              const isFieldRequired =
-                field.settings?.validation?.fieldRule === 'REQUIRED'
-
-              return (
-                <div
-                  className='border-b border-gray-1 pb-6 last:border-0 last:pb-0'
-                  key={field.id}
-                >
-                  {/* Handle divider / heading types specially (no labels/inputs needed) */}
-                  {type === 'DIVIDER' ? (
-                    <Divider className='my-4' />
-                  ) : type === 'HEADING' ? (
-                    <h3 className='text-lg font-bold text-gray-13'>
-                      {field.label || 'Heading Section'}
-                    </h3>
-                  ) : (
-                    <>
-                      {/* Label / Description wrapper */}
-                      <div className='mb-2'>
-                        <label className='block text-sm font-bold text-gray-12'>
-                          {field.label || 'Untitled Question'}
-                          {isFieldRequired && (
-                            <span className='ml-1 text-red-9'>*</span>
-                          )}
-                        </label>
-                        {field.settings?.general?.description && (
-                          <span className='mt-0.5 block text-xs text-gray-7'>
-                            {field.settings.general.description}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Render matching dynamic form control */}
-                      {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
-                        <div className='bg-gray-50/50 flex max-w-xs items-center justify-between rounded-xl border border-gray-2 p-3 transition-colors hover:border-gray-3'>
-                          <span className='text-xs font-semibold text-gray-11'>
-                            Consent / Enable
-                          </span>
-                          <InputSwitch
-                            checked={val === 'Yes'}
-                            onChange={(checked) =>
-                              handleFieldChange(
-                                field.id,
-                                checked ? 'Yes' : 'No',
-                              )
-                            }
-                          />
-                        </div>
-                      ) : type === 'DATE' ? (
-                        <InputDate
-                          value={val ? val : null}
-                          placeholder={
-                            field.settings?.general?.placeholder ||
-                            'Select Date'
-                          }
-                          onChange={(dateString) =>
-                            handleFieldChange(field.id, dateString)
-                          }
-                        />
-                      ) : type === 'NUMBER' || type === 'COUNTER' ? (
-                        <InputNumber
-                          value={val}
-                          placeholder={
-                            field.settings?.general?.placeholder ||
-                            'Enter value'
-                          }
-                          onChange={(num) => handleFieldChange(field.id, num)}
-                        />
-                      ) : type === 'CURRENCY_AMOUNT' ? (
-                        <div className='relative max-w-xs'>
-                          <span className='absolute top-1/2 left-3 -translate-y-1/2 text-sm font-bold text-gray-8'>
-                            $
-                          </span>
-                          <InputNumber
-                            value={val}
-                            classNames={{
-                              input: 'pl-8',
-                            }}
-                            placeholder={
-                              field.settings?.general?.placeholder || '0.00'
-                            }
-                            onChange={(num) => handleFieldChange(field.id, num)}
-                          />
-                        </div>
-                      ) : type === 'RATING' ? (
-                        <div className='py-2'>
-                          <Rating
-                            color='yellow'
-                            count={field.settings?.specific?.iconCount || 5}
-                            size='lg'
-                            value={Number(val || 0)}
-                            onChange={(v) => handleFieldChange(field.id, v)}
-                          />
-                        </div>
-                      ) : type === 'OPINION_SCALE' ? (
-                        <div className='flex flex-wrap gap-1 py-1'>
-                          {Array.from({ length: 11 }).map((_, i) => {
-                            const isSelected = Number(val) === i && val !== ''
-                            return (
-                              <button
-                                key={i}
-                                type='button'
-                                className={cn(
-                                  'size-10 rounded-lg border text-sm font-bold transition-all hover:bg-accent-soft hover:text-accent-primary active:scale-95',
-                                  isSelected
-                                    ? 'border-accent-primary bg-accent-primary text-white'
-                                    : 'border-gray-3 bg-white text-gray-12',
-                                )}
-                                onClick={() => handleFieldChange(field.id, i)}
-                              >
-                                {i}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      ) : type === 'SINGLE_CHOICE' ? (
-                        (() => {
-                          const optString =
-                            field.settings?.specific?.customOptions ||
-                            'Option A,Option B,Option C'
-                          const delimiter =
-                            field.settings?.specific?.separateOptionsUsing ===
-                              'COMMA'
-                              ? ','
-                              : '\n'
-                          const opts = optString
-                            .split(delimiter)
-                            .map((o: any) => o.trim())
-                            .filter(Boolean)
-
-                          return (
-                            <div className='max-w-md space-y-2'>
-                              {opts.map((opt: string) => {
-                                const isSelected = val === opt
-                                return (
-                                  <button
-                                    key={opt}
-                                    type='button'
-                                    className={cn(
-                                      'flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
-                                      isSelected
-                                        ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
-                                        : 'border-gray-2 bg-white text-gray-12',
-                                    )}
-                                    onClick={() =>
-                                      handleFieldChange(field.id, opt)
-                                    }
-                                  >
-                                    <div className='flex size-5 shrink-0 items-center justify-center rounded-full border border-gray-3'>
-                                      {isSelected && (
-                                        <div className='size-2.5 rounded-full bg-accent-primary' />
-                                      )}
-                                    </div>
-                                    <span className='text-sm'>{opt}</span>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          )
-                        })()
-                      ) : type === 'MULTIPLE_CHOICE' ? (
-                        (() => {
-                          const optString =
-                            field.settings?.specific?.customOptions ||
-                            'Option A,Option B,Option C'
-                          const delimiter =
-                            field.settings?.specific?.separateOptionsUsing ===
-                              'COMMA'
-                              ? ','
-                              : '\n'
-                          const opts = optString
-                            .split(delimiter)
-                            .map((o: any) => o.trim())
-                            .filter(Boolean)
-
-                          const selectedList = Array.isArray(val)
-                            ? val
-                            : val
-                              ? String(val).split(',')
-                              : []
-
-                          const toggleOpt = (opt: string) => {
-                            const next = selectedList.includes(opt)
-                              ? selectedList.filter((x) => x !== opt)
-                              : [...selectedList, opt]
-                            handleFieldChange(field.id, next.join(','))
-                          }
-
-                          return (
-                            <div className='max-w-md space-y-2'>
-                              {opts.map((opt: string) => {
-                                const isSelected = selectedList.includes(opt)
-                                return (
-                                  <button
-                                    key={opt}
-                                    type='button'
-                                    className={cn(
-                                      'flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all hover:bg-gray-1 active:scale-[0.99]',
-                                      isSelected
-                                        ? 'border-accent-primary bg-accent-soft/10 font-bold text-accent-primary'
-                                        : 'border-gray-2 bg-white text-gray-12',
-                                    )}
-                                    onClick={() => toggleOpt(opt)}
-                                  >
-                                    <div className='flex size-5 shrink-0 items-center justify-center rounded-md border border-gray-3'>
-                                      {isSelected && (
-                                        <Icon
-                                          className='size-3.5 text-accent-primary'
-                                          name='lucide:check'
-                                        />
-                                      )}
-                                    </div>
-                                    <span className='text-sm'>{opt}</span>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                          )
-                        })()
-                      ) : type === 'SINGLE_SELECT' ||
-                        type === 'MULTI_SELECT' ? (
-                        (() => {
-                          const optString =
-                            field.settings?.specific?.customOptions ||
-                            'Option A,Option B,Option C'
-                          const delimiter =
-                            field.settings?.specific?.separateOptionsUsing ===
-                              'COMMA'
-                              ? ','
-                              : '\n'
-                          const opts = optString
-                            .split(delimiter)
-                            .map((o: any) => o.trim())
-                            .filter(Boolean)
-                            .map((o: string) => ({ id: o, name: o }))
-
-                          const selectedOpt = val
-                            ? { id: val, name: val }
-                            : null
-
-                          return (
-                            <InputSelect
-                              options={opts}
-                              value={selectedOpt}
-                              placeholder={
-                                field.settings?.general?.placeholder ||
-                                'Select option'
-                              }
-                              onChange={(opt) =>
-                                handleFieldChange(field.id, opt ? opt.id : '')
-                              }
-                            />
-                          )
-                        })()
-                      ) : type === 'FILE_UPLOAD' || type === 'IMAGE_UPLOAD' ? (
-                        <div className='bg-gray-50 flex max-w-md items-center justify-between rounded-xl border border-gray-2 p-3'>
-                          <div className='flex items-center gap-2'>
-                            <Icon
-                              className='size-5 text-gray-8'
-                              name='lucide:upload-cloud'
-                            />
-                            <span className='text-xs font-semibold text-gray-11'>
-                              Upload dynamic documents / media
-                            </span>
-                          </div>
-                          <IconButton
-                            color='gray'
-                            icon='lucide:upload'
-                            variant='outline'
-                            onClick={() =>
-                              showToast({
-                                message: 'File picker simulated successfully',
-                              })
-                            }
-                          />
-                        </div>
-                      ) : type === 'LONG_TEXT' ? (
-                        <InputTextarea
-                          value={val}
-                          placeholder={
-                            field.settings?.general?.placeholder ||
-                            'Write here...'
-                          }
-                          onChange={(text) => handleFieldChange(field.id, text)}
-                        />
-                      ) : (
-                        <InputText
-                          value={val}
-                          placeholder={
-                            field.settings?.general?.placeholder ||
-                            'Type answer...'
-                          }
-                          onChange={(text) => handleFieldChange(field.id, text)}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
-              )
-            })}
-
-            {fields.length === 0 && (
-              <div className='bg-gray-50 rounded-2xl border border-dashed border-gray-3 py-12 text-center text-xs text-gray-5'>
-                This form currently has no input fields.
-              </div>
-            )}
           </div>
         </div>
       </div>
