@@ -22,5 +22,7 @@ services:
       - redis
 
   redis:
-    image: redis:7-alpine
+    # Pull via public ECR mirror — App Service GHCR registry creds break
+    # anonymous pulls from docker.io/library/*.
+    image: public.ecr.aws/docker/library/redis:7-alpine
     restart: always
