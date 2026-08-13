@@ -11,14 +11,15 @@ services:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/api:latest
     restart: always
 
-  agents:
-    image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
-    restart: always
-    environment:
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      - redis
-
-  redis:
-    image: redis:7-alpine
-    restart: always
+  # agents + redis temporarily disabled: agents crash loop was marking
+  # the whole multi-container site unhealthy (api/swagger also 502).
+  # agents:
+  #   image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
+  #   restart: always
+  #   environment:
+  #     REDIS_URL: redis://redis:6379/0
+  #   depends_on:
+  #     - redis
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: always
