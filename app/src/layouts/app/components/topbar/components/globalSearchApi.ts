@@ -1,14 +1,32 @@
 import {
-  SEARCH_ENDPOINT,
   resolveChatbotAuth,
+  SEARCH_ENDPOINT,
 } from '@/components/common/ask-ai/chatbotApi'
 
-export type GlobalSearchHitId = {
-  itemId?: string
-  processId?: number
-  repositoryId?: string
-  workflowId?: number
-  workspaceId?: string
+export type GlobalSearchMatchedField = {
+  fieldName: string
+  fieldValue: string
+  status?: string
+}
+
+export type GlobalSearchMatchInfo = {
+  label?: string
+
+  // Supports a simple single matched field
+  fieldName?: string
+  fieldValue?: string
+
+  // Supports multiple matched fields
+  matchedFields?: GlobalSearchMatchedField[]
+
+  // Optional search context
+  snippet?: string
+
+  // AI-generated explanation
+  aiExplanation?: string
+
+  // Accepts either 0-1 or 0-100
+  score?: number
 }
 
 export type GlobalSearchHit = {
@@ -16,10 +34,22 @@ export type GlobalSearchHit = {
   description?: string
   id: GlobalSearchHitId
   ifileName?: string
+
+  matchSource?: string
+  matchInfo?: GlobalSearchMatchInfo
+
   modifiedDateandtime?: string
   name?: string
   requestNo?: string
   type: string
+}
+
+export type GlobalSearchHitId = {
+  itemId?: string
+  processId?: number
+  repositoryId?: string
+  workflowId?: number
+  workspaceId?: string
 }
 
 export type GlobalSearchRequest = {
@@ -39,7 +69,9 @@ export async function fetchGlobalSearch(
     throw new Error('Missing tenant. Sign in again, then retry search.')
   }
 
-  const rawSpecificId = payload.specificId ? String(payload.specificId).trim() : ''
+  const rawSpecificId = payload.specificId
+    ? String(payload.specificId).trim()
+    : ''
   const specificId = rawSpecificId || null
 
   const response = await fetch(SEARCH_ENDPOINT, {
@@ -50,7 +82,7 @@ export async function fetchGlobalSearch(
       tenantId,
     } satisfies GlobalSearchRequest),
     headers: {
-      Accept: 'application/json',
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       ...(accessToken
         ? {
@@ -73,14 +105,26 @@ export async function fetchGlobalSearch(
   return Array.isArray(data) ? (data as GlobalSearchHit[]) : []
 }
 
-export function getSearchHitTitle(hit: GlobalSearchHit) {
-  return (
-    hit.ifileName?.trim() ||
-    hit.name?.trim() ||
-    hit.requestNo?.trim() ||
-    hit.description?.trim() ||
-    'Untitled'
-  )
+export function formatSearchDate(value?: string) {
+  const raw = value?.trim()
+  if (!raw) return ''
+
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (dateOnly) {
+    const [, year, month, day] = dateOnly
+    const monthName = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+    ).toLocaleString('en-US', { month: 'short' })
+    return `${day}-${monthName}-${year}`
+  }
+
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return raw
+  const day = String(date.getDate()).padStart(2, '0')
+  const monthName = date.toLocaleString('en-US', { month: 'short' })
+  return `${day}-${monthName}-${date.getFullYear()}`
 }
 
 export function getSearchHitDate(hit: GlobalSearchHit) {
@@ -105,4 +149,14 @@ export function getSearchHitIcon(type: string) {
     return 'lucide:user'
   }
   return 'lucide:file-text'
+}
+
+export function getSearchHitTitle(hit: GlobalSearchHit) {
+  return (
+    hit.ifileName?.trim() ||
+    hit.name?.trim() ||
+    hit.requestNo?.trim() ||
+    hit.description?.trim() ||
+    'Untitled'
+  )
 }

@@ -184,13 +184,13 @@ const FormsPage = () => {
         id: 'type',
         label: t`Type`,
         size: 140,
-        renderCell: (row: any) => (
-          <FormTypeBadge
-            type={
-              (row._json?.settings?.general?.type || row.type) as Form['type']
-            }
-          />
-        ),
+        renderCell: (row: any) => {
+          const typeVal = row._json?.settings?.general?.type || row.type
+          if (!typeVal || String(typeVal).trim().toUpperCase() === 'ITEM') {
+            return null
+          }
+          return <FormTypeBadge type={typeVal as Form['type']} />
+        },
       },
       {
         id: 'createdBy',

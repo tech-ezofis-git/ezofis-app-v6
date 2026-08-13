@@ -152,22 +152,6 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
   })
 }
 
-// Helper for case-insensitive and normalized key lookup in line item row objects
-const getRowVal = (row: Record<string, any>, candidateKeys: string[]) => {
-  if (!row || typeof row !== 'object') return undefined
-  const normMap = Object.keys(row).reduce((acc, k) => {
-    acc[k.toLowerCase().replace(/[^a-z0-9]/g, '')] = row[k]
-    return acc
-  }, {} as Record<string, any>)
-
-  for (const key of candidateKeys) {
-    const norm = key.toLowerCase().replace(/[^a-z0-9]/g, '')
-    if (normMap[norm] !== undefined && normMap[norm] !== null && normMap[norm] !== '') {
-      return normMap[norm]
-    }
-  }
-  return undefined
-}
 
 // Sub-component for Inline Expansion Line Item Form (Flat-Focus UI compliant: no drawers, no popups, no modals)
 const FormLineItemInlineEditor = ({
@@ -421,11 +405,13 @@ const FormLineItemInlineEditor = ({
 const FormLineItemsEditor = ({
   field,
   getFieldLabel,
+  isFieldRequired,
   onChange,
   value,
 }: {
   field: Question
   getFieldLabel: (key: string) => string
+  isFieldRequired?: boolean
   onChange: (val: string) => void
   value: any
 }) => {
@@ -514,79 +500,25 @@ const FormLineItemsEditor = ({
     onChange(JSON.stringify(updated))
   }
 
-  // Calculate financial totals using case-insensitive key lookups
-  const totals = useMemo(() => {
-    let subtotal = 0
-    let totalTaxAmount = 0
-
-    rows.forEach((row) => {
-      const extVal = getRowVal(row, [
-        'extended',
-        'line total',
-        'total amount',
-        'total',
-        'amount',
-      ])
-      let rowVal = 0
-
-      if (extVal !== undefined) {
-        rowVal = parseFloat(String(extVal).replace(/[^0-9.-]+/g, '')) || 0
-      } else {
-        const qtyVal = getRowVal(row, [
-          'quantity',
-          'qty',
-          'count',
-          'units',
-          'unit',
-        ])
-        const priceVal = getRowVal(row, [
-          'unit cost',
-          'unitcost',
-          'unit price',
-          'unitprice',
-          'price',
-          'cost',
-          'rate',
-        ])
-        const q = parseFloat(String(qtyVal || 0)) || 0
-        const p = parseFloat(String(priceVal || 0)) || 0
-        rowVal = q * p
-      }
-
-      subtotal += rowVal
-
-      const taxVal = getRowVal(row, [
-        'tax',
-        'tax percentage',
-        'taxpercentage',
-        'tax percent',
-        'taxpercent',
-        'tax rate',
-        'taxrate',
-      ])
-      const taxPct =
-        parseFloat(String(taxVal || 0).replace(/[^0-9.-]+/g, '')) || 0
-
-      if (taxPct > 0) {
-        totalTaxAmount += rowVal * (taxPct / 100)
-      }
-    })
-
-    const grandTotal = subtotal + totalTaxAmount
-    return { grandTotal, subtotal, taxAmount: totalTaxAmount }
-  }, [rows])
 
   return (
-    <div className='space-y-3 rounded-xl border border-gray-2 bg-gray-50/40 p-4 font-inter'>
-      <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-2.5'>
-          <div className='flex size-6 items-center justify-center rounded bg-accent-soft/20 text-accent-primary'>
-            <Icon className='size-3.5' name='lucide:table' />
-          </div>
-          <span className='text-xs font-bold text-gray-12'>
-            Line Items ({rows.length} {rows.length === 1 ? 'item' : 'items'})
-          </span>
-          <Badge color='gray' label={`${columns.length} columns`} />
+    <div className='space-y-3 font-inter'>
+      {/* Table Field Title & Action Row */}
+      <div className='flex items-center justify-between mb-1.5'>
+        <div>
+          <label className='block text-xs font-bold text-gray-12'>
+            {field.label || 'Untitled Question'}
+            {isFieldRequired && (
+              <span className='ml-1 font-bold text-red-9' title='Required field'>
+                *
+              </span>
+            )}
+          </label>
+          {field.settings?.general?.description && (
+            <p className='mt-0.5 text-[11px] text-gray-7'>
+              {field.settings.general.description}
+            </p>
+          )}
         </div>
         <Button
           color='primary'
@@ -686,29 +618,11 @@ const FormLineItemsEditor = ({
             </table>
           </div>
 
-          {/* Table Financial Summary Footer */}
-          <div className='flex flex-wrap items-center justify-between border-t border-gray-2 bg-gray-50/60 px-4 py-3 text-xs'>
+          {/* Table Footer */}
+          <div className='flex items-center justify-between border-t border-gray-2 bg-gray-50/60 px-4 py-3 text-xs'>
             <span className='text-[11px] font-medium text-gray-7'>
               Showing {rows.length} line {rows.length === 1 ? 'item' : 'items'}
             </span>
-            <div className='flex items-center gap-6 font-mono'>
-              <div className='flex items-center gap-2'>
-                <span className='text-gray-8'>Subtotal:</span>
-                <span className='font-bold text-gray-12'>
-                  {totals.subtotal.toFixed(2)}
-                </span>
-              </div>
-              <div className='flex items-center gap-2'>
-                <span className='text-gray-8'>Tax Amount:</span>
-                <span className='font-bold text-gray-12'>
-                  {totals.taxAmount.toFixed(2)}
-                </span>
-              </div>
-              <div className='flex items-center gap-2 rounded-lg bg-accent-soft/20 px-2.5 py-1 text-xs font-bold text-accent-primary'>
-                <span>Grand Total:</span>
-                <span>{totals.grandTotal.toFixed(2)}</span>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -1427,22 +1341,7 @@ const FormEntriesPage = () => {
     }
   }
 
-  const requiredProgress = useMemo(() => {
-    const requiredFields = fields.filter(
-      (f: Question) => f.settings?.validation?.fieldRule === 'REQUIRED',
-    )
-    if (requiredFields.length === 0)
-      return { completed: 0, percent: 100, total: 0 }
-    let completed = 0
-    requiredFields.forEach((f: Question) => {
-      const val = editValues[f.id]
-      if (val !== undefined && val !== null && String(val).trim() !== '') {
-        completed++
-      }
-    })
-    const percent = Math.round((completed / requiredFields.length) * 100)
-    return { completed, percent, total: requiredFields.length }
-  }, [fields, editValues])
+
 
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
@@ -1524,10 +1423,7 @@ const FormEntriesPage = () => {
               </p>
             </div>
           </div>
-          <div className='flex items-center gap-2 text-xs text-gray-8'>
-            <Icon className='size-3.5 text-gray-6' name='lucide:shield-check' />
-            <span>Encrypted ERP System Session</span>
-          </div>
+
         </div>
 
         {/* Scrollable Form Body with ~80% Width Container */}
@@ -1568,12 +1464,6 @@ const FormEntriesPage = () => {
                         )}
                       </div>
                     </div>
-                    <Badge
-                      color='gray'
-                      label={`${renderableFields.length} ${
-                        renderableFields.length === 1 ? 'field' : 'fields'
-                      }`}
-                    />
                   </div>
 
                   {/* Block Fields Layout using 12-column grid */}
@@ -1589,32 +1479,43 @@ const FormEntriesPage = () => {
                         field.settings?.general?.size,
                       )
 
+                      const isTableType =
+                        type === 'LINE_ITEM' ||
+                        type === 'TABLE' ||
+                        type === 'DYNAMIC_TABLE' ||
+                        (typeof val === 'string' &&
+                          val.trim().startsWith('[') &&
+                          val.trim().endsWith(']')) ||
+                        Array.isArray(val)
+
                       return (
                         <div
                           className={cn('flex flex-col justify-start', colSpan)}
                           key={field.id}
                         >
-                          {/* Label / Required Indicators */}
-                          <div className='mb-1.5 flex items-center justify-between'>
-                            <label className='block text-xs font-bold text-gray-12'>
-                              {field.label || 'Untitled Question'}
-                              {isFieldRequired && (
-                                <span
-                                  className='ml-1 font-bold text-red-9'
-                                  title='Required field'
-                                >
-                                  *
+                          {/* Label / Required Indicators (rendered internally for table fields) */}
+                          {!isTableType && (
+                            <div className='mb-1.5 flex items-center justify-between'>
+                              <label className='block text-xs font-bold text-gray-12'>
+                                {field.label || 'Untitled Question'}
+                                {isFieldRequired && (
+                                  <span
+                                    className='ml-1 font-bold text-red-9'
+                                    title='Required field'
+                                  >
+                                    *
+                                  </span>
+                                )}
+                              </label>
+                              {isReadOnly && (
+                                <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
+                                  Auto-calculated
                                 </span>
                               )}
-                            </label>
-                            {isReadOnly && (
-                              <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
-                                Auto-calculated
-                              </span>
-                            )}
-                          </div>
+                            </div>
+                          )}
 
-                          {field.settings?.general?.description && (
+                          {!isTableType && field.settings?.general?.description && (
                             <p className='mb-1.5 text-[11px] text-gray-7'>
                               {field.settings.general.description}
                             </p>
@@ -1887,16 +1788,11 @@ const FormEntriesPage = () => {
                                 handleFieldChange(field.id, text)
                               }
                             />
-                          ) : type === 'LINE_ITEM' ||
-                            type === 'TABLE' ||
-                            type === 'DYNAMIC_TABLE' ||
-                            (typeof val === 'string' &&
-                              val.trim().startsWith('[') &&
-                              val.trim().endsWith(']')) ||
-                            Array.isArray(val) ? (
+                          ) : isTableType ? (
                             <FormLineItemsEditor
                               field={field}
                               getFieldLabel={getFieldLabel}
+                              isFieldRequired={isFieldRequired}
                               value={val}
                               onChange={(newVal) =>
                                 handleFieldChange(field.id, newVal)
@@ -1930,27 +1826,7 @@ const FormEntriesPage = () => {
         </div>
 
         {/* Sticky Action Footer Bar */}
-        <div className='sticky bottom-0 z-20 flex shrink-0 flex-wrap items-center justify-between border-t border-gray-2 bg-white/95 px-8 py-3.5 backdrop-blur-md shadow-lg'>
-          {/* Progress Bar & Required Metric */}
-          <div className='flex items-center gap-4 min-w-[280px]'>
-            <div className='flex flex-col gap-1 flex-1'>
-              <div className='flex items-center justify-between text-xs font-semibold text-gray-11'>
-                <span>Form Progress</span>
-                <span className='font-bold text-gray-13'>
-                  {requiredProgress.percent}%
-                </span>
-              </div>
-              <div className='h-1.5 w-full rounded-full bg-gray-2 overflow-hidden'>
-                <div
-                  className='h-full bg-accent-primary transition-all duration-300'
-                  style={{ width: `${requiredProgress.percent}%` }}
-                />
-              </div>
-            </div>
-            <span className='text-[11px] font-medium text-gray-8 whitespace-nowrap'>
-              {requiredProgress.completed}/{requiredProgress.total} required
-            </span>
-          </div>
+        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-white/95 px-8 py-3.5 backdrop-blur-md shadow-lg'>
 
           {/* Action Buttons */}
           <div className='flex items-center gap-3'>

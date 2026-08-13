@@ -1,4 +1,4 @@
-import { axiosCrypto, axiosV6 } from '../axios'
+import { axiosV6 } from '../axios'
 
 const viewBinary = async (
   tId: number,
@@ -9,7 +9,7 @@ const viewBinary = async (
 ) => {
   const response: any = { data: '', error: '' }
   try {
-    const { data, status } = await axiosCrypto.get(
+    const { data, status } = await axiosV6.get(
       `/file/viewBinary/${tId}/${uId}/${rId}/${id}/${type}`,
     )
     if (status != 200) return

@@ -1,3 +1,4 @@
+import { getV6ApiBaseUrl } from '@/api/axios'
 import { formatUtcToLocalDateTime } from '@/utils/utcDate'
 
 export type CommentItem = {
@@ -107,7 +108,12 @@ export const buildInfoCards = (
     .filter((card) => card.rows.length > 0)
 }
 
-export const DOCUMENT_PREVIEW_BASE_URL = 'https://demo.ezofis.com/v6api'
+export const getDocumentPreviewBaseUrl = (): string => {
+  const apiUrl = getV6ApiBaseUrl()
+  return apiUrl.replace(/\/api\/?$/, '')
+}
+
+export const DOCUMENT_PREVIEW_BASE_URL = getDocumentPreviewBaseUrl()
 
 const GENERIC_BLOB_TYPES = new Set([
   '',

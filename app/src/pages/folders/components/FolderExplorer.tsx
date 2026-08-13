@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
-import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
-import showToast from '@/components/base/toast/showToast'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
+import showToast from '@/components/base/toast/showToast'
+import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import { encodeRepositoryNodeId } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
@@ -25,8 +25,8 @@ export function FolderExplorer() {
   const {
     activeFolder,
     appView,
-    breadcrumbs,
     beginFilterDefer,
+    breadcrumbs,
     changePageSize,
     changeServerPage,
     changeViewMode,
@@ -39,14 +39,15 @@ export function FolderExplorer() {
     filePage,
     files,
     fileSearch,
-    folderContextFilters,
-    folderFilters,
-    folderFilterOptionSource,
     filterOptionsCache,
+    folderContextFilters,
+    folderFilterOptionSource,
+    folderFilters,
     folderHasMore,
     folderPage,
     folders,
     folderSearch,
+    itemFilterFields,
     loading,
     loadingFolders,
     loadingPage,
@@ -54,13 +55,12 @@ export function FolderExplorer() {
     openFile,
     openFileAction,
     openFolder,
-    itemFilterFields,
     refreshData,
     refreshing,
     repositoryNodes,
-    selectFolder,
     selectedFile,
     selectedRepository,
+    selectFolder,
     toggleFolder,
     tree,
     viewMode,
@@ -106,12 +106,7 @@ export function FolderExplorer() {
 
     if (folderToSelect) selectFolder(folderToSelect)
     else setAppView('explorer')
-  }, [
-    activeFolder,
-    resolveUploadReturnFolder,
-    selectFolder,
-    setAppView,
-  ])
+  }, [activeFolder, resolveUploadReturnFolder, selectFolder, setAppView])
 
   const openShareForFile = useCallback(
     (fileId: string) => {
@@ -193,14 +188,13 @@ export function FolderExplorer() {
         await new Promise((resolve) => window.setTimeout(resolve, 120))
         if (cancelled) return
 
-        if (Object.keys(filters).length > 0) {
-          setFileFilters(filters)
-        }
-        if (pendingAskAiAction.fileSearch?.trim()) {
-          setFileSearch(pendingAskAiAction.fileSearch.trim())
-        }
+        setFileFilters(filters)
+        setFileSearch(pendingAskAiAction.fileSearch?.trim() || '')
+
         if (pendingAskAiAction.openItemId?.trim()) {
           openDetailsFile(pendingAskAiAction.openItemId.trim())
+        } else {
+          setAppView('explorer')
         }
         clearPending()
       } finally {
@@ -221,6 +215,7 @@ export function FolderExplorer() {
     openDetailsFile,
     openFolder,
     pendingAskAiAction,
+    setAppView,
     setFileFilters,
     setFileSearch,
     tree,
@@ -326,9 +321,7 @@ export function FolderExplorer() {
     const detailsRepositoryId =
       detailsDocument?.repositoryId ||
       String(
-        getRepositoryIdFromFolder(activeFolder) ||
-          selectedRepository?.id ||
-          '',
+        getRepositoryIdFromFolder(activeFolder) || selectedRepository?.id || '',
       )
 
     return (
@@ -343,7 +336,10 @@ export function FolderExplorer() {
           setAppView('explorer')
         }}
         onEdit={() => setAppView('editMetadata')}
-        onOpenRelatedDocument={({ id: relatedId, repositoryId: relatedRepoId }) => {
+        onOpenRelatedDocument={({
+          id: relatedId,
+          repositoryId: relatedRepoId,
+        }) => {
           setPendingOpenShare(false)
           setDetailsDocument({
             id: relatedId,
@@ -388,10 +384,15 @@ export function FolderExplorer() {
   }
 
   if (appView === 'aiSummary') {
-    console.log('appView === aiSummary', selectedFile,getSelectedFileRow(selectedFile))
+    console.log(
+      'appView === aiSummary',
+      selectedFile,
+      getSelectedFileRow(selectedFile),
+    )
     const currentFileName = getSelectedFileRow(selectedFile)?.fileName
     return (
       <AiSummaryView
+        currentFileName={currentFileName}
         itemId={selectedFile}
         repositoryId={String(
           selectedRepository?.id ||
@@ -399,7 +400,6 @@ export function FolderExplorer() {
             '',
         )}
         onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
-        currentFileName={currentFileName}
       />
     )
   }
@@ -420,8 +420,8 @@ export function FolderExplorer() {
           fileFilters={fileFilters}
           filePage={filePage}
           files={files}
-          folderContextFilters={folderContextFilters}
           filterOptionsCache={filterOptionsCache}
+          folderContextFilters={folderContextFilters}
           folderFilterOptionSource={folderFilterOptionSource}
           folders={folders}
           itemFilterFields={itemFilterFields}
@@ -431,15 +431,17 @@ export function FolderExplorer() {
           repositories={repositoryNodes}
           repositoryId={resolvedRepositoryId}
           searchQuery={fileSearch}
+          uploadDisabled={!resolvedRepositoryId}
           view={viewMode}
+          setView={changeViewMode}
           onAiSummary={(id) => openFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
           onEdit={(id) => openFileAction(id, 'editMetadata')}
-          onFiltersChange={setFileFilters}
           onFilterMenuOpenChange={(id) => {
             if (id) beginFilterDefer()
             else commitFilterDefer()
           }}
+          onFiltersChange={setFileFilters}
           onOpenFile={openDetailsFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
@@ -449,9 +451,7 @@ export function FolderExplorer() {
           onShare={openShareForFile}
           onUpload={handleUpload}
           onUploadFile={handleUploadFile}
-          uploadDisabled={!resolvedRepositoryId}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
-          setView={changeViewMode}
         />
       </div>
     )
@@ -466,10 +466,10 @@ export function FolderExplorer() {
         fileFilters={fileFilters}
         files={files}
         fileSearch={fileSearch}
-        folderContextFilters={folderContextFilters}
-        folderFilters={folderFilters}
-        folderFilterOptionSource={folderFilterOptionSource}
         filterOptionsCache={filterOptionsCache}
+        folderContextFilters={folderContextFilters}
+        folderFilterOptionSource={folderFilterOptionSource}
+        folderFilters={folderFilters}
         folders={folders}
         folderSearch={folderSearch}
         itemFilterFields={itemFilterFields}
@@ -481,13 +481,13 @@ export function FolderExplorer() {
         view={viewMode}
         setView={changeViewMode}
         onFileFiltersChange={setFileFilters}
-        onFolderFiltersChange={setFolderFilters}
+        onFileSearchChange={setFileSearch}
         onFilterMenuOpenChange={(id) => {
           if (id) beginFilterDefer()
           else commitFilterDefer()
         }}
+        onFolderFiltersChange={setFolderFilters}
         onFolderSearchChange={setFolderSearch}
-        onFileSearchChange={setFileSearch}
         onRefresh={handleRefresh}
         onUpload={handleUpload}
       />
@@ -518,6 +518,7 @@ export function FolderExplorer() {
               loadingFolders={loadingFolders}
               loadingPage={loadingPage}
               refreshing={refreshing}
+              uploadDisabled={!resolvedRepositoryId}
               onAiSummary={(id) => openFileAction(id, 'aiSummary')}
               onEditMetadata={(id) => openFileAction(id, 'editMetadata')}
               onLoadMoreFolders={loadMoreFolders}
@@ -528,7 +529,6 @@ export function FolderExplorer() {
               onShare={openShareForFile}
               onUpload={handleUpload}
               onUploadFile={handleUploadFile}
-              uploadDisabled={!resolvedRepositoryId}
               onWorkflow={(id) => openFileAction(id, 'workflow')}
             />
           </div>

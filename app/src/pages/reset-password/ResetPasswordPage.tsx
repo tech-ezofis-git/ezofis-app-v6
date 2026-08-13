@@ -100,7 +100,7 @@ const ResetPasswordPage = () => {
 
       console.log(payload)
 
-      // We use the new apiRouter here. It will automatically decide if it's v5 or v6!
+      // We use apiRouter here to register the new user account
       const { data, status } = await apiRouter.signUp(payload)
 
       if (status === 200 || status === 201 || data === 'Success') {
