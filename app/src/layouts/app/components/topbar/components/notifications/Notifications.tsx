@@ -1,39 +1,36 @@
 import { useLingui } from '@lingui/react/macro'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import Menu from '@/components/base/menu/Menu'
 import PageEmptyState from '@/components/common/PageEmptyState'
+import type { NotificationItem } from './types'
 import Header from './components/header/Header'
 import NotificationCard from './components/NotificationCard'
 import NotificationsTrigger from './components/NotificationsTrigger'
-import { mockNotifications } from './mockData'
-import type { NotificationItem } from './types'
+import { useNotifications } from './hooks/useNotifications'
+import { navigateToNotificationTarget } from './utils/navigateToTarget'
 
 const Notifications = () => {
   const { t } = useLingui()
+  const navigate = useNavigate()
   const [isNotificationsOpened, setIsNotificationsOpened] = useState(false)
-  const [notificationsList, setNotificationsList] = useState<NotificationItem[]>(mockNotifications)
-  const [activeTab, setActiveTab] = useState<string>('All')
 
-  const unreadCount = notificationsList.filter((n) => !n.isRead).length
+  const {
+    activeTab,
+    clearAll,
+    data: filteredNotifications,
+    markAllRead,
+    markAsRead,
+    searchQuery,
+    unreadCount,
+    setActiveTab,
+    setSearchQuery,
+  } = useNotifications()
 
-  const filteredNotifications = notificationsList.filter((item) => {
-    if (activeTab === 'Unread') return !item.isRead
-    if (activeTab === 'Read') return item.isRead
-    return true
-  })
-
-  const handleMarkAsRead = (id: string) => {
-    setNotificationsList((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, isRead: true } : item))
-    )
-  }
-
-  const handleMarkAllRead = () => {
-    setNotificationsList((prev) => prev.map((item) => ({ ...item, isRead: true })))
-  }
-
-  const handleClearAll = () => {
-    setNotificationsList([])
+  const handleItemClick = (notification: NotificationItem) => {
+    markAsRead(notification.id)
+    navigateToNotificationTarget(navigate, notification.target)
+    setIsNotificationsOpened(false)
   }
 
   return (
@@ -51,19 +48,22 @@ const Notifications = () => {
     >
       <Header
         activeTab={activeTab}
+        searchQuery={searchQuery}
         unreadCount={unreadCount}
-        onClearAll={handleClearAll}
-        onMarkAllRead={handleMarkAllRead}
+        onClearAll={clearAll}
+        onMarkAllRead={markAllRead}
+        onSearchChange={setSearchQuery}
         onTabChange={setActiveTab}
       />
 
-      <div className='max-h-96 overflow-y-auto divide-y divide-gray-3 bg-surface-primary'>
+      <div className='max-h-96 divide-y divide-gray-3 overflow-y-auto bg-surface-primary'>
         {filteredNotifications.length > 0 ? (
           filteredNotifications.map((notification) => (
             <NotificationCard
               key={notification.id}
               notification={notification}
-              onMarkAsRead={handleMarkAsRead}
+              onItemClick={handleItemClick}
+              onMarkAsRead={markAsRead}
             />
           ))
         ) : (

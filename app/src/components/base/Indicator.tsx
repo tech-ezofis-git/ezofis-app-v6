@@ -10,6 +10,7 @@ interface Props {
   className?: string
   color?: IndicatorColor
   disabled?: boolean
+  label?: ReactNode
   offset?: number
   position?: IndicatorProps['position']
   size?: number
@@ -27,6 +28,7 @@ const Indicator = ({
   className,
   color = 'primary',
   disabled,
+  label,
   offset,
   position,
   size = 5,
@@ -35,10 +37,11 @@ const Indicator = ({
     <Base
       className={className}
       disabled={disabled}
+      label={label}
       offset={offset}
       position={position}
       processing={animate}
-      size={size}
+      size={label !== undefined ? undefined : size}
       classNames={{
         indicator: colorClassName[color],
       }}

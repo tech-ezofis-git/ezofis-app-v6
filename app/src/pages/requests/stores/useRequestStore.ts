@@ -71,6 +71,12 @@ type Store = {
   jobStatuses: Record<string, any>
   newRequest: boolean
   newRequestMeta: string | null
+  pendingDeepLink: {
+    processId: string
+    tab?: string
+    transactionId?: string
+    workflowId: string
+  } | null
   pendingNav: any
   pendingOpenNewRequest: boolean
   playgroundContext: any
@@ -87,6 +93,7 @@ type Store = {
   summaryCache: Record<string, any>
   addProcessingProcess: (process: any) => void
   cacheSummaryData: (reqNo: string, data: any) => void
+  clearPendingDeepLink: () => void
   clearPendingNav: () => void
   clearQuickFilters: () => void
   closeNewRequest: () => void
@@ -98,6 +105,7 @@ type Store = {
   setIsPlaygroundOpen: (open: boolean) => void
   setJobMapping: (jobId: string | number, instanceId: string) => void
   setJobStatus: (id: string, status: any) => void
+  setPendingDeepLink: (deepLink: Store['pendingDeepLink']) => void
 
   setPendingNav: (v: any) => void
   setPendingOpenNewRequest: (value: boolean) => void
@@ -123,6 +131,7 @@ const requestStore = create<Store>((set) => ({
   jobStatuses: getInitialJobStatuses(),
   newRequest: false,
   newRequestMeta: null,
+  pendingDeepLink: null,
   pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
   pendingOpenNewRequest: false,
   playgroundContext: null,
@@ -149,6 +158,7 @@ const requestStore = create<Store>((set) => ({
     set((state) => ({
       summaryCache: { ...state.summaryCache, [reqNo]: data },
     })),
+  clearPendingDeepLink: () => set({ pendingDeepLink: null }),
   clearPendingNav: () => set({ pendingNav: null }),
   clearQuickFilters: () => set({ activeQuickFilters: [] }),
   closeNewRequest: () => set({ newRequest: false, newRequestMeta: null }),
@@ -159,8 +169,8 @@ const requestStore = create<Store>((set) => ({
       isRequestOpen: false,
       selectedItem: null, // Optional: clear data on close
     })),
-  handleSetRepoData: (data) => set({ repoData: data }),
 
+  handleSetRepoData: (data) => set({ repoData: data }),
   openNewRequest: (title: string) =>
     set({
       newRequest: true,
@@ -227,6 +237,7 @@ const requestStore = create<Store>((set) => ({
       } catch {}
       return { jobStatuses: nextStatuses }
     }),
+  setPendingDeepLink: (deepLink) => set({ pendingDeepLink: deepLink }),
   setPendingNav: (v) => set({ pendingNav: v }),
   setPendingOpenNewRequest: (value: boolean) =>
     set({ pendingOpenNewRequest: value }),

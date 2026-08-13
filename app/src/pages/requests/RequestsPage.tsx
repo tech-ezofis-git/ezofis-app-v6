@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useNavigate } from '@tanstack/react-router'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { V6SearchFilterClause } from '@/api/v6/workflows'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
+import requestApi from '@/api/requests/requests'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
 } from '@/api/v6/workflows'
-import type { V6SearchFilterClause } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import ApiPlayground from '@/components/playground/ApiPlayground'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
@@ -30,7 +32,7 @@ function flattenRows(groups: any[]): any[] {
     if (Array.isArray(node.children)) node.children.forEach(walk)
     if (Array.isArray(node.groups)) node.groups.forEach(walk)
   }
-  ;(groups || []).forEach(walk)
+    ; (groups || []).forEach(walk)
   return out
 }
 
@@ -50,11 +52,13 @@ const RequestsPage = () => {
   const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>([])
 
   const {
+    clearPendingDeepLink,
     closeRequest,
     isClosed,
     isPlaygroundOpen,
     openNewRequest,
     openRequest,
+    pendingDeepLink,
     pendingOpenNewRequest,
     playgroundContext,
     reloadMeta,
@@ -65,6 +69,8 @@ const RequestsPage = () => {
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
   } = requestStore()
+
+  const navigate = useNavigate()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(100)
@@ -197,6 +203,54 @@ const RequestsPage = () => {
     loadWorkflowList()
   }, [loadWorkflowList])
 
+  // Notification deep-link: switch to the target workflow once the list is loaded
+  useEffect(() => {
+    if (!pendingDeepLink || !allWorkflow) return
+    const match = allWorkflow.find(
+      (opt) => String(opt.id) === String(pendingDeepLink.workflowId),
+    )
+    if (match && String(match.id) !== String(workflow?.id)) {
+      setWorkflow(match)
+    }
+  }, [pendingDeepLink, allWorkflow, workflow])
+
+  // Notification deep-link: once the target workflow's data is ready, fetch and open the row
+  useEffect(() => {
+    if (!pendingDeepLink || !selectedWorkflow) return
+    if (String(selectedWorkflow.id) !== String(pendingDeepLink.workflowId))
+      return
+
+    let cancelled = false
+      ; (async () => {
+        try {
+          const row = await requestApi.getProcess(
+            pendingDeepLink.workflowId,
+            pendingDeepLink.processId,
+            // Single-transaction requests share processId/transactionId; multi-transaction
+            // ones must pass transactionId explicitly via the notification's target.search.
+            pendingDeepLink.transactionId ?? pendingDeepLink.processId,
+          )
+          if (cancelled) return
+          openRequest(row, selectedWorkflow, pendingDeepLink.tab ?? 'Details')
+        } finally {
+          if (!cancelled) {
+            clearPendingDeepLink()
+            void navigate({ replace: true, search: {}, to: '/requests' })
+          }
+        }
+      })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    pendingDeepLink,
+    selectedWorkflow,
+    openRequest,
+    clearPendingDeepLink,
+    navigate,
+  ])
+
   // Workflow Change Listener
   useEffect(() => {
     if (workflow?.id) {
@@ -251,11 +305,7 @@ const RequestsPage = () => {
 
     openNewRequest('request')
     setPendingOpenNewRequest(false)
-  }, [
-    pendingOpenNewRequest,
-    openNewRequest,
-    setPendingOpenNewRequest,
-  ])
+  }, [pendingOpenNewRequest, openNewRequest, setPendingOpenNewRequest])
 
   // --- 4. NAVIGATION & FLATTENING ---
 

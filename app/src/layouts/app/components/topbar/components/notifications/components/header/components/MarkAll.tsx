@@ -11,7 +11,12 @@ const MarkAll = ({ onClick }: Props) => {
 
   return (
     <Tooltip content={t`Mark all as read`} position='top'>
-      <IconButton color='gray' icon='lucide:check-check' variant='ghost' onClick={onClick} />
+      <IconButton
+        color='gray'
+        icon='lucide:check-check'
+        variant='ghost'
+        onClick={onClick}
+      />
     </Tooltip>
   )
 }

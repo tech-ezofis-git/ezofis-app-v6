@@ -7,18 +7,22 @@ import Search from './components/Search'
 
 interface Props {
   activeTab: string
-  onTabChange: (tab: string) => void
-  onMarkAllRead: () => void
-  onClearAll: () => void
+  searchQuery: string
   unreadCount: number
+  onClearAll: () => void
+  onMarkAllRead: () => void
+  onSearchChange: (query: string) => void
+  onTabChange: (tab: string) => void
 }
 
 const Header = ({
   activeTab,
-  onTabChange,
-  onMarkAllRead,
-  onClearAll,
+  searchQuery,
   unreadCount,
+  onClearAll,
+  onMarkAllRead,
+  onSearchChange,
+  onTabChange,
 }: Props) => {
   const { t } = useLingui()
 
@@ -28,7 +32,7 @@ const Header = ({
         <div className='flex-1 font-poppins text-15 font-semibold text-gray-12'>
           {t`Notifications`}
         </div>
-        <Search />
+        <Search query={searchQuery} onChange={onSearchChange} />
         <MarkAll onClick={onMarkAllRead} />
         <ClearAll onClick={onClearAll} />
       </div>
