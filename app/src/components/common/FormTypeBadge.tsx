@@ -3,7 +3,7 @@ import type { Form } from '@/types/form'
 import Badge from '@/components/base/Badge'
 
 interface Props {
-  type: Form['type']
+  type?: Form['type'] | string | null
 }
 
 const FormTypeBadge = ({ type }: Props) => {
@@ -17,10 +17,16 @@ const FormTypeBadge = ({ type }: Props) => {
         return 'blue'
       case 'DOCUMENT_FORM':
         return 'indigo'
+      case 'MASTER':
+        return 'violet'
       default:
         return 'gray'
     }
   }, [type])
+
+  if (!type || String(type).trim().toUpperCase() === 'ITEM') {
+    return null
+  }
 
   return <Badge color={color} label={type} />
 }

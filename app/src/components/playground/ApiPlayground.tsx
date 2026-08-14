@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getV6ApiBaseUrl } from '@/api/axios'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
@@ -50,7 +51,6 @@ interface ApiPlaygroundProps extends ApiPlaygroundContext {
 
 const DEFAULT_PLAYGROUND_URL =
   'https://demo.ezofis.com/V6Playground/apikey.html'
-const DEFAULT_API_HOST = 'https://api.ezofis.com'
 
 const DEFAULT_DOCUMENT: Required<
   Pick<
@@ -367,11 +367,12 @@ export const ApiPlayground = ({
               ...endpoint.headers,
             }
 
+            const baseHost = getV6ApiBaseUrl()
             const fullApiEndpoint =
               endpoint.apiEndpoint ||
               (endpoint.apiPath.startsWith('http')
                 ? endpoint.apiPath
-                : `${DEFAULT_API_HOST}${endpoint.apiPath}`)
+                : `${baseHost}${endpoint.apiPath.startsWith('/') ? '' : '/'}${endpoint.apiPath}`)
 
             const headerLines = Object.entries(requestHeaders)
               .map(([key, value]) => `  -H "${key}: ${value}" \\`)

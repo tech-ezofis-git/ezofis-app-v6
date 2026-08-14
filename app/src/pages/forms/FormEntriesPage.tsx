@@ -152,6 +152,7 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
   })
 }
 
+
 // Sub-component for Inline Expansion Line Item Form (Flat-Focus UI compliant: no drawers, no popups, no modals)
 const FormLineItemInlineEditor = ({
   columns,
@@ -400,15 +401,17 @@ const FormLineItemInlineEditor = ({
 // Sub-component for rendering line items / table fields inside entry creation/editing
 const FormLineItemsEditor = ({
   field,
-  isFieldRequired,
+  // isFieldRequired,
   value,
   getFieldLabel,
+  isFieldRequired,
   onChange,
 }: {
   field: Question
-  isFieldRequired?: boolean
+  // isFieldRequired?: boolean
   value: any
   getFieldLabel: (key: string) => string
+  isFieldRequired?: boolean
   onChange: (val: string) => void
 }) => {
   const { t } = useLingui()
@@ -503,18 +506,16 @@ const FormLineItemsEditor = ({
     onChange(JSON.stringify(updated))
   }
 
+
   return (
     <div className='space-y-3 font-inter'>
       {/* Table Field Title & Action Row */}
-      <div className='mb-1.5 flex items-center justify-between'>
+      <div className='flex items-center justify-between mb-1.5'>
         <div>
           <label className='block text-xs font-bold text-gray-12'>
             {field.label || 'Untitled Question'}
             {isFieldRequired && (
-              <span
-                className='ml-1 font-bold text-red-9'
-                title='Required field'
-              >
+              <span className='ml-1 font-bold text-red-9' title='Required field'>
                 *
               </span>
             )}
@@ -632,7 +633,7 @@ const FormLineItemsEditor = ({
           </div>
 
           {/* Table Footer */}
-          <div className='bg-gray-50/60 flex items-center justify-between border-t border-gray-2 px-4 py-3 text-xs'>
+          <div className='flex items-center justify-between border-t border-gray-2 bg-gray-50/60 px-4 py-3 text-xs'>
             <span className='text-[11px] font-medium text-gray-7'>
               Showing {rows.length} line {rows.length === 1 ? 'item' : 'items'}
             </span>
@@ -1368,6 +1369,8 @@ const FormEntriesPage = () => {
     }
   }
 
+
+
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
     return (
@@ -1448,6 +1451,7 @@ const FormEntriesPage = () => {
               </p>
             </div>
           </div>
+
         </div>
 
         {/* Scrollable Form Body with ~80% Width Container */}
@@ -1538,12 +1542,11 @@ const FormEntriesPage = () => {
                             </div>
                           )}
 
-                          {!isTableType &&
-                            field.settings?.general?.description && (
-                              <p className='mb-1.5 text-[11px] text-gray-7'>
-                                {field.settings.general.description}
-                              </p>
-                            )}
+                          {!isTableType && field.settings?.general?.description && (
+                            <p className='mb-1.5 text-[11px] text-gray-7'>
+                              {field.settings.general.description}
+                            </p>
+                          )}
 
                           {/* Form Input Control */}
                           {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
@@ -1809,9 +1812,9 @@ const FormEntriesPage = () => {
                           ) : isTableType ? (
                             <FormLineItemsEditor
                               field={field}
+                              getFieldLabel={getFieldLabel}
                               isFieldRequired={isFieldRequired}
                               value={val}
-                              getFieldLabel={getFieldLabel}
                               onChange={(newVal) =>
                                 handleFieldChange(field.id, newVal)
                               }
@@ -1842,7 +1845,8 @@ const FormEntriesPage = () => {
         </div>
 
         {/* Sticky Action Footer Bar */}
-        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-white/95 px-8 py-3.5 shadow-lg backdrop-blur-md'>
+        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-white/95 px-8 py-3.5 backdrop-blur-md shadow-lg'>
+
           {/* Action Buttons */}
           <div className='flex items-center gap-3'>
             <Button

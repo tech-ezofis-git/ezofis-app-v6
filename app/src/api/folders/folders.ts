@@ -1,10 +1,10 @@
 import authUserStore from '../../stores/authUserStore'
-import { _axios, axiosCrypto } from '../axios'
+import { _axios } from '../axios'
 
 const fetchFoldersById = async (folderId: number) => {
   const response: any = { data: '', error: '' }
   try {
-    const { data, status } = await axiosCrypto(`/repository/${folderId}`)
+    const { data, status } = await _axios(`/repository/${folderId}`)
     if (status != 200) return
     response.data = data
   } catch (error) {
@@ -68,7 +68,7 @@ const uploadMasterFile = async (payload: any) => {
 const getRepositoryList = async (criteria = '', value = '') => {
   const response: any = { data: '', error: '' }
   try {
-    const { data, status } = await axiosCrypto.post('/repository/list', {
+    const { data, status } = await _axios.post('/repository/list', {
       criteria,
       value,
     })

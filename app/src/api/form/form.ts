@@ -1,5 +1,5 @@
 import authUserStore from '../../stores/authUserStore'
-import { axiosCrypto, axiosV6 } from '../axios'
+import { axiosV6 } from '../axios'
 
 const getFormDataById = async (id: string) => {
   const response: any = { data: null, error: '' }
@@ -124,7 +124,7 @@ const listAllForms = async (
 const deleteFormEntry = async (fId: string, eId: string) => {
   const response: any = { data: null, error: '' }
   try {
-    const { data, status } = await axiosCrypto.delete(
+    const { data, status } = await axiosV6.delete(
       `/form/${fId}/entry/${eId}`,
     )
     if (status !== 200) throw new Error('Invalid status code')

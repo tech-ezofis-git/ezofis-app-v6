@@ -217,14 +217,13 @@ export function FolderExplorer() {
         await new Promise((resolve) => window.setTimeout(resolve, 120))
         if (cancelled) return
 
-        if (Object.keys(filters).length > 0) {
-          setFileFilters(filters)
-        }
-        if (pendingAskAiAction.fileSearch?.trim()) {
-          setFileSearch(pendingAskAiAction.fileSearch.trim())
-        }
+        setFileFilters(filters)
+        setFileSearch(pendingAskAiAction.fileSearch?.trim() || '')
+
         if (pendingAskAiAction.openItemId?.trim()) {
           openDetailsFile(pendingAskAiAction.openItemId.trim())
+        } else {
+          setAppView('explorer')
         }
         clearPending()
       } finally {
@@ -245,6 +244,7 @@ export function FolderExplorer() {
     openDetailsFile,
     openFolder,
     pendingAskAiAction,
+    setAppView,
     setFileFilters,
     setFileSearch,
     tree,

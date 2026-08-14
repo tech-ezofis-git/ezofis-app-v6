@@ -1,26 +1,10 @@
 import { axiosV6 } from './axios'
 import { authApiV6 } from './v6/auth'
 
-/**
- * Helper to determine API version based on origin or other configs.
- * Modify this logic to suit your specific tenant check.
- */
-export const getApiVersion = (): 'v5' | 'v6' => {
-  if (globalThis.window !== undefined) {
-    const origin = globalThis.location.origin
-    // Example logic: if the origin contains 'localhost:3000', use the V6 API
-    // Adjust this to your actual condition
-    if (origin.includes('localhost:3001')) {
-      return 'v6'
-    }
-  }
-  return 'v5' // Default to V5
-}
-
 // --- AUTH ROUTER ---
 
 export const signUp = async (payload: any) => {
-  // Map the generic/v5 payload to the specific V6 payload interface
+  // Map generic payload to the specific V6 payload interface
   const v6Payload = {
     appVersion: '1.0.0',
     databaseName: null,
@@ -195,7 +179,6 @@ export const apiRouter = {
   socialLogin,
   userSession,
   verifyMailOTP,
-  getApiVersion,
 }
 
 export default apiRouter
