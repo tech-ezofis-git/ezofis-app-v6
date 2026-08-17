@@ -40,14 +40,10 @@ export interface FormStore {
   previewMode: 'typeform' | 'grid' | 'full'
   publishStatus: PublishStatus
   secondaryPanels: Panel[]
-  selectionType: 'general' | 'question' | 'welcome' | 'thank_you'
+  selectionType: 'general' | 'question'
   showHeaderFooter: boolean
-  showThankYouPage: boolean
-  showWelcomePage: boolean
   sidebarView: 'explorer' | 'fields'
-  thankYouPage: WelcomePageSettings
   uid: string
-  welcomePage: WelcomePageSettings
   closedMessage?: string
   // Phase 4: Management
   responseLimit?: number
@@ -68,7 +64,10 @@ export interface FormStore {
   moveQuestion: (id: string, toPanelId: string, index: number) => void
   pasteQuestion: (panelId: string, index: number) => void
   resetForm: () => void
-  saveForm: (targetStatus?: PublishStatus) => Promise<boolean>
+  saveForm: (
+    targetStatus?: PublishStatus,
+    formId?: string,
+  ) => Promise<{ createdFormId?: string; success: boolean }>
   updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
   updateQuestion: (id: string, updates: any) => void
   setActivePanelId: (id: string | null) => void
@@ -97,15 +96,9 @@ export interface FormStore {
   setPublishStatus: (status: PublishStatus) => void
   setResponseLimit: (limit: number | undefined) => void
   setSchedule: (start?: string, end?: string) => void
-  setSelectionType: (
-    type: 'general' | 'question' | 'welcome' | 'thank_you',
-  ) => void
-  setShowThankYouPage: (show: boolean) => void
-  setShowWelcomePage: (show: boolean) => void
+  setSelectionType: (type: 'general' | 'question') => void
   setSidebarOpen: (open: boolean) => void
   setSidebarView: (view: 'explorer' | 'fields') => void
-  setThankYouPage: (updates: Partial<WelcomePageSettings>) => void
-  setWelcomePage: (updates: Partial<WelcomePageSettings>) => void
 }
 
 export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
@@ -344,13 +337,6 @@ export type QuestionType =
 
 export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
 
-export interface WelcomePageSettings {
-  buttonText: string
-  description: string
-  enabled: boolean
-  title: string
-}
-
 const initialState = {
   activePanelId: null,
   activeQuestionId: null,
@@ -381,22 +367,8 @@ const initialState = {
   secondaryPanels: [],
   selectionType: 'general' as const,
   showHeaderFooter: false,
-  showThankYouPage: false,
-  showWelcomePage: false,
   sidebarView: 'explorer' as const,
-  thankYouPage: {
-    buttonText: 'Submit',
-    description: 'Your submission has been received.',
-    enabled: true,
-    title: 'Thank you!',
-  },
   uid: '',
-  welcomePage: {
-    buttonText: 'Start',
-    description: 'Welcome to our form.',
-    enabled: true,
-    title: 'Welcome',
-  },
 }
 
 export const useFormStore = create<FormStore>()(
@@ -489,15 +461,6 @@ export const useFormStore = create<FormStore>()(
             name: data.name || state.name,
             panels: panels.length > 0 ? panels : state.panels,
             selectionType: 'general',
-            showThankYouPage:
-              data.thankYouPage?.enabled ?? state.showThankYouPage,
-            showWelcomePage: data.welcomePage?.enabled ?? state.showWelcomePage,
-            thankYouPage: data.thankYouPage
-              ? { ...state.thankYouPage, ...data.thankYouPage }
-              : state.thankYouPage,
-            welcomePage: data.welcomePage
-              ? { ...state.welcomePage, ...data.welcomePage }
-              : state.welcomePage,
           }
         }),
 
@@ -650,7 +613,7 @@ export const useFormStore = create<FormStore>()(
           return { activeQuestionId: newQuestion.id, panels: newPanels }
         }),
       resetForm: () => set({ ...initialState, uid: generateId() }),
-      saveForm: async (targetStatus) => {
+      saveForm: async (targetStatus, formId) => {
         const state = get()
         const currentStatus = targetStatus || state.publishStatus
 
@@ -676,24 +639,13 @@ export const useFormStore = create<FormStore>()(
               'Please add at least one field to your form before saving.',
             title: 'Empty Form',
           })
-          return false
+          return { success: false }
         }
 
         try {
-          let response
-          const path = window.location.pathname
-          const isCreation =
-            path === '/form-builder' ||
-            path === '/form-builder/' ||
-            path.endsWith('/form-builder')
-
-          if (!isCreation) {
-            const parts = path.split('/')
-            const formId = parts[parts.length - 1]
-            response = await formApi.updateForm(formId, payload)
-          } else {
-            response = await formApi.createForm(payload)
-          }
+          const response = formId
+            ? await formApi.updateForm(formId, payload)
+            : await formApi.createForm(payload)
 
           if (response.error) {
             notifications.show({
@@ -701,7 +653,7 @@ export const useFormStore = create<FormStore>()(
               message: response.error,
               title: 'Error Saving Form',
             })
-            return false
+            return { success: false }
           }
 
           notifications.show({
@@ -710,22 +662,20 @@ export const useFormStore = create<FormStore>()(
             title: 'Success!',
           })
 
-          const createdFormId =
-            response.data?.id ??
-            response.data?.formId ??
-            (typeof response.data === 'string' ? response.data : null)
+          const createdFormId = formId
+            ? undefined
+            : (response.data?.id ??
+              response.data?.formId ??
+              (typeof response.data === 'string' ? response.data : undefined))
 
-          if (isCreation && createdFormId) {
-            window.location.replace(`/form-builder/${createdFormId}`)
-          }
-          return true
+          return { createdFormId, success: true }
         } catch (error) {
           notifications.show({
             color: 'red',
             message: 'An unexpected error occurred while saving.',
             title: 'Unexpected Error',
           })
-          return false
+          return { success: false }
         }
       },
       updatePanel: (id, updates) =>
@@ -783,24 +733,11 @@ export const useFormStore = create<FormStore>()(
       setSchedule: (scheduleStart, scheduleEnd) =>
         set({ scheduleEnd, scheduleStart }),
       setSelectionType: (selectionType) => set({ selectionType }),
-      setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
-      setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
 
       // Sidebar Actions
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
 
       setSidebarView: (sidebarView) => set({ sidebarView }),
-
-      setThankYouPage: (updates) =>
-        set((state) => ({
-          thankYouPage: { ...state.thankYouPage, ...updates },
-        })),
-
-      // Page Settings Actions
-      setWelcomePage: (updates) =>
-        set((state) => ({
-          welcomePage: { ...state.welcomePage, ...updates },
-        })),
     }),
 
     {

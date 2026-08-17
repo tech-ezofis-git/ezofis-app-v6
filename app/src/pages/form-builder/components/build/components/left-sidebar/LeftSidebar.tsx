@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ActionIcon } from '@mantine/core'
+import { ActionIcon, Tooltip } from '@mantine/core'
 import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
@@ -78,16 +78,16 @@ const SortableSectionItem = ({
     >
       <div
         className={cn(
-          'relative flex w-full items-center rounded-lg border border-transparent transition-all',
+          'relative flex w-full items-center rounded-lg border border-transparent transition-all duration-200',
           isCollapsed
             ? 'size-9 justify-center p-2'
-            : 'gap-2 px-2 py-1.5 text-left',
-          'text-gray-10 hover:border-accent-soft/20 hover:bg-accent-soft/5',
+            : 'gap-2 px-2.5 py-1.5 text-left',
+          'text-gray-11 hover:border-gray-3 hover:bg-gray-2/70 hover:text-gray-13',
           isActive &&
-            'border-accent-soft/30 bg-accent-soft/10 text-accent-primary shadow-sm',
+            'border-primary-4 bg-primary-3/80 text-primary-9 font-semibold shadow-xs',
           isDragging &&
-            'scale-[1.02] bg-accent-soft/15 text-accent-primary shadow-md',
-          isConfirmingDelete && 'bg-red-50 border-red-200',
+            'scale-[1.02] border-primary-4 bg-primary-3 text-primary-9 shadow-md',
+          isConfirmingDelete && 'border-red-4 bg-red-3/60 text-red-11',
         )}
       >
         {isConfirmingDelete ? (
@@ -143,16 +143,23 @@ const SortableSectionItem = ({
                 </div>
               )}
 
-              <Icon
-                name={index === 0 ? 'lucide:shield-check' : 'lucide:layout'}
-                width={isCollapsed ? 18 : 14}
-                className={cn(
-                  'shrink-0 transition-all',
-                  isActive
-                    ? 'scale-110 text-accent-primary opacity-100'
-                    : 'opacity-60 group-hover:text-accent-primary group-hover:opacity-100',
-                )}
-              />
+              <Tooltip
+                disabled={!p.settings.isLocked}
+                label='Section is locked from edits'
+                position='top'
+                withArrow
+              >
+                <Icon
+                  name={p.settings.isLocked ? 'lucide:lock' : 'lucide:layout'}
+                  width={isCollapsed ? 18 : 14}
+                  className={cn(
+                    'shrink-0 transition-all',
+                    isActive
+                      ? 'scale-110 text-accent-primary opacity-100'
+                      : 'opacity-60 group-hover:text-accent-primary group-hover:opacity-100',
+                  )}
+                />
+              </Tooltip>
 
               {!isCollapsed && (
                 <div
@@ -170,45 +177,51 @@ const SortableSectionItem = ({
 
             {!isCollapsed && (
               <div className='animate-in fade-in slide-in-from-right-2 hidden items-center gap-0.5 duration-200 group-hover:flex'>
-                <ActionIcon
-                  className='hover:bg-accent-soft/10 hover:text-accent-primary disabled:opacity-30'
-                  color='gray'
-                  disabled={index === 0}
-                  size='xs'
-                  variant='subtle'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    movePanel(p.id, 'up')
-                  }}
-                >
-                  <Icon height={12} name='lucide:arrow-up' width={12} />
-                </ActionIcon>
-                <ActionIcon
-                  className='hover:bg-accent-soft/10 hover:text-accent-primary disabled:opacity-30'
-                  color='gray'
-                  disabled={index === totalPanels - 1}
-                  size='xs'
-                  variant='subtle'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    movePanel(p.id, 'down')
-                  }}
-                >
-                  <Icon height={12} name='lucide:arrow-down' width={12} />
-                </ActionIcon>
+                <Tooltip label='Move section up' position='top' withArrow>
+                  <ActionIcon
+                    className='hover:bg-accent-soft/10 hover:text-accent-primary disabled:opacity-30'
+                    color='gray'
+                    disabled={index === 0}
+                    size='xs'
+                    variant='subtle'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      movePanel(p.id, 'up')
+                    }}
+                  >
+                    <Icon height={12} name='lucide:arrow-up' width={12} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label='Move section down' position='top' withArrow>
+                  <ActionIcon
+                    className='hover:bg-accent-soft/10 hover:text-accent-primary disabled:opacity-30'
+                    color='gray'
+                    disabled={index === totalPanels - 1}
+                    size='xs'
+                    variant='subtle'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      movePanel(p.id, 'down')
+                    }}
+                  >
+                    <Icon height={12} name='lucide:arrow-down' width={12} />
+                  </ActionIcon>
+                </Tooltip>
                 <div className='mx-0.5 h-3 w-px bg-gray-2' />
-                <ActionIcon
-                  className='hover:bg-red-50 hover:text-red-500 text-gray-4 transition-colors'
-                  color='red'
-                  size='xs'
-                  variant='subtle'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setIsConfirmingDelete(true)
-                  }}
-                >
-                  <Icon height={12} name='lucide:trash-2' width={12} />
-                </ActionIcon>
+                <Tooltip label='Delete section' position='top' withArrow>
+                  <ActionIcon
+                    className='hover:bg-red-50 hover:text-red-500 text-gray-4 transition-colors'
+                    color='red'
+                    size='xs'
+                    variant='subtle'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setIsConfirmingDelete(true)
+                    }}
+                  >
+                    <Icon height={12} name='lucide:trash-2' width={12} />
+                  </ActionIcon>
+                </Tooltip>
               </div>
             )}
           </>
@@ -325,7 +338,7 @@ const LeftSidebar = () => {
             )}
           >
             {!isLeftSidebarCollapsed && (
-              <div className='animate-in fade-in text-[11px] font-extrabold tracking-[0.1em] text-gray-10 uppercase duration-300'>
+              <div className='animate-in fade-in text-xs font-bold text-gray-13 duration-300'>
                 Explorer
               </div>
             )}
@@ -501,19 +514,26 @@ const LeftSidebar = () => {
               isLeftSidebarCollapsed && 'flex justify-center p-3',
             )}
           >
-            <div className='flex items-center gap-2 text-gray-5'>
-              <Icon
-                className='text-green-500'
-                height={14}
-                name='lucide:check-circle-2'
-                width={14}
-              />
-              {!isLeftSidebarCollapsed && (
-                <div className='animate-in fade-in text-[10px] font-semibold tracking-widest uppercase duration-300'>
-                  Auto-saved
-                </div>
-              )}
-            </div>
+            <Tooltip
+              label='Saved to this browser only. Use Save or Publish in the header to sync to the server.'
+              position='top'
+              w={220}
+              multiline
+            >
+              <div className='flex items-center gap-2 text-gray-5'>
+                <Icon
+                  className='text-green-500'
+                  height={14}
+                  name='lucide:check-circle-2'
+                  width={14}
+                />
+                {!isLeftSidebarCollapsed && (
+                  <div className='animate-in fade-in text-[10px] font-semibold tracking-widest uppercase duration-300'>
+                    Saved locally
+                  </div>
+                )}
+              </div>
+            </Tooltip>
           </div>
         </>
       )}

@@ -1,13 +1,10 @@
-import { ActionIcon, Badge, Tooltip } from '@mantine/core'
+import { Badge } from '@mantine/core'
 import { useEffect, useRef, useState } from 'react'
-import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import GeneralSettings from './sections/GeneralSettings'
 import QuestionSettings from './sections/QuestionSettings'
-import ThankYouPageSettings from './sections/ThankYouPageSettings'
-import WelcomePageSettings from './sections/WelcomePageSettings'
 
 const FIELD_ICONS: Record<string, string> = {
   ADDRESS: 'lucide:map-pin',
@@ -45,7 +42,6 @@ const FieldSettings = () => {
   const activeQuestionId = useFormStore((state) => state.activeQuestionId)
   const updateQuestion = useFormStore((state) => state.updateQuestion)
   const selectionType = useFormStore((state) => state.selectionType)
-  const clearSelection = useFormStore((state) => state.clearSelection)
   const setSidebarOpen = useFormStore((state) => state.setSidebarOpen)
 
   const activeQuestion = panels
@@ -79,10 +75,6 @@ const FieldSettings = () => {
     switch (selectionType) {
       case 'general':
         return <GeneralSettings />
-      case 'welcome':
-        return <WelcomePageSettings />
-      case 'thank_you':
-        return <ThankYouPageSettings />
       case 'question':
         return activeQuestion ? (
           <QuestionSettings activeQuestion={activeQuestion} />
@@ -96,10 +88,6 @@ const FieldSettings = () => {
     switch (selectionType) {
       case 'general':
         return 'General Settings'
-      case 'welcome':
-        return 'Welcome Screen'
-      case 'thank_you':
-        return 'Completion Screen'
       default:
         return 'Field Settings'
     }
@@ -109,10 +97,6 @@ const FieldSettings = () => {
     switch (selectionType) {
       case 'general':
         return 'tabler:settings'
-      case 'welcome':
-        return 'lucide:megaphone'
-      case 'thank_you':
-        return 'lucide:party-popper'
       default:
         return 'tabler:adjustments-horizontal'
     }
@@ -124,7 +108,6 @@ const FieldSettings = () => {
     <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white font-inter shadow-xl transition-all duration-300'>
       <SettingsHeader
         activeQuestion={activeQuestion}
-        clearSelection={clearSelection}
         handleLabelSave={handleLabelSave}
         headerLabel={headerLabel}
         icon={getIcon()}
@@ -139,17 +122,13 @@ const FieldSettings = () => {
 
       {renderContent()}
 
-      <SettingsFooter
-        onCancel={() => setSidebarOpen(false)}
-        onSave={() => setSidebarOpen(false)}
-      />
+      <SettingsFooter />
     </div>
   )
 }
 
 const SettingsHeader = ({
   activeQuestion,
-  clearSelection,
   handleLabelSave,
   headerLabel,
   icon,
@@ -169,19 +148,6 @@ const SettingsHeader = ({
   return (
     <div className='flex shrink-0 items-center justify-between gap-2 border-b border-gray-2 bg-white px-5 py-4'>
       <div className='flex min-w-0 flex-1 items-center gap-3'>
-        {selectionType !== 'general' && selectionType !== 'question' && (
-          <Tooltip label='Back to General'>
-            <ActionIcon
-              className='mr-1 shrink-0 text-gray-8 hover:bg-gray-2'
-              size='md'
-              variant='subtle'
-              onClick={() => clearSelection()}
-            >
-              <Icon height={16} name='lucide:arrow-left' width={16} />
-            </ActionIcon>
-          </Tooltip>
-        )}
-
         <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft/10 text-accent-primary'>
           <Icon height={20} name={headerIcon} width={20} />
         </div>
@@ -242,29 +208,20 @@ const SettingsHeader = ({
   )
 }
 
-const SettingsFooter = ({
-  onCancel,
-  onSave,
-}: {
-  onCancel: () => void
-  onSave: () => void
-}) => (
-  <div className='bg-gray-50/50 flex items-center justify-end gap-3 border-t border-gray-2 px-6 py-4'>
-    <Button
-      className='bg-white'
-      color='gray'
-      variant='outline'
-      onClick={onCancel}
-    >
-      Cancel
-    </Button>
-    <Button
-      className='font-semibold'
-      icon='lucide:check-circle'
-      onClick={onSave}
-    >
-      Save
-    </Button>
+const SettingsFooter = () => (
+  <div className='bg-gray-50/50 flex items-center gap-2 border-t border-gray-2 px-6 py-3'>
+    <Icon
+      className='shrink-0 text-gray-6'
+      height={13}
+      name='lucide:zap'
+      width={13}
+    />
+    <span className='text-[11px] text-gray-8'>
+      Changes apply instantly. Use{' '}
+      <span className='font-semibold text-gray-11'>Save</span> or{' '}
+      <span className='font-semibold text-gray-11'>Publish</span> in the header
+      to sync this form to the server.
+    </span>
   </div>
 )
 

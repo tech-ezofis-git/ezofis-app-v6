@@ -1,3 +1,4 @@
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -18,19 +19,27 @@ const Header = () => {
     setSelectionType,
   } = useFormStore()
 
+  const { formId } = useParams({ strict: false }) as { formId?: string }
+  const navigate = useNavigate()
   const [isSaving, setIsSaving] = useState(false)
 
   const handleQuickSave = async () => {
     setIsSaving(true)
     try {
-      await saveForm('DRAFT')
+      const { createdFormId } = await saveForm('DRAFT', formId)
+      if (createdFormId) {
+        navigate({
+          params: { formId: createdFormId },
+          to: '/form-builder/$formId',
+        })
+      }
     } finally {
       setIsSaving(false)
     }
   }
 
   return (
-    <header className='relative z-10 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-4 font-inter'>
+    <header className='relative z-10 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-gradient-to-r from-gray-1 via-white to-gray-2 px-4 font-inter shadow-xs'>
       {/* Left: Navigation & Metadata */}
       <div className='flex min-w-0 flex-1 items-center gap-4'>
         <IconButton
@@ -68,19 +77,21 @@ const Header = () => {
 
             <span
               className={cn(
-                'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+                'shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-2xs',
                 publishStatus === 'PUBLISHED'
-                  ? 'bg-success-subtle text-success-main'
-                  : 'bg-gray-3 text-gray-11',
+                  ? 'border-green-4 bg-green-3/80 text-green-11'
+                  : 'border-amber-4 bg-amber-3/80 text-amber-11',
               )}
             >
               {publishStatus === 'PUBLISHED' ? 'Published' : 'Draft'}
             </span>
           </div>
 
-          <span className='max-w-[400px] truncate px-1 text-xs text-gray-10'>
-            {description || 'No description'}
-          </span>
+          {description && (
+            <span className='max-w-[400px] truncate px-1 text-xs text-gray-10'>
+              {description}
+            </span>
+          )}
         </div>
       </div>
 
@@ -103,10 +114,10 @@ const Header = () => {
         <div className='mx-1 h-6 w-px bg-gray-3' />
 
         <Button
-          className='cursor-pointer font-medium flex items-center gap-1.5'
+          className='flex cursor-pointer items-center gap-1.5 font-medium border border-purple-4/60 bg-purple-3/80 text-purple-11 hover:bg-purple-4 hover:border-purple-5 shadow-2xs transition-all'
           color='primary'
           size='sm'
-          variant='ghost'
+          variant='subtle'
           onClick={() => {
             useFormStore.getState().setSidebarOpen(false)
             const { close, isOpen, open } = useAskAIStore.getState()
@@ -115,7 +126,7 @@ const Header = () => {
           }}
         >
           <AiBrandIcon className='size-4' variant='outline-purple' />
-          <span>Ask AI</span>
+          <span className='font-semibold'>Ask AI</span>
         </Button>
 
         <Button

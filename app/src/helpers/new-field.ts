@@ -9,6 +9,13 @@ export const generateId = () => {
   }
 }
 
+const toTitleCase = (value: string) =>
+  value
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+
 export const getField = (fieldType: string) => {
   const id = generateId()
 
@@ -18,7 +25,7 @@ export const getField = (fieldType: string) => {
     label:
       fieldType.toLowerCase() === 'text_builder'
         ? 'Paragraph'
-        : fieldType.replace(/_/g, ' ').toLowerCase(),
+        : toTitleCase(fieldType.replace(/_/g, ' ')),
     type: fieldType.toUpperCase(),
     settings: {
       aiSettings: {
@@ -42,7 +49,7 @@ export const getField = (fieldType: string) => {
         autoGenerateValue: { enabled: false, prefix: '', suffix: '' },
         customDefaultValue: '',
         customOptions: 'Option 1,Option 2,Option 3',
-        defaultValue: 'CUSTOM',
+        defaultValue: '',
         dividerStyle: 'SOLID',
         fibFields: [] as any[],
         matrixColumns: [] as any[],

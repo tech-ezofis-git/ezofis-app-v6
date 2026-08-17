@@ -33,6 +33,7 @@ import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -655,6 +656,7 @@ const FormEntriesPage = () => {
   const [tabValue, setTabValue] = useState<string>('Browse')
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, any>>({})
   const [deletingEntry, setDeletingEntry] = useState<{
     id: string
@@ -1439,10 +1441,9 @@ const FormEntriesPage = () => {
                 <h3 className='truncate text-sm font-extrabold text-gray-13'>
                   {isAddOpen ? t`New Form Entry` : selectedEntry?.id}
                 </h3>
-                <Badge
-                  color={isAddOpen ? 'orange' : 'green'}
-                  label={isAddOpen ? t`Draft` : t`Submitted`}
-                />
+                {!isAddOpen && selectedEntry && (
+                  <Badge color='green' label={t`Submitted`} />
+                )}
               </div>
               <p className='truncate text-[11px] font-medium text-gray-7'>
                 {isAddOpen
@@ -1856,19 +1857,6 @@ const FormEntriesPage = () => {
               onClick={closeSidebar}
             />
             <Button
-              color='gray'
-              icon='lucide:file-text'
-              label={t`Save Draft`}
-              variant='outline'
-              onClick={() => {
-                showToast({
-                  message: 'Form draft saved successfully',
-                  variant: 'success',
-                })
-                closeSidebar()
-              }}
-            />
-            <Button
               color='primary'
               icon={isAddOpen ? 'lucide:send' : 'lucide:check'}
               label={isAddOpen ? t`Submit Form` : t`Save Changes`}
@@ -1903,13 +1891,22 @@ const FormEntriesPage = () => {
           </Tabs>
         </div>
 
-        <Button
-          color='primary'
-          icon='lucide:plus'
-          label={t`Add Entry`}
-          variant='solid'
-          onClick={openNewEntry}
-        />
+        <div className='flex items-center gap-2'>
+          <Button
+            color='primary'
+            icon='tabler:table-import'
+            label={t`Bulk Import`}
+            variant='outline'
+            onClick={() => setIsImportOpen(true)}
+          />
+          <Button
+            color='primary'
+            icon='lucide:plus'
+            label={t`Add Entry`}
+            variant='solid'
+            onClick={openNewEntry}
+          />
+        </div>
       </div>
 
       {deletingEntry && (
@@ -2141,6 +2138,11 @@ const FormEntriesPage = () => {
           </div>
         )}
       </Modal>
+      {isImportOpen && (
+        <div className='fixed inset-0 z-[100] overflow-hidden bg-white'>
+          <PoSetupFlowPage onClose={() => setIsImportOpen(false)} />
+        </div>
+      )}
     </div>
   )
 }

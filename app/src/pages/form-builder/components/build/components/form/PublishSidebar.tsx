@@ -7,6 +7,7 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
@@ -25,6 +26,8 @@ const PublishSidebar = () => {
     setPublishOpen,
   } = useFormStore()
 
+  const { formId } = useParams({ strict: false }) as { formId?: string }
+  const navigate = useNavigate()
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
 
@@ -33,9 +36,15 @@ const PublishSidebar = () => {
     else setIsPublishing(true)
 
     try {
-      const success = await saveForm(status)
+      const { createdFormId, success } = await saveForm(status, formId)
       if (success) {
         setPublishOpen(false)
+        if (createdFormId) {
+          navigate({
+            params: { formId: createdFormId },
+            to: '/form-builder/$formId',
+          })
+        }
       }
     } finally {
       setIsSavingDraft(false)

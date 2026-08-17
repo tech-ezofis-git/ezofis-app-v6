@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import type React from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import { createFieldQuestions } from '@/pages/form-builder/helpers/field-utils'
 import {
@@ -297,9 +298,18 @@ const FIELD_THEMES: Record<
 }
 
 const FieldLibrary = () => {
-  const { addFieldPosition, addQuestion, setAddFieldPosition, setSidebarView } =
-    useFormStore()
+  const {
+    addFieldPosition,
+    addQuestion,
+    panels,
+    setAddFieldPosition,
+    setSidebarView,
+  } = useFormStore()
   const [search, setSearch] = useState('')
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  const targetPanel = panels.find((p) => p.id === addFieldPosition?.panelId)
 
   const filteredFields = useMemo(() => {
     if (!search.trim()) return ALL_FIELDS
@@ -308,6 +318,10 @@ const FieldLibrary = () => {
         f.label.toLowerCase().includes(search.toLowerCase()) ||
         f.description.toLowerCase().includes(search.toLowerCase()),
     )
+  }, [search])
+
+  useEffect(() => {
+    setSelectedIndex(0)
   }, [search])
 
   const handleSelect = (type: string) => {
@@ -322,6 +336,22 @@ const FieldLibrary = () => {
 
     setSidebarView('explorer')
     setAddFieldPosition(null)
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (filteredFields.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex((prev) => (prev + 1) % filteredFields.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(
+        (prev) => (prev - 1 + filteredFields.length) % filteredFields.length,
+      )
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSelect(filteredFields[selectedIndex].type)
+    }
   }
 
   const categories = [
@@ -343,11 +373,52 @@ const FieldLibrary = () => {
           >
             <Icon height={16} name='lucide:arrow-left' width={16} />
           </button>
-          <div className='text-[11px] font-extrabold tracking-widest text-gray-10 uppercase'>
+          <div className='text-xs font-bold text-gray-13'>
             Fields Library
           </div>
         </div>
       </div>
+
+      {/* Target panel indicator + quick retarget */}
+      {panels.length > 0 && (
+        <div className='border-b border-gray-2 bg-accent-soft/5 px-3 py-2'>
+          <div className='mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-gray-8'>
+            <Icon
+              className='text-accent-primary'
+              height={12}
+              name='lucide:corner-down-right'
+              width={12}
+            />
+            <span>Adding to:</span>
+            <span className='truncate font-bold text-accent-primary'>
+              {targetPanel?.settings.title || 'Untitled Section'}
+            </span>
+          </div>
+          {panels.length > 1 && (
+            <div className='no-scrollbar flex items-center gap-1.5 overflow-x-auto'>
+              {panels.map((p) => (
+                <button
+                  key={p.id}
+                  className={cn(
+                    'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap transition-colors',
+                    p.id === targetPanel?.id
+                      ? 'border-accent-primary bg-accent-primary text-white'
+                      : 'border-gray-2 bg-white text-gray-7 hover:border-accent-soft hover:text-accent-primary',
+                  )}
+                  onClick={() =>
+                    setAddFieldPosition({
+                      index: p.fields.length,
+                      panelId: p.id,
+                    })
+                  }
+                >
+                  {p.settings.title || 'Untitled Section'}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search */}
       <div className='sticky top-12 z-10 border-b border-gray-2 bg-white/50 p-3 backdrop-blur-sm'>
@@ -364,9 +435,11 @@ const FieldLibrary = () => {
           <input
             className='bg-gray-50 w-full rounded-lg border border-gray-2 py-1.5 pr-8 pl-8 text-xs font-medium transition-all outline-none placeholder:text-gray-4 focus:border-accent-primary focus:bg-white focus:ring-2 focus:ring-accent-soft/20'
             placeholder='Search fields...'
+            ref={searchRef}
             type='text'
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
           />
         </div>
       </div>
@@ -379,54 +452,56 @@ const FieldLibrary = () => {
           const theme = FIELD_THEMES[cat.id as CategoryType]
 
           return (
-            <div className='space-y-3.5' key={cat.id}>
-              <div className='flex items-center justify-between px-1'>
-                <div className='flex items-center gap-2'>
-                  <div
-                    className={cn(
-                      'size-2 rounded-full shadow-sm',
-                      theme.icon.replace('text', 'bg'),
-                    )}
-                  />
-                  <div className='text-[11px] font-black tracking-[0.2em] text-gray-12 uppercase'>
-                    {cat.label}
-                  </div>
+            <div className='space-y-3' key={cat.id}>
+              <div className='flex items-center gap-2 px-1 py-1'>
+                <div className='size-2.5 rounded-full bg-primary-9 shadow-xs' />
+                <div className='text-sm font-bold text-gray-12'>
+                  {cat.label}
                 </div>
-                <div className='ml-4 h-px flex-1 bg-gradient-to-r from-gray-2 to-transparent' />
               </div>
               <div className='grid grid-cols-1 gap-2'>
-                {catFields.map((field, idx) => (
-                  <motion.button
-                    animate={{ opacity: 1, x: 0 }}
-                    className='group relative flex items-center gap-4 rounded-2xl border border-transparent bg-white/40 p-3 text-left shadow-[0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-300 hover:border-gray-2 hover:bg-white hover:shadow-[0_8px_25px_rgba(0,0,0,0.05)] active:scale-[0.97]'
-                    initial={{ opacity: 0, x: -10 }}
-                    key={field.type + field.label}
-                    transition={{ delay: catIdx * 0.08 + idx * 0.04 }}
-                    onClick={() => handleSelect(field.type)}
-                  >
-                    <div
+                {catFields.map((field, idx) => {
+                  const flatIndex = filteredFields.indexOf(field)
+                  const isSelected = flatIndex === selectedIndex
+                  return (
+                    <motion.button
+                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, x: -10 }}
+                      key={field.type + field.label}
+                      transition={{ delay: catIdx * 0.06 + idx * 0.03 }}
                       className={cn(
-                        'flex size-11 shrink-0 items-center justify-center rounded-[14px] border border-transparent transition-all duration-500',
-                        theme.bg,
-                        theme.icon,
-                        'group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-lg group-hover:shadow-current/10',
+                        'group relative flex items-center gap-3.5 rounded-2xl border p-3 text-left transition-all duration-200 active:scale-[0.98]',
+                        isSelected
+                          ? 'border-primary-4 bg-primary-3/50 shadow-2xs'
+                          : 'border-transparent bg-gray-1/60 hover:border-gray-3 hover:bg-gray-2/80',
                       )}
+                      onClick={() => handleSelect(field.type)}
+                      onMouseEnter={() => setSelectedIndex(flatIndex)}
                     >
-                      <Icon height={20} name={field.icon} width={20} />
-                    </div>
-                    <div className='flex min-w-0 flex-col'>
-                      <div className='truncate text-[14px] font-bold tracking-tight text-gray-13 transition-colors group-hover:text-accent-primary'>
-                        {field.label}
+                      <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-3 text-primary-9 transition-transform duration-200 group-hover:scale-105'>
+                        <Icon height={20} name={field.icon} width={20} />
                       </div>
-                      <div className='truncate text-[11px] leading-tight font-medium text-gray-5 opacity-70 transition-opacity group-hover:opacity-100'>
-                        {field.description}
+                      <div className='flex min-w-0 flex-1 flex-col justify-center'>
+                        <div className='truncate text-sm font-bold text-gray-12 transition-colors group-hover:text-primary-9'>
+                          {field.label}
+                        </div>
+                        <div className='truncate text-xs font-normal text-gray-10'>
+                          {field.description}
+                        </div>
                       </div>
-                    </div>
-                    <div className='bg-gray-50 ml-auto flex size-8 translate-x-2 items-center justify-center rounded-full text-accent-primary opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:bg-accent-soft group-hover:opacity-100'>
-                      <Icon height={16} name='lucide:plus' width={16} />
-                    </div>
-                  </motion.button>
-                ))}
+                      <div
+                        className={cn(
+                          'ml-auto flex size-7 shrink-0 items-center justify-center rounded-lg text-primary-9 transition-all duration-200',
+                          isSelected
+                            ? 'translate-x-0 bg-primary-4/50 opacity-100'
+                            : 'translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:bg-primary-3 group-hover:opacity-100',
+                        )}
+                      >
+                        <Icon height={16} name='lucide:plus' width={16} />
+                      </div>
+                    </motion.button>
+                  )
+                })}
               </div>
             </div>
           )

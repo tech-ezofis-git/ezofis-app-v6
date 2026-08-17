@@ -77,19 +77,19 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   return (
     <div
-      className='group/page relative mb-6 rounded-2xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-300'
+      className='group/page relative rounded-2xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-300 focus-within:z-30'
       id={panel.id}
       ref={pageRef}
       onDragOver={(e) => e.preventDefault()}
     >
       {/* 0. Floating Canva Actions */}
       <div className='absolute -top-10 right-0 z-20 flex items-center gap-2 transition-all'>
-        <div className='flex items-center gap-1.5 rounded-xl border border-gray-2/20 bg-white/70 px-2 py-1.5 opacity-0 shadow-[0_8px_30px_rgb(0,0,0,0.08)] backdrop-blur-md transition-all duration-300 group-hover/page:opacity-100 md:opacity-100'>
+        <div className='flex items-center gap-1.5 rounded-xl border border-gray-2/20 bg-white/70 px-2 py-1.5 opacity-0 shadow-[0_8px_30px_rgb(0,0,0,0.08)] backdrop-blur-md transition-all duration-300 group-hover/page:opacity-100'>
           {/* Section Reordering */}
           <div className='flex items-center gap-0.5'>
             <Tooltip label='Move Section Up' position='top' withArrow>
               <ActionIcon
-                className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-gray-1 active:scale-95 disabled:opacity-30'
+                className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-primary-3/50 hover:text-primary-9 active:scale-95 disabled:opacity-30'
                 color='gray'
                 disabled={panelIndex === 0}
                 size='md'
@@ -101,7 +101,7 @@ const Page = ({ panel, panelIndex }: Props) => {
             </Tooltip>
             <Tooltip label='Move Section Down' position='top' withArrow>
               <ActionIcon
-                className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-gray-1 active:scale-95 disabled:opacity-30'
+                className='h-8 w-8 rounded-lg text-gray-12 transition-all hover:bg-primary-3/50 hover:text-primary-9 active:scale-95 disabled:opacity-30'
                 color='gray'
                 disabled={panelIndex === panels.length - 1}
                 size='md'
@@ -116,9 +116,13 @@ const Page = ({ panel, panelIndex }: Props) => {
           <div className='mx-0.5 h-4 w-px bg-gray-2/50' />
 
           <Tooltip
-            label={isLocked ? 'Unlock Page' : 'Lock Page'}
             position='top'
             withArrow
+            label={
+              isLocked
+                ? 'Unlock section for editing in the builder'
+                : 'Lock section from edits in the builder (fields stay editable by end users)'
+            }
           >
             <ActionIcon
               color={isLocked ? 'violet' : 'gray'}
@@ -128,7 +132,7 @@ const Page = ({ panel, panelIndex }: Props) => {
                 'h-8 w-8 rounded-lg transition-all active:scale-95',
                 isLocked
                   ? 'bg-accent-soft/30 font-bold text-accent-primary'
-                  : 'text-gray-12 hover:bg-gray-1',
+                  : 'text-gray-12 hover:bg-primary-3/50 hover:text-primary-9',
               )}
               onClick={() => updatePanel(panel.id, { isLocked: !isLocked })}
             >
@@ -202,7 +206,7 @@ const Page = ({ panel, panelIndex }: Props) => {
               items={panel.fields.map((q) => q.id)}
               strategy={rectSortingStrategy}
             >
-              <div className='grid w-full grid-cols-12 gap-x-4 gap-y-5'>
+              <div className='grid w-full grid-cols-12 gap-x-4 gap-y-3'>
                 {/* Render Fields */}
                 {panel.fields.map((q: Question, i: number) => (
                   <div
@@ -244,7 +248,7 @@ const Page = ({ panel, panelIndex }: Props) => {
 
             {/* 3. Slash Command & Add Field Button */}
             {!isLocked && (
-              <div className='mt-6 flex flex-col gap-4'>
+              <div className='mt-4 flex flex-col gap-2.5'>
                 <SlashCommand index={panel.fields.length} panelId={panel.id} />
 
                 <AddFieldButton
@@ -254,7 +258,7 @@ const Page = ({ panel, panelIndex }: Props) => {
             )}
 
             {isLocked && (
-              <div className='bg-gray-50/50 mt-6 flex items-center justify-center rounded-xl border border-dashed border-gray-2 py-4'>
+              <div className='bg-gray-50/50 mt-4 flex items-center justify-center rounded-xl border border-dashed border-gray-2 py-4'>
                 <div className='flex items-center gap-2 text-13 font-medium text-gray-4'>
                   <Icon height={14} name='lucide:lock' width={14} />
                   <span>Section is locked</span>
