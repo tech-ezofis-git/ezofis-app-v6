@@ -34,7 +34,6 @@ type Props = {
     files: Array<{ id: string | number; name: string }>,
   ) => void
   onSelect?: (file: AttachmentItem) => void
-  mockAiDocs?: string[]
 }
 
 function cn(...inputs: ClassValue[]) {
@@ -77,7 +76,7 @@ function resolveApiBaseUrl() {
   return String(v || '').replace(/\/$/, '')
 }
 
-const getExt = (file?: AttachmentItem) => {
+export const getExt = (file?: AttachmentItem) => {
   if (!file) return ''
 
   // 1. Try to extract from filePath if it exists and has a dot
@@ -153,7 +152,7 @@ const formatBytes = (bytes?: number) => {
 //     return allowed.includes(ext.toLowerCase())
 // }
 
-const getFileIcon = (ext: string): string => {
+export const getFileIcon = (ext: string): string => {
   const iconMap: Record<string, string> = {
     csv: 'tabler:file-type-csv',
     doc: 'tabler:file-type-doc',
@@ -174,7 +173,7 @@ const getFileIcon = (ext: string): string => {
   return iconMap[ext] || 'tabler:file'
 }
 
-const getFileIconClasses = (ext: string) => {
+export const getFileIconClasses = (ext: string) => {
   const map: Record<string, { badge: string; wrap: string }> = {
     doc: {
       badge: 'bg-blue-2 text-blue-11 ring-blue-8/30',
@@ -243,30 +242,15 @@ export default function Attachments({
   onSelect,
   onOpenHistory,
   onOpenMailShare,
-  mockAiDocs,
   initialData,
 }: Props & { initialData?: any[] }) {
   const { t } = useLingui()
   const targetInstanceId = instanceId || processId
   const {
-    data: _files = [],
+    data: files = [],
     isLoading,
     refetch,
   } = useAttachments(workflowId, targetInstanceId, enabled, initialData)
-
-  const files = [
-    ...(mockAiDocs || []).map((docId) => ({
-      id: `mock-${docId}`,
-      name: `${docId}.pdf`,
-      contentType: 'application/pdf',
-      createdAt: new Date().toISOString(),
-      uploadedBy: 'AI Match',
-      isAiMatch: true,
-      fileSize: 0,
-      repositoryId: '',
-    })),
-    ..._files,
-  ]
 
   console.log('[Attachments] Loaded files list:', files)
   const { session } = authUserStore.getState()

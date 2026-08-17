@@ -23,7 +23,7 @@ export default function SettingsSection({
   return (
     <div className={cn('flex flex-col gap-1', isOpen && 'mb-2.5', className)}>
       <div
-        className='group -mx-2 flex cursor-pointer items-center justify-between rounded-xl p-2 transition-all duration-300 select-none hover:bg-[#f0f2f5] active:scale-[0.99]'
+        className='group -mx-2 flex cursor-pointer items-center justify-between rounded-xl p-2 transition-all duration-300 select-none hover:bg-gray-2 active:scale-[0.99]'
         onClick={onToggle}
       >
         <div className='flex items-center gap-2'>
@@ -69,7 +69,7 @@ export default function SettingsSection({
           className={cn(
             'animate-in fade-in slide-in-from-top-2 rounded-xl duration-300',
             variant === 'premium'
-              ? 'space-y-3 bg-[#F8FAFC] p-3'
+              ? 'space-y-3 bg-gray-1/80 p-3'
               : 'space-y-3.5 border border-gray-2 bg-white p-3.5 shadow-sm',
           )}
         >

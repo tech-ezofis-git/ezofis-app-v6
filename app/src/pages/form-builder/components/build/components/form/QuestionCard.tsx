@@ -603,7 +603,7 @@ const QuestionCard = ({
                   : 'border-gray-2 bg-white group-hover:border-gray-3',
               )}
             >
-              <div className='hover:bg-blue-50/50 flex w-[80px] cursor-pointer items-center justify-between border-r border-gray-1 bg-[#f0f8ff] px-3 transition-colors'>
+              <div className='hover:bg-primary-3/50 flex w-[80px] cursor-pointer items-center justify-between border-r border-gray-1 bg-primary-3/30 px-3 transition-colors'>
                 <span className='text-[13px] font-bold text-gray-12 uppercase'>
                   {(question.settings.specific.defaultValue as any)?.currency ||
                     'USD'}

@@ -1,8 +1,4 @@
 export interface DocumentVerificationState {
-  relatedDocuments: {
-    data?: RelatedDocumentsData
-    status: 'not_run' | 'pending' | 'complete'
-  }
   supplierVerification: {
     data?: SupplierVerificationData
     status: 'not_run' | 'pending' | 'complete'
@@ -12,11 +8,6 @@ export interface DocumentVerificationState {
 export interface MockDatabase {
   credits: number
   documents: Record<string, DocumentVerificationState>
-}
-
-export interface RelatedDocumentsData {
-  chips: Array<{ date: string; id: string }>
-  summary: string
 }
 
 export interface SupplierVerificationData {
@@ -57,13 +48,12 @@ export const saveMockDB = (db: MockDatabase) => {
  */
 const acquireDeduction = (
   documentId: string,
-  feature: 'supplierVerification' | 'relatedDocuments',
+  feature: 'supplierVerification',
 ): { db: MockDatabase; docState: DocumentVerificationState } => {
   const db = getMockDB()
 
   if (!db.documents[documentId]) {
     db.documents[documentId] = {
-      relatedDocuments: { status: 'not_run' },
       supplierVerification: { status: 'not_run' },
     }
   }
@@ -121,51 +111,6 @@ export const startSupplierVerification = async (
         }
         saveMockDB(db)
         resolve(realApiResult)
-      }
-    }, 1500)
-  })
-}
-
-export const startRelatedDocuments = async (
-  documentId: string,
-  supplierName: string,
-): Promise<RelatedDocumentsData> => {
-  // Synchronous checks & credit deduction
-  acquireDeduction(documentId, 'relatedDocuments')
-
-  const result: RelatedDocumentsData = {
-    chips: [
-      { date: '2026-05-15', id: 'PO-2026-991' },
-      { date: '2026-06-01', id: 'PO-2026-882' },
-      { date: '2026-06-15', id: 'INV-77165' },
-    ],
-    summary: `3 related documents found — 2 similar purchase orders and 1 prior invoice from ${supplierName || 'the supplier'}, issued within the last 90 days.`,
-  }
-
-  // Simulate server-side API call (1.5 seconds loading state)
-  return new Promise<RelatedDocumentsData>((resolve, reject) => {
-    setTimeout(() => {
-      // 10% failure chance to test auto-refund / error handling
-      const isFailure = Math.random() < 0.1
-
-      if (isFailure) {
-        // Auto-refund credit and reset status to 'not_run'
-        const db = getMockDB()
-        db.credits += 1
-        if (db.documents[documentId]) {
-          db.documents[documentId].relatedDocuments.status = 'not_run'
-        }
-        saveMockDB(db)
-        reject(new Error('Failed to index historical documents.'))
-      } else {
-        // Mark as completed and save payload
-        const db = getMockDB()
-        if (db.documents[documentId]) {
-          db.documents[documentId].relatedDocuments.status = 'complete'
-          db.documents[documentId].relatedDocuments.data = result
-        }
-        saveMockDB(db)
-        resolve(result)
       }
     }, 1500)
   })
