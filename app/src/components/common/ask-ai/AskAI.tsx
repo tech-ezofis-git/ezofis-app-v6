@@ -576,7 +576,7 @@ const AskAI = () => {
   const saveWorkflowHistory = (workflowState: WorkflowHistoryData) => {
     const sessionId = currentHistoryId || uid()
     if (!currentHistoryId) setCurrentHistoryId(sessionId)
-    
+
     // Find the last assistant message or user message for subtitle
     const lastMsg = [...workflowState.messages].reverse().find(m => m.textContent || m.htmlContent)
     let subtitleText = lastMsg?.textContent || lastMsg?.htmlContent || 'Workflow Assistant'
@@ -758,11 +758,10 @@ const AskAI = () => {
       {isOpen ? (
         <motion.aside
           animate={{ opacity: 1, x: 0 }}
-          className={`fixed bottom-0 right-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${
-            isMaximized
+          className={`fixed bottom-0 right-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${isMaximized
               ? 'top-[56px] left-0 xl:left-[56px] w-auto max-w-none border-l border-[var(--border)]'
               : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
-          }`}
+            }`}
           initial={{ opacity: 0.96, x: 28 }}
           style={shellStyle}
           transition={{ duration: 0.18, ease: 'easeOut' }}
@@ -791,7 +790,7 @@ const AskAI = () => {
 
             <div className='min-w-0 flex-1'>
               <div className='truncate text-[15px] font-semibold tracking-[-.2px] text-[var(--text1)]'>
-                {view === 'history' ? 'Chat History' : 'AI Chat'}
+                {view === 'history' ? 'Chat History' : 'AI Assistant'}
               </div>
               {aiStatusWord && (
                 <AnimatePresence mode='wait'>

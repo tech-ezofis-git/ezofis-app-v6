@@ -1,3 +1,5 @@
+import { Accordion } from '@mantine/core'
+import { DatePicker } from '@mantine/dates'
 import {
   ArrowLeft,
   Bot,
@@ -10,33 +12,35 @@ import {
   Plus,
   Send,
   Sparkles,
+  Trash2,
   Upload,
   User,
   Volume2,
   X,
-  Trash2,
 } from 'lucide-react'
-import IconButton from '@/components/base/button/IconButton'
-import { Button, Card, PrimaryButton, StatusPill } from '@/pages/folders/components/Ui'
-import { Accordion } from '@mantine/core'
-import InputDate from '@/components/base/inputs/InputDate'
-import InputSelect from '@/components/base/inputs/InputSelect'
-import InputText from '@/components/base/inputs/InputText'
-import InputTextarea from '@/components/base/inputs/InputTextarea'
-import ScrollArea from '@/components/base/scroll-area/ScrollArea'
-
 import React, { useEffect, useRef, useState } from 'react'
 import formApi from '@/api/form/form'
+import { uploadForOcr } from '@/api/v6/folder/folder'
 import workflowsApiV6, {
   createPublishedWorkflowBrowsePayload,
   mapPublishedBrowseResponseToOptions,
   type WorkflowOptionItem,
 } from '@/api/v6/workflows'
 import workflowApi from '@/api/workflow/workflow'
-import { uploadForOcr } from '@/api/v6/folder/folder'
+import IconButton from '@/components/base/button/IconButton'
+import InputDate from '@/components/base/inputs/InputDate'
+import InputSelect from '@/components/base/inputs/InputSelect'
+import InputText from '@/components/base/inputs/InputText'
+import InputTextarea from '@/components/base/inputs/InputTextarea'
+import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import { DatePicker } from '@mantine/dates'
-import cn from '@/utils/cn'
+import {
+  Button,
+  Card,
+  PrimaryButton,
+  StatusPill,
+} from '@/pages/folders/components/Ui'
+import LineItemTable from '@/pages/requests/components/request/components/sections/overview/LineItemTable'
 import {
   matchWorkflowWithGemini,
   type ParsedDoc,
@@ -45,7 +49,30 @@ import {
   type WorkflowSummary,
 } from '@/services/ai/workflowChatAi'
 import authUserStore from '@/stores/authUserStore'
-import LineItemTable from '@/pages/requests/components/request/components/sections/overview/LineItemTable'
+import cn from '@/utils/cn'
+
+export type WorkflowChatMode = 'idle' | 'collecting' | 'review' | 'submitted'
+
+export interface WorkflowChatPageProps {
+  embedded?: boolean
+  initialState?: WorkflowHistoryData
+  isExpanded?: boolean
+  onSaveHistory?: (state: WorkflowHistoryData) => void
+}
+
+export interface WorkflowHistoryData {
+  activeWorkflow: WorkflowSummary | null
+  answers: Record<string, any>
+  awaitingDoc: ParsedDoc | null
+  awaitingField: ParsedField | null
+  docsMap: Record<string, string>
+  documents: ParsedDoc[]
+  fields: ParsedField[]
+  messages: Message[]
+  mode: WorkflowChatMode
+  ticketId: string | null
+  panels?: any[]
+}
 
 // Types for chat messages
 interface Message {
@@ -53,35 +80,12 @@ interface Message {
   sender: 'assistant' | 'user'
   htmlContent?: string
   pills?: string[]
-  textContent?: string
-  tipText?: string
-  uploadCardDoc?: ParsedDoc
   selectedPill?: string
   showDatePicker?: boolean
   tableField?: ParsedField
-}
-
-export type WorkflowChatMode = 'idle' | 'collecting' | 'review' | 'submitted'
-
-export interface WorkflowHistoryData {
-  messages: Message[]
-  mode: WorkflowChatMode
-  activeWorkflow: WorkflowSummary | null
-  fields: ParsedField[]
-  documents: ParsedDoc[]
-  answers: Record<string, any>
-  docsMap: Record<string, string>
-  awaitingField: ParsedField | null
-  awaitingDoc: ParsedDoc | null
-  ticketId: string | null
-  panels?: any[]
-}
-
-export interface WorkflowChatPageProps {
-  embedded?: boolean
-  isExpanded?: boolean
-  initialState?: WorkflowHistoryData
-  onSaveHistory?: (state: WorkflowHistoryData) => void
+  textContent?: string
+  tipText?: string
+  uploadCardDoc?: ParsedDoc
 }
 
 const TableInputWidget = ({
@@ -91,45 +95,41 @@ const TableInputWidget = ({
   field: ParsedField
   onSubmit: (data: any[]) => void
 }) => {
-  const rawColumns =
-    field.rawControl?.settings?.specific?.tableColumns || []
+  const rawColumns = field.rawControl?.settings?.specific?.tableColumns || []
 
   const [rows, setRows] = useState<any[]>([{}])
 
   const dynamicColumns =
     rawColumns.length > 0
       ? rawColumns.map((column: any, index: number) => ({
-        id:
-          column.id ||
-          column.jsonId ||
-          column.name ||
-          column.label ||
-          `column_${index}`,
+          id:
+            column.id ||
+            column.jsonId ||
+            column.name ||
+            column.label ||
+            `column_${index}`,
 
-        label:
-          column.label ||
-          column.name ||
-          column.id ||
-          `Column ${index + 1}`,
-      }))
+          label:
+            column.label || column.name || column.id || `Column ${index + 1}`,
+        }))
       : [
-        {
-          id: 'Description',
-          label: 'Description',
-        },
-        {
-          id: 'Quantity',
-          label: 'Quantity',
-        },
-        {
-          id: 'Unit Price',
-          label: 'Unit Price',
-        },
-        {
-          id: 'Line Amount',
-          label: 'Line Amount',
-        },
-      ]
+          {
+            id: 'Description',
+            label: 'Description',
+          },
+          {
+            id: 'Quantity',
+            label: 'Quantity',
+          },
+          {
+            id: 'Unit Price',
+            label: 'Unit Price',
+          },
+          {
+            id: 'Line Amount',
+            label: 'Line Amount',
+          },
+        ]
 
   const handleCellChange = (
     rowIndex: number,
@@ -166,9 +166,7 @@ const TableInputWidget = ({
     const nonEmptyRows = rows.filter((row) =>
       Object.values(row || {}).some(
         (value) =>
-          value !== undefined &&
-          value !== null &&
-          String(value).trim() !== '',
+          value !== undefined && value !== null && String(value).trim() !== '',
       ),
     )
 
@@ -176,86 +174,22 @@ const TableInputWidget = ({
   }
 
   return (
-    <div
-      className='
-        mt-2
-        ml-[40px]
-        block
-        w-[calc(100%_-_40px)]
-        max-w-[calc(100%_-_40px)]
-        rounded-xl
-        border
-        border-gray-4
-        bg-surface
-        shadow-sm
-      '
-    >
+    <div className='mt-2 ml-[40px] block w-[calc(100%_-_40px)] max-w-[calc(100%_-_40px)] rounded-xl border border-gray-4 bg-surface shadow-sm'>
       {/* TABLE SCROLL AREA */}
-      <div
-        className='
-          ez-scrollbar
-          relative
-          block
-          w-full
-          max-h-[420px]
-          overflow-x-auto
-          overflow-y-auto
-        '
-      >
-        <table
-          className='
-            w-full
-            border-collapse
-            text-left
-            text-xs
-          '
-        >
+      <div className='ez-scrollbar relative block max-h-[420px] w-full overflow-x-auto overflow-y-auto'>
+        <table className='w-full border-collapse text-left text-xs'>
           <thead>
             <tr className='bg-gray-1'>
-              {dynamicColumns.map((column) => (
+              {dynamicColumns.map((column: any) => (
                 <th
+                  className='sticky top-0 z-20 h-[46px] min-w-[120px] border-r border-b border-gray-4 bg-gray-1 px-4 text-left text-[11px] font-semibold whitespace-nowrap text-gray-11'
                   key={column.id}
-                  className='
-                    sticky
-                    top-0
-                    z-20
-                    h-[46px]
-                    min-w-[120px]
-                    border-b
-                    border-r
-                    border-gray-4
-                    bg-gray-1
-                    px-4
-                    text-left
-                    text-[11px]
-                    font-semibold
-                    whitespace-nowrap
-                    text-gray-11
-                  '
                 >
                   {column.label}
                 </th>
               ))}
 
-              <th
-                className='
-                  sticky
-                  top-0
-                  right-0
-                  z-30
-                  h-[46px]
-                  w-[70px]
-                  min-w-[70px]
-                  border-b
-                  border-gray-4
-                  bg-gray-1
-                  px-2
-                  text-center
-                  text-[11px]
-                  font-semibold
-                  text-gray-11
-                '
-              >
+              <th className='sticky top-0 right-0 z-30 h-[46px] w-[70px] min-w-[70px] border-b border-gray-4 bg-gray-1 px-2 text-center text-[11px] font-semibold text-gray-11'>
                 Action
               </th>
             </tr>
@@ -263,83 +197,29 @@ const TableInputWidget = ({
 
           <tbody>
             {rows.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className='bg-surface hover:bg-gray-1'
-              >
-                {dynamicColumns.map((column) => (
+              <tr className='bg-surface hover:bg-gray-1' key={rowIndex}>
+                {dynamicColumns.map((column: any) => (
                   <td
+                    className='h-[48px] min-w-[120px] border-r border-b border-gray-4 bg-surface p-0'
                     key={column.id}
-                    className='
-                      h-[48px]
-                      min-w-[120px]
-                      border-b
-                      border-r
-                      border-gray-4
-                      bg-surface
-                      p-0
-                    '
                   >
                     <input
+                      className='block h-[48px] w-full min-w-[120px] border-0 bg-transparent px-4 text-[13px] text-gray-12 outline-none placeholder:text-gray-7 focus:bg-primary-1/30 focus:ring-1 focus:ring-primary-7 focus:ring-inset'
+                      placeholder={`Enter ${column.label}`}
                       type='text'
                       value={row[column.id] ?? ''}
-                      placeholder={`Enter ${column.label}`}
-                      className='
-                        block
-                        h-[48px]
-                        w-full
-                        min-w-[120px]
-                        border-0
-                        bg-transparent
-                        px-4
-                        text-[13px]
-                        text-gray-12
-                        outline-none
-                        placeholder:text-gray-7
-                        focus:bg-primary-1/30
-                        focus:ring-1
-                        focus:ring-inset
-                        focus:ring-primary-7
-                      '
                       onChange={(e) =>
-                        handleCellChange(
-                          rowIndex,
-                          column.id,
-                          e.target.value,
-                        )
+                        handleCellChange(rowIndex, column.id, e.target.value)
                       }
                     />
                   </td>
                 ))}
 
-                <td
-                  className='
-                    sticky
-                    right-0
-                    z-10
-                    h-[48px]
-                    w-[70px]
-                    min-w-[70px]
-                    border-b
-                    border-gray-4
-                    bg-surface
-                    p-0
-                  '
-                >
+                <td className='sticky right-0 z-10 h-[48px] w-[70px] min-w-[70px] border-b border-gray-4 bg-surface p-0'>
                   <button
-                    type='button'
+                    className='flex h-[48px] w-full items-center justify-center text-gray-9 transition hover:bg-red-1 hover:text-red-9'
                     title='Delete row'
-                    className='
-                      flex
-                      h-[48px]
-                      w-full
-                      items-center
-                      justify-center
-                      text-gray-9
-                      transition
-                      hover:bg-red-1
-                      hover:text-red-9
-                    '
+                    type='button'
                     onClick={() => removeRow(rowIndex)}
                   >
                     <Trash2 size={16} />
@@ -347,44 +227,18 @@ const TableInputWidget = ({
                 </td>
               </tr>
             ))}
-
-
           </tbody>
         </table>
       </div>
 
       {/* FOOTER */}
-      <div
-        className='
-          flex
-          items-center
-          justify-between
-          border-t
-          border-gray-4
-          bg-gray-1
-          px-3
-          py-2.5
-        '
-      >
+      <div className='flex items-center justify-between border-t border-gray-4 bg-gray-1 px-3 py-2.5'>
         <button
+          className='flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-primary-9 transition hover:bg-primary-2'
           type='button'
-          className='
-            flex
-            items-center
-            gap-2
-            rounded-lg
-            px-3
-            py-2
-            text-xs
-            font-semibold
-            text-primary-9
-            transition
-            hover:bg-primary-2
-          '
           onClick={addRow}
         >
           <Plus size={15} />
-
           Add Row
         </button>
 
@@ -393,10 +247,7 @@ const TableInputWidget = ({
             {rows.length} {rows.length === 1 ? 'row' : 'rows'}
           </span>
 
-          <PrimaryButton
-            size='sm'
-            onClick={handleSubmit}
-          >
+          <PrimaryButton onClick={handleSubmit}>
             Submit Table
           </PrimaryButton>
         </div>
@@ -407,8 +258,8 @@ const TableInputWidget = ({
 
 export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   embedded = false,
-  isExpanded = false,
   initialState,
+  isExpanded = false,
   onSaveHistory,
 }) => {
   const session = authUserStore((state) => state.session)
@@ -419,15 +270,33 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   const [loadingWorkflows, setLoadingWorkflows] = useState<boolean>(true)
 
   // Chat & Active Workflow state
-  const [messages, setMessages] = useState<Message[]>(initialState?.messages || [])
-  const [mode, setMode] = useState<WorkflowChatMode>(initialState?.mode || 'idle')
-  const [activeWorkflow, setActiveWorkflow] = useState<WorkflowSummary | null>(initialState?.activeWorkflow || null)
-  const [fields, setFields] = useState<ParsedField[]>(initialState?.fields || [])
-  const [documents, setDocuments] = useState<ParsedDoc[]>(initialState?.documents || [])
-  const [answers, setAnswers] = useState<Record<string, any>>(initialState?.answers || {})
-  const [docsMap, setDocsMap] = useState<Record<string, string>>(initialState?.docsMap || {})
-  const [awaitingField, setAwaitingField] = useState<ParsedField | null>(initialState?.awaitingField || null)
-  const [awaitingDoc, setAwaitingDoc] = useState<ParsedDoc | null>(initialState?.awaitingDoc || null)
+  const [messages, setMessages] = useState<Message[]>(
+    initialState?.messages || [],
+  )
+  const [mode, setMode] = useState<WorkflowChatMode>(
+    initialState?.mode || 'idle',
+  )
+  const [activeWorkflow, setActiveWorkflow] = useState<WorkflowSummary | null>(
+    initialState?.activeWorkflow || null,
+  )
+  const [fields, setFields] = useState<ParsedField[]>(
+    initialState?.fields || [],
+  )
+  const [documents, setDocuments] = useState<ParsedDoc[]>(
+    initialState?.documents || [],
+  )
+  const [answers, setAnswers] = useState<Record<string, any>>(
+    initialState?.answers || {},
+  )
+  const [docsMap, setDocsMap] = useState<Record<string, string>>(
+    initialState?.docsMap || {},
+  )
+  const [awaitingField, setAwaitingField] = useState<ParsedField | null>(
+    initialState?.awaitingField || null,
+  )
+  const [awaitingDoc, setAwaitingDoc] = useState<ParsedDoc | null>(
+    initialState?.awaitingDoc || null,
+  )
   const [panels, setPanels] = useState<any[]>(initialState?.panels || [])
 
   // Layout & UI state
@@ -435,7 +304,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   const [inputText, setInputText] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(false)
   const [submitting, setSubmitting] = useState<boolean>(false)
-  const [ticketId, setTicketId] = useState<string | null>(initialState?.ticketId || null)
+  const [ticketId, setTicketId] = useState<string | null>(
+    initialState?.ticketId || null,
+  )
 
   const chatScrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -568,29 +439,41 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   useEffect(() => {
     if (onSaveHistoryRef.current && messages.length > 0) {
       onSaveHistoryRef.current({
+        activeWorkflow,
+        answers,
+        awaitingDoc,
+        awaitingField,
+        docsMap,
+        documents,
+        fields,
         messages,
         mode,
-        activeWorkflow,
-        fields,
-        documents,
-        answers,
-        docsMap,
-        awaitingField,
-        awaitingDoc,
-        ticketId,
         panels,
+        ticketId,
       })
     }
-  }, [messages, mode, activeWorkflow, fields, documents, answers, docsMap, awaitingField, awaitingDoc, ticketId, panels])
+  }, [
+    messages,
+    mode,
+    activeWorkflow,
+    fields,
+    documents,
+    answers,
+    docsMap,
+    awaitingField,
+    awaitingDoc,
+    ticketId,
+    panels,
+  ])
 
   // Parse Form JSON into ParsedField[] and ParsedDoc[]
   const parseFormJson = (
     formJsonObj: any,
-  ): { docs: ParsedDoc[]; fields: ParsedField[] } => {
+  ): { docs: ParsedDoc[]; fields: ParsedField[]; panels?: any[] } => {
     const parsedFields: ParsedField[] = []
     const parsedDocs: ParsedDoc[] = []
 
-    if (!formJsonObj) return { docs: parsedDocs, fields: parsedFields }
+    if (!formJsonObj) return { docs: parsedDocs, fields: parsedFields, panels: [] }
 
     let target = formJsonObj
     if (typeof target === 'string') {
@@ -633,24 +516,24 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       if (!ctrl) return
       const id = String(
         ctrl.jsonId ||
-        ctrl.id ||
-        ctrl.name ||
-        ctrl.columnName ||
-        `field_${idx}`,
+          ctrl.id ||
+          ctrl.name ||
+          ctrl.columnName ||
+          `field_${idx}`,
       )
       const label = String(
         ctrl.label ||
-        ctrl.name ||
-        ctrl.title ||
-        ctrl.jsonId ||
-        `Field ${idx + 1}`,
+          ctrl.name ||
+          ctrl.title ||
+          ctrl.jsonId ||
+          `Field ${idx + 1}`,
       )
       const type = String(
         ctrl.type ||
-        ctrl.control ||
-        ctrl.controlType ||
-        ctrl.dataType ||
-        'text',
+          ctrl.control ||
+          ctrl.controlType ||
+          ctrl.dataType ||
+          'text',
       ).toLowerCase()
       const required = Boolean(
         ctrl.isRequired || ctrl.required || ctrl.isMandatory,
@@ -707,7 +590,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           options = Object.entries(rawOptions)
             .map(([key, val]: [string, any]) => {
               if (typeof val === 'string') return key // Or val? Usually key is the value we want to submit. Let's provide the label or key. Actually, we should probably submit the key, but show the label. The pills only show a string. Let's just use the key. Wait, if it's `{ label: 'USD', value: 'USD' }`, we already handle array of objects. If it's a map:
-              return String(val.label || val.value || val.text || val.name || key)
+              return String(
+                val.label || val.value || val.text || val.name || key,
+              )
             })
             .filter(Boolean)
         }
@@ -724,10 +609,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           options,
           placeholder: ctrl.placeholder || '',
           question: `What is the ${label}?`,
+          rawControl: ctrl,
           required,
           tipExample: ctrl.example || ctrl.placeholder || undefined,
-          type: options ? 'select' : (type.includes('date') ? 'date' : 'text'),
-          rawControl: ctrl,
+          type: options ? 'select' : type.includes('date') ? 'date' : 'text',
         })
       }
     })
@@ -774,8 +659,12 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
   const renderField = (control: any) => {
     if (!control) return null
-    const id = String(control.jsonId || control.id || control.name || control.columnName)
-    const isMatchedStatus = control.label?.toLowerCase().includes('matched status')
+    const id = String(
+      control.jsonId || control.id || control.name || control.columnName,
+    )
+    const isMatchedStatus = control.label
+      ?.toLowerCase()
+      .includes('matched status')
 
     if (control.type === 'SHORT_TEXT' && isMatchedStatus) {
       return (
@@ -793,7 +682,13 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       )
     }
 
-    if (control.type === 'SHORT_TEXT' || control.type === 'CURRENCY' || control.type === 'NUMBER' || control.type === 'EMAIL' || !control.type) {
+    if (
+      control.type === 'SHORT_TEXT' ||
+      control.type === 'CURRENCY' ||
+      control.type === 'NUMBER' ||
+      control.type === 'EMAIL' ||
+      !control.type
+    ) {
       return (
         <div className='flex w-full flex-col space-y-1.5 pr-4 pb-4'>
           <label className='text-[10px] font-bold text-[var(--gray-9)]'>
@@ -836,7 +731,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               },
             }}
             value={
-              getOptions(control)?.find((opt: any) => opt.id === answers[id]) || null
+              getOptions(control)?.find((opt: any) => opt.id === answers[id]) ||
+              null
             }
             onChange={(opt) => handleFieldChange(id, opt ? opt.id : null)}
           />
@@ -902,27 +798,36 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             <table className='w-full text-left text-xs'>
               <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-0)]'>
                 <tr>
-                  {control.settings?.specific?.tableColumns?.map((column: any, index: number) => (
-                    <th
-                      className='px-5 py-4 text-[10px] font-bold tracking-widest whitespace-nowrap text-[var(--gray-10)] uppercase'
-                      key={index}
-                    >
-                      {column.label}
-                    </th>
-                  ))}
+                  {control.settings?.specific?.tableColumns?.map(
+                    (column: any, index: number) => (
+                      <th
+                        className='px-5 py-4 text-[10px] font-bold tracking-widest whitespace-nowrap text-[var(--gray-10)] uppercase'
+                        key={index}
+                      >
+                        {column.label}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody className='divide-y divide-[var(--gray-3)]'>
                 {(answers[id] || []).map((row: any, rowIndex: number) => (
-                  <tr className='transition-colors hover:bg-[var(--gray-1)]' key={rowIndex}>
-                    {control.settings?.specific?.tableColumns?.map((column: any, colIndex: number) => (
-                      <td
-                        className='px-5 py-4 text-[12px] font-semibold whitespace-nowrap text-[var(--gray-13)]'
-                        key={colIndex}
-                      >
-                        {row[column.id] || row[column.label] || row[column.name]}
-                      </td>
-                    ))}
+                  <tr
+                    className='transition-colors hover:bg-[var(--gray-1)]'
+                    key={rowIndex}
+                  >
+                    {control.settings?.specific?.tableColumns?.map(
+                      (column: any, colIndex: number) => (
+                        <td
+                          className='px-5 py-4 text-[12px] font-semibold whitespace-nowrap text-[var(--gray-13)]'
+                          key={colIndex}
+                        >
+                          {row[column.id] ||
+                            row[column.label] ||
+                            row[column.name]}
+                        </td>
+                      ),
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -960,7 +865,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               </thead>
               <tbody className='divide-y divide-[var(--gray-3)]'>
                 {(data || []).map((row: any, rowIndex: number) => (
-                  <tr className='transition-colors hover:bg-[var(--gray-1)]' key={rowIndex}>
+                  <tr
+                    className='transition-colors hover:bg-[var(--gray-1)]'
+                    key={rowIndex}
+                  >
                     {columns?.map((column: any, colIndex: number) => (
                       <td className='px-2 py-2' key={colIndex}>
                         <InputText
@@ -978,7 +886,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                           onChange={(value: string) => {
                             const newAnswers = { ...answers }
                             if (!newAnswers[id]) newAnswers[id] = []
-                            if (!newAnswers[id][rowIndex]) newAnswers[id][rowIndex] = {}
+                            if (!newAnswers[id][rowIndex])
+                              newAnswers[id][rowIndex] = {}
                             newAnswers[id][rowIndex][column] = value
                             setAnswers(newAnswers)
                           }}
@@ -998,7 +907,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       return (
         <div
           className='w-full pr-4 pb-4 text-[13px] text-[var(--gray-13)]'
-          dangerouslySetInnerHTML={{ __html: control.settings?.specific?.textContent }}
+          dangerouslySetInnerHTML={{
+            __html: control.settings?.specific?.textContent,
+          }}
         />
       )
     }
@@ -1055,7 +966,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         }
       }
 
-      let { docs: parsedD, fields: parsedF, panels: parsedP } = parseFormJson(formJsonData)
+      let {
+        docs: parsedD,
+        fields: parsedF,
+        panels: parsedP,
+      } = parseFormJson(formJsonData)
 
       // Fallback default form fields for standard workflows if formJson is empty
       if (parsedF.length === 0) {
@@ -1209,25 +1124,37 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       }
 
       if ((!parsedP || parsedP.length === 0) && parsedF.length > 0) {
-        parsedP = [{
-          settings: { title: 'Workflow Details' },
-          fields: parsedF.map(f => ({
-            id: f.id,
-            label: f.label,
-            type: f.type === 'select' ? 'SINGLE_SELECT' : 'SHORT_TEXT',
-            settings: f.options ? { specific: { optionsType: 'CUSTOM', separateOptionsUsing: 'COMMA', customOptions: f.options.join(',') } } : {}
-          }))
-        }]
+        parsedP = [
+          {
+            fields: parsedF.map((f) => ({
+              id: f.id,
+              label: f.label,
+              type: f.type === 'select' ? 'SINGLE_SELECT' : 'SHORT_TEXT',
+              settings: f.options
+                ? {
+                    specific: {
+                      customOptions: f.options.join(','),
+                      optionsType: 'CUSTOM',
+                      separateOptionsUsing: 'COMMA',
+                    },
+                  }
+                : {},
+            })),
+            settings: { title: 'Workflow Details' },
+          },
+        ]
       }
 
       setFields(parsedF)
-      setPanels(parsedP)
+      setPanels(parsedP || [])
       setDocuments(parsedD)
 
       // Ask first field or doc
       const firstF = parsedF[0]
       const firstD = parsedD[0]
-      const isPayable = workflow.name.toLowerCase().includes('payable') || workflow.name.toLowerCase().includes('invoice')
+      const isPayable =
+        workflow.name.toLowerCase().includes('payable') ||
+        workflow.name.toLowerCase().includes('invoice')
 
       if (isPayable && firstD) {
         setAwaitingDoc(firstD)
@@ -1253,10 +1180,18 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             sender: 'assistant',
             showDatePicker: firstF.type === 'date',
             tableField:
-              String(firstF.type).toLowerCase().match(/table|grid|subform|lineitem/) ||
-                String(firstF.rawControl?.type).toLowerCase().match(/table|grid|subform|lineitem/) ||
-                String(firstF.label).toLowerCase().match(/table|line item|lineitem/) ||
-                String(firstF.rawControl?.name).toLowerCase().match(/table|line item|lineitem/)
+              String(firstF.type)
+                .toLowerCase()
+                .match(/table|grid|subform|lineitem/) ||
+              String(firstF.rawControl?.type)
+                .toLowerCase()
+                .match(/table|grid|subform|lineitem/) ||
+              String(firstF.label)
+                .toLowerCase()
+                .match(/table|line item|lineitem/) ||
+              String(firstF.rawControl?.name)
+                .toLowerCase()
+                .match(/table|line item|lineitem/)
                 ? firstF
                 : undefined,
             tipText: firstF.tipExample
@@ -1332,7 +1267,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     // Check next field or doc
     const remainingF = fields.filter((f) => updatedAnswers[f.id] === undefined)
     const remainingD = documents.filter((d) => !docsMap[d.id])
-    const isPayable = activeWorkflow?.name?.toLowerCase().includes('payable') || activeWorkflow?.name?.toLowerCase().includes('invoice')
+    const isPayable =
+      activeWorkflow?.name?.toLowerCase().includes('payable') ||
+      activeWorkflow?.name?.toLowerCase().includes('invoice')
 
     if (isPayable && remainingD.length > 0) {
       const nextD = remainingD[0]
@@ -1351,17 +1288,34 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       let nextF = fields.find((f) => f.id === stepResult.nextFieldId)
       if (!nextF || updatedAnswers[nextF.id] !== undefined) {
         // Fallback: Try to infer the field from the AI's reply text
-        let inferredF = remainingF.find(f =>
-          stepResult.reply && stepResult.reply.toLowerCase().includes(String(f.label).toLowerCase())
+        let inferredF = remainingF.find(
+          (f) =>
+            stepResult.reply &&
+            stepResult.reply
+              .toLowerCase()
+              .includes(String(f.label).toLowerCase()),
         )
 
         // If the AI explicitly mentions 'line item' or 'table', find the next available table field
-        if (!inferredF && stepResult.reply && stepResult.reply.toLowerCase().match(/table|line item|lineitem/)) {
-          inferredF = remainingF.find(f =>
-            String(f.type).toLowerCase().match(/table|grid|subform|lineitem/) ||
-            String(f.rawControl?.type).toLowerCase().match(/table|grid|subform|lineitem/) ||
-            String(f.label).toLowerCase().match(/table|line item|lineitem/) ||
-            String(f.rawControl?.name).toLowerCase().match(/table|line item|lineitem/)
+        if (
+          !inferredF &&
+          stepResult.reply &&
+          stepResult.reply.toLowerCase().match(/table|line item|lineitem/)
+        ) {
+          inferredF = remainingF.find(
+            (f) =>
+              String(f.type)
+                .toLowerCase()
+                .match(/table|grid|subform|lineitem/) ||
+              String(f.rawControl?.type)
+                .toLowerCase()
+                .match(/table|grid|subform|lineitem/) ||
+              String(f.label)
+                .toLowerCase()
+                .match(/table|line item|lineitem/) ||
+              String(f.rawControl?.name)
+                .toLowerCase()
+                .match(/table|line item|lineitem/),
           )
         }
 
@@ -1379,10 +1333,18 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           sender: 'assistant',
           showDatePicker: nextF.type === 'date',
           tableField:
-            String(nextF.type).toLowerCase().match(/table|grid|subform|lineitem/) ||
-              String(nextF.rawControl?.type).toLowerCase().match(/table|grid|subform|lineitem/) ||
-              String(nextF.label).toLowerCase().match(/table|line item|lineitem/) ||
-              String(nextF.rawControl?.name).toLowerCase().match(/table|line item|lineitem/)
+            String(nextF.type)
+              .toLowerCase()
+              .match(/table|grid|subform|lineitem/) ||
+            String(nextF.rawControl?.type)
+              .toLowerCase()
+              .match(/table|grid|subform|lineitem/) ||
+            String(nextF.label)
+              .toLowerCase()
+              .match(/table|line item|lineitem/) ||
+            String(nextF.rawControl?.name)
+              .toLowerCase()
+              .match(/table|line item|lineitem/)
               ? nextF
               : undefined,
           tipText: nextF.tipExample
@@ -1417,7 +1379,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   }
 
   // Handle document upload
-  const handleDocumentAttached = async (doc: ParsedDoc, fileName: string, fileObj?: File) => {
+  const handleDocumentAttached = async (
+    doc: ParsedDoc,
+    fileName: string,
+    fileObj?: File,
+  ) => {
     const updatedDocs = { ...docsMap, [doc.id]: fileName }
     setDocsMap(updatedDocs)
     setAwaitingDoc(null)
@@ -1433,133 +1399,154 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
     setIsTyping(true)
 
-    let updatedAnswers = { ...answers }
+    const updatedAnswers = { ...answers }
 
-    const isPayable = activeWorkflow?.name?.toLowerCase().includes('payable')
+    const isPayable =
+      activeWorkflow?.name?.toLowerCase().includes('payable') ||
+      activeWorkflow?.name?.toLowerCase().includes('invoice')
     if (fileObj && isPayable) {
       try {
-        const ocrFields = fields.map(f => `${f.label}, ${f.type === 'select' ? 'text' : f.type || 'text'}`)
-        const { data, error } = await uploadForOcr(activeWorkflow?.id || 'accounts_payable', fileObj, ocrFields)
-        
-        if (!error && data) {
-           const ocrValues: Record<string, string> = {}
-           const normalize = (k: string) => String(k).toLowerCase().replace(/[_ \-]/g, '')
-           
-           const processFlat = (obj: any) => {
-             if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return
-             Object.entries(obj).forEach(([k, v]) => {
-               if (v !== null && v !== undefined) {
-                 const valStr = typeof v === 'object' && 'value' in (v as any) ? String((v as any).value) : String(v)
-                 if (valStr.trim()) ocrValues[normalize(k)] = valStr
-               }
-             })
-           }
+        setMessages((prev) => [
+          ...prev,
+          {
+            htmlContent: `Processing the document. This might take a moment...`,
+            id: `msg-${Date.now()}-processing`,
+            sender: 'assistant',
+          },
+        ])
 
-           const extractFrom = (obj: any) => {
-             if (!obj || typeof obj !== 'object') return
-             processFlat(obj)
-             
-             if (typeof obj.ocrJson === 'string') {
-               try {
-                 const parsed = JSON.parse(obj.ocrJson)
-                 processFlat(parsed)
-                 if (Array.isArray(parsed.ocrResult)) parsed.ocrResult.forEach((item: any) => { if (item?.name && item?.value !== undefined) ocrValues[normalize(item.name)] = String(item.value) })
-                 if (Array.isArray(parsed.fields)) parsed.fields.forEach((item: any) => { if (item?.name && item?.value !== undefined) ocrValues[normalize(item.name)] = String(item.value) })
-               } catch (e) {}
-             }
-             
-             if (Array.isArray(obj.ocrFieldList)) {
-               obj.ocrFieldList.forEach((item: any) => {
-                 if (item?.name && item?.value !== undefined) ocrValues[normalize(item.name)] = String(item.value)
-               })
-             }
-             if (Array.isArray(obj.ocrResult)) {
-               obj.ocrResult.forEach((item: any) => {
-                 if (item?.name && item?.value !== undefined) ocrValues[normalize(item.name)] = String(item.value)
-               })
-             }
-           }
-           
-           extractFrom(data)
-           extractFrom(data?.data)
-           extractFrom(data?.result)
-           extractFrom(data?.fields)
-           extractFrom(data?.values)
+        const formData = new FormData()
+        formData.append('file', fileObj)
+        formData.append('context', '')
+        formData.append('envType', 'trial')
 
-           
-           fields.forEach(f => {
-             const cands = [f.label, f.id].map(s => String(s || '').toLowerCase().replace(/[_ \-]/g, ''))
-             for (const c of cands) {
-               if (ocrValues[c]) {
-                 updatedAnswers[f.id] = ocrValues[c]
-                 break
-               }
-             }
-           })
-           
-           setAnswers(updatedAnswers)
+        const startRes = await workflowsApiV6.startWorkflow(
+          activeWorkflow?.id || 'accounts_payable',
+          formData,
+        )
+
+        if (startRes.data && startRes.data.instanceId) {
+          const instanceId = startRes.data.instanceId
+
+          let foundData = false
+          let attempts = 0
+          while (!foundData && attempts < 12) {
+            await new Promise((resolve) => setTimeout(resolve, 10000))
+            attempts++
+
+            const inboxRes = await workflowsApiV6.getInboxList(
+              activeWorkflow?.id || 'accounts_payable',
+              1,
+              5,
+              instanceId,
+            )
+            if (
+              inboxRes.data &&
+              inboxRes.data.items &&
+              inboxRes.data.items.length > 0
+            ) {
+              const item = inboxRes.data.items[0]
+              if (item.formData) {
+                let formDataObj: any = {}
+                try {
+                  formDataObj = JSON.parse(item.formData)
+                } catch (e) {}
+
+                let nonEmptyCount = 0
+                Object.values(formDataObj).forEach((v) => {
+                  if (v !== undefined && v !== null && String(v).trim() !== '') {
+                    nonEmptyCount++
+                  }
+                })
+
+                if (nonEmptyCount >= 2) {
+                  foundData = true
+                  Object.entries(formDataObj).forEach(([k, v]) => {
+                    const field = fields.find(
+                      (f) =>
+                        f.id === k ||
+                        f.rawControl?.jsonId === k ||
+                        f.rawControl?.id === k,
+                    )
+                    if (field && v !== undefined && v !== null && v !== '') {
+                      let val = v
+                      if (
+                        typeof v === 'string' &&
+                        (v.startsWith('[') || v.startsWith('{'))
+                      ) {
+                        try {
+                          val = JSON.parse(v)
+                        } catch (e) {}
+                      }
+                      updatedAnswers[field.id] = val
+                    }
+                  })
+                  setAnswers(updatedAnswers)
+                }
+              }
+            }
+          }
         }
       } catch (err) {
         console.error('OCR Extraction failed:', err)
       }
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 600))
     }
 
-    setTimeout(() => {
-      setIsTyping(false)
-      const remainingF = fields.filter((f) => updatedAnswers[f.id] === undefined)
-      const remainingD = documents.filter((d) => !updatedDocs[d.id])
-      const isPayable = activeWorkflow?.name?.toLowerCase().includes('payable') || activeWorkflow?.name?.toLowerCase().includes('invoice')
+    setIsTyping(false)
+    const remainingF = fields.filter((f) => updatedAnswers[f.id] === undefined)
+    const remainingD = documents.filter((d) => !updatedDocs[d.id])
 
-      if (isPayable && remainingD.length > 0) {
-        const nextD = remainingD[0]
-        setAwaitingDoc(nextD)
-        setAwaitingField(null)
-        setMessages((prev) => [
-          ...prev,
-          {
-            htmlContent: `Please attach the <strong>${nextD.label}</strong>.`,
-            id: `msg-${Date.now()}-nextD`,
-            sender: 'assistant',
-            uploadCardDoc: nextD,
-          },
-        ])
-      } else if (remainingF.length > 0) {
-        const nextF = remainingF[0]
-        setAwaitingField(nextF)
-        setMessages((prev) => [
-          ...prev,
-          {
-            htmlContent: nextF.question || `What is the ${nextF.label}?`,
-            id: `msg-${Date.now()}-nextF`,
-            pills: nextF.options,
-            sender: 'assistant',
-          },
-        ])
-      } else if (remainingD.length > 0) {
-        const nextD = remainingD[0]
-        setAwaitingDoc(nextD)
-        setMessages((prev) => [
-          ...prev,
-          {
-            htmlContent: `Please attach the <strong>${nextD.label}</strong>.`,
-            id: `msg-${Date.now()}-nextD`,
-            sender: 'assistant',
-            uploadCardDoc: nextD,
-          },
-        ])
-      } else {
-        setMode('review')
-        setMessages((prev) => [
-          ...prev,
-          {
-            htmlContent: `All set! I've collected everything needed for your <strong>${activeWorkflow?.name}</strong> request. Ready to submit?`,
-            id: `msg-${Date.now()}-review`,
-            pills: ['Review & Submit', 'Make changes'],
-            sender: 'assistant',
-          },
-        ])
-      }
-    }, 600)
+    if (isPayable && remainingD.length > 0) {
+      const nextD = remainingD[0]
+      setAwaitingDoc(nextD)
+      setAwaitingField(null)
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent: `Please attach the <strong>${nextD.label}</strong>.`,
+          id: `msg-${Date.now()}-nextD`,
+          sender: 'assistant',
+          uploadCardDoc: nextD,
+        },
+      ])
+    } else if (remainingF.length > 0) {
+      const nextF = remainingF[0]
+      setAwaitingField(nextF)
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent: nextF.question || `What is the ${nextF.label}?`,
+          id: `msg-${Date.now()}-nextF`,
+          pills: nextF.options,
+          sender: 'assistant',
+        },
+      ])
+    } else if (remainingD.length > 0) {
+      const nextD = remainingD[0]
+      setAwaitingDoc(nextD)
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent: `Please attach the <strong>${nextD.label}</strong>.`,
+          id: `msg-${Date.now()}-nextD`,
+          sender: 'assistant',
+          uploadCardDoc: nextD,
+        },
+      ])
+    } else {
+      setMode('review')
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent: `All set! I've collected everything needed for your <strong>${activeWorkflow?.name}</strong> request. Ready to submit?`,
+          id: `msg-${Date.now()}-review`,
+          pills: ['Review & Submit', 'Make changes'],
+          sender: 'assistant',
+        },
+      ])
+    }
   }
 
   // Submit Workflow to Backend API
@@ -1772,7 +1759,6 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           id='assistant-header'
         >
           <div className='flex items-center gap-3'>
-
             <IconButton
               ariaLabel={'Back'}
               color='gray'
@@ -1807,7 +1793,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               <rect height='16' rx='2' width='18' x='3' y='4' />
               <path d='M14 4v16' />
             </svg>
-            <span>{(embedded ? isExpanded : contextVisible) ? 'Hide context' : 'Show context'}</span>
+            <span>
+              {(embedded ? isExpanded : contextVisible)
+                ? 'Hide context'
+                : 'Show context'}
+            </span>
           </button>
         </div>
       )}
@@ -1895,7 +1885,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                               handleDocumentAttached(
                                 msg.uploadCardDoc!,
                                 e.target.files[0].name,
-                                e.target.files[0]
+                                e.target.files[0],
                               )
                             }
                           }}
@@ -1923,16 +1913,16 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                         const isSelected = msg.selectedPill === pill
                         return (
                           <button
+                            key={idx}
                             className={cn(
-                              'cursor-pointer flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition',
+                              'flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition',
                               isSelected
                                 ? 'cursor-default border-primary-5 bg-primary-1 text-primary-9'
                                 : 'border-primary-4 bg-surface text-primary-9 hover:bg-primary-2',
                               msg.selectedPill &&
-                              !isSelected &&
-                              'pointer-events-none opacity-50 grayscale',
+                                !isSelected &&
+                                'pointer-events-none opacity-50 grayscale',
                             )}
-                            key={idx}
                             onClick={() =>
                               !msg.selectedPill && handlePillClick(msg.id, pill)
                             }
@@ -1966,6 +1956,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                           yearsListControl:
                             'text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-12 data-[disabled]:opacity-50 data-[selected]:!bg-primary-9 data-[selected]:!font-medium data-[selected]:!text-white',
                         }}
+                        value={
+                          msg.selectedPill ? new Date(msg.selectedPill) : null
+                        }
                         onChange={(val: any) => {
                           if (!val || msg.selectedPill) return
                           try {
@@ -1979,9 +1972,6 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                             console.error(e)
                           }
                         }}
-                        value={
-                          msg.selectedPill ? new Date(msg.selectedPill) : null
-                        }
                       />
                     </div>
                   )}
@@ -2041,10 +2031,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               />
               <button
                 disabled={!inputText.trim()}
-                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition ${inputText.trim()
-                  ? 'cursor-pointer bg-primary-9 text-white'
-                  : 'cursor-not-allowed bg-gray-4 text-white'
-                  }`}
+                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition ${
+                  inputText.trim()
+                    ? 'cursor-pointer bg-primary-9 text-white'
+                    : 'cursor-not-allowed bg-gray-4 text-white'
+                }`}
                 onClick={() => handleSendMessage()}
               >
                 <Send className='h-4 w-4' />
@@ -2081,8 +2072,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         {/* Context Sidebar */}
         <div
           id='context-col'
-          className={`flex w-[300px] flex-shrink-0 flex-col overflow-y-auto border-l border-gray-5 bg-surface transition-all duration-200 ${(embedded ? isExpanded : contextVisible) ? 'block' : 'hidden'
-            }`}
+          className={`flex w-[300px] flex-shrink-0 flex-col overflow-y-auto border-l border-gray-5 bg-surface transition-all duration-200 ${
+            (embedded ? isExpanded : contextVisible) ? 'block' : 'hidden'
+          }`}
         >
           <div className='flex items-center justify-between border-b border-gray-4 px-[18px] pt-4 pb-3'>
             <h3 className='m-0 text-sm font-bold text-gray-12'>
@@ -2132,10 +2124,13 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                 <div className='mt-2 flex flex-col gap-6'>
                   {panels.map((panel: any, panelIndex: number) => {
                     // Only show fields that are actually tracked as fillable inputs by the AI
-                    const panelFields = panel.fields?.filter((c: any) => {
-                      const id = String(c.jsonId || c.id || c.name || c.columnName)
-                      return fields.some(f => f.id === id)
-                    }) || []
+                    const panelFields =
+                      panel.fields?.filter((c: any) => {
+                        const id = String(
+                          c.jsonId || c.id || c.name || c.columnName,
+                        )
+                        return fields.some((f) => f.id === id)
+                      }) || []
 
                     if (panelFields.length === 0) return null
 
@@ -2146,11 +2141,22 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                         </div>
                         <div className='flex flex-col gap-2.5'>
                           {panelFields.map((ctrl: any, ctrlIndex: number) => {
-                            const id = String(ctrl.jsonId || ctrl.id || ctrl.name || ctrl.columnName)
-                            const isDone = answers[id] !== undefined && answers[id] !== ''
+                            const id = String(
+                              ctrl.jsonId ||
+                                ctrl.id ||
+                                ctrl.name ||
+                                ctrl.columnName,
+                            )
+                            const isDone =
+                              answers[id] !== undefined && answers[id] !== ''
                             let answerText = String(answers[id] || '')
-                            if (typeof answers[id] === 'object' && answers[id] !== null) {
-                              answerText = Array.isArray(answers[id]) ? `${answers[id].length} items` : 'Object'
+                            if (
+                              typeof answers[id] === 'object' &&
+                              answers[id] !== null
+                            ) {
+                              answerText = Array.isArray(answers[id])
+                                ? `${answers[id].length} items`
+                                : 'Object'
                             }
 
                             return (
@@ -2227,8 +2233,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               <div className='flex items-center justify-between border-t border-gray-4 pt-3 text-xs'>
                 <span className='text-gray-9'>Status</span>
                 <span
-                  className={`font-bold ${mode === 'submitted' ? 'text-green-8' : 'text-primary-9'
-                    }`}
+                  className={`font-bold ${
+                    mode === 'submitted' ? 'text-green-8' : 'text-primary-9'
+                  }`}
                 >
                   {mode === 'submitted'
                     ? 'Submitted'

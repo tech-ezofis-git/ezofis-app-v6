@@ -256,10 +256,10 @@ export function searchMock(raw: any) {
   const rest = raw.replace(/"[^"]+"/g, '').trim()
   const whole = raw.replace(/"/g, '').trim()
   const needles = [...phrases, ...(rest ? rest.split(/\s+/) : [])]
-  const out = []
+  const out: any[] = []
 
   MOCK_DATA.forEach((item) => {
-    const found = []
+    const found: any[] = []
     let score = 0
     const AT = item.attachments || [],
       C = item.content || [],
@@ -344,8 +344,8 @@ export function searchMock(raw: any) {
     })
 
     if (!found.length) return
-    const seen = new Set(),
-      uniq = []
+    const seen = new Set()
+    const uniq: any[] = []
     found.forEach((f) => {
       const k = f.kind + f.field + f.snippet + f.value
       if (!seen.has(k)) {

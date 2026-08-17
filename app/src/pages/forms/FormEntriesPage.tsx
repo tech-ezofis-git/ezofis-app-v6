@@ -648,7 +648,7 @@ const FormEntriesPage = () => {
   const { t } = useLingui()
   const { formId } = useParams({ strict: false }) as any
   const navigate = useNavigate()
-  const deepLinkSearch = useSearch({ from: '/_app/forms_/$formId/entries' })
+  const deepLinkSearch: any = useSearch({ strict: false })
 
   const [entries, setEntries] = useState<any[]>([])
   const [trashEntries, setTrashEntries] = useState<any[]>([])

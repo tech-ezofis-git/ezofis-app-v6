@@ -12,23 +12,14 @@ const getAiClient = () => {
   return aiClient
 }
 
-export interface WorkflowSummary {
-  id: string
-  name: string
-  description?: string
-  wFormId?: string | number
-}
-
-export interface ParsedField {
-  id: string
-  label: string
-  type: string // text, select, date, number, boolean, etc.
-  required: boolean
-  options?: string[]
-  question?: string
-  tipExample?: string
-  placeholder?: string
-  rawControl?: any
+export interface ChatStepResult {
+  extractedAnswers: Record<string, any>
+  isComplete: boolean
+  nextDocId: string | null
+  nextFieldId: string | null
+  reply: string
+  suggestedPills: string[]
+  tipText?: string
 }
 
 export interface ParsedDoc {
@@ -38,20 +29,29 @@ export interface ParsedDoc {
   accept?: string
 }
 
+export interface ParsedField {
+  id: string
+  label: string
+  required: boolean
+  type: string // text, select, date, number, boolean, etc.
+  options?: string[]
+  placeholder?: string
+  question?: string
+  rawControl?: any
+  tipExample?: string
+}
+
 export interface WorkflowIntentResult {
   matchedWorkflowId: string | null
   reply: string
   suggestedPills: string[]
 }
 
-export interface ChatStepResult {
-  reply: string
-  extractedAnswers: Record<string, any>
-  nextFieldId: string | null
-  nextDocId: string | null
-  suggestedPills: string[]
-  isComplete: boolean
-  tipText?: string
+export interface WorkflowSummary {
+  id: string
+  name: string
+  description?: string
+  wFormId?: string | number
 }
 
 const CANDIDATE_MODELS = [
@@ -62,8 +62,8 @@ const CANDIDATE_MODELS = [
 ]
 
 /**
-  * Uses Gemini AI to analyze user prompt against available real workflows in the system.
-  */
+ * Uses Gemini AI to analyze user prompt against available real workflows in the system.
+ */
 export async function matchWorkflowWithGemini(
   userPrompt: string,
   availableWorkflows: WorkflowSummary[],
@@ -74,7 +74,10 @@ export async function matchWorkflowWithGemini(
   }
 
   const workflowsListText = availableWorkflows
-    .map((w) => `- ID: "${w.id}", Name: "${w.name}", Description: "${w.description || 'No description'}"`)
+    .map(
+      (w) =>
+        `- ID: "${w.id}", Name: "${w.name}", Description: "${w.description || 'No description'}"`,
+    )
     .join('\n')
 
   const promptText = `
@@ -96,23 +99,23 @@ Return strictly JSON matching this schema.
   for (const model of CANDIDATE_MODELS) {
     try {
       const response = await client.models.generateContent({
-        model,
-        contents: [{ role: 'user', parts: [{ text: promptText }] }],
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
-            type: Type.OBJECT,
             properties: {
-              matchedWorkflowId: { type: Type.STRING, nullable: true },
+              matchedWorkflowId: { nullable: true, type: Type.STRING },
               reply: { type: Type.STRING },
               suggestedPills: {
-                type: Type.ARRAY,
                 items: { type: Type.STRING },
+                type: Type.ARRAY,
               },
             },
             required: ['reply', 'suggestedPills'],
+            type: Type.OBJECT,
           },
         },
+        contents: [{ parts: [{ text: promptText }], role: 'user' }],
+        model,
       })
 
       const raw = response.text
@@ -121,85 +124,74 @@ Return strictly JSON matching this schema.
         return {
           matchedWorkflowId: parsed.matchedWorkflowId || null,
           reply: parsed.reply || `I can help you start a workflow.`,
-          suggestedPills: parsed.suggestedPills || availableWorkflows.map((w) => w.name).slice(0, 4),
+          suggestedPills:
+            parsed.suggestedPills ||
+            availableWorkflows.map((w) => w.name).slice(0, 4),
         }
       }
     } catch (err) {
-      console.warn(`Gemini matchWorkflow attempt failed with model ${model}:`, err)
+      console.warn(
+        `Gemini matchWorkflow attempt failed with model ${model}:`,
+        err,
+      )
     }
   }
 
   return fallbackMatchWorkflow(userPrompt, availableWorkflows)
 }
 
-function fallbackMatchWorkflow(
-  userPrompt: string,
-  availableWorkflows: WorkflowSummary[],
-): WorkflowIntentResult {
-  const query = userPrompt.toLowerCase()
-
-  const matched = availableWorkflows.find((w) => {
-    const nameMatch = w.name.toLowerCase().split(/\s+/).some((term) => term.length > 3 && query.includes(term))
-    const descMatch = w.description && w.description.toLowerCase().includes(query)
-    return nameMatch || descMatch
-  })
-
-  if (matched) {
-    return {
-      matchedWorkflowId: matched.id,
-      reply: `Great — I can help you start the **${matched.name}** workflow. Let's get the required details.`,
-      suggestedPills: ['Proceed with ' + matched.name, 'Browse other workflows'],
-    }
-  }
-
-  if (/pending|status|track|my request/i.test(query)) {
-    return {
-      matchedWorkflowId: null,
-      reply: `Here are options for checking your active requests or starting a new process:`,
-      suggestedPills: ['Show my pending requests', 'Start a workflow', 'Browse workflows'],
-    }
-  }
-
-  return {
-    matchedWorkflowId: null,
-    reply: `I'm ready to assist you. Tell me what process you'd like to initiate, or select one of the published workflows below:`,
-    suggestedPills: availableWorkflows.slice(0, 4).map((w) => w.name),
-  }
-}
-
 /**
-  * Uses Gemini AI to process a step in an active workflow, extract values, and formulate the response.
-  */
+ * Uses Gemini AI to process a step in an active workflow, extract values, and formulate the response.
+ */
 export async function processWorkflowChatStepWithGemini(params: {
-  userMessage: string
-  workflowName: string
-  fields: ParsedField[]
-  documents: ParsedDoc[]
   currentAnswers: Record<string, any>
   currentDocs: Record<string, string>
+  documents: ParsedDoc[]
+  fields: ParsedField[]
+  userMessage: string
+  workflowName: string
 }): Promise<ChatStepResult> {
-  const { userMessage, workflowName, fields, documents, currentAnswers, currentDocs } = params
+  const {
+    currentAnswers,
+    currentDocs,
+    documents,
+    fields,
+    userMessage,
+    workflowName,
+  } = params
   const client = getAiClient()
 
   const missingFields = fields.filter((f) => currentAnswers[f.id] === undefined)
   const missingDocs = documents.filter((d) => !currentDocs[d.id])
 
   if (!client) {
-    return fallbackProcessStep(userMessage, fields, documents, currentAnswers, currentDocs)
+    return fallbackProcessStep(
+      userMessage,
+      fields,
+      documents,
+      currentAnswers,
+      currentDocs,
+    )
   }
 
   const fieldsSchemaDesc = fields
     .map((f) => {
       let desc = `- Field ID: "${f.id}", Label: "${f.label}", Type: "${f.type}", Required: ${f.required}`
-      
+
       if (f.options && f.options.length > 0) {
         desc += `, Options: [${f.options.join(', ')}]`
       }
 
       if (f.rawControl) {
-        if (f.rawControl.type === 'TABLE' || f.rawControl.type === 'DYNAMIC_TABLE') {
-          const cols = f.rawControl.settings?.specific?.tableColumns?.map((c: any) => c.label).join(', ')
-          if (cols) desc += `. This is a table. Required columns: [${cols}]. Instruct the user to provide all these columns.`
+        if (
+          f.rawControl.type === 'TABLE' ||
+          f.rawControl.type === 'DYNAMIC_TABLE'
+        ) {
+          const cols = f.rawControl.settings?.specific?.tableColumns
+            ?.map((c: any) => c.label)
+            .join(', ')
+          if (cols)
+            desc += `. This is a table. Required columns: [${cols}]. Instruct the user to provide all these columns.`
         } else if (f.rawControl.type === 'CURRENCY') {
           desc += `. This is a currency field. Expect an amount and a currency symbol.`
         }
@@ -242,30 +234,35 @@ Return strictly JSON matching this schema:
   for (const model of CANDIDATE_MODELS) {
     try {
       const response = await client.models.generateContent({
-        model,
-        contents: [{ role: 'user', parts: [{ text: promptText }] }],
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
-            type: Type.OBJECT,
             properties: {
               extractedAnswers: {
-                type: Type.OBJECT,
                 description: 'Dictionary of field ID to extracted value',
+                type: Type.OBJECT,
               },
               isComplete: { type: Type.BOOLEAN },
-              nextDocId: { type: Type.STRING, nullable: true },
-              nextFieldId: { type: Type.STRING, nullable: true },
+              nextDocId: { nullable: true, type: Type.STRING },
+              nextFieldId: { nullable: true, type: Type.STRING },
               reply: { type: Type.STRING },
               suggestedPills: {
-                type: Type.ARRAY,
                 items: { type: Type.STRING },
+                type: Type.ARRAY,
               },
               tipText: { type: Type.STRING },
             },
-            required: ['extractedAnswers', 'reply', 'isComplete', 'suggestedPills'],
+            required: [
+              'extractedAnswers',
+              'reply',
+              'isComplete',
+              'suggestedPills',
+            ],
+            type: Type.OBJECT,
           },
         },
+        contents: [{ parts: [{ text: promptText }], role: 'user' }],
+        model,
       })
 
       const raw = response.text
@@ -282,11 +279,66 @@ Return strictly JSON matching this schema:
         }
       }
     } catch (err) {
-      console.warn(`Gemini processStep attempt failed with model ${model}:`, err)
+      console.warn(
+        `Gemini processStep attempt failed with model ${model}:`,
+        err,
+      )
     }
   }
 
-  return fallbackProcessStep(userMessage, fields, documents, currentAnswers, currentDocs)
+  return fallbackProcessStep(
+    userMessage,
+    fields,
+    documents,
+    currentAnswers,
+    currentDocs,
+  )
+}
+
+function fallbackMatchWorkflow(
+  userPrompt: string,
+  availableWorkflows: WorkflowSummary[],
+): WorkflowIntentResult {
+  const query = userPrompt.toLowerCase()
+
+  const matched = availableWorkflows.find((w) => {
+    const nameMatch = w.name
+      .toLowerCase()
+      .split(/\s+/)
+      .some((term) => term.length > 3 && query.includes(term))
+    const descMatch =
+      w.description && w.description.toLowerCase().includes(query)
+    return nameMatch || descMatch
+  })
+
+  if (matched) {
+    return {
+      matchedWorkflowId: matched.id,
+      reply: `Great — I can help you start the **${matched.name}** workflow. Let's get the required details.`,
+      suggestedPills: [
+        'Proceed with ' + matched.name,
+        'Browse other workflows',
+      ],
+    }
+  }
+
+  if (/pending|status|track|my request/i.test(query)) {
+    return {
+      matchedWorkflowId: null,
+      reply: `Here are options for checking your active requests or starting a new process:`,
+      suggestedPills: [
+        'Show my pending requests',
+        'Start a workflow',
+        'Browse workflows',
+      ],
+    }
+  }
+
+  return {
+    matchedWorkflowId: null,
+    reply: `I'm ready to assist you. Tell me what process you'd like to initiate, or select one of the published workflows below:`,
+    suggestedPills: availableWorkflows.slice(0, 4).map((w) => w.name),
+  }
 }
 
 function fallbackProcessStep(
@@ -305,7 +357,9 @@ function fallbackProcessStep(
   }
 
   const remainingFields = fields.filter(
-    (f) => currentAnswers[f.id] === undefined && extractedAnswers[f.id] === undefined,
+    (f) =>
+      currentAnswers[f.id] === undefined &&
+      extractedAnswers[f.id] === undefined,
   )
   const upcomingField = remainingFields[0]
   const upcomingDoc = documents.find((d) => !currentDocs[d.id])
@@ -316,7 +370,8 @@ function fallbackProcessStep(
       isComplete: true,
       nextDocId: null,
       nextFieldId: null,
-      reply: "All set! I've collected everything needed for your request. Ready to submit?",
+      reply:
+        "All set! I've collected everything needed for your request. Ready to submit?",
       suggestedPills: ['Review & Submit', 'Make changes'],
     }
   }

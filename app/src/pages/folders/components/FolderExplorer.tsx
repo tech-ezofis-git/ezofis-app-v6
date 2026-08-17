@@ -76,11 +76,11 @@ export function FolderExplorer() {
 
   const isBusy = loading || loadingPage || refreshing
   const navigate = useNavigate()
-  const deepLinkSearch = useSearch({ from: '/_app/folders' })
+  const deepLinkSearch: any = useSearch({ strict: false })
   const applyingDeepLinkRef = useRef(false)
 
   useEffect(() => {
-    const { folderId, itemId, repositoryId } = deepLinkSearch
+    const { folderId, itemId, repositoryId } = deepLinkSearch || {}
     if (!repositoryId) return
     if (applyingDeepLinkRef.current) return
     if (tree.length === 0) return
@@ -98,7 +98,9 @@ export function FolderExplorer() {
 
     void openFolder(nodeId).then(() => {
       if (itemId) openDetailsFile(itemId)
-      void navigate({ replace: true, search: {}, to: '/folders' })
+      if (!globalThis.location?.pathname?.startsWith('/embed')) {
+        void navigate({ replace: true, search: {}, to: '/folders' })
+      }
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deepLinkSearch, tree])
