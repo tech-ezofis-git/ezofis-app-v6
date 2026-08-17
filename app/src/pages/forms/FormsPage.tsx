@@ -448,13 +448,13 @@ const FormsPage = () => {
       <AiFormBuilder
         onBack={() => setShowAiBuilder(false)}
         onStartFromScratch={() => {
-          setShowAiBuilder(false)
           useFormStore.getState().resetForm()
+          setShowAiBuilder(false)
           navigate({ to: '/form-builder' })
         }}
         onApply={(payload) => {
-          setShowAiBuilder(false)
           useFormStore.getState().loadForm(payload)
+          setShowAiBuilder(false)
           navigate({ to: '/form-builder' })
         }}
       />

@@ -29,6 +29,33 @@ interface ChatMessage {
   component?: 'TYPE_SELECTOR' | 'DETAILS_FORM' | 'GENERATED_CARD'
 }
 
+const FIELD_TYPE_OPTIONS = [
+  { label: 'Short Text', value: 'SHORT_TEXT' },
+  { label: 'Long Text', value: 'LONG_TEXT' },
+  { label: 'Number', value: 'NUMBER' },
+  { label: 'Date', value: 'DATE' },
+  { label: 'Time', value: 'TIME' },
+  { label: 'Date & Time', value: 'DATE_TIME' },
+  { label: 'Single Select', value: 'SINGLE_SELECT' },
+  { label: 'Multi Select', value: 'MULTI_SELECT' },
+  { label: 'Single Choice', value: 'SINGLE_CHOICE' },
+  { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
+  { label: 'Email', value: 'EMAIL' },
+  { label: 'Phone Number', value: 'PHONE_NUMBER' },
+  { label: 'Address', value: 'ADDRESS' },
+  { label: 'Currency', value: 'CURRENCY_AMOUNT' },
+  { label: 'File Upload', value: 'FILE_UPLOAD' },
+  { label: 'Signature', value: 'SIGNATURE' },
+  { label: 'Star Rating', value: 'RATING' },
+  { label: 'Yes/No Toggle', value: 'YES_NO_TOGGLE' },
+  { label: 'Counter', value: 'COUNTER' },
+  { label: 'Table', value: 'TABLE' },
+  { label: 'Password', value: 'PASSWORD' },
+  { label: 'Heading', value: 'HEADING' },
+  { label: 'Paragraph', value: 'TEXT_BUILDER' },
+  { label: 'Divider', value: 'DIVIDER' },
+]
+
 export default function AiFormBuilder({
   onBack,
   onApply,
@@ -50,6 +77,7 @@ export default function AiFormBuilder({
   ])
 
   const [selectedType, setSelectedType] = useState<FormTypeOption>('WORKFLOW')
+  const [isTypeSelected, setIsTypeSelected] = useState(false)
   const [formName, setFormName] = useState('')
   const [description, setDescription] = useState('')
   const [chatInput, setChatInput] = useState('')
@@ -69,6 +97,7 @@ export default function AiFormBuilder({
       typeValue === 'WORKFLOW' ? t`Workflow Form` : t`Master Form`
 
     setSelectedType(typeValue as FormTypeOption)
+    setIsTypeSelected(true)
 
     setMessages((prev) => [
       ...prev,
@@ -204,9 +233,19 @@ export default function AiFormBuilder({
   }
 
   return (
-    <div className='bg-surface-primary flex h-full min-h-0 w-full flex-col overflow-hidden text-gray-12'>
+    <motion.div
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      className='bg-surface-primary flex h-full min-h-0 w-full flex-col overflow-hidden text-gray-12'
+      initial={{ opacity: 0, scale: 0.98, y: 12 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    >
       {/* Top Bar */}
-      <div className='flex items-center justify-between border-b border-gray-4 bg-surface-primary px-6 py-3.5 shadow-xs'>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className='flex items-center justify-between border-b border-gray-4 bg-surface-primary px-6 py-3.5 shadow-xs'
+        initial={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      >
         <div className='flex items-center gap-3'>
           <IconButton
             ariaLabel='Back'
@@ -230,7 +269,7 @@ export default function AiFormBuilder({
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Chat Messages Timeline */}
       <div className='flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-gray-1/30'>
@@ -243,8 +282,8 @@ export default function AiFormBuilder({
                 'flex gap-3',
                 msg.role === 'user' ? 'justify-end' : 'justify-start',
               )}
-              initial={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
             >
               {msg.role === 'assistant' && (
                 <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400'>
@@ -274,23 +313,30 @@ export default function AiFormBuilder({
                 {msg.component === 'TYPE_SELECTOR' && msg.chips && (
                   <div className='flex flex-wrap gap-2 pt-1'>
                     {msg.chips.map((chip) => (
-                      <button
+                      <motion.button
                         key={chip.value}
-                        className='inline-flex items-center gap-2 rounded-full border border-primary-4 bg-surface-primary px-3.5 py-2 text-xs font-semibold text-primary-9 transition-all hover:border-primary-9 hover:bg-primary-3 focus:outline-none focus:ring-2 focus:ring-primary-5'
+                        whileHover={{ scale: 1.04, y: -1 }}
+                        whileTap={{ scale: 0.96 }}
+                        className='inline-flex items-center gap-2 rounded-full border border-primary-4 bg-surface-primary px-3.5 py-2 text-xs font-semibold text-primary-9 transition-all hover:border-primary-9 hover:bg-primary-3 focus:outline-none focus:ring-2 focus:ring-primary-5 shadow-xs'
                         onClick={() => handleSelectType(chip.value)}
                       >
                         {chip.icon && (
                           <Icon className='h-3.5 w-3.5' name={chip.icon} />
                         )}
                         <span>{chip.label}</span>
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 )}
 
                 {/* Form Details Component */}
                 {msg.component === 'DETAILS_FORM' && !suggestion && (
-                  <div className='w-full space-y-3.5 rounded-2xl border border-gray-4 bg-surface-primary p-4 shadow-sm'>
+                  <motion.div
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className='w-full space-y-3.5 rounded-2xl border border-gray-4 bg-surface-primary p-4 shadow-sm'
+                    initial={{ opacity: 0, scale: 0.97, y: 10 }}
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  >
                     <div>
                       <label className='block text-xs font-semibold text-gray-11 uppercase tracking-wider'>
                         {t`Form Name`} <span className='text-red-500'>*</span>
@@ -329,12 +375,17 @@ export default function AiFormBuilder({
                         </div>
                       </Button>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Generated Form Card Component */}
                 {msg.component === 'GENERATED_CARD' && suggestion && (
-                  <div className='w-full space-y-4 rounded-2xl border border-primary-4 bg-surface-primary p-5 shadow-sm'>
+                  <motion.div
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className='w-full space-y-4 rounded-2xl border border-primary-4 bg-surface-primary p-5 shadow-sm'
+                    initial={{ opacity: 0, scale: 0.97, y: 12 }}
+                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                  >
                     <div className='flex items-center justify-between border-b border-gray-3 pb-3'>
                       <div>
                         <h4 className='text-sm font-bold text-gray-12'>
@@ -402,13 +453,26 @@ export default function AiFormBuilder({
                                     onClick={() => handleRemoveField(pIdx, fIdx)}
                                   />
                                 </div>
-                                <div className='mt-1.5 flex items-center justify-between text-[10px] text-gray-10'>
-                                  <span className='rounded bg-gray-3 px-1.5 py-0.5 font-medium uppercase'>
-                                    {f.type}
-                                  </span>
-                                  <label className='flex items-center gap-1 cursor-pointer'>
+                                <div className='mt-2 flex items-center justify-between gap-2 text-[10px] text-gray-10'>
+                                  <select
+                                    className='min-w-0 flex-1 truncate rounded-md border border-gray-4 bg-gray-2/60 px-2 py-1 text-xs font-medium text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3 cursor-pointer'
+                                    value={f.type}
+                                    onChange={(e) =>
+                                      handleUpdateField(pIdx, fIdx, {
+                                        type: e.target.value,
+                                      })
+                                    }
+                                  >
+                                    {FIELD_TYPE_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <label className='flex shrink-0 items-center gap-1.5 cursor-pointer select-none text-xs font-medium text-gray-11 hover:text-gray-12'>
                                     <input
                                       checked={f.isMandatory || false}
+                                      className='rounded border-gray-4 text-primary-9 focus:ring-primary-3 cursor-pointer'
                                       type='checkbox'
                                       onChange={(e) =>
                                         handleUpdateField(pIdx, fIdx, {
@@ -438,7 +502,7 @@ export default function AiFormBuilder({
                         {t`Open in Form Builder`}
                       </Button>
                     </div>
-                  </div>
+                  </motion.div>
                 )}
               </div>
             </motion.div>
@@ -461,35 +525,42 @@ export default function AiFormBuilder({
       </div>
 
       {/* Chat Prompt Bar */}
-      <div className='border-t border-gray-4 bg-surface-primary p-3 md:p-4'>
-        <div className='mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-gray-4 bg-gray-1/40 px-4 py-2 focus-within:border-primary-9 focus-within:ring-2 focus-within:ring-primary-3'>
-          <input
-            className='flex-1 bg-transparent text-xs text-gray-12 outline-none placeholder:text-gray-10'
-            placeholder={
-              suggestion
-                ? t`Type instructions to tweak layout (e.g. Add a file upload field)...`
-                : t`Type form name or requirements...`
-            }
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                handleSendPrompt()
+      {isTypeSelected && (
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          className='border-t border-gray-4 bg-surface-primary p-3 md:p-4'
+          initial={{ opacity: 0, y: 10 }}
+          transition={{ duration: 0.25 }}
+        >
+          <div className='mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-gray-4 bg-gray-1/40 px-4 py-2 focus-within:border-primary-9 focus-within:ring-2 focus-within:ring-primary-3'>
+            <input
+              className='flex-1 bg-transparent text-xs text-gray-12 outline-none placeholder:text-gray-10'
+              placeholder={
+                suggestion
+                  ? t`Type instructions to tweak layout (e.g. Add a file upload field)...`
+                  : t`Type form name or requirements...`
               }
-            }}
-          />
-          <IconButton
-            ariaLabel='Send'
-            color='primary'
-            disabled={!chatInput.trim() || isGenerating}
-            icon='lucide:send'
-            size='sm'
-            variant='solid'
-            onClick={handleSendPrompt}
-          />
-        </div>
-      </div>
-    </div>
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleSendPrompt()
+                }
+              }}
+            />
+            <IconButton
+              ariaLabel='Send'
+              color='primary'
+              disabled={!chatInput.trim() || isGenerating}
+              icon='lucide:send'
+              size='sm'
+              variant='solid'
+              onClick={handleSendPrompt}
+            />
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
   )
 }

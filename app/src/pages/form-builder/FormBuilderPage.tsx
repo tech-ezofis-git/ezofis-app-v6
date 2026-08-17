@@ -26,13 +26,11 @@ const FormBuilderPage = () => {
         } finally {
           setIsLoading(false)
         }
-      } else {
-        resetForm()
       }
     }
 
     fetchForm()
-  }, [formId, loadForm, resetForm])
+  }, [formId, loadForm])
 
   if (isLoading) {
     return <FormBuilderSkeleton />

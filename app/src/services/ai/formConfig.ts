@@ -324,24 +324,33 @@ export function buildFormPayloadFromAiSuggestion(
 ) {
   const panels = suggestion.panels.map((panel) => {
     const fields = panel.fields.map((f) => {
-      const question = getField(f.type || 'SHORT_TEXT')
+      const fieldType = (f.type || 'SHORT_TEXT').toUpperCase()
+      const question = getField(fieldType)
       question.label = f.label
-      if (f.placeholder) {
-        question.settings.general.placeholder = f.placeholder
+      if (question.settings?.general) {
+        question.settings.general.label = f.label
+        if (f.placeholder) {
+          question.settings.general.placeholder = f.placeholder
+        }
+        if (f.size) {
+          question.settings.general.size = f.size as any
+        }
       }
-      if (f.size) {
-        question.settings.general.size = f.size as any
-      }
-      if (f.isMandatory) {
-        question.settings.validation.fieldRule = 'MANDATORY'
+      if (question.settings?.validation) {
+        question.settings.validation.fieldRule = f.isMandatory
+          ? 'MANDATORY'
+          : 'OPTIONAL'
       }
       if (
-        (f.type === 'SINGLE_SELECT' || f.type === 'MULTI_SELECT') &&
-        f.options &&
-        f.options.length > 0
+        ['SINGLE_SELECT', 'MULTI_SELECT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE'].includes(
+          fieldType,
+        ) &&
+        question.settings?.specific
       ) {
-        question.settings.specific.customOptions = f.options.join(',')
-        question.settings.specific.optionsType = 'CUSTOM'
+        if (f.options && f.options.length > 0) {
+          question.settings.specific.customOptions = f.options.join(',')
+          question.settings.specific.optionsType = 'CUSTOM'
+        }
       }
       return question
     })
