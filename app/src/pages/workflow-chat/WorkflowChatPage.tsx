@@ -180,7 +180,7 @@ const TableInputWidget = ({
         <table className='w-full border-collapse text-left text-xs'>
           <thead>
             <tr className='bg-gray-1'>
-              {dynamicColumns.map((column) => (
+              {dynamicColumns.map((column: any) => (
                 <th
                   className='sticky top-0 z-20 h-[46px] min-w-[120px] border-r border-b border-gray-4 bg-gray-1 px-4 text-left text-[11px] font-semibold whitespace-nowrap text-gray-11'
                   key={column.id}
@@ -198,7 +198,7 @@ const TableInputWidget = ({
           <tbody>
             {rows.map((row, rowIndex) => (
               <tr className='bg-surface hover:bg-gray-1' key={rowIndex}>
-                {dynamicColumns.map((column) => (
+                {dynamicColumns.map((column: any) => (
                   <td
                     className='h-[48px] min-w-[120px] border-r border-b border-gray-4 bg-surface p-0'
                     key={column.id}
@@ -247,7 +247,7 @@ const TableInputWidget = ({
             {rows.length} {rows.length === 1 ? 'row' : 'rows'}
           </span>
 
-          <PrimaryButton size='sm' onClick={handleSubmit}>
+          <PrimaryButton onClick={handleSubmit}>
             Submit Table
           </PrimaryButton>
         </div>
@@ -469,11 +469,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   // Parse Form JSON into ParsedField[] and ParsedDoc[]
   const parseFormJson = (
     formJsonObj: any,
-  ): { docs: ParsedDoc[]; fields: ParsedField[] } => {
+  ): { docs: ParsedDoc[]; fields: ParsedField[]; panels?: any[] } => {
     const parsedFields: ParsedField[] = []
     const parsedDocs: ParsedDoc[] = []
 
-    if (!formJsonObj) return { docs: parsedDocs, fields: parsedFields }
+    if (!formJsonObj) return { docs: parsedDocs, fields: parsedFields, panels: [] }
 
     let target = formJsonObj
     if (typeof target === 'string') {
@@ -1146,7 +1146,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       }
 
       setFields(parsedF)
-      setPanels(parsedP)
+      setPanels(parsedP || [])
       setDocuments(parsedD)
 
       // Ask first field or doc
