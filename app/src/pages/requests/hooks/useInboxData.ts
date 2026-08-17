@@ -9,7 +9,7 @@ import {
 } from '../utils/inboxList.utils'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
-const transformProcess = (
+export const transformProcess = (
   process: any,
   groupKey: string,
   originalIndex: number,

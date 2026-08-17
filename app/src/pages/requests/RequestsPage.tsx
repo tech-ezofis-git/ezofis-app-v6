@@ -17,7 +17,7 @@ import Header from './components/Header'
 import InboxList from './components/InboxList'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
 import Request from './components/request/Request'
-import { useInboxData } from './hooks/useInboxData'
+import { transformProcess, useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
@@ -206,37 +206,198 @@ const RequestsPage = () => {
   // Notification deep-link: switch to the target workflow once the list is loaded
   useEffect(() => {
     if (!pendingDeepLink || !allWorkflow) return
+    console.log('📌 [RequestsPage Step 6: Workflow Matching Effect]', {
+      availableWorkflows: allWorkflow.map((w) => ({ id: w.id, name: w.name })),
+      currentWorkflowId: workflow?.id,
+      pendingDeepLinkWorkflowId: pendingDeepLink.workflowId,
+    })
+
     const match = allWorkflow.find(
       (opt) => String(opt.id) === String(pendingDeepLink.workflowId),
     )
-    if (match && String(match.id) !== String(workflow?.id)) {
-      setWorkflow(match)
+    if (match) {
+      console.log('📌 [RequestsPage Step 6.1: Found Matching Workflow]', match)
+      if (String(match.id) !== String(workflow?.id)) {
+        setWorkflow(match)
+      }
+    } else {
+      console.warn(
+        '⚠️ [RequestsPage Step 6.2: Workflow ID not found in user workflows list!]',
+        pendingDeepLink.workflowId,
+      )
     }
   }, [pendingDeepLink, allWorkflow, workflow])
 
   // Notification deep-link: once the target workflow's data is ready, fetch and open the row
   useEffect(() => {
     if (!pendingDeepLink || !selectedWorkflow) return
-    if (String(selectedWorkflow.id) !== String(pendingDeepLink.workflowId))
+
+    // Prevent redundant reloading if the clicked ticket is ALREADY open in overview
+    const currentInstId =
+      selectedItem?.workflowInstanceId ||
+      selectedItem?.processId ||
+      selectedItem?.id
+    const currentTxId = selectedItem?.transactionId
+
+    const targetInstId = pendingDeepLink.processId
+    const targetTxId = pendingDeepLink.transactionId
+
+    const isAlreadyOpen =
+      !!selectedItem &&
+      ((currentInstId && targetInstId && String(currentInstId).toLowerCase() === String(targetInstId).toLowerCase()) ||
+        (currentTxId && targetTxId && String(currentTxId).toLowerCase() === String(targetTxId).toLowerCase()))
+
+    if (isAlreadyOpen) {
+      console.log(
+        'ℹ️ [RequestsPage] Ticket is ALREADY currently open in overview. Skipping redundant reload.',
+      )
+      clearPendingDeepLink()
       return
+    }
+
+    console.log('📌 [RequestsPage Step 7: Ticket Retrieval Effect Triggered]', {
+      pendingDeepLink,
+      selectedWorkflowId: selectedWorkflow.id,
+      selectedWorkflowName: selectedWorkflow.name,
+    })
+
+    if (String(selectedWorkflow.id) !== String(pendingDeepLink.workflowId)) {
+      console.log(
+        '📌 [RequestsPage Step 7.1: Waiting for selectedWorkflow.id to equal pendingDeepLink.workflowId]',
+        {
+          pendingDeepLinkWorkflowId: pendingDeepLink.workflowId,
+          selectedWorkflowId: selectedWorkflow.id,
+        },
+      )
+      return
+    }
 
     let cancelled = false
       ; (async () => {
+        let row: any = null
+        const wfId = String(pendingDeepLink.workflowId)
+        const instId = pendingDeepLink.processId
+        const txId = pendingDeepLink.transactionId
+
+        console.log(
+          '📌 [RequestsPage Step 8: Fetching single ticket instance from V6 API]',
+          { instId, txId, wfId },
+        )
+
+        // 1. Primary: Fetch via V6 /Workflows/inbox, /sent, and /completed using instanceId
         try {
-          const row = await requestApi.getProcess(
-            pendingDeepLink.workflowId,
-            pendingDeepLink.processId,
-            // Single-transaction requests share processId/transactionId; multi-transaction
-            // ones must pass transactionId explicitly via the notification's target.search.
-            pendingDeepLink.transactionId ?? pendingDeepLink.processId,
+          const [inboxRes, sentRes, completedRes] = await Promise.all([
+            workflowsApiV6.getInboxList(wfId, 1, 10, instId, txId),
+            workflowsApiV6.getSentList(wfId, 1, 10, instId, txId),
+            workflowsApiV6.getCompletedList(wfId, 1, 10, instId, txId),
+          ])
+
+          console.log('📌 [RequestsPage Step 8.1: API Responses Received]', {
+            completedItemsCount: completedRes.data?.items?.length || 0,
+            inboxItemsCount: inboxRes.data?.items?.length || 0,
+            sentItemsCount: sentRes.data?.items?.length || 0,
+          })
+
+          const candidateItems = [
+            ...(inboxRes.data?.items || []),
+            ...(sentRes.data?.items || []),
+            ...(completedRes.data?.items || []),
+          ]
+
+          row = candidateItems.find(
+            (item: any) =>
+              String(item.workflowInstanceId || item.processId || item.id) ===
+                String(instId) ||
+              (txId && String(item.transactionId) === String(txId)),
           )
-          if (cancelled) return
-          openRequest(row, selectedWorkflow, pendingDeepLink.tab ?? 'Details')
-        } finally {
-          if (!cancelled) {
-            clearPendingDeepLink()
-            void navigate({ replace: true, search: {}, to: '/requests' })
+          if (row) {
+            console.log(
+              '📌 [RequestsPage Step 8.2: Found Ticket in V6 API Response]',
+              row,
+            )
           }
+        } catch (e) {
+          console.warn('⚠️ V6 instance fetch error', e)
+        }
+
+        // 2. Secondary fallback: try getProcess rowInfo
+        if (!row) {
+          console.log(
+            '📌 [RequestsPage Step 8.3: Trying getProcess rowInfo fallback]',
+          )
+          try {
+            row = await requestApi.getProcess(
+              pendingDeepLink.workflowId,
+              pendingDeepLink.processId,
+              pendingDeepLink.transactionId ?? pendingDeepLink.processId,
+            )
+            console.log(
+              '📌 [RequestsPage Step 8.4: getProcess rowInfo returned]',
+              row,
+            )
+          } catch (e) {
+            console.warn('⚠️ getProcess request failed', e)
+          }
+        }
+
+        // 3. Fallback: search currently loaded inboxResult items
+        if (!row && inboxResult?.data) {
+          console.log('📌 [RequestsPage Step 8.5: Searching inboxResult items]')
+          const allItems = inboxResult.data.flatMap(
+            (group: any) => group.items || [],
+          )
+          row = allItems.find(
+            (item: any) =>
+              String(item.processId || item.workflowInstanceId || item.id) ===
+                String(instId) ||
+              (txId && String(item.transactionId) === String(txId)),
+          )
+          if (row) {
+            console.log(
+              '📌 [RequestsPage Step 8.6: Found Ticket in inboxResult]',
+              row,
+            )
+          }
+        }
+
+        // Transform row to full InboxItem format if needed
+        let transformedRow = row
+        if (row && !row._actions) {
+          console.log(
+            '📌 [RequestsPage Step 9: Transforming raw process item via transformProcess...]',
+          )
+          transformedRow = transformProcess(
+            row,
+            'Inbox',
+            0,
+            'Inbox',
+            selectedWorkflow,
+          )
+        }
+
+        if (cancelled) return
+
+        if (transformedRow) {
+          console.log(
+            '🚀 [RequestsPage Step 10: Calling openRequest to open detail drawer!]',
+            {
+              selectedWorkflow,
+              tab: pendingDeepLink.tab ?? 'Details',
+              transformedRow,
+            },
+          )
+          closeRequest()
+          openRequest(transformedRow, selectedWorkflow, pendingDeepLink.tab ?? 'Details')
+        } else {
+          console.error(
+            '❌ [RequestsPage Error: Could not locate ticket item for instanceId]',
+            instId,
+          )
+        }
+
+        if (!cancelled) {
+          console.log('📌 [RequestsPage Step 11: Clearing pendingDeepLink]')
+          clearPendingDeepLink()
         }
       })()
 
@@ -246,7 +407,10 @@ const RequestsPage = () => {
   }, [
     pendingDeepLink,
     selectedWorkflow,
+    selectedItem,
+    inboxResult,
     openRequest,
+    closeRequest,
     clearPendingDeepLink,
     navigate,
   ])

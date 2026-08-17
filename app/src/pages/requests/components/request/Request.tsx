@@ -1250,6 +1250,9 @@ const Request = ({
         return
       }
 
+      // Invalidate notifications query so new ticket notifications load immediately
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+
       showToast({
         message:
           action.toLowerCase() === 'submit'

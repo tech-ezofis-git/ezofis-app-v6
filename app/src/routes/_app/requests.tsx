@@ -29,7 +29,10 @@ export const Route = createFileRoute('/_app/requests')({
       })
       return
     }
-    requestStore.getState().closeRequest()
+    const state = requestStore.getState()
+    if (!state.pendingDeepLink && !state.selectedItem) {
+      state.closeRequest()
+    }
   },
   validateSearch: (
     search: Record<string, unknown>,

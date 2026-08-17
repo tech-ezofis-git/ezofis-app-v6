@@ -61,8 +61,9 @@ const NotificationCard = ({
 
   return (
     <div
-      className={`group relative flex cursor-pointer items-start gap-3 border-b border-gray-3 p-3.5 transition-colors hover:bg-gray-2 ${!notification.isRead ? 'bg-primary-1/60' : 'bg-surface-primary'
-        }`}
+      className={`group relative flex cursor-pointer items-start gap-3 border-b border-gray-3 p-3.5 transition-all hover:bg-gray-2 ${
+        !notification.isRead ? 'bg-primary-1/60' : 'bg-surface-primary'
+      }`}
       onClick={() => onItemClick?.(notification)}
     >
       <div
@@ -72,9 +73,12 @@ const NotificationCard = ({
       </div>
 
       <div className='min-w-0 flex-1'>
-        <div className='flex items-center justify-between gap-2'>
+        <div className='flex items-start justify-between gap-2'>
           <p
-            className={`truncate text-13 font-semibold ${!notification.isRead ? 'text-gray-12' : 'text-gray-11'}`}
+            className={`truncate text-13 font-semibold transition-all group-hover:whitespace-normal group-hover:overflow-visible group-hover:truncate-none ${
+              !notification.isRead ? 'text-gray-12' : 'text-gray-11'
+            }`}
+            title={notification.title}
           >
             {notification.title}
           </p>
@@ -82,7 +86,10 @@ const NotificationCard = ({
             {formatRelativeTime(notification.createdAtUtc)}
           </span>
         </div>
-        <p className='mt-1 line-clamp-2 text-12 leading-relaxed text-gray-10'>
+        <p
+          className='mt-1 line-clamp-2 text-12 leading-relaxed text-gray-10 transition-all group-hover:line-clamp-none group-hover:whitespace-normal'
+          title={notification.message}
+        >
           {notification.message}
         </p>
       </div>
