@@ -1,26 +1,21 @@
+import { useEffect } from 'react'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import Form from './components/form/Form'
 import PublishSidebar from './components/form/PublishSidebar'
 import LeftSidebar from './components/left-sidebar/LeftSidebar'
 import FieldSettings from './components/settings/FieldSettings'
-import WelcomeScreen from './components/welcome/WelcomeScreen'
 
 const Build = () => {
   const isPublishOpen = useFormStore((state) => state.isPublishOpen)
   const isSidebarOpen = useFormStore((state) => state.isSidebarOpen)
   const panels = useFormStore((state) => state.panels)
+  const addPanel = useFormStore((state) => state.addPanel)
 
-  const hasPanels = panels.length > 0
-
-  if (!hasPanels) {
-    return (
-      <div className='flex h-full w-full overflow-hidden bg-white'>
-        <div className='bg-gray-50/20 flex-1 overflow-auto'>
-          <WelcomeScreen />
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (panels.length === 0) {
+      addPanel()
+    }
+  }, [panels.length, addPanel])
 
   return (
     <div className='flex h-full w-full overflow-hidden bg-white'>

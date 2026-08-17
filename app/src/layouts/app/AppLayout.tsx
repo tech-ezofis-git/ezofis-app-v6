@@ -24,6 +24,7 @@ const AppLayout = ({ children }: Props) => {
   const isNewRequestOpen = requestStore((state) => state.newRequest)
   const closeNewRequest = requestStore((state) => state.closeNewRequest)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+  const isAskAIMaximized = useAskAIStore((state: any) => state.isMaximized)
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
   const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
   const { pathname } = useLocation()
@@ -108,7 +109,7 @@ const AppLayout = ({ children }: Props) => {
       <div
         className='flex h-svh flex-col transition-[margin-right] duration-200 xl:ml-[56px]'
         style={{
-          marginRight: isAskAIOpen ? AI_PANEL_WIDTH : 0,
+          marginRight: isAskAIOpen && !isAskAIMaximized ? AI_PANEL_WIDTH : 0,
         }}
       >
         <Topbar />

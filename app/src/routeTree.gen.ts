@@ -73,6 +73,7 @@ import { Route as EmbedRequestsRouteImport } from './routes/embed/requests'
 import { Route as EmbedFoldersRouteImport } from './routes/embed/folders'
 import { Route as EmbedDashboardRouteImport } from './routes/embed/dashboard'
 import { Route as AppWorkflowsRouteImport } from './routes/_app/workflows'
+import { Route as AppWorkflowChatRouteImport } from './routes/_app/workflow-chat'
 import { Route as AppTrashRouteImport } from './routes/_app/trash'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
@@ -412,6 +413,11 @@ const AppWorkflowsRoute = AppWorkflowsRouteImport.update({
   path: '/workflows',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppWorkflowChatRoute = AppWorkflowChatRouteImport.update({
+  id: '/workflow-chat',
+  path: '/workflow-chat',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppTrashRoute = AppTrashRouteImport.update({
   id: '/trash',
   path: '/trash',
@@ -509,6 +515,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
+  '/workflow-chat': typeof AppWorkflowChatRoute
   '/workflows': typeof AppWorkflowsRoute
   '/embed/dashboard': typeof EmbedDashboardRoute
   '/embed/folders': typeof EmbedFoldersRoute
@@ -588,6 +595,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
+  '/workflow-chat': typeof AppWorkflowChatRoute
   '/workflows': typeof AppWorkflowsRoute
   '/embed/dashboard': typeof EmbedDashboardRoute
   '/embed/folders': typeof EmbedFoldersRoute
@@ -671,6 +679,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/trash': typeof AppTrashRoute
+  '/_app/workflow-chat': typeof AppWorkflowChatRoute
   '/_app/workflows': typeof AppWorkflowsRoute
   '/embed/dashboard': typeof EmbedDashboardRoute
   '/embed/folders': typeof EmbedFoldersRoute
@@ -753,6 +762,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/trash'
+    | '/workflow-chat'
     | '/workflows'
     | '/embed/dashboard'
     | '/embed/folders'
@@ -832,6 +842,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/trash'
+    | '/workflow-chat'
     | '/workflows'
     | '/embed/dashboard'
     | '/embed/folders'
@@ -914,6 +925,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/tasks'
     | '/_app/trash'
+    | '/_app/workflow-chat'
     | '/_app/workflows'
     | '/embed/dashboard'
     | '/embed/folders'
@@ -1445,6 +1457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkflowsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/workflow-chat': {
+      id: '/_app/workflow-chat'
+      path: '/workflow-chat'
+      fullPath: '/workflow-chat'
+      preLoaderRoute: typeof AppWorkflowChatRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/trash': {
       id: '/_app/trash'
       path: '/trash'
@@ -1571,6 +1590,7 @@ interface AppRouteRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppTrashRoute: typeof AppTrashRoute
+  AppWorkflowChatRoute: typeof AppWorkflowChatRoute
   AppWorkflowsRoute: typeof AppWorkflowsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppMyAccountChar123SlugChar125Route: typeof AppMyAccountChar123SlugChar125Route
@@ -1588,6 +1608,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
   AppTrashRoute: AppTrashRoute,
+  AppWorkflowChatRoute: AppWorkflowChatRoute,
   AppWorkflowsRoute: AppWorkflowsRoute,
   AppIndexRoute: AppIndexRoute,
   AppMyAccountChar123SlugChar125Route: AppMyAccountChar123SlugChar125Route,

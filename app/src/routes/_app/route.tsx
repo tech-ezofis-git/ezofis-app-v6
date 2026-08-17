@@ -36,6 +36,7 @@ export const Route = createFileRoute('/_app')({
         '/forms': 'forms',
         '/requests': 'requests',
         '/settings': 'settings',
+        '/workflow-chat': 'workflow',
         '/workflows': 'workflow',
       }
 
@@ -48,10 +49,11 @@ export const Route = createFileRoute('/_app')({
       if (baseRoute) {
         const requiredPermissionKey = routeToPermissionKey[baseRoute]
 
-        // TEMP: allow Requests/Forms until role permission persistence is fixed
+        // TEMP: allow Requests/Forms/Workflow-Chat until role permission persistence is fixed
         if (
           requiredPermissionKey === 'requests' ||
-          requiredPermissionKey === 'forms'
+          requiredPermissionKey === 'forms' ||
+          location.pathname.startsWith('/workflow-chat')
         ) {
           return
         }

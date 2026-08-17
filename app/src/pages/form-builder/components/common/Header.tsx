@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
@@ -34,7 +35,7 @@ const Header = () => {
       <div className='flex min-w-0 flex-1 items-center gap-4'>
         <IconButton
           color='gray'
-          icon='lucide:chevron-left'
+          icon='lucide:arrow-left'
           size='sm'
           variant='ghost'
           onClick={() => globalThis.history.back()}
@@ -102,10 +103,8 @@ const Header = () => {
         <div className='mx-1 h-6 w-px bg-gray-3' />
 
         <Button
-          className='cursor-pointer font-medium'
+          className='cursor-pointer font-medium flex items-center gap-1.5'
           color='primary'
-          icon='lucide:bot'
-          label='Ask AI'
           size='sm'
           variant='ghost'
           onClick={() => {
@@ -114,7 +113,10 @@ const Header = () => {
             if (isOpen) close()
             else open()
           }}
-        />
+        >
+          <AiBrandIcon className='size-4' variant='outline-purple' />
+          <span>Ask AI</span>
+        </Button>
 
         <Button
           className='cursor-pointer font-medium'

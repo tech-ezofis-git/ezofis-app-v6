@@ -21,6 +21,8 @@ import {
   type LucideIcon as LucideIconType,
   Mail,
   MailOpen,
+  Maximize2,
+  Minimize2,
   MoreHorizontal,
   Paperclip,
   Pencil,
@@ -35,6 +37,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
+import { WorkflowChatPage } from '@/pages/workflow-chat/WorkflowChatPage'
 import {
   type CSSProperties,
   type ReactElement,
@@ -63,6 +66,7 @@ import type {
   AskAiCtaMode,
   AskAiTextBlock as TextBlock,
 } from './types'
+import type { WorkflowHistoryData } from '@/pages/workflow-chat/WorkflowChatPage'
 
 type HistoryItem = {
   createdAt: string
@@ -72,6 +76,8 @@ type HistoryItem = {
   messages: Message[]
   subtitle: string
   title: string
+  isWorkflow?: boolean
+  workflowState?: WorkflowHistoryData
 }
 
 type Message = {
@@ -102,6 +108,10 @@ const AI_STATUS_WORDS = [
 type ViewMode = 'chat' | 'history'
 
 const suggestions = [
+  {
+    label: 'Initiate workflow.',
+    query: 'Initiate workflow',
+  },
   {
     label: 'Find recent supplier invoices.',
     query: 'Show recent supplier invoices awaiting review',
@@ -201,6 +211,8 @@ const iconMap: Record<string, LucideIconType> = {
   lightning: Bolt,
   mail: Mail,
   mailOpen: MailOpen,
+  maximize: Maximize2,
+  minimize: Minimize2,
   more: MoreHorizontal,
   pdf: FileText,
   pencil: Pencil,
@@ -243,6 +255,8 @@ const legacyIconMap: Record<string, keyof typeof iconMap> = {
   'mingcute:loading-line': 'send',
   'mingcute:mail-line': 'mail',
   'mingcute:mail-open-line': 'mailOpen',
+  'mingcute:maximize-line': 'maximize',
+  'mingcute:minimize-line': 'minimize',
   'mingcute:more-2-line': 'more',
   'mingcute:pencil-line': 'pencil',
   'mingcute:question-line': 'question',
@@ -456,6 +470,8 @@ const StaggeredCards = ({
 
 const AskAI = () => {
   const isOpen = useAskAIStore((state: any) => state.isOpen)
+  const isMaximized = useAskAIStore((state: any) => state.isMaximized)
+  const toggleMaximize = useAskAIStore((state: any) => state.toggleMaximize)
   const close = useAskAIStore((state: any) => state.close)
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -469,6 +485,8 @@ const AskAI = () => {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [credits, setCredits] = useState(15)
+  const [isWorkflowMode, setIsWorkflowMode] = useState(false)
+  const [currentWorkflowHistoryData, setCurrentWorkflowHistoryData] = useState<WorkflowHistoryData | undefined>()
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const hasMessages = messages.length > 0
@@ -529,6 +547,8 @@ const AskAI = () => {
     setInput('')
     setBusy(false)
     setView('chat')
+    setIsWorkflowMode(false)
+    setCurrentWorkflowHistoryData(undefined)
   }
 
   const openHistory = () => {
@@ -536,11 +556,50 @@ const AskAI = () => {
   }
 
   const loadHistory = (item: HistoryItem) => {
+    if (item.isWorkflow) {
+      setCurrentWorkflowHistoryData(item.workflowState)
+      setCurrentHistoryId(item.id)
+      setIsWorkflowMode(true)
+      setView('chat')
+      return
+    }
+
     setMessages(
       item.messages.map((m) => ({ ...m, isTyping: false, revealExtras: true })),
     )
     setCurrentHistoryId(item.id)
+    setIsWorkflowMode(false)
+    setCurrentWorkflowHistoryData(undefined)
     setView('chat')
+  }
+
+  const saveWorkflowHistory = (workflowState: WorkflowHistoryData) => {
+    const sessionId = currentHistoryId || uid()
+    if (!currentHistoryId) setCurrentHistoryId(sessionId)
+    
+    // Find the last assistant message or user message for subtitle
+    const lastMsg = [...workflowState.messages].reverse().find(m => m.textContent || m.htmlContent)
+    let subtitleText = lastMsg?.textContent || lastMsg?.htmlContent || 'Workflow Assistant'
+    // clean up html tags for subtitle if needed
+    subtitleText = subtitleText.replace(/<[^>]*>?/gm, '').substring(0, 80)
+
+    setHistory((prev) => {
+      const existing = prev.find((item) => item.id === sessionId)
+      const updatedItem: HistoryItem = {
+        createdAt: existing?.createdAt || new Date().toLocaleString(),
+        creditsRemaining: existing?.creditsRemaining || 15,
+        creditsUsed: existing?.creditsUsed || 0,
+        id: sessionId,
+        messages: [],
+        subtitle: subtitleText,
+        title: existing?.title || workflowState.activeWorkflow?.name || 'Workflow Chat',
+        isWorkflow: true,
+        workflowState
+      }
+
+      const withoutCurrent = prev.filter((item) => item.id !== sessionId)
+      return [updatedItem, ...withoutCurrent].slice(0, 20)
+    })
   }
 
   const finishTyping = (messageId: string) => {
@@ -589,6 +648,13 @@ const AskAI = () => {
     const text = (value ?? input).trim()
     if (!text || busy) return
     if (credits <= 0) return
+
+    if (text.toLowerCase().includes('initiate workflow')) {
+      setIsWorkflowMode(true)
+      setInput('')
+      setView('chat')
+      return
+    }
 
     const userMessage: Message = { id: uid(), role: 'user', text }
     const baseMessages = [
@@ -692,7 +758,11 @@ const AskAI = () => {
       {isOpen ? (
         <motion.aside
           animate={{ opacity: 1, x: 0 }}
-          className="fixed top-0 right-0 bottom-0 z-[9999] flex w-[420px] max-w-[calc(100vw-16px)] flex-col overflow-hidden border-l border-[var(--border)] bg-[var(--bg)] font-['Inter',system-ui,sans-serif] shadow-[-8px_0_24px_rgba(0,0,0,.06)]"
+          className={`fixed bottom-0 right-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${
+            isMaximized
+              ? 'top-[56px] left-0 xl:left-[56px] w-auto max-w-none border-l border-[var(--border)]'
+              : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
+          }`}
           initial={{ opacity: 0.96, x: 28 }}
           style={shellStyle}
           transition={{ duration: 0.18, ease: 'easeOut' }}
@@ -739,10 +809,21 @@ const AskAI = () => {
               )}
             </div>
 
+            <HeaderIconButton
+              title={isMaximized ? 'Minimize' : 'Expand'}
+              onClick={toggleMaximize}
+            >
+              <UiIcon
+                className='text-[var(--text2)] group-hover:text-[var(--text1)]'
+                name={isMaximized ? 'minimize' : 'maximize'}
+                size={16}
+              />
+            </HeaderIconButton>
+
             {view === 'history' ? null : (
               <>
                 <HeaderIconButton
-                  disabled={!hasMessages && !busy}
+                  disabled={(!hasMessages && !busy) && !isWorkflowMode}
                   title='Clear chat'
                   onClick={clearChat}
                 >
@@ -771,84 +852,99 @@ const AskAI = () => {
             </HeaderIconButton>
           </div>
 
-          <div className='min-h-0 flex-1 overflow-y-auto scroll-smooth'>
-            {view === 'history' ? (
+          {view === 'history' ? (
+            <div className='min-h-0 flex-1 overflow-y-auto scroll-smooth'>
               <HistoryView
                 history={history}
                 onClear={clearChat}
                 onLoad={loadHistory}
               />
-            ) : !hasMessages ? (
-              <WelcomeView onSend={sendMessage} />
-            ) : (
-              <div className='pb-2'>
-                {messages.map((msg) => (
-                  <ChatMessage
-                    key={msg.id}
-                    msg={msg}
-                    onActionClick={() => applyAnswerAction(msg)}
-                    onTypingComplete={() => finishTyping(msg.id)}
-                    onTypingProgress={() =>
-                      bottomRef.current?.scrollIntoView({ behavior: 'auto' })
-                    }
-                  />
-                ))}
-                {busy && <CallingLoader />}
-                <div ref={bottomRef} />
-              </div>
-            )}
-          </div>
-
-          {view === 'chat' && (
+            </div>
+          ) : isWorkflowMode ? (
+            <div className='flex min-h-0 flex-1 flex-col'>
+              <WorkflowChatPage
+                embedded
+                initialState={currentWorkflowHistoryData}
+                isExpanded={isMaximized}
+                onSaveHistory={saveWorkflowHistory}
+              />
+            </div>
+          ) : (
             <>
-              <div className='shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 pt-2.5 pb-2'>
-                <div className='mb-2 text-[12.5px] text-[var(--text2)]'>
-                  <strong className='text-[var(--text1)]'>{credits}</strong> of{' '}
-                  <strong className='text-[var(--text1)]'>15</strong> calls
-                  remaining -{' '}
-                  <button
-                    className='font-medium text-[var(--purple)]'
-                    type='button'
-                  >
-                    Upgrade
-                  </button>
-                </div>
-              </div>
-
-              <div className='shrink-0 bg-[var(--bg)] px-4 pb-3.5'>
-                <div className='overflow-hidden rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
-                  <div className='px-3.5 pt-2.5 pb-1'>
-                    <textarea
-                      className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
-                      placeholder='Ask about invoices, documents, or requests...'
-                      rows={1}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          sendMessage()
+              <div className='min-h-0 flex-1 overflow-y-auto scroll-smooth'>
+                {!hasMessages ? (
+                  <WelcomeView onSend={sendMessage} />
+                ) : (
+                  <div className='pb-2'>
+                    {messages.map((msg) => (
+                      <ChatMessage
+                        key={msg.id}
+                        msg={msg}
+                        onActionClick={() => applyAnswerAction(msg)}
+                        onTypingComplete={() => finishTyping(msg.id)}
+                        onTypingProgress={() =>
+                          bottomRef.current?.scrollIntoView({ behavior: 'auto' })
                         }
-                      }}
-                    />
+                      />
+                    ))}
+                    {busy && <CallingLoader />}
+                    <div ref={bottomRef} />
+                  </div>
+                )}
+              </div>
+
+              {view === 'chat' && (
+                <>
+                  <div className='shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 pt-2.5 pb-2'>
+                    <div className='mb-2 text-[12.5px] text-[var(--text2)]'>
+                      <strong className='text-[var(--text1)]'>{credits}</strong> of{' '}
+                      <strong className='text-[var(--text1)]'>15</strong> calls
+                      remaining -{' '}
+                      <button
+                        className='font-medium text-[var(--purple)]'
+                        type='button'
+                      >
+                        Upgrade
+                      </button>
+                    </div>
                   </div>
 
-                  <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
-                    <button
-                      className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
-                      disabled={!canSend}
-                      title='Send'
-                      type='button'
-                      onClick={() => sendMessage()}
-                    >
-                      <UiIcon
-                        className='size-4'
-                        name='mingcute:send-plane-line'
-                      />
-                    </button>
+                  <div className='shrink-0 bg-[var(--bg)] px-4 pb-3.5'>
+                    <div className='overflow-hidden rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
+                      <div className='px-3.5 pt-2.5 pb-1'>
+                        <textarea
+                          className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
+                          placeholder='Ask about invoices, documents, or requests...'
+                          rows={1}
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault()
+                              sendMessage()
+                            }
+                          }}
+                        />
+                      </div>
+
+                      <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
+                        <button
+                          className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
+                          disabled={!canSend}
+                          title='Send'
+                          type='button'
+                          onClick={() => sendMessage()}
+                        >
+                          <UiIcon
+                            className='size-4'
+                            name='mingcute:send-plane-line'
+                          />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
             </>
           )}
         </motion.aside>
@@ -934,8 +1030,8 @@ const HistoryView = ({
           >
             <div className='mb-1 flex items-center gap-2'>
               <UiIcon
-                className='text-[var(--purple)]'
-                name='history'
+                className={item.isWorkflow ? 'text-[var(--primary-main)]' : 'text-[var(--purple)]'}
+                name={item.isWorkflow ? 'bot' : 'history'}
                 size={15}
               />
               <span className='min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--text1)]'>

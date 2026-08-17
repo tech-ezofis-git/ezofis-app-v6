@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EZOFIS Widget</title>
+  
+  <!-- EZOFIS Official Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" href="/mark.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f6f6f9;
+    }
+    #ezofis-widget-container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+
+  <!-- Include EZOFIS Widget SDK -->
+  <script src="/ezofis-widget.js"></script>
+</head>
+<body>
+
+  <!-- Widget Mount Point -->
+  <div id="ezofis-widget-container"></div>
+
+  <script>
+    // Safe Base64 decoder matching EZOFIS local-storage helper
+    function decodeEzofisBase64(stored) {
+      try {
+        return decodeURIComponent(escape(atob(stored)));
+      } catch (e) {
+        return stored;
+      }
+    }
+
+    // Retrieve active logged-in user email from EZOFIS session store in localStorage
+    function getLoggedInUserEmail() {
+      try {
+        const storedSession = localStorage.getItem('session');
+        if (storedSession) {
+          const decoded = decodeEzofisBase64(storedSession);
+          const parsed = JSON.parse(decoded);
+          if (parsed && parsed.email) return parsed.email;
+          if (parsed && parsed.state && parsed.state.session && parsed.state.session.email) {
+            return parsed.state.session.email;
+          }
+        }
+      } catch (e) {}
+
+      try {
+        const storedIdentity = localStorage.getItem('identity');
+        if (storedIdentity) {
+          const decoded = decodeEzofisBase64(storedIdentity);
+          const parsed = JSON.parse(decoded);
+          if (parsed && parsed.email) return parsed.email;
+        }
+      } catch (e) {}
+
+      return 'raja@ezofis.com';
+    }
+
+    // Parse URL options: ?page=folders|requests|dashboard, ?email=..., ?mode=inline|floating, ?filters={...}, ?view=list|grid
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page') || urlParams.get('module') || 'folders';
+    const emailParam = urlParams.get('email') || getLoggedInUserEmail();
+    const modeParam = urlParams.get('mode') || 'inline';
+    const viewParam = urlParams.get('view') || urlParams.get('viewMode');
+    const filtersParam = urlParams.get('filters');
+
+    // Initialize EZOFIS Widget
+    EzofisWidget.init({
+      page: pageParam,
+      email: emailParam,
+      mode: modeParam,
+      view: viewParam,
+      filters: filtersParam,
+      target: '#ezofis-widget-container'
+    });
+  </script>
+
+</body>
+</html>

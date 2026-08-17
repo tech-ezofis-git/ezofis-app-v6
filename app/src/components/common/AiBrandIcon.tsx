@@ -9,9 +9,11 @@ export type AiBrandIconVariant =
   | 'outline-purple'
   | 'outline-blue'
   | 'outline-black'
+  | 'outline-white'
   | 'purple'
   | 'blue'
   | 'black'
+  | 'white'
   | 'curved-purple'
   | 'curved-purple-dark'
   | 'curved-purple-light'
@@ -91,6 +93,10 @@ export default function AiBrandIcon({
       strokeColor = resolvedColorScheme === 'dark' ? '#FFFFFF' : '#000000'
       pathD = OUTLINE_PATH_D
       break
+    case 'outline-white':
+      strokeColor = '#FFFFFF'
+      pathD = OUTLINE_PATH_D
+      break
     case 'purple':
       strokeColor = '#8300E6'
       isFilled = true
@@ -101,6 +107,10 @@ export default function AiBrandIcon({
       break
     case 'black':
       strokeColor = resolvedColorScheme === 'dark' ? '#FFFFFF' : '#000000'
+      isFilled = true
+      break
+    case 'white':
+      strokeColor = '#FFFFFF'
       isFilled = true
       break
   }

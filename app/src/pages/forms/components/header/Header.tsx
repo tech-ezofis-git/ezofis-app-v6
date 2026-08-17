@@ -1,14 +1,18 @@
 import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
+import Menu from '@/components/base/menu/Menu'
+import MenuItem from '@/components/base/menu/MenuItem'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 
 interface HeaderProps {
   tabValue: string
   onTabChange: (value: string) => void
+  onOpenAiBuilder?: () => void
 }
 
-const Header = ({ tabValue, onTabChange }: HeaderProps) => {
+const Header = ({ tabValue, onTabChange, onOpenAiBuilder }: HeaderProps) => {
   const navigate = useNavigate()
 
   const openFormBuilder = () => {
@@ -28,7 +32,12 @@ const Header = ({ tabValue, onTabChange }: HeaderProps) => {
       </Tabs>
 
       <div className='flex items-center gap-2'>
-        <Button icon='lucide:plus' label='New Form' onClick={openFormBuilder} />
+        <Button
+          color='primary'
+          icon='lucide:plus'
+          label='New Form'
+          onClick={onOpenAiBuilder || openFormBuilder}
+        />
       </div>
     </div>
   )

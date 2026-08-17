@@ -26,6 +26,9 @@ import {
   matchesDateRangeValue,
   parseFilterValues,
 } from '@/utils/filterUtils'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
+import { useFormStore } from '@/pages/form-builder/store/formStore'
+import AiFormBuilder from './components/AiFormBuilder'
 import Table from './components/Table'
 
 const mapItem = (item: any) => ({
@@ -65,6 +68,7 @@ const FormsPage = () => {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [showAiBuilder, setShowAiBuilder] = useState(false)
   const [deletingForm, setDeletingForm] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -435,7 +439,26 @@ const FormsPage = () => {
   }, [setExpandState])
 
   const openFormBuilder = () => {
+    useFormStore.getState().resetForm()
     navigate({ to: '/form-builder' })
+  }
+
+  if (showAiBuilder) {
+    return (
+      <AiFormBuilder
+        onBack={() => setShowAiBuilder(false)}
+        onStartFromScratch={() => {
+          setShowAiBuilder(false)
+          useFormStore.getState().resetForm()
+          navigate({ to: '/form-builder' })
+        }}
+        onApply={(payload) => {
+          setShowAiBuilder(false)
+          useFormStore.getState().loadForm(payload)
+          navigate({ to: '/form-builder' })
+        }}
+      />
+    )
   }
 
   return (
@@ -518,7 +541,17 @@ const FormsPage = () => {
           customSearchComponent={<TableSearch table={table as any} />}
           searchPlaceholder={t`Search forms...`}
           searchQuery=''
-          trailingActions={<TableExport table={table as any} />}
+          trailingActions={
+            <div className='flex items-center gap-2'>
+              <TableExport table={table as any} />
+              <Button
+                color='primary'
+                icon='lucide:plus'
+                label={t`New Form`}
+                onClick={() => setShowAiBuilder(true)}
+              />
+            </div>
+          }
           actionButtons={[
             {
               color: 'gray',
@@ -531,11 +564,6 @@ const FormsPage = () => {
               onClick: () => refetch(),
             },
           ]}
-          addButton={{
-            icon: 'lucide:plus',
-            tooltip: t`New Form`,
-            onClick: openFormBuilder,
-          }}
           filters={[
             {
               id: 'name',

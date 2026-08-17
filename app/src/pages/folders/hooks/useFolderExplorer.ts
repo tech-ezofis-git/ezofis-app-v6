@@ -37,16 +37,20 @@ import {
   syncTreeChildren,
   updateTreeNode,
 } from '../utils/folderExplorerUtils'
+import useEmbedMode from '@/hooks/useEmbedMode'
 import { resolveShareContext } from '../utils/shareContextStorage'
 
 export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>
 
 export function useFolderExplorer() {
+  const embedMode = useEmbedMode()
   const [tree, setTree] = useState<TreeNode[]>([])
   const [activeFolder, setActiveFolder] = useState('')
   const [selectedRepository, setSelectedRepository] =
     useState<RepositoryDetail | null>(null)
-  const [viewMode, setViewModeState] = useState<ExplorerView>('grid')
+  const [viewMode, setViewModeState] = useState<ExplorerView>(
+    embedMode.viewMode || 'grid',
+  )
   const [appView, setAppView] = useState<AppView>('explorer')
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([])
   const [folders, setFolders] = useState<FolderItem[]>([])
@@ -67,7 +71,10 @@ export function useFolderExplorer() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [folderSearch, setFolderSearch] = useState('')
   const [fileSearch, setFileSearch] = useState('')
-  const [fileFilters, setFileFiltersState] = useState<Record<string, string>>({})
+  const [fileFilters, setFileFiltersState] = useState<Record<string, string>>(
+    embedMode.filters || {},
+  )
+
   const [folderFilters, setFolderFiltersState] = useState<Record<string, string>>({})
   const [folderFilterOptionSource, setFolderFilterOptionSource] = useState<
     FolderItem[]
@@ -489,6 +496,8 @@ export function useFolderExplorer() {
     }
   }, [])
 
+  const initialUrlFiltersAppliedRef = useRef(false)
+
   useEffect(() => {
     if (!activeFolder) return
     cursorByFolderRef.current[activeFolder] = { 1: null }
@@ -498,7 +507,21 @@ export function useFolderExplorer() {
     skipSearchReloadRef.current = true
     setFolderSearch('')
     setFileSearch('')
-    setFileFilters({})
+
+    let initialFileFilters: Record<string, string> = {}
+    if (
+      !initialUrlFiltersAppliedRef.current &&
+      embedMode.filters &&
+      Object.keys(embedMode.filters).length > 0
+    ) {
+      initialFileFilters = embedMode.filters
+      setFileFiltersState(embedMode.filters)
+      fileFiltersRef.current = embedMode.filters
+      initialUrlFiltersAppliedRef.current = true
+    } else {
+      setFileFilters({})
+    }
+
     setFolderFilters({})
     setFolderFilterOptionSource([])
     setFilterOptionsCache({})
@@ -506,7 +529,7 @@ export function useFolderExplorer() {
     loadFolderContent({
       folderId: activeFolder,
       folderFilters: {},
-      fileFilters: {},
+      fileFilters: initialFileFilters,
       listAllFiles: viewMode === 'list',
       page: 1,
       pageSizeValue: pageSizeRef.current,

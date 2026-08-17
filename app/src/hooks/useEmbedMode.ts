@@ -10,9 +10,12 @@ export interface EmbedModeOptions {
 export interface EmbedModeState {
   isEmbed: boolean
   sessionToken?: string
+  email?: string
   hasTopbar: boolean
   hasActions: boolean
   hasLogo: boolean
+  viewMode?: 'list' | 'grid'
+  filters?: Record<string, string>
 }
 
 /**
@@ -31,6 +34,7 @@ export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
   )
   const isEmbedQuery = searchParams.get('embed') === 'true'
   const sessionToken = searchParams.get('session') ?? undefined
+  const email = searchParams.get('email') ?? undefined
   const hasTopbar = searchParams.get('topbar') !== 'false'
   const hasActions =
     searchParams.get('actions') === 'true' ||
@@ -41,13 +45,38 @@ export function useEmbedMode(_options?: EmbedModeOptions): EmbedModeState {
 
   const isEmbed = isEmbedPath || isEmbedQuery
 
+  const viewParam = searchParams.get('view') || searchParams.get('viewMode')
+  const viewMode: 'list' | 'grid' =
+    viewParam === 'grid' || viewParam === 'list'
+      ? viewParam
+      : isEmbed
+      ? 'list'
+      : 'grid'
+
+  let filters: Record<string, string> | undefined = undefined
+  const filtersRaw = searchParams.get('filters')
+  if (filtersRaw) {
+    try {
+      const parsed = JSON.parse(filtersRaw)
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        filters = parsed as Record<string, string>
+      }
+    } catch (e) {
+      console.warn('Failed to parse filters parameter from URL:', e)
+    }
+  }
+
   return {
     isEmbed,
     sessionToken,
+    email,
     hasTopbar,
     hasActions,
     hasLogo,
+    viewMode,
+    filters,
   }
 }
 
 export default useEmbedMode
+

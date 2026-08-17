@@ -34,15 +34,13 @@ const FormBuilderPage = () => {
     fetchForm()
   }, [formId, loadForm, resetForm])
 
-  const hasPanels = useFormStore((state) => state.panels.length > 0)
-
   if (isLoading) {
     return <FormBuilderSkeleton />
   }
 
   return (
     <div className='relative flex h-dvh flex-col overflow-hidden'>
-      {hasPanels && <Header />}
+      <Header />
       <div className='flex flex-1 overflow-hidden'>
         <div className='flex-1 overflow-auto'>
           <Build />
