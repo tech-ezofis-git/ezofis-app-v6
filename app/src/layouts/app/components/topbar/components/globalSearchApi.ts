@@ -26,12 +26,15 @@ export type GlobalSearchHit = {
 export type GlobalSearchRequest = {
   actionFrom: string
   query: string
-  specificId: string | string[] | null
+  specificId: string | null
   tenantId: string
 }
 
 export async function fetchGlobalSearch(
-  payload: Omit<GlobalSearchRequest, 'tenantId'> & { tenantId?: string },
+  payload: Omit<GlobalSearchRequest, 'specificId' | 'tenantId'> & {
+    specificId?: string | string[] | null
+    tenantId?: string
+  },
 ): Promise<GlobalSearchHit[]> {
   const { accessToken, tenantId: resolvedTenantId } = resolveChatbotAuth()
   const tenantId = payload.tenantId || resolvedTenantId
@@ -40,10 +43,12 @@ export async function fetchGlobalSearch(
     throw new Error('Missing tenant. Sign in again, then retry search.')
   }
 
-  let specificId: string | string[] | null
+  // Backend currently only accepts a single specificId string; multiple
+  // folder selections are joined here until it supports an array natively.
+  let specificId: string | null
   if (Array.isArray(payload.specificId)) {
     const cleaned = payload.specificId.map((id) => String(id).trim()).filter(Boolean)
-    specificId = cleaned.length ? cleaned : null
+    specificId = cleaned.length ? cleaned.join(',') : null
   } else {
     const rawSpecificId = payload.specificId ? String(payload.specificId).trim() : ''
     specificId = rawSpecificId || null

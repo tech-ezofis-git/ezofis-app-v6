@@ -15,11 +15,7 @@ import {
 } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import cn from '@/utils/cn'
 import { formatUtcToLocalDate, parseUtcDate } from '@/utils/utcDate'
-import {
-  getExt,
-  getFileIcon,
-  getFileIconClasses,
-} from '../attachment/Attachments'
+import { getFileIcon, getFileIconClasses } from '../attachment/Attachments'
 
 type Props = {
   attachedIds: Set<string>
@@ -539,11 +535,9 @@ const RelatedDocumentsFinder = ({
                   {visibleResults.map((hit, idx) => {
                     const key = hitKey(hit)
                     const title = getSearchHitTitle(hit)
-                    const ext = getExt({ name: title })
-                    const iconName = getFileIcon(ext)
-                    const iconStyles = getFileIconClasses(ext)
-                    const repoId = String(hit.id?.repositoryId || '')
-                    const folderName = folderNameById.get(repoId) || hit.type
+                    const iconName = getFileIcon('pdf')
+                    const iconStyles = getFileIconClasses('pdf')
+                    const folderName = hit.name
                     const date = getSearchHitDate(hit)
                     const attached = isAttached(hit)
                     const attaching = attachingKey === key
