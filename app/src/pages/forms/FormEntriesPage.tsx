@@ -34,6 +34,7 @@ import CustomFilter from '@/components/common/CustomFilter'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
+import GenericFormImportModal from './components/GenericFormImportModal'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -774,6 +775,25 @@ const FormEntriesPage = () => {
     () => panels.flatMap((p: any) => p.fields || []),
     [panels],
   )
+
+  const formName = useMemo(() => {
+    if (!formData) return ''
+    let json = formData._json || formData.formJson
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json)
+      } catch (e) {
+        console.error('Failed to parse formJson:', e)
+        json = null
+      }
+    }
+    return json?.settings?.general?.name || formData?.name || ''
+  }, [formData])
+
+  const isPoMasterForm = useMemo(() => {
+    const normalized = formName.toLowerCase().replace(/[^a-z0-9]/g, '')
+    return normalized.includes('pomaster')
+  }, [formName])
 
   // Resolver helper to find human-readable names for nested keys inside table structures
   const getFieldLabel = useCallback(
@@ -2169,9 +2189,19 @@ const FormEntriesPage = () => {
         )}
       </Modal>
       {isImportOpen && (
-        <div className='fixed inset-0 z-[100] overflow-hidden bg-white'>
-          <PoSetupFlowPage onClose={() => setIsImportOpen(false)} />
-        </div>
+        isPoMasterForm ? (
+          <div className='fixed inset-0 z-[100] overflow-hidden bg-white'>
+            <PoSetupFlowPage onClose={() => setIsImportOpen(false)} />
+          </div>
+        ) : (
+          <GenericFormImportModal
+            fields={fields}
+            formId={formId}
+            formName={formName}
+            onClose={() => setIsImportOpen(false)}
+            onComplete={() => refetchEntries()}
+          />
+        )
       )}
     </div>
   )
