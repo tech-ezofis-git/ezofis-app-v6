@@ -379,61 +379,20 @@ const FieldLibrary = () => {
         </div>
       </div>
 
-      {/* Target panel indicator + quick retarget */}
-      {panels.length > 0 && (
-        <div className='border-b border-gray-2 bg-accent-soft/5 px-3 py-2'>
-          <div className='mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-gray-8'>
-            <Icon
-              className='text-accent-primary'
-              height={12}
-              name='lucide:corner-down-right'
-              width={12}
-            />
-            <span>Adding to:</span>
-            <span className='truncate font-bold text-accent-primary'>
-              {targetPanel?.settings.title || 'Untitled Section'}
-            </span>
-          </div>
-          {panels.length > 1 && (
-            <div className='no-scrollbar flex items-center gap-1.5 overflow-x-auto'>
-              {panels.map((p) => (
-                <button
-                  key={p.id}
-                  className={cn(
-                    'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap transition-colors',
-                    p.id === targetPanel?.id
-                      ? 'border-accent-primary bg-accent-primary text-white'
-                      : 'border-gray-2 bg-white text-gray-7 hover:border-accent-soft hover:text-accent-primary',
-                  )}
-                  onClick={() =>
-                    setAddFieldPosition({
-                      index: p.fields.length,
-                      panelId: p.id,
-                    })
-                  }
-                >
-                  {p.settings.title || 'Untitled Section'}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Search */}
-      <div className='sticky top-12 z-10 border-b border-gray-2 bg-white/50 p-3 backdrop-blur-sm'>
-        <div className='group relative'>
+      <div className='sticky top-0 z-10 border-b border-gray-3 bg-white p-3'>
+        <div className='group relative w-full'>
           <Icon
-            height={13}
+            height={14}
             name='lucide:search'
-            width={13}
+            width={14}
             className={cn(
-              'absolute top-1/2 left-2.5 -translate-y-1/2 text-gray-4 transition-colors',
-              search && 'text-accent-primary',
+              'absolute top-1/2 left-2.5 -translate-y-1/2 text-gray-9 transition-colors',
+              search && 'text-primary-9',
             )}
           />
           <input
-            className='bg-gray-50 w-full rounded-lg border border-gray-2 py-1.5 pr-8 pl-8 text-xs font-medium transition-all outline-none placeholder:text-gray-4 focus:border-accent-primary focus:bg-white focus:ring-2 focus:ring-accent-soft/20'
+            className='w-full rounded-lg border border-gray-3 bg-white py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3 shadow-2xs'
             placeholder='Search fields...'
             ref={searchRef}
             type='text'
@@ -453,9 +412,9 @@ const FieldLibrary = () => {
 
           return (
             <div className='space-y-3' key={cat.id}>
-              <div className='flex items-center gap-2 px-1 py-1'>
-                <div className='size-2.5 rounded-full bg-primary-9 shadow-xs' />
-                <div className='text-sm font-bold text-gray-12'>
+              <div className='flex items-center gap-2 px-1 py-0.5'>
+                <div className='size-2 rounded-full bg-primary-9' />
+                <div className='text-xs font-bold text-gray-12'>
                   {cat.label}
                 </div>
               </div>
@@ -470,34 +429,34 @@ const FieldLibrary = () => {
                       key={field.type + field.label}
                       transition={{ delay: catIdx * 0.06 + idx * 0.03 }}
                       className={cn(
-                        'group relative flex items-center gap-3.5 rounded-2xl border p-3 text-left transition-all duration-200 active:scale-[0.98]',
+                        'group relative flex items-center gap-2.5 rounded-xl border p-2 text-left transition-all duration-200 active:scale-[0.98]',
                         isSelected
-                          ? 'border-primary-4 bg-primary-3/50 shadow-2xs'
-                          : 'border-transparent bg-gray-1/60 hover:border-gray-3 hover:bg-gray-2/80',
+                          ? 'border-primary-4 bg-primary-3/60 shadow-2xs'
+                          : 'border-transparent bg-white hover:border-gray-3 hover:bg-gray-2',
                       )}
                       onClick={() => handleSelect(field.type)}
                       onMouseEnter={() => setSelectedIndex(flatIndex)}
                     >
-                      <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-3 text-primary-9 transition-transform duration-200 group-hover:scale-105'>
-                        <Icon height={20} name={field.icon} width={20} />
+                      <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-3 text-primary-9 transition-transform duration-200 group-hover:scale-105'>
+                        <Icon height={16} name={field.icon} width={16} />
                       </div>
                       <div className='flex min-w-0 flex-1 flex-col justify-center'>
-                        <div className='truncate text-sm font-bold text-gray-12 transition-colors group-hover:text-primary-9'>
+                        <div className='truncate text-xs font-semibold text-gray-12 transition-colors group-hover:text-primary-9'>
                           {field.label}
                         </div>
-                        <div className='truncate text-xs font-normal text-gray-10'>
+                        <div className='truncate text-[10px] font-normal text-gray-10'>
                           {field.description}
                         </div>
                       </div>
                       <div
                         className={cn(
-                          'ml-auto flex size-7 shrink-0 items-center justify-center rounded-lg text-primary-9 transition-all duration-200',
+                          'ml-auto flex size-6 shrink-0 items-center justify-center rounded-md text-primary-9 transition-all duration-200',
                           isSelected
                             ? 'translate-x-0 bg-primary-4/50 opacity-100'
                             : 'translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:bg-primary-3 group-hover:opacity-100',
                         )}
                       >
-                        <Icon height={16} name='lucide:plus' width={16} />
+                        <Icon height={14} name='lucide:plus' width={14} />
                       </div>
                     </motion.button>
                   )

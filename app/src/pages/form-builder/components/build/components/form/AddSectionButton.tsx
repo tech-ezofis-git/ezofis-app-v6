@@ -22,7 +22,7 @@ const AddSectionButton = ({ onClick }: Props) => {
         }
         onClick={onClick}
       >
-        Add page
+        Add Section
       </Button>
     </div>
   )
