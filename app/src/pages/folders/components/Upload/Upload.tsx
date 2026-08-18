@@ -435,14 +435,14 @@ export default function Upload({
     try {
       const criteriaLabel = masterFormSyncLabels[repoFieldName] || masterFormSyncData.mapping[repoFieldName]
       const payload = {
-        sortBy: { criteria: 'created_at', order: 'desc' },
+        sortBy: { criteria: 'createdAt', order: 'DESC' },
         filterBy: [
           {
             groupCondition: '',
             filters: [
               {
                 criteria: criteriaLabel,
-                condition: 'IS_EQUALS_TO',
+                condition: 'eq',
                 value: fieldValue,
               },
             ],
@@ -1486,8 +1486,8 @@ export default function Upload({
                       <div className='shrink-0 p-4 pb-2'>
                         <div className='grid grid-cols-1 gap-4'>
                           {syncRepoFields.map((field) => (
-                            <div 
-                              className='space-y-1.5 rounded-[5px] bg-[var(--gray-2)] p-[5px]' 
+                            <div
+                              className='space-y-1.5 rounded-[5px] bg-[var(--gray-2)] p-[5px]'
                               key={field.id}
                             >
                               {renderFieldControl(field, true)}
