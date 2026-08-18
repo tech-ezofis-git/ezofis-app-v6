@@ -467,7 +467,7 @@ export default function GenericFormImportModal({
                         onChange={(opt) =>
                           setMapping((prev) => ({
                             ...prev,
-                            [field.id]: opt ? opt.id : '',
+                            [field.id]: opt ? String(opt.id) : '',
                           }))
                         }
                       />

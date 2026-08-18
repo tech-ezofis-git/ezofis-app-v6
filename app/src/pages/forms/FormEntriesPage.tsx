@@ -1087,22 +1087,7 @@ const FormEntriesPage = () => {
 
   // Build Table Columns dynamically
   const columns: Column[] = useMemo(() => {
-    const colList: Column[] = [
-      {
-        id: 'id',
-        label: t`Entry #`,
-        // minSize: 140,
-        size: 140,
-        renderCell: (row: any) => (
-          <span
-            className='cursor-pointer font-bold text-[var(--primary-9)] hover:underline'
-            onClick={() => openEditEntry(row)}
-          >
-            {row.id}
-          </span>
-        ),
-      },
-    ]
+    const colList: Column[] = []
 
     // Render dynamic columns from fields
     fields.forEach((field: Question) => {
@@ -1487,11 +1472,8 @@ const FormEntriesPage = () => {
             <div className='flex min-w-0 flex-col'>
               <div className='flex items-center gap-2.5'>
                 <h3 className='truncate text-sm font-extrabold text-gray-13'>
-                  {isAddOpen ? t`New Form Entry` : selectedEntry?.id}
+                  {isAddOpen ? t`New Form Entry` : t`Edit Form Entry`}
                 </h3>
-                {!isAddOpen && selectedEntry && (
-                  <Badge color='green' label={t`Submitted`} />
-                )}
               </div>
               <p className='truncate text-[11px] font-medium text-gray-7'>
                 {isAddOpen
@@ -1907,8 +1889,8 @@ const FormEntriesPage = () => {
             <Button
               color='primary'
               disabled={isSaving}
-              icon={isAddOpen ? 'lucide:send' : 'lucide:check'}
-              label={isAddOpen ? t`Submit Form` : t`Save Changes`}
+              icon={isAddOpen ? 'lucide:plus' : 'lucide:check'}
+              label={isAddOpen ? t`Save Entry` : t`Save Changes`}
               loading={isSaving}
               variant='solid'
               onClick={handleSaveEntry}
@@ -1942,13 +1924,6 @@ const FormEntriesPage = () => {
         </div>
 
         <div className='flex items-center gap-2'>
-          <Button
-            color='primary'
-            icon='tabler:table-import'
-            label={t`Bulk Import`}
-            variant='outline'
-            onClick={() => setIsImportOpen(true)}
-          />
           <Button
             color='primary'
             icon='lucide:plus'
@@ -2048,6 +2023,15 @@ const FormEntriesPage = () => {
                   refetch()
                   refetchEntries()
                 },
+              },
+              {
+                color: 'gray',
+                icon: 'tabler:table-import',
+                id: 'bulk-import',
+                isIconButton: true,
+                tooltip: t`Bulk Import`,
+                variant: 'outline',
+                onClick: () => setIsImportOpen(true),
               },
             ]}
             filters={[
