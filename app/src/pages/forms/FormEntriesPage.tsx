@@ -658,6 +658,7 @@ const FormEntriesPage = () => {
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [isImportOpen, setIsImportOpen] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, any>>({})
+  const [isSaving, setIsSaving] = useState(false)
   const [deletingEntry, setDeletingEntry] = useState<{
     id: string
     type: 'trash' | 'permanent'
@@ -746,7 +747,7 @@ const FormEntriesPage = () => {
     enabled: !!formId,
     queryKey: ['forms', 'entries', formId],
     queryFn: async () => {
-      const { data, error } = await formApi.getFormEntries(formId)
+      const { data, error } = await formApi.getFormEntries(formId, 1, 500)
       if (error) throw new Error(error)
       if (data && typeof data === 'object' && Array.isArray(data.entries)) {
         return data.entries
@@ -854,6 +855,7 @@ const FormEntriesPage = () => {
           id: e.itemId
             ? `Entry #${e.itemId}`
             : e.id || e.uid || `Entry #${Math.random()}`,
+          entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
           isDeleted: !!e.isDeleted,
           values,
         }
@@ -906,26 +908,52 @@ const FormEntriesPage = () => {
   }
 
   // Actions
-  const handleSaveEntry = () => {
-    if (isAddOpen) {
-      const newEntry = {
-        createdAt: new Date().toISOString(),
-        createdBy: 'seth@ezofis.com',
-        id: `Entry #${entries.length + trashEntries.length + 1}`,
-        isDeleted: false,
-        values: editValues,
+  const handleSaveEntry = async () => {
+    setIsSaving(true)
+    try {
+      let targetEntryId: number | string = 0
+      if (!isAddOpen && selectedEntry) {
+        targetEntryId =
+          selectedEntry.entryId ??
+          selectedEntry.itemId ??
+          (typeof selectedEntry.id === 'string'
+            ? selectedEntry.id.replace(/^Entry #/, '')
+            : selectedEntry.id) ??
+          0
       }
-      setEntries((prev) => [newEntry, ...prev])
-      showToast({ message: 'Entry created successfully!', variant: 'success' })
-    } else if (selectedEntry) {
-      setEntries((prev) =>
-        prev.map((e) =>
-          e.id === selectedEntry.id ? { ...e, values: editValues } : e,
-        ),
+
+      const { data, error } = await formApi.saveFormEntry(
+        formId,
+        targetEntryId,
+        editValues,
       )
-      showToast({ message: 'Entry updated successfully!', variant: 'success' })
+
+      if (error) {
+        showToast({
+          message: error || 'Failed to save form entry',
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({
+        message: isAddOpen
+          ? 'Entry created successfully!'
+          : 'Entry updated successfully!',
+        variant: 'success',
+      })
+
+      await refetchEntries()
+      closeSidebar()
+    } catch (err: any) {
+      console.error('Error saving entry:', err)
+      showToast({
+        message: err.message || 'Error saving form entry',
+        variant: 'error',
+      })
+    } finally {
+      setIsSaving(false)
     }
-    closeSidebar()
   }
 
   const handleMoveToTrash = (entryId: string) => {
@@ -1858,8 +1886,10 @@ const FormEntriesPage = () => {
             />
             <Button
               color='primary'
+              disabled={isSaving}
               icon={isAddOpen ? 'lucide:send' : 'lucide:check'}
               label={isAddOpen ? t`Submit Form` : t`Save Changes`}
+              loading={isSaving}
               variant='solid'
               onClick={handleSaveEntry}
             />

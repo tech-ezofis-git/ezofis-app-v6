@@ -136,7 +136,12 @@ const deleteFormEntry = async (fId: string, eId: string) => {
   return response
 }
 
-const getFormEntries = async (formId: string) => {
+const getFormEntries = async (
+  formId: string,
+  page: number = 1,
+  size: number = 500,
+  includeFormJson: boolean = true,
+) => {
   const response: any = { data: null, error: '' }
   try {
     const store = authUserStore.getState()
@@ -144,6 +149,11 @@ const getFormEntries = async (formId: string) => {
     const { data, status } = await axiosV6.get(`/form/${formId}/entry/all`, {
       headers: {
         'X-Tenant-Id': tenantId,
+      },
+      params: {
+        currentPage: page,
+        includeFormJson,
+        itemsPerPage: size,
       },
     })
     if (status !== 200) throw new Error('Invalid status code')
@@ -224,11 +234,56 @@ const uploadMasterFile = async (payload: any) => {
   return response
 }
 
+const saveFormEntry = async (
+  formId: string,
+  entryId: number | string = 0,
+  payload: any,
+) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    let fieldsData = payload
+    if (typeof payload === 'string') {
+      try {
+        fieldsData = JSON.parse(payload)
+      } catch {
+        fieldsData = payload
+      }
+    }
+    const bodyObject =
+      fieldsData && typeof fieldsData === 'object' && 'fields' in fieldsData
+        ? fieldsData
+        : { fields: fieldsData }
+    const bodyData = JSON.stringify(bodyObject)
+    const { data, status } = await axiosV6.post(
+      `/form/${formId}/entry/${entryId}`,
+      bodyData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-Id': tenantId,
+        },
+      },
+    )
+    if (![200, 201, 202].includes(status)) {
+      throw new Error(`Invalid status code ${status}`)
+    }
+    response.data = data
+  } catch (e: any) {
+    console.error('[formApi.saveFormEntry] Failed:', e)
+    response.error =
+      e.response?.data?.message || e.message || 'Error saving form entry'
+  }
+  return response
+}
+
 const formApi = {
   createForm,
   deleteForm,
   deleteFormEntry,
   listAllForms,
+  saveFormEntry,
   updateForm,
   uploadMasterFile,
   getFormDataById,
@@ -237,3 +292,4 @@ const formApi = {
 }
 
 export default formApi
+
