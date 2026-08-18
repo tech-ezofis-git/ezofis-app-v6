@@ -33,6 +33,8 @@ import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
+import GenericFormImportModal from './components/GenericFormImportModal'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
@@ -655,7 +657,9 @@ const FormEntriesPage = () => {
   const [tabValue, setTabValue] = useState<string>('Browse')
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null)
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isImportOpen, setIsImportOpen] = useState(false)
   const [editValues, setEditValues] = useState<Record<string, any>>({})
+  const [isSaving, setIsSaving] = useState(false)
   const [deletingEntry, setDeletingEntry] = useState<{
     id: string
     type: 'trash' | 'permanent'
@@ -744,7 +748,7 @@ const FormEntriesPage = () => {
     enabled: !!formId,
     queryKey: ['forms', 'entries', formId],
     queryFn: async () => {
-      const { data, error } = await formApi.getFormEntries(formId)
+      const { data, error } = await formApi.getFormEntries(formId, 1, 500)
       if (error) throw new Error(error)
       if (data && typeof data === 'object' && Array.isArray(data.entries)) {
         return data.entries
@@ -771,6 +775,25 @@ const FormEntriesPage = () => {
     () => panels.flatMap((p: any) => p.fields || []),
     [panels],
   )
+
+  const formName = useMemo(() => {
+    if (!formData) return ''
+    let json = formData._json || formData.formJson
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json)
+      } catch (e) {
+        console.error('Failed to parse formJson:', e)
+        json = null
+      }
+    }
+    return json?.settings?.general?.name || formData?.name || ''
+  }, [formData])
+
+  const isPoMasterForm = useMemo(() => {
+    const normalized = formName.toLowerCase().replace(/[^a-z0-9]/g, '')
+    return normalized.includes('pomaster')
+  }, [formName])
 
   // Resolver helper to find human-readable names for nested keys inside table structures
   const getFieldLabel = useCallback(
@@ -852,6 +875,7 @@ const FormEntriesPage = () => {
           id: e.itemId
             ? `Entry #${e.itemId}`
             : e.id || e.uid || `Entry #${Math.random()}`,
+          entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
           isDeleted: !!e.isDeleted,
           values,
         }
@@ -904,26 +928,52 @@ const FormEntriesPage = () => {
   }
 
   // Actions
-  const handleSaveEntry = () => {
-    if (isAddOpen) {
-      const newEntry = {
-        createdAt: new Date().toISOString(),
-        createdBy: 'seth@ezofis.com',
-        id: `Entry #${entries.length + trashEntries.length + 1}`,
-        isDeleted: false,
-        values: editValues,
+  const handleSaveEntry = async () => {
+    setIsSaving(true)
+    try {
+      let targetEntryId: number | string = 0
+      if (!isAddOpen && selectedEntry) {
+        targetEntryId =
+          selectedEntry.entryId ??
+          selectedEntry.itemId ??
+          (typeof selectedEntry.id === 'string'
+            ? selectedEntry.id.replace(/^Entry #/, '')
+            : selectedEntry.id) ??
+          0
       }
-      setEntries((prev) => [newEntry, ...prev])
-      showToast({ message: 'Entry created successfully!', variant: 'success' })
-    } else if (selectedEntry) {
-      setEntries((prev) =>
-        prev.map((e) =>
-          e.id === selectedEntry.id ? { ...e, values: editValues } : e,
-        ),
+
+      const { data, error } = await formApi.saveFormEntry(
+        formId,
+        targetEntryId,
+        editValues,
       )
-      showToast({ message: 'Entry updated successfully!', variant: 'success' })
+
+      if (error) {
+        showToast({
+          message: error || 'Failed to save form entry',
+          variant: 'error',
+        })
+        return
+      }
+
+      showToast({
+        message: isAddOpen
+          ? 'Entry created successfully!'
+          : 'Entry updated successfully!',
+        variant: 'success',
+      })
+
+      await refetchEntries()
+      closeSidebar()
+    } catch (err: any) {
+      console.error('Error saving entry:', err)
+      showToast({
+        message: err.message || 'Error saving form entry',
+        variant: 'error',
+      })
+    } finally {
+      setIsSaving(false)
     }
-    closeSidebar()
   }
 
   const handleMoveToTrash = (entryId: string) => {
@@ -1037,22 +1087,7 @@ const FormEntriesPage = () => {
 
   // Build Table Columns dynamically
   const columns: Column[] = useMemo(() => {
-    const colList: Column[] = [
-      {
-        id: 'id',
-        label: t`Entry #`,
-        // minSize: 140,
-        size: 140,
-        renderCell: (row: any) => (
-          <span
-            className='cursor-pointer font-bold text-[var(--primary-9)] hover:underline'
-            onClick={() => openEditEntry(row)}
-          >
-            {row.id}
-          </span>
-        ),
-      },
-    ]
+    const colList: Column[] = []
 
     // Render dynamic columns from fields
     fields.forEach((field: Question) => {
@@ -1412,6 +1447,24 @@ const FormEntriesPage = () => {
     )
   }
 
+  if (isImportOpen) {
+    return (
+      <div className='flex h-full flex-col bg-white font-inter'>
+        {isPoMasterForm ? (
+          <PoSetupFlowPage onClose={() => setIsImportOpen(false)} />
+        ) : (
+          <GenericFormImportModal
+            fields={fields}
+            formId={formId}
+            formName={formName}
+            onClose={() => setIsImportOpen(false)}
+            onComplete={() => refetchEntries()}
+          />
+        )}
+      </div>
+    )
+  }
+
   const isPanelOpen = isAddOpen || !!selectedEntry
 
   if (isPanelOpen) {
@@ -1437,12 +1490,8 @@ const FormEntriesPage = () => {
             <div className='flex min-w-0 flex-col'>
               <div className='flex items-center gap-2.5'>
                 <h3 className='truncate text-sm font-extrabold text-gray-13'>
-                  {isAddOpen ? t`New Form Entry` : selectedEntry?.id}
+                  {isAddOpen ? t`New Form Entry` : t`Edit Form Entry`}
                 </h3>
-                <Badge
-                  color={isAddOpen ? 'orange' : 'green'}
-                  label={isAddOpen ? t`Draft` : t`Submitted`}
-                />
               </div>
               <p className='truncate text-[11px] font-medium text-gray-7'>
                 {isAddOpen
@@ -1856,22 +1905,11 @@ const FormEntriesPage = () => {
               onClick={closeSidebar}
             />
             <Button
-              color='gray'
-              icon='lucide:file-text'
-              label={t`Save Draft`}
-              variant='outline'
-              onClick={() => {
-                showToast({
-                  message: 'Form draft saved successfully',
-                  variant: 'success',
-                })
-                closeSidebar()
-              }}
-            />
-            <Button
               color='primary'
-              icon={isAddOpen ? 'lucide:send' : 'lucide:check'}
-              label={isAddOpen ? t`Submit Form` : t`Save Changes`}
+              disabled={isSaving}
+              icon={isAddOpen ? 'lucide:plus' : 'lucide:check'}
+              label={isAddOpen ? t`Save Entry` : t`Save Changes`}
+              loading={isSaving}
               variant='solid'
               onClick={handleSaveEntry}
             />
@@ -1882,7 +1920,7 @@ const FormEntriesPage = () => {
   }
 
   return (
-    <div className='flex h-full flex-col bg-white'>
+    <div className='relative flex h-full flex-col bg-white'>
       {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
       <div className='flex items-center justify-between border-b border-gray-2 px-6'>
         <div className='flex items-center gap-4'>
@@ -1903,13 +1941,15 @@ const FormEntriesPage = () => {
           </Tabs>
         </div>
 
-        <Button
-          color='primary'
-          icon='lucide:plus'
-          label={t`Add Entry`}
-          variant='solid'
-          onClick={openNewEntry}
-        />
+        <div className='flex items-center gap-2'>
+          <Button
+            color='primary'
+            icon='lucide:plus'
+            label={t`Add Entry`}
+            variant='solid'
+            onClick={openNewEntry}
+          />
+        </div>
       </div>
 
       {deletingEntry && (
@@ -2001,6 +2041,15 @@ const FormEntriesPage = () => {
                   refetch()
                   refetchEntries()
                 },
+              },
+              {
+                color: 'gray',
+                icon: 'tabler:table-import',
+                id: 'bulk-import',
+                isIconButton: true,
+                tooltip: t`Bulk Import`,
+                variant: 'outline',
+                onClick: () => setIsImportOpen(true),
               },
             ]}
             filters={[

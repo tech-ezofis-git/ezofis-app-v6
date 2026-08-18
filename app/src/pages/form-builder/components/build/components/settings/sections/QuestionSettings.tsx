@@ -1,12 +1,18 @@
-import { Button, Divider, NumberInput, SegmentedControl } from '@mantine/core'
+import {
+  Button,
+  Divider,
+  NumberInput,
+  SegmentedControl,
+  Tooltip,
+} from '@mantine/core'
 import { useEffect, useState } from 'react'
-import type { Question } from '@/pages/form-builder/store/formStore'
+import type { LogicRule, Question } from '@/pages/form-builder/store/formStore'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
-import { useFormStore } from '@/pages/form-builder/store/formStore'
+import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 import SettingsSection from '../../../../common/SettingsSection'
 
@@ -19,7 +25,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
   const panels = useFormStore((state) => state.panels)
   const allQuestions = panels.flatMap((p) => p.fields)
 
-  const [openSetup, setOpenSetup] = useState(false)
+  const [openSetup, setOpenSetup] = useState(true)
   const [openValidation, setOpenValidation] = useState(false)
   const [openAppearance, setOpenAppearance] = useState(false)
   const [openAdvanced, setOpenAdvanced] = useState(false)
@@ -37,6 +43,10 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
   const [localDefaultValue, setLocalDefaultValue] = useState(
     activeQuestion.settings.specific.defaultValue || '',
   )
+  const [idCopied, setIdCopied] = useState(false)
+  const [showMoreSetup, setShowMoreSetup] = useState(false)
+  const [showSelectAdvanced, setShowSelectAdvanced] = useState(false)
+  const [showTableAdvanced, setShowTableAdvanced] = useState(false)
 
   useEffect(() => {
     setLocalLabel(activeQuestion.label || '')
@@ -57,6 +67,55 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
       },
     }))
   }
+
+  const logicRules = activeQuestion.settings.logic || []
+  const logicFieldOptions = allQuestions
+    .filter((q) => q.id !== activeQuestion.id)
+    .map((q) => ({ id: q.id, name: q.label || 'Untitled Field' }))
+
+  const setLogicRules = (rules: LogicRule[]) => {
+    updateQuestion(activeQuestion.id, (q: Question) => ({
+      ...q,
+      settings: { ...q.settings, logic: rules },
+    }))
+  }
+
+  const addLogicRule = () => {
+    const newRule: LogicRule = {
+      action: 'SHOW',
+      condition: 'IS',
+      fieldId: logicFieldOptions[0]?.id || '',
+      id: generateId(),
+      value: '',
+    }
+    setLogicRules([...logicRules, newRule])
+  }
+
+  const updateLogicRule = (ruleId: string, updates: Partial<LogicRule>) => {
+    setLogicRules(
+      logicRules.map((r) => (r.id === ruleId ? { ...r, ...updates } : r)),
+    )
+  }
+
+  const removeLogicRule = (ruleId: string) => {
+    setLogicRules(logicRules.filter((r) => r.id !== ruleId))
+  }
+
+  const logicConditionOptions = [
+    { id: 'IS', name: 'is' },
+    { id: 'IS_NOT', name: 'is not' },
+    { id: 'CONTAINS', name: 'contains' },
+    { id: 'NOT_CONTAINS', name: 'does not contain' },
+    { id: 'GT', name: 'is greater than' },
+    { id: 'LT', name: 'is less than' },
+    { id: 'EMPTY', name: 'is empty' },
+    { id: 'NOT_EMPTY', name: 'is not empty' },
+  ]
+
+  const logicActionOptions = [
+    { id: 'SHOW', name: 'Show' },
+    { id: 'HIDE', name: 'Hide' },
+  ]
 
   const isShortText = activeQuestion.type === 'SHORT_TEXT'
   const isLongText = activeQuestion.type === 'LONG_TEXT'
@@ -214,6 +273,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
         onToggle={() => setOpenSetup(!openSetup)}
       >
         <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
+          {/* Primary controls - the ones edited most often */}
           <InputText
             label='Field Label'
             placeholder='e.g. What is your name?'
@@ -224,38 +284,24 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             onChange={(val: string) => setLocalLabel(val)}
           />
 
-          <div className='flex flex-col gap-1'>
-            <div className='px-1 text-[11px] font-bold tracking-tighter text-gray-9 uppercase'>
-              System Field ID
-            </div>
-            <div
-              className='bg-gray-50 cursor-help rounded-lg border border-gray-1 px-3 py-2 font-mono text-[11px] text-gray-12 select-all'
-              title='Click to select'
+          <Tooltip label={activeQuestion.id} position='top' withArrow>
+            <button
+              className='flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-[10px] font-medium text-gray-6 transition-colors hover:bg-gray-1 hover:text-gray-9'
+              type='button'
+              onClick={() => {
+                navigator.clipboard?.writeText(activeQuestion.id)
+                setIdCopied(true)
+                setTimeout(() => setIdCopied(false), 1500)
+              }}
             >
-              {activeQuestion.id}
-            </div>
-          </div>
-
-          {(isLongText || isNumber || isDate || isTime || isSelect) && (
-            <InputText
-              label='Display Label (Internal)'
-              placeholder='Alternative visual name'
-              value={activeQuestion.displayLabel || ''}
-              onChange={(val: string) =>
-                updateQuestion(activeQuestion.id, { displayLabel: val })
-              }
-            />
-          )}
-
-          <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-1 py-2'>
-            <div className='text-xs font-semibold text-gray-7'>Hide Label</div>
-            <InputSwitch
-              checked={activeQuestion.settings.general.hideLabel || false}
-              onChange={(checked: boolean) =>
-                updateNested('general', { hideLabel: checked })
-              }
-            />
-          </div>
+              <Icon
+                height={11}
+                name={idCopied ? 'lucide:check' : 'lucide:hash'}
+                width={11}
+              />
+              {idCopied ? 'Copied' : 'Copy field ID'}
+            </button>
+          </Tooltip>
 
           <InputText
             label='Placeholder'
@@ -278,7 +324,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           {!isNumber && !isDate && !isSelect && (
             <InputText
               label='Default Value'
-              placeholder='Pre-defined answer'
+              placeholder='No default'
               value={localDefaultValue}
               onBlur={() =>
                 updateNested('specific', { defaultValue: localDefaultValue })
@@ -289,142 +335,192 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
 
           <div>
             <label className='mb-2 block text-13 font-medium text-gray-11'>
-              Help Text / Description
+              Field Width
             </label>
-            <div className='relative'>
-              <textarea
-                className='min-h-[80px] w-full resize-none rounded-md border border-gray-1 bg-white px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
-                placeholder='Add extra instructions...'
-                value={localDesc}
-                onBlur={() =>
-                  updateNested('general', { description: localDesc })
-                }
-                onChange={(e) => setLocalDesc(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {(isLongText || isNumber || isDate || isTime) && (
-            <InputText
-              label='Tooltip (Hover Text)'
-              placeholder='Explanation on hover'
-              value={activeQuestion.settings.general.tooltip || ''}
-              onChange={(val: string) =>
-                updateNested('general', { tooltip: val })
+            <InputSelect
+              placeholder='Select width'
+              options={
+                isLongText || isNumber || isDate || isTime || isSelect
+                  ? sizeOptions
+                  : [
+                      { id: 'col-12', name: '100% Full Width' },
+                      { id: 'col-6', name: '50% Half Width' },
+                      { id: 'col-4', name: '33% Column' },
+                    ]
+              }
+              value={
+                (isLongText || isNumber || isDate || isTime || isSelect
+                  ? sizeOptions
+                  : [
+                      { id: 'col-12', name: '100% Full Width' },
+                      { id: 'col-6', name: '50% Half Width' },
+                      { id: 'col-4', name: '33% Column' },
+                    ]
+                ).find(
+                  (o) => o.id === activeQuestion.settings.general.size,
+                ) || { id: 'col-12', name: '100% Full Width' }
+              }
+              onChange={(val) =>
+                val && updateNested('general', { size: val.id })
               }
             />
-          )}
+          </div>
 
-          {(isShortText ||
-            isLongText ||
-            isNumber ||
-            isDate ||
-            isTime ||
-            isSelect) && (
-            <div className='bg-primary-subtle/20 border-primary-subtle/30 flex items-center justify-between rounded-lg border px-3 py-2'>
-              <div>
-                <div className='text-xs font-bold text-primary-9'>
-                  Answer Status Indicator
-                </div>
-                <div className='text-[10px] text-gray-9'>
-                  Track progress for this field
-                </div>
-              </div>
-              <InputSwitch
-                checked={
-                  activeQuestion.settings.specific.showStatusIndicator || false
-                }
-                onChange={(checked) =>
-                  updateNested('specific', { showStatusIndicator: checked })
-                }
-              />
-            </div>
-          )}
+          {/* Secondary controls - collapsed by default */}
+          <button
+            className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+            type='button'
+            onClick={() => setShowMoreSetup(!showMoreSetup)}
+          >
+            <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+              More Options
+            </span>
+            <Icon
+              height={14}
+              name='lucide:chevron-down'
+              width={14}
+              className={cn(
+                'text-gray-5 transition-transform duration-200',
+                showMoreSetup && 'rotate-180',
+              )}
+            />
+          </button>
 
-          <Divider className='border-gray-1' />
-
-          <div className='space-y-3'>
-            <div>
-              <label className='mb-2 block text-13 font-medium text-gray-11'>
-                Field Width
-              </label>
-              <InputSelect
-                placeholder='Select width'
-                options={
-                  isLongText || isNumber || isDate || isTime || isSelect
-                    ? sizeOptions
-                    : [
-                        { id: 'col-12', name: '100% Full Width' },
-                        { id: 'col-6', name: '50% Half Width' },
-                        { id: 'col-4', name: '33% Column' },
-                      ]
-                }
-                value={
-                  (isLongText || isNumber || isDate || isTime || isSelect
-                    ? sizeOptions
-                    : [
-                        { id: 'col-12', name: '100% Full Width' },
-                        { id: 'col-6', name: '50% Half Width' },
-                        { id: 'col-4', name: '33% Column' },
-                      ]
-                  ).find(
-                    (o) => o.id === activeQuestion.settings.general.size,
-                  ) || { id: 'col-12', name: '100% Full Width' }
-                }
-                onChange={(val) =>
-                  val && updateNested('general', { size: val.id })
-                }
-              />
-            </div>
-
-            {(isLongText || isNumber || isDate || isTime || isSelect) && (
-              <div>
-                <label className='mb-2 block text-13 font-medium text-gray-11'>
-                  Visibility State
-                </label>
-                <InputSelect
-                  options={visibilityOptions}
-                  placeholder='Normal, Read Only...'
-                  value={
-                    visibilityOptions.find(
-                      (o) =>
-                        o.id === activeQuestion.settings.general.visibility,
-                    ) || visibilityOptions[0]
+          {showMoreSetup && (
+            <div className='animate-in fade-in slide-in-from-top-1 space-y-4 duration-200'>
+              {(isLongText || isNumber || isDate || isTime || isSelect) && (
+                <InputText
+                  label='Display Label (Internal)'
+                  placeholder='Alternative visual name'
+                  value={activeQuestion.displayLabel || ''}
+                  onChange={(val: string) =>
+                    updateQuestion(activeQuestion.id, { displayLabel: val })
                   }
-                  onChange={(val) =>
-                    val && updateNested('general', { visibility: val.id })
+                />
+              )}
+
+              <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+                <div className='text-xs font-semibold text-gray-7'>
+                  Hide Label
+                </div>
+                <InputSwitch
+                  checked={activeQuestion.settings.general.hideLabel || false}
+                  onChange={(checked: boolean) =>
+                    updateNested('general', { hideLabel: checked })
                   }
                 />
               </div>
-            )}
 
-            {!isLongText && !isNumber && !isDate && !isTime && !isSelect && (
-              <div className='grid grid-cols-2 gap-2'>
-                <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
-                  <div className='text-xs font-bold text-gray-13'>
-                    Read Only
-                  </div>
-                  <InputSwitch
-                    checked={activeQuestion.settings.general.readOnly || false}
-                    onChange={(checked) =>
-                      updateNested('general', { readOnly: checked })
+              <div>
+                <label className='mb-2 block text-13 font-medium text-gray-11'>
+                  Help Text / Description
+                </label>
+                <div className='relative'>
+                  <textarea
+                    className='min-h-[80px] w-full resize-none rounded-md border border-gray-1 bg-white px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
+                    placeholder='Add extra instructions...'
+                    value={localDesc}
+                    onBlur={() =>
+                      updateNested('general', { description: localDesc })
                     }
-                  />
-                </div>
-                <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
-                  <div className='text-xs font-bold text-gray-13'>
-                    Hidden Field
-                  </div>
-                  <InputSwitch
-                    checked={activeQuestion.settings.general.hidden || false}
-                    onChange={(checked) =>
-                      updateNested('general', { hidden: checked })
-                    }
+                    onChange={(e) => setLocalDesc(e.target.value)}
                   />
                 </div>
               </div>
-            )}
-          </div>
+
+              {(isLongText || isNumber || isDate || isTime) && (
+                <InputText
+                  label='Tooltip (Hover Text)'
+                  placeholder='Explanation on hover'
+                  value={activeQuestion.settings.general.tooltip || ''}
+                  onChange={(val: string) =>
+                    updateNested('general', { tooltip: val })
+                  }
+                />
+              )}
+
+              {(isShortText ||
+                isLongText ||
+                isNumber ||
+                isDate ||
+                isTime ||
+                isSelect) && (
+                <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+                  <div>
+                    <div className='text-xs font-bold text-gray-13'>
+                      Answer Status Indicator
+                    </div>
+                    <div className='text-[10px] text-gray-9'>
+                      Track progress for this field
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={
+                      activeQuestion.settings.specific.showStatusIndicator ||
+                      false
+                    }
+                    onChange={(checked) =>
+                      updateNested('specific', {
+                        showStatusIndicator: checked,
+                      })
+                    }
+                  />
+                </div>
+              )}
+
+              <Divider className='border-gray-1' />
+
+              {(isLongText || isNumber || isDate || isTime || isSelect) && (
+                <div>
+                  <label className='mb-2 block text-13 font-medium text-gray-11'>
+                    Visibility State
+                  </label>
+                  <InputSelect
+                    options={visibilityOptions}
+                    placeholder='Normal, Read Only...'
+                    value={
+                      visibilityOptions.find(
+                        (o) =>
+                          o.id === activeQuestion.settings.general.visibility,
+                      ) || visibilityOptions[0]
+                    }
+                    onChange={(val) =>
+                      val && updateNested('general', { visibility: val.id })
+                    }
+                  />
+                </div>
+              )}
+
+              {!isLongText && !isNumber && !isDate && !isTime && !isSelect && (
+                <div className='grid grid-cols-2 gap-2'>
+                  <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                    <div className='text-xs font-bold text-gray-13'>
+                      Read Only
+                    </div>
+                    <InputSwitch
+                      checked={
+                        activeQuestion.settings.general.readOnly || false
+                      }
+                      onChange={(checked) =>
+                        updateNested('general', { readOnly: checked })
+                      }
+                    />
+                  </div>
+                  <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                    <div className='text-xs font-bold text-gray-13'>
+                      Hidden Field
+                    </div>
+                    <InputSwitch
+                      checked={activeQuestion.settings.general.hidden || false}
+                      onChange={(checked) =>
+                        updateNested('general', { hidden: checked })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </SettingsSection>
 
@@ -795,257 +891,286 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   </div>
                 )}
 
-                {isMulti && (
-                  <div className='bg-gray-50/50 space-y-4 rounded-xl border border-gray-1 p-3'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <div className='text-xs font-bold text-gray-8'>
-                          Bulk Actions
+                <button
+                  className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+                  type='button'
+                  onClick={() => setShowSelectAdvanced(!showSelectAdvanced)}
+                >
+                  <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                    Advanced Options
+                  </span>
+                  <Icon
+                    height={14}
+                    name='lucide:chevron-down'
+                    width={14}
+                    className={cn(
+                      'text-gray-5 transition-transform duration-200',
+                      showSelectAdvanced && 'rotate-180',
+                    )}
+                  />
+                </button>
+
+                {showSelectAdvanced && (
+                  <>
+                    {isMulti && (
+                      <div className='bg-gray-50/50 space-y-4 rounded-xl border border-gray-1 p-3'>
+                        <div className='flex items-center justify-between'>
+                          <div>
+                            <div className='text-xs font-bold text-gray-8'>
+                              Bulk Actions
+                            </div>
+                            <div className='text-[10px] text-gray-6'>
+                              Select All / Unselect All
+                            </div>
+                          </div>
+                          <InputSwitch
+                            checked={
+                              activeQuestion.settings.specific
+                                .bulkActionsEnabled || false
+                            }
+                            onChange={(checked) =>
+                              updateNested('specific', {
+                                bulkActionsEnabled: checked,
+                              })
+                            }
+                          />
                         </div>
-                        <div className='text-[10px] text-gray-6'>
-                          Select All / Unselect All
+
+                        {activeQuestion.type === 'MULTI_SELECT' && (
+                          <>
+                            <Divider className='border-dashed border-gray-1' />
+
+                            <div className='space-y-3'>
+                              <div className='flex items-center justify-between'>
+                                <div>
+                                  <div className='text-xs font-bold text-gray-13'>
+                                    Allow Custom Entries
+                                  </div>
+                                  <div className='text-[10px] text-gray-6'>
+                                    Users can type in new options
+                                  </div>
+                                </div>
+                                <InputSwitch
+                                  checked={
+                                    activeQuestion.settings.specific
+                                      .allowCustomEntries || false
+                                  }
+                                  onChange={(checked) =>
+                                    updateNested('specific', {
+                                      allowCustomEntries: checked,
+                                    })
+                                  }
+                                />
+                              </div>
+
+                              {activeQuestion.settings.specific
+                                .allowCustomEntries && (
+                                <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
+                                  <label className='block text-[10px] font-bold tracking-wider text-gray-8 uppercase'>
+                                    Entry Validation
+                                  </label>
+                                  <InputSelect
+                                    options={validationOptions}
+                                    placeholder='Format for custom entry'
+                                    value={
+                                      validationOptions.find(
+                                        (o) =>
+                                          o.id ===
+                                          activeQuestion.settings.validation
+                                            .contentRule,
+                                      ) || validationOptions[0]
+                                    }
+                                    onChange={(val) =>
+                                      val &&
+                                      updateNested('validation', {
+                                        contentRule: val.id,
+                                      })
+                                    }
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {isChoice && (
+                      <div className='bg-secondary-subtle/10 border-secondary-subtle/20 space-y-4 rounded-xl border p-3'>
+                        <div className='flex items-center justify-between'>
+                          <div>
+                            <div className='text-xs font-bold text-gray-13'>
+                              Show Options Wrapper
+                            </div>
+                            <div className='text-[10px] text-gray-6'>
+                              Add border and padding to group
+                            </div>
+                          </div>
+                          <InputSwitch
+                            checked={
+                              activeQuestion.settings.specific
+                                .showOptionsWrapper || false
+                            }
+                            onChange={(checked) =>
+                              updateNested('specific', {
+                                showOptionsWrapper: checked,
+                              })
+                            }
+                          />
+                        </div>
+
+                        <Divider className='border-dashed border-gray-1' />
+
+                        <div className='space-y-2'>
+                          <label className='block text-13 font-medium text-gray-11'>
+                            Options Layout
+                          </label>
+                          <InputSelect
+                            options={optionsPerLineOptions}
+                            placeholder='Items per row'
+                            value={
+                              optionsPerLineOptions.find(
+                                (o) =>
+                                  Number(o.id) ===
+                                  activeQuestion.settings.specific
+                                    .optionsPerLine,
+                              ) || optionsPerLineOptions[0]
+                            }
+                            onChange={(val) =>
+                              val &&
+                              updateNested('specific', {
+                                optionsPerLine: Number(val.id),
+                              })
+                            }
+                          />
+                          <div className='text-[10px] text-gray-6 italic'>
+                            Control grid columns (1 = Vertical List).
+                          </div>
                         </div>
                       </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.specific.bulkActionsEnabled ||
-                          false
+                    )}
+
+                    <Divider className='border-dashed border-gray-1' />
+
+                    <div>
+                      <label className='mb-2 block text-13 font-medium text-gray-11'>
+                        Cascading Filter (Parent)
+                      </label>
+                      <InputSelect
+                        placeholder='Filter by another field'
+                        value={null}
+                        options={[
+                          { id: 'none', name: 'No Filter' },
+                          ...panels
+                            .flatMap((p: any) => p.fields)
+                            .filter(
+                              (f: any) =>
+                                f.id !== activeQuestion.id &&
+                                ['SINGLE_SELECT', 'SINGLE_CHOICE'].includes(
+                                  f.type,
+                                ),
+                            )
+                            .map((f: any) => ({ id: f.id, name: f.label })),
+                        ]}
+                        onChange={(val) =>
+                          val &&
+                          updateNested('specific', { parentFieldId: val.id })
                         }
-                        onChange={(checked) =>
-                          updateNested('specific', {
-                            bulkActionsEnabled: checked,
-                          })
+                      />
+                      <div className='mt-1 text-[10px] text-gray-6 italic'>
+                        Options will change based on parent selection.
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className='mb-2 block text-13 font-medium text-gray-11'>
+                        Default Selection Mode
+                      </label>
+                      <InputSelect
+                        options={selectDefaultValueOptions}
+                        placeholder='Initial value mode'
+                        value={
+                          selectDefaultValueOptions.find(
+                            (o) =>
+                              o.id ===
+                              activeQuestion.settings.specific.defaultValueType,
+                          ) || selectDefaultValueOptions[2]
+                        }
+                        onChange={(val) =>
+                          val &&
+                          updateNested('specific', { defaultValueType: val.id })
                         }
                       />
                     </div>
 
-                    {activeQuestion.type === 'MULTI_SELECT' && (
-                      <>
-                        <Divider className='border-dashed border-gray-1' />
-
-                        <div className='space-y-3'>
-                          <div className='flex items-center justify-between'>
-                            <div>
-                              <div className='text-xs font-bold text-gray-13'>
-                                Allow Custom Entries
-                              </div>
-                              <div className='text-[10px] text-gray-6'>
-                                Users can type in new options
-                              </div>
-                            </div>
-                            <InputSwitch
-                              checked={
-                                activeQuestion.settings.specific
-                                  .allowCustomEntries || false
+                    {activeQuestion.settings.specific.defaultValueType ===
+                      'STATIC' && (
+                      <div className='animate-in fade-in slide-in-from-top-1 space-y-3 duration-200'>
+                        {isCurrency ? (
+                          <div className='grid grid-cols-2 gap-2'>
+                            <InputText
+                              label='Default Currency'
+                              placeholder='USD'
+                              value={
+                                (
+                                  activeQuestion.settings.specific
+                                    .defaultValue as any
+                                )?.currency || ''
                               }
-                              onChange={(checked) =>
+                              onChange={(val: string) =>
                                 updateNested('specific', {
-                                  allowCustomEntries: checked,
+                                  defaultValue: {
+                                    ...((activeQuestion.settings.specific
+                                      .defaultValue as any) || {}),
+                                    currency: val.toUpperCase(),
+                                  },
+                                })
+                              }
+                            />
+                            <NumberInput
+                              label='Default Amount'
+                              placeholder='0.00'
+                              value={
+                                (
+                                  activeQuestion.settings.specific
+                                    .defaultValue as any
+                                )?.amount || undefined
+                              }
+                              onChange={(val) =>
+                                updateNested('specific', {
+                                  defaultValue: {
+                                    ...((activeQuestion.settings.specific
+                                      .defaultValue as any) || {}),
+                                    amount: val,
+                                  },
                                 })
                               }
                             />
                           </div>
-
-                          {activeQuestion.settings.specific
-                            .allowCustomEntries && (
-                            <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
-                              <label className='block text-[10px] font-bold tracking-wider text-gray-8 uppercase'>
-                                Entry Validation
-                              </label>
-                              <InputSelect
-                                options={validationOptions}
-                                placeholder='Format for custom entry'
-                                value={
-                                  validationOptions.find(
-                                    (o) =>
-                                      o.id ===
-                                      activeQuestion.settings.validation
-                                        .contentRule,
-                                  ) || validationOptions[0]
-                                }
-                                onChange={(val) =>
-                                  val &&
-                                  updateNested('validation', {
-                                    contentRule: val.id,
-                                  })
-                                }
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </>
+                        ) : (
+                          <InputText
+                            value={localDefaultValue}
+                            label={
+                              isMulti
+                                ? 'Static Default Values (Comma separated)'
+                                : 'Static Default Value'
+                            }
+                            placeholder={
+                              isMulti ? 'Option A, Option B' : 'Option A'
+                            }
+                            onBlur={() =>
+                              updateNested('specific', {
+                                defaultValue: localDefaultValue,
+                              })
+                            }
+                            onChange={(val: string) =>
+                              setLocalDefaultValue(val)
+                            }
+                          />
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
-
-                {isChoice && (
-                  <div className='bg-secondary-subtle/10 border-secondary-subtle/20 space-y-4 rounded-xl border p-3'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <div className='text-xs font-bold text-gray-13'>
-                          Show Options Wrapper
-                        </div>
-                        <div className='text-[10px] text-gray-6'>
-                          Add border and padding to group
-                        </div>
-                      </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.specific.showOptionsWrapper ||
-                          false
-                        }
-                        onChange={(checked) =>
-                          updateNested('specific', {
-                            showOptionsWrapper: checked,
-                          })
-                        }
-                      />
-                    </div>
-
-                    <Divider className='border-dashed border-gray-1' />
-
-                    <div className='space-y-2'>
-                      <label className='block text-13 font-medium text-gray-11'>
-                        Options Layout
-                      </label>
-                      <InputSelect
-                        options={optionsPerLineOptions}
-                        placeholder='Items per row'
-                        value={
-                          optionsPerLineOptions.find(
-                            (o) =>
-                              Number(o.id) ===
-                              activeQuestion.settings.specific.optionsPerLine,
-                          ) || optionsPerLineOptions[0]
-                        }
-                        onChange={(val) =>
-                          val &&
-                          updateNested('specific', {
-                            optionsPerLine: Number(val.id),
-                          })
-                        }
-                      />
-                      <div className='text-[10px] text-gray-6 italic'>
-                        Control grid columns (1 = Vertical List).
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <Divider className='border-dashed border-gray-1' />
-
-                <div>
-                  <label className='mb-2 block text-13 font-medium text-gray-11'>
-                    Cascading Filter (Parent)
-                  </label>
-                  <InputSelect
-                    placeholder='Filter by another field'
-                    value={null}
-                    options={[
-                      { id: 'none', name: 'No Filter' },
-                      ...panels
-                        .flatMap((p: any) => p.fields)
-                        .filter(
-                          (f: any) =>
-                            f.id !== activeQuestion.id &&
-                            ['SINGLE_SELECT', 'SINGLE_CHOICE'].includes(f.type),
-                        )
-                        .map((f: any) => ({ id: f.id, name: f.label })),
-                    ]}
-                    onChange={(val) =>
-                      val && updateNested('specific', { parentFieldId: val.id })
-                    }
-                  />
-                  <div className='mt-1 text-[10px] text-gray-6 italic'>
-                    Options will change based on parent selection.
-                  </div>
-                </div>
-
-                <div>
-                  <label className='mb-2 block text-13 font-medium text-gray-11'>
-                    Default Selection Mode
-                  </label>
-                  <InputSelect
-                    options={selectDefaultValueOptions}
-                    placeholder='Initial value mode'
-                    value={
-                      selectDefaultValueOptions.find(
-                        (o) =>
-                          o.id ===
-                          activeQuestion.settings.specific.defaultValueType,
-                      ) || selectDefaultValueOptions[2]
-                    }
-                    onChange={(val) =>
-                      val &&
-                      updateNested('specific', { defaultValueType: val.id })
-                    }
-                  />
-                </div>
-
-                {activeQuestion.settings.specific.defaultValueType ===
-                  'STATIC' && (
-                  <div className='animate-in fade-in slide-in-from-top-1 space-y-3 duration-200'>
-                    {isCurrency ? (
-                      <div className='grid grid-cols-2 gap-2'>
-                        <InputText
-                          label='Default Currency'
-                          placeholder='USD'
-                          value={
-                            (
-                              activeQuestion.settings.specific
-                                .defaultValue as any
-                            )?.currency || ''
-                          }
-                          onChange={(val: string) =>
-                            updateNested('specific', {
-                              defaultValue: {
-                                ...((activeQuestion.settings.specific
-                                  .defaultValue as any) || {}),
-                                currency: val.toUpperCase(),
-                              },
-                            })
-                          }
-                        />
-                        <NumberInput
-                          label='Default Amount'
-                          placeholder='0.00'
-                          value={
-                            (
-                              activeQuestion.settings.specific
-                                .defaultValue as any
-                            )?.amount || undefined
-                          }
-                          onChange={(val) =>
-                            updateNested('specific', {
-                              defaultValue: {
-                                ...((activeQuestion.settings.specific
-                                  .defaultValue as any) || {}),
-                                amount: val,
-                              },
-                            })
-                          }
-                        />
-                      </div>
-                    ) : (
-                      <InputText
-                        value={localDefaultValue}
-                        label={
-                          isMulti
-                            ? 'Static Default Values (Comma separated)'
-                            : 'Static Default Value'
-                        }
-                        placeholder={
-                          isMulti ? 'Option A, Option B' : 'Option A'
-                        }
-                        onBlur={() =>
-                          updateNested('specific', {
-                            defaultValue: localDefaultValue,
-                          })
-                        }
-                        onChange={(val: string) => setLocalDefaultValue(val)}
-                      />
-                    )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
@@ -1473,93 +1598,120 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
 
                 <Divider className='border-dashed border-gray-1' />
 
-                {/* Row Management */}
-                <div className='space-y-4'>
-                  <div className='space-y-2'>
-                    <label className='block text-13 font-medium text-gray-11'>
-                      Table Entry Type
-                    </label>
-                    <SegmentedControl
-                      className='bg-gray-50'
-                      size='xs'
-                      fullWidth
-                      data={[
-                        { label: 'On Demand', value: 'ON_DEMAND' },
-                        { label: 'Fixed Rows', value: 'FIXED' },
-                      ]}
-                      value={
-                        activeQuestion.settings.specific.rowsType || 'ON_DEMAND'
-                      }
-                      onChange={(v) =>
-                        updateNested('specific', { rowsType: v })
-                      }
-                    />
-                  </div>
-
-                  {activeQuestion.settings.specific.rowsType === 'FIXED' && (
-                    <NumberInput
-                      label='Fixed Row Count'
-                      max={100}
-                      min={1}
-                      size='xs'
-                      value={
-                        activeQuestion.settings.specific.fixedRowCount || 5
-                      }
-                      onChange={(v) =>
-                        updateNested('specific', { fixedRowCount: v })
-                      }
-                    />
-                  )}
-
-                  <InputSelect
-                    label='Row Selection'
-                    options={[
-                      { id: 'NONE', name: 'None' },
-                      { id: 'SINGLE', name: 'Single Row' },
-                      { id: 'MULTIPLE', name: 'Multiple Rows' },
-                    ]}
-                    value={{
-                      id:
-                        activeQuestion.settings.specific.rowSelection || 'NONE',
-                      name:
-                        activeQuestion.settings.specific.rowSelection ===
-                        'MULTIPLE'
-                          ? 'Multiple Rows'
-                          : activeQuestion.settings.specific.rowSelection ===
-                              'SINGLE'
-                            ? 'Single Row'
-                            : 'None',
-                    }}
-                    onChange={(v) =>
-                      v && updateNested('specific', { rowSelection: v.id })
-                    }
+                <button
+                  className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+                  type='button'
+                  onClick={() => setShowTableAdvanced(!showTableAdvanced)}
+                >
+                  <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                    Row & Export Options
+                  </span>
+                  <Icon
+                    height={14}
+                    name='lucide:chevron-down'
+                    width={14}
+                    className={cn(
+                      'text-gray-5 transition-transform duration-200',
+                      showTableAdvanced && 'rotate-180',
+                    )}
                   />
-                </div>
+                </button>
 
-                <Divider className='border-dashed border-gray-1' />
+                {showTableAdvanced && (
+                  <>
+                    {/* Row Management */}
+                    <div className='space-y-4'>
+                      <div className='space-y-2'>
+                        <label className='block text-13 font-medium text-gray-11'>
+                          Table Entry Type
+                        </label>
+                        <SegmentedControl
+                          className='bg-gray-50'
+                          size='xs'
+                          fullWidth
+                          data={[
+                            { label: 'On Demand', value: 'ON_DEMAND' },
+                            { label: 'Fixed Rows', value: 'FIXED' },
+                          ]}
+                          value={
+                            activeQuestion.settings.specific.rowsType ||
+                            'ON_DEMAND'
+                          }
+                          onChange={(v) =>
+                            updateNested('specific', { rowsType: v })
+                          }
+                        />
+                      </div>
 
-                {/* Bulk Actions & View */}
-                <div className='space-y-3'>
-                  <InputSwitch
-                    label='Enable Import/Export'
-                    checked={
-                      activeQuestion.settings.specific.importExportEnabled ||
-                      false
-                    }
-                    onChange={(v) =>
-                      updateNested('specific', { importExportEnabled: v })
-                    }
-                  />
-                  <InputSwitch
-                    label='Show Summary Totals'
-                    checked={
-                      activeQuestion.settings.specific.showSummaryRow || false
-                    }
-                    onChange={(v) =>
-                      updateNested('specific', { showSummaryRow: v })
-                    }
-                  />
-                </div>
+                      {activeQuestion.settings.specific.rowsType ===
+                        'FIXED' && (
+                        <NumberInput
+                          label='Fixed Row Count'
+                          max={100}
+                          min={1}
+                          size='xs'
+                          value={
+                            activeQuestion.settings.specific.fixedRowCount || 5
+                          }
+                          onChange={(v) =>
+                            updateNested('specific', { fixedRowCount: v })
+                          }
+                        />
+                      )}
+
+                      <InputSelect
+                        label='Row Selection'
+                        options={[
+                          { id: 'NONE', name: 'None' },
+                          { id: 'SINGLE', name: 'Single Row' },
+                          { id: 'MULTIPLE', name: 'Multiple Rows' },
+                        ]}
+                        value={{
+                          id:
+                            activeQuestion.settings.specific.rowSelection ||
+                            'NONE',
+                          name:
+                            activeQuestion.settings.specific.rowSelection ===
+                            'MULTIPLE'
+                              ? 'Multiple Rows'
+                              : activeQuestion.settings.specific
+                                    .rowSelection === 'SINGLE'
+                                ? 'Single Row'
+                                : 'None',
+                        }}
+                        onChange={(v) =>
+                          v && updateNested('specific', { rowSelection: v.id })
+                        }
+                      />
+                    </div>
+
+                    <Divider className='border-dashed border-gray-1' />
+
+                    {/* Bulk Actions & View */}
+                    <div className='space-y-3'>
+                      <InputSwitch
+                        label='Enable Import/Export'
+                        checked={
+                          activeQuestion.settings.specific
+                            .importExportEnabled || false
+                        }
+                        onChange={(v) =>
+                          updateNested('specific', { importExportEnabled: v })
+                        }
+                      />
+                      <InputSwitch
+                        label='Show Summary Totals'
+                        checked={
+                          activeQuestion.settings.specific.showSummaryRow ||
+                          false
+                        }
+                        onChange={(v) =>
+                          updateNested('specific', { showSummaryRow: v })
+                        }
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -2727,89 +2879,6 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   }
                 />
               )}
-
-              <div className='space-y-2'>
-                <div className='text-xs font-bold tracking-wider text-gray-11 uppercase'>
-                  Mapping Configuration
-                </div>
-                <div className='bg-gray-50 space-y-2 rounded-lg border border-dashed border-gray-1 p-3'>
-                  <div className='grid grid-cols-2 gap-2'>
-                    <div className='text-[10px] font-semibold text-gray-8'>
-                      External Field
-                    </div>
-                    <div className='text-[10px] font-semibold text-gray-8'>
-                      Local Prop
-                    </div>
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    <InputText
-                      placeholder='Source Column'
-                      value=''
-                      readOnly
-                      onChange={(v: any) => {
-                        console.log(v)
-                      }}
-                    />
-                    <Icon
-                      className='text-gray-5'
-                      name='lucide:arrow-right'
-                      width={12}
-                    />
-                    <InputText
-                      value={isSelect ? 'Display Label' : 'Field Value'}
-                      readOnly
-                      onChange={(v: any) => {
-                        console.log(v)
-                      }}
-                    />
-                  </div>
-                  {isSelect && (
-                    <div className='flex items-center gap-2'>
-                      <InputText
-                        placeholder='ID Column'
-                        value=''
-                        readOnly
-                        onChange={(v: any) => {
-                          console.log(v)
-                        }}
-                      />
-                      <Icon
-                        className='text-gray-5'
-                        name='lucide:arrow-right'
-                        width={12}
-                      />
-                      <InputText
-                        value='Option Value'
-                        readOnly
-                        onChange={(v: any) => {
-                          console.log(v)
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className='space-y-2'>
-                <div className='text-xs font-bold tracking-wider text-gray-11 uppercase'>
-                  Condition Mapping
-                </div>
-                <div className='bg-gray-50 rounded-lg border border-dashed border-gray-1 p-3'>
-                  <div className='text-[11px] text-gray-6 italic'>
-                    Define when this lookup should be triggered based on other
-                    field values.
-                  </div>
-                  <Button
-                    className='mt-3 border border-gray-1 bg-white'
-                    color='gray'
-                    size='compact-xs'
-                    variant='subtle'
-                    fullWidth
-                  >
-                    + Add Condition Rule
-                  </Button>
-                </div>
-              </div>
             </div>
           </SettingsSection>
         )}
@@ -2996,18 +3065,146 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           variant='premium'
           onToggle={() => setOpenLogic(!openLogic)}
         >
-          <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
-            <div className='bg-gray-50/50 rounded-xl border border-gray-2 p-4 text-center'>
-              <div className='mb-1 text-sm font-semibold text-gray-9'>
-                Visibility Logic
+          <div className='animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-300'>
+            {logicRules.length === 0 ? (
+              <div className='bg-gray-50/50 rounded-xl border border-gray-2 p-4 text-center'>
+                <div className='mb-1 text-sm font-semibold text-gray-9'>
+                  Visibility Logic
+                </div>
+                <div className='mb-3 text-[11px] text-gray-5'>
+                  Set rules to show or hide this field based on other responses.
+                </div>
+                {logicFieldOptions.length === 0 ? (
+                  <div className='text-[11px] text-gray-5 italic'>
+                    Add another field to this form to create a rule.
+                  </div>
+                ) : (
+                  <Button
+                    color='primary'
+                    size='xs'
+                    variant='subtle'
+                    leftSection={
+                      <Icon height={12} name='lucide:plus' width={12} />
+                    }
+                    onClick={addLogicRule}
+                  >
+                    Add Rule
+                  </Button>
+                )}
               </div>
-              <div className='mb-3 text-[11px] text-gray-5'>
-                Set rules to show or hide this field based on other responses.
+            ) : (
+              <div className='space-y-2.5'>
+                {logicRules.map((rule, idx) => {
+                  const needsValue = !['EMPTY', 'NOT_EMPTY'].includes(
+                    rule.condition,
+                  )
+                  return (
+                    <div
+                      className='space-y-2 rounded-xl border border-gray-1 bg-white p-3 shadow-sm'
+                      key={rule.id}
+                    >
+                      <div className='flex items-center justify-between'>
+                        <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                          {idx === 0 ? 'If' : 'And if'}
+                        </span>
+                        <button
+                          className='hover:text-red-500 text-gray-4 transition-colors'
+                          title='Remove rule'
+                          onClick={() => removeLogicRule(rule.id)}
+                        >
+                          <Icon height={13} name='lucide:x' width={13} />
+                        </button>
+                      </div>
+
+                      <InputSelect
+                        options={logicFieldOptions}
+                        placeholder='Select a field'
+                        value={
+                          logicFieldOptions.find(
+                            (o) => o.id === rule.fieldId,
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          val &&
+                          updateLogicRule(rule.id, { fieldId: String(val.id) })
+                        }
+                      />
+
+                      <div
+                        className={cn(
+                          'grid gap-2',
+                          needsValue ? 'grid-cols-2' : 'grid-cols-1',
+                        )}
+                      >
+                        <InputSelect
+                          options={logicConditionOptions}
+                          value={
+                            logicConditionOptions.find(
+                              (o) => o.id === rule.condition,
+                            ) || logicConditionOptions[0]
+                          }
+                          onChange={(val) =>
+                            val &&
+                            updateLogicRule(rule.id, {
+                              condition: val.id as LogicRule['condition'],
+                            })
+                          }
+                        />
+                        {needsValue && (
+                          <InputText
+                            placeholder='Value'
+                            value={rule.value ?? ''}
+                            onChange={(val: string) =>
+                              updateLogicRule(rule.id, { value: val })
+                            }
+                          />
+                        )}
+                      </div>
+
+                      <div className='flex items-center gap-2 border-t border-dashed border-gray-1 pt-2'>
+                        <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                          Then
+                        </span>
+                        <div className='w-28'>
+                          <InputSelect
+                            options={logicActionOptions}
+                            value={
+                              logicActionOptions.find(
+                                (o) => o.id === rule.action,
+                              ) || logicActionOptions[0]
+                            }
+                            onChange={(val) =>
+                              val &&
+                              updateLogicRule(rule.id, {
+                                action: val.id as LogicRule['action'],
+                              })
+                            }
+                          />
+                        </div>
+                        <span className='text-[11px] text-gray-6'>
+                          this field
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+
+                <Button
+                  className='w-full border border-dashed border-gray-2 bg-white'
+                  color='gray'
+                  disabled={logicRules.length >= logicFieldOptions.length}
+                  size='xs'
+                  variant='subtle'
+                  fullWidth
+                  leftSection={
+                    <Icon height={12} name='lucide:plus' width={12} />
+                  }
+                  onClick={addLogicRule}
+                >
+                  Add Another Rule
+                </Button>
               </div>
-              <Button color='primary' size='xs' variant='subtle'>
-                + Add Rule
-              </Button>
-            </div>
+            )}
           </div>
         </SettingsSection>
       )}

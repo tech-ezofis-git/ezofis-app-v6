@@ -20,40 +20,34 @@ const SectionHeader = ({
   const { updatePanel } = useFormStore()
 
   return (
-    <div className='group/header relative flex flex-col gap-1 rounded-t-2xl border-b border-gray-3/30 bg-white px-8 pt-4 pb-3 transition-all'>
-      {/* Visual Indicator Line (Optional based on design, matching purple branding) */}
-      <div className='absolute top-0 right-8 left-8 h-1 rounded-b-md bg-accent-soft/20' />
-
-      {/* Compact Header: Title + Actions */}
-      <div className='group/desc -ml-2 flex h-10 w-full items-center justify-between'>
-        <div className='flex min-w-0 flex-1 items-center'>
-          {/* Hover Actions: Drag handles and collapse */}
-          <div className='flex w-8 shrink-0 items-center justify-center'>
-            <Tooltip
-              label={isCollapsed ? 'Expand' : 'Collapse'}
-              position='top'
-              withArrow
+    <div className='group/header relative flex flex-col gap-1 rounded-t-2xl bg-white px-6 pt-5 pb-3 transition-all'>
+      {/* Header: Title + Expand Toggle + Count Badge */}
+      <div className='flex w-full items-center justify-between gap-4'>
+        <div className='flex min-w-0 flex-1 items-center gap-1.5 -ml-2'>
+          <Tooltip
+            label={isCollapsed ? 'Expand' : 'Collapse'}
+            position='top'
+            withArrow
+          >
+            <ActionIcon
+              className='rounded-md text-gray-10 transition-all hover:bg-gray-2 hover:text-gray-13 active:scale-95'
+              color='gray'
+              size='sm'
+              variant='subtle'
+              onClick={onToggleCollapse}
             >
-              <ActionIcon
-                className='rounded-md text-gray-10 transition-all hover:bg-gray-1 hover:text-gray-13 active:scale-95'
-                color='gray'
-                size='sm'
-                variant='subtle'
-                onClick={onToggleCollapse}
-              >
-                <Icon
-                  height={16}
-                  width={16}
-                  name={
-                    isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'
-                  }
-                />
-              </ActionIcon>
-            </Tooltip>
-          </div>
+              <Icon
+                height={18}
+                width={18}
+                name={
+                  isCollapsed ? 'lucide:chevron-down' : 'lucide:chevron-up'
+                }
+              />
+            </ActionIcon>
+          </Tooltip>
 
           <input
-            className='hover:bg-gray-50 flex-1 rounded-md bg-transparent px-1 py-1 text-lg font-semibold tracking-tight text-gray-13 transition-colors placeholder:text-gray-4 focus:bg-white focus:outline-none disabled:cursor-not-allowed disabled:hover:bg-transparent'
+            className='flex-1 rounded-lg bg-transparent px-1 py-0.5 font-poppins text-xl font-bold tracking-tight text-gray-13 transition-colors placeholder:text-gray-8 focus:bg-gray-1/50 focus:outline-none disabled:cursor-not-allowed'
             disabled={isLocked}
             placeholder='Section Title'
             type='text'
@@ -62,16 +56,18 @@ const SectionHeader = ({
           />
         </div>
 
-        {/* Right Actions - Moved outside to floating bar */}
-        <div className='flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover/header:opacity-100'>
-          {/* Only keeping things that might still be useful inside if any, but the user asked for them outside. Canva keeps nothing in header except title. */}
-        </div>
+        {/* Count Pill Badge */}
+        {fieldCount > 0 && (
+          <div className='shrink-0 rounded-full bg-gray-2 px-3 py-1 text-xs font-semibold text-gray-11 shadow-2xs'>
+            {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
+          </div>
+        )}
       </div>
 
-      {/* Description Input (with mocked variable detection for visual) */}
-      <div className='group/desc relative mt-1 flex w-full items-center'>
+      {/* Description Input */}
+      <div className='mt-0.5 flex w-full items-center pl-6'>
         <input
-          className='w-full bg-transparent px-1 text-13 font-medium text-gray-12 placeholder:font-normal placeholder:text-gray-8 focus:outline-none disabled:cursor-not-allowed'
+          className='w-full bg-transparent px-1 text-xs font-normal text-gray-10 placeholder:text-gray-8 focus:outline-none disabled:cursor-not-allowed'
           disabled={isLocked}
           placeholder='Please provide details...'
           type='text'
@@ -80,17 +76,7 @@ const SectionHeader = ({
             updatePanel(panel.id, { description: e.target.value })
           }
         />
-
-        {fieldCount > 0 && (
-          <div className='bg-gray-50 pointer-events-none absolute top-1/2 right-0 shrink-0 -translate-y-1/2 rounded-md border border-gray-2 px-2 py-0.5 opacity-0 transition-opacity group-hover/desc:opacity-100'>
-            <span className='text-[10px] leading-none font-bold tracking-widest whitespace-nowrap text-gray-4 uppercase'>
-              {fieldCount} {fieldCount === 1 ? 'field' : 'fields'}
-            </span>
-          </div>
-        )}
       </div>
-
-      <div className='mt-4 h-px w-full bg-gray-1' />
     </div>
   )
 }

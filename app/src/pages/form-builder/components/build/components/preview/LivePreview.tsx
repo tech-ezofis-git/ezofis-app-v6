@@ -13,30 +13,19 @@ import {
   type Panel as PanelType,
   type Question,
   useFormStore,
-  type WelcomePageSettings as WelcomePage,
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
 type ViewMode = 'typeform' | 'grid' | 'full'
 
 const LivePreview = () => {
-  const {
-    isPreviewOpen,
-    panels,
-    showThankYouPage,
-    showWelcomePage,
-    thankYouPage,
-    welcomePage,
-    setIsPreviewOpen,
-  } = useFormStore()
+  const { isPreviewOpen, panels, setIsPreviewOpen } = useFormStore()
 
   const [viewMode, setViewMode] = useState<ViewMode>('typeform')
   const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
     'desktop',
   )
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [isCompleted, setIsCompleted] = useState(false)
-  const [showWelcome, setShowWelcome] = useState(false)
 
   // Flatten all fields for Typeform mode
   const allFields = panels.flatMap((p) => p.fields)
@@ -47,10 +36,8 @@ const LivePreview = () => {
   useEffect(() => {
     if (isPreviewOpen) {
       setCurrentIndex(0)
-      setIsCompleted(false)
-      setShowWelcome(showWelcomePage)
     }
-  }, [isPreviewOpen, showWelcomePage])
+  }, [isPreviewOpen])
 
   // Close on Escape
   useEffect(() => {
@@ -65,41 +52,26 @@ const LivePreview = () => {
 
   // Handlers
   const handleNext = () => {
-    if (showWelcome) {
-      setShowWelcome(false)
-      return
-    }
-
     if (viewMode === 'typeform') {
       if (currentIndex < totalFields - 1) {
         setCurrentIndex((prev) => prev + 1)
-      } else if (showThankYouPage) {
-        setIsCompleted(true)
       } else {
         setIsPreviewOpen(false)
       }
     } else if (viewMode === 'grid') {
       if (currentIndex < totalPanels - 1) {
         setCurrentIndex((prev) => prev + 1)
-      } else if (showThankYouPage) {
-        setIsCompleted(true)
       } else {
         setIsPreviewOpen(false)
       }
     } else {
-      if (showThankYouPage) {
-        setIsCompleted(true)
-      } else {
-        setIsPreviewOpen(false)
-      }
+      setIsPreviewOpen(false)
     }
   }
 
   const handlePrev = () => {
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1)
-    } else if (showWelcomePage && !showWelcome) {
-      setShowWelcome(true)
     }
   }
 
@@ -162,8 +134,6 @@ const LivePreview = () => {
                     onClick={() => {
                       setViewMode(v.value as ViewMode)
                       setCurrentIndex(0)
-                      setIsCompleted(false)
-                      setShowWelcome(showWelcomePage)
                     }}
                   >
                     <Icon height={14} name={v.icon} width={14} />
@@ -233,7 +203,7 @@ const LivePreview = () => {
           )}
         >
           {/* Progress Bar */}
-          {!showWelcome && !isCompleted && viewMode !== 'full' && (
+          {viewMode !== 'full' && (
             <div className='absolute top-0 left-0 z-10 h-1.5 w-full bg-gray-1'>
               <div
                 className='h-full bg-accent-primary shadow-[0_0_10px_rgba(var(--accent-primary-rgb),0.5)] transition-all duration-700 ease-in-out'
@@ -243,30 +213,21 @@ const LivePreview = () => {
           )}
 
           <div className='custom-scrollbar relative flex flex-1 flex-col overflow-y-auto'>
-            {showWelcome ? (
-              <WelcomeScreen page={welcomePage} onStart={handleNext} />
-            ) : isCompleted ? (
-              <CompletionScreen
-                page={thankYouPage}
-                onClose={() => setIsPreviewOpen(false)}
-              />
-            ) : (
-              <div className='flex-1 p-10 sm:p-14'>
-                {viewMode === 'typeform' && (
-                  <TypeformView
-                    field={allFields[currentIndex]}
-                    index={currentIndex}
-                  />
-                )}
-                {viewMode === 'grid' && (
-                  <PanelPreview
-                    panel={panels[currentIndex]}
-                    panelIndex={currentIndex}
-                  />
-                )}
-                {viewMode === 'full' && <FullFormView panels={panels} />}
-              </div>
-            )}
+            <div className='flex-1 p-10 sm:p-14'>
+              {viewMode === 'typeform' && (
+                <TypeformView
+                  field={allFields[currentIndex]}
+                  index={currentIndex}
+                />
+              )}
+              {viewMode === 'grid' && (
+                <PanelPreview
+                  panel={panels[currentIndex]}
+                  panelIndex={currentIndex}
+                />
+              )}
+              {viewMode === 'full' && <FullFormView panels={panels} />}
+            </div>
           </div>
 
           {/* Footer / Navigation */}
@@ -288,52 +249,46 @@ const LivePreview = () => {
               </div>
             </div>
 
-            {!isCompleted && (
-              <div className='flex gap-4'>
-                {(showWelcome ||
-                  (viewMode !== 'full' && currentIndex > 0) ||
-                  (!showWelcome && showWelcomePage)) && (
-                  <Button
-                    className='h-11 rounded-2xl px-6 font-bold'
-                    color='gray'
-                    disabled={showWelcome}
-                    size='md'
-                    variant='subtle'
-                    onClick={handlePrev}
-                  >
-                    {showWelcome ? '' : 'Back'}
-                  </Button>
-                )}
+            <div className='flex gap-4'>
+              {viewMode !== 'full' && currentIndex > 0 && (
                 <Button
-                  className='h-11 rounded-2xl px-8 font-black text-white shadow-lg shadow-accent-soft/50 transition-all hover:opacity-90 active:scale-95'
-                  color='primary'
+                  className='h-11 rounded-2xl px-6 font-bold'
+                  color='gray'
                   size='md'
-                  variant='filled'
-                  rightSection={
-                    <Icon
-                      height={18}
-                      width={18}
-                      name={
-                        isCompleted || viewMode === 'full'
-                          ? 'tabler:check'
-                          : 'tabler:arrow-right'
-                      }
-                    />
-                  }
-                  onClick={handleNext}
+                  variant='subtle'
+                  onClick={handlePrev}
                 >
-                  {showWelcome
-                    ? welcomePage.buttonText
-                    : viewMode === 'full'
-                      ? 'Submit'
-                      : currentIndex === totalFields - 1 ||
-                          (viewMode === 'grid' &&
-                            currentIndex === totalPanels - 1)
-                        ? 'Submit'
-                        : 'Next'}
+                  Back
                 </Button>
-              </div>
-            )}
+              )}
+              <Button
+                className='h-11 rounded-2xl px-8 font-black text-white shadow-lg shadow-accent-soft/50 transition-all hover:opacity-90 active:scale-95'
+                color='primary'
+                size='md'
+                variant='filled'
+                rightSection={
+                  <Icon
+                    height={18}
+                    width={18}
+                    name={
+                      viewMode === 'full' ||
+                      currentIndex === totalFields - 1 ||
+                      (viewMode === 'grid' && currentIndex === totalPanels - 1)
+                        ? 'tabler:check'
+                        : 'tabler:arrow-right'
+                    }
+                  />
+                }
+                onClick={handleNext}
+              >
+                {viewMode === 'full'
+                  ? 'Submit'
+                  : currentIndex === totalFields - 1 ||
+                      (viewMode === 'grid' && currentIndex === totalPanels - 1)
+                    ? 'Submit'
+                    : 'Next'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -349,66 +304,6 @@ const LivePreview = () => {
 // }
 
 // --- Sub-Components ---
-
-const WelcomeScreen = ({
-  page,
-  onStart,
-}: {
-  page: WelcomePage
-  onStart: () => void
-}) => (
-  <div className='animate-in fade-in zoom-in-95 flex flex-1 flex-col items-center justify-center p-12 text-center duration-500'>
-    <div className='mb-10 flex size-28 rotate-3 items-center justify-center rounded-[2.5rem] border border-accent-soft/60 bg-accent-soft/30 text-accent-primary shadow-sm'>
-      <Icon className='size-12' name='lucide:megaphone' />
-    </div>
-    <h1 className='mb-6 text-5xl leading-tight font-black tracking-tight text-gray-13'>
-      {page.title}
-    </h1>
-    <p className='mx-auto mb-12 max-w-lg text-xl leading-relaxed font-medium text-gray-11'>
-      {page.description}
-    </p>
-    <Button
-      className='h-16 rounded-2xl px-12 text-xl font-black text-white shadow-xl shadow-accent-soft/60 transition-all hover:scale-[1.02] active:scale-95'
-      color='primary'
-      size='xl'
-      variant='filled'
-      onClick={onStart}
-    >
-      {page.buttonText}
-    </Button>
-  </div>
-)
-
-const CompletionScreen = ({
-  page,
-  onClose,
-}: {
-  page: WelcomePage
-  onClose: () => void
-}) => (
-  <div className='animate-in fade-in zoom-in-95 flex flex-1 flex-col items-center justify-center p-12 text-center duration-500'>
-    <div className='border-green-200 animate-bounce-slow mb-10 flex size-28 items-center justify-center rounded-full border bg-green-10/5 text-green-6 shadow-sm'>
-      <Icon className='size-12' name='tabler:circle-check' />
-    </div>
-    <h2 className='mb-6 text-5xl font-black tracking-tight text-gray-13'>
-      {page.title}
-    </h2>
-    <p className='mx-auto mb-12 max-w-md text-xl leading-relaxed font-medium text-gray-11'>
-      {page.description}
-    </p>
-    <div className='flex flex-col gap-4'>
-      <Button
-        className='h-14 rounded-2xl border-2 border-gray-3 px-10 font-bold transition-all hover:bg-gray-1'
-        color='gray'
-        size='lg'
-        variant='outline'
-        onClick={onClose}
-      >
-        Close Preview
-      </Button>
-    </div>
-  </div>
-)
 
 const TypeformView = ({ field, index }: { field: Question; index: number }) => {
   if (!field) return <EmptyState />

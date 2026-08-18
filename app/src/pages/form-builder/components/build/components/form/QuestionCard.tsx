@@ -69,57 +69,63 @@ const QuestionCard = ({
         'group relative overflow-visible rounded-xl border font-inter transition-all duration-300',
         isLocked
           ? 'bg-gray-50/30 cursor-not-allowed border-gray-2 opacity-90'
-          : 'hover:bg-gray-50/50 cursor-pointer',
+          : 'hover:bg-gray-50/60 cursor-pointer',
         isActive
-          ? 'border-accent-primary bg-accent-soft/5 shadow-sm ring-1 ring-accent-primary'
-          : 'border-gray-2 bg-transparent hover:border-gray-3',
+          ? 'border-primary-9 bg-primary-3/30 shadow-sm ring-1 ring-primary-9'
+          : 'border-gray-2 bg-white hover:border-gray-3 hover:shadow-xs',
       )}
       style={{
         padding: '0',
       }}
       onClick={onSelect}
     >
-      <div className='flex flex-col gap-2 p-3'>
-        {/* Top Header: Label, Badges, Quick Actions, Drag Handle */}
-        <div className='flex items-start justify-between gap-3'>
-          <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
-            <div className='truncate text-13 font-medium text-gray-12'>
-              {question.label || 'Untitled Field'}
+      <div className='flex flex-col gap-2.5 p-4'>
+        {/* Top Header: Icon box, Label, Required asterisk, Quick Actions, Drag Handle */}
+        <div className='flex items-center justify-between gap-3'>
+          <div className='flex min-w-0 flex-1 items-center gap-2.5'>
+            {/* Field Icon Badge */}
+            <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-3 text-primary-9 shadow-2xs'>
+              <Icon
+                height={15}
+                name={
+                  question.type === 'FULL_NAME'
+                    ? 'lucide:user'
+                    : question.type === 'EMAIL'
+                      ? 'lucide:mail'
+                      : question.type === 'PHONE_NUMBER'
+                        ? 'lucide:phone'
+                        : question.type === 'CURRENCY_AMOUNT'
+                          ? 'lucide:banknote'
+                          : question.type === 'DIVIDER'
+                            ? 'lucide:separator-horizontal'
+                            : question.type === 'FILE_UPLOAD'
+                              ? 'lucide:upload-cloud'
+                              : question.type === 'SINGLE_SELECT' ||
+                                  question.type === 'MULTI_SELECT'
+                                ? 'lucide:list-todo'
+                                : question.type === 'SINGLE_CHOICE' ||
+                                    question.type === 'MULTIPLE_CHOICE'
+                                  ? 'lucide:radio'
+                                  : question.type === 'DATE' ||
+                                      question.type === 'TIME' ||
+                                      question.type === 'DATE_TIME'
+                                    ? 'lucide:calendar'
+                                    : 'mdi:form-textbox'
+                }
+                width={15}
+              />
             </div>
 
-            {isRequired && (
-              <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-gray-7 uppercase'>
-                Required
-              </span>
-            )}
+            <div className='truncate text-sm font-semibold text-gray-12'>
+              {question.label || 'Untitled Field'}
+              {isRequired && <span className='ml-1 font-bold text-red-11'>*</span>}
+            </div>
 
             {hasLogic && (
-              <span className='flex items-center gap-1 rounded bg-accent-primary px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white uppercase'>
+              <span className='flex items-center gap-1 rounded-md bg-purple-3 px-1.5 py-0.5 text-[10px] font-bold text-purple-11'>
                 <Icon height={10} name='lucide:split' width={10} />
                 Logic Active
               </span>
-            )}
-
-            {isLocked && (
-              <Tooltip label='This section is locked' position='top' withArrow>
-                <div className='bg-gray-100 flex items-center gap-1.5 rounded border border-gray-2 px-2 py-0.5 text-[9px] font-black tracking-widest text-gray-5 uppercase'>
-                  <Icon height={10} name='lucide:lock' width={10} />
-                  <span>Locked</span>
-                </div>
-              </Tooltip>
-            )}
-
-            {/* Visibility Warning */}
-            {!isVisible && (
-              <Tooltip
-                label='Visible when Vendor Entity Type is International Entity'
-                position='top'
-                withArrow
-              >
-                <div className='ml-1 flex size-5 cursor-help items-center justify-center rounded-md border border-accent-soft/20 bg-accent-soft/10 text-accent-primary'>
-                  <Icon height={12} name='lucide:info' width={12} />
-                </div>
-              </Tooltip>
             )}
           </div>
 
@@ -603,7 +609,7 @@ const QuestionCard = ({
                   : 'border-gray-2 bg-white group-hover:border-gray-3',
               )}
             >
-              <div className='hover:bg-primary-3/50 flex w-[80px] cursor-pointer items-center justify-between border-r border-gray-1 bg-primary-3/30 px-3 transition-colors'>
+              <div className='flex w-[80px] cursor-pointer items-center justify-between border-r border-gray-1 bg-primary-3/30 px-3 transition-colors hover:bg-primary-3/50'>
                 <span className='text-[13px] font-bold text-gray-12 uppercase'>
                   {(question.settings.specific.defaultValue as any)?.currency ||
                     'USD'}
@@ -788,61 +794,43 @@ const QuestionCard = ({
               </div>
             </div>
           ) : (question.type as string) === 'FULL_NAME' ? (
-            <div className='grid w-full grid-cols-2 gap-3'>
+            <div className='grid w-full grid-cols-2 gap-3.5'>
               <div className='flex flex-col gap-1.5'>
-                <span className='px-1 text-[10px] font-bold text-gray-4 uppercase'>
-                  First Name
+                <span className='text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
+                  FIRST NAME
                 </span>
-                <div className='flex h-10 items-center rounded-lg border border-gray-2 bg-white px-3 text-[13px] text-gray-4'>
+                <div className='flex h-11 items-center rounded-xl border border-gray-3 bg-gray-1/50 px-3.5 text-sm text-gray-10 italic shadow-2xs'>
                   e.g. John
                 </div>
               </div>
               <div className='flex flex-col gap-1.5'>
-                <span className='px-1 text-[10px] font-bold text-gray-4 uppercase'>
-                  Last Name
+                <span className='text-[10px] font-bold tracking-wider text-gray-10 uppercase'>
+                  LAST NAME
                 </span>
-                <div className='flex h-10 items-center rounded-lg border border-gray-2 bg-white px-3 text-[13px] text-gray-4'>
+                <div className='flex h-11 items-center rounded-xl border border-gray-3 bg-gray-1/50 px-3.5 text-sm text-gray-10 italic shadow-2xs'>
                   e.g. Doe
                 </div>
               </div>
             </div>
           ) : (question.type as string) === 'EMAIL' ? (
-            <div
-              className={cn(
-                'flex h-11 w-full items-center gap-3 rounded-lg border px-4 transition-colors',
-                isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
-              )}
-            >
+            <div className='flex h-11 w-full items-center gap-2.5 rounded-xl border border-gray-3 bg-gray-1/50 px-3.5 text-sm text-gray-10 italic shadow-2xs'>
               <Icon
-                className='text-gray-4'
+                className='text-gray-10'
                 height={16}
                 name='lucide:mail'
                 width={16}
               />
-              <span className='text-[13px] text-gray-4 italic'>
-                john.doe@example.com
-              </span>
+              <span>john.doe@example.com</span>
             </div>
           ) : (question.type as string) === 'PHONE_NUMBER' ? (
-            <div
-              className={cn(
-                'flex h-11 w-full items-center gap-3 rounded-lg border px-4 transition-colors',
-                isActive
-                  ? 'border-accent-primary/50 bg-white'
-                  : 'border-gray-2 bg-white group-hover:border-gray-3',
-              )}
-            >
+            <div className='flex h-11 w-full items-center gap-2.5 rounded-xl border border-gray-3 bg-gray-1/50 px-3.5 text-sm text-gray-10 italic shadow-2xs'>
               <Icon
-                className='text-gray-4'
+                className='text-gray-10'
                 height={16}
                 name='lucide:phone'
                 width={16}
               />
-              <span className='text-[13px] text-gray-4 italic'>
-                +1 (555) 000-0000
-              </span>
+              <span>+1 (555) 000-0000</span>
             </div>
           ) : (question.type as string) === 'URL' ? (
             <div

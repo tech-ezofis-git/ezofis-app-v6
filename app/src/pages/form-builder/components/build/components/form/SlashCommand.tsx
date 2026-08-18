@@ -78,10 +78,13 @@ const SlashCommand = ({
   }
 
   return (
-    <div className='group/slash relative w-full px-1'>
-      <div className='flex items-center gap-3 border-b border-transparent py-3 transition-all duration-300 focus-within:border-accent-primary/50 hover:border-gray-2'>
+    <div className={cn('group/slash relative w-full', isOpen && 'z-50')}>
+      <div className='flex items-center gap-2.5 rounded-lg border border-dashed border-gray-2 bg-white px-3 py-2.5 transition-all duration-300 focus-within:border-primary-9/60 focus-within:bg-primary-3/20 hover:border-gray-3'>
+        <div className='flex size-5 shrink-0 items-center justify-center rounded-md bg-gray-1 text-gray-5 transition-colors group-focus-within/slash:bg-primary-3 group-focus-within/slash:text-primary-9'>
+          <Icon height={11} name='lucide:slash' width={11} />
+        </div>
         <input
-          className='flex-1 border-none bg-transparent text-[14px] font-medium text-gray-12 outline-none placeholder:text-gray-4'
+          className='flex-1 border-none bg-transparent text-xs font-medium text-gray-12 outline-none placeholder:text-gray-6'
           placeholder={placeholder}
           ref={inputRef}
           type='text'
@@ -94,9 +97,9 @@ const SlashCommand = ({
 
       {/* Floating Menu */}
       {isOpen && (
-        <div className='animate-in fade-in zoom-in-95 slide-in-from-top-4 absolute top-full left-0 z-[100] mt-2 w-72 overflow-hidden rounded-xl border border-gray-2 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.15)] duration-200'>
-          <div className='bg-gray-50/50 border-b border-gray-1 p-2'>
-            <div className='px-2 text-[10px] font-extrabold tracking-[0.2em] text-gray-4 uppercase italic'>
+        <div className='animate-in fade-in zoom-in-95 slide-in-from-top-4 absolute top-full left-0 z-[999] mt-2 w-72 overflow-hidden rounded-xl border border-gray-3 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.18)] duration-200'>
+          <div className='border-b border-gray-2 bg-gray-1/60 p-2'>
+            <div className='px-2 text-xs font-bold text-gray-11'>
               Commands
             </div>
           </div>

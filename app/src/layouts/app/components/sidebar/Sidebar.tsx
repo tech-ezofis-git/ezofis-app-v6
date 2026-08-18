@@ -1,8 +1,36 @@
 import { useLingui } from '@lingui/react/macro'
-import authUserStore from '@/stores/authUserStore'
+import authUserStore, { type SessionPermission } from '@/stores/authUserStore'
 import type { Menus } from '../../types'
 import SidebarLarge from './sidebar-large/SidebarLarge'
 import SidebarSmall from './sidebar-small/SidebarSmall'
+
+const normalizePermissionKey = (key: string) => {
+  const k = key.toLowerCase().trim()
+  if (k === 'requests') return 'request'
+  if (k === 'forms') return 'form'
+  if (k === 'folders') return 'folder'
+  if (k === 'workflows') return 'workflow'
+  return k
+}
+
+const isMenuVisible = (
+  permissionKey?: string,
+  sessionPermissions?: SessionPermission[] | null,
+): boolean => {
+  if (!permissionKey) return true
+  if (!sessionPermissions || sessionPermissions.length === 0) return true
+
+  const targetKey = normalizePermissionKey(permissionKey)
+  const permission = sessionPermissions.find(
+    (item) => item.key && normalizePermissionKey(item.key) === targetKey,
+  )
+
+  if (permission) {
+    return permission.visible !== false
+  }
+
+  return true
+}
 
 const Sidebar = () => {
   const { t } = useLingui()
@@ -23,7 +51,7 @@ const Sidebar = () => {
         {
           icon: 'lucide:inbox',
           label: t`Requests`,
-          permissionKey: 'requests',
+          permissionKey: 'request',
           route: '/requests',
         },
         {
@@ -32,11 +60,6 @@ const Sidebar = () => {
           permissionKey: 'folder',
           route: '/folders',
         },
-        // {
-        //   icon: 'lucide:chart-pie',
-        //   label: 'Reports',
-        //   route: '/reports',
-        // },
       ],
       label: t`Insights`,
     },
@@ -51,7 +74,7 @@ const Sidebar = () => {
         {
           icon: 'lucide:clipboard-list',
           label: t`Forms`,
-          permissionKey: 'forms',
+          permissionKey: 'form',
           route: '/forms',
         },
         {
@@ -60,72 +83,19 @@ const Sidebar = () => {
           permissionKey: 'settings',
           route: '/settings',
         },
-        // {
-        //   icon: 'lucide:folder',
-        //   label: 'Folders',
-        //   route: '/folders',
-        // },
-        // {
-        //   icon: 'lucide:blocks',
-        //   label: 'Tasks',
-        //   route: '/tasks',
-        // },
-        // {
-        //   icon: 'lucide:panels-top-left',
-        //   label: 'Portals',
-        //   route: '/portals',
-        // },
       ],
       label: t`Modules`,
     },
-    // {
-    //   items: [
-    //     {
-    //       icon: 'lucide:settings',
-    //       label: 'Settings',
-    //       route: '/settings',
-    //     },
-    //     {
-    //       icon: 'lucide:life-buoy',
-    //       label: 'Help Center',
-    //       route: '/help-center',
-    //     },
-    //     {
-    //       icon: 'lucide:trash-2',
-    //       label: 'Trash',
-    //       route: '/trash',
-    //     },
-    //   ],
-    //   label: 'Others',
-    // },
   ]
 
-  const permissionMap = new Map<string, boolean>(
-    (sessionPermissions || []).map((item) => [
-      item.key ?? '',
-      item.visible === true,
-    ]),
-  )
-
-  // TEMP: always show Requests/Forms until role permission persistence is fixed
-  const temporarilyAlwaysVisible = new Set(['requests', 'forms'])
-
-  const filteredMenu =
-    !sessionPermissions || sessionPermissions.length === 0
-      ? menus
-      : menus
-          .map((section) => ({
-            ...section,
-            items: section.items.filter(
-              (item) =>
-                !item.permissionKey ||
-                temporarilyAlwaysVisible.has(item.permissionKey) ||
-                permissionMap.get(item.permissionKey) === true,
-            ),
-          }))
-          .filter((section) => section.items.length > 0)
-
-  // console.log(filteredMenu)
+  const filteredMenu = menus
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) =>
+        isMenuVisible(item.permissionKey, sessionPermissions),
+      ),
+    }))
+    .filter((section) => section.items.length > 0)
 
   return (
     <>
@@ -137,3 +107,4 @@ const Sidebar = () => {
 
 Sidebar.displayName = 'Sidebar'
 export default Sidebar
+

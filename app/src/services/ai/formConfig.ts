@@ -328,7 +328,7 @@ export function buildFormPayloadFromAiSuggestion(
       const question = getField(fieldType)
       question.label = f.label
       if (question.settings?.general) {
-        question.settings.general.label = f.label
+        ;(question.settings.general as any).label = f.label
         if (f.placeholder) {
           question.settings.general.placeholder = f.placeholder
         }
