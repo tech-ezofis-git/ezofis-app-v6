@@ -79,8 +79,8 @@ const Header = () => {
               className={cn(
                 'shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase shadow-2xs',
                 publishStatus === 'PUBLISHED'
-                  ? 'border-green-4 bg-green-3/80 text-green-11'
-                  : 'border-amber-4 bg-amber-3/80 text-amber-11',
+                  ? 'border-green-4 bg-green-3 text-green-11'
+                  : 'border-gray-4 bg-gray-2 text-gray-11',
               )}
             >
               {publishStatus === 'PUBLISHED' ? 'Published' : 'Draft'}

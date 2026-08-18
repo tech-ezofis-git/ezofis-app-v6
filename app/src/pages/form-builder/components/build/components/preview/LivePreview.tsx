@@ -4,42 +4,22 @@ import {
   Rating,
   SegmentedControl,
   TextInput,
-  Tooltip,
-  UnstyledButton,
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import {
-  type Panel as PanelType,
   type Question,
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
-type ViewMode = 'typeform' | 'grid' | 'full'
-
 const LivePreview = () => {
-  const { isPreviewOpen, panels, setIsPreviewOpen } = useFormStore()
-
-  const [viewMode, setViewMode] = useState<ViewMode>('typeform')
+  const { isPreviewOpen, name, panels, setIsPreviewOpen } = useFormStore()
   const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
     'desktop',
   )
-  const [currentIndex, setCurrentIndex] = useState(0)
 
-  // Flatten all fields for Typeform mode
-  const allFields = panels.flatMap((p) => p.fields)
-  const totalFields = allFields.length
-  const totalPanels = panels.length
-
-  // Reset state when opening
-  useEffect(() => {
-    if (isPreviewOpen) {
-      setCurrentIndex(0)
-    }
-  }, [isPreviewOpen])
-
-  // Close on Escape
+  // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsPreviewOpen(false)
@@ -50,100 +30,17 @@ const LivePreview = () => {
 
   if (!isPreviewOpen) return null
 
-  // Handlers
-  const handleNext = () => {
-    if (viewMode === 'typeform') {
-      if (currentIndex < totalFields - 1) {
-        setCurrentIndex((prev) => prev + 1)
-      } else {
-        setIsPreviewOpen(false)
-      }
-    } else if (viewMode === 'grid') {
-      if (currentIndex < totalPanels - 1) {
-        setCurrentIndex((prev) => prev + 1)
-      } else {
-        setIsPreviewOpen(false)
-      }
-    } else {
-      setIsPreviewOpen(false)
-    }
-  }
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1)
-    }
-  }
-
-  // Progress Calculation
-  let progress = 0
-  if (viewMode === 'typeform') {
-    progress =
-      totalFields > 0 ? Math.round(((currentIndex + 1) / totalFields) * 100) : 0
-  } else if (viewMode === 'grid') {
-    progress =
-      totalPanels > 0 ? Math.round(((currentIndex + 1) / totalPanels) * 100) : 0
-  } else {
-    progress = 100
-  }
-
   return (
-    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-white font-inter duration-500'>
-      {/* Header */}
-      <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-2 bg-white px-6'>
-        <div className='flex items-center gap-4'>
-          <div className='flex items-center gap-3'>
-            <div className='flex size-9 items-center justify-center rounded-xl border border-gray-2 bg-gray-1 text-gray-7'>
-              <Icon height={18} name='tabler:eye' width={18} />
-            </div>
-            <span className='text-lg font-bold tracking-tight text-gray-13'>
-              Preview
-            </span>
+    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 backdrop-blur-sm font-inter duration-300'>
+      {/* Header Control Bar */}
+      <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6 shadow-2xs'>
+        <div className='flex items-center gap-3'>
+          <div className='flex size-9 items-center justify-center rounded-xl border border-gray-3 bg-primary-3 text-primary-9 shadow-2xs'>
+            <Icon height={18} name='tabler:eye' width={18} />
           </div>
-
-          <div className='mx-2 h-6 w-px bg-gray-2' />
-
-          <div className='flex gap-1 overflow-hidden rounded-xl border border-gray-2 bg-gray-1 p-1'>
-            {[
-              {
-                icon: 'lucide:layout-list',
-                label: 'One at a time',
-                value: 'typeform',
-              },
-              {
-                icon: 'lucide:layout-grid',
-                label: 'Section by Section',
-                value: 'grid',
-              },
-              {
-                icon: 'lucide:file-text',
-                label: 'All Questions',
-                value: 'full',
-              },
-            ].map((v) => {
-              const active = viewMode === v.value
-              return (
-                <Tooltip key={v.value} label={v.label} openDelay={500}>
-                  <UnstyledButton
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg px-3 py-1.5 transition-all',
-                      active
-                        ? 'bg-white text-accent-primary shadow-sm'
-                        : 'text-gray-5 hover:bg-gray-2',
-                    )}
-                    onClick={() => {
-                      setViewMode(v.value as ViewMode)
-                      setCurrentIndex(0)
-                    }}
-                  >
-                    <Icon height={14} name={v.icon} width={14} />
-                    <div className='text-[10px] font-extrabold tracking-wider uppercase'>
-                      {active ? v.label : ''}
-                    </div>
-                  </UnstyledButton>
-                </Tooltip>
-              )
-            })}
+          <div className='flex flex-col'>
+            <span className='text-sm font-bold text-gray-12'>Form Live Preview</span>
+            <span className='text-xs text-gray-10'>{name || 'Untitled Form'}</span>
           </div>
         </div>
 
@@ -153,390 +50,188 @@ const LivePreview = () => {
             size='xs'
             value={deviceType}
             classNames={{
-              indicator: 'bg-white shadow-sm',
-              root: 'border border-gray-2 bg-gray-1 p-1',
+              indicator: 'bg-white shadow-xs',
+              root: 'border border-gray-3 bg-gray-2 p-1',
             }}
             data={[
               {
-                label: (
-                  <Icon height={14} name='tabler:device-desktop' width={14} />
-                ),
+                label: <Icon height={14} name='tabler:device-desktop' width={14} />,
                 value: 'desktop',
               },
               {
-                label: (
-                  <Icon height={14} name='tabler:device-tablet' width={14} />
-                ),
+                label: <Icon height={14} name='tabler:device-tablet' width={14} />,
                 value: 'tablet',
               },
               {
-                label: (
-                  <Icon height={14} name='tabler:device-mobile' width={14} />
-                ),
+                label: <Icon height={14} name='tabler:device-mobile' width={14} />,
                 value: 'mobile',
               },
             ]}
             onChange={(v) => setDeviceType(v as any)}
           />
-          <div className='mx-1 h-6 w-px bg-gray-2' />
+
+          <div className='h-6 w-px bg-gray-3' />
+
           <Button
-            className='h-10 rounded-xl px-4 hover:bg-gray-1'
+            className='h-9 rounded-xl px-4 hover:bg-gray-2 text-gray-12 cursor-pointer'
             color='gray'
-            leftSection={<Icon height={18} name='tabler:x' width={18} />}
+            leftSection={<Icon height={16} name='tabler:x' width={16} />}
             size='sm'
             variant='subtle'
             onClick={() => setIsPreviewOpen(false)}
           >
-            Exit
+            Close
           </Button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className='bg-gray-50 relative flex flex-1 flex-col items-center justify-center overflow-hidden p-4 transition-all duration-500 sm:p-8'>
+      {/* Single Scrollable Full-Form Preview Container */}
+      <div className='relative flex flex-1 items-center justify-center overflow-hidden p-4 sm:p-6 bg-gray-2/40'>
         <div
           className={cn(
-            'relative flex h-full max-h-[850px] flex-col overflow-hidden rounded-[2rem] border border-gray-2 bg-white shadow-2xl transition-all duration-500',
-            deviceType === 'desktop' && 'w-full max-w-4xl',
-            deviceType === 'tablet' && 'w-[768px] max-w-full',
-            deviceType === 'mobile' && 'w-[375px] max-w-full',
+            'relative flex h-full max-h-[880px] w-full flex-col overflow-hidden rounded-2xl border border-gray-3 bg-white shadow-xl transition-all duration-300',
+            deviceType === 'desktop' && 'max-w-4xl',
+            deviceType === 'tablet' && 'max-w-[768px]',
+            deviceType === 'mobile' && 'max-w-[380px]',
           )}
         >
-          {/* Progress Bar */}
-          {viewMode !== 'full' && (
-            <div className='absolute top-0 left-0 z-10 h-1.5 w-full bg-gray-1'>
-              <div
-                className='h-full bg-accent-primary shadow-[0_0_10px_rgba(var(--accent-primary-rgb),0.5)] transition-all duration-700 ease-in-out'
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          )}
-
-          <div className='custom-scrollbar relative flex flex-1 flex-col overflow-y-auto'>
-            <div className='flex-1 p-10 sm:p-14'>
-              {viewMode === 'typeform' && (
-                <TypeformView
-                  field={allFields[currentIndex]}
-                  index={currentIndex}
-                />
-              )}
-              {viewMode === 'grid' && (
-                <PanelPreview
-                  panel={panels[currentIndex]}
-                  panelIndex={currentIndex}
-                />
-              )}
-              {viewMode === 'full' && <FullFormView panels={panels} />}
-            </div>
-          </div>
-
-          {/* Footer / Navigation */}
-          <div className='z-20 flex shrink-0 items-center justify-between border-t border-gray-1 bg-white px-8 py-6'>
-            <div className='group flex cursor-default items-center gap-2 opacity-80 transition-opacity hover:opacity-100'>
-              <div className='flex size-6 items-center justify-center rounded-lg bg-accent-soft/30 transition-colors group-hover:bg-accent-soft/50'>
+          {/* Scrollable Form Content */}
+          <div className='custom-scrollbar flex-1 overflow-y-auto p-6 sm:p-8 space-y-6'>
+            {panels.length === 0 || panels.every((p) => p.fields.length === 0) ? (
+              <div className='py-24 text-center text-gray-10'>
                 <Icon
-                  className='text-accent-primary transition-transform group-hover:scale-110'
-                  height={14}
-                  name='lucide:zap'
-                  width={14}
+                  className='mx-auto mb-3 text-gray-8 opacity-60'
+                  height={40}
+                  name='tabler:clipboard-x'
+                  width={40}
                 />
-              </div>
-              <div className='text-[10px] font-extrabold tracking-[0.2em] text-gray-11 uppercase'>
-                Powered By{' '}
-                <span className='border-b border-gray-3 pb-0.5 text-gray-13'>
-                  EZOFIS
-                </span>
-              </div>
-            </div>
-
-            <div className='flex gap-4'>
-              {viewMode !== 'full' && currentIndex > 0 && (
-                <Button
-                  className='h-11 rounded-2xl px-6 font-bold'
-                  color='gray'
-                  size='md'
-                  variant='subtle'
-                  onClick={handlePrev}
-                >
-                  Back
-                </Button>
-              )}
-              <Button
-                className='h-11 rounded-2xl px-8 font-black text-white shadow-lg shadow-accent-soft/50 transition-all hover:opacity-90 active:scale-95'
-                color='primary'
-                size='md'
-                variant='filled'
-                rightSection={
-                  <Icon
-                    height={18}
-                    width={18}
-                    name={
-                      viewMode === 'full' ||
-                      currentIndex === totalFields - 1 ||
-                      (viewMode === 'grid' && currentIndex === totalPanels - 1)
-                        ? 'tabler:check'
-                        : 'tabler:arrow-right'
-                    }
-                  />
-                }
-                onClick={handleNext}
-              >
-                {viewMode === 'full'
-                  ? 'Submit'
-                  : currentIndex === totalFields - 1 ||
-                      (viewMode === 'grid' && currentIndex === totalPanels - 1)
-                    ? 'Submit'
-                    : 'Next'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// interface TableColumn {
-//   id: string
-//   label: string
-//   size: string
-//   type: string
-// }
-
-// --- Sub-Components ---
-
-const TypeformView = ({ field, index }: { field: Question; index: number }) => {
-  if (!field) return <EmptyState />
-
-  return (
-    <div
-      className='animate-in fade-in slide-in-from-bottom-4 flex min-h-[300px] flex-col justify-center duration-500'
-      key={field.id}
-    >
-      <div className='mb-6'>
-        <h2 className='mb-2 text-2xl leading-tight font-bold text-gray-9'>
-          <span className='mr-2 text-xl text-accent-primary'>{index + 1}.</span>
-          {field.label || 'Untitled Question'}
-        </h2>
-        {field.settings.general.description && (
-          <p className='text-lg text-gray-5'>
-            {field.settings.general.description}
-          </p>
-        )}
-      </div>
-
-      <div className='mb-6'>{renderPreviewInput(field)}</div>
-
-      {field.settings.validation.fieldRule === 'REQUIRED' && (
-        <div className='text-red-500 flex items-center gap-1 text-xs font-bold tracking-wider uppercase'>
-          <Icon height={10} name='tabler:asterisk' width={10} />
-          Required
-        </div>
-      )}
-    </div>
-  )
-}
-
-const PanelPreview = ({
-  panel,
-  panelIndex,
-}: {
-  panel: PanelType
-  panelIndex: number
-}) => {
-  if (!panel || panel.fields.length === 0) return <EmptyState />
-
-  return (
-    <div
-      className='animate-in fade-in slide-in-from-right-4 space-y-8 duration-500'
-      key={panel.id}
-    >
-      <div className='mb-4 border-b border-gray-1 pb-4'>
-        <div className='text-sm font-bold tracking-wider text-gray-4 uppercase'>
-          Section {panelIndex + 1}
-        </div>
-      </div>
-
-      <div className='grid grid-cols-12 gap-6'>
-        {panel.fields.map((f) => (
-          <div
-            key={f.id}
-            className={cn(
-              'col-span-12',
-              f.settings.general.size === 'col-6' && 'md:col-span-6',
-              f.settings.general.size === 'col-4' && 'md:col-span-4',
-            )}
-          >
-            <div className='mb-2'>
-              <label className='mb-1 block text-sm font-bold text-gray-9'>
-                {f.label || 'Untitled Question'}
-                {f.settings.validation.fieldRule === 'REQUIRED' && (
-                  <span className='text-red-500 ml-1'>*</span>
-                )}
-              </label>
-              {f.settings.general.description && (
-                <p className='mb-2 text-xs text-gray-5'>
-                  {f.settings.general.description}
-                </p>
-              )}
-            </div>
-            {renderPreviewInput(f, 'sm')}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const FullFormView = ({ panels }: { panels: PanelType[] }) => {
-  const allFields = panels.flatMap((p) => p.fields)
-  if (allFields.length === 0) return <EmptyState />
-
-  return (
-    <div className='animate-in fade-in space-y-12 duration-500'>
-      {panels.map((panel, i) => (
-        <div className='space-y-6' key={panel.id}>
-          {panels.length > 1 && (
-            <div className='border-b border-gray-1 pb-2'>
-              <div className='text-sm font-bold tracking-wider text-gray-4 uppercase'>
-                Section {i + 1}
-              </div>
-            </div>
-          )}
-          <div className='grid grid-cols-12 gap-6'>
-            {panel.fields.map((f) => (
-              <div
-                key={f.id}
-                className={cn(
-                  'col-span-12',
-                  f.settings.general.size === 'col-6' && 'md:col-span-6',
-                  f.settings.general.size === 'col-4' && 'md:col-span-4',
-                )}
-              >
-                <div className='mb-2'>
-                  <label className='mb-1 block text-sm font-bold text-gray-9'>
-                    {f.label || 'Untitled Question'}
-                    {f.settings.validation.fieldRule === 'REQUIRED' && (
-                      <span className='text-red-500 ml-1'>*</span>
-                    )}
-                  </label>
-                  {f.settings.general.description && (
-                    <p className='mb-2 text-xs text-gray-5'>
-                      {f.settings.general.description}
-                    </p>
-                  )}
+                <div className='text-sm font-semibold text-gray-12'>
+                  No fields added to this form yet.
                 </div>
-                {renderPreviewInput(f, 'sm')}
+                <div className='mt-1 text-xs text-gray-9'>
+                  Add sections and fields in the Form Builder to preview them here.
+                </div>
               </div>
-            ))}
+            ) : (
+              panels.map((panel, idx) => (
+                <div
+                  key={panel.id}
+                  className='rounded-xl border border-gray-3 bg-white p-5 shadow-2xs space-y-4'
+                >
+                  {/* Section Title & Description Header */}
+                  <div className='border-b border-gray-3 pb-3'>
+                    <h3 className='text-base font-bold text-gray-12'>
+                      {panel.settings.title || `Section ${idx + 1}`}
+                    </h3>
+                    {panel.settings.description && (
+                      <p className='mt-1 text-xs font-normal text-gray-10'>
+                        {panel.settings.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Section Fields Grid */}
+                  <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
+                    {panel.fields.map((field) => (
+                      <div
+                        key={field.id}
+                        className={cn(
+                          'col-span-12',
+                          field.settings.general.size === 'col-6' &&
+                            'md:col-span-6',
+                          field.settings.general.size === 'col-4' &&
+                            'md:col-span-4',
+                          field.settings.general.size === 'col-3' &&
+                            'md:col-span-3',
+                        )}
+                      >
+                        {!field.settings.general.hideLabel && (
+                          <div className='mb-1.5 flex items-center justify-between'>
+                            <label className='block text-xs font-semibold text-gray-12'>
+                              {field.label || 'Untitled Question'}
+                              {field.settings.validation.fieldRule ===
+                                'REQUIRED' && (
+                                <span className='ml-1 font-bold text-red-11'>
+                                  *
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        )}
+                        {field.settings.general.description && (
+                          <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
+                            {field.settings.general.description}
+                          </p>
+                        )}
+                        {renderPreviewInput(field)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+
+            {/* Bottom Form Submit Action */}
+            {panels.length > 0 && (
+              <div className='flex items-center justify-end gap-3 border-t border-gray-3 pt-4'>
+                <Button
+                  className='rounded-xl font-bold cursor-pointer px-6'
+                  color='primary'
+                  leftSection={<Icon height={16} name='lucide:send' width={16} />}
+                  size='md'
+                  variant='solid'
+                  onClick={() => setIsPreviewOpen(false)}
+                >
+                  Submit Form
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-      ))}
+      </div>
     </div>
   )
 }
 
-const EmptyState = () => (
-  <div className='py-20 text-center text-gray-5'>
-    <Icon
-      className='mx-auto mb-4 opacity-50'
-      height={48}
-      name='tabler:clipboard-x'
-      width={48}
-    />
-    <div>No questions to display.</div>
-  </div>
-)
-
-const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
-  const isSmall = size === 'sm'
+const renderPreviewInput = (field: Question) => {
   switch (field.type) {
     case 'LABEL':
       return (
-        <div
-          className={cn(
-            'font-medium text-gray-9',
-            isSmall ? 'text-sm' : 'text-xl',
-          )}
-        >
+        <div className='text-sm font-medium text-gray-12'>
           {field.label || 'Label Text'}
         </div>
       )
     case 'DIVIDER':
-      return <Divider className='my-4' />
+      return <Divider className='my-2' />
     case 'TEXT_BUILDER':
       return (
-        <div
-          className={cn(
-            'w-full overflow-hidden rounded-lg border border-gray-2 bg-white',
-            isSmall ? 'min-h-[100px]' : 'min-h-[200px]',
-          )}
-        >
-          <div className='bg-gray-50 flex gap-2 border-b border-gray-2 p-2'>
-            <Icon
-              className='text-gray-4'
-              height={16}
-              name='tabler:bold'
-              width={16}
-            />
-            <Icon
-              className='text-gray-4'
-              height={16}
-              name='tabler:italic'
-              width={16}
-            />
-            <Icon
-              className='text-gray-4'
-              height={16}
-              name='tabler:list'
-              width={16}
-            />
+        <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-white'>
+          <div className='flex gap-2 border-b border-gray-3 bg-gray-2/60 p-2'>
+            <Icon className='text-gray-10' height={14} name='tabler:bold' width={14} />
+            <Icon className='text-gray-10' height={14} name='tabler:italic' width={14} />
+            <Icon className='text-gray-10' height={14} name='tabler:list' width={14} />
           </div>
-          <div className='p-4 text-gray-4 italic'>
-            Rich text editor placeholder...
+          <div className='p-3 text-xs italic text-gray-9'>
+            Rich text content editor...
           </div>
         </div>
       )
     case 'FILE_UPLOAD':
       return (
-        <div
-          className={cn(
-            'bg-gray-50 hover:bg-gray-100 flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-2 transition-colors',
-            isSmall ? 'p-4' : 'p-10',
-          )}
-        >
-          <Icon
-            className='mb-2 text-gray-4'
-            height={isSmall ? 24 : 40}
-            name='tabler:upload'
-            width={isSmall ? 24 : 40}
-          />
-          <div
-            className={cn(
-              'font-medium text-gray-6',
-              isSmall ? 'text-xs' : 'text-sm',
-            )}
-          >
+        <div className='flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-3 bg-gray-1/40 p-4 transition-colors hover:bg-gray-2'>
+          <Icon className='mb-1.5 text-gray-10' height={20} name='tabler:upload' width={20} />
+          <div className='text-xs font-medium text-gray-12'>
             Click to upload or drag and drop
           </div>
-          <div className='mt-1 text-center text-xs text-gray-4'>
+          <div className='mt-0.5 text-[10px] text-gray-9'>
             Any file up to 10MB
           </div>
         </div>
       )
     case 'TIME':
       return (
-        <div
-          className={cn(
-            'flex items-center gap-3 rounded-lg border border-gray-2 bg-white text-gray-5',
-            isSmall ? 'p-2 text-sm' : 'p-3 text-lg',
-          )}
-        >
-          <Icon
-            height={isSmall ? 16 : 20}
-            name='tabler:clock'
-            width={isSmall ? 16 : 20}
-          />
+        <div className='flex items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11'>
+          <Icon height={15} name='tabler:clock' width={15} />
           <span>HH : MM AM/PM</span>
         </div>
       )
@@ -547,19 +242,14 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
         { id: '3', label: 'Column 3', size: 'col-4', type: 'SHORT_TEXT' },
       ]
       return (
-        <div className='overflow-x-auto rounded-lg border border-gray-2 bg-white'>
-          <table className='w-full border-collapse text-left text-sm'>
-            <thead className='bg-gray-50 border-b border-gray-2'>
+        <div className='overflow-x-auto rounded-lg border border-gray-3 bg-white'>
+          <table className='w-full border-collapse text-left text-xs'>
+            <thead className='border-b border-gray-3 bg-gray-2/60'>
               <tr>
                 {columns.map((col: any) => (
                   <th
                     key={col.id}
-                    className={cn(
-                      'p-3 font-bold whitespace-nowrap text-gray-7',
-                      col.size === 'col-3' && 'w-[100px]',
-                      col.size === 'col-6' && 'w-[200px]',
-                      col.size === 'col-12' && 'w-[300px]',
-                    )}
+                    className='p-2.5 font-bold whitespace-nowrap text-gray-12'
                   >
                     {col.label}
                   </th>
@@ -568,9 +258,9 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
             </thead>
             <tbody>
               {[1, 2].map((i) => (
-                <tr className='border-b border-gray-1 last:border-0' key={i}>
+                <tr className='border-b border-gray-2 last:border-0' key={i}>
                   {columns.map((col: any) => (
-                    <td className='p-3' key={col.id}>
+                    <td className='p-2' key={col.id}>
                       <TextInput
                         placeholder='...'
                         size='xs'
@@ -593,12 +283,10 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     case 'FULL_NAME':
       return (
         <TextInput
-          size={isSmall ? 'sm' : 'xl'}
-          variant={isSmall ? 'default' : 'unstyled'}
+          size='sm'
+          variant='default'
           classNames={{
-            input: isSmall
-              ? 'bg-white'
-              : 'rounded-none border-b-2 border-gray-2 px-0 py-2 text-2xl font-light transition-colors focus:border-accent-primary',
+            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
@@ -608,12 +296,7 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     case 'LONG_TEXT':
       return (
         <textarea
-          className={cn(
-            'w-full resize-none transition-colors outline-none',
-            isSmall
-              ? 'min-h-[80px] rounded-md border border-gray-3 bg-white p-2 text-sm focus:border-accent-primary focus:ring-1 focus:ring-accent-primary'
-              : 'min-h-[100px] border-b-2 border-gray-2 bg-transparent py-2 text-xl font-light focus:border-accent-primary',
-          )}
+          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-white p-2.5 text-xs text-gray-12 transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3 shadow-2xs'
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
@@ -621,17 +304,8 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
       )
     case 'DATE':
       return (
-        <div
-          className={cn(
-            'inline-flex cursor-pointer items-center gap-3 rounded-lg border border-gray-2 bg-white text-gray-5 transition-colors hover:border-accent-primary/50',
-            isSmall ? 'p-2 text-sm' : 'p-3 text-lg',
-          )}
-        >
-          <Icon
-            height={isSmall ? 16 : 20}
-            name='tabler:calendar'
-            width={isSmall ? 16 : 20}
-          />
+        <div className='inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11 transition-colors hover:border-primary-9'>
+          <Icon height={15} name='tabler:calendar' width={15} />
           <span>MM / DD / YYYY</span>
         </div>
       )
@@ -641,7 +315,7 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
           color='yellow'
           count={field.settings.specific.iconCount || 5}
           defaultValue={0}
-          size={isSmall ? 'md' : 'xl'}
+          size='md'
         />
       )
     case 'SINGLE_CHOICE':
@@ -649,29 +323,21 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     case 'SINGLE_SELECT':
     case 'MULTI_SELECT':
       return (
-        <div className='space-y-2'>
+        <div className='space-y-1.5'>
           {['Option A', 'Option B', 'Option C'].map((opt, i) => (
             <div
               key={i}
-              className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-lg border border-gray-2 bg-white transition-all hover:border-accent-primary/30 hover:bg-accent-soft/5',
-                isSmall ? 'p-2 text-sm' : 'p-3',
-              )}
+              className='flex cursor-pointer items-center gap-2.5 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-12 transition-all hover:bg-gray-2'
             >
               <div
                 className={cn(
-                  'flex items-center justify-center border border-gray-3',
+                  'flex size-4 items-center justify-center border border-gray-4',
                   field.type === 'SINGLE_CHOICE'
                     ? 'rounded-full'
                     : 'rounded-md',
-                  isSmall ? 'size-4' : 'size-5',
                 )}
-              ></div>
-              <span
-                className={cn('text-gray-7', isSmall ? 'text-sm' : 'text-lg')}
-              >
-                {opt}
-              </span>
+              />
+              <span>{opt}</span>
             </div>
           ))}
         </div>
@@ -679,12 +345,10 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
     default:
       return (
         <TextInput
-          size={isSmall ? 'sm' : 'xl'}
-          variant={isSmall ? 'default' : 'unstyled'}
+          size='sm'
+          variant='default'
           classNames={{
-            input: isSmall
-              ? 'bg-white'
-              : 'rounded-none border-b-2 border-gray-2 px-0 py-2 text-2xl font-light transition-colors focus:border-accent-primary',
+            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'

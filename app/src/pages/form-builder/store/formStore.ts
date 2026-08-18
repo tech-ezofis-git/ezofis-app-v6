@@ -551,6 +551,9 @@ export const useFormStore = create<FormStore>()(
             ? genSettings.type
             : 'WORKFLOW',
           hubLinkIds: json.settings?.hubLinkIds || [],
+          isPreviewOpen: false,
+          isPublishOpen: false,
+          isSidebarOpen: false,
           layout: genSettings.layout || 'typeform',
           name: genSettings.name || 'Untitled Form',
           panels: json.panels || [],
@@ -736,12 +739,23 @@ export const useFormStore = create<FormStore>()(
 
       // Sidebar Actions
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
-
       setSidebarView: (sidebarView) => set({ sidebarView }),
     }),
-
     {
       name: 'form-builder-storage-v3',
+      partialize: (state) => {
+        // Exclude transient UI drawer flags from localStorage persistence
+        const {
+          activePanelId,
+          activeQuestionId,
+          addFieldPosition,
+          isPreviewOpen,
+          isPublishOpen,
+          isSidebarOpen,
+          ...rest
+        } = state
+        return rest
+      },
       version: 3,
     },
   ),

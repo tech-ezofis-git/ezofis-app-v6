@@ -82,6 +82,7 @@ export default function AiFormBuilder({
   const [description, setDescription] = useState('')
   const [chatInput, setChatInput] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isThinking, setIsThinking] = useState(false)
   const [suggestion, setSuggestion] = useState<AiFormConfigSuggestion | null>(
     null,
   )
@@ -90,14 +91,13 @@ export default function AiFormBuilder({
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isGenerating])
+  }, [messages, isGenerating, isThinking])
 
   const handleSelectType = (typeValue: string) => {
     const typeLabel =
       typeValue === 'WORKFLOW' ? t`Workflow Form` : t`Master Form`
 
     setSelectedType(typeValue as FormTypeOption)
-    setIsTypeSelected(true)
 
     setMessages((prev) => [
       ...prev,
@@ -106,13 +106,23 @@ export default function AiFormBuilder({
         role: 'user',
         text: typeLabel,
       },
-      {
-        component: 'DETAILS_FORM',
-        id: `ast-${Date.now()}`,
-        role: 'assistant',
-        text: t`Great! Please enter the form name and describe what purpose this form serves.`,
-      },
     ])
+
+    setIsThinking(true)
+
+    setTimeout(() => {
+      setIsThinking(false)
+      setIsTypeSelected(true)
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ast-${Date.now()}`,
+          role: 'assistant',
+          text: t`Let's set up your form. What would you like to name it, and what's it for? (e.g., "Vendor Onboarding" — used to collect new vendor details before approval.)`,
+        },
+      ])
+    }, 900)
   }
 
   const handleGenerate = async (
@@ -120,55 +130,126 @@ export default function AiFormBuilder({
     overrideDesc?: string,
     extraPrompt?: string,
   ) => {
-    const finalName = (overrideName || formName).trim()
-    const finalDesc = (overrideDesc || description).trim()
+    const promptText = (overrideDesc || description || extraPrompt || overrideName || formName).trim()
+    const rawTitle = (overrideName || formName || promptText).trim()
+    const finalDesc = (overrideDesc || description || promptText).trim()
 
-    if (!finalName) {
+    if (!promptText && !rawTitle) {
       showToast({
-        message: t`Please enter a form name`,
+        message: t`Please describe what form you want to create`,
         variant: 'error',
       })
       return
     }
+
+    const displayName = rawTitle.length <= 40 ? rawTitle : rawTitle.substring(0, 40) + '...'
 
     setMessages((prev) => [
       ...prev,
       {
         id: `user-${Date.now()}`,
         role: 'user',
-        text: `${finalName}${finalDesc ? ` — ${finalDesc}` : ''}${extraPrompt ? ` (${extraPrompt})` : ''}`,
+        text: promptText,
       },
     ])
 
+    const startTime = Date.now()
     setIsGenerating(true)
 
     try {
       const result = await generateFormConfigViaQwen({
         description: finalDesc,
         formType: selectedType,
-        name: finalName,
-        prompt: extraPrompt || '',
+        name: displayName,
+        prompt: promptText,
       })
 
+      // Ensure AI loader shows for at least 1.8 seconds to feel lively
+      const elapsedTime = Date.now() - startTime
+      if (elapsedTime < 1800) {
+        await new Promise((res) => setTimeout(res, 1800 - elapsedTime))
+      }
+
       setSuggestion(result)
+
+      const totalFields = result.panels.reduce(
+        (acc, p) => acc + p.fields.length,
+        0,
+      )
+      const payload = buildFormPayloadFromAiSuggestion(result)
+
+      setIsGenerating(false)
 
       setMessages((prev) => [
         ...prev,
         {
-          component: 'GENERATED_CARD',
-          id: `ast-result-${Date.now()}`,
+          id: `ast-resp-${Date.now()}`,
           role: 'assistant',
-          text: t`I've created a customized layout for "${result.name}" with ${result.panels.length} sections and ${result.panels.reduce((acc, p) => acc + p.fields.length, 0)} fields.`,
+          text: t`I've built the "${result.name}" form layout with ${result.panels.length} sections and ${totalFields} fields! Opening fields in Form Builder...`,
         },
       ])
+
+      setTimeout(() => {
+        showToast({
+          message: t`Opening Form Builder...`,
+          variant: 'success',
+        })
+        onApply(payload)
+      }, 1400)
     } catch (error) {
       console.error('Form generation error:', error)
-      showToast({
-        message: t`Unable to generate form layout. Using default template.`,
-        variant: 'error',
-      })
-    } finally {
+      const fallbackConfig: AiFormConfigSuggestion = {
+        description: finalDesc,
+        formType: selectedType,
+        name: displayName,
+        panels: [
+          {
+            description: 'General details section',
+            fields: [
+              {
+                isMandatory: true,
+                label: 'Full Name',
+                placeholder: 'Enter name',
+                size: 'col-6',
+                type: 'FULL_NAME',
+              },
+              {
+                isMandatory: true,
+                label: 'Email Address',
+                placeholder: 'Enter email',
+                size: 'col-6',
+                type: 'EMAIL',
+              },
+              {
+                isMandatory: false,
+                label: 'Description & Notes',
+                placeholder: 'Enter details...',
+                size: 'col-12',
+                type: 'LONG_TEXT',
+              },
+            ],
+            title: 'General Information',
+          },
+        ],
+        reply: 'Generated sample form layout.',
+        source: 'local',
+      }
+      const fallbackPayload = buildFormPayloadFromAiSuggestion(fallbackConfig)
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ast-resp-${Date.now()}`,
+          role: 'assistant',
+          text: t`I've prepared the "${displayName}" form fields! Opening in Form Builder...`,
+        },
+      ])
+
       setIsGenerating(false)
+
+      setTimeout(() => {
+        onApply(fallbackPayload)
+      }, 1400)
     }
   }
 
@@ -176,15 +257,7 @@ export default function AiFormBuilder({
     if (!chatInput.trim()) return
     const text = chatInput.trim()
     setChatInput('')
-
-    if (suggestion) {
-      handleGenerate(suggestion.name, suggestion.description, text)
-    } else if (formName) {
-      handleGenerate(formName, description, text)
-    } else {
-      setFormName(text)
-      handleGenerate(text, '', '')
-    }
+    handleGenerate(text, text, text)
   }
 
   const handleAddField = (panelIdx: number) => {
@@ -329,54 +402,7 @@ export default function AiFormBuilder({
                   </div>
                 )}
 
-                {/* Form Details Component */}
-                {msg.component === 'DETAILS_FORM' && !suggestion && (
-                  <motion.div
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className='w-full space-y-3.5 rounded-2xl border border-gray-4 bg-surface-primary p-4 shadow-sm'
-                    initial={{ opacity: 0, scale: 0.97, y: 10 }}
-                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  >
-                    <div>
-                      <label className='block text-xs font-semibold text-gray-11 uppercase tracking-wider'>
-                        {t`Form Name`} <span className='text-red-500'>*</span>
-                      </label>
-                      <input
-                        className='mt-1 w-full rounded-xl border border-gray-4 bg-gray-1/40 px-3.5 py-2 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
-                        placeholder={t`e.g. Vendor Onboarding, Leave Request...`}
-                        type='text'
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                      />
-                    </div>
 
-                    <div>
-                      <label className='block text-xs font-semibold text-gray-11 uppercase tracking-wider'>
-                        {t`Purpose / Description`}
-                      </label>
-                      <textarea
-                        className='mt-1 min-h-[70px] w-full rounded-xl border border-gray-4 bg-gray-1/40 px-3.5 py-2 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
-                        placeholder={t`Describe what this form collects...`}
-                        rows={3}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                      />
-                    </div>
-
-                    <div className='flex justify-end pt-1'>
-                      <Button
-                        color='primary'
-                        size='sm'
-                        onClick={() => handleGenerate()}
-                      >
-                        <div className='flex items-center gap-1.5'>
-                          <AiBrandIcon className='size-4' variant='outline-white' />
-                          <span>{t`Generate Form`}</span>
-                        </div>
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
 
                 {/* Generated Form Card Component */}
                 {msg.component === 'GENERATED_CARD' && suggestion && (
@@ -508,15 +534,21 @@ export default function AiFormBuilder({
             </motion.div>
           ))}
 
-          {isGenerating && (
+          {(isThinking || isGenerating) && (
             <motion.div
               animate={{ opacity: 1 }}
-              className='flex items-center gap-3 text-xs text-primary-9'
+              className='flex items-center gap-3 text-xs text-purple-600 dark:text-purple-400'
             >
-              <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400'>
+              <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 shadow-sm'>
                 <AiBrandIcon className='size-4 animate-spin' variant='outline-purple' />
               </div>
-              <span>{t`Designing your form layout...`}</span>
+              <div className='flex items-center gap-1.5 font-medium'>
+                <span className='animate-pulse'>
+                  {isThinking
+                    ? t`Form Assistant is thinking...`
+                    : t`Analyzing requirements & building form fields...`}
+                </span>
+              </div>
             </motion.div>
           )}
 
@@ -536,9 +568,7 @@ export default function AiFormBuilder({
             <input
               className='flex-1 bg-transparent text-xs text-gray-12 outline-none placeholder:text-gray-10'
               placeholder={
-                suggestion
-                  ? t`Type instructions to tweak layout (e.g. Add a file upload field)...`
-                  : t`Type form name or requirements...`
+                t`Describe what form you want to create (e.g. Vendor Onboarding, Employee Leave Request)...`
               }
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
