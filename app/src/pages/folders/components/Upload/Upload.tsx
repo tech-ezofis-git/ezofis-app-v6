@@ -240,12 +240,57 @@ const extractOcrFieldMap = (response: unknown) => {
   return fieldMap
 }
 
+const getFileNameWithoutExtension = (fileName: string) => {
+  if (!fileName) return ''
+  const lastDotIndex = fileName.lastIndexOf('.')
+  if (lastDotIndex <= 0) return fileName
+  return fileName.substring(0, lastDotIndex)
+}
+
+const isFilenameField = (field: RepositoryField) => {
+  const normName = normalizeFieldKey(field.name || '')
+  const normSql = normalizeFieldKey(field.sqlColumnName || '')
+  return (
+    normName === 'filename' ||
+    normSql === 'filename' ||
+    normName === 'file' ||
+    normSql === 'file' ||
+    normName === 'documentname' ||
+    normSql === 'documentname'
+  )
+}
+
+const applyFilenamePreFill = (
+  values: Record<string, string>,
+  repositoryFields: RepositoryField[],
+  fileName?: string,
+) => {
+  if (!fileName) return values
+
+  const cleanFileName = getFileNameWithoutExtension(fileName)
+  const next = { ...values }
+
+  repositoryFields.forEach((field) => {
+    if (isFilenameField(field)) {
+      const fieldKey = getFieldKey(field)
+      if (!next[fieldKey] || !next[fieldKey].trim()) {
+        next[fieldKey] = cleanFileName
+      }
+    }
+  })
+
+  return next
+}
+
 const mapOcrResponseToFieldValues = (
   response: unknown,
   repositoryFields: RepositoryField[],
+  fileName?: string,
 ) => {
   const result = getInitialValues(repositoryFields)
-  if (!response || typeof response !== 'object') return result
+  if (!response || typeof response !== 'object') {
+    return applyFilenamePreFill(result, repositoryFields, fileName)
+  }
 
   const ocrFieldMap = extractOcrFieldMap(response)
 
@@ -300,7 +345,7 @@ const mapOcrResponseToFieldValues = (
     }
   })
 
-  return result
+  return applyFilenamePreFill(result, repositoryFields, fileName)
 }
 
 export default function Upload({
@@ -344,8 +389,20 @@ export default function Upload({
   }, [repositoryData?.fields])
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
-    getInitialValues(repositoryFields),
+    applyFilenamePreFill(
+      getInitialValues(repositoryFields),
+      repositoryFields,
+      initialFile?.name,
+    ),
   )
+
+  useEffect(() => {
+    if (!fileData?.name || !repositoryFields.length) return
+    setFieldValues((prev) =>
+      applyFilenamePreFill(prev, repositoryFields, fileData.name),
+    )
+  }, [fileData?.name, repositoryFields])
+
   const [ocrExtractedValues, setOcrExtractedValues] = useState<Record<string, string>>({})
   const [masterSyncedValues, setMasterSyncedValues] = useState<Record<string, string>>({})
 
@@ -602,7 +659,13 @@ export default function Upload({
       const requestId = ++ocrRequestIdRef.current
       setOcrStatus('analyzing')
       setExportStatus('idle')
-      setFieldValues(getInitialValues(repositoryFields))
+      setFieldValues(
+        applyFilenamePreFill(
+          getInitialValues(repositoryFields),
+          repositoryFields,
+          selectedFile.name,
+        ),
+      )
       setFocusedFieldKey(null)
 
       const ocrFields = repositoryFields
@@ -627,7 +690,11 @@ export default function Upload({
           return
         }
 
-        const mappedValues = mapOcrResponseToFieldValues(data, repositoryFields)
+        const mappedValues = mapOcrResponseToFieldValues(
+          data,
+          repositoryFields,
+          selectedFile.name,
+        )
         setFieldValues(mappedValues)
         setOcrExtractedValues(mappedValues)
         setOcrStatus('complete')
@@ -751,6 +818,13 @@ export default function Upload({
       setPreviewUrl(URL.createObjectURL(selectedFile))
       setActiveTab('fields')
       setExportStatus('idle')
+      setFieldValues(
+        applyFilenamePreFill(
+          getInitialValues(repositoryFields),
+          repositoryFields,
+          selectedFile.name,
+        ),
+      )
 
       if (!activeRepositoryId) {
         setOcrStatus('error')

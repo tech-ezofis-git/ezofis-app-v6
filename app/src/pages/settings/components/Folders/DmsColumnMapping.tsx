@@ -38,8 +38,10 @@ interface DmsColumnMappingProps {
   dataTypes: Record<string, string>
   previewRows: any[]
   uploadedColumns: string[]
+  syncFields?: string[]
   onUpdateMapping: (mapping: Record<string, string>) => void
   onUpdateDataTypes: (dataTypes: Record<string, string>) => void
+  onUpdateSyncFields?: (syncFields: string[]) => void
 }
 
 const MENU_LABEL_CLASS = 'mb-0.5 flex h-8 w-full items-center gap-1.5 rounded-md px-2 text-13 font-semibold text-gray-12 transition-colors'
@@ -66,10 +68,12 @@ export default function DmsColumnMapping({
   fields = [],
   mapping = {},
   dataTypes = {},
+  syncFields = [],
   previewRows = [],
   uploadedColumns = [],
   onUpdateMapping,
   onUpdateDataTypes,
+  onUpdateSyncFields,
 }: DmsColumnMappingProps) {
   const [activeDropdownRow, setActiveDropdownRow] = useState<string | null>(null)
   const [activeTypeDropdownRow, setActiveTypeDropdownRow] = useState<string | null>(null)
@@ -110,6 +114,15 @@ export default function DmsColumnMapping({
     setActiveTypeDropdownRow(null)
   }
 
+  const handleToggleSyncField = (repoFieldName: string, checked: boolean) => {
+    if (!onUpdateSyncFields) return
+    if (checked) {
+      onUpdateSyncFields([...(syncFields || []), repoFieldName])
+    } else {
+      onUpdateSyncFields((syncFields || []).filter(f => f !== repoFieldName))
+    }
+  }
+
   return (
     <div className='flex flex-col rounded-xl border border-border-default bg-surface shadow-2xs'>
       {/* Header */}
@@ -126,13 +139,18 @@ export default function DmsColumnMapping({
 
       {/* Table header */}
       <div className='grid grid-cols-12 gap-4 border-b border-border-default/50 bg-gray-1/30 px-5 py-2.5 text-xs font-semibold text-gray-11'>
-        <div className='col-span-5 flex items-center gap-2'>
+        <div className='col-span-4 flex items-center gap-2'>
           <Icon className='size-3.5 text-primary-9' name='tabler:database' />
-          Repository Field
+          Folder Fields
         </div>
-        <div className='col-span-7 flex items-center gap-2 pl-2'>
-          <Icon className='size-3.5 text-green-11' name='lucide:file-spreadsheet' />
-          Excel Column & Form Data Type
+        <div className='col-span-8 flex items-center gap-3 pl-2'>
+          <div className='flex-1 flex items-center gap-2'>
+            <Icon className='size-3.5 text-green-11' name='lucide:file-spreadsheet' />
+            Excel Fields
+          </div>
+          <div className='flex w-16 shrink-0 items-center justify-end pr-2 text-primary-9'>
+            Sync
+          </div>
         </div>
       </div>
 
@@ -161,7 +179,7 @@ export default function DmsColumnMapping({
               key={repoFieldName}
             >
               {/* Repository Field Name */}
-              <div className='col-span-5 flex min-w-0 items-center gap-2'>
+              <div className='col-span-4 flex min-w-0 items-center gap-2'>
                 <div
                   className={cn(
                     'truncate text-[13px] font-medium transition-colors',
@@ -174,8 +192,9 @@ export default function DmsColumnMapping({
               </div>
 
               {/* Combined Excel Column & Datatype Picker */}
-              <div className='col-span-7 flex items-center relative'>
-                <div
+              <div className='col-span-8 flex items-center relative gap-3'>
+                <div className='flex-1 relative'>
+                  <div
                   className={cn(
                     'flex h-[36px] w-full cursor-pointer items-center justify-between rounded-lg border bg-surface px-3 font-normal transition-all duration-200 select-none',
                     isDropdownOpen ? 'border-primary-9 ring-2 ring-primary-9/20' : 'border-gray-3 hover:border-gray-4'
@@ -336,6 +355,36 @@ export default function DmsColumnMapping({
                     )}
                   </div>
                 )}
+                </div>
+                
+                {/* Sync Checkbox */}
+                <div className='flex shrink-0 items-center w-16 justify-end pr-2'>
+                  <label 
+                    className={cn(
+                      'flex items-center transition-opacity', 
+                      isMapped ? 'cursor-pointer hover:opacity-80' : 'cursor-not-allowed opacity-40'
+                    )} 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (!isMapped) e.preventDefault()
+                    }}
+                  >
+                    <div className={cn(
+                      'flex size-[18px] items-center justify-center rounded border transition-colors',
+                      syncFields?.includes(repoFieldName) && isMapped ? 'border-primary-9 bg-primary-9' : 'border-gray-4 bg-surface',
+                      isMapped && 'hover:border-primary-9'
+                    )}>
+                      {syncFields?.includes(repoFieldName) && isMapped && <Icon name='lucide:check' className='size-3.5 text-white' />}
+                    </div>
+                    <input 
+                      type='checkbox' 
+                      className='hidden' 
+                      disabled={!isMapped}
+                      checked={syncFields?.includes(repoFieldName) || false}
+                      onChange={(e) => handleToggleSyncField(repoFieldName, e.target.checked)}
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           )
