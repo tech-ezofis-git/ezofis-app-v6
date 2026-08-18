@@ -66,20 +66,20 @@ const QuestionCard = ({
   return (
     <Card
       className={cn(
-        'group relative overflow-visible rounded-xl border font-inter transition-all duration-300',
+        'group relative overflow-visible rounded-xl border font-inter transition-all duration-200',
         isLocked
-          ? 'bg-gray-50/30 cursor-not-allowed border-gray-2 opacity-90'
-          : 'hover:bg-gray-50/60 cursor-pointer',
+          ? 'bg-gray-2/40 cursor-not-allowed border-gray-3 opacity-90'
+          : 'hover:bg-gray-1/60 cursor-pointer',
         isActive
-          ? 'border-primary-9 bg-primary-3/30 shadow-sm ring-1 ring-primary-9'
-          : 'border-gray-2 bg-white hover:border-gray-3 hover:shadow-xs',
+          ? 'border-primary-9 bg-primary-3/30 shadow-xs ring-1 ring-primary-9'
+          : 'border-gray-3 bg-white hover:border-gray-4 hover:shadow-2xs',
       )}
       style={{
         padding: '0',
       }}
       onClick={onSelect}
     >
-      <div className='flex flex-col gap-2.5 p-4'>
+      <div className='flex flex-col gap-2 p-3'>
         {/* Top Header: Icon box, Label, Required asterisk, Quick Actions, Drag Handle */}
         <div className='flex items-center justify-between gap-3'>
           <div className='flex min-w-0 flex-1 items-center gap-2.5'>

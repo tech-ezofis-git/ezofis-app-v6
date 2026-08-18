@@ -15,6 +15,7 @@ const Build = () => {
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
 
   useEffect(() => {
+    useFormStore.getState().setSidebarOpen(false)
     if (panels.length === 0) {
       addPanel()
     }
