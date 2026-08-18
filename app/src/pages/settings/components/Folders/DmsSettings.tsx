@@ -17,6 +17,7 @@ import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import { createRepository, deleteRepository, updateRepository } from '@/api/createFolder'
 import { getRepositoryById, getRepositorys } from '@/api/v6/folder/folder'
+import { axiosV6 } from '@/api/axios'
 import formApi from '@/api/form/form'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
@@ -1286,51 +1287,150 @@ export default function DmsFolderConfiguration({
       const wizardState = wizardRef.current?.getMasterFormState?.()
       if (wizardState?.masterFormSetupMode === 'create' && wizardState?.selectedIntegration === 'MasterForm') {
         const { syncMapping, syncDataTypes } = wizardState
-        
+
         // 1. Generate Form Payload
+        const formTitle = wizardState?.masterFormTitle || `${payload.name} - Master Form`
+        const formDesc = wizardState?.masterFormDescription || ''
         const formPayload = {
-          allowPrint: false,
-          allowShare: false,
-          color: '',
-          defaultTheme: false,
-          description: wizardState?.masterFormDescription || '',
-          enableDocumentVisibility: false,
-          icon: 'lucide:table',
-          name: wizardState?.masterFormTitle || `${payload.name} - Master Form`,
-          theme: 'light',
-          status: 'Published',
-          panels: [
-            {
-              id: `panel-${Date.now()}`,
-              name: 'Master Data',
-              title: 'Panel 1',
-              description: 'Panel 1 description',
-              settings: {
-                title: 'Panel 1',
-                description: 'Panel 1 description'
+          name: formTitle,
+          description: formDesc,
+          type: 'WORKFLOW',
+          layout: 'CLASSIC',
+          publishOption: 'PUBLISHED',
+          formJson: {
+            settings: {
+              general: {
+                name: formTitle,
+                description: formDesc,
+                type: 'WORKFLOW',
+                layout: 'CLASSIC',
               },
-              columns: 1,
-              fields: Object.entries(syncMapping).map(([repoName, excelHeader], idx) => {
-                const dataType = syncDataTypes?.[repoName] || fields.find(f => f.fieldName === repoName)?.dataType || 'SHORT_TEXT'
-                return {
-                  id: `field-${Date.now()}-${idx}`,
-                  label: repoName,
-                  type: dataType,
-                  settings: { general: { size: 'col-12' } }
-                }
-              })
-            }
-          ]
+              publish: {
+                publishOption: 'PUBLISHED',
+                publishSchedule: '',
+                unpublishSchedule: ''
+              }
+            },
+            panels: [
+              {
+                id: `panel-${Date.now()}`,
+                name: 'Master Data',
+                settings: {
+                  title: formTitle,
+                  description: 'Master Data Fields'
+                },
+                columns: 1,
+                fields: Object.entries(syncMapping).map(([repoName, excelHeader], idx) => {
+                  const dataType = syncDataTypes?.[repoName] || fields.find(f => f.fieldName === repoName)?.dataType || 'SHORT_TEXT'
+                  return {
+                    id: `field-${Date.now()}-${idx}`,
+                    label: repoName,
+                    type: dataType,
+                    settings: {
+                      general: {
+                        hideLabel: false,
+                        size: 'col-12',
+                        visibility: 'NORMAL',
+                        placeholder: '',
+                        tooltip: '',
+                        dividerType: 'SOLID',
+                        url: ''
+                      },
+                      specific: {
+                        optionsType: 'CUSTOM',
+                        masterTable: '',
+                        masterTableColumn: '',
+                        customOptions: 'Option 1,Option 2',
+                        separateOptionsUsing: 'COMMA',
+                        allowToAddNewOptions: false,
+                        optionsPerLine: 0,
+                        defaultValue: 'CUSTOM',
+                        autoGenerateValue: { prefix: 'Form', suffix: 'DATE_TIME' },
+                        customDefaultValue: '',
+                        showColumnTotal: false,
+                        allowMultipleFiles: false,
+                        ratingIcon: 'STAR',
+                        ratingIconCount: 5,
+                        allowHalfRating: false,
+                        allowMultipleSignatures: false,
+                        tableColumns: [],
+                        tableRowsType: 'ON_DEMAND',
+                        tableFixedRowCount: 0,
+                        qrValue: false,
+                        tableFixedRowLabels: [],
+                        matrixColumns: [],
+                        matrixRows: [],
+                        matrixType: 'SHORT_TEXT',
+                        matrixTypeSettings: {},
+                        textContent: '',
+                        fibFields: [],
+                        tabList: [],
+                        popupTriggerType: 'BUTTON',
+                        secondaryPanel: '',
+                        mappedFieldId: '',
+                        mappedColumnId: '',
+                        nestedListMaxLevel: 3,
+                        nestedList: [],
+                        nestedListItemsPerLine: [],
+                        nestedListFieldType: 'SHORT_TEXT',
+                        nestedListTypeSettings: {},
+                        formula: '',
+                        loginType: 'EZOFIS_LOGIN',
+                        additionalLoginTypes: [],
+                        masterFormTableColumns: []
+                      },
+                      validation: {
+                        fieldRule: 'OPTIONAL',
+                        contentRule: '',
+                        minimum: '',
+                        maximum: '',
+                        allowedFileTypes: [],
+                        maxFileSize: 10,
+                        dateRange: 'NONE',
+                        timeRange: 'NONE',
+                        maxiDays: 0,
+                        miniDays: 0,
+                        maxiTime: 0,
+                        miniTime: 0,
+                        answerIndicator: 'NO',
+                        requiredValidation: 'ANY',
+                        documentExpiryField: '',
+                        enableSettings: [],
+                        mandatorySettings: [],
+                        readonlySettings: [],
+                        timeFormat: '12',
+                        hasCalculatedField: false,
+                        verificationRequired: false
+                      },
+                      aiSettings: {
+                        formControlValidate: {
+                          optionsType: '',
+                          masterFormId: 0,
+                          masterFormColumn: [],
+                          formFields: '',
+                          existingFormFields: [],
+                          conditionFields: []
+                        },
+                        fileDataValidate: [],
+                        imageFileValidate: { optionsType: '', formFields: [] }
+                      }
+                    }
+                  }
+                })
+              }
+            ]
+          }
         }
 
         // 2. Call formApi.createForm
-        const formRes = await formApi.createForm(JSON.stringify(formPayload))
+        const formRes = await formApi.createForm(formPayload)
         if (formRes.error) {
           showToast({ message: `Failed to create Master Form: ${formRes.error}`, variant: 'error' })
           return
         }
 
-        const formId = formRes.data?.id ?? formRes.data?.formId ?? formRes.data
+        const formIdRaw = formRes.data
+        const formId = typeof formIdRaw === 'string' ? formIdRaw : (formIdRaw?.id || formIdRaw?.formId || formIdRaw?.data || '')
         if (!formId) {
           showToast({ message: 'Master Form created but no form ID was returned.', variant: 'error' })
           return
@@ -1348,7 +1448,7 @@ export default function DmsFolderConfiguration({
               : Array.isArray(formJson?.components)
                 ? formJson.components
                 : []
-          
+
           fieldsArray.forEach((f: any) => {
             const actualId = String(f.id || f.key || f.name || '')
             const actualLabel = String(f.displayLabel || f.label || f.name || f.title || f.id || f.key || '')
@@ -2689,11 +2789,53 @@ function WizardContent({
       const headerRow = headerRawRows?.[0] ?? []
       const headers = headerRow.map((h) => String(h ?? '').trim().replace(/\s+/g, ' ')).filter(Boolean)
       const allHeaderRows = XLSX.utils.sheet_to_json(headerWs) as any[]
-      
+
+      // Auto-match fields via API
+      const mappingPayload = {
+        excelSheets: [
+          {
+            columns: headers,
+            sheetName: firstSheetName
+          }
+        ],
+        headerFields: fields.map(f => ({
+          dataType: f.dataType || 'SHORT_TEXT',
+          name: f.fieldName
+        })),
+        lineItemFields: []
+      }
+
+      const newSyncMapping = { ...syncMapping }
+
+      try {
+        const { data } = await axiosV6.post('/field-mapping', mappingPayload)
+        if (data?.headerFields && Array.isArray(data.headerFields)) {
+          data.headerFields.forEach((match: any) => {
+            if (match.masterField && match.excelField && !newSyncMapping[match.masterField]) {
+              newSyncMapping[match.masterField] = match.excelField
+            }
+          })
+        }
+      } catch (apiError) {
+        console.error("API Field Mapping failed, falling back to basic matching", apiError)
+        fields.forEach((field) => {
+          const fieldNameLower = field.fieldName.toLowerCase()
+          const match = headers.find(h => h.toLowerCase() === fieldNameLower)
+          if (match && !newSyncMapping[field.fieldName]) {
+            newSyncMapping[field.fieldName] = match
+          }
+        })
+      }
+
+      setSyncMapping(newSyncMapping)
       setMasterFormHeaders(headers)
       setMasterFormPreviewRows(allHeaderRows.slice(0, 15))
       setMasterFormRowCount(allHeaderRows.length)
       setMasterFormUploadState('ready')
+
+      // Use the uploaded file name for the form name
+      const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "")
+      setMasterFormTitle(fileNameWithoutExt)
     } catch (e) {
       setMasterFormUploadState('error')
       showToast({ message: 'Failed to parse Excel file', variant: 'error' })
@@ -2742,9 +2884,9 @@ function WizardContent({
     }
     return []
   })
-  
+
   const [syncDataTypes, setSyncDataTypes] = useState<Record<string, string>>({})
-  
+
   const [masterFormTitle, setMasterFormTitle] = useState(`${folderName} - Master Form`)
   const [masterFormDescription, setMasterFormDescription] = useState('')
 
@@ -3488,94 +3630,94 @@ function WizardContent({
                       </div>
 
                       {selectedFormId && (
-                    <div>
-                      <h5 className='mb-3 text-13 font-medium text-gray-12'>
-                        Field Mapping
-                      </h5>
-                      <div className='overflow-y-auto max-h-[300px] rounded-lg border border-gray-3 shadow-inner'>
-                        <table className='w-full text-left text-13'>
-                          <thead className='sticky top-0 z-10 border-b border-gray-3 bg-gray-2/50 backdrop-blur-sm'>
-                            <tr>
-                              <th className='w-[40%] px-4 py-3 font-semibold text-gray-11'>
-                                Folder Fields
-                              </th>
-                              <th className='w-[40%] px-4 py-3 font-semibold text-gray-11'>
-                                Form Fields
-                              </th>
-                              <th className='w-[20%] px-4 py-3 text-center font-semibold text-gray-11'>
-                                Sync
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className='divide-y divide-gray-3 bg-surface'>
-                            {fields.map((repoField) => {
-                              const mappedValue =
-                                syncMapping[repoField.fieldName] || ''
-                              const formFieldOption = formFields.find(
-                                (f) => f.id === mappedValue,
-                              )
-
-                              return (
-                                <tr
-                                  key={repoField.id}
-                                  className='transition-colors hover:bg-gray-1/30'
-                                >
-                                  <td className='px-4 py-3'>
-                                    <span className='font-medium text-gray-12'>
-                                      {repoField.fieldName}
-                                    </span>
-                                  </td>
-                                  <td className='px-4 py-3'>
-                                    <MasterFieldSelectDropdown
-                                      options={formFields}
-                                      value={mappedValue || null}
-                                      onChange={(selectedId) => {
-                                        setSyncMapping((prev) => {
-                                          const newMap = { ...prev }
-                                          if (selectedId) {
-                                            newMap[repoField.fieldName] = selectedId
-                                          } else {
-                                            delete newMap[repoField.fieldName]
-                                            setSyncFields(prev => prev.filter(f => f !== repoField.fieldName))
-                                          }
-                                          return newMap
-                                        })
-                                      }}
-                                    />
-                                  </td>
-                                  <td className='px-4 py-3'>
-                                    <div className='flex justify-center'>
-                                      <input
-                                        type='checkbox'
-                                        name='sync_field'
-                                        disabled={!mappedValue}
-                                        checked={syncFields.includes(repoField.fieldName)}
-                                        onChange={(e) => {
-                                          if (mappedValue) {
-                                            if (e.target.checked) {
-                                              setSyncFields((prev) => [...prev, repoField.fieldName])
-                                            } else {
-                                              setSyncFields((prev) => prev.filter((f) => f !== repoField.fieldName))
-                                            }
-                                          }
-                                        }}
-                                        className='h-4 w-4 cursor-pointer rounded border-gray-3 text-primary-9 accent-primary-9 focus:ring-primary-5'
-                                        title={!mappedValue ? 'Please map a form field first' : 'Select for sync'}
-                                      />
-                                    </div>
-                                  </td>
+                        <div>
+                          <h5 className='mb-3 text-13 font-medium text-gray-12'>
+                            Field Mapping
+                          </h5>
+                          <div className='overflow-y-auto max-h-[300px] rounded-lg border border-gray-3 shadow-inner'>
+                            <table className='w-full text-left text-13'>
+                              <thead className='sticky top-0 z-10 border-b border-gray-3 bg-gray-2/50 backdrop-blur-sm'>
+                                <tr>
+                                  <th className='w-[40%] px-4 py-3 font-semibold text-gray-11'>
+                                    Folder Fields
+                                  </th>
+                                  <th className='w-[40%] px-4 py-3 font-semibold text-gray-11'>
+                                    Form Fields
+                                  </th>
+                                  <th className='w-[20%] px-4 py-3 text-center font-semibold text-gray-11'>
+                                    Sync
+                                  </th>
                                 </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-                </AnimateFadeIn>
-              )}
+                              </thead>
+                              <tbody className='divide-y divide-gray-3 bg-surface'>
+                                {fields.map((repoField) => {
+                                  const mappedValue =
+                                    syncMapping[repoField.fieldName] || ''
+                                  const formFieldOption = formFields.find(
+                                    (f) => f.id === mappedValue,
+                                  )
 
-              {masterFormSetupMode === 'create' && (
+                                  return (
+                                    <tr
+                                      key={repoField.id}
+                                      className='transition-colors hover:bg-gray-1/30'
+                                    >
+                                      <td className='px-4 py-3'>
+                                        <span className='font-medium text-gray-12'>
+                                          {repoField.fieldName}
+                                        </span>
+                                      </td>
+                                      <td className='px-4 py-3'>
+                                        <MasterFieldSelectDropdown
+                                          options={formFields}
+                                          value={mappedValue || null}
+                                          onChange={(selectedId) => {
+                                            setSyncMapping((prev) => {
+                                              const newMap = { ...prev }
+                                              if (selectedId) {
+                                                newMap[repoField.fieldName] = selectedId
+                                              } else {
+                                                delete newMap[repoField.fieldName]
+                                                setSyncFields(prev => prev.filter(f => f !== repoField.fieldName))
+                                              }
+                                              return newMap
+                                            })
+                                          }}
+                                        />
+                                      </td>
+                                      <td className='px-4 py-3'>
+                                        <div className='flex justify-center'>
+                                          <input
+                                            type='checkbox'
+                                            name='sync_field'
+                                            disabled={!mappedValue}
+                                            checked={syncFields.includes(repoField.fieldName)}
+                                            onChange={(e) => {
+                                              if (mappedValue) {
+                                                if (e.target.checked) {
+                                                  setSyncFields((prev) => [...prev, repoField.fieldName])
+                                                } else {
+                                                  setSyncFields((prev) => prev.filter((f) => f !== repoField.fieldName))
+                                                }
+                                              }
+                                            }}
+                                            className='h-4 w-4 cursor-pointer rounded border-gray-3 text-primary-9 accent-primary-9 focus:ring-primary-5'
+                                            title={!mappedValue ? 'Please map a form field first' : 'Select for sync'}
+                                          />
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </AnimateFadeIn>
+                  )}
+
+                  {masterFormSetupMode === 'create' && (
                     <AnimateFadeIn delay={0.1}>
                       {masterFormUploadState === 'idle' ? (
                         <div className='mb-6 group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
@@ -3655,7 +3797,7 @@ function WizardContent({
                               }}
                             />
                           </div>
-                          
+
                           {masterFormUploadState === 'ready' && (
                             <div className='flex flex-col gap-6'>
                               <div className='flex flex-col gap-4 rounded-xl border border-border-default bg-surface p-5 shadow-2xs'>
@@ -3681,14 +3823,16 @@ function WizardContent({
                                   />
                                 </div>
                               </div>
-                              <DmsColumnMapping 
-                                fields={fields} 
-                                mapping={syncMapping} 
+                              <DmsColumnMapping
+                                fields={fields}
+                                mapping={syncMapping}
                                 dataTypes={syncDataTypes}
-                                previewRows={masterFormPreviewRows} 
-                                uploadedColumns={masterFormHeaders} 
-                                onUpdateMapping={(newMapping) => setSyncMapping(newMapping)} 
+                                syncFields={syncFields}
+                                previewRows={masterFormPreviewRows}
+                                uploadedColumns={masterFormHeaders}
+                                onUpdateMapping={(newMapping) => setSyncMapping(newMapping)}
                                 onUpdateDataTypes={(newDataTypes) => setSyncDataTypes(newDataTypes)}
+                                onUpdateSyncFields={(newSyncFields) => setSyncFields(newSyncFields)}
                               />
                             </div>
                           )}
