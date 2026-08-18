@@ -163,7 +163,7 @@ const SortableSectionItem = ({
                       : 'text-gray-13 group-hover:text-gray-13',
                   )}
                 >
-                  {p.settings.title}
+                  {p?.settings?.title || 'Section'}
                 </div>
               )}
             </button>
@@ -247,20 +247,22 @@ const LeftSidebar = () => {
 
   const filteredPanels = useMemo(() => {
     if (!searchQuery.trim()) return panels
-    return panels.filter(
-      (p) =>
-        (p.settings.title || '')
+    return panels.filter((p) => {
+      const matchTitle =
+        (p?.settings?.title || '')
           .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        (p.settings.description || '')
+          .includes(searchQuery.toLowerCase())
+      const matchDesc =
+        (p?.settings?.description || '')
           .toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
         p.fields.some(
           (f) =>
             (f.label || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (f.type || '').toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
-    )
+        )
+      return matchTitle || matchDesc
+    })
   }, [panels, searchQuery])
 
   const handleDragEnd = (event: DragEndEvent) => {

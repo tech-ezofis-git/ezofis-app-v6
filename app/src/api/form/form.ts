@@ -155,6 +155,25 @@ const getFormEntries = async (formId: string) => {
   return response
 }
 
+const searchFormEntries = async (formId: string, payload: any) => {
+  const response: any = { data: null, error: '' }
+  try {
+    const store = authUserStore.getState()
+    const tenantId = store.session?.tenantId || ''
+    const { data, status } = await axiosV6.post(`/form/${formId}/entry/all`, payload, {
+      headers: {
+        'X-Tenant-Id': tenantId,
+      },
+    })
+    if (status !== 200) throw new Error('Invalid status code')
+    response.data = data
+  } catch (e: any) {
+    console.error(e)
+    response.error = e.message || 'Error searching form entries'
+  }
+  return response
+}
+
 const getForms = async (payload: any) => {
   const response: any = { data: null, error: '' }
   try {
@@ -233,6 +252,7 @@ const formApi = {
   uploadMasterFile,
   getFormDataById,
   getFormEntries,
+  searchFormEntries,
   getForms,
 }
 
