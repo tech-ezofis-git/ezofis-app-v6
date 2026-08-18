@@ -83,6 +83,19 @@ export default function GenericFormImportModal({
   const [step3State, setStep3State] = useState<TimelineStepState>('waiting')
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const columnMappingRef = useRef<HTMLDivElement | null>(null)
+
+  // Smooth auto-scroll to Column Mapping section once ready
+  useEffect(() => {
+    if (uploadState === 'ready') {
+      setTimeout(() => {
+        columnMappingRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+      }, 150)
+    }
+  }, [uploadState])
 
   // Filter uploaded columns to exclude EntryId and metadata fields from mapping rows
   const displayUploadedColumns = useMemo(() => {
@@ -736,7 +749,10 @@ export default function GenericFormImportModal({
 
               {/* INLINE COLUMN MAPPING TABLE (Exact Image 1 Design) */}
               {uploadState === 'ready' && (
-                <div className='animate-in fade-in slide-in-from-top-2 mt-4 space-y-3 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                <div
+                  ref={columnMappingRef}
+                  className='animate-in fade-in slide-in-from-top-2 mt-4 space-y-3 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'
+                >
                   <div className='flex items-center justify-between border-b border-border-default pb-3'>
                     <p className='text-[11px] text-gray-11'>
                       {t`Map Excel file headers (source) to EZOFIS database fields (destination).`}
