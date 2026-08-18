@@ -1,7 +1,9 @@
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useDebouncedValue } from '@mantine/hooks'
 import { UploadFiles, uploadForOcr } from '@/api/v6/folder/folder'
+import formApi from '@/api/form/form'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import IconButton from '@/components/base/button/IconButton'
@@ -11,6 +13,7 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
 import {
   IMAGE_ACCEPT,
@@ -59,6 +62,7 @@ type UploadProps = {
     fields?: RepositoryField[]
     id?: string
     name?: string
+    storageDrive?: string | null
   } | null
   repositoryId: string | number | null
   onBack: () => void
@@ -342,6 +346,244 @@ export default function Upload({
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
     getInitialValues(repositoryFields),
   )
+  const [ocrExtractedValues, setOcrExtractedValues] = useState<Record<string, string>>({})
+  const [masterSyncedValues, setMasterSyncedValues] = useState<Record<string, string>>({})
+
+  const masterFormSyncData = useMemo(() => {
+    if (!repositoryData?.storageDrive || !repositoryData.storageDrive.includes('[')) return null
+    const sd = repositoryData.storageDrive
+    const formId = sd.substring(0, sd.indexOf('[')).trim()
+    const mappingStr = sd.substring(sd.indexOf('[') + 1, sd.length - 1)
+
+    let syncFieldNames: string[] = []
+    const mapping: Record<string, string> = {}
+
+    mappingStr.split(',').forEach((pair: string) => {
+      const parts = pair.split(':')
+      if (parts.length >= 2) {
+        mapping[parts[0].trim()] = parts[1].trim() // repoField: formFieldId
+        if (parts.length >= 3 && parts[2].trim() === 'sync') {
+          syncFieldNames.push(parts[0].trim())
+        }
+      }
+    })
+
+    return { formId, syncFieldNames, mapping }
+  }, [repositoryData?.storageDrive])
+
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncingField, setSyncingField] = useState<string | null>(null)
+  const [masterFormSyncLabels, setMasterFormSyncLabels] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!masterFormSyncData || !masterFormSyncData.syncFieldNames.length) {
+      setMasterFormSyncLabels({})
+      return
+    }
+
+    let isMounted = true
+    const fetchForm = async () => {
+      try {
+        const formRes = await formApi.getFormDataById(masterFormSyncData.formId)
+        if (formRes.data?.formJson) {
+          const formJson = formRes.data.formJson
+          const fieldsArray = Array.isArray(formJson?.panels)
+            ? formJson.panels.flatMap((panel: any) =>
+              Array.isArray(panel?.fields) ? panel.fields : [],
+            )
+            : Array.isArray(formJson?.fields)
+              ? formJson.fields
+              : Array.isArray(formJson?.components)
+                ? formJson.components
+                : []
+
+          const newLabels: Record<string, string> = {}
+          masterFormSyncData.syncFieldNames.forEach(repoFieldName => {
+            const syncFormId = masterFormSyncData.mapping[repoFieldName]
+            if (syncFormId) {
+              const fieldDef = fieldsArray.find((f: any) => String(f.id || f.key || f.name) === syncFormId)
+              newLabels[repoFieldName] = fieldDef ? String(
+                fieldDef.displayLabel ||
+                fieldDef.label ||
+                fieldDef.name ||
+                fieldDef.title ||
+                fieldDef.id ||
+                fieldDef.key ||
+                syncFormId
+              ) : syncFormId
+            }
+          })
+
+          if (isMounted) {
+            setMasterFormSyncLabels(newLabels)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch master form definition', err)
+      }
+    }
+
+    void fetchForm()
+
+    return () => { isMounted = false }
+  }, [masterFormSyncData])
+
+  const handleSync = async (fieldValue: string, repoFieldName: string) => {
+    if (!masterFormSyncData?.formId || !fieldValue) return
+    setIsSyncing(true)
+    setSyncingField(repoFieldName)
+    try {
+      const criteriaLabel = masterFormSyncLabels[repoFieldName] || masterFormSyncData.mapping[repoFieldName]
+      const payload = {
+        sortBy: { criteria: 'createdAt', order: 'DESC' },
+        filterBy: [
+          {
+            groupCondition: '',
+            filters: [
+              {
+                criteria: criteriaLabel,
+                condition: 'eq',
+                value: fieldValue,
+              },
+            ],
+          },
+        ],
+        currentPage: 1,
+        itemsPerPage: 10,
+        mode: 'live',
+        includeFormJson: true,
+      }
+
+      const { data, error } = await formApi.searchFormEntries(masterFormSyncData.formId, payload)
+      if (error) {
+        showToast({ message: `Sync failed: ${error}`, variant: 'error' })
+        return
+      }
+
+      const entries = data?.entries || []
+
+      if (entries.length === 0) {
+        showToast({
+          message: 'No matching record found.',
+          variant: 'error',
+        })
+        return
+      }
+
+      const entry = entries[0]
+
+      // Your API response already has field IDs directly inside entry
+      const values = entry?.values || entry?.data || entry?.formValues || entry
+
+      setFieldValues((prev) => {
+        const next = { ...prev }
+
+        Object.entries(masterFormSyncData.mapping || {}).forEach(
+          ([repoName, formFieldId]) => {
+            if (repoName === repoFieldName) return
+
+            const normalizedRepoName = String(repoName)
+              .trim()
+              .toLowerCase()
+
+            const repoField = repositoryFields.find((field: any) => {
+              const fieldName = String(field?.name || '')
+                .trim()
+                .toLowerCase()
+
+              const sqlColumnName = String(field?.sqlColumnName || '')
+                .trim()
+                .toLowerCase()
+
+              return (
+                fieldName === normalizedRepoName ||
+                sqlColumnName === normalizedRepoName
+              )
+            })
+
+            if (!repoField) {
+              console.warn('Repository field not found:', repoName)
+              return
+            }
+
+            const sourceFieldId = String(formFieldId)
+
+            let mappedValue = values?.[sourceFieldId]
+
+            // Handle { value: "something" }
+            if (
+              typeof mappedValue === 'object' &&
+              mappedValue !== null &&
+              'value' in mappedValue
+            ) {
+              mappedValue = mappedValue.value
+            }
+
+            if (
+              mappedValue !== undefined &&
+              mappedValue !== null
+            ) {
+              const targetKey = getFieldKey(repoField)
+
+              next[targetKey] = mappedValue
+
+              console.log('Synced field:', {
+                repoName,
+                sourceFieldId,
+                targetKey,
+                mappedValue,
+              })
+            }
+          },
+        )
+
+        return next
+      })
+
+      // Also store raw synced values for suggestion toggles
+      setMasterSyncedValues((prev) => {
+        const next = { ...prev }
+        Object.entries(masterFormSyncData.mapping || {}).forEach(
+          ([repoName, formFieldId]) => {
+            if (repoName === repoFieldName) return
+
+            const normalizedRepoName = String(repoName).trim().toLowerCase()
+            const repoField = repositoryFields.find((field: any) => {
+              const fieldName = String(field?.name || '').trim().toLowerCase()
+              const sqlColumnName = String(field?.sqlColumnName || '').trim().toLowerCase()
+              return fieldName === normalizedRepoName || sqlColumnName === normalizedRepoName
+            })
+
+            if (!repoField) return
+
+            const sourceFieldId = String(formFieldId)
+            let mappedValue = values?.[sourceFieldId]
+
+            if (typeof mappedValue === 'object' && mappedValue !== null && 'value' in mappedValue) {
+              mappedValue = mappedValue.value
+            }
+
+            if (mappedValue !== undefined && mappedValue !== null) {
+              const targetKey = getFieldKey(repoField)
+              next[targetKey] = String(mappedValue)
+            }
+          }
+        )
+        return next
+      })
+
+      showToast({
+        message: 'Fields synced successfully.',
+        variant: 'success',
+      })
+
+    } catch (e: any) {
+      showToast({ message: `Sync error: ${e.message}`, variant: 'error' })
+    } finally {
+      setIsSyncing(false)
+      setSyncingField(null)
+    }
+  }
 
   const isAnalyzing = ocrStatus === 'analyzing'
   const isExporting = exportStatus === 'exporting'
@@ -385,8 +627,41 @@ export default function Upload({
           return
         }
 
-        setFieldValues(mapOcrResponseToFieldValues(data, repositoryFields))
+        const mappedValues = mapOcrResponseToFieldValues(data, repositoryFields)
+        setFieldValues(mappedValues)
+        setOcrExtractedValues(mappedValues)
         setOcrStatus('complete')
+
+        // Auto-sync trigger
+        if (masterFormSyncData && masterFormSyncData.syncFieldNames.length > 0) {
+          let syncFieldFound = ''
+          let syncValueFound = ''
+
+          for (const name of masterFormSyncData.syncFieldNames) {
+            const normalizedName = name.trim().toLowerCase()
+            const repoField = repositoryFields.find((f) => {
+              const fieldName = String(f.name || '').trim().toLowerCase()
+              const sqlColumnName = String(f.sqlColumnName || '').trim().toLowerCase()
+              return fieldName === normalizedName || sqlColumnName === normalizedName
+            })
+
+            if (repoField) {
+              const targetKey = getFieldKey(repoField)
+              if (mappedValues[targetKey]?.trim()) {
+                syncFieldFound = name
+                syncValueFound = mappedValues[targetKey]
+                break
+              }
+            }
+          }
+
+          if (syncFieldFound && syncValueFound) {
+            // We use setTimeout to allow state to settle before firing the sync
+            setTimeout(() => {
+              void handleSync(syncValueFound, syncFieldFound)
+            }, 0)
+          }
+        }
       } catch (error: any) {
         if (requestId !== ocrRequestIdRef.current) return
         setOcrStatus('error')
@@ -396,8 +671,9 @@ export default function Upload({
           variant: 'error',
         })
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [repositoryFields, t],
+    [repositoryFields, t, masterFormSyncData],
   )
 
   const resetInput = () => {
@@ -417,6 +693,8 @@ export default function Upload({
     setActiveTab('fields')
     setFocusedFieldKey(null)
     setFieldValues(getInitialValues(repositoryFields))
+    setOcrExtractedValues({})
+    setMasterSyncedValues({})
     resetInput()
   }
 
@@ -610,17 +888,21 @@ export default function Upload({
     exportStatus,
   )
 
+  const [debouncedFocusedValue] = useDebouncedValue(
+    focusedFieldKey ? fieldValues[focusedFieldKey] : '',
+    400
+  )
+
   const highlightTerms = useMemo(() => {
     if (!focusedFieldKey) return []
-    const value = fieldValues[focusedFieldKey]
-    return value ? [value] : []
-  }, [focusedFieldKey, fieldValues])
+    return debouncedFocusedValue ? [debouncedFocusedValue] : []
+  }, [focusedFieldKey, debouncedFocusedValue])
 
   const handleFieldFocus = useCallback((field: RepositoryField) => {
     setFocusedFieldKey(getFieldKey(field))
   }, [])
 
-  const renderFieldControl = (field: RepositoryField) => {
+  const renderFieldControl = (field: RepositoryField, isSyncField: boolean = false) => {
     const column = toDynamicColumn(field)
     const fieldKey = getFieldKey(field)
     const fieldType = normalizeType(field.dataType)
@@ -634,10 +916,85 @@ export default function Upload({
       onFocus: () => handleFieldFocus(field),
     }
 
-    if (fieldType === 'date' || fieldType === 'datetime') {
+    const normalizedFieldName = String(field.name).trim().toLowerCase()
+    const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
+    const matchingSyncName = masterFormSyncData?.syncFieldNames?.find(
+      name => {
+        const norm = name.trim().toLowerCase()
+        return norm === normalizedFieldName || norm === normalizedColName
+      }
+    )
+
+    const renderSyncButton = () => {
+      if (!matchingSyncName) return undefined
+      const isThisFieldSyncing = syncingField === matchingSyncName
       return (
+        <Button
+          aria-label={t`Sync`}
+          onClick={() => handleSync(toTextValue(value), matchingSyncName)}
+          disabled={!value || syncingField !== null}
+          className={cn(
+            'mr-1 flex h-[20px] w-[40px] items-center justify-center gap-1',
+            'rounded-[4px] px-1.5',
+            'text-[10px] font-medium uppercase tracking-[0.04em]',
+            'transition-colors',
+            isThisFieldSyncing
+              ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
+              : value
+                ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
+                : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
+          )}
+        >
+          {isThisFieldSyncing && (
+            <Icon className='size-2.5 animate-spin' name='tabler:loader' />
+          )}
+          <span className='text-[9px]'> {t`SYNC`}</span>
+        </Button>
+      )
+    }
+
+    const fieldClassName = cn('w-full', isSyncField &&
+      '[&_input]:bg-[var(--primary-1)] [&_button]:bg-[var(--surface)] [&_textarea]:bg-[var(--primary-1)]')
+
+    const renderSuggestionCapsule = () => {
+      const ocrValue = ocrExtractedValues[fieldKey]
+      const syncValue = masterSyncedValues[fieldKey]
+      const currentValue = fieldValues[fieldKey]
+
+      if (ocrValue && ocrValue !== currentValue && (!syncValue || syncValue === currentValue)) {
+        return (
+          <button
+            type="button"
+            onClick={() => updateFieldValue(field, ocrValue)}
+            className="mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)]"
+          >
+            <Icon className="size-3 shrink-0" name="tabler:scan" />
+            <span className="truncate text-xs ml-2">{ocrValue}</span>
+          </button>
+        )
+      }
+
+      if (syncValue && syncValue !== currentValue) {
+        return (
+          <button
+            type="button"
+            onClick={() => updateFieldValue(field, syncValue)}
+            className="mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--indigo-4)] bg-[var(--indigo-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--indigo-11)] transition-colors hover:bg-[var(--indigo-2)]"
+          >
+            <Icon className="size-3 shrink-0" name="lucide:database" />
+            <span className="truncate text-xs ml-2">{syncValue}</span>
+          </button>
+        )
+      }
+      return null
+    }
+
+    let InputComponent = null
+
+    if (fieldType === 'date' || fieldType === 'datetime') {
+      InputComponent = (
         <InputDate
-          className='w-full'
+          className={fieldClassName}
           disabled={disabled}
           label={label}
           required={required}
@@ -645,18 +1002,22 @@ export default function Upload({
           onChange={(nextValue: string | null) =>
             updateFieldValue(field, nextValue || '')
           }
+          // @ts-ignore
+          rightSection={renderSyncButton()}
+          // @ts-ignore
+          rightSectionWidth={64}
+          rightSectionPointerEvents='auto'
           {...focusProps}
         />
       )
-    }
-
-    if (
+    } else if (
       fieldType === 'select' ||
       fieldType === 'dropdown' ||
       options.length > 0
     ) {
-      return (
+      InputComponent = (
         <InputSelect
+          className={fieldClassName}
           disabled={disabled}
           label={label}
           options={options}
@@ -668,19 +1029,22 @@ export default function Upload({
               String(selected?.value ?? selected?.name ?? selected?.id ?? ''),
             )
           }
+          // @ts-ignore
+          rightSection={renderSyncButton()}
+          // @ts-ignore
+          rightSectionWidth={64}
+          rightSectionPointerEvents='auto'
           {...focusProps}
         />
       )
-    }
-
-    if (
+    } else if (
       fieldType === 'long_text' ||
       fieldType === 'textarea' ||
       label.toLowerCase().includes('address')
     ) {
-      return (
+      InputComponent = (
         <InputTextarea
-          className='w-full'
+          className={fieldClassName}
           disabled={disabled}
           label={label}
           placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
@@ -688,31 +1052,46 @@ export default function Upload({
           rows={3}
           value={toTextValue(value)}
           onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
+          // @ts-ignore
+          rightSection={renderSyncButton()}
+          // @ts-ignore
+          rightSectionWidth={64}
+          rightSectionPointerEvents='auto'
+          {...focusProps}
+        />
+      )
+    } else {
+      InputComponent = (
+        <InputText
+          className={fieldClassName}
+          disabled={disabled}
+          label={label}
+          placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
+          required={required}
+          value={toTextValue(value)}
+          type={
+            fieldType === 'decimal' ||
+              fieldType === 'number' ||
+              fieldType === 'int' ||
+              fieldType === 'integer' ||
+              fieldType === 'currency'
+              ? 'number'
+              : 'text'
+          }
+          onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
+          rightSection={renderSyncButton()}
+          rightSectionWidth={64}
+          rightSectionPointerEvents='auto'
           {...focusProps}
         />
       )
     }
 
     return (
-      <InputText
-        className='w-full'
-        disabled={disabled}
-        label={label}
-        placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
-        required={required}
-        value={toTextValue(value)}
-        type={
-          fieldType === 'decimal' ||
-            fieldType === 'number' ||
-            fieldType === 'int' ||
-            fieldType === 'integer' ||
-            fieldType === 'currency'
-            ? 'number'
-            : 'text'
-        }
-        onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
-        {...focusProps}
-      />
+      <div className="flex w-full flex-col">
+        {InputComponent}
+        {renderSuggestionCapsule()}
+      </div>
     )
   }
 
@@ -1028,7 +1407,7 @@ export default function Upload({
           </AnimateSlideUp>
 
           <AnimateSlideUp
-            className='flex h-[560px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
+            className='flex h-[900px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
             delay={0.08}
           >
             <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
@@ -1089,23 +1468,53 @@ export default function Upload({
                 </div>
               ) : null}
 
-              {activeTab === 'fields' ? (
-                <div className='h-full max-h-full overflow-y-auto pr-2'>
-                  <div className='m-4 grid grid-cols-1 gap-4'>
-                    {repositoryFields.map((field) => (
-                      <div className='space-y-1.5' key={field.id}>
-                        {renderFieldControl(field)}
-                      </div>
-                    ))}
+              {activeTab === 'fields' ? (() => {
+                const syncRepoFields = repositoryFields.filter((field) => {
+                  const normalizedFieldName = String(field.name).trim().toLowerCase()
+                  const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
+                  return masterFormSyncData?.syncFieldNames?.some((name) => {
+                    const norm = name.trim().toLowerCase()
+                    return norm === normalizedFieldName || norm === normalizedColName
+                  })
+                })
 
-                    {!repositoryFields.length ? (
-                      <div className='rounded-xl border border-dashed border-[var(--gray-4)] p-8 text-center text-sm font-medium text-[var(--gray-9)]'>
-                        {t`No repository fields configured.`}
+                const otherRepoFields = repositoryFields.filter(f => !syncRepoFields.includes(f))
+
+                return (
+                  <div className='flex h-full flex-col'>
+                    {syncRepoFields.length > 0 && (
+                      <div className='shrink-0 p-4 pb-2'>
+                        <div className='grid grid-cols-1 gap-4'>
+                          {syncRepoFields.map((field) => (
+                            <div
+                              className='space-y-1.5 rounded-[5px] bg-[var(--gray-2)] p-[5px]'
+                              key={field.id}
+                            >
+                              {renderFieldControl(field, true)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ) : null}
+                    )}
+
+                    <div className='min-h-0 flex-1 overflow-y-auto p-4 pt-2 pr-2'>
+                      <div className='grid grid-cols-1 gap-4'>
+                        {otherRepoFields.map((field) => (
+                          <div className='space-y-1.5' key={field.id}>
+                            {renderFieldControl(field, false)}
+                          </div>
+                        ))}
+
+                        {!repositoryFields.length ? (
+                          <div className='rounded-xl border border-dashed border-[var(--gray-4)] p-8 text-center text-sm font-medium text-[var(--gray-9)]'>
+                            {t`No repository fields configured.`}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ) : (
+                )
+              })() : (
                 <div className='relative h-full max-h-full'>
                   <button
                     aria-label={t`Copy JSON`}

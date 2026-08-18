@@ -51,7 +51,7 @@ const SectionHeader = ({
             disabled={isLocked}
             placeholder='Section Title'
             type='text'
-            value={panel.settings.title}
+            value={panel?.settings?.title || ''}
             onChange={(e) => updatePanel(panel.id, { title: e.target.value })}
           />
         </div>
@@ -71,7 +71,7 @@ const SectionHeader = ({
           disabled={isLocked}
           placeholder='Please provide details...'
           type='text'
-          value={panel.settings.description}
+          value={panel?.settings?.description || ''}
           onChange={(e) =>
             updatePanel(panel.id, { description: e.target.value })
           }

@@ -10,12 +10,14 @@ import {
   useMemo,
   useRef,
   useState,
+  useImperativeHandle,
 } from 'react'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import type { Option } from '@/types/option'
 import { createRepository, deleteRepository, updateRepository } from '@/api/createFolder'
 import { getRepositoryById, getRepositorys } from '@/api/v6/folder/folder'
+import formApi from '@/api/form/form'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
 import StorageLogo from '@/assets/brands/storage.svg'
@@ -68,6 +70,9 @@ import FolderSecurity from './FolderSecurity'
 import FolderStorageConnectorPanel, {
   type CloudStorageOption,
 } from './FolderStorageConnectorPanel'
+import * as XLSX from 'xlsx'
+import DmsColumnMapping from './DmsColumnMapping'
+import MasterFieldSelectDropdown from './MasterFieldSelectDropdown'
 type DmsFolderConfigurationProps = {
   onBack?: () => void
 }
@@ -423,6 +428,12 @@ const integrations = [
     title: 'Skip for now',
   },
   {
+    description: 'Sync Master Form data with corresponding folder fields.',
+    icon: 'tabler:file-description',
+    id: 'MasterForm',
+    title: 'Master Form Sync',
+  },
+  {
     description: 'Sync folder documents and metadata with SAP ERP.',
     icon: 'tabler:building-warehouse',
     id: 'SAP',
@@ -745,6 +756,7 @@ export default function DmsFolderConfiguration({
   const [displayMode, setDisplayMode] = useState('Show Latest Version Only')
   const [folderName, setFolderName] = useState('')
   const [description, setDescription] = useState('')
+  const [storageDrive, setStorageDrive] = useState<string | null>(null)
 
   const [repositories, setRepositories] = useState<RepositoryRow[]>([])
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
@@ -945,6 +957,7 @@ export default function DmsFolderConfiguration({
         )
       }
 
+      setStorageDrive(details.storageDrive ? String(details.storageDrive) : null)
       setStep(1)
       setShowWizard(true)
     } finally {
@@ -959,6 +972,7 @@ export default function DmsFolderConfiguration({
   }, [])
 
   const loadRepositoriesRequestIdRef = useRef(0)
+  const wizardRef = useRef<any>(null)
 
   const loadRepositories = useCallback(async () => {
     const requestId = ++loadRepositoriesRequestIdRef.current
@@ -1051,6 +1065,7 @@ export default function DmsFolderConfiguration({
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
     setShowConnectorError(false)
+    setStorageDrive(null)
   }
 
   const openManualBuilder = () => {
@@ -1063,6 +1078,7 @@ export default function DmsFolderConfiguration({
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
     setShowConnectorError(false)
+    setStorageDrive(null)
     setVersioning('Incremental Version')
     setDisplayMode('Show Latest Version Only')
     setStep(1)
@@ -1253,7 +1269,7 @@ export default function DmsFolderConfiguration({
         }
       }),
       name: trimmedName,
-      storageDrive: null,
+      storageDrive: storageDrive || '',
       storageProviderCode: selectedStorageOption.storageProviderCode,
       storageProviderId:
         selectedStorageOption.storageProviderCode === 'EZOFIS'
@@ -1264,6 +1280,98 @@ export default function DmsFolderConfiguration({
     setIsSavingRepository(true)
 
     try {
+      let finalStorageDrive = payload.storageDrive
+
+      // Handle "Create Master Form" workflow interception
+      const wizardState = wizardRef.current?.getMasterFormState?.()
+      if (wizardState?.masterFormSetupMode === 'create' && wizardState?.selectedIntegration === 'MasterForm') {
+        const { syncMapping, syncDataTypes } = wizardState
+        
+        // 1. Generate Form Payload
+        const formPayload = {
+          allowPrint: false,
+          allowShare: false,
+          color: '',
+          defaultTheme: false,
+          description: wizardState?.masterFormDescription || '',
+          enableDocumentVisibility: false,
+          icon: 'lucide:table',
+          name: wizardState?.masterFormTitle || `${payload.name} - Master Form`,
+          theme: 'light',
+          status: 'Published',
+          panels: [
+            {
+              id: `panel-${Date.now()}`,
+              name: 'Master Data',
+              title: 'Panel 1',
+              description: 'Panel 1 description',
+              settings: {
+                title: 'Panel 1',
+                description: 'Panel 1 description'
+              },
+              columns: 1,
+              fields: Object.entries(syncMapping).map(([repoName, excelHeader], idx) => {
+                const dataType = syncDataTypes?.[repoName] || fields.find(f => f.fieldName === repoName)?.dataType || 'SHORT_TEXT'
+                return {
+                  id: `field-${Date.now()}-${idx}`,
+                  label: repoName,
+                  type: dataType,
+                  settings: { general: { size: 'col-12' } }
+                }
+              })
+            }
+          ]
+        }
+
+        // 2. Call formApi.createForm
+        const formRes = await formApi.createForm(JSON.stringify(formPayload))
+        if (formRes.error) {
+          showToast({ message: `Failed to create Master Form: ${formRes.error}`, variant: 'error' })
+          return
+        }
+
+        const formId = formRes.data?.id ?? formRes.data?.formId ?? formRes.data
+        if (!formId) {
+          showToast({ message: 'Master Form created but no form ID was returned.', variant: 'error' })
+          return
+        }
+
+        // Fetch the freshly created form to get the actual field IDs generated by the server
+        let actualFieldMapping: Record<string, string> = {}
+        try {
+          const freshFormRes = await formApi.getFormDataById(formId)
+          const formJson = freshFormRes.data?.formJson
+          const fieldsArray = Array.isArray(formJson?.panels)
+            ? formJson.panels.flatMap((panel: any) => Array.isArray(panel?.fields) ? panel.fields : [])
+            : Array.isArray(formJson?.fields)
+              ? formJson.fields
+              : Array.isArray(formJson?.components)
+                ? formJson.components
+                : []
+          
+          fieldsArray.forEach((f: any) => {
+            const actualId = String(f.id || f.key || f.name || '')
+            const actualLabel = String(f.displayLabel || f.label || f.name || f.title || f.id || f.key || '')
+            if (actualId && actualLabel) {
+              actualFieldMapping[actualLabel] = actualId
+            }
+          })
+        } catch (e) {
+          console.error("Failed to fetch fresh form details", e)
+        }
+
+        // 3. Construct the storageDrive value
+        // Format: formId[repoName:formFieldId:sync, ...]
+        const mappingParts = Object.entries(syncMapping).map(([repoName, excelHeader]) => {
+          const isSync = wizardState.syncFields?.includes(repoName)
+          // Use the actual field ID from the form if available, fallback to the label (repoName)
+          const actualFieldId = actualFieldMapping[repoName] || repoName
+          return `${repoName}:${actualFieldId}${isSync ? ':sync' : ''}`
+        })
+        finalStorageDrive = `${formId}[${mappingParts.join(',')}]`
+        payload.storageDrive = finalStorageDrive
+      }
+
       const response = isEditing
         ? await updateRepository(editingRepositoryId as string, payload)
         : await createRepository(payload)
@@ -1388,12 +1496,15 @@ export default function DmsFolderConfiguration({
               storage={storage}
               storageConnectorId={storageConnectorId}
               storageConnectorLabel={storageConnectorLabel}
+              storageDrive={storageDrive}
               versioning={versioning}
+              wizardRef={wizardRef}
               setDescription={setDescription}
               setDisplayMode={setDisplayMode}
               setFields={setFields}
               setFolderName={setFolderName}
               setStorage={handleStorageChange}
+              setStorageDrive={setStorageDrive}
               setVersioning={setVersioning}
               onStorageConnectorChange={handleStorageConnectorChange}
             />
@@ -2508,8 +2619,11 @@ function WizardContent({
   setFolderName,
   setStep,
   setStorage,
+  setStorageDrive,
+  storageDrive,
   setVersioning,
   onStorageConnectorChange,
+  wizardRef,
 }: {
   description: string
   displayMode: string
@@ -2534,6 +2648,9 @@ function WizardContent({
     connectorLabel: string | null,
   ) => void
   setStorage: (nextStorage: string) => void
+  setStorageDrive: Dispatch<SetStateAction<string | null>>
+  storageDrive: string | null
+  wizardRef?: React.MutableRefObject<any>
 }) {
   const { t } = useLingui()
   const [newFieldName, setNewFieldName] = useState('')
@@ -2546,10 +2663,104 @@ function WizardContent({
   const [fieldTypeOptions, setFieldTypeOptions] = useState<SelectOption[]>(() =>
     toFieldTypeOptions([...REPOSITORY_FIELD_DATA_TYPES]),
   )
-  const [selectedIntegration, setSelectedIntegration] = useState<string>('None')
-  const [connectedIntegrationId, setConnectedIntegrationId] = useState<
-    string | null
-  >(null)
+
+  // Master Form Setup Modes
+  const [masterFormSetupMode, setMasterFormSetupMode] = useState<'existing' | 'create' | null>('existing')
+  const [masterFormFile, setMasterFormFile] = useState<File | null>(null)
+  const [masterFormParsing, setMasterFormParsing] = useState(false)
+  const [masterFormHeaders, setMasterFormHeaders] = useState<string[]>([])
+  const [masterFormPreviewRows, setMasterFormPreviewRows] = useState<any[]>([])
+  const [masterFormRowCount, setMasterFormRowCount] = useState(0)
+  const [masterFormUploadState, setMasterFormUploadState] = useState<'idle' | 'parsing' | 'ready' | 'error'>('idle')
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  const handleMasterFileChange = async (file: File | null | undefined) => {
+    if (!file) return
+    setMasterFormFile(file)
+    setMasterFormUploadState('parsing')
+    try {
+      const buf = await file.arrayBuffer()
+      const u8 = new Uint8Array(buf)
+      const wb = XLSX.read(u8, { type: 'array' })
+      const firstSheetName = wb.SheetNames[0]
+      const headerWs = wb.Sheets[firstSheetName]
+      const headerRawRows = XLSX.utils.sheet_to_json(headerWs, { blankrows: false, header: 1 }) as unknown[][]
+      const headerRow = headerRawRows?.[0] ?? []
+      const headers = headerRow.map((h) => String(h ?? '').trim().replace(/\s+/g, ' ')).filter(Boolean)
+      const allHeaderRows = XLSX.utils.sheet_to_json(headerWs) as any[]
+      
+      setMasterFormHeaders(headers)
+      setMasterFormPreviewRows(allHeaderRows.slice(0, 15))
+      setMasterFormRowCount(allHeaderRows.length)
+      setMasterFormUploadState('ready')
+    } catch (e) {
+      setMasterFormUploadState('error')
+      showToast({ message: 'Failed to parse Excel file', variant: 'error' })
+    }
+  }
+
+  const [formsList, setFormsList] = useState<Array<{ id: string; name: string }>>([])
+
+  const [selectedIntegration, setSelectedIntegration] = useState<string>(() => {
+    if (storageDrive && storageDrive.includes('[')) return 'MasterForm'
+    return 'None'
+  })
+  const [connectedIntegrationId, setConnectedIntegrationId] = useState<string | null>(() => {
+    if (storageDrive && storageDrive.includes('[')) return 'MasterForm'
+    return null
+  })
+  const [selectedFormId, setSelectedFormId] = useState<string | null>(() => {
+    if (storageDrive && storageDrive.includes('[')) {
+      return storageDrive.substring(0, storageDrive.indexOf('[')).trim() || null
+    }
+    return null
+  })
+  const [syncMapping, setSyncMapping] = useState<Record<string, string>>(() => {
+    if (storageDrive && storageDrive.includes('[')) {
+      const mappingStr = storageDrive.substring(storageDrive.indexOf('[') + 1, storageDrive.length - 1)
+      const pairs = mappingStr.split(',')
+      const parsedMapping: Record<string, string> = {}
+      pairs.forEach(pair => {
+        const parts = pair.split(':')
+        if (parts.length >= 2) parsedMapping[parts[0]] = parts[1]
+      })
+      return parsedMapping
+    }
+    return {}
+  })
+  const [syncFields, setSyncFields] = useState<string[]>(() => {
+    if (storageDrive && storageDrive.includes('[')) {
+      const mappingStr = storageDrive.substring(storageDrive.indexOf('[') + 1, storageDrive.length - 1)
+      const pairs = mappingStr.split(',')
+      let parsedSyncFields: string[] = []
+      pairs.forEach(pair => {
+        const parts = pair.split(':')
+        if (parts.length >= 3 && parts[2] === 'sync') parsedSyncFields.push(parts[0])
+      })
+      return parsedSyncFields
+    }
+    return []
+  })
+  
+  const [syncDataTypes, setSyncDataTypes] = useState<Record<string, string>>({})
+  
+  const [masterFormTitle, setMasterFormTitle] = useState(`${folderName} - Master Form`)
+  const [masterFormDescription, setMasterFormDescription] = useState('')
+
+  useImperativeHandle(wizardRef, () => ({
+    getMasterFormState: () => ({
+      masterFormSetupMode,
+      selectedIntegration,
+      syncMapping,
+      syncDataTypes,
+      syncFields,
+      masterFormTitle,
+      masterFormDescription,
+    })
+  }), [masterFormSetupMode, selectedIntegration, syncMapping, syncDataTypes, syncFields, masterFormTitle, masterFormDescription])
+
+  const [formFields, setFormFields] = useState<Array<{ id: string; label: string }>>([])
 
   const loadFieldTypes = useCallback(async () => {
     const allowedTypes = new Set<string>(REPOSITORY_FIELD_DATA_TYPES)
@@ -2575,6 +2786,84 @@ function WizardContent({
     if (step !== 2) return
     void loadFieldTypes()
   }, [loadFieldTypes, step])
+
+  useEffect(() => {
+    if (step === 5 && selectedIntegration === 'MasterForm') {
+      void formApi.listAllForms().then((res) => {
+        if (res.data) {
+          let forms: any[] = []
+          if (Array.isArray(res.data)) {
+            if (res.data.length > 0 && res.data[0].value && Array.isArray(res.data[0].value)) {
+              forms = res.data.flatMap((group: any) => group.value || [])
+            } else {
+              forms = res.data
+            }
+          } else if (res.data?.data && Array.isArray(res.data.data)) {
+            forms = res.data.data
+          } else if (res.data?.content && Array.isArray(res.data.content)) {
+            forms = res.data.content
+          }
+
+          setFormsList(
+            forms[0]?.value?.map((f: any) => ({
+              id: String(f.id || f.formId),
+              name: f.name || f.title || f.id,
+            })),
+          )
+        }
+      })
+    }
+  }, [step, selectedIntegration])
+
+  useEffect(() => {
+    if (selectedFormId) {
+      void formApi.getFormDataById(selectedFormId).then((res) => {
+        if (res.data?.formJson) {
+          const formJson = res.data.formJson
+          const fieldsArray = Array.isArray(formJson?.panels)
+            ? formJson.panels.flatMap((panel: any) =>
+              Array.isArray(panel?.fields) ? panel.fields : [],
+            )
+            : Array.isArray(formJson?.fields)
+              ? formJson.fields
+              : Array.isArray(formJson?.components)
+                ? formJson.components
+                : []
+
+          console.log('All form fields:', fieldsArray)
+
+          setFormFields(
+            fieldsArray.map((f: any) => ({
+              id: String(f.id || f.key || f.name || ''),
+              label: String(
+                f.displayLabel ||
+                f.label ||
+                f.name ||
+                f.title ||
+                f.id ||
+                f.key ||
+                '',
+              ),
+            })),
+          )
+        }
+      })
+    } else {
+      setFormFields([])
+    }
+  }, [selectedFormId])
+
+  useEffect(() => {
+    if (connectedIntegrationId === 'MasterForm' && Object.keys(syncMapping).length > 0 && selectedFormId) {
+      const formatted = `${selectedFormId}[${Object.entries(syncMapping)
+        .map(([repoName, formId]) => `${repoName}:${formId}${syncFields.includes(repoName) ? ':sync' : ''}`)
+        .join(',')}]`
+      setStorageDrive(formatted)
+      console.log('Sync mapping string to save:', formatted)
+    } else {
+      setStorageDrive(null)
+    }
+  }, [connectedIntegrationId, syncMapping, syncFields, selectedFormId, setStorageDrive])
 
   const addField = () => {
     const trimmedName = newFieldName.trim()
@@ -2614,7 +2903,12 @@ function WizardContent({
             label={t`Folder Name *`}
             placeholder={t`e.g. AP Invoices 2026`}
             value={folderName}
-            onChange={(value: string) => setFolderName(value)}
+            onChange={(value: string) => {
+              setFolderName(value)
+              if (masterFormTitle === `${folderName} - Master Form` || !masterFormTitle) {
+                setMasterFormTitle(`${value} - Master Form`)
+              }
+            }}
           />
         </AnimateFadeIn>
 
@@ -3001,6 +3295,8 @@ function WizardContent({
                           setSelectedIntegration(item.id)
                           if (item.id === 'None') {
                             setConnectedIntegrationId(null)
+                          } else {
+                            setConnectedIntegrationId(item.id)
                           }
                         }}
                       >
@@ -3026,6 +3322,8 @@ function WizardContent({
                               setSelectedIntegration(item.id)
                               if (item.id === 'None') {
                                 setConnectedIntegrationId(null)
+                              } else {
+                                setConnectedIntegrationId(item.id)
                               }
                             }}
                           >
@@ -3079,6 +3377,8 @@ function WizardContent({
                             setSelectedIntegration(item.id)
                             if (item.id === 'None') {
                               setConnectedIntegrationId(null)
+                            } else {
+                              setConnectedIntegrationId(item.id)
                             }
                           }}
                         >
@@ -3091,6 +3391,315 @@ function WizardContent({
               )
             })}
           </div>
+
+          <AnimatePresence>
+            {selectedIntegration === 'MasterForm' && connectedIntegrationId === 'MasterForm' && (
+              <AnimateFadeIn delay={0.2}>
+                <div className='mt-6 rounded-[12px] border border-gray-3 bg-surface p-4 shadow-sm'>
+                  <div className='mb-4'>
+                    <h4 className='text-14/5 font-semibold text-gray-12'>
+                      Master Form Configuration
+                    </h4>
+                    <p className='mt-0.5 text-xs text-gray-10'>
+                      Select an existing form or upload an Excel file to create a new one.
+                    </p>
+                  </div>
+
+                  {/* Setup Mode Toggle */}
+                  <div className='mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                    <button
+                      type='button'
+                      className={cn(
+                        'group relative flex min-h-[76px] w-full flex-row items-center gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200 cursor-pointer',
+                        masterFormSetupMode === 'existing'
+                          ? 'border-primary-9 bg-primary-1 shadow-sm ring-2 ring-primary-9/20'
+                          : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
+                      )}
+                      onClick={() => setMasterFormSetupMode('existing')}
+                    >
+                      <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-md p-1.5', masterFormSetupMode === 'existing' ? 'bg-white shadow-sm' : 'bg-gray-2 group-hover:bg-gray-3')}>
+                        <Icon className={cn('size-5', masterFormSetupMode === 'existing' ? 'text-primary-11' : 'text-primary-9')} name='tabler:database-search' />
+                      </div>
+                      <div className='min-w-0 flex-1'>
+                        <div className={cn('truncate text-14/5 font-medium', masterFormSetupMode === 'existing' ? 'text-primary-12' : 'text-gray-13')}>Use existing form</div>
+                        <p className='mt-0.5 line-clamp-2 text-12/4.5 text-pretty text-gray-10'>Select an existing form and map its fields.</p>
+                      </div>
+                      {masterFormSetupMode === 'existing' && (
+                        <div className='flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-9'>
+                          <Icon className='size-3 text-white' name='tabler:check' />
+                        </div>
+                      )}
+                    </button>
+
+                    <button
+                      type='button'
+                      className={cn(
+                        'group relative flex min-h-[76px] w-full cursor-pointer flex-row items-center gap-3 rounded-lg border px-4 py-3.5 text-left transition-all duration-200',
+                        masterFormSetupMode === 'create'
+                          ? 'border-primary-9 bg-primary-1 shadow-sm ring-2 ring-primary-9/20'
+                          : 'border-gray-4 bg-surface hover:border-gray-5 hover:bg-gray-2',
+                      )}
+                      onClick={() => setMasterFormSetupMode('create')}
+                    >
+                      <div className={cn('flex size-9 shrink-0 items-center justify-center rounded-md p-1.5', masterFormSetupMode === 'create' ? 'bg-white shadow-sm' : 'bg-gray-2 group-hover:bg-gray-3')}>
+                        <Icon className={cn('size-5', masterFormSetupMode === 'create' ? 'text-primary-11' : 'text-primary-9')} name='tabler:table-import' />
+                      </div>
+                      <div className='min-w-0 flex-1'>
+                        <div className={cn('truncate text-14/5 font-medium', masterFormSetupMode === 'create' ? 'text-primary-12' : 'text-gray-13')}>Create master form</div>
+                        <p className='mt-0.5 line-clamp-2 text-12/4.5 text-pretty text-gray-10'>Upload your records via CSV or Excel.</p>
+                      </div>
+                      {masterFormSetupMode === 'create' && (
+                        <div className='flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-9'>
+                          <Icon className='size-3 text-white' name='tabler:check' />
+                        </div>
+                      )}
+                    </button>
+                  </div>
+
+                  {masterFormSetupMode === 'existing' && (
+                    <AnimateFadeIn delay={0.1}>
+                      <div className='mb-6 max-w-md'>
+                        <InputSelect
+                          label='Select Form'
+                          options={formsList.map((f) => ({
+                            id: f.id,
+                            name: f.name,
+                            value: f.id,
+                          }))}
+                          placeholder='Select a form...'
+                          searchable
+                          value={
+                            formsList.find((f) => f.id === selectedFormId)
+                              ? {
+                                id: selectedFormId as string,
+                                name: formsList.find(
+                                  (f) => f.id === selectedFormId,
+                                )?.name as string,
+                                value: selectedFormId as string,
+                              }
+                              : null
+                          }
+                          onChange={(selected) => {
+                            setSelectedFormId(selected ? String(selected.value) : null)
+                            setSyncMapping({})
+                            setSyncFields([])
+                          }}
+                        />
+                      </div>
+
+                      {selectedFormId && (
+                    <div>
+                      <h5 className='mb-3 text-13 font-medium text-gray-12'>
+                        Field Mapping
+                      </h5>
+                      <div className='overflow-y-auto max-h-[300px] rounded-lg border border-gray-3 shadow-inner'>
+                        <table className='w-full text-left text-13'>
+                          <thead className='sticky top-0 z-10 border-b border-gray-3 bg-gray-2/50 backdrop-blur-sm'>
+                            <tr>
+                              <th className='w-[40%] px-4 py-3 font-semibold text-gray-11'>
+                                Folder Fields
+                              </th>
+                              <th className='w-[40%] px-4 py-3 font-semibold text-gray-11'>
+                                Form Fields
+                              </th>
+                              <th className='w-[20%] px-4 py-3 text-center font-semibold text-gray-11'>
+                                Sync
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className='divide-y divide-gray-3 bg-surface'>
+                            {fields.map((repoField) => {
+                              const mappedValue =
+                                syncMapping[repoField.fieldName] || ''
+                              const formFieldOption = formFields.find(
+                                (f) => f.id === mappedValue,
+                              )
+
+                              return (
+                                <tr
+                                  key={repoField.id}
+                                  className='transition-colors hover:bg-gray-1/30'
+                                >
+                                  <td className='px-4 py-3'>
+                                    <span className='font-medium text-gray-12'>
+                                      {repoField.fieldName}
+                                    </span>
+                                  </td>
+                                  <td className='px-4 py-3'>
+                                    <MasterFieldSelectDropdown
+                                      options={formFields}
+                                      value={mappedValue || null}
+                                      onChange={(selectedId) => {
+                                        setSyncMapping((prev) => {
+                                          const newMap = { ...prev }
+                                          if (selectedId) {
+                                            newMap[repoField.fieldName] = selectedId
+                                          } else {
+                                            delete newMap[repoField.fieldName]
+                                            setSyncFields(prev => prev.filter(f => f !== repoField.fieldName))
+                                          }
+                                          return newMap
+                                        })
+                                      }}
+                                    />
+                                  </td>
+                                  <td className='px-4 py-3'>
+                                    <div className='flex justify-center'>
+                                      <input
+                                        type='checkbox'
+                                        name='sync_field'
+                                        disabled={!mappedValue}
+                                        checked={syncFields.includes(repoField.fieldName)}
+                                        onChange={(e) => {
+                                          if (mappedValue) {
+                                            if (e.target.checked) {
+                                              setSyncFields((prev) => [...prev, repoField.fieldName])
+                                            } else {
+                                              setSyncFields((prev) => prev.filter((f) => f !== repoField.fieldName))
+                                            }
+                                          }
+                                        }}
+                                        className='h-4 w-4 cursor-pointer rounded border-gray-3 text-primary-9 accent-primary-9 focus:ring-primary-5'
+                                        title={!mappedValue ? 'Please map a form field first' : 'Select for sync'}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </AnimateFadeIn>
+              )}
+
+              {masterFormSetupMode === 'create' && (
+                    <AnimateFadeIn delay={0.1}>
+                      {masterFormUploadState === 'idle' ? (
+                        <div className='mb-6 group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
+                          <div
+                            className={cn(
+                              'relative z-10 flex min-h-[150px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-[1.5px] border-dashed border-border-default px-6 py-6 text-center transition-all duration-500 ease-out',
+                              isDragOver
+                                ? 'scale-[0.99] border-primary-9 bg-accent-soft/10 shadow-inner'
+                                : 'bg-surface hover:border-primary-9 hover:bg-accent-soft/5',
+                            )}
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragLeave={() => setIsDragOver(false)}
+                            onDragOver={(e) => {
+                              e.preventDefault()
+                              setIsDragOver(true)
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault()
+                              setIsDragOver(false)
+                              handleMasterFileChange(e.dataTransfer.files?.[0])
+                            }}
+                          >
+                            <div className='flex size-14 items-center justify-center rounded-full bg-accent-soft transition-all duration-300 group-hover:scale-105'>
+                              <Icon
+                                className='size-6 text-primary-9'
+                                name='tabler:cloud-upload'
+                              />
+                            </div>
+                            <div className='text-center'>
+                              <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
+                                Drop your PO master file here, or{' '}
+                                <span className='font-medium text-primary-9 group-hover:underline'>
+                                  browse
+                                </span>
+                              </h3>
+                              <p className='mt-1.5 text-[12px] text-gray-8'>
+                                Supports Excel (.xlsx, .xls) and CSV formats
+                              </p>
+                            </div>
+                          </div>
+
+                          <input
+                            accept='.csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel'
+                            className='hidden'
+                            ref={fileInputRef}
+                            type='file'
+                            onChange={(e) => handleMasterFileChange(e.target.files?.[0])}
+                          />
+                        </div>
+                      ) : (
+                        <div className='mb-6 flex flex-col gap-4'>
+                          <div className='flex items-center justify-between rounded-xl border border-border-default bg-surface p-4 shadow-sm'>
+                            <div className='flex items-center gap-3'>
+                              <div className='flex size-10 items-center justify-center rounded-lg bg-green-2 text-green-11'>
+                                <Icon className='size-5 text-green-11' name='tabler:file-spreadsheet' />
+                              </div>
+                              <div className='min-w-0 flex-1'>
+                                <h4 className='truncate text-[14px] font-medium text-gray-12'>
+                                  {masterFormFile?.name}
+                                </h4>
+                                <p className='text-[12px] text-gray-9'>
+                                  {masterFormFile
+                                    ? `Excel Spreadsheet • ${masterFormRowCount} Records`
+                                    : 'Processing...'}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              icon='tabler:refresh'
+                              label='Replace File'
+                              size='sm'
+                              variant='outline'
+                              onClick={() => {
+                                setMasterFormUploadState('idle')
+                                setMasterFormFile(null)
+                                setSyncMapping({})
+                              }}
+                            />
+                          </div>
+                          
+                          {masterFormUploadState === 'ready' && (
+                            <div className='flex flex-col gap-6'>
+                              <div className='flex flex-col gap-4 rounded-xl border border-border-default bg-surface p-5 shadow-2xs'>
+                                <div>
+                                  <h3 className='text-[13px] font-semibold text-gray-12'>Form Details</h3>
+                                  <p className='mt-1 text-[12px] text-gray-10'>
+                                    Provide a name and description for the new master form that will be created.
+                                  </p>
+                                </div>
+                                <div className='flex flex-col gap-4'>
+                                  <InputText
+                                    label='Form Title *'
+                                    placeholder='Enter master form title'
+                                    value={masterFormTitle}
+                                    onChange={(val: string) => setMasterFormTitle(val)}
+                                  />
+                                  <InputTextarea
+                                    label='Description'
+                                    minRows={2}
+                                    placeholder='Optional description for this master form'
+                                    value={masterFormDescription}
+                                    onChange={(val: string) => setMasterFormDescription(val)}
+                                  />
+                                </div>
+                              </div>
+                              <DmsColumnMapping 
+                                fields={fields} 
+                                mapping={syncMapping} 
+                                dataTypes={syncDataTypes}
+                                previewRows={masterFormPreviewRows} 
+                                uploadedColumns={masterFormHeaders} 
+                                onUpdateMapping={(newMapping) => setSyncMapping(newMapping)} 
+                                onUpdateDataTypes={(newDataTypes) => setSyncDataTypes(newDataTypes)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </AnimateFadeIn>
+                  )}
+                </div>
+              </AnimateFadeIn>
+            )}
+          </AnimatePresence>
         </div>
       </SettingsFormSection>
     )

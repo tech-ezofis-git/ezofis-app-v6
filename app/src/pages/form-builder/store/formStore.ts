@@ -684,7 +684,7 @@ export const useFormStore = create<FormStore>()(
       updatePanel: (id, updates) =>
         set((state) => ({
           panels: state.panels.map((p) =>
-            p.id === id ? { ...p, settings: { ...p.settings, ...updates } } : p,
+            p.id === id ? { ...p, settings: { ...(p.settings || {}), ...updates } } : p,
           ),
         })),
 

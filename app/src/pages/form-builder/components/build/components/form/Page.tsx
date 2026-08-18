@@ -44,8 +44,8 @@ const Page = ({ panel, panelIndex }: Props) => {
   } = useFormStore()
 
   const pageRef = useRef<HTMLDivElement>(null)
-  const isLocked = panel.settings.isLocked || false
-  const isCollapsed = panel.settings.isCollapsed || false
+  const isLocked = panel?.settings?.isLocked || false
+  const isCollapsed = panel?.settings?.isCollapsed || false
 
   // Mapping for field widths to 12-column grid spans
   const getColumnSpan = (size: string) => {
