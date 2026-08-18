@@ -4,6 +4,15 @@ import AppLayout from '@/layouts/app/AppLayout'
 import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
 
+const normalizePermissionKey = (key: string) => {
+  const k = key.toLowerCase().trim()
+  if (k === 'requests') return 'request'
+  if (k === 'forms') return 'form'
+  if (k === 'folders') return 'folder'
+  if (k === 'workflows') return 'workflow'
+  return k
+}
+
 export const Route = createFileRoute('/_app')({
   component: RouteComponent,
   staticData: {
@@ -33,8 +42,8 @@ export const Route = createFileRoute('/_app')({
       const routeToPermissionKey: Record<string, string> = {
         '/': 'dashboard',
         '/folders': 'folder',
-        '/forms': 'forms',
-        '/requests': 'requests',
+        '/forms': 'form',
+        '/requests': 'request',
         '/settings': 'settings',
         '/workflow-chat': 'workflow',
         '/workflows': 'workflow',
@@ -48,32 +57,26 @@ export const Route = createFileRoute('/_app')({
 
       if (baseRoute) {
         const requiredPermissionKey = routeToPermissionKey[baseRoute]
-
-        // TEMP: allow Requests/Forms/Workflow-Chat until role permission persistence is fixed
-        if (
-          requiredPermissionKey === 'requests' ||
-          requiredPermissionKey === 'forms' ||
-          location.pathname.startsWith('/workflow-chat')
-        ) {
-          return
-        }
+        const normalizedTarget = normalizePermissionKey(requiredPermissionKey)
 
         const permission = sessionPermissions.find(
-          (p) => p.key === requiredPermissionKey,
+          (p) => p.key && normalizePermissionKey(p.key) === normalizedTarget,
         )
 
         if (permission && permission.visible === false) {
-          const firstVisible = sessionPermissions.find((p) => p.visible)
-          const fallbackRoute = firstVisible
-            ? Object.keys(routeToPermissionKey).find(
-                (k) => routeToPermissionKey[k] === firstVisible.key,
-              ) || '/'
-            : '/'
+          const firstAllowedRoute =
+            Object.keys(routeToPermissionKey).find((r) => {
+              const k = normalizePermissionKey(routeToPermissionKey[r])
+              const p = sessionPermissions.find(
+                (item) => item.key && normalizePermissionKey(item.key) === k,
+              )
+              return !p || p.visible !== false
+            }) || '/'
 
-          if (location.pathname !== fallbackRoute) {
+          if (location.pathname !== firstAllowedRoute) {
             throw redirect({
               replace: true,
-              to: fallbackRoute,
+              to: firstAllowedRoute,
             })
           }
         }
