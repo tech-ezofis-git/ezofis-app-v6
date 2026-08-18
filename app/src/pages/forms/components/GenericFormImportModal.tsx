@@ -2,10 +2,12 @@ import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import formApi from '@/api/form/form'
+import logoMark from '@/assets/logo/mark.png'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import {
   AnimateEntrancePop,
   AnimateFadeIn,
@@ -18,13 +20,14 @@ import { findBestHeaderMatch } from '@/pages/requests/components/request/compone
 export type GenericUploadState =
   | 'idle'
   | 'parsing'
-  | 'strategy'
-  | 'processing'
+  | 'timeline'
   | 'ready'
+  | 'processing'
   | 'completed'
   | 'error'
 
 export type GenericImportStrategy = 'replace' | 'append'
+type TimelineStepState = 'waiting' | 'active' | 'done'
 
 type Props = {
   fields: Question[]
@@ -43,15 +46,22 @@ export default function GenericFormImportModal({
 }: Props) {
   const { t } = useLingui()
 
-  // Filter out non-input structural fields like HEADING, DIVIDER
+  // Filter out non-input structural fields and metadata keys from target schema
   const validFields = useMemo(
     () =>
-      fields.filter(
-        (f) =>
-          !['HEADING', 'DIVIDER', 'LABEL'].includes(
-            (f.type || '').toUpperCase(),
-          ),
-      ),
+      fields.filter((f) => {
+        const type = (f.type || '').toUpperCase()
+        const fieldId = (f.id || '').toLowerCase().trim()
+        const label = (f.label || '').toLowerCase().trim()
+
+        const isMetadataKey =
+          ['id', 'entryid', 'entry #', 'entry_id', 'itemid', 'createdat', 'createdby', 'modifiedat', 'modifiedby', 'isdeleted'].includes(fieldId) ||
+          ['entry #', 'entry id', 'id', 'created by', 'created date', 'modified by', 'modified date'].includes(label)
+
+        return (
+          !['HEADING', 'DIVIDER', 'LABEL'].includes(type) && !isMetadataKey
+        )
+      }),
     [fields],
   )
 
@@ -62,12 +72,34 @@ export default function GenericFormImportModal({
     useState<GenericImportStrategy>('append')
   const [uploadedColumns, setUploadedColumns] = useState<string[]>([])
   const [parsedRows, setParsedRows] = useState<any[]>([])
-  const [mapping, setMapping] = useState<Record<string, string>>({}) // fieldId -> excelHeader
+  const [mapping, setMapping] = useState<Record<string, string>>({}) // excelHeader -> fieldId
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false)
 
+  // Step-wise timeline states
+  const [step1State, setStep1State] = useState<TimelineStepState>('waiting')
+  const [step2State, setStep2State] = useState<TimelineStepState>('waiting')
+  const [step3State, setStep3State] = useState<TimelineStepState>('waiting')
+
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Filter uploaded columns to exclude EntryId and metadata fields from mapping rows
+  const displayUploadedColumns = useMemo(() => {
+    return uploadedColumns.filter((col) => {
+      const norm = col.toLowerCase().replace(/[^a-z0-9]/g, '')
+      return ![
+        'entryid',
+        'id',
+        'itemid',
+        'createdat',
+        'createdby',
+        'modifiedat',
+        'modifiedby',
+        'isdeleted',
+      ].includes(norm)
+    })
+  }, [uploadedColumns])
 
   // Dynamic sample Excel template generation based on active form fields
   const handleDownloadDynamicTemplate = async () => {
@@ -108,7 +140,7 @@ export default function GenericFormImportModal({
     }
   }
 
-  // Parse file (CSV or XLSX)
+  // Parse file and trigger Step-Wise Timeline Animation
   const parseUploadedFile = async (file: File) => {
     setUploadedFile(file)
     setUploadProgress(0)
@@ -137,7 +169,7 @@ export default function GenericFormImportModal({
       // Progress animation
       let currentProgress = 0
       const timer = setInterval(() => {
-        currentProgress += 20
+        currentProgress += 25
         if (currentProgress >= 100) {
           clearInterval(timer)
           setUploadProgress(100)
@@ -145,20 +177,7 @@ export default function GenericFormImportModal({
           setTimeout(() => {
             setUploadedColumns(headers)
             setParsedRows(allRows)
-
-            // Auto mapping algorithm
-            const initialMapping: Record<string, string> = {}
-            validFields.forEach((field) => {
-              const matchedHeader = findBestHeaderMatch(
-                field.label || field.id,
-                headers,
-              )
-              if (matchedHeader) {
-                initialMapping[field.id] = matchedHeader
-              }
-            })
-            setMapping(initialMapping)
-            setUploadState('ready')
+            runTimelineSimulation(headers)
           }, 300)
         } else {
           setUploadProgress(currentProgress)
@@ -175,6 +194,61 @@ export default function GenericFormImportModal({
     }
   }
 
+  // Step-wise timeline simulation
+  const runTimelineSimulation = (headers: string[]) => {
+    setUploadState('timeline')
+    setStep1State('active')
+    setStep2State('waiting')
+    setStep3State('waiting')
+
+    // Step 1: File Ingestion & Parsing completes at 600ms
+    setTimeout(() => {
+      setStep1State('done')
+      setStep2State('active')
+
+      // Step 2: Column & Row Extraction completes at 1300ms
+      setTimeout(() => {
+        setStep2State('done')
+        setStep3State('active')
+
+        // Step 3: Schema Auto-Mapping completes at 2100ms
+        setTimeout(() => {
+          const initialMapping: Record<string, string> = {}
+          headers.forEach((col) => {
+            const matchedField = validFields.find((f) => {
+              const matchedHeader = findBestHeaderMatch(f.label || f.id, headers)
+              return matchedHeader === col
+            })
+            if (matchedField) {
+              initialMapping[col] = matchedField.id
+            }
+          })
+          setMapping(initialMapping)
+          setStep3State('done')
+          setUploadState('ready')
+        }, 800)
+      }, 700)
+    }, 600)
+  }
+
+  const handleResetMapping = () => {
+    const initialMapping: Record<string, string> = {}
+    displayUploadedColumns.forEach((col) => {
+      const matchedField = validFields.find((f) => {
+        const matchedHeader = findBestHeaderMatch(f.label || f.id, displayUploadedColumns)
+        return matchedHeader === col
+      })
+      if (matchedField) {
+        initialMapping[col] = matchedField.id
+      }
+    })
+    setMapping(initialMapping)
+    showToast({
+      message: t`Reset mappings to matching suggestions.`,
+      variant: 'default',
+    })
+  }
+
   // Process and ingest records into backend
   const handleConfirmImport = async () => {
     if (!parsedRows || parsedRows.length === 0) return
@@ -183,22 +257,18 @@ export default function GenericFormImportModal({
 
     try {
       let successCount = 0
-      let failCount = 0
 
-      // Batch save entries using formApi.saveFormEntry
       for (const row of parsedRows) {
         const entryValues: Record<string, any> = {}
-        validFields.forEach((field) => {
-          const mappedHeader = mapping[field.id]
-          if (mappedHeader && row[mappedHeader] !== undefined) {
-            entryValues[field.id] = row[mappedHeader]
+        Object.entries(mapping).forEach(([excelCol, fieldId]) => {
+          if (fieldId && row[excelCol] !== undefined) {
+            entryValues[fieldId] = row[excelCol]
           }
         })
 
         if (Object.keys(entryValues).length > 0) {
           const { error } = await formApi.saveFormEntry(formId, 0, entryValues)
           if (!error) successCount++
-          else failCount++
         }
       }
 
@@ -234,318 +304,559 @@ export default function GenericFormImportModal({
     parseUploadedFile(file)
   }
 
+  // Compute matched fields count
+  const matchedCount = useMemo(
+    () => Object.values(mapping).filter(Boolean).length,
+    [mapping],
+  )
+  const unmappedCount = useMemo(
+    () => displayUploadedColumns.length - matchedCount,
+    [displayUploadedColumns, matchedCount],
+  )
+
   return (
-    <div className='animate-in fade-in fixed inset-0 z-[100] flex flex-col overflow-hidden bg-surface-muted font-inter text-gray-13 duration-300'>
+    <div className='relative flex h-full w-full flex-col overflow-hidden bg-surface-muted font-inter text-gray-13 duration-300'>
       {/* Header Banner */}
-      <div className='flex h-14 shrink-0 items-center justify-between border-b border-border-default bg-white px-6 shadow-xs'>
-        <div className='flex items-center gap-3'>
+      <div className='flex h-13 shrink-0 items-center justify-between border-b border-border-default bg-gradient-to-b from-gray-1 to-gray-2 px-4'>
+        <div className='flex items-center gap-2'>
           <button
-            className='cursor-pointer rounded-lg p-1.5 text-gray-9 transition-colors hover:bg-gray-2 hover:text-gray-13'
+            className='cursor-pointer rounded-md p-1.5 text-gray-9 transition-colors hover:bg-surface-hover hover:text-gray-12'
             onClick={onClose}
           >
-            <Icon className='size-5' name='tabler:arrow-left' />
+            <Icon className='size-4' name='tabler:arrow-left' />
           </button>
-          <div className='flex size-8 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
-            <Icon className='size-4 text-primary-9' name='tabler:file-import' />
-          </div>
-          <div>
-            <h1 className='text-sm font-bold text-gray-13'>
+          <div className='flex items-center gap-2'>
+            <div className='flex size-7 items-center justify-center rounded-lg bg-accent-soft text-primary-9'>
+              <Icon className='size-4 text-primary-9' name='tabler:file-import' />
+            </div>
+            <h1 className='text-[16px] font-medium text-gray-12'>
               {t`Bulk Import Entries`}
-              {formName ? ` — ${formName}` : ''}
             </h1>
-            <p className='text-[11px] font-medium text-gray-8'>
-              {t`Upload CSV or Excel spreadsheets to populate form submissions in bulk.`}
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Main Content Body */}
+      {/* Main Content Area */}
       <main className='custom-scrollbar flex min-h-0 flex-1 flex-col items-center overflow-y-auto p-6'>
+        {/* SCREEN 1: FILE UPLOAD */}
         {(uploadState === 'idle' || uploadState === 'parsing') && (
           <AnimateFadeIn className='my-auto flex w-full max-w-[850px] flex-col items-center gap-6 py-4'>
             <AnimateSlideUp className='space-y-1.5 text-center'>
               <h2 className='text-2xl font-bold tracking-tight text-gray-13'>
-                {t`Bulk Import`} <span className='text-primary-9'>{formName || t`Form Entries`}</span>
+                {t`Bulk Import Entries`}
               </h2>
               <p className='mx-auto max-w-lg text-xs leading-relaxed text-gray-9'>
                 {t`Map spreadsheet columns to active form fields and import response records in bulk.`}
               </p>
             </AnimateSlideUp>
 
-            {/* Template Download Card */}
+            {/* Animated Dropzone Container */}
             <AnimateSlideUp className='w-full' delay={0.05}>
-              <div className='flex items-center justify-between rounded-xl border border-gray-3 bg-white p-4 shadow-xs'>
-                <div className='flex items-center gap-3.5'>
-                  <div className='flex size-10 items-center justify-center rounded-xl bg-accent-soft/20 text-accent-primary'>
-                    <Icon className='size-5' name='tabler:file-spreadsheet' />
+              {uploadState === 'idle' ? (
+                <div className='group relative w-full overflow-hidden rounded-xl border border-border-default bg-surface-primary p-2 shadow-2xs transition-all duration-500 hover:shadow-xs'>
+                  {/* Scan Animation effect */}
+                  <div className='pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl opacity-0 transition-opacity duration-700 group-hover:opacity-100'>
+                    <div className='absolute inset-0 h-1/2 w-full animate-[scan_3s_linear_infinite] bg-gradient-to-b from-transparent via-accent-soft/20 to-transparent' />
                   </div>
-                  <div>
-                    <h3 className='text-xs font-bold text-gray-13'>
-                      {t`Need a template?`}
-                    </h3>
-                    <p className='text-[11px] text-gray-8'>
-                      {t`Download a pre-formatted Excel template matching exact fields of this form.`}
-                    </p>
+
+                  <div
+                    className={cn(
+                      'relative z-10 flex min-h-[160px] cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-[1.5px] border-dashed border-border-default px-6 py-8 text-center transition-all duration-500 ease-out',
+                      isDragOver
+                        ? 'scale-[0.99] border-primary-9 bg-accent-soft/10 shadow-inner'
+                        : 'bg-surface-primary hover:border-primary-9 hover:bg-accent-soft/5',
+                    )}
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setIsDragOver(true)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      setIsDragOver(false)
+                      onFileChange(e.dataTransfer.files?.[0])
+                    }}
+                  >
+                    <div className='flex size-14 items-center justify-center rounded-full bg-accent-soft transition-all duration-300 group-hover:scale-105'>
+                      <Icon className='size-6 text-primary-9' name='tabler:cloud-upload' />
+                    </div>
+                    <div className='text-center'>
+                      <h3 className='text-[14px] font-medium tracking-tight text-gray-12'>
+                        {t`Drop your file here, or`}{' '}
+                        <span className='font-medium text-primary-9 group-hover:underline'>
+                          {t`browse`}
+                        </span>
+                      </h3>
+                      <p className='mt-1 text-[12px] text-gray-8'>
+                        {t`Supports Excel (.xlsx, .xls) and CSV formats`}
+                      </p>
+                      <div className='mt-3 flex justify-center'>
+                        <button
+                          className='inline-flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-primary-9 hover:text-primary-10 hover:underline'
+                          disabled={isDownloadingTemplate}
+                          type='button'
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDownloadDynamicTemplate()
+                          }}
+                        >
+                          {isDownloadingTemplate ? (
+                            <span className='size-3 animate-spin rounded-full border-2 border-primary-9 border-t-transparent' />
+                          ) : (
+                            <Icon className='size-3.5' name='tabler:download' />
+                          )}
+                          <span>
+                            {isDownloadingTemplate
+                              ? t`Downloading...`
+                              : t`Download Sample Template`}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <input
+                    accept='.csv, .xlsx'
+                    className='hidden'
+                    ref={fileInputRef}
+                    type='file'
+                    onChange={(e) => onFileChange(e.target.files?.[0])}
+                  />
+                </div>
+              ) : (
+                /* FILE PREVIEW CARD DURING PARSING */
+                <div className='animate-in fade-in flex w-full flex-col gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-2xs duration-300'>
+                  <div className='flex items-center gap-3'>
+                    <div className='flex size-10 items-center justify-center rounded-lg bg-green-3 text-green-11'>
+                      <Icon className='size-5 text-green-11' name='tabler:file-text' />
+                    </div>
+                    <div className='min-w-0 flex-1'>
+                      <h4 className='truncate text-[13px] font-medium text-gray-12'>
+                        {uploadedFile?.name}
+                      </h4>
+                      <p className='text-[11px] text-gray-8'>
+                        {uploadedFile
+                          ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
+                          : t`Processing...`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className='h-1 w-full overflow-hidden rounded-full bg-gray-2'>
+                    <div
+                      className='h-full bg-primary-9 transition-all duration-150 ease-out'
+                      style={{ width: `${uploadProgress}%` }}
+                    />
                   </div>
                 </div>
-                <Button
-                  color='gray'
-                  icon='tabler:download'
-                  label={t`Download Template`}
-                  loading={isDownloadingTemplate}
-                  size='sm'
-                  variant='outline'
-                  onClick={handleDownloadDynamicTemplate}
-                />
-              </div>
+              )}
             </AnimateSlideUp>
 
-            {/* Drag & Drop Upload Container */}
+            {/* Three Context Cards Grid */}
             <AnimateSlideUp className='w-full' delay={0.1}>
-              <div
-                className={cn(
-                  'relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-white p-10 text-center transition-all duration-200',
-                  isDragOver
-                    ? 'border-primary-9 bg-primary-1/30 scale-[1.005]'
-                    : 'border-gray-3 hover:border-gray-4',
-                )}
-                onDragLeave={() => setIsDragOver(false)}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  setIsDragOver(true)
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  setIsDragOver(false)
-                  const file = e.dataTransfer.files[0]
-                  onFileChange(file)
-                }}
-              >
-                <input
-                  accept='.csv, .xlsx'
-                  className='hidden'
-                  ref={fileInputRef}
-                  type='file'
-                  onChange={(e) => onFileChange(e.target.files?.[0])}
-                />
-
-                <div className='mb-3 flex size-14 items-center justify-center rounded-2xl bg-primary-1 text-primary-9 shadow-xs'>
-                  <Icon className='size-7' name='tabler:cloud-upload' />
-                </div>
-                <h3 className='text-sm font-bold text-gray-13'>
-                  {t`Drop your CSV or XLSX file here`}
-                </h3>
-                <p className='mt-1 text-xs text-gray-8'>
-                  {t`Supports single or multi-sheet Excel workbooks up to 25MB.`}
-                </p>
-
-                <Button
-                  className='mt-5'
-                  color='primary'
-                  icon='tabler:file-plus'
-                  label={t`Select File`}
-                  size='sm'
-                  variant='solid'
-                  onClick={() => fileInputRef.current?.click()}
-                />
-
-                {uploadState === 'parsing' && (
-                  <div className='mt-6 w-full max-w-sm space-y-2'>
-                    <div className='flex justify-between text-xs font-semibold text-gray-10'>
-                      <span>{t`Parsing file...`}</span>
-                      <span>{uploadProgress}%</span>
+              <div className='grid w-full grid-cols-1 gap-4 md:grid-cols-3'>
+                {[
+                  {
+                    color: 'text-[var(--orange-9)] bg-[var(--orange-2)]',
+                    icon: 'tabler:table-column',
+                    label: t`MAPPING`,
+                    sub: t`Automatically links file columns`,
+                    title: t`Auto Column Mapping`,
+                  },
+                  {
+                    color: 'text-[var(--indigo-9)] bg-[var(--indigo-2)]',
+                    icon: 'tabler:checks',
+                    label: t`VALIDATION`,
+                    sub: t`Validates required system fields`,
+                    title: t`Schema Validation`,
+                  },
+                  {
+                    color: 'text-[var(--green-11)] bg-[var(--green-2)]',
+                    icon: 'tabler:database-import',
+                    label: t`INGESTION`,
+                    sub: t`Updates records in master database`,
+                    title: t`Master Data Update`,
+                  },
+                ].map((item, idx) => (
+                  <AnimateEntrancePop
+                    delay={0.2 + idx * 0.1}
+                    key={item.title}
+                  >
+                    <div className='group flex h-full flex-col gap-2 rounded-xl border border-[var(--gray-3)] bg-surface p-5 shadow-sm transition-all duration-300 hover:shadow-md'>
+                      <span className='truncate text-[9px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                        {item.label}
+                      </span>
+                      <div className='mt-1 flex items-center gap-3.5'>
+                        <div
+                          className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${item.color} transition-transform duration-300 group-hover:scale-105`}
+                        >
+                          <Icon
+                            className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                            name={item.icon}
+                          />
+                        </div>
+                        <div className='min-w-0 flex-1'>
+                          <h4 className='truncate text-13/4.5 font-semibold text-[var(--gray-13)] transition-colors group-hover:text-purple-7'>
+                            {item.title}
+                          </h4>
+                          <p className='mt-0.5 truncate text-11/4 text-[var(--gray-10)]'>
+                            {item.sub}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className='h-2 w-full overflow-hidden rounded-full bg-gray-2'>
-                      <div
-                        className='h-full bg-primary-9 transition-all duration-200'
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  </AnimateEntrancePop>
+                ))}
               </div>
             </AnimateSlideUp>
           </AnimateFadeIn>
         )}
 
-        {/* MAPPING REVIEW & CONFIRMATION SCREEN */}
-        {uploadState === 'ready' && (
-          <AnimateFadeIn className='w-full max-w-[1100px] space-y-6 py-4'>
-            {/* Header info card */}
-            <div className='flex items-center justify-between rounded-xl border border-gray-3 bg-white p-5 shadow-xs'>
-              <div className='flex items-center gap-3.5'>
-                <div className='flex size-10 items-center justify-center rounded-xl bg-green-1 text-green-11'>
-                  <Icon className='size-5' name='tabler:check' />
+        {/* SCREEN 2: INGESTION TIMELINE & COLUMN MAPPING (Image 1 Exact Design) */}
+        {(uploadState === 'timeline' || uploadState === 'ready') && (
+          <AnimateSlideUp className='relative my-auto w-full max-w-3xl space-y-6 py-4 pl-8 transition-all duration-300'>
+            {/* STEP 1: FILE INGESTION & PARSING */}
+            <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+              <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
+              <div
+                className={cn(
+                  'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                  step1State === 'done' ? 'scale-y-100' : 'scale-y-0',
+                )}
+              />
+              <div className='flex items-start gap-4'>
+                <div
+                  className={cn(
+                    'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                    step1State === 'done'
+                      ? 'border border-green-9 bg-white text-green-9'
+                      : step1State === 'active'
+                        ? 'border-2 border-primary-9 bg-white text-primary-9'
+                        : 'border-2 border-gray-3 bg-white text-gray-4',
+                  )}
+                >
+                  {step1State === 'done' ? (
+                    <Icon className='size-4 stroke-[3px]' name='tabler:check' />
+                  ) : step1State === 'active' ? (
+                    <Icon className='size-4 animate-spin' name='tabler:loader-2' />
+                  ) : (
+                    <Icon className='size-3.5' name='tabler:clock' />
+                  )}
                 </div>
-                <div>
-                  <h3 className='text-xs font-bold text-gray-13'>
-                    {uploadedFile?.name}
+                <div className='flex flex-1 items-center gap-2'>
+                  <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
+                    {t`File Ingestion & Parsing`}
                   </h3>
-                  <p className='text-[11px] text-gray-8'>
-                    {parsedRows.length} {t`records detected`} • {uploadedColumns.length} {t`columns loaded`}
-                  </p>
+                  {step1State === 'done' && (
+                    <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                      {t`Completed in 0.4s`}
+                    </span>
+                  )}
+                  {step1State === 'active' && (
+                    <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
+                      {t`In progress`}
+                    </span>
+                  )}
                 </div>
               </div>
+              <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                {t`Ingesting raw file payload and validating structure.`}
+              </p>
 
-              {/* Import Strategy Picker */}
-              <div className='flex items-center gap-3'>
-                <span className='text-xs font-semibold text-gray-10'>
-                  {t`Import Strategy`}:
-                </span>
-                <div className='flex rounded-lg border border-gray-3 bg-gray-1 p-0.5'>
-                  <button
-                    type='button'
-                    className={cn(
-                      'rounded-md px-3 py-1 text-xs font-bold transition-all',
-                      importStrategy === 'append'
-                        ? 'bg-white text-primary-9 shadow-xs'
-                        : 'text-gray-9 hover:text-gray-13',
-                    )}
-                    onClick={() => setImportStrategy('append')}
-                  >
-                    {t`Append Records`}
-                  </button>
-                  <button
-                    type='button'
-                    className={cn(
-                      'rounded-md px-3 py-1 text-xs font-bold transition-all',
-                      importStrategy === 'replace'
-                        ? 'bg-white text-primary-9 shadow-xs'
-                        : 'text-gray-9 hover:text-gray-13',
-                    )}
-                    onClick={() => setImportStrategy('replace')}
-                  >
-                    {t`Replace Records`}
-                  </button>
+              {(step1State === 'active' || step1State === 'done') && (
+                <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`File Size`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {uploadedFile
+                        ? `${(uploadedFile.size / 1024).toFixed(1)} KB`
+                        : '3.6 KB'}
+                    </span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Format`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {uploadedFile?.name.split('.').pop()?.toUpperCase() || 'XLSX'}
+                    </span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Rows Detected`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {parsedRows.length + 1} {t`rows`}
+                    </span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Sheets Used`}</span>
+                    <span className='font-bold text-gray-12'>{t`1 sheet`}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* STEP 2: COLUMN & ROW EXTRACTION */}
+            <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+              <div className='absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] bg-border-default' />
+              <div
+                className={cn(
+                  'absolute top-8 -bottom-[18px] left-[13px] z-0 w-[1.5px] origin-top bg-green-11 transition-transform duration-700 ease-in-out',
+                  step2State === 'done' ? 'scale-y-100' : 'scale-y-0',
+                )}
+              />
+              <div className='flex items-start gap-4'>
+                <div
+                  className={cn(
+                    'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                    step2State === 'done'
+                      ? 'border border-green-9 bg-white text-green-9'
+                      : step2State === 'active'
+                        ? 'border-2 border-primary-9 bg-white text-primary-9'
+                        : 'border-2 border-gray-3 bg-white text-gray-4',
+                  )}
+                >
+                  {step2State === 'done' ? (
+                    <Icon className='size-4 stroke-[3px]' name='tabler:check' />
+                  ) : step2State === 'active' ? (
+                    <Icon className='size-4 animate-spin' name='tabler:loader-2' />
+                  ) : (
+                    <Icon className='size-3.5' name='tabler:clock' />
+                  )}
+                </div>
+                <div className='flex flex-1 items-center gap-2'>
+                  <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
+                    {t`Column & Row Extraction`}
+                  </h3>
+                  {step2State === 'done' && (
+                    <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                      {t`Completed in 0.9s`}
+                    </span>
+                  )}
+                  {step2State === 'active' && (
+                    <span className='shrink-0 animate-pulse rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-primary-9'>
+                      {t`In progress`}
+                    </span>
+                  )}
                 </div>
               </div>
+              <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                {t`Extracting grid fields and filtering metadata records.`}
+              </p>
+
+              {(step2State === 'active' || step2State === 'done') && (
+                <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Columns Found`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {displayUploadedColumns.length} {t`columns`}
+                    </span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Empty Rows Skipped`}</span>
+                    <span className='font-bold text-gray-12'>{t`0 skipped`}</span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Header Row`}</span>
+                    <span className='font-bold text-gray-12'>{t`Row 1`}</span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Data Rows`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {parsedRows.length} {t`rows`}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Field Mapping Grid */}
-            <div className='rounded-2xl border border-gray-3 bg-white p-6 shadow-xs'>
-              <div className='mb-4 border-b border-gray-2 pb-3'>
-                <h3 className='text-sm font-bold text-gray-13'>
-                  {t`Column Mapping`}
-                </h3>
-                <p className='text-[11px] text-gray-8'>
-                  {t`Map active form fields to spreadsheet column headers.`}
-                </p>
+            {/* STEP 3: SCHEMA AUTO-MAPPING */}
+            <div className='relative z-10 flex flex-col gap-3.5 pl-10'>
+              <div className='flex items-start gap-4'>
+                <div
+                  className={cn(
+                    'absolute top-0.5 left-0 z-10 flex size-7 items-center justify-center rounded-full shadow-xs transition-all duration-300',
+                    step3State === 'done'
+                      ? 'border border-green-9 bg-white text-green-9'
+                      : step3State === 'active'
+                        ? 'border-2 border-primary-9 bg-white text-primary-9'
+                        : 'border-2 border-gray-3 bg-white text-gray-4',
+                  )}
+                >
+                  {step3State === 'done' ? (
+                    <Icon className='size-4 stroke-[3px]' name='tabler:check' />
+                  ) : step3State === 'active' ? (
+                    <Icon className='size-4 animate-spin' name='tabler:loader-2' />
+                  ) : (
+                    <Icon className='size-3.5' name='tabler:clock' />
+                  )}
+                </div>
+                <div className='flex flex-1 items-center gap-2'>
+                  <h3 className='min-w-0 flex-1 text-[13px] font-bold text-gray-12'>
+                    {t`Schema Auto-Mapping`}
+                  </h3>
+                  {step3State === 'done' && (
+                    <span className='shrink-0 rounded-full border border-green-9 bg-white px-2 py-0.5 text-[11px] font-medium whitespace-nowrap text-green-9'>
+                      {t`Completed`}
+                    </span>
+                  )}
+                </div>
               </div>
+              <p className='-mt-2 text-[11px] font-medium text-gray-8'>
+                {t`Aligning CSV/XLSX headers with database mapping schema.`}
+              </p>
 
-              <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3'>
-                {validFields.map((field) => {
-                  const isRequired =
-                    field.settings?.validation?.fieldRule === 'REQUIRED'
-                  const currentMapped = mapping[field.id] || ''
+              {(step3State === 'active' || step3State === 'done') && (
+                <div className='animate-in fade-in slide-in-from-top-2 grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Fields Matched`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {matchedCount} / {validFields.length} {t`fields`}
+                    </span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Confidence Level`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {matchedCount > 0
+                        ? `${Math.round((matchedCount / validFields.length) * 100)}% average`
+                        : '0%'}
+                    </span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Strategy`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {importStrategy === 'append' ? t`Append` : t`Replace`}
+                    </span>
+                  </div>
+                  <div className='flex justify-between border-b border-border-default/45 pb-1.5'>
+                    <span className='text-gray-11'>{t`Fields Needing Review`}</span>
+                    <span className='font-bold text-gray-12'>
+                      {unmappedCount} {t`fields`}
+                    </span>
+                  </div>
+                </div>
+              )}
 
-                  const selectOptions = [
-                    { id: '', name: `-- ${t`Skip Column`} --` },
-                    ...uploadedColumns.map((col) => ({ id: col, name: col })),
-                  ]
-
-                  return (
-                    <div
-                      key={field.id}
-                      className='flex flex-col gap-1.5 rounded-xl border border-gray-2 bg-gray-50/50 p-3.5'
-                    >
-                      <label className='block text-xs font-bold text-gray-12'>
-                        {field.label || field.id}
-                        {isRequired && (
-                          <span className='ml-1 font-bold text-red-9'>*</span>
-                        )}
-                      </label>
-
-                      <InputSelect
-                        options={selectOptions}
-                        placeholder={t`Select column...`}
-                        value={
-                          currentMapped
-                            ? { id: currentMapped, name: currentMapped }
-                            : null
-                        }
-                        onChange={(opt) =>
-                          setMapping((prev) => ({
-                            ...prev,
-                            [field.id]: opt ? String(opt.id) : '',
-                          }))
-                        }
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Live Data Preview */}
-            <div className='overflow-hidden rounded-2xl border border-gray-3 bg-white shadow-xs'>
-              <div className='border-b border-gray-2 bg-gray-50/50 px-5 py-3'>
-                <h4 className='text-xs font-bold text-gray-12'>
-                  {t`Data Preview (First 5 Rows)`}
-                </h4>
-              </div>
-              <div className='custom-scrollbar max-h-60 overflow-x-auto overflow-y-auto'>
-                <table className='w-full border-collapse text-left text-xs'>
-                  <thead>
-                    <tr className='border-b border-gray-2 bg-gray-1'>
-                      {validFields.map((field) => (
-                        <th
-                          key={field.id}
-                          className='p-3 font-bold whitespace-nowrap text-gray-11'
-                        >
-                          {field.label || field.id}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedRows.slice(0, 5).map((row, idx) => (
-                      <tr
-                        key={idx}
-                        className='border-b border-gray-1 transition-colors hover:bg-gray-50/60 last:border-0'
+              {/* INLINE COLUMN MAPPING TABLE (Exact Image 1 Design) */}
+              {uploadState === 'ready' && (
+                <div className='animate-in fade-in slide-in-from-top-2 mt-4 space-y-3 rounded-xl border border-border-default bg-surface-primary p-4 text-[12px] shadow-2xs duration-300'>
+                  <div className='flex items-center justify-between border-b border-border-default pb-3'>
+                    <p className='text-[11px] text-gray-11'>
+                      {t`Map Excel file headers (source) to EZOFIS database fields (destination).`}
+                    </p>
+                    <Tooltip content={t`Reset to default suggestions`} position='top'>
+                      <button
+                        className='flex items-center gap-1 text-[11px] text-primary-9 hover:underline'
+                        type='button'
+                        onClick={handleResetMapping}
                       >
-                        {validFields.map((field) => {
-                          const colKey = mapping[field.id]
-                          const val = colKey ? row[colKey] : null
-                          return (
-                            <td
-                              key={field.id}
-                              className='p-3 font-medium whitespace-nowrap text-gray-12'
-                            >
-                              {val !== undefined && val !== null ? (
-                                String(val)
-                              ) : (
-                                <span className='text-gray-5'>—</span>
-                              )}
-                            </td>
-                          )
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                        <Icon className='size-3.5' name='tabler:rotate' />
+                        <span>{t`Reset`}</span>
+                      </button>
+                    </Tooltip>
+                  </div>
 
-            {/* Bottom Actions Bar */}
-            <div className='flex items-center justify-between pt-2'>
-              <Button
-                color='gray'
-                label={t`Cancel`}
-                variant='outline'
-                onClick={onClose}
-              />
-              <Button
-                color='primary'
-                disabled={isSubmitting}
-                icon='tabler:check'
-                label={t`Confirm & Ingest Entries`}
-                loading={isSubmitting}
-                variant='solid'
-                onClick={handleConfirmImport}
-              />
+                  {/* Table Column Headers */}
+                  <div className='grid grid-cols-[1.2fr_1.2fr_1.6fr] gap-4 border-b border-border-default pb-2 text-[12px] font-semibold text-gray-10 select-none'>
+                    <div className='flex items-center gap-1.5'>
+                      <Icon className='size-3.5' name='vscode-icons:file-type-excel' />
+                      <span>{t`Excel Fields`}</span>
+                    </div>
+                    <div className='flex items-center gap-1.5 pl-2'>
+                      <span>{t`Example`}</span>
+                    </div>
+                    <div className='flex items-center gap-1.5 pl-2'>
+                      <img
+                        alt='EZOFIS Logo'
+                        className='size-3.5 shrink-0 object-contain'
+                        src={logoMark}
+                      />
+                      <span>{t`EZOFIS Fields`}</span>
+                    </div>
+                  </div>
+
+                  {/* Table Rows (Filtered displayUploadedColumns - no EntryId row!) */}
+                  <div className='divide-y divide-border-default/60'>
+                    {displayUploadedColumns.map((excelCol) => {
+                      const currentMappedFieldId = mapping[excelCol] || ''
+                      const rawPreviewVal = parsedRows?.[0]?.[excelCol]
+                      const previewVal =
+                        rawPreviewVal !== undefined &&
+                        rawPreviewVal !== null &&
+                        rawPreviewVal !== ''
+                          ? String(rawPreviewVal)
+                          : ''
+
+                      const fieldOptions = [
+                        { id: '', name: t`Skip this field` },
+                        ...validFields.map((f) => ({
+                          id: f.id,
+                          name: f.label || f.id,
+                        })),
+                      ]
+
+                      const selectedOpt = fieldOptions.find(
+                        (o) => o.id === currentMappedFieldId,
+                      ) || { id: '', name: t`Skip this field` }
+
+                      return (
+                        <div
+                          key={excelCol}
+                          className='grid grid-cols-[1.2fr_1.2fr_1.6fr] items-center gap-4 py-2.5 first:pt-1'
+                        >
+                          <div className='flex min-w-0 items-center'>
+                            <span className='truncate font-semibold text-gray-12' title={excelCol}>
+                              {excelCol}
+                            </span>
+                          </div>
+
+                          <div className='truncate pl-2 text-[11px] text-gray-8' title={previewVal}>
+                            {previewVal ? (
+                              <span>{previewVal}</span>
+                            ) : (
+                              <span className='text-gray-5 italic'>{t`Empty`}</span>
+                            )}
+                          </div>
+
+                          <div className='pl-2'>
+                            <InputSelect
+                              options={fieldOptions}
+                              placeholder={t`Skip this field`}
+                              value={selectedOpt}
+                              onChange={(opt) =>
+                                setMapping((prev) => ({
+                                  ...prev,
+                                  [excelCol]: opt ? String(opt.id) : '',
+                                }))
+                              }
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className='flex items-center justify-between border-t border-border-default pt-3'>
+                    <Button
+                      color='gray'
+                      label={t`Cancel`}
+                      size='sm'
+                      variant='outline'
+                      onClick={onClose}
+                    />
+                    <Button
+                      color='primary'
+                      disabled={isSubmitting}
+                      icon='tabler:check'
+                      label={t`Confirm & Ingest Entries`}
+                      loading={isSubmitting}
+                      size='sm'
+                      variant='solid'
+                      onClick={handleConfirmImport}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          </AnimateFadeIn>
+          </AnimateSlideUp>
         )}
 
         {uploadState === 'processing' && (

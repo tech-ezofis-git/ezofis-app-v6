@@ -1447,6 +1447,24 @@ const FormEntriesPage = () => {
     )
   }
 
+  if (isImportOpen) {
+    return (
+      <div className='flex h-full flex-col bg-white font-inter'>
+        {isPoMasterForm ? (
+          <PoSetupFlowPage onClose={() => setIsImportOpen(false)} />
+        ) : (
+          <GenericFormImportModal
+            fields={fields}
+            formId={formId}
+            formName={formName}
+            onClose={() => setIsImportOpen(false)}
+            onComplete={() => refetchEntries()}
+          />
+        )}
+      </div>
+    )
+  }
+
   const isPanelOpen = isAddOpen || !!selectedEntry
 
   if (isPanelOpen) {
@@ -1902,7 +1920,7 @@ const FormEntriesPage = () => {
   }
 
   return (
-    <div className='flex h-full flex-col bg-white'>
+    <div className='relative flex h-full flex-col bg-white'>
       {/* 1. HEADER (Title, Back button, Browse/Trash Tabs) */}
       <div className='flex items-center justify-between border-b border-gray-2 px-6'>
         <div className='flex items-center gap-4'>
@@ -2172,21 +2190,6 @@ const FormEntriesPage = () => {
           </div>
         )}
       </Modal>
-      {isImportOpen && (
-        isPoMasterForm ? (
-          <div className='fixed inset-0 z-[100] overflow-hidden bg-white'>
-            <PoSetupFlowPage onClose={() => setIsImportOpen(false)} />
-          </div>
-        ) : (
-          <GenericFormImportModal
-            fields={fields}
-            formId={formId}
-            formName={formName}
-            onClose={() => setIsImportOpen(false)}
-            onComplete={() => refetchEntries()}
-          />
-        )
-      )}
     </div>
   )
 }
