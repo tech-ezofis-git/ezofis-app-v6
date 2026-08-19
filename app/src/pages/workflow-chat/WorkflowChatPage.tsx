@@ -56,6 +56,7 @@ export type WorkflowChatMode = 'idle' | 'collecting' | 'review' | 'submitted'
 export interface WorkflowChatPageProps {
   embedded?: boolean
   initialState?: WorkflowHistoryData
+  initialAction?: string
   isExpanded?: boolean
   onSaveHistory?: (state: WorkflowHistoryData) => void
 }
@@ -102,34 +103,34 @@ const TableInputWidget = ({
   const dynamicColumns =
     rawColumns.length > 0
       ? rawColumns.map((column: any, index: number) => ({
-          id:
-            column.id ||
-            column.jsonId ||
-            column.name ||
-            column.label ||
-            `column_${index}`,
+        id:
+          column.id ||
+          column.jsonId ||
+          column.name ||
+          column.label ||
+          `column_${index}`,
 
-          label:
-            column.label || column.name || column.id || `Column ${index + 1}`,
-        }))
+        label:
+          column.label || column.name || column.id || `Column ${index + 1}`,
+      }))
       : [
-          {
-            id: 'Description',
-            label: 'Description',
-          },
-          {
-            id: 'Quantity',
-            label: 'Quantity',
-          },
-          {
-            id: 'Unit Price',
-            label: 'Unit Price',
-          },
-          {
-            id: 'Line Amount',
-            label: 'Line Amount',
-          },
-        ]
+        {
+          id: 'Description',
+          label: 'Description',
+        },
+        {
+          id: 'Quantity',
+          label: 'Quantity',
+        },
+        {
+          id: 'Unit Price',
+          label: 'Unit Price',
+        },
+        {
+          id: 'Line Amount',
+          label: 'Line Amount',
+        },
+      ]
 
   const handleCellChange = (
     rowIndex: number,
@@ -259,6 +260,7 @@ const TableInputWidget = ({
 export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   embedded = false,
   initialState,
+  initialAction,
   isExpanded = false,
   onSaveHistory,
 }) => {
@@ -416,20 +418,53 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
     // Add initial greeting message
     if (!initialState?.messages || initialState.messages.length === 0) {
-      setMessages([
-        {
-          htmlContent: `Hi <span class="text-primary-9 font-semibold">${userName}</span> 👋 I'm your Workflow Assistant. Tell me what you'd like to do and I'll guide you through it — <span class="text-primary-9 font-semibold">I'll figure out the right workflow and ask only what's needed</span>.`,
-          id: 'msg-init',
-          pills: [
-            'Start a workflow',
-            'Show my pending requests',
-            'Browse workflows',
-          ],
-          sender: 'assistant',
-        },
-      ])
+      if (initialAction === 'Initiate workflow') {
+        setMessages([
+          {
+            htmlContent: `Hi <span class="text-primary-9 font-semibold">${userName}</span> 👋 I'm your Workflow Assistant. Which workflow would you like to start?`,
+            id: 'msg-init-choices',
+            pills: workflowsList.map((w) => w.name),
+            sender: 'assistant',
+          },
+        ])
+      } else if (initialAction === 'Show my pending requests') {
+        setMessages([
+          {
+            htmlContent: `You have 2 active requests:<br><br>
+            <strong>WF-2026-001245</strong> - Vendor Registration - <span style="color:#8300E6; font-weight:600;">Pending Approval</span><br>
+            <strong>WF-2026-001231</strong> - Accounts Payable - <span style="color:#8300E6; font-weight:600;">Action Required</span>`,
+            id: `msg-${Date.now()}-pending`,
+            sender: 'assistant',
+          },
+        ])
+      } else {
+        setMessages([
+          {
+            htmlContent: `Hi <span class="text-primary-9 font-semibold">${userName}</span> 👋 I'm your Workflow Assistant. Tell me what you'd like to do and I'll guide you through it — <span class="text-primary-9 font-semibold">I'll figure out the right workflow and ask only what's needed</span>.`,
+            id: 'msg-init',
+            pills: [
+              'Start workflow',
+              'Show my pending requests',
+              'Browse workflows',
+            ],
+            sender: 'assistant',
+          },
+        ])
+      }
     }
   }, [])
+
+  useEffect(() => {
+    if (workflowsList.length > 0) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === 'msg-init-choices' && (!msg.pills || msg.pills.length === 0)
+            ? { ...msg, pills: workflowsList.map((w) => w.name) }
+            : msg
+        )
+      )
+    }
+  }, [workflowsList])
 
   const onSaveHistoryRef = useRef(onSaveHistory)
   useEffect(() => {
@@ -516,24 +551,24 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       if (!ctrl) return
       const id = String(
         ctrl.jsonId ||
-          ctrl.id ||
-          ctrl.name ||
-          ctrl.columnName ||
-          `field_${idx}`,
+        ctrl.id ||
+        ctrl.name ||
+        ctrl.columnName ||
+        `field_${idx}`,
       )
       const label = String(
         ctrl.label ||
-          ctrl.name ||
-          ctrl.title ||
-          ctrl.jsonId ||
-          `Field ${idx + 1}`,
+        ctrl.name ||
+        ctrl.title ||
+        ctrl.jsonId ||
+        `Field ${idx + 1}`,
       )
       const type = String(
         ctrl.type ||
-          ctrl.control ||
-          ctrl.controlType ||
-          ctrl.dataType ||
-          'text',
+        ctrl.control ||
+        ctrl.controlType ||
+        ctrl.dataType ||
+        'text',
       ).toLowerCase()
       const required = Boolean(
         ctrl.isRequired || ctrl.required || ctrl.isMandatory,
@@ -1129,15 +1164,15 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             fields: parsedF.map((f) => ({
               id: f.id,
               label: f.label,
-              type: f.type === 'select' ? 'SINGLE_SELECT' : 'SHORT_TEXT',
+              type: f.type === 'select' ? 'SINGLE_SELECT' : f.type,
               settings: f.options
                 ? {
-                    specific: {
-                      customOptions: f.options.join(','),
-                      optionsType: 'CUSTOM',
-                      separateOptionsUsing: 'COMMA',
-                    },
-                  }
+                  specific: {
+                    customOptions: f.options.join(','),
+                    optionsType: 'CUSTOM',
+                    separateOptionsUsing: 'COMMA',
+                  },
+                }
                 : {},
             })),
             settings: { title: 'Workflow Details' },
@@ -1178,20 +1213,20 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             id: `msg-${Date.now()}-q`,
             pills: firstF.options,
             sender: 'assistant',
-            showDatePicker: firstF.type === 'date',
+            showDatePicker: firstF.type === 'date' || firstF.type === 'DATE',
             tableField:
               String(firstF.type)
                 .toLowerCase()
                 .match(/table|grid|subform|lineitem/) ||
-              String(firstF.rawControl?.type)
-                .toLowerCase()
-                .match(/table|grid|subform|lineitem/) ||
-              String(firstF.label)
-                .toLowerCase()
-                .match(/table|line item|lineitem/) ||
-              String(firstF.rawControl?.name)
-                .toLowerCase()
-                .match(/table|line item|lineitem/)
+                String(firstF.rawControl?.type)
+                  .toLowerCase()
+                  .match(/table|grid|subform|lineitem/) ||
+                String(firstF.label)
+                  .toLowerCase()
+                  .match(/table|line item|lineitem/) ||
+                String(firstF.rawControl?.name)
+                  .toLowerCase()
+                  .match(/table|line item|lineitem/)
                 ? firstF
                 : undefined,
             tipText: firstF.tipExample
@@ -1331,20 +1366,20 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           id: `msg-${Date.now()}-nextF`,
           pills: nextF.options,
           sender: 'assistant',
-          showDatePicker: nextF.type === 'date',
+          showDatePicker: nextF.type === 'date' || nextF.type === 'DATE',
           tableField:
             String(nextF.type)
               .toLowerCase()
               .match(/table|grid|subform|lineitem/) ||
-            String(nextF.rawControl?.type)
-              .toLowerCase()
-              .match(/table|grid|subform|lineitem/) ||
-            String(nextF.label)
-              .toLowerCase()
-              .match(/table|line item|lineitem/) ||
-            String(nextF.rawControl?.name)
-              .toLowerCase()
-              .match(/table|line item|lineitem/)
+              String(nextF.rawControl?.type)
+                .toLowerCase()
+                .match(/table|grid|subform|lineitem/) ||
+              String(nextF.label)
+                .toLowerCase()
+                .match(/table|line item|lineitem/) ||
+              String(nextF.rawControl?.name)
+                .toLowerCase()
+                .match(/table|line item|lineitem/)
               ? nextF
               : undefined,
           tipText: nextF.tipExample
@@ -1450,7 +1485,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                 let formDataObj: any = {}
                 try {
                   formDataObj = JSON.parse(item.formData)
-                } catch (e) {}
+                } catch (e) { }
 
                 let nonEmptyCount = 0
                 Object.values(formDataObj).forEach((v) => {
@@ -1476,7 +1511,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                       ) {
                         try {
                           val = JSON.parse(v)
-                        } catch (e) {}
+                        } catch (e) { }
                       }
                       updatedAnswers[field.id] = val
                     }
@@ -1680,7 +1715,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       return
     }
     if (
-      label === 'Start a workflow' ||
+      label === 'Initiate workflow' ||
       label === 'Start another workflow' ||
       label === 'Browse workflows'
     ) {
@@ -1917,21 +1952,17 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                             className={cn(
                               'flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition',
                               isSelected
-                                ? 'cursor-default border-primary-5 bg-primary-1 text-primary-9'
+                                ? 'cursor-default border-primary-9 bg-primary-9 text-white'
                                 : 'border-primary-4 bg-surface text-primary-9 hover:bg-primary-2',
                               msg.selectedPill &&
-                                !isSelected &&
-                                'pointer-events-none opacity-50 grayscale',
+                              !isSelected &&
+                              'pointer-events-none opacity-50 grayscale',
                             )}
                             onClick={() =>
                               !msg.selectedPill && handlePillClick(msg.id, pill)
                             }
                           >
-                            {isSelected ? (
-                              <CheckCircle2 className='h-3.5 w-3.5 text-green-5' />
-                            ) : (
-                              <Circle className='h-3.5 w-3.5 text-gray-5' />
-                            )}
+
                             {pill}
                           </button>
                         )
@@ -2021,7 +2052,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             <div className='flex items-center gap-3'>
               <input
                 className='flex-1 rounded-full border border-gray-5 px-4 py-2.5 text-sm outline-hidden transition focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20'
-                placeholder='Ask me to start a workflow or check a request…'
+                placeholder='Ask me to initiate a workflow or check a request.'
                 type='text'
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
@@ -2031,11 +2062,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               />
               <button
                 disabled={!inputText.trim()}
-                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition ${
-                  inputText.trim()
-                    ? 'cursor-pointer bg-primary-9 text-white'
-                    : 'cursor-not-allowed bg-gray-4 text-white'
-                }`}
+                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition ${inputText.trim()
+                  ? 'cursor-pointer bg-primary-9 text-white'
+                  : 'cursor-not-allowed bg-gray-4 text-white'
+                  }`}
                 onClick={() => handleSendMessage()}
               >
                 <Send className='h-4 w-4' />
@@ -2072,20 +2102,19 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         {/* Context Sidebar */}
         <div
           id='context-col'
-          className={`flex w-[300px] flex-shrink-0 flex-col overflow-y-auto border-l border-gray-5 bg-surface transition-all duration-200 ${
-            (embedded ? isExpanded : contextVisible) ? 'block' : 'hidden'
-          }`}
+          className={`flex w-[300px] flex-shrink-0 flex-col overflow-y-auto border-l border-gray-5 bg-surface transition-all duration-200 ${(embedded ? isExpanded : contextVisible) ? 'block' : 'hidden'
+            }`}
         >
           <div className='flex items-center justify-between border-b border-gray-4 px-[18px] pt-4 pb-3'>
             <h3 className='m-0 text-sm font-bold text-gray-12'>
               Workflow Context
             </h3>
-            <button
+            {/* <button
               className='cursor-pointer p-1 text-gray-9 hover:text-gray-12'
               onClick={() => setContextVisible(false)}
             >
               <X className='h-4 w-4' />
-            </button>
+            </button> */}
           </div>
 
           {!activeWorkflow ? (
@@ -2143,9 +2172,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                           {panelFields.map((ctrl: any, ctrlIndex: number) => {
                             const id = String(
                               ctrl.jsonId ||
-                                ctrl.id ||
-                                ctrl.name ||
-                                ctrl.columnName,
+                              ctrl.id ||
+                              ctrl.name ||
+                              ctrl.columnName,
                             )
                             const isDone =
                               answers[id] !== undefined && answers[id] !== ''
@@ -2233,9 +2262,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               <div className='flex items-center justify-between border-t border-gray-4 pt-3 text-xs'>
                 <span className='text-gray-9'>Status</span>
                 <span
-                  className={`font-bold ${
-                    mode === 'submitted' ? 'text-green-8' : 'text-primary-9'
-                  }`}
+                  className={`font-bold ${mode === 'submitted' ? 'text-green-8' : 'text-primary-9'
+                    }`}
                 >
                   {mode === 'submitted'
                     ? 'Submitted'

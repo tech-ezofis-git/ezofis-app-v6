@@ -123,7 +123,7 @@ Return strictly JSON matching this schema.
         const parsed = JSON.parse(raw) as WorkflowIntentResult
         return {
           matchedWorkflowId: parsed.matchedWorkflowId || null,
-          reply: parsed.reply || `I can help you start a workflow.`,
+          reply: parsed.reply || `I can help you initiate a workflow.`,
           suggestedPills:
             parsed.suggestedPills ||
             availableWorkflows.map((w) => w.name).slice(0, 4),
@@ -328,7 +328,7 @@ function fallbackMatchWorkflow(
       reply: `Here are options for checking your active requests or starting a new process:`,
       suggestedPills: [
         'Show my pending requests',
-        'Start a workflow',
+        'Initiate workflow',
         'Browse workflows',
       ],
     }

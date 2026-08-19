@@ -109,28 +109,16 @@ type ViewMode = 'chat' | 'history'
 
 const suggestions = [
   {
-    label: 'Initiate workflow.',
+    label: 'Create Request.',
     query: 'Initiate workflow',
   },
   {
-    label: 'Find recent supplier invoices.',
-    query: 'Show recent supplier invoices awaiting review',
+    label: 'Show my pending requests.',
+    query: 'Show my pending requests',
   },
   {
     label: 'Search for a purchase request.',
     query: 'Find open purchase requests pending approval',
-  },
-  {
-    label: 'Locate a vendor payment document.',
-    query: 'Find payment documents and remittance advices for this month',
-  },
-  {
-    label: 'Check invoice matching status.',
-    query: 'Show invoices that need 2-way or 3-way matching',
-  },
-  {
-    label: 'Summarise AP documents this week.',
-    query: 'Summarise accounts payable documents and requests from this week',
   },
 ]
 
@@ -486,6 +474,7 @@ const AskAI = () => {
   const [busy, setBusy] = useState(false)
   const [credits, setCredits] = useState(15)
   const [isWorkflowMode, setIsWorkflowMode] = useState(false)
+  const [initialWorkflowAction, setInitialWorkflowAction] = useState<string | undefined>()
   const [currentWorkflowHistoryData, setCurrentWorkflowHistoryData] = useState<WorkflowHistoryData | undefined>()
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
@@ -649,7 +638,9 @@ const AskAI = () => {
     if (!text || busy) return
     if (credits <= 0) return
 
-    if (text.toLowerCase().includes('initiate workflow')) {
+    const lowerText = text.toLowerCase()
+    if (lowerText === 'initiate workflow' || lowerText === 'show my pending requests') {
+      setInitialWorkflowAction(text)
       setIsWorkflowMode(true)
       setInput('')
       setView('chat')
@@ -759,8 +750,8 @@ const AskAI = () => {
         <motion.aside
           animate={{ opacity: 1, x: 0 }}
           className={`fixed bottom-0 right-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${isMaximized
-              ? 'top-[56px] left-0 xl:left-[56px] w-auto max-w-none border-l border-[var(--border)]'
-              : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
+            ? 'top-[56px] left-0 xl:left-[56px] w-auto max-w-none border-l border-[var(--border)]'
+            : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
             }`}
           initial={{ opacity: 0.96, x: 28 }}
           style={shellStyle}
@@ -864,6 +855,7 @@ const AskAI = () => {
               <WorkflowChatPage
                 embedded
                 initialState={currentWorkflowHistoryData}
+                initialAction={initialWorkflowAction}
                 isExpanded={isMaximized}
                 onSaveHistory={saveWorkflowHistory}
               />
@@ -961,8 +953,7 @@ const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
       How can I assist you?
     </h2>
     <p className='mb-[22px] text-[13.5px] leading-[1.55] text-[var(--text2)]'>
-      Search invoices, documents, and accounts payable requests - or ask me
-      anything.
+      Search invoices,Workflow,Create Request, documents, and accounts payable requests - or ask me Related to the Folder & workflow.
     </p>
     <div className='flex flex-col'>
       {suggestions.map((item, index) => (
