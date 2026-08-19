@@ -77,6 +77,8 @@ type FolderTableDataTableSplitProps = {
 
   files: FileItem[]
 
+  fileSearch?: string
+
   folderContextFilters?: Record<string, string>
 
   folderFilters?: Record<string, string>
@@ -242,6 +244,8 @@ export default function FolderTableDataTableSplit({
   filePage,
 
   files,
+
+  fileSearch = '',
 
   folderContextFilters = {},
 
@@ -448,6 +452,7 @@ export default function FolderTableDataTableSplit({
             fileFilters={fileFilters}
             filePage={filePage}
             files={files}
+            fileSearch={fileSearch || folderSearch}
             folderContextFilters={folderContextFilters}
             folderFilters={folderFilters}
             foldersLength={folders.length}
@@ -555,6 +560,7 @@ function FileDataTableSection({
   fileFilters = {},
   filePage,
   files,
+  fileSearch = '',
   folderContextFilters = {},
   folderFilters = {},
   foldersLength,
@@ -576,6 +582,7 @@ function FileDataTableSection({
   fileFilters?: Record<string, string>
   filePage?: RepositoryFilePage
   files: FileItem[]
+  fileSearch?: string
   folderContextFilters?: Record<string, string>
   folderFilters?: Record<string, string>
   foldersLength: number
@@ -605,8 +612,9 @@ function FileDataTableSection({
         files as Array<Record<string, unknown>>,
         mergedFileFilters,
         folderContextFilters,
+        fileSearch,
       ),
-    [folderContextFilters, files, mergedFileFilters],
+    [folderContextFilters, files, mergedFileFilters, fileSearch],
   )
 
   const getPrimaryFileName = (file: any) => {
@@ -876,8 +884,8 @@ function FileDataTableSection({
       <div className='min-h-0 flex-1 overflow-hidden'>
         <DataTable
           hideActionBar
-          isLoading={loading || loadingPage}
-          isReLoading={loadingPage}
+          isLoading={(loading || loadingPage) && filteredFiles.length === 0}
+          isReLoading={loadingPage || (loading && filteredFiles.length > 0)}
           pageSize={pageSize}
           rowSize='compact'
           table={fileTable}
@@ -983,8 +991,8 @@ function FolderDataTableSection({
   const requestedFolderCountRef = useRef(0)
 
   const filteredFolders = useMemo(
-    () => filterFolders(folders, folderFilters),
-    [folderFilters, folders],
+    () => filterFolders(folders, folderFilters, folderSearch),
+    [folderFilters, folders, folderSearch],
   )
 
   const folderRows = useMemo<FolderRow[]>(

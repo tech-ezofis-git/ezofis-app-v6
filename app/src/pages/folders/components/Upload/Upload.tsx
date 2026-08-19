@@ -240,6 +240,70 @@ const extractOcrFieldMap = (response: unknown) => {
   return fieldMap
 }
 
+const extractOcrJsonAndText = (response: unknown) => {
+  let ocrJsonVal: any = []
+  let ocrTextVal: any = ''
+
+  if (!response || typeof response !== 'object') {
+    return { ocrJson: ocrJsonVal, ocrText: ocrTextVal }
+  }
+
+  const payload = response as Record<string, unknown>
+  const dataObj =
+    (payload.data as Record<string, unknown> | undefined) ?? payload
+
+  // 1. Parse ocrJson if it is a JSON string or object
+  const rawJson = dataObj.ocrJson ?? payload.ocrJson
+  let parsedJsonObj: Record<string, unknown> | null = null
+
+  if (rawJson != null) {
+    if (typeof rawJson === 'string') {
+      try {
+        parsedJsonObj = JSON.parse(rawJson) as Record<string, unknown>
+      } catch {
+        // invalid JSON string
+      }
+    } else if (typeof rawJson === 'object' && rawJson !== null) {
+      parsedJsonObj = rawJson as Record<string, unknown>
+    }
+  }
+
+  // 2. Extract ocrText (checks parsed ocrJson first, then root/dataObj level)
+  const rawText =
+    parsedJsonObj?.ocrText ??
+    dataObj.ocrText ??
+    payload.ocrText ??
+    dataObj.text ??
+    payload.text ??
+    ''
+
+  if (typeof rawText === 'string') {
+    ocrTextVal = rawText
+  } else if (rawText && typeof rawText === 'object') {
+    ocrTextVal =
+      typeof rawText === 'object' && Object.keys(rawText).length === 0
+        ? ''
+        : rawText
+  } else {
+    ocrTextVal = String(rawText || '')
+  }
+
+  // 3. Extract ocrResult to pass as ocrJson (checks parsed ocrJson first, then root/dataObj level)
+  let ocrResult =
+    parsedJsonObj?.ocrResult ??
+    parsedJsonObj?.fields ??
+    dataObj.ocrResult ??
+    payload.ocrResult ??
+    dataObj.ocrFieldList ??
+    payload.ocrFieldList
+
+  if (ocrResult !== undefined && ocrResult !== null) {
+    ocrJsonVal = ocrResult
+  }
+
+  return { ocrJson: ocrJsonVal, ocrText: ocrTextVal }
+}
+
 const getFileNameWithoutExtension = (fileName: string) => {
   if (!fileName) return ''
   const lastDotIndex = fileName.lastIndexOf('.')
@@ -405,6 +469,8 @@ export default function Upload({
 
   const [ocrExtractedValues, setOcrExtractedValues] = useState<Record<string, string>>({})
   const [masterSyncedValues, setMasterSyncedValues] = useState<Record<string, string>>({})
+  const [rawOcrJson, setRawOcrJson] = useState<any>({})
+  const [rawOcrText, setRawOcrText] = useState<string>('')
 
   const masterFormSyncData = useMemo(() => {
     if (!repositoryData?.storageDrive || !repositoryData.storageDrive.includes('[')) return null
@@ -690,6 +756,10 @@ export default function Upload({
           return
         }
 
+        const { ocrJson, ocrText } = extractOcrJsonAndText(data)
+        setRawOcrJson(ocrJson)
+        setRawOcrText(ocrText)
+
         const mappedValues = mapOcrResponseToFieldValues(
           data,
           repositoryFields,
@@ -762,6 +832,8 @@ export default function Upload({
     setFieldValues(getInitialValues(repositoryFields))
     setOcrExtractedValues({})
     setMasterSyncedValues({})
+    setRawOcrJson({})
+    setRawOcrText('')
     resetInput()
   }
 
@@ -850,11 +922,16 @@ export default function Upload({
   }, [])
 
   const buildUploadMetadata = () => {
-    return repositoryFields.reduce<Record<string, string>>((acc, field) => {
+    const meta = repositoryFields.reduce<Record<string, any>>((acc, field) => {
       const key = field.sqlColumnName || field.name
       acc[key] = fieldValues[getFieldKey(field)] ?? ''
       return acc
     }, {})
+
+    meta.ocrJson = rawOcrJson ?? []
+    meta.ocrText = rawOcrText ?? ''
+
+    return meta
   }
 
   const buildMetadata = () => {
@@ -870,10 +947,13 @@ export default function Upload({
       }
     })
 
-    const values = fields.reduce<Record<string, string>>((acc, field) => {
+    const values = fields.reduce<Record<string, any>>((acc, field) => {
       acc[field.sqlColumnName || field.id] = field.value
       return acc
     }, {})
+
+    values.ocrJson = rawOcrJson ?? []
+    values.ocrText = rawOcrText ?? ''
 
     return {
       fields,
