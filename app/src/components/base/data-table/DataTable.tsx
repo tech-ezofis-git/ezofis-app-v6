@@ -204,9 +204,15 @@ const DataTable = <TData,>({
     updateWidth()
 
     const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      setContainerWidth(entry.contentRect.width)
+      window.requestAnimationFrame(() => {
+        const entry = entries[0]
+        if (!entry) return
+        
+        setContainerWidth((prev) => {
+          const newWidth = Math.round(entry.contentRect.width)
+          return Math.abs(prev - newWidth) > 1 ? newWidth : prev
+        })
+      })
     })
 
     observer.observe(container)
