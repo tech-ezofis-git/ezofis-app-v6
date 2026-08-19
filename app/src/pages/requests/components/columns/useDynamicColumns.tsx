@@ -42,7 +42,7 @@ const LINK_TEXT =
 
 const wrap = (content: React.ReactNode) => <WrapOnHoverCell value={content} />
 
-const resolveFormJson = (
+export const resolveFormJson = (
   workflow: WorkflowOption | null,
 ): Record<string, any> | any[] | null => {
   if (!workflow?.formJson) return null
@@ -735,6 +735,19 @@ const extractInvoiceDate = (row: any): string => {
   return '-'
 }
 
+// Backend `referenceNumber` values are long timestamp-based strings
+// (REQ-20260819095120360); `formEntryId` is a small sequential per-form
+// counter (1, 2, 3, ...) already returned on every process/instance
+// record, so it's what actually gives a short, human "REQ-1" style id.
+export const extractGenericRequestNumber = (row: any): string => {
+  if (!row) return '-'
+  const entryId = row.formEntryId
+  if (entryId !== undefined && entryId !== null && entryId !== '') {
+    return `REQ-${entryId}`
+  }
+  return row.requestNo || row.referenceNumber || '-'
+}
+
 const extractInvoiceNumber = (row: any): string => {
   if (!row) return '-'
 
@@ -822,7 +835,7 @@ const computeDueDateInfo = (
   return { calculationText, calculationTheme, termsDisplay }
 }
 
-const isStandardField = (field: any, label: string) => {
+export const isStandardField = (field: any, label: string) => {
   const lowerLabel = String(label || '').toLowerCase()
   const type = String(field.type ?? '').toUpperCase()
 
@@ -1254,7 +1267,7 @@ const renderDynamicCell = (
   return renderCellByType(type, rawVal, row)
 }
 
-const getFormPanels = (form: any) => {
+export const getFormPanels = (form: any) => {
   if (!form) return []
   const panels =
     !Array.isArray(form) && Array.isArray(form?.panels) ? form.panels : []
@@ -1301,7 +1314,9 @@ const getBaseColumns = (
                     }
                   }}
                 >
-                  {extractInvoiceNumber(row)}
+                  {isAccountsPayable
+                    ? extractInvoiceNumber(row)
+                    : extractGenericRequestNumber(row)}
                 </button>
               }
             />
@@ -1644,7 +1659,7 @@ const getBaseColumns = (
   return columns
 }
 
-const buildDynamicColumns = (
+export const buildDynamicColumns = (
   allPanels: any[],
   selectedItem: any,
   tableMetaByParentId: Map<string, any>,
@@ -1715,7 +1730,10 @@ export const useDynamicColumns = (
       selectedItem,
       tableMetaByParentId,
     )
-    columns.push(...dynamicCols)
+    // Generic workflows can have arbitrarily many form fields — keep the
+    // list scannable by showing only the first few as columns, same spot
+    // AP fills with its fixed PO/amount/date columns.
+    columns.push(...(isAccountsPayable ? dynamicCols : dynamicCols.slice(0, 3)))
 
     if (!selectedItem) {
       columns.push(makeActionsColumn(onRowClick))

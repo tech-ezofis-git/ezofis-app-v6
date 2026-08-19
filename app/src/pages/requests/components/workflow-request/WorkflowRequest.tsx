@@ -1,11 +1,12 @@
 import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
+import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import Footer from '../request/components/newrequest/Footer'
 import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
-import WorkflowRequestHeader from './WorkflowRequestHeader'
+import WorkflowRequestSidebar from './WorkflowRequestSidebar'
 
 interface Props {
   workflow: any
@@ -21,14 +22,21 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
 
   const {
-    form,
+    addAttachment,
+    addComment,
+    attachments,
+    commentDraft,
+    comments,
     formModel,
     isLoadingForm,
     isSubmitting,
+    isUploadingAttachment,
     loadError,
     panels,
+    removeAttachment,
     submit,
     submitError,
+    setCommentDraft,
     setFieldValue,
   } = useWorkflowForm(workflow)
 
@@ -53,36 +61,49 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
 
   if (isLoadingForm) {
     return (
-      <div className='flex flex-1 items-center justify-center'>
-        <Icon
-          className='size-6 animate-spin text-gray-9'
-          name='tabler:loader-2'
-        />
-      </div>
+      <AnimateFadeIn className='flex flex-1 flex-col items-center justify-center gap-3'>
+        <div className='flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-1)] shadow-sm'>
+          <Icon
+            className='size-7 animate-spin text-[var(--primary-9)]'
+            name='tabler:loader-2'
+          />
+        </div>
+        <p className='text-14 font-medium text-gray-11'>{t`Loading form…`}</p>
+      </AnimateFadeIn>
     )
   }
 
   if (loadError) {
     return (
-      <div className='flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center'>
-        <Icon className='size-8 text-gray-8' name='tabler:file-off' />
+      <AnimateFadeIn className='flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center'>
+        <div className='flex size-14 items-center justify-center rounded-2xl bg-gray-2 shadow-sm'>
+          <Icon className='size-7 text-gray-8' name='tabler:file-off' />
+        </div>
         <p className='text-14 font-medium text-gray-12'>{loadError}</p>
-      </div>
+      </AnimateFadeIn>
     )
   }
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
-      <div className='flex-1 overflow-hidden'>
-        <WorkflowRequestHeader
-          description={form?.description}
-          name={form?.name}
-        />
-        <WorkflowFormRenderer
-          formModel={formModel}
-          panels={panels}
-          repositoryId={workflow?.repositoryId}
-          onFieldChange={setFieldValue}
+      <div className='flex min-h-0 flex-1 overflow-hidden'>
+        <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+          <WorkflowFormRenderer
+            formModel={formModel}
+            panels={panels}
+            repositoryId={workflow?.repositoryId}
+            onFieldChange={setFieldValue}
+          />
+        </div>
+        <WorkflowRequestSidebar
+          attachments={attachments}
+          commentDraft={commentDraft}
+          comments={comments}
+          isUploadingAttachment={isUploadingAttachment}
+          onAddAttachment={addAttachment}
+          onCommentDraftChange={setCommentDraft}
+          onRemoveAttachment={removeAttachment}
+          onSendComment={addComment}
         />
       </div>
       <Footer

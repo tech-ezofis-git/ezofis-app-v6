@@ -12,6 +12,7 @@ import PageEmptyState from '@/components/common/PageEmptyState'
 import ApiPlayground from '@/components/playground/ApiPlayground'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import cn from '@/utils/cn'
+import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
@@ -22,6 +23,14 @@ import requestStore from './stores/useRequestStore'
 import { isAccountsPayableWorkflow } from './utils/workflow.utils'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
+
+const LAST_WORKFLOW_ID_KEY = 'v6_requests_last_workflow_id'
+
+const getLastSelectedWorkflowId = () =>
+  getFromLocalStorage<string>(LAST_WORKFLOW_ID_KEY, 'STRING')
+
+const setLastSelectedWorkflowId = (id: string | number) =>
+  setToLocalStorage(String(id), LAST_WORKFLOW_ID_KEY, 'STRING')
 
 function flattenRows(groups: any[]): any[] {
   const out: any[] = []
@@ -116,7 +125,14 @@ const RequestsPage = () => {
       const options = mapPublishedWorkflowListToOptions(data)
       if (options.length > 0) {
         setAllWorkflow(options)
-        setWorkflow(options[0])
+        // Re-select whatever workflow was last active instead of always
+        // defaulting to the first one — this page remounts (and loses its
+        // local `workflow` state) whenever the user navigates away and
+        // back, or when the New Request panel opens/closes.
+        const lastId = getLastSelectedWorkflowId()
+        const restored =
+          lastId && options.find((opt) => String(opt.id) === String(lastId))
+        setWorkflow(restored || options[0])
       } else {
         setAllWorkflow([])
         setWorkflow(null)
@@ -438,6 +454,14 @@ const RequestsPage = () => {
     clearPendingDeepLink,
     navigate,
   ])
+
+  // Remember the active workflow so it survives this page remounting
+  // (navigating away and back, or opening/closing New Request).
+  useEffect(() => {
+    if (workflow?.id) {
+      setLastSelectedWorkflowId(workflow.id)
+    }
+  }, [workflow?.id])
 
   // Workflow Change Listener
   useEffect(() => {

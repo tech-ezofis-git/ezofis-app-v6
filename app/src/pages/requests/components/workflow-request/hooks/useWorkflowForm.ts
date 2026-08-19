@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import formApi from '@/api/form/form'
+import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6 from '@/api/v6/workflows'
+import type { AttachmentEntry } from '../components/AttachmentsPanel'
+import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
 
 interface FormRecord {
@@ -24,6 +27,12 @@ export const useWorkflowForm = (workflow: any) => {
   const [formModel, setFormModel] = useState<Record<string, any>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [attachments, setAttachments] = useState<AttachmentEntry[]>([])
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false)
+  const [comments, setComments] = useState<LocalComment[]>([])
+  const [commentDraft, setCommentDraft] = useState('')
+
+  const repositoryId = workflow?.repositoryId
 
   const formId =
     workflow?.formId ??
@@ -72,6 +81,45 @@ export const useWorkflowForm = (workflow: any) => {
     setFormModel((prev) => ({ ...prev, [fieldId]: value }))
   }
 
+  const addAttachment = async (files: FileList | null) => {
+    const list = files ? Array.from(files) : []
+    if (list.length === 0 || !repositoryId) return
+
+    setIsUploadingAttachment(true)
+    for (const file of list) {
+      const { data, error } = await uploadAndIndexApi.uploadWithOcr({
+        file,
+        repositoryId,
+      })
+      if (!error && data) {
+        setAttachments((prev) => [
+          ...prev,
+          {
+            fileId: data.fileId,
+            fileName: data.fileName || file.name,
+            repositoryId: data.repositoryId || repositoryId,
+            size: file.size,
+          },
+        ])
+      }
+    }
+    setIsUploadingAttachment(false)
+  }
+
+  const removeAttachment = (fileId: string) => {
+    setAttachments((prev) => prev.filter((a) => a.fileId !== fileId))
+  }
+
+  const addComment = () => {
+    const text = commentDraft.trim()
+    if (!text) return
+    setComments((prev) => [
+      ...prev,
+      { createdAt: new Date().toISOString(), id: crypto.randomUUID(), text },
+    ])
+    setCommentDraft('')
+  }
+
   const submit = async () => {
     if (!workflow?.id) {
       setSubmitError('Workflow ID is missing. Cannot start workflow.')
@@ -81,7 +129,15 @@ export const useWorkflowForm = (workflow: any) => {
     setIsSubmitting(true)
     setSubmitError(null)
 
-    const payload = buildStartWorkflowPayload(panels, formModel)
+    // The start payload only has one free-text `context` field — fold the
+    // locally composed comments into it, in order.
+    const context = comments.map((c) => c.text).join('\n\n')
+    const payload = buildStartWorkflowPayload(
+      panels,
+      formModel,
+      attachments,
+      context,
+    )
     const { data, error } = await workflowsApiV6.startWorkflowJson(
       String(workflow.id),
       payload,
@@ -98,14 +154,22 @@ export const useWorkflowForm = (workflow: any) => {
   }
 
   return {
+    addAttachment,
+    addComment,
+    attachments,
+    commentDraft,
+    comments,
     form,
     formModel,
     isLoadingForm,
     isSubmitting,
+    isUploadingAttachment,
     loadError,
     panels,
+    removeAttachment,
     submit,
     submitError,
+    setCommentDraft,
     setFieldValue,
   }
 }

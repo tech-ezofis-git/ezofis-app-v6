@@ -99,3 +99,34 @@ export const SUPPORTED_TYPES = new Set([
   'LABEL',
   'DIVIDER',
 ])
+
+export const getFileExtension = (fileName: string): string => {
+  const parts = (fileName || '').split('.')
+  return parts.length > 1 ? (parts.pop() || '').toLowerCase() : ''
+}
+
+export const formatFileSize = (bytes?: number): string => {
+  if (!bytes || Number.isNaN(bytes)) return ''
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
+}
+
+// Whether a required field currently has a value worth counting toward a
+// panel's "N of M mandatory fields completed" indicator.
+export const isFieldFilled = (field: any, value: any): boolean => {
+  if (PRESENTATIONAL_TYPES.has(field.type)) return true
+
+  if (field.type === 'FILE_UPLOAD' || field.type === 'IMAGE_UPLOAD') {
+    return Boolean(value?.fileId)
+  }
+  if (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') {
+    return Array.isArray(value) && value.length > 0
+  }
+  if (field.type === 'YES_NO_TOGGLE' || field.type === 'CONSENT') {
+    return value === true
+  }
+  return value !== undefined && value !== null && String(value).trim() !== ''
+}

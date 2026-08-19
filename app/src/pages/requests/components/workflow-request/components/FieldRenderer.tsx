@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import type { Option } from '@/types/option'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
+import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -11,17 +12,23 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
 import showToast from '@/components/base/toast/showToast'
-import FileUpload from '@/components/common/file-upload/FIleUpload'
+import {
+  getFileIcon,
+  getFileIconClasses,
+} from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import {
   getFieldOptions,
+  getFileExtension,
   isFieldReadOnly,
   isFieldRequired,
 } from '../utils/fieldRendering'
+import CompactDropzone from './CompactDropzone'
 
 interface Props {
   field: any
   repositoryId: string | undefined
   value: any
+  viewOnly?: boolean
   onChange: (value: any) => void
 }
 
@@ -35,12 +42,18 @@ interface StagedFileValue {
 // @/components/base input components. Field types outside the MVP set
 // (TABLE, MATRIX, SIGNATURE, ADDRESS, RATING, ...) render a labeled
 // placeholder instead of silently disappearing.
-const FieldRenderer = ({ field, repositoryId, value, onChange }: Props) => {
+const FieldRenderer = ({
+  field,
+  repositoryId,
+  value,
+  viewOnly,
+  onChange,
+}: Props) => {
   const { t } = useLingui()
   const [isUploading, setIsUploading] = useState(false)
   const general = field?.settings?.general || {}
   const required = isFieldRequired(field)
-  const readOnly = isFieldReadOnly(field)
+  const readOnly = viewOnly || isFieldReadOnly(field)
 
   const common = {
     disabled: readOnly,
@@ -162,6 +175,25 @@ const FieldRenderer = ({ field, repositoryId, value, onChange }: Props) => {
 
     case 'IMAGE_UPLOAD':
     case 'FILE_UPLOAD': {
+      // Submitted files aren't part of formData (per the integration guide
+      // they travel as stagedFiles instead), so there's nothing meaningful
+      // to show inline here for an already-submitted request — point at
+      // the Attachments section instead of rendering a broken dropzone.
+      if (viewOnly) {
+        return (
+          <div>
+            {!general.hideLabel && (
+              <label className='mb-1.5 block text-13 font-medium text-gray-12'>
+                {field.label}
+              </label>
+            )}
+            <div className='rounded-lg border border-dashed border-gray-3 bg-gray-1 px-3 py-2.5 text-12 text-gray-8'>
+              {t`See the Attachments section for uploaded files.`}
+            </div>
+          </div>
+        )
+      }
+
       const staged: StagedFileValue | null = value || null
 
       // Per the "Normal Workflow — Frontend Integration Guide": a file
@@ -204,6 +236,10 @@ const FieldRenderer = ({ field, repositoryId, value, onChange }: Props) => {
         })
       }
 
+      const ext = staged ? getFileExtension(staged.fileName) : ''
+      const icon = staged ? getFileIcon(ext) : ''
+      const styles = staged ? getFileIconClasses(ext) : null
+
       return (
         <div>
           {!general.hideLabel && (
@@ -212,17 +248,39 @@ const FieldRenderer = ({ field, repositoryId, value, onChange }: Props) => {
               {required && <span className='text-red-9'> *</span>}
             </label>
           )}
-          <FileUpload
-            accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
-            disabled={readOnly}
-            heightClassName='h-[140px]'
-            isLoading={isUploading}
-            loadingText={t`Uploading…`}
-            selectedFileName={staged?.fileName || null}
-            subtitle={t`or click to browse`}
-            title={staged ? staged.fileName : t`Drag & drop a file here`}
-            onFiles={handleFiles}
-          />
+          {staged && styles ? (
+            <div className='flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2'>
+              <div
+                className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${styles.wrap}`}
+              >
+                <Icon className='size-4' name={icon} />
+              </div>
+              <div
+                className='min-w-0 flex-1 truncate text-12 font-semibold text-gray-12'
+                title={staged.fileName}
+              >
+                {staged.fileName}
+              </div>
+              {!readOnly && (
+                <button
+                  aria-label={t`Remove file`}
+                  className='flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
+                  type='button'
+                  onClick={() => onChange(null)}
+                >
+                  <Icon className='size-3.5' name='tabler:x' />
+                </button>
+              )}
+            </div>
+          ) : (
+            <CompactDropzone
+              accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
+              disabled={readOnly}
+              isLoading={isUploading}
+              loadingText={t`Uploading…`}
+              onFiles={handleFiles}
+            />
+          )}
         </div>
       )
     }

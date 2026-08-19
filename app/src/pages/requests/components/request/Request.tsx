@@ -18,6 +18,8 @@ import {
   isMatrixFieldType,
   isTableType,
 } from '../../utils/dynamicTable.utils'
+import { isAccountsPayableWorkflow } from '../../utils/workflow.utils'
+import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 
@@ -494,15 +496,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-          String(p.processId || p.id) === jobKey
-            ? {
-              ...p,
-              apAgentJobId: null,
-              id: jobData.instanceId,
-              processId: jobData.instanceId,
-            }
-            : p,
-        )
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
         : state.processingProcesses
 
       return {
@@ -621,7 +623,9 @@ const useJobPolling = (
   }, [onJobData])
 
   const isPollingExternally = useMemo(() => {
-    return processingProcesses.some((p) => String(p.apAgentJobId) === String(apAgentJobId))
+    return processingProcesses.some(
+      (p) => String(p.apAgentJobId) === String(apAgentJobId),
+    )
   }, [processingProcesses, apAgentJobId])
 
   const jobKey = apAgentJobId ? `job-${apAgentJobId}` : ''
@@ -825,6 +829,7 @@ const Request = ({
   const selectedItem = item || storeSelectedItem
   const resolvedWorkflowId =
     selectedWorkflow?.id || workflowId || selectedWorkflowId
+  const isGenericWorkflow = !isAccountsPayableWorkflow(rawWorkflowData)
 
   const [activeTab, setActiveTab] = useState<string>(
     activeTabValue || 'Overview',
@@ -984,10 +989,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-      request.review ||
-      request._agentData?.[0]?.decision ||
-      request.completedAtUtc
-    )
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc
+      )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1191,8 +1196,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-              selectedItem?.agentResponse || request?.agentResponse || {},
-            ),
+                selectedItem?.agentResponse || request?.agentResponse || {},
+              ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1292,10 +1297,10 @@ const Request = ({
           fields:
             Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                formModel,
-                selectedWorkflow,
-                request?._formDefinition,
-              )
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1559,12 +1564,7 @@ const Request = ({
     statusBadge = 'Preparing your request...'
   } else {
     // If job completed but we don't have agentDecision yet, show a loader status
-    if (
-      isCurrentlyProcessing &&
-      apAgentJobId &&
-      jobStatus &&
-      !agentDecision
-    ) {
+    if (isCurrentlyProcessing && apAgentJobId && jobStatus && !agentDecision) {
       statusBadge = 'Finalizing Results...'
     } else {
       statusBadge = finalStatusBadge
@@ -1642,34 +1642,41 @@ const Request = ({
           raisedAt={request?.createdAt}
           rightView={rightView}
           showApprove={requestListTab === 'Inbox'}
+          simple={isGenericWorkflow}
           status={statusBadge}
           totalAmount={totalAmount}
           requestNo={
-            formModel?.['Invoice Number'] ||
-            formModel?.['Invoice No'] ||
-            formModel?.['invoice_number'] ||
-            formModel?.['invoice_no'] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice No'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_no'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice Number'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_number'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_num'
-            ] ||
-            currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
-            selectedItem?.reqNo ||
-            selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
-            selectedItem?.invoiceNumber ||
-            selectedItem?.requestNo ||
-            'REQ - ...'
+            isGenericWorkflow
+              ? selectedItem?.formEntryId
+                ? `REQ-${selectedItem.formEntryId}`
+                : selectedItem?.referenceNumber ||
+                  selectedItem?.requestNo ||
+                  'REQ - ...'
+              : formModel?.['Invoice Number'] ||
+                formModel?.['Invoice No'] ||
+                formModel?.['invoice_number'] ||
+                formModel?.['invoice_no'] ||
+                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+                  'Invoice No'
+                ] ||
+                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+                  'invoice_no'
+                ] ||
+                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+                  'Invoice Number'
+                ] ||
+                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+                  'invoice_number'
+                ] ||
+                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+                  'invoice_num'
+                ] ||
+                currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
+                selectedItem?.reqNo ||
+                selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
+                selectedItem?.invoiceNumber ||
+                selectedItem?.requestNo ||
+                'REQ - ...'
           }
           ticketUserId={
             selectedItem?.userId ||
@@ -1700,26 +1707,33 @@ const Request = ({
             className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'
             delay={0.6}
           >
-            <Overview
-              actions={headerActions}
-              agentData={currentAgentData}
-              allowedLabels={allowedLabels}
-              formDefinition={request?._formDefinition}
-              formModel={formModel}
-              isFourthItem={isFourthItem}
-              isProcessing={isCurrentlyProcessing || isLoading}
-              isThirdItem={isThirdItem}
-              processId={Number(selectedItem?.processId)}
-              repositoryId={Number(rawWorkflowData?.repositoryId)}
-              rightView={rightView}
-              selectedItem={request || selectedItem}
-              selectedWorkflow={selectedWorkflow}
-              transactionId={selectedItem?.transactionId as any}
-              workflowId={resolvedWorkflowId}
-              setFormModel={setFormModel}
-              setRightView={setRightView}
-              onOpenPlayground={handleOpenPlayground}
-            />
+            {isGenericWorkflow ? (
+              <GenericRequestOverview
+                rawWorkflowData={rawWorkflowData}
+                selectedItem={request || selectedItem}
+              />
+            ) : (
+              <Overview
+                actions={headerActions}
+                agentData={currentAgentData}
+                allowedLabels={allowedLabels}
+                formDefinition={request?._formDefinition}
+                formModel={formModel}
+                isFourthItem={isFourthItem}
+                isProcessing={isCurrentlyProcessing || isLoading}
+                isThirdItem={isThirdItem}
+                processId={Number(selectedItem?.processId)}
+                repositoryId={Number(rawWorkflowData?.repositoryId)}
+                rightView={rightView}
+                selectedItem={request || selectedItem}
+                selectedWorkflow={selectedWorkflow}
+                transactionId={selectedItem?.transactionId as any}
+                workflowId={resolvedWorkflowId}
+                setFormModel={setFormModel}
+                setRightView={setRightView}
+                onOpenPlayground={handleOpenPlayground}
+              />
+            )}
           </AnimateFadeIn>
         </div>
 

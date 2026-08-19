@@ -24,9 +24,15 @@ const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
 export const buildStartWorkflowPayload = (
   panels: any[],
   formModel: Record<string, any>,
+  // General attachments added via the sidebar (not tied to any specific
+  // form field) and an optional initiator note — both folded into the same
+  // documented payload shape rather than invented fields: extra files just
+  // become more `stagedFiles` entries, the note becomes `context`.
+  extraAttachments: StagedFile[] = [],
+  comment = '',
 ): StartWorkflowJsonPayload => {
   const formData: Record<string, any> = {}
-  const stagedFiles: StagedFile[] = []
+  const stagedFiles: StagedFile[] = [...extraAttachments]
 
   for (const panel of panels || []) {
     for (const field of panel.fields || []) {
@@ -51,7 +57,7 @@ export const buildStartWorkflowPayload = (
   }
 
   return {
-    context: '',
+    context: comment,
     envType: 'trial',
     formData,
     stagedFiles,
