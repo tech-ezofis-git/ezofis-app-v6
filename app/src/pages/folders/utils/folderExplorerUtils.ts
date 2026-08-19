@@ -433,6 +433,22 @@ export const getFileId = (file: { [key: string]: any; id?: string }) =>
       '',
   )
 
+export const mergeFilesById = <T extends Record<string, any>>(
+  current: T[],
+  next: T[],
+): T[] => {
+  const map = new Map<string, T>()
+  current.forEach((file) => {
+    const id = getFileId(file)
+    if (id) map.set(id, file)
+  })
+  next.forEach((file) => {
+    const id = getFileId(file)
+    if (id) map.set(id, file)
+  })
+  return Array.from(map.values())
+}
+
 export const syncTreeChildren = (
   tree: TreeNode[],
   folderId: string,

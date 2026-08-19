@@ -225,6 +225,44 @@ const buildScopeFiltersForFacets = (
   return scope
 }
 
+export const matchesSearchText = (
+  item: Record<string, any>,
+  searchQuery?: string,
+): boolean => {
+  if (!searchQuery) return true
+  const query = searchQuery.trim().toLowerCase()
+  if (!query) return true
+
+  const visited = new WeakSet()
+
+  const checkValue = (val: any): boolean => {
+    if (val === null || val === undefined) return false
+
+    if (
+      typeof val === 'string' ||
+      typeof val === 'number' ||
+      typeof val === 'boolean'
+    ) {
+      return String(val).toLowerCase().includes(query)
+    }
+
+    if (typeof val === 'object') {
+      if (visited.has(val)) return false
+      visited.add(val)
+
+      if (Array.isArray(val)) {
+        return val.some(checkValue)
+      }
+
+      return Object.values(val).some(checkValue)
+    }
+
+    return false
+  }
+
+  return checkValue(item)
+}
+
 export const matchesFolderTableFilters = (
   folder: FolderItem,
   filters: Record<string, string>,
@@ -241,8 +279,13 @@ export const matchesFolderTableFilters = (
 export const filterFolders = (
   folders: FolderItem[],
   filters: Record<string, string>,
+  searchQuery = '',
 ) =>
-  folders.filter((folder) => matchesFolderTableFilters(folder, filters))
+  folders.filter(
+    (folder) =>
+      matchesSearchText(folder, searchQuery) &&
+      matchesFolderTableFilters(folder, filters),
+  )
 
 export const matchesFolderFileFilters = (
   file: AnyFileItem,
@@ -262,9 +305,12 @@ export const filterFolderFiles = (
   files: AnyFileItem[],
   filters: Record<string, string>,
   folderContextFilters: Record<string, string> = {},
+  searchQuery = '',
 ) =>
-  files.filter((file) =>
-    matchesFolderFileFilters(file, filters, folderContextFilters),
+  files.filter(
+    (file) =>
+      matchesSearchText(file, searchQuery) &&
+      matchesFolderFileFilters(file, filters, folderContextFilters),
   )
 
 type FolderFilterBarProps = {
@@ -315,12 +361,13 @@ export function FolderFilterBar({
   onUpload,
   refreshing = false,
   repositoryId = '',
-  searchPlaceholder = 'Search files...',
+  searchPlaceholder,
   searchQuery,
   setView,
   view,
 }: FolderFilterBarProps) {
   const { t } = useLingui()
+  const effectivePlaceholder = searchPlaceholder || t`Search by name or metadata...`
   const showFileFilters = filterMode === 'files' || filterMode === 'both'
   const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
   const folderBaseline =
@@ -638,11 +685,7 @@ export function FolderFilterBar({
       isLoading={isBusy || Boolean(loadingFacetField)}
       moreFilters={moreFilters}
       multiSelect
-      searchPlaceholder={
-        searchPlaceholder === 'Search files...'
-          ? t`Search files...`
-          : searchPlaceholder
-      }
+      searchPlaceholder={effectivePlaceholder}
       searchQuery={searchQuery}
       showReset={hasActiveFilters}
       actionButtons={[

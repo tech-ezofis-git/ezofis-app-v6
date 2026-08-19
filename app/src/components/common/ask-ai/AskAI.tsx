@@ -109,16 +109,19 @@ type ViewMode = 'chat' | 'history'
 
 const suggestions = [
   {
-    label: 'Create Request.',
+    description: 'Provide details and send for approval',
+    label: 'Submit a new request',
     query: 'Initiate workflow',
   },
   {
-    label: 'Show my pending requests.',
+    description: "Check status of requests you've submitted",
+    label: 'Track my requests',
     query: 'Show my pending requests',
   },
   {
-    label: 'Search for a purchase request.',
-    query: 'Find open purchase requests pending approval',
+    description: 'Find files by name, folder, or content',
+    label: 'Search my documents',
+    query: 'Search my documents',
   },
 ]
 
@@ -647,6 +650,32 @@ const AskAI = () => {
       return
     }
 
+    if (
+      lowerText === 'search my documents' ||
+      lowerText === 'find open documents and requests'
+    ) {
+      const userMsg: Message = {
+        id: uid(),
+        role: 'user',
+        text: 'Search my documents',
+      }
+      const aiPromptMsg: Message = {
+        id: uid(),
+        isTyping: false,
+        revealExtras: true,
+        role: 'ai',
+        text: 'What document, folder, or keyword would you like to search for?',
+      }
+      setMessages((prev) => [
+        ...prev.filter((m) => m.role !== 'status'),
+        userMsg,
+        aiPromptMsg,
+      ])
+      setInput('')
+      setView('chat')
+      return
+    }
+
     const userMessage: Message = { id: uid(), role: 'user', text }
     const baseMessages = [
       ...messages.filter((m) => m.role !== 'status'),
@@ -885,56 +914,40 @@ const AskAI = () => {
               </div>
 
               {view === 'chat' && (
-                <>
-                  <div className='shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 pt-2.5 pb-2'>
-                    <div className='mb-2 text-[12.5px] text-[var(--text2)]'>
-                      <strong className='text-[var(--text1)]'>{credits}</strong> of{' '}
-                      <strong className='text-[var(--text1)]'>15</strong> calls
-                      remaining -{' '}
+                <div className='shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 py-3.5'>
+                  <div className='overflow-hidden rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
+                    <div className='px-3.5 pt-2.5 pb-1'>
+                      <textarea
+                        className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
+                        placeholder='Ask me anything about your documents or requests...'
+                        rows={1}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            sendMessage()
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
                       <button
-                        className='font-medium text-[var(--purple)]'
+                        className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
+                        disabled={!canSend}
+                        title='Send'
                         type='button'
+                        onClick={() => sendMessage()}
                       >
-                        Upgrade
+                        <UiIcon
+                          className='size-4'
+                          name='mingcute:send-plane-line'
+                        />
                       </button>
                     </div>
                   </div>
-
-                  <div className='shrink-0 bg-[var(--bg)] px-4 pb-3.5'>
-                    <div className='overflow-hidden rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
-                      <div className='px-3.5 pt-2.5 pb-1'>
-                        <textarea
-                          className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
-                          placeholder='Ask about invoices, documents, or requests...'
-                          rows={1}
-                          value={input}
-                          onChange={(e) => setInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault()
-                              sendMessage()
-                            }
-                          }}
-                        />
-                      </div>
-
-                      <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
-                        <button
-                          className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
-                          disabled={!canSend}
-                          title='Send'
-                          type='button'
-                          onClick={() => sendMessage()}
-                        >
-                          <UiIcon
-                            className='size-4'
-                            name='mingcute:send-plane-line'
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </>
+                </div>
               )}
             </>
           )}
@@ -945,21 +958,21 @@ const AskAI = () => {
 }
 
 const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
-  <div className='px-5 pt-7 pb-4'>
-    <div className='mb-5 text-[var(--gray-7)]'>
-      <Bot size={40} strokeWidth={1.75} />
+  <div className='px-5 pt-6 pb-4'>
+    <div className='mb-4 text-[var(--gray-7)]'>
+      <Bot size={36} strokeWidth={1.75} />
     </div>
-    <h2 className='mb-2 text-[19px] font-bold tracking-[-.3px] text-[var(--text1)]'>
-      How can I assist you?
+    <h2 className='mb-1.5 text-[18px] font-semibold tracking-[-.2px] text-[var(--text1)]'>
+      How can I help you today?
     </h2>
-    <p className='mb-[22px] text-[13.5px] leading-[1.55] text-[var(--text2)]'>
-      Search invoices,Workflow,Create Request, documents, and accounts payable requests - or ask me Related to the Folder & workflow.
+    <p className='mb-5 text-[13.5px] leading-[1.5] text-[var(--text2)]'>
+      Submit requests, track progress, and find documents — all in one place.
     </p>
-    <div className='flex flex-col'>
+    <div className='flex flex-col gap-2'>
       {suggestions.map((item, index) => (
         <motion.button
           animate={{ opacity: 1, x: 0 }}
-          className='flex items-center gap-3 border-b border-[var(--border)] px-1 py-[13px] text-left text-[13.5px] leading-[1.4] text-[var(--text1)] hover:rounded-[10px] hover:bg-[var(--bg2)]'
+          className='group flex items-start gap-3 rounded-xl border border-[var(--border)] bg-surface p-3 text-left transition-colors hover:border-[var(--spark1)] hover:bg-[var(--bg2)]'
           initial={{ opacity: 0, x: -8 }}
           key={item.query}
           transition={{ delay: 0.05 * index, duration: 0.25 }}
@@ -967,10 +980,17 @@ const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
           onClick={() => onSend(item.query)}
         >
           <UiIcon
-            className='size-[15px] shrink-0 text-[var(--text3)]'
+            className='mt-0.5 size-[15px] shrink-0 text-[var(--text3)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--purple)]'
             name='mingcute:arrow-right-line'
           />
-          <span>{item.label}</span>
+          <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+            <span className='text-[13px] font-semibold text-[var(--text1)] group-hover:text-[var(--purple)]'>
+              {item.label}
+            </span>
+            <span className='text-[12px] font-normal leading-normal text-[var(--text2)]'>
+              {item.description}
+            </span>
+          </div>
         </motion.button>
       ))}
     </div>
@@ -1090,17 +1110,17 @@ const ChatMessage = ({
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      className='px-[18px] py-3'
+      className='px-[18px] py-2.5'
       initial={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.22 }}
     >
-      <div className='flex items-start gap-2.5'>
-        <div className='mt-1 shrink-0 text-[var(--text2)]'>
-          <Bot size={16} strokeWidth={1.75} />
+      <div className='flex items-start gap-3'>
+        <div className='mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--purple-light)] text-[var(--purple)] shadow-xs'>
+          <Bot size={18} strokeWidth={1.75} />
         </div>
-        <div className='min-w-0 flex-1 pt-0.5 text-[13.5px] leading-[1.72] text-[var(--text1)]'>
+        <div className='min-w-0 flex-1 rounded-2xl rounded-tl-sm border border-[var(--border)] bg-[var(--bg2)] px-4 py-3 text-[13.5px] leading-relaxed text-[var(--text1)] shadow-xs'>
           {msg.isTyping ? (
-            <p className='mb-2.5 whitespace-pre-wrap'>
+            <p className='whitespace-pre-wrap'>
               <TypewriterReply
                 text={msg.text}
                 onComplete={onTypingComplete}
@@ -1109,24 +1129,29 @@ const ChatMessage = ({
             </p>
           ) : (
             paragraphs.map((p, i) => (
-              <p className='mb-2.5' key={`${p}-${i}`}>
+              <p
+                className={i < paragraphs.length - 1 ? 'mb-2.5' : ''}
+                key={`${p}-${i}`}
+              >
                 {p}
               </p>
             ))
           )}
 
           {showExtras && richBlocks.length > 0 && (
-            <StaggeredCards
-              items={richBlocks.map((block, index) => (
-                <AnswerBlock
-                  block={block}
-                  ctaMode={msg.ctaMode}
-                  key={`${block.type}-${index}`}
-                  onActionClick={onActionClick}
-                />
-              ))}
-              onProgress={onTypingProgress}
-            />
+            <div className='mt-3 border-t border-[var(--border)] pt-3'>
+              <StaggeredCards
+                items={richBlocks.map((block, index) => (
+                  <AnswerBlock
+                    block={block}
+                    ctaMode={msg.ctaMode}
+                    key={`${block.type}-${index}`}
+                    onActionClick={onActionClick}
+                  />
+                ))}
+                onProgress={onTypingProgress}
+              />
+            </div>
           )}
         </div>
       </div>

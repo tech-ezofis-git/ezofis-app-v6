@@ -258,13 +258,7 @@ export function ExplorerToolbar({
         itemFilterFields={itemFilterFields}
         refreshing={refreshing}
         repositoryId={repositoryId}
-        searchPlaceholder={
-          filterMode === 'files'
-            ? t`Search files...`
-            : filterMode === 'both'
-              ? t`Search folders and files...`
-              : t`Search folders...`
-        }
+        searchPlaceholder={t`Search by name or metadata...`}
         searchQuery={searchQuery}
         view={view}
         onFilterChange={handleFilterChange}
