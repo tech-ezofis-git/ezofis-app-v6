@@ -55,32 +55,20 @@ type RepositoryField = {
   sqlColumnName: string
 }
 
-type ResultTab = 'fields' | 'json'
-
-interface JsonTreeNodeProps {
+interface JsonNodeProps {
   data: unknown
   name?: string
   isLast?: boolean
-  defaultExpanded?: boolean
   level?: number
 }
 
-function JsonTreeNode({
-  data,
-  name,
-  isLast = true,
-  defaultExpanded = true,
-  level = 0,
-}: JsonTreeNodeProps) {
-  const [isCollapsed, setIsCollapsed] = useState(!defaultExpanded)
-
-  useEffect(() => {
-    setIsCollapsed(!defaultExpanded)
-  }, [defaultExpanded])
+function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   if (data === null || data === undefined) {
     return (
-      <div className='flex items-center gap-1 font-mono text-xs leading-6'>
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
         {name !== undefined && (
           <span className='font-semibold text-purple-700 dark:text-purple-300'>
             "{name}":{' '}
@@ -94,7 +82,8 @@ function JsonTreeNode({
 
   if (typeof data === 'boolean') {
     return (
-      <div className='flex items-center gap-1 font-mono text-xs leading-6'>
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
         {name !== undefined && (
           <span className='font-semibold text-purple-700 dark:text-purple-300'>
             "{name}":{' '}
@@ -110,7 +99,8 @@ function JsonTreeNode({
 
   if (typeof data === 'number') {
     return (
-      <div className='flex items-center gap-1 font-mono text-xs leading-6'>
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
         {name !== undefined && (
           <span className='font-semibold text-purple-700 dark:text-purple-300'>
             "{name}":{' '}
@@ -126,7 +116,8 @@ function JsonTreeNode({
 
   if (typeof data === 'string') {
     return (
-      <div className='flex items-center gap-1 font-mono text-xs leading-6 break-all'>
+      <div className='flex items-center gap-1 font-mono text-xs leading-5 break-all'>
+        <div className='size-4 shrink-0' />
         {name !== undefined && (
           <span className='font-semibold text-purple-700 dark:text-purple-300'>
             "{name}":{' '}
@@ -150,16 +141,16 @@ function JsonTreeNode({
   const itemCount = keys.length
 
   return (
-    <div className='font-mono text-xs leading-6'>
+    <div className='font-mono text-xs leading-5'>
       <div className='flex items-center gap-1'>
         <button
           type='button'
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className='flex size-4 shrink-0 items-center justify-center rounded text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700'
+          className='flex size-4 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)]'
         >
           <Icon
             name='tabler:chevron-right'
-            className={`size-3.5 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
+            className={`size-3 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
           />
         </button>
 
@@ -169,7 +160,7 @@ function JsonTreeNode({
           </span>
         )}
 
-        <span className='font-bold text-gray-700 dark:text-gray-300'>
+        <span className='font-bold text-[var(--gray-12)]'>
           {openBracket}
         </span>
 
@@ -177,14 +168,14 @@ function JsonTreeNode({
           <button
             type='button'
             onClick={() => setIsCollapsed(false)}
-            className='mx-1 rounded bg-gray-200/80 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300'
+            className='mx-1 rounded bg-[var(--gray-3)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)]'
           >
             {itemCount} {itemCount === 1 ? 'item' : 'items'} ...
           </button>
         ) : null}
 
         {isCollapsed ? (
-          <span className='font-bold text-gray-700 dark:text-gray-300'>
+          <span className='font-bold text-[var(--gray-12)]'>
             {closeBracket}
             {!isLast && ','}
           </span>
@@ -192,18 +183,16 @@ function JsonTreeNode({
       </div>
 
       {!isCollapsed && (
-        <div className='ml-3.5 border-l border-gray-300/80 pl-2.5 dark:border-gray-700/60'>
+        <div className='ml-2 border-l border-[var(--gray-4)]/70 pl-2.5'>
           {keys.map((key, index) => {
             const childData = (data as Record<string, any>)[key]
             const isChildLast = index === keys.length - 1
             return (
-              <JsonTreeNode
+              <JsonNode
                 key={key}
                 data={childData}
                 name={isArray ? undefined : key}
                 isLast={isChildLast}
-                defaultExpanded={level < 2}
-                level={level + 1}
               />
             )
           })}
@@ -211,66 +200,14 @@ function JsonTreeNode({
       )}
 
       {!isCollapsed && (
-        <div className='pl-4 font-bold text-gray-700 dark:text-gray-300'>
-          {closeBracket}
-          {!isLast && ','}
+        <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+          <div className='size-4 shrink-0' />
+          <span className='font-bold text-[var(--gray-12)]'>
+            {closeBracket}
+          </span>
+          {!isLast && <span className='text-gray-400'>,</span>}
         </div>
       )}
-    </div>
-  )
-}
-
-function InteractiveJsonViewer({
-  data,
-  onCopy,
-}: {
-  data: unknown
-  onCopy: () => void
-}) {
-  const [expandAll, setExpandAll] = useState<boolean>(true)
-  const [expandKey, setExpandKey] = useState<number>(0)
-  const { t } = useLingui()
-
-  const handleToggleExpandAll = () => {
-    setExpandAll((prev) => !prev)
-    setExpandKey((prev) => prev + 1)
-  }
-
-  return (
-    <div className='flex h-full min-h-0 flex-col'>
-      <div className='mb-2 flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] pb-2'>
-        <button
-          type='button'
-          onClick={handleToggleExpandAll}
-          className='flex items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-xs font-semibold text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
-        >
-          <Icon
-            name={expandAll ? 'tabler:fold-up' : 'tabler:fold-down'}
-            className='size-3.5'
-          />
-          <span>{expandAll ? t`Collapse All` : t`Expand All`}</span>
-        </button>
-
-        <Tooltip content={t`Copy JSON`} position='top'>
-          <button
-            aria-label={t`Copy JSON`}
-            className='flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--gray-3)] bg-surface text-[var(--gray-11)] shadow-sm transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
-            type='button'
-            onClick={onCopy}
-          >
-            <Copy size={14} />
-          </button>
-        </Tooltip>
-      </div>
-
-      <div className='ez-scrollbar min-h-0 flex-1 overflow-auto rounded-xl bg-[var(--gray-1)] p-3 text-xs leading-6'>
-        <JsonTreeNode
-          key={expandKey}
-          data={data}
-          defaultExpanded={expandAll}
-          level={0}
-        />
-      </div>
     </div>
   )
 }
@@ -1961,11 +1898,22 @@ export default function Upload({
                   </div>
                 )
               })() : (
-                <div className='relative h-full max-h-full'>
-                  <InteractiveJsonViewer
-                    data={parsedJsonData}
-                    onCopy={copyMetadata}
-                  />
+                <div className='relative flex h-full min-h-0 flex-1 flex-col'>
+                  <div className='absolute top-2.5 right-3.5 z-20'>
+                    <Tooltip content={t`Copy JSON`} position='top'>
+                      <button
+                        aria-label={t`Copy JSON`}
+                        className='flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--gray-4)] bg-surface/90 text-[var(--gray-11)] shadow-sm backdrop-blur-md transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
+                        type='button'
+                        onClick={copyMetadata}
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                  <div className='ez-scrollbar h-full max-h-full min-h-0 flex-1 overflow-auto rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-3 pt-2.5 pr-14 text-xs leading-5 text-[var(--gray-12)]'>
+                    <JsonNode data={parsedJsonData} />
+                  </div>
                 </div>
               )}
             </div>
