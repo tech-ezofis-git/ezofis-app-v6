@@ -965,13 +965,13 @@ export default function CustomFilter({
         )}
 
         {afterSearchActions ? (
-          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {afterSearchActions}
           </div>
         ) : null}
 
         {viewMode && onViewModeChange && (
-          <div className='ml-1 flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
+          <div className='flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
             <Tooltip content={t`Grid View`} openDelay={500}>
               <button
                 type='button'
@@ -1004,7 +1004,7 @@ export default function CustomFilter({
         )}
 
         {actionButtons && actionButtons.length > 0 && (
-          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {actionButtons.map((btn) => {
               const btnEl = btn.isIconButton ? (
                 <IconButton
@@ -1041,13 +1041,13 @@ export default function CustomFilter({
         )}
 
         {trailingActions ? (
-          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {trailingActions}
           </div>
         ) : null}
 
         {addButton && (
-          <div className='ml-1 flex shrink-0 items-center'>
+          <div className='flex shrink-0 items-center'>
             {addButton.tooltip ? (
               <Tooltip content={addButton.tooltip}>
                 {addButton.label ? (

@@ -5,6 +5,7 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Column } from '@/components/base/data-table/types'
 import type { Question } from '@/pages/form-builder/store/formStore'
+import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
 import userApi from '@/api/user'
 import Badge from '@/components/base/Badge'
@@ -20,6 +21,7 @@ import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
@@ -815,6 +817,33 @@ const FormEntriesPage = () => {
     },
     [fields],
   )
+
+  // Distinct values already used for each SELECT-type field, sourced from
+  // existing entries, so dropdowns offer real data instead of static options
+  const fieldDistinctOptions = useMemo(() => {
+    const map: Record<string, Option[]> = {}
+    fields.forEach((field: Question) => {
+      const isMulti = (field.type || '').toUpperCase() === 'MULTI_SELECT'
+      const unique = new Set<string>()
+      entries.forEach((entry) => {
+        const raw = entry.values?.[field.id]
+        if (raw === undefined || raw === null || raw === '') return
+        if (typeof raw === 'string' && raw.trim().startsWith('[')) return
+
+        if (isMulti) {
+          String(raw)
+            .split(',')
+            .map((v) => v.trim())
+            .filter(Boolean)
+            .forEach((v) => unique.add(v))
+        } else {
+          unique.add(String(raw).trim())
+        }
+      })
+      map[field.id] = Array.from(unique).map((v) => ({ id: v, name: v }))
+    })
+    return map
+  }, [fields, entries])
 
   // Set up standard data table state
   const {
@@ -1784,18 +1813,61 @@ const FormEntriesPage = () => {
                             type === 'MULTI_SELECT' ? (
                             (() => {
                               const optString =
-                                field.settings?.specific?.customOptions ||
-                                'Option A,Option B,Option C'
+                                field.settings?.specific?.customOptions || ''
                               const delimiter =
                                 field.settings?.specific
                                   ?.separateOptionsUsing === 'COMMA'
                                   ? ','
                                   : '\n'
-                              const opts = optString
+                              const configuredOpts = optString
                                 .split(delimiter)
                                 .map((o: any) => o.trim())
                                 .filter(Boolean)
-                                .map((o: string) => ({ id: o, name: o }))
+
+                              // Merge configured options with distinct values
+                              // already saved for this column across entries
+                              // (no hardcoded placeholder options — an empty
+                              // list is fine since both dropdowns are creatable)
+                              const merged = new Map<string, Option>()
+                              configuredOpts.forEach((o: string) =>
+                                merged.set(o, { id: o, name: o }),
+                              )
+                              ;(fieldDistinctOptions[field.id] || []).forEach(
+                                (o) => merged.set(o.name, o),
+                              )
+                              const opts = Array.from(merged.values())
+
+                              if (type === 'MULTI_SELECT') {
+                                const selectedValues = val
+                                  ? String(val)
+                                    .split(',')
+                                    .map((v) => v.trim())
+                                    .filter(Boolean)
+                                  : []
+                                const selectedOpts = selectedValues.map(
+                                  (v) => ({ id: v, name: v }),
+                                )
+
+                                return (
+                                  <InputSelectMultiple
+                                    creatable
+                                    searchable
+                                    options={opts}
+                                    placeholder={
+                                      field.settings?.general?.placeholder
+                                    }
+                                    value={selectedOpts}
+                                    onChange={(vals) =>
+                                      handleFieldChange(
+                                        field.id,
+                                        vals
+                                          .map((v) => String(v.value ?? v.name))
+                                          .join(','),
+                                      )
+                                    }
+                                  />
+                                )
+                              }
 
                               const selectedOpt = val
                                 ? { id: val, name: val }
@@ -1803,6 +1875,8 @@ const FormEntriesPage = () => {
 
                               return (
                                 <InputSelect
+                                  creatable
+                                  searchable
                                   options={opts}
                                   value={selectedOpt}
                                   placeholder={
@@ -1811,7 +1885,7 @@ const FormEntriesPage = () => {
                                   onChange={(opt) =>
                                     handleFieldChange(
                                       field.id,
-                                      opt ? opt.id : '',
+                                      opt ? String(opt.value ?? opt.name) : '',
                                     )
                                   }
                                 />
