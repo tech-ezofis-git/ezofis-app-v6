@@ -70,4 +70,9 @@ export interface WorkflowOption {
   name: string
   wFormId: number | string
   formJson?: string // The JSON defining columns/fields
+  // Raw { blocks, rules, settings } object, when available — the real V6
+  // workflow detail response only returns this (no `flowJson` string), so
+  // block-shape checks like isAccountsPayableWorkflow() need this to work
+  // off real data, not just the (often-empty) flowJson string.
+  workflowJson?: any
 }

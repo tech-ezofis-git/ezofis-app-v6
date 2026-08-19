@@ -96,3 +96,41 @@ export const safeParse = (data: any) => {
     return data
   }
 }
+
+// Extract the blocks array from any of the shapes a "workflow" object shows up
+// as in this module: the raw V6 workflow record (`workflowJson.blocks`), the
+// lightweight WorkflowOption used by the requests list (`flowJson` as a JSON
+// string), or an already-parsed flow object (`{ blocks, rules, settings }`).
+const extractBlocks = (workflow: any): any[] => {
+  if (!workflow) return []
+
+  if (Array.isArray(workflow.workflowJson?.blocks)) {
+    return workflow.workflowJson.blocks
+  }
+  if (Array.isArray(workflow.blocks)) {
+    return workflow.blocks
+  }
+
+  const flowJsonInput = workflow.flowJson ?? workflow.workflowJson
+  if (!flowJsonInput) return []
+
+  try {
+    const flow =
+      typeof flowJsonInput === 'string'
+        ? JSON.parse(flowJsonInput)
+        : flowJsonInput
+    if (Array.isArray(flow?.blocks)) return flow.blocks
+  } catch {
+    // ignore
+  }
+  return []
+}
+
+/**
+ * An Accounts Payable workflow is one built with the "Intelligent AP Agent"
+ * step from the workflow builder (block type `AP_AGENT` — see
+ * AddNodeMenu.tsx / StepFour.tsx's applyApAgentSettings). Every other
+ * workflow is treated as a generic, form-driven workflow.
+ */
+export const isAccountsPayableWorkflow = (workflow: any): boolean =>
+  extractBlocks(workflow).some((block: any) => block?.type === 'AP_AGENT')

@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import React, { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Column } from '@/components/base/data-table/types'
@@ -7,9 +8,9 @@ import IconButton from '@/components/base/button/IconButton'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import { motion, AnimatePresence } from 'framer-motion'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
 import {
   buildTableMeta,
@@ -20,10 +21,12 @@ import {
   isTableType,
 } from '@/pages/requests/utils/dynamicTable.utils'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
-import { safeParse } from '@/pages/requests/utils/workflow.utils'
+import {
+  isAccountsPayableWorkflow,
+  safeParse,
+} from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
-import dayjs from 'dayjs'
 import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
 import HoverExpandableText from '../HoverExpandableText'
@@ -824,11 +827,7 @@ const isStandardField = (field: any, label: string) => {
   const type = String(field.type ?? '').toUpperCase()
 
   // Skip file uploads and table controls — not useful as list/filter columns
-  if (
-    type === 'FILE_UPLOAD' ||
-    type === 'DYNAMIC_TABLE' ||
-    type === 'TABLE'
-  ) {
+  if (type === 'FILE_UPLOAD' || type === 'DYNAMIC_TABLE' || type === 'TABLE') {
     return true
   }
 
@@ -920,10 +919,10 @@ const StatusCell = ({
   const parsedForm = getParsedFormData(row)
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-    agentData?.decision ||
-    row.decision ||
-    row.status ||
-    '',
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
   ).toUpperCase()
 
   let iconName = 'tabler:clock'
@@ -1271,11 +1270,12 @@ const getBaseColumns = (
   selectedItem: any,
   activeTab: string | undefined,
   onRowClick: (item: any, tab: string) => void,
+  isAccountsPayable: boolean,
 ): Column[] => {
   const columns: Column[] = [
     {
       id: 'requestNo',
-      label: 'Invoice Number',
+      label: isAccountsPayable ? 'Invoice Number' : 'Request No',
       size: 260,
       renderCell: (row: any, index = 0) => (
         <div className='flex min-w-0 items-center gap-3'>
@@ -1315,6 +1315,38 @@ const getBaseColumns = (
   ]
 
   if (selectedItem) {
+    return columns
+  }
+
+  if (!isAccountsPayable) {
+    columns.push(
+      {
+        id: 'status',
+        label: 'Status',
+        size: 160,
+        renderCell: (row: any) => {
+          const statusText = row?.status || row?.stage || '-'
+          return (
+            <span className='inline-flex items-center gap-1 rounded-md border border-[var(--gray-4)] bg-[var(--gray-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gray-11)]'>
+              {statusText}
+            </span>
+          )
+        },
+      },
+      {
+        id: 'raisedBy',
+        label: 'Raised By',
+        size: 200,
+        renderCell: (row: any) => (
+          <HoverExpandableText
+            className='text-[13px] font-medium text-[var(--gray-11)]'
+            fallbackText='-'
+            normalMaxWidthClass='max-w-[180px]'
+            text={row?.raisedBy || '-'}
+          />
+        ),
+      },
+    )
     return columns
   }
 
@@ -1653,7 +1685,13 @@ export const useDynamicColumns = (
   activeTab?: string,
 ) => {
   return useMemo(() => {
-    const columns = getBaseColumns(selectedItem, activeTab, onRowClick)
+    const isAccountsPayable = isAccountsPayableWorkflow(workflow)
+    const columns = getBaseColumns(
+      selectedItem,
+      activeTab,
+      onRowClick,
+      isAccountsPayable,
+    )
 
     const form = resolveFormJson(workflow)
     if (!form) {
