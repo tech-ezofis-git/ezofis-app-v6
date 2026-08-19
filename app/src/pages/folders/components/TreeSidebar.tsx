@@ -69,19 +69,19 @@ function TreeItem({
   return (
     <div>
       <div
-        style={{ paddingLeft: `${8 + level * 22}px` }}
-        className={`group flex min-h-9 cursor-pointer items-end gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-none transition-all ${
+        style={{ paddingLeft: `${8 + level * 20}px` }}
+        className={`group flex min-h-9 cursor-pointer items-center gap-2 rounded-lg py-1.5 pr-2 text-[13px] font-medium leading-tight transition-all ${
           isActive ? 'bg-blue-2 text-blue-11' : 'text-gray-12 hover:bg-gray-2'
         }`}
         onClick={handleNodeClick}
       >
         {/* Always reserve chevron width so folder icons share one vertical column */}
-        <div className='flex h-4 w-5 shrink-0 items-end justify-center'>
+        <div className='flex h-5 w-5 shrink-0 items-center justify-center'>
           {canExpand ? (
             <button
               title={isExpanded ? t`Collapse` : t`Expand`}
               type='button'
-              className='flex h-4 w-5 items-end justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
+              className='flex h-5 w-5 items-center justify-center rounded-md text-gray-11 transition-all hover:bg-gray-4'
               onClick={handleChevronClick}
             >
               <DynamicIcon
@@ -90,21 +90,21 @@ function TreeItem({
               />
             </button>
           ) : (
-            <span aria-hidden className='h-4 w-5' />
+            <span aria-hidden className='h-5 w-5' />
           )}
         </div>
 
         <DynamicIcon
-          className={`block size-3.5 shrink-0 ${isActive ? 'text-blue-10' : 'text-gray-11'}`}
+          className={`block size-4 shrink-0 ${isActive ? 'text-blue-10' : 'text-gray-11'}`}
           name={node.iconKey || node.title || 'folder'}
         />
 
-        <span className='min-w-0 flex-1 leading-none break-words [overflow-wrap:anywhere] line-clamp-1 transition-all group-hover:line-clamp-none'>
+        <span className='min-w-0 flex-1 leading-tight break-words [overflow-wrap:anywhere] line-clamp-1 transition-all group-hover:line-clamp-none'>
           {node.title}
         </span>
 
         {node.isLoading ? (
-          <span className='h-3 w-3 animate-spin rounded-full border-2 border-gray-5 border-t-gray-10' />
+          <span className='h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-5 border-t-gray-10' />
         ) : null}
       </div>
 

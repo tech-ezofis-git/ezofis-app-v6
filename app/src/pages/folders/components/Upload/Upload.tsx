@@ -12,6 +12,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
@@ -55,6 +56,225 @@ type RepositoryField = {
 }
 
 type ResultTab = 'fields' | 'json'
+
+interface JsonTreeNodeProps {
+  data: unknown
+  name?: string
+  isLast?: boolean
+  defaultExpanded?: boolean
+  level?: number
+}
+
+function JsonTreeNode({
+  data,
+  name,
+  isLast = true,
+  defaultExpanded = true,
+  level = 0,
+}: JsonTreeNodeProps) {
+  const [isCollapsed, setIsCollapsed] = useState(!defaultExpanded)
+
+  useEffect(() => {
+    setIsCollapsed(!defaultExpanded)
+  }, [defaultExpanded])
+
+  if (data === null || data === undefined) {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-6'>
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='italic text-gray-500'>null</span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'boolean') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-6'>
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='font-semibold text-blue-600 dark:text-blue-400'>
+          {String(data)}
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'number') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-6'>
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='font-medium text-amber-600 dark:text-amber-400'>
+          {data}
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'string') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-6 break-all'>
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='text-emerald-700 dark:text-emerald-400'>
+          "{data}"
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  const isArray = Array.isArray(data)
+  const isObject = typeof data === 'object' && data !== null
+  if (!isObject) return null
+
+  const keys = Object.keys(data as Record<string, unknown>)
+  const openBracket = isArray ? '[' : '{'
+  const closeBracket = isArray ? ']' : '}'
+  const itemCount = keys.length
+
+  return (
+    <div className='font-mono text-xs leading-6'>
+      <div className='flex items-center gap-1'>
+        <button
+          type='button'
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className='flex size-4 shrink-0 items-center justify-center rounded text-gray-500 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700'
+        >
+          <Icon
+            name='tabler:chevron-right'
+            className={`size-3.5 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
+          />
+        </button>
+
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+
+        <span className='font-bold text-gray-700 dark:text-gray-300'>
+          {openBracket}
+        </span>
+
+        {isCollapsed ? (
+          <button
+            type='button'
+            onClick={() => setIsCollapsed(false)}
+            className='mx-1 rounded bg-gray-200/80 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300'
+          >
+            {itemCount} {itemCount === 1 ? 'item' : 'items'} ...
+          </button>
+        ) : null}
+
+        {isCollapsed ? (
+          <span className='font-bold text-gray-700 dark:text-gray-300'>
+            {closeBracket}
+            {!isLast && ','}
+          </span>
+        ) : null}
+      </div>
+
+      {!isCollapsed && (
+        <div className='ml-3.5 border-l border-gray-300/80 pl-2.5 dark:border-gray-700/60'>
+          {keys.map((key, index) => {
+            const childData = (data as Record<string, any>)[key]
+            const isChildLast = index === keys.length - 1
+            return (
+              <JsonTreeNode
+                key={key}
+                data={childData}
+                name={isArray ? undefined : key}
+                isLast={isChildLast}
+                defaultExpanded={level < 2}
+                level={level + 1}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      {!isCollapsed && (
+        <div className='pl-4 font-bold text-gray-700 dark:text-gray-300'>
+          {closeBracket}
+          {!isLast && ','}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function InteractiveJsonViewer({
+  data,
+  onCopy,
+}: {
+  data: unknown
+  onCopy: () => void
+}) {
+  const [expandAll, setExpandAll] = useState<boolean>(true)
+  const [expandKey, setExpandKey] = useState<number>(0)
+  const { t } = useLingui()
+
+  const handleToggleExpandAll = () => {
+    setExpandAll((prev) => !prev)
+    setExpandKey((prev) => prev + 1)
+  }
+
+  return (
+    <div className='flex h-full min-h-0 flex-col'>
+      <div className='mb-2 flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] pb-2'>
+        <button
+          type='button'
+          onClick={handleToggleExpandAll}
+          className='flex items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-xs font-semibold text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
+        >
+          <Icon
+            name={expandAll ? 'tabler:fold-up' : 'tabler:fold-down'}
+            className='size-3.5'
+          />
+          <span>{expandAll ? t`Collapse All` : t`Expand All`}</span>
+        </button>
+
+        <Tooltip content={t`Copy JSON`} position='top'>
+          <button
+            aria-label={t`Copy JSON`}
+            className='flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--gray-3)] bg-surface text-[var(--gray-11)] shadow-sm transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
+            type='button'
+            onClick={onCopy}
+          >
+            <Copy size={14} />
+          </button>
+        </Tooltip>
+      </div>
+
+      <div className='ez-scrollbar min-h-0 flex-1 overflow-auto rounded-xl bg-[var(--gray-1)] p-3 text-xs leading-6'>
+        <JsonTreeNode
+          key={expandKey}
+          data={data}
+          defaultExpanded={expandAll}
+          level={0}
+        />
+      </div>
+    </div>
+  )
+}
+
 type UploadProps = {
   folderId: string | number | null
   initialFile?: File | null
@@ -981,6 +1201,13 @@ export default function Upload({
     return true
   }
 
+  const filledFieldsCount = useMemo(() => {
+    return repositoryFields.filter((field) => {
+      const value = fieldValues[getFieldKey(field)]
+      return Boolean(String(value ?? '').trim())
+    }).length
+  }, [repositoryFields, fieldValues])
+
   const uploadFile = async () => {
     if (!fileData) {
       showToast({ message: t`Please select a file first.`, variant: 'error' })
@@ -1087,18 +1314,22 @@ export default function Upload({
       const currentValue = fieldValues[fieldKey]
 
       // Icon if value is from OCR or Master Sync
-      if (repositoryData?.storageDrive?.includes('[') && currentValue) {
+      if (currentValue) {
         if (currentValue === syncValue) {
           elements.push(
-            <div key="master-icon" className="mr-1 flex items-center justify-center text-[var(--indigo-11)]" title="Master Sync Data">
-              <Icon className="size-4" name="lucide:database" />
-            </div>
+            <Tooltip key="master-icon" content={t`Master Sync Data`} position="top">
+              <div className="flex items-center justify-center text-[var(--indigo-11)] transition-colors hover:text-[var(--indigo-9)]">
+                <Icon className="size-4" name="lucide:database" />
+              </div>
+            </Tooltip>
           )
         } else if (currentValue === ocrValue) {
           elements.push(
-            <div key="ocr-icon" className="mr-1 flex items-center justify-center text-[var(--primary-11)]" title="OCR Extracted Data">
-              <Icon className="size-4" name="tabler:scan" />
-            </div>
+            <Tooltip key="ocr-icon" content={t`OCR Extracted Data`} position="top">
+              <div className="flex items-center justify-center text-[var(--primary-11)] transition-colors hover:text-[var(--primary-9)]">
+                <Icon className="size-4" name="tabler:scan" />
+              </div>
+            </Tooltip>
           )
         }
       }
@@ -1106,35 +1337,37 @@ export default function Upload({
       if (matchingSyncName) {
         const isThisFieldSyncing = syncingField === matchingSyncName
         elements.push(
-          <Button
-            key="sync-btn"
-            aria-label={t`Sync`}
-            onClick={() => handleSync(toTextValue(value), matchingSyncName)}
-            disabled={!value || syncingField !== null}
-            className={cn(
-              'mr-1 flex h-[20px] w-[40px] items-center justify-center gap-1',
-              'rounded-[4px] px-1.5',
-              'text-[10px] font-medium uppercase tracking-[0.04em]',
-              'transition-colors',
-              isThisFieldSyncing
-                ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
-                : value
-                  ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
-                  : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
-            )}
-          >
-            {isThisFieldSyncing && (
-              <Icon className='size-2.5 animate-spin' name='tabler:loader' />
-            )}
-            <span className='text-[9px]'> {t`SYNC`}</span>
-          </Button>
+          <Tooltip key="sync-btn-tooltip" content={t`Sync Master Data`} position="top" disabled={!value}>
+            <Button
+              key="sync-btn"
+              aria-label={t`Sync`}
+              onClick={() => handleSync(toTextValue(value), matchingSyncName)}
+              disabled={!value || syncingField !== null}
+              className={cn(
+                'flex h-[20px] w-[40px] items-center justify-center gap-1',
+                'rounded-[4px] px-1.5',
+                'text-[10px] font-medium uppercase tracking-[0.04em]',
+                'transition-colors',
+                isThisFieldSyncing
+                  ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
+                  : value
+                    ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
+                    : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
+              )}
+            >
+              {isThisFieldSyncing && (
+                <Icon className='size-2.5 animate-spin' name='tabler:loader' />
+              )}
+              <span className='text-[9px]'> {t`SYNC`}</span>
+            </Button>
+          </Tooltip>
         )
       }
 
       if (elements.length === 0) return undefined
 
       return (
-        <div className="flex items-center gap-1">
+        <div className="flex w-full items-center justify-end pr-2.5 gap-1.5">
           {elements}
         </div>
       )
@@ -1282,9 +1515,35 @@ export default function Upload({
     )
   }
 
+  const parsedJsonData = useMemo(() => {
+    if (
+      rawOcrJson &&
+      (Array.isArray(rawOcrJson)
+        ? rawOcrJson.length > 0
+        : Object.keys(rawOcrJson).length > 0)
+    ) {
+      return rawOcrJson
+    }
+    const meta = buildMetadata() as Record<string, any>
+    if (meta.ocrJson) {
+      try {
+        return typeof meta.ocrJson === 'string'
+          ? JSON.parse(meta.ocrJson)
+          : meta.ocrJson
+      } catch {
+        return meta.ocrJson
+      }
+    }
+    return meta
+  }, [rawOcrJson, fieldValues, repositoryFields])
+
+  const displayJsonContent = useMemo(() => {
+    return safeJson(parsedJsonData)
+  }, [parsedJsonData])
+
   const copyMetadata = async () => {
-    await navigator.clipboard.writeText(safeJson(buildMetadata()))
-    showToast({ message: t`Metadata copied.`, variant: 'success' })
+    await navigator.clipboard.writeText(displayJsonContent)
+    showToast({ message: t`JSON copied to clipboard.`, variant: 'success' })
   }
 
   if (!fileData) {
@@ -1539,10 +1798,10 @@ export default function Upload({
 
         <div className='grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
           <AnimateSlideUp className='flex h-[560px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-            <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
+            <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
               <div className='flex min-w-0 items-center gap-3'>
-                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
-                  <FileText size={20} />
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
+                  <FileText size={18} />
                 </div>
                 <div className='min-w-0'>
                   <h2 className='text-base font-bold text-[var(--gray-13)]'>
@@ -1557,7 +1816,7 @@ export default function Upload({
 
             <div
               className={[
-                'm-6 min-h-0 flex-1 overflow-hidden rounded-xl border transition-all',
+                'm-4 min-h-0 flex-1 overflow-hidden rounded-xl border transition-all',
                 isDragOver
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)]'
                   : 'border-[var(--gray-4)] bg-[var(--gray-1)]',
@@ -1597,9 +1856,9 @@ export default function Upload({
             className='flex h-[900px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
             delay={0.08}
           >
-            <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
+            <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
               <div className='flex min-w-0 items-center gap-3'>
-                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
                   <Icon className='size-5' name='tabler:code' />
                 </div>
                 <div>
@@ -1609,7 +1868,7 @@ export default function Upload({
                   <p className='text-xs font-medium text-[var(--gray-9)]'>
                     {isAnalyzing
                       ? t`Extracting fields...`
-                      : t`${repositoryFields.length} fields ready`}
+                      : t`${filledFieldsCount} of ${repositoryFields.length} fields ready`}
                   </p>
                 </div>
               </div>
@@ -1642,7 +1901,7 @@ export default function Upload({
               </div>
             </div>
 
-            <div className='relative min-h-0 flex-1 overflow-hidden p-5'>
+            <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
               {isAnalyzing ? (
                 <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface/80 backdrop-blur-[1px]'>
                   <Icon
@@ -1670,7 +1929,7 @@ export default function Upload({
                 return (
                   <div className='flex h-full flex-col'>
                     {syncRepoFields.length > 0 && (
-                      <div className='shrink-0 p-4 pb-2'>
+                      <div className='shrink-0 pb-3'>
                         <div className='grid grid-cols-1 gap-4'>
                           {syncRepoFields.map((field) => (
                             <div
@@ -1684,7 +1943,7 @@ export default function Upload({
                       </div>
                     )}
 
-                    <div className='min-h-0 flex-1 overflow-y-auto p-4 pt-2 pr-2'>
+                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto pr-1.5'>
                       <div className='grid grid-cols-1 gap-4'>
                         {otherRepoFields.map((field) => (
                           <div className='space-y-1.5' key={field.id}>
@@ -1703,18 +1962,10 @@ export default function Upload({
                 )
               })() : (
                 <div className='relative h-full max-h-full'>
-                  <button
-                    aria-label={t`Copy JSON`}
-                    className='absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border border-[var(--gray-3)] bg-surface/95 px-2.5 py-1.5 text-xs font-semibold text-[var(--gray-11)] shadow-sm backdrop-blur-sm hover:bg-[var(--gray-2)]'
-                    type='button'
-                    onClick={copyMetadata}
-                  >
-                    <Copy size={14} />
-                    {t`Copy`}
-                  </button>
-                  <pre className='h-full max-h-full overflow-auto rounded-xl bg-[var(--gray-1)] p-4 pt-12 text-xs leading-6 text-[var(--gray-12)]'>
-                    {safeJson(buildMetadata())}
-                  </pre>
+                  <InteractiveJsonViewer
+                    data={parsedJsonData}
+                    onCopy={copyMetadata}
+                  />
                 </div>
               )}
             </div>
