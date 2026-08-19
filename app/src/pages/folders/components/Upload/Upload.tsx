@@ -490,7 +490,7 @@ export default function Upload({
     setIsSyncing(true)
     setSyncingField(repoFieldName)
     try {
-      const criteriaLabel = masterFormSyncLabels[repoFieldName] || masterFormSyncData.mapping[repoFieldName]
+      const criteriaFieldId = masterFormSyncData.mapping[repoFieldName]
       const payload = {
         sortBy: { criteria: 'createdAt', order: 'DESC' },
         filterBy: [
@@ -498,7 +498,7 @@ export default function Upload({
             groupCondition: '',
             filters: [
               {
-                criteria: criteriaLabel,
+                criteria: criteriaFieldId,
                 condition: 'eq',
                 value: fieldValue,
               },
@@ -999,36 +999,69 @@ export default function Upload({
       }
     )
 
-    const renderSyncButton = () => {
-      if (!matchingSyncName) return undefined
-      const isThisFieldSyncing = syncingField === matchingSyncName
+    const renderRightSection = () => {
+      const elements = []
+
+      const ocrValue = ocrExtractedValues[fieldKey]
+      const syncValue = masterSyncedValues[fieldKey]
+      const currentValue = fieldValues[fieldKey]
+
+      // Icon if value is from OCR or Master Sync
+      if (repositoryData?.storageDrive?.includes('[') && currentValue) {
+        if (currentValue === syncValue) {
+          elements.push(
+            <div key="master-icon" className="mr-1 flex items-center justify-center text-[var(--indigo-11)]" title="Master Sync Data">
+              <Icon className="size-4" name="lucide:database" />
+            </div>
+          )
+        } else if (currentValue === ocrValue) {
+          elements.push(
+            <div key="ocr-icon" className="mr-1 flex items-center justify-center text-[var(--primary-11)]" title="OCR Extracted Data">
+              <Icon className="size-4" name="tabler:scan" />
+            </div>
+          )
+        }
+      }
+
+      if (matchingSyncName) {
+        const isThisFieldSyncing = syncingField === matchingSyncName
+        elements.push(
+          <Button
+            key="sync-btn"
+            aria-label={t`Sync`}
+            onClick={() => handleSync(toTextValue(value), matchingSyncName)}
+            disabled={!value || syncingField !== null}
+            className={cn(
+              'mr-1 flex h-[20px] w-[40px] items-center justify-center gap-1',
+              'rounded-[4px] px-1.5',
+              'text-[10px] font-medium uppercase tracking-[0.04em]',
+              'transition-colors',
+              isThisFieldSyncing
+                ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
+                : value
+                  ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
+                  : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
+            )}
+          >
+            {isThisFieldSyncing && (
+              <Icon className='size-2.5 animate-spin' name='tabler:loader' />
+            )}
+            <span className='text-[9px]'> {t`SYNC`}</span>
+          </Button>
+        )
+      }
+
+      if (elements.length === 0) return undefined
+
       return (
-        <Button
-          aria-label={t`Sync`}
-          onClick={() => handleSync(toTextValue(value), matchingSyncName)}
-          disabled={!value || syncingField !== null}
-          className={cn(
-            'mr-1 flex h-[20px] w-[40px] items-center justify-center gap-1',
-            'rounded-[4px] px-1.5',
-            'text-[10px] font-medium uppercase tracking-[0.04em]',
-            'transition-colors',
-            isThisFieldSyncing
-              ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
-              : value
-                ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
-                : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
-          )}
-        >
-          {isThisFieldSyncing && (
-            <Icon className='size-2.5 animate-spin' name='tabler:loader' />
-          )}
-          <span className='text-[9px]'> {t`SYNC`}</span>
-        </Button>
+        <div className="flex items-center gap-1">
+          {elements}
+        </div>
       )
     }
 
     const fieldClassName = cn('w-full', isSyncField &&
-      '[&_input]:bg-[var(--primary-1)] [&_button]:bg-[var(--surface)] [&_textarea]:bg-[var(--primary-1)]')
+      '[&_input]:bg-[var(--gray-1)] [&_input]:border-[var(--gray-4)] [&_button]:bg-[var(--surface)] [&_textarea]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)]')
 
     const renderSuggestionCapsule = () => {
       const ocrValue = ocrExtractedValues[fieldKey]
@@ -1077,9 +1110,9 @@ export default function Upload({
             updateFieldValue(field, nextValue || '')
           }
           // @ts-ignore
-          rightSection={renderSyncButton()}
+          rightSection={renderRightSection()}
           // @ts-ignore
-          rightSectionWidth={64}
+          rightSectionWidth={90}
           rightSectionPointerEvents='auto'
           {...focusProps}
         />
@@ -1104,9 +1137,9 @@ export default function Upload({
             )
           }
           // @ts-ignore
-          rightSection={renderSyncButton()}
+          rightSection={renderRightSection()}
           // @ts-ignore
-          rightSectionWidth={64}
+          rightSectionWidth={90}
           rightSectionPointerEvents='auto'
           {...focusProps}
         />
@@ -1127,9 +1160,9 @@ export default function Upload({
           value={toTextValue(value)}
           onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
           // @ts-ignore
-          rightSection={renderSyncButton()}
+          rightSection={renderRightSection()}
           // @ts-ignore
-          rightSectionWidth={64}
+          rightSectionWidth={90}
           rightSectionPointerEvents='auto'
           {...focusProps}
         />
@@ -1153,8 +1186,8 @@ export default function Upload({
               : 'text'
           }
           onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
-          rightSection={renderSyncButton()}
-          rightSectionWidth={64}
+          rightSection={renderRightSection()}
+          rightSectionWidth={90}
           rightSectionPointerEvents='auto'
           {...focusProps}
         />
@@ -1561,7 +1594,7 @@ export default function Upload({
                         <div className='grid grid-cols-1 gap-4'>
                           {syncRepoFields.map((field) => (
                             <div
-                              className='space-y-1.5 rounded-[5px] bg-[var(--gray-2)] p-[5px]'
+                              className='space-y-1.5 rounded-[5px] bg-[var(--gray-2)] p-[5px] border border-gray-4'
                               key={field.id}
                             >
                               {renderFieldControl(field, true)}
