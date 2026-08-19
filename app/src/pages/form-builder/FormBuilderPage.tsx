@@ -10,27 +10,39 @@ import { useFormStore } from './store/formStore'
 const FormBuilderPage = () => {
   const { formId } = useParams({ strict: false }) as any
   const { loadForm, resetForm } = useFormStore()
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
+
     const fetchForm = async () => {
-      if (formId) {
-        setIsLoading(true)
-        try {
-          const { data, error } = await formApi.getFormDataById(formId)
-          if (data && !error) {
-            loadForm(data)
-          }
-        } catch (err) {
-          console.error('Failed to fetch form:', err)
-        } finally {
-          setIsLoading(false)
+      if (!formId) {
+        // No formId: the caller (e.g. FormsPage's "New Form"/AI builder flow)
+        // is responsible for resetting or pre-loading the store before
+        // navigating here, so just render whatever is already in it.
+        setIsLoading(false)
+        return
+      }
+      setIsLoading(true)
+      resetForm()
+      try {
+        const { data, error } = await formApi.getFormDataById(formId)
+        if (!cancelled && data && !error) {
+          loadForm(data)
         }
+      } catch (err) {
+        console.error('Failed to fetch form:', err)
+      } finally {
+        if (!cancelled) setIsLoading(false)
       }
     }
 
     fetchForm()
-  }, [formId, loadForm])
+
+    return () => {
+      cancelled = true
+    }
+  }, [formId, loadForm, resetForm])
 
   if (isLoading) {
     return <FormBuilderSkeleton />
