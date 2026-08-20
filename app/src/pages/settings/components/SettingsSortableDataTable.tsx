@@ -48,6 +48,7 @@ type SettingsSortableDataTableProps<TData> = {
     rows: TData[],
   ) => boolean
   disabled?: boolean | ((row: TData) => boolean)
+  renderSubComponent?: (row: TData) => React.ReactNode
 }
 
 export default function SettingsSortableDataTable<TData>({
@@ -62,6 +63,7 @@ export default function SettingsSortableDataTable<TData>({
   onRowMouseLeave,
   onValidateReorder,
   disabled,
+  renderSubComponent,
 }: SettingsSortableDataTableProps<TData>) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -188,6 +190,7 @@ export default function SettingsSortableDataTable<TData>({
                       onRowMouseEnter={onRowMouseEnter}
                       onRowMouseLeave={onRowMouseLeave}
                       disabled={isDragDisabled}
+                      renderSubComponent={renderSubComponent}
                     />
                   )
                 })}
@@ -211,6 +214,7 @@ function SortableDataRow<TData>({
   onRowMouseEnter,
   onRowMouseLeave,
   disabled,
+  renderSubComponent,
 }: {
   dragColumnId: string
   row: Row<TData>
@@ -222,6 +226,7 @@ function SortableDataRow<TData>({
   onRowMouseEnter?: (rowId: string) => void
   onRowMouseLeave?: () => void
   disabled?: boolean
+  renderSubComponent?: (row: TData) => React.ReactNode
 }) {
   const {
     attributes,
@@ -234,8 +239,9 @@ function SortableDataRow<TData>({
   } = useSortable({ id: row.id, disabled })
 
   return (
-    <tr
-      ref={setNodeRef}
+    <>
+      <tr
+        ref={setNodeRef}
       className={cn(
         'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] focus-within:z-40 hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
         rowClassName,
@@ -282,6 +288,8 @@ function SortableDataRow<TData>({
           )}
         </Td>
       ))}
-    </tr>
+      </tr>
+      {renderSubComponent?.(row.original)}
+    </>
   )
 }

@@ -56,6 +56,7 @@ export interface SelectProps extends InputProps {
   dropdownFooter?: ReactNode
   iconOnly?: boolean
   leftSection?: ReactNode
+  loading?: boolean
   position?: ComboboxProps['position']
   rightSectionIcon?: string
   searchable?: boolean

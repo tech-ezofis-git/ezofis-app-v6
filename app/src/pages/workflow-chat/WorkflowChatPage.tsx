@@ -430,10 +430,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       } else if (initialAction === 'Show my pending requests') {
         setMessages([
           {
-            htmlContent: `You have 2 active requests:<br><br>
-            <strong>WF-2026-001245</strong> - Vendor Registration - <span style="color:#8300E6; font-weight:600;">Pending Approval</span><br>
-            <strong>WF-2026-001231</strong> - Accounts Payable - <span style="color:#8300E6; font-weight:600;">Action Required</span>`,
-            id: `msg-${Date.now()}-pending`,
+            htmlContent: `Hi <span class="text-primary-9 font-semibold">${userName}</span> 👋 I'm your Workflow Assistant. Which workflow would you like to see the pending requests for?`,
+            id: 'msg-init-pending-choices',
+            pills: workflowsList.map((w) => w.name),
             sender: 'assistant',
           },
         ])
@@ -458,7 +457,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     if (workflowsList.length > 0) {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === 'msg-init-choices' && (!msg.pills || msg.pills.length === 0)
+          (msg.id === 'msg-init-choices' || msg.id === 'msg-init-pending-choices') && (!msg.pills || msg.pills.length === 0)
             ? { ...msg, pills: workflowsList.map((w) => w.name) }
             : msg
         )
@@ -1738,7 +1737,24 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       setMessages((prev) => [
         ...prev,
         {
-          htmlContent: `You have 2 active requests:<br><br>
+          htmlContent: `Which workflow would you like to see the pending requests for?`,
+          id: `msg-${Date.now()}-pending-choices`,
+          pills: workflowsList.map((w) => w.name),
+          sender: 'assistant',
+        },
+      ])
+      return
+    }
+
+    if (msgId === 'msg-init-pending-choices' || msgId.includes('-pending-choices')) {
+      const matchedWf = workflowsList.find(
+        (w) => w.name === label || label.includes(w.name),
+      )
+      
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent: `You have 2 active requests for <strong>${matchedWf ? matchedWf.name : label}</strong>:<br><br>
             <strong>WF-2026-001245</strong> — Vendor Registration — <span style="color:#8300E6; font-weight:600;">Pending Approval</span><br>
             <strong>WF-2026-001231</strong> — Accounts Payable — <span style="color:#8300E6; font-weight:600;">Action Required</span>`,
           id: `msg-${Date.now()}-pending`,

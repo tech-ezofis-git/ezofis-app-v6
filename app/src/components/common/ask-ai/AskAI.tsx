@@ -58,6 +58,7 @@ import {
 } from './chatbotApi'
 import useAskAiActionStore from './stores/useAskAiActionStore'
 import useAskAIStore from './stores/useAskAIStore'
+import authUserStore from '@/stores/authUserStore'
 import type {
   AskAiAnswer,
   AskAiActionContext,
@@ -457,6 +458,7 @@ const StaggeredCards = ({
 }
 
 const AskAI = () => {
+  const session = authUserStore((state: any) => state.session)
   const isOpen = useAskAIStore((state: any) => state.isOpen)
   const isMaximized = useAskAIStore((state: any) => state.isMaximized)
   const toggleMaximize = useAskAIStore((state: any) => state.toggleMaximize)
@@ -643,6 +645,20 @@ const AskAI = () => {
       setInitialWorkflowAction(text)
       setIsWorkflowMode(true)
       setInput('')
+      setView('chat')
+      return
+    }
+
+    if (lowerText === 'find open purchase requests pending approval') {
+      setInput('')
+      const userName = session?.firstName || session?.name || 'there'
+      setMessages([
+        {
+          id: uid(),
+          role: 'ai',
+          text: `Hi ${userName} 👋, kindly chat with me for the Files,workflow,Folders,etc. results.`,
+        }
+      ])
       setView('chat')
       return
     }
