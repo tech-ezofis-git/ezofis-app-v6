@@ -1,4 +1,5 @@
 using Hangfire;
+using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -205,7 +206,7 @@ if (hangfireEnabled)
 
     if (builder.Configuration.GetValue<bool?>("Hangfire:RunServerInApi") ?? true)
     {
-        // API host: keep workers low — each job holds SQL + HTTP to Python (minutes). High WorkerCount
+        // API host: keep workers low â€” each job holds SQL + HTTP to Python (minutes). High WorkerCount
         // starves IIS/Kestrel threads and makes every API call feel slow.
         var apiWorkers = builder.Configuration.GetValue<int?>("Hangfire:ApiWorkerCount")
             ?? builder.Configuration.GetValue<int?>("Hangfire:WorkerCount")
@@ -228,7 +229,7 @@ else
     Log.Warning("Hangfire is disabled because ConnectionStrings:DefaultConnection is missing.");
 }
 
-// API controllers — keep default numeric enum serialization (workflow status = 1, not "active").
+// API controllers â€” keep default numeric enum serialization (workflow status = 1, not "active").
 // String enums (e.g. AP dashboard period) use [JsonConverter] on those types only.
 builder.Services.AddControllers();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
@@ -334,7 +335,13 @@ app.MapHealthChecks("/health");
 // Hangfire dashboard (protect in production with auth)
 if (hangfireEnabled)
 {
-    app.MapHangfireDashboard("/hangfire");
+    // Default Hangfire auth is localhost-only; that blocks the dashboard
+    // behind Azure nginx. Same public model as /swagger for now.
+    app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = Array.Empty<IDashboardAuthorizationFilter>(),
+        IgnoreAntiforgeryToken = true
+    });
 
     var emailIngestHangfire = app.Configuration.GetValue("EmailIngest:HangfireEnabled", true);
     if (emailIngestHangfire)
