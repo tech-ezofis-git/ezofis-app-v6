@@ -46,10 +46,22 @@ function flattenRows(groups: any[]): any[] {
   return out
 }
 
+const SESSION_KEY = 'ezofis_requests_page_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 const RequestsPage = () => {
   const { t } = useLingui()
-  const [activeTab, setActiveTab] = useState<string>('Inbox')
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid')
+  const storedState = useMemo(() => getStoredState(), [])
+  const [activeTab, setActiveTab] = useState<string>(storedState?.activeTab ?? 'Inbox')
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>(storedState?.viewMode ?? 'grid')
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [workflowLoadStatus, setWorkflowLoadStatus] =
@@ -58,8 +70,8 @@ const RequestsPage = () => {
   const [workflow, setWorkflow] = useState<Option | null>(null)
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] =
-    useState<WorkflowOption | null>(null)
-  const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>([])
+    useState<WorkflowOption | null>(requestStore.getState().selectedWorkflow)
+  const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>(storedState?.filterClauses ?? [])
 
   const {
     clearPendingDeepLink,
@@ -88,9 +100,20 @@ const RequestsPage = () => {
 
   const navigate = useNavigate()
 
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(100)
-  const [groupBy, setGroupBy] = useState<string[]>([])
+  const [page, setPage] = useState(storedState?.page ?? 1)
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 100)
+  const [groupBy, setGroupBy] = useState<string[]>(storedState?.groupBy ?? [])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ activeTab, viewMode, filterClauses, page, pageSize, groupBy }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [activeTab, viewMode, filterClauses, page, pageSize, groupBy])
 
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' and 'filterClauses' to the hook so it knows which API to call

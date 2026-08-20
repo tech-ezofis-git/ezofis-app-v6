@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { motion } from 'motion/react'
 import Button from '@/components/base/button/Button'
@@ -56,6 +56,17 @@ const FIELD_TYPE_OPTIONS = [
   { label: 'Divider', value: 'DIVIDER' },
 ]
 
+const SESSION_KEY = 'ezofis_aiformbuilder_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 export default function AiFormBuilder({
   onBack,
   onApply,
@@ -63,7 +74,9 @@ export default function AiFormBuilder({
 }: AiFormBuilderProps) {
   const { t } = useLingui()
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const storedState = useMemo(() => getStoredState(), [])
+
+  const [messages, setMessages] = useState<ChatMessage[]>(storedState?.messages ?? [
     {
       chips: [
         { icon: 'lucide:git-pull-request', label: t`Workflow Form`, value: 'WORKFLOW' },
@@ -76,16 +89,33 @@ export default function AiFormBuilder({
     },
   ])
 
-  const [selectedType, setSelectedType] = useState<FormTypeOption>('WORKFLOW')
-  const [isTypeSelected, setIsTypeSelected] = useState(false)
-  const [formName, setFormName] = useState('')
-  const [description, setDescription] = useState('')
-  const [chatInput, setChatInput] = useState('')
+  const [selectedType, setSelectedType] = useState<FormTypeOption>(storedState?.selectedType ?? 'WORKFLOW')
+  const [isTypeSelected, setIsTypeSelected] = useState(storedState?.isTypeSelected ?? false)
+  const [formName, setFormName] = useState(storedState?.formName ?? '')
+  const [description, setDescription] = useState(storedState?.description ?? '')
+  const [chatInput, setChatInput] = useState(storedState?.chatInput ?? '')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isThinking, setIsThinking] = useState(false)
-  const [suggestion, setSuggestion] = useState<AiFormConfigSuggestion | null>(
-    null,
-  )
+  const [suggestion, setSuggestion] = useState<AiFormConfigSuggestion | null>(storedState?.suggestion ?? null)
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          messages,
+          selectedType,
+          isTypeSelected,
+          formName,
+          description,
+          chatInput,
+          suggestion,
+        })
+      )
+    } catch {
+      // ignore
+    }
+  }, [messages, selectedType, isTypeSelected, formName, description, chatInput, suggestion])
 
   const chatEndRef = useRef<HTMLDivElement>(null)
 
