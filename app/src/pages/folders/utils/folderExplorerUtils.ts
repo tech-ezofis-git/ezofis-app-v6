@@ -23,7 +23,7 @@ export function formatFolderModifiedDate(value?: string | null) {
   const parsed = dayjs(cleaned)
   if (!parsed.isValid()) return raw
 
-  return parsed.format('DD-MM-YYYY')
+  return parsed.format('DD-MMM-YYYY')
 }
 
 export type FolderFilterOption = { label: string; value: string }

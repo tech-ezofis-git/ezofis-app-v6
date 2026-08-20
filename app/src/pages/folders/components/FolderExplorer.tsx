@@ -261,12 +261,11 @@ export function FolderExplorer() {
       }
 
       if (key === 'folders-root') {
-        const root = tree.find((node) => !node.isStatic) || tree[0]
-        if (root) {
-          if (appView === 'Upload') selectFolder(root.id)
-          else void openFolder(root.id)
-        } else if (appView === 'Upload') {
+        if (appView === 'Upload') {
+          selectFolder('')
           setAppView('explorer')
+        } else {
+          void openFolder('')
         }
         return
       }
@@ -285,6 +284,7 @@ export function FolderExplorer() {
 
     const items: SettingsBreadcrumbItem[] = [
       {
+        key: 'folders-root',
         label: t`Folders`,
       },
       ...pathItems,
@@ -439,6 +439,19 @@ export function FolderExplorer() {
     return <StartWorkflowView onBack={() => setAppView('details')} />
   }
 
+  const displayFolders = activeFolder
+    ? folders
+    : (repositoryNodes.map((node) => ({
+        iconKey: node.iconKey || 'folder',
+        id: node.id,
+        itemsText: node.fileCount !== undefined ? String(node.fileCount) : '-',
+        modifiedText: node.createdAtUtc || '-',
+        createdByName: node.createdByName || '-',
+        title: node.title,
+      })) as any[])
+
+  const displayFiles = activeFolder ? files : []
+
   if (viewMode === 'list') {
     return (
       <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-sm text-gray-11'>
@@ -450,11 +463,11 @@ export function FolderExplorer() {
           fileColumns={fileColumns}
           fileFilters={fileFilters}
           filePage={filePage}
-          files={files}
+          files={displayFiles}
           filterOptionsCache={filterOptionsCache}
           folderContextFilters={folderContextFilters}
           folderFilterOptionSource={folderFilterOptionSource}
-          folders={folders}
+          folders={displayFolders}
           itemFilterFields={itemFilterFields}
           loading={loading}
           loadingPage={loadingPage}
@@ -472,13 +485,19 @@ export function FolderExplorer() {
             if (id) beginFilterDefer()
             else commitFilterDefer()
           }}
-          onFiltersChange={setFileFilters}
+          onFiltersChange={(filters) => {
+            setFileFilters(filters)
+            setFolderFilters(filters)
+          }}
           onOpenFile={openDetailsFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
           onRefresh={handleRefresh}
           onRepositoryChange={openFolder}
-          onSearchChange={setFileSearch}
+          onSearchChange={(value) => {
+            setFileSearch(value)
+            setFolderSearch(value)
+          }}
           onShare={openShareForFile}
           onUpload={handleUpload}
           onUploadFile={handleUploadFile}
@@ -501,7 +520,7 @@ export function FolderExplorer() {
         folderContextFilters={folderContextFilters}
         folderFilterOptionSource={folderFilterOptionSource}
         folderFilters={folderFilters}
-        folders={folders}
+        folders={displayFolders}
         folderSearch={folderSearch}
         itemFilterFields={itemFilterFields}
         loading={loading}
@@ -538,14 +557,15 @@ export function FolderExplorer() {
               fileColumns={fileColumns}
               fileFilters={fileFilters}
               filePage={filePage}
-              files={files}
+              files={displayFiles}
               fileSearch={fileSearch}
               folderContextFilters={folderContextFilters}
               folderFilters={folderFilters}
-              folderHasMore={folderHasMore}
-              folders={folders}
+              folderHasMore={activeFolder ? folderHasMore : false}
+              folders={displayFolders}
               folderSearch={folderSearch}
-              folderTotalCount={folderPage?.totalCount}
+              folderTotalCount={activeFolder ? folderPage?.totalCount : displayFolders.length}
+              hideFolderActions={!activeFolder}
               loading={loading}
               loadingFolders={loadingFolders}
               loadingPage={loadingPage}

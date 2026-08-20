@@ -63,6 +63,8 @@ type FolderRow = {
 
   name: string
 
+  createdBy: string
+
   raw: FolderItem
 }
 
@@ -259,6 +261,8 @@ export default function FolderTableDataTableSplit({
 
   folderTotalCount,
 
+  hideFolderActions = false,
+
   loading = false,
 
   loadingFolders = false,
@@ -431,6 +435,7 @@ export default function FolderTableDataTableSplit({
             folderSearch={folderSearch}
             hasFiles={filesHave}
             hasMoreFolders={hasMoreFolders}
+            hideFolderActions={hideFolderActions}
             isExpanded={splitViewMode === 'folders-only' || !canResizeSplit}
             isSplitView={canResizeSplit && isSplitView}
             loading={loading}
@@ -439,6 +444,7 @@ export default function FolderTableDataTableSplit({
             onLoadMoreFolders={onLoadMoreFolders}
             onOpenFolder={onOpenFolder}
             onReload={onReload}
+            rowSize={hideFolderActions ? 'default' : 'compact'}
           />
         ) : null}
 
@@ -930,7 +936,7 @@ function FileDataTableSection({
   )
 }
 
-function FolderDataTableSection({
+export function FolderDataTableSection({
   folderBodyMaxHeight,
   folders,
   folderFilters = {},
@@ -939,6 +945,8 @@ function FolderDataTableSection({
   hasFiles,
 
   hasMoreFolders,
+
+  hideFolderActions = false,
 
   isExpanded = false,
 
@@ -955,6 +963,8 @@ function FolderDataTableSection({
   onOpenFolder,
 
   onReload,
+
+  rowSize = 'compact',
 }: {
   folderBodyMaxHeight?: string
   effectiveFolderTotal: number
@@ -966,6 +976,8 @@ function FolderDataTableSection({
   hasFiles: boolean
 
   hasMoreFolders: boolean
+
+  hideFolderActions?: boolean
 
   isExpanded?: boolean
 
@@ -982,6 +994,8 @@ function FolderDataTableSection({
   onOpenFolder: (id: string) => void
 
   onReload?: () => void
+
+  rowSize?: 'compact' | 'comfortable' | 'default'
 }) {
   const { t } = useLingui()
   const folderScrollRef = useRef<HTMLDivElement | null>(null)
@@ -1005,6 +1019,8 @@ function FolderDataTableSection({
         modified: formatFolderModifiedDate(folder.modifiedText),
 
         name: folder.title,
+
+        createdBy: folder.createdByName || '-',
 
         raw: folder,
       })),
@@ -1100,60 +1116,76 @@ function FolderDataTableSection({
         ),
       }),
 
-      folderColumnHelper.display({
-        enableResizing: false,
-        enableSorting: false,
-        header: '',
-        id: 'actions',
-        maxSize: 72,
+      folderColumnHelper.accessor('createdBy', {
+        header: () => <EllipsisText lines={1} value={t`Created By Name`} />,
+        id: 'createdBy',
+        maxSize: 180,
         meta: EXPLORER_CELL_META,
-        minSize: 56,
-        size: 64,
-
-        cell: ({ row }) => {
-          const folderId = row.original.id
-
-          return (
-            <div
-              className='flex items-center justify-end'
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Menu
-                position='bottom-end'
-                withinPortal
-                width={200}
-                target={
-                  <button
-                    className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
-                    disabled={loadingFolders}
-                    type='button'
-                  >
-                    <DynamicIcon className='h-4 w-4' name='more' />
-                  </button>
-                }
-              >
-                <MenuItem
-                  icon='lucide:folder'
-                  label={t`Open`}
-                  onClick={() => onOpenFolder(folderId)}
-                />
-                <MenuItem icon='lucide:pencil' label={t`Rename`} />
-                <MenuItem icon='lucide:share-2' label={t`Share`} />
-                <MenuDivider />
-                <MenuItem
-                  className='text-red-9'
-                  icon='lucide:trash-2'
-                  iconClass='text-red-9'
-                  label={t`Delete`}
-                />
-              </Menu>
-            </div>
-          )
-        },
+        minSize: 130,
+        size: 150,
+        cell: ({ getValue }) => (
+          <ExplorerValue value={String(getValue() || '-')} />
+        ),
       }),
+
+      ...(hideFolderActions
+        ? []
+        : [
+            folderColumnHelper.display({
+              enableResizing: false,
+              enableSorting: false,
+              header: '',
+              id: 'actions',
+              maxSize: 72,
+              meta: EXPLORER_CELL_META,
+              minSize: 56,
+              size: 64,
+
+              cell: ({ row }) => {
+                const folderId = row.original.id
+
+                return (
+                  <div
+                    className='flex items-center justify-end'
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <Menu
+                      position='bottom-end'
+                      withinPortal
+                      width={200}
+                      target={
+                        <button
+                          className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
+                          disabled={loadingFolders}
+                          type='button'
+                        >
+                          <DynamicIcon className='h-4 w-4' name='more' />
+                        </button>
+                      }
+                    >
+                      <MenuItem
+                        icon='lucide:folder'
+                        label={t`Open`}
+                        onClick={() => onOpenFolder(folderId)}
+                      />
+                      <MenuItem icon='lucide:pencil' label={t`Rename`} />
+                      <MenuItem icon='lucide:share-2' label={t`Share`} />
+                      <MenuDivider />
+                      <MenuItem
+                        className='text-red-9'
+                        icon='lucide:trash-2'
+                        iconClass='text-red-9'
+                        label={t`Delete`}
+                      />
+                    </Menu>
+                  </div>
+                )
+              },
+            }),
+          ]),
     ],
 
-    [loadingFolders, loadingPage, onOpenFolder, t],
+    [hideFolderActions, loadingFolders, loadingPage, onOpenFolder, t],
   )
 
   const folderTable = useReactTable({
@@ -1195,7 +1227,7 @@ function FolderDataTableSection({
         isLoadingMore={loadingFolders}
         isReLoading={loadingFolders && folders.length > 0}
         pageSize={Math.max(5, folders.length || 5)}
-        rowSize='compact'
+        rowSize={rowSize || 'compact'}
         table={folderTable}
         tableBodyMaxHeight={resolvedFolderBodyMaxHeight}
         hideGrouping

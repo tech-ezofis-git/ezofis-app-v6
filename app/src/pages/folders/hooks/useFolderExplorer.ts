@@ -42,18 +42,31 @@ import { matchesSearchText } from '../components/FolderFilterBar'
 import useEmbedMode from '@/hooks/useEmbedMode'
 import { resolveShareContext } from '../utils/shareContextStorage'
 
+const SESSION_STORAGE_KEY = 'ezofis_folder_explorer_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>
 
 export function useFolderExplorer() {
   const embedMode = useEmbedMode()
+  const storedState = useMemo(() => getStoredState(), [])
+  
   const [tree, setTree] = useState<TreeNode[]>([])
-  const [activeFolder, setActiveFolder] = useState('')
+  const [activeFolder, setActiveFolder] = useState(storedState?.activeFolder ?? '')
   const [selectedRepository, setSelectedRepository] =
     useState<RepositoryDetail | null>(null)
   const [viewMode, setViewModeState] = useState<ExplorerView>(
-    embedMode.viewMode || 'grid',
+    (embedMode.isEmbed ? embedMode.viewMode : undefined) || storedState?.viewMode || 'grid',
   )
-  const [appView, setAppView] = useState<AppView>('explorer')
+  const [appView, setAppView] = useState<AppView>(storedState?.appView ?? 'explorer')
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([])
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [files, setFiles] = useState<FileItem[]>([])
@@ -63,21 +76,21 @@ export function useFolderExplorer() {
   >([])
   const [filePage, setFilePage] = useState<RepositoryFilePage | undefined>()
   const [folderPage, setFolderPage] = useState<FolderPageMeta | undefined>()
-  const [selectedFile, setSelectedFile] = useState('')
-  const [expandedIds, setExpandedIds] = useState<string[]>([])
+  const [selectedFile, setSelectedFile] = useState(storedState?.selectedFile ?? '')
+  const [expandedIds, setExpandedIds] = useState<string[]>(storedState?.expandedIds ?? [])
   const [loading, setLoading] = useState(false)
   const [loadingPage, setLoadingPage] = useState(false)
   const [loadingFolders, setLoadingFolders] = useState(false)
   const [treeLoadingId, setTreeLoadingId] = useState<string | null>(null)
   const [error, setError] = useState('')
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  const [folderSearch, setFolderSearch] = useState('')
-  const [fileSearch, setFileSearch] = useState('')
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? DEFAULT_PAGE_SIZE)
+  const [folderSearch, setFolderSearch] = useState(storedState?.folderSearch ?? '')
+  const [fileSearch, setFileSearch] = useState(storedState?.fileSearch ?? '')
   const [fileFilters, setFileFiltersState] = useState<Record<string, string>>(
-    embedMode.filters || {},
+    (embedMode.isEmbed ? embedMode.filters : undefined) || storedState?.fileFilters || {},
   )
 
-  const [folderFilters, setFolderFiltersState] = useState<Record<string, string>>({})
+  const [folderFilters, setFolderFiltersState] = useState<Record<string, string>>(storedState?.folderFilters || {})
   const [folderFilterOptionSource, setFolderFilterOptionSource] = useState<
     FolderItem[]
   >([])
@@ -102,7 +115,10 @@ export function useFolderExplorer() {
   const lastExecutedSearchRef = useRef({ folderSearch: '', fileSearch: '' })
   const deferFilterApiRef = useRef(false)
   const deferFilterSnapshotRef = useRef('')
+  const treeRef = useRef(tree)
+  const lastDeepFolderRef = useRef<string | null>(null)
 
+  treeRef.current = tree
   pageSizeRef.current = pageSize
   fileFiltersRef.current = fileFilters
   folderFiltersRef.current = folderFilters
@@ -152,6 +168,39 @@ export function useFolderExplorer() {
         : incomingFolders,
     )
   }
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_STORAGE_KEY,
+        JSON.stringify({
+          activeFolder,
+          appView,
+          selectedFile,
+          viewMode,
+          expandedIds,
+          folderSearch,
+          fileSearch,
+          folderFilters,
+          fileFilters,
+          pageSize,
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [
+    activeFolder,
+    appView,
+    selectedFile,
+    viewMode,
+    expandedIds,
+    folderSearch,
+    fileSearch,
+    folderFilters,
+    fileFilters,
+    pageSize,
+  ])
 
   const syncFilterOptionsCache = ({
     columns = [],
@@ -518,7 +567,7 @@ export function useFolderExplorer() {
 
         const firstRepository =
           response.find((node) => !node.isStatic) || response[0]
-        if (firstRepository) {
+        if (!storedState && firstRepository) {
           setActiveFolder(firstRepository.id)
           setExpandedIds([firstRepository.id])
           cursorByFolderRef.current[firstRepository.id] = { 1: null }
@@ -538,45 +587,129 @@ export function useFolderExplorer() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!tree.length || !breadcrumbs.length) return
+
+    let mounted = true
+    const loadMissingTreePath = async () => {
+      for (const crumb of breadcrumbs) {
+        if (!crumb.id || !mounted) continue
+
+        const node = findNodeById(treeRef.current, crumb.id)
+        if (node && (node.isLoaded || node.isLoading)) continue
+
+        setTree((prev) =>
+          updateTreeNode(prev, crumb.id, (n) => ({ ...n, isLoading: true })),
+        )
+
+        try {
+          const response = await folderApi.getFolderChildren(crumb.id, {
+            page: 1,
+            pageSize: DEFAULT_FOLDER_PAGE_SIZE,
+          })
+          if (!mounted) return
+          setTree((prev) => syncTreeChildren(prev, crumb.id, response.folders))
+        } catch {
+          if (!mounted) return
+          setTree((prev) =>
+            updateTreeNode(prev, crumb.id, (n) => ({ ...n, isLoading: false })),
+          )
+          break
+        }
+      }
+    }
+
+    loadMissingTreePath()
+
+    return () => {
+      mounted = false
+    }
+  }, [breadcrumbs, tree.length])
+
   const initialUrlFiltersAppliedRef = useRef(false)
+  const isInitialMountRef = useRef(true)
+  const prevActiveFolderRef = useRef(activeFolder)
+  const isViewChangingRef = useRef(false)
 
   useEffect(() => {
     if (!activeFolder) return
+    
+    const isInitialMount = isInitialMountRef.current
+    if (isInitialMount) {
+      isInitialMountRef.current = false
+    }
+
+    const isViewChanging = isViewChangingRef.current
+    if (isViewChanging) {
+      isViewChangingRef.current = false
+    }
+
+    const folderChanged = prevActiveFolderRef.current !== activeFolder
+    prevActiveFolderRef.current = activeFolder
+
+    let nextFileFilters: Record<string, string> = {}
+    let nextFolderFilters: Record<string, string> = {}
+    let nextFolderSearch = ''
+    let nextFileSearch = ''
+    let filtersStateUpdated = false
+
+    if (folderChanged && !isInitialMount && !isViewChanging) {
+      setFolderSearch('')
+      setFileSearch('')
+      setFolderFilters({})
+      setFileFilters({})
+      setFolderFilterOptionSource([])
+      setFilterOptionsCache({})
+      filtersStateUpdated = true
+    } else if (isInitialMount) {
+      nextFileFilters = fileFiltersRef.current
+      nextFolderFilters = folderFiltersRef.current
+      nextFolderSearch = folderSearchRef.current
+      nextFileSearch = fileSearchRef.current
+
+      if (
+        !initialUrlFiltersAppliedRef.current &&
+        embedMode.isEmbed &&
+        embedMode.filters &&
+        Object.keys(embedMode.filters).length > 0
+      ) {
+        nextFileFilters = embedMode.filters
+        setFileFiltersState(embedMode.filters)
+        fileFiltersRef.current = embedMode.filters
+        initialUrlFiltersAppliedRef.current = true
+        filtersStateUpdated = true
+      }
+    } else {
+      nextFileFilters = fileFiltersRef.current
+      nextFolderFilters = folderFiltersRef.current
+      nextFolderSearch = folderSearchRef.current
+      nextFileSearch = fileSearchRef.current
+    }
+
     cursorByFolderRef.current[activeFolder] = { 1: null }
     folderLoadLockRef.current = false
     lastRequestedFolderPageRef.current[activeFolder] = 1
-    skipFilterReloadRef.current = true
-    lastExecutedSearchRef.current = { folderSearch: '', fileSearch: '' }
-    setFolderSearch('')
-    setFileSearch('')
-
-    let initialFileFilters: Record<string, string> = {}
-    if (
-      !initialUrlFiltersAppliedRef.current &&
-      embedMode.filters &&
-      Object.keys(embedMode.filters).length > 0
-    ) {
-      initialFileFilters = embedMode.filters
-      setFileFiltersState(embedMode.filters)
-      fileFiltersRef.current = embedMode.filters
-      initialUrlFiltersAppliedRef.current = true
-    } else {
-      setFileFilters({})
+    
+    if (filtersStateUpdated) {
+      skipFilterReloadRef.current = true
+    }
+    
+    lastExecutedSearchRef.current = {
+      folderSearch: nextFolderSearch,
+      fileSearch: nextFileSearch,
     }
 
-    setFolderFilters({})
-    setFolderFilterOptionSource([])
-    setFilterOptionsCache({})
     loadSelectedRepository(activeFolder)
     loadFolderContent({
       folderId: activeFolder,
-      folderFilters: {},
-      fileFilters: initialFileFilters,
+      folderFilters: nextFolderFilters,
+      fileFilters: nextFileFilters,
       listAllFiles: viewMode === 'list',
       page: 1,
       pageSizeValue: pageSizeRef.current,
-      folderSearch: '',
-      fileSearch: '',
+      folderSearch: nextFolderSearch,
+      fileSearch: nextFileSearch,
+      syncTree: viewMode === 'grid',
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFolder, viewMode])
@@ -697,6 +830,9 @@ export function useFolderExplorer() {
   const selectFolder = useCallback(
     (id: string) => {
       if (!id) {
+        setActiveFolder('')
+        setBreadcrumbs([])
+        setExpandedIds([])
         setAppView('explorer')
         return
       }
@@ -873,11 +1009,22 @@ export function useFolderExplorer() {
   }
 
   const changeViewMode = (nextView: ExplorerView) => {
+    isViewChangingRef.current = true
     if (nextView === 'list') {
       const rootNodeId = getRepositoryRootNodeId(activeFolder, tree)
       if (rootNodeId && rootNodeId !== activeFolder) {
+        lastDeepFolderRef.current = activeFolder
         cursorByFolderRef.current[rootNodeId] = { 1: null }
-        setActiveFolder(rootNodeId)
+        selectFolder(rootNodeId)
+      }
+    } else if (nextView === 'grid') {
+      if (lastDeepFolderRef.current) {
+        const rootNodeId = getRepositoryRootNodeId(lastDeepFolderRef.current, tree)
+        if (rootNodeId === activeFolder) {
+          cursorByFolderRef.current[lastDeepFolderRef.current] = { 1: null }
+          selectFolder(lastDeepFolderRef.current)
+        }
+        lastDeepFolderRef.current = null
       }
     }
 
@@ -958,7 +1105,7 @@ export function useFolderExplorer() {
         pageSizeValue: pageSizeRef.current,
         folderSearch: folderSearchRef.current.trim() || undefined,
         fileSearch: fileSearchRef.current.trim() || undefined,
-        syncTree: true,
+        syncTree: viewMode === 'grid',
       })
     } catch {
       // error already handled inside loadFolderContent

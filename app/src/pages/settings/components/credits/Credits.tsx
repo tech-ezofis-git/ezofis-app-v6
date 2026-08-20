@@ -126,6 +126,16 @@ function getAgentBadgeTone(agent: string) {
 
 const MAX_TABLE_ROWS = 200
 const MAX_CHART_ITEMS = 10
+const SESSION_KEY = 'ezofis_credits_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
 
 export default function Credits({ onBack }: { onBack?: () => void }) {
   const { i18n, t } = useLingui()
@@ -151,13 +161,15 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     [i18n.locale],
   )
 
-  const [period, setPeriod] = useState<UsagePeriod>('monthly')
-  const [month, setMonth] = useState<Option>(() => ({
+  const storedState = useMemo(() => getStoredState(), [])
+
+  const [period, setPeriod] = useState<UsagePeriod>(storedState?.period ?? 'monthly')
+  const [month, setMonth] = useState<Option>(storedState?.month ?? (() => ({
     id: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
     name: MONTH_OPTION_DEFS[currentMonthIndex]?.id ?? '1',
     value: MONTH_OPTION_DEFS[currentMonthIndex]?.value ?? '1',
-  }))
-  const [year, setYear] = useState<Option>({
+  })))
+  const [year, setYear] = useState<Option>(storedState?.year ?? {
     id: String(currentYear),
     name: String(currentYear),
     value: String(currentYear),
@@ -230,7 +242,18 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
   )
   const [transactionFilters, setTransactionFilters] = useState<
     Record<string, string>
-  >({})
+  >(storedState?.transactionFilters ?? {})
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ transactionFilters, period, month, year })
+      )
+    } catch {
+      // ignore
+    }
+  }, [transactionFilters, period, month, year])
 
   const agentFilterOptions = useMemo(() => {
     const values = new Set<string>()
@@ -415,7 +438,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     () => createColumnHelper<CreditsUsageTransaction>(),
     [],
   )
-  const tableSearchOptions = useSettingsTableSearch()
+  const tableSearchOptions = useSettingsTableSearch(SESSION_KEY)
 
   const columns = useMemo(
     () => [

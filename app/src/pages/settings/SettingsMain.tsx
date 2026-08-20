@@ -9,7 +9,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useLingui } from '@lingui/react/macro'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import AuditMonitoring from './components/AuditMonitoring'
 import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
@@ -27,7 +27,29 @@ type SettingsItem = {
 }
 
 export default function SettingsMain() {
-  const [activePage, setActivePage] = useState<string>('settings')
+  const [activePage, setActivePage] = useState<string>(() => {
+    try {
+      const stored = sessionStorage.getItem('ezofis_settings_state')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed.activePage) return parsed.activePage
+      }
+    } catch {
+      // ignore
+    }
+    return 'settings'
+  })
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        'ezofis_settings_state',
+        JSON.stringify({ activePage }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [activePage])
 
   if (activePage === 'user-management') {
     return (

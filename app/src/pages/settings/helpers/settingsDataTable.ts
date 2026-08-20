@@ -7,7 +7,7 @@ import {
   type PaginationState,
   type Row,
 } from '@tanstack/react-table'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { SearchState } from '@/components/base/data-table/types'
 
 export const settingsTableDefaultColumn = {
@@ -96,12 +96,28 @@ export function useSettingsTablePagination(initialPageSize = 10) {
   )
 }
 
-export function useSettingsTableSearch() {
-  const [globalFilter, setGlobalFilter] = useState<SearchState>({
-    id: '',
-    value: '',
+export function useSettingsTableSearch(storageKey?: string) {
+  const [globalFilter, setGlobalFilter] = useState<SearchState>(() => {
+    if (storageKey) {
+      try {
+        const stored = sessionStorage.getItem(`${storageKey}_search`)
+        if (stored) return JSON.parse(stored)
+      } catch {}
+    }
+    return { id: '', value: '' }
   })
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
+  useEffect(() => {
+    if (storageKey) {
+      try {
+        sessionStorage.setItem(
+          `${storageKey}_search`,
+          JSON.stringify(globalFilter),
+        )
+      } catch {}
+    }
+  }, [globalFilter, storageKey])
 
   return useMemo(
     () => ({

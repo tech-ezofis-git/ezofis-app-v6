@@ -77,6 +77,18 @@ import FolderStorageConnectorPanel, {
 import * as XLSX from 'xlsx'
 import DmsColumnMapping from './DmsColumnMapping'
 import MasterFieldSelectDropdown from './MasterFieldSelectDropdown'
+
+const SESSION_KEY = 'ezofis_dms_settings_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 type DmsFolderConfigurationProps = {
   onBack?: () => void
 }
@@ -937,39 +949,92 @@ export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
   const { t } = useLingui()
+  const storedState = useMemo(() => getStoredState(), [])
+
   // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
   //   null,
   // )
   const [securityRepository, setSecurityRepository] = useState<RepositoryRow | null>(
-    null,
+    storedState?.securityRepository ?? null,
   )
-  const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(null)
-  const [originalFieldIds, setOriginalFieldIds] = useState<Set<string>>(new Set())
+  const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(
+    storedState?.editingRepositoryId ?? null,
+  )
+  const [originalFieldIds, setOriginalFieldIds] = useState<Set<string>>(
+    storedState?.originalFieldIds ? new Set(storedState.originalFieldIds) : new Set(),
+  )
   const [deletingRepositoryId, setDeletingRepositoryId] = useState<string | null>(
     null,
   )
   const [isDeletingRepository, setIsDeletingRepository] = useState(false)
-  const [showWizard, setShowWizard] = useState(false)
-  const [showAiBuilder, setShowAiBuilder] = useState(false)
-  const [step, setStep] = useState<WizardStep>(1)
-  const [fields, setFields] = useState<FieldRow[]>(defaultFields)
-  const [storage, setStorage] = useState('EZOFIS Drive')
+  const [showWizard, setShowWizard] = useState(storedState?.showWizard ?? false)
+  const [showAiBuilder, setShowAiBuilder] = useState(storedState?.showAiBuilder ?? false)
+  const [step, setStep] = useState<WizardStep>(storedState?.step ?? 1)
+  const [fields, setFields] = useState<FieldRow[]>(storedState?.fields ?? defaultFields)
+  const [storage, setStorage] = useState(storedState?.storage ?? 'EZOFIS Drive')
   const [storageConnectorId, setStorageConnectorId] = useState<string | null>(
-    null,
+    storedState?.storageConnectorId ?? null,
   )
   const [storageConnectorLabel, setStorageConnectorLabel] = useState<
     string | null
-  >(null)
+  >(storedState?.storageConnectorLabel ?? null)
   const [isSavingRepository, setIsSavingRepository] = useState(false)
   const [showConnectorError, setShowConnectorError] = useState(false)
-  const [versioning, setVersioning] = useState('Incremental Version')
-  const [displayMode, setDisplayMode] = useState('Show Latest Version Only')
-  const [folderName, setFolderName] = useState('')
-  const [description, setDescription] = useState('')
-  const [storageDrive, setStorageDrive] = useState<string | null>(null)
+  const [versioning, setVersioning] = useState(storedState?.versioning ?? 'Incremental Version')
+  const [displayMode, setDisplayMode] = useState(storedState?.displayMode ?? 'Show Latest Version Only')
+  const [folderName, setFolderName] = useState(storedState?.folderName ?? '')
+  const [description, setDescription] = useState(storedState?.description ?? '')
+  const [storageDrive, setStorageDrive] = useState<string | null>(storedState?.storageDrive ?? null)
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {}
+  )
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          securityRepository,
+          editingRepositoryId,
+          originalFieldIds: Array.from(originalFieldIds),
+          showWizard,
+          showAiBuilder,
+          step,
+          fields,
+          storage,
+          storageConnectorId,
+          storageConnectorLabel,
+          versioning,
+          displayMode,
+          folderName,
+          description,
+          storageDrive,
+          activeFilters,
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [
+    securityRepository,
+    editingRepositoryId,
+    originalFieldIds,
+    showWizard,
+    showAiBuilder,
+    step,
+    fields,
+    storage,
+    storageConnectorId,
+    storageConnectorLabel,
+    versioning,
+    displayMode,
+    folderName,
+    description,
+    storageDrive,
+    activeFilters,
+  ])
 
   const [repositories, setRepositories] = useState<RepositoryRow[]>([])
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [isLoadingRepositories, setIsLoadingRepositories] = useState(true)
   const [isLoadingEditRepository, setIsLoadingEditRepository] = useState(false)
 
@@ -2734,7 +2799,7 @@ function useRepositoryTable(
 ) {
   const { t } = useLingui()
   const columnHelper = createColumnHelper<RepositoryRow>()
-  const tableSearchOptions = useSettingsTableSearch()
+  const tableSearchOptions = useSettingsTableSearch(SESSION_KEY)
   const {
     page,
     pageSize,

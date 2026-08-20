@@ -10,6 +10,7 @@ import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
+import { FolderDataTableSection } from './FolderTable'
 import type { Option } from '@/types/option'
 import type {
   DynamicRepositoryColumn,
@@ -769,70 +770,100 @@ export function DocumentsListView({
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-2 pt-2'>
-        <section className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-          {visibleFiles.length === 0 &&
-          !loading &&
-          !loadingPage &&
-          !refreshing ? (
-            hasActiveQuery ? (
-              <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
-                <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
-                <b className='text-gray-13'>{t`No documents found`}</b>
-                <p className='text-sm text-gray-10'>
-                  {t`Try changing the file search or resetting the selected filters.`}
-                </p>
-                <Button
-                  className='mt-2 h-9 px-4 text-sm'
-                  onClick={resetSearchAndFilters}
-                >
-                  <DynamicIcon className='h-4 w-4' name='refresh' />
-                  {t`Reset Search`}
-                </Button>
-              </div>
-            ) : (
-              <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
-                <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
-                  <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
-                    <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
-                  </div>
-                </div>
-                <b className='text-gray-13'>{t`No documents found`}</b>
-                <p className='max-w-[460px] text-sm text-gray-10'>
-                  {t`This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content.`}
-                </p>
-                {onUploadFile || onUpload ? (
-                  <EmptyFolderUploadDropzone
-                    className='mt-4'
-                    disabled={uploadDisabled}
-                    onFileSelected={(file) => {
-                      if (onUploadFile) onUploadFile(file)
-                      else onUpload?.()
-                    }}
-                    onOpenUpload={onUpload}
-                  />
-                ) : null}
-              </div>
-            )
-          ) : (
-            <DataTable
-              component={<div />}
-              isLoading={(loading || loadingPage) && visibleFiles.length === 0}
-              pageSize={Math.max(5, visibleFiles.length || pageSize)}
-              table={table}
-              isSticky
-              stickyHeader
-              hideGrouping
-              isReLoading={
-                refreshing ||
-                loadingPage ||
-                (loading && visibleFiles.length > 0)
-              }
+        <section className='flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden'>
+          {!activeRepositoryId || folders.length > 0 ? (
+            <FolderDataTableSection
+              folders={folders}
+              effectiveFolderTotal={folders.length}
+              folderFilters={{}}
+              folderSearch={searchQuery}
+              hasFiles={activeRepositoryId ? visibleFiles.length > 0 : false}
+              hasMoreFolders={false}
+              hideFolderActions={!activeRepositoryId}
+              isExpanded={!activeRepositoryId || visibleFiles.length === 0}
+              isSplitView={false}
+              loading={loading}
+              loadingFolders={false}
+              loadingPage={loadingPage}
+              onLoadMoreFolders={() => undefined}
+              onOpenFolder={(id) => onBreadcrumbSelect(id)}
               onReload={handleRefresh}
+              rowSize='default'
+              folderBodyMaxHeight={
+                activeRepositoryId && visibleFiles.length > 0
+                  ? `${Math.min(260, Math.max(96, folders.length * 56 + 52))}px`
+                  : undefined
+              }
             />
-          )}
+          ) : null}
+
+          {activeRepositoryId ? (
+            visibleFiles.length === 0 &&
+            !loading &&
+            !loadingPage &&
+            !refreshing &&
+            folders.length === 0 ? (
+              hasActiveQuery ? (
+                <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
+                  <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
+                  <b className='text-gray-13'>{t`No documents found`}</b>
+                  <p className='text-sm text-gray-10'>
+                    {t`Try changing the file search or resetting the selected filters.`}
+                  </p>
+                  <Button
+                    className='mt-2 h-9 px-4 text-sm'
+                    onClick={resetSearchAndFilters}
+                  >
+                    <DynamicIcon className='h-4 w-4' name='refresh' />
+                    {t`Reset Search`}
+                  </Button>
+                </div>
+              ) : (
+                <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
+                  <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
+                    <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
+                      <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
+                    </div>
+                  </div>
+                  <b className='text-gray-13'>{t`No documents found`}</b>
+                  <p className='max-w-[460px] text-sm text-gray-10'>
+                    {t`This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content.`}
+                  </p>
+                  {onUploadFile || onUpload ? (
+                    <EmptyFolderUploadDropzone
+                      className='mt-4'
+                      disabled={uploadDisabled}
+                      onFileSelected={(file) => {
+                        if (onUploadFile) onUploadFile(file)
+                        else onUpload?.()
+                      }}
+                      onOpenUpload={onUpload}
+                    />
+                  ) : null}
+                </div>
+              )
+            ) : visibleFiles.length > 0 || loading || loadingPage || refreshing ? (
+              <DataTable
+                component={<div />}
+                isLoading={(loading || loadingPage) && visibleFiles.length === 0}
+                pageSize={Math.max(5, visibleFiles.length || pageSize)}
+                table={table}
+                isSticky
+                stickyHeader
+                hideGrouping
+                isReLoading={
+                  refreshing ||
+                  loadingPage ||
+                  (loading && visibleFiles.length > 0)
+                }
+                onReload={handleRefresh}
+              />
+            ) : null
+          ) : null}
         </section>
       </div>
 
+      {!activeRepositoryId ? null : (
       <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
         <Pagination
           itemLabel={t`Files`}
@@ -858,6 +889,7 @@ export function DocumentsListView({
           }}
         />
       </div>
+      )}
 
       {openMenuId && actionMenuPosition ? (
         <div

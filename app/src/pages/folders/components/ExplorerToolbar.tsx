@@ -160,11 +160,7 @@ export function ExplorerToolbar({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (filterMode === 'files') {
-        onFileSearchChange?.(searchQuery)
-        return
-      }
-      // folders | both → folder browse search
+      onFileSearchChange?.(searchQuery)
       onFolderSearchChange?.(searchQuery)
     }, 300)
 

@@ -1475,6 +1475,7 @@ export const folderApi = {
       modifiedByName: repository.modifiedByName,
       storageProviderId: repository.storageProviderId,
       title: repository.name,
+      fileCount: repository.fileCount,
     }))
 
     return [
