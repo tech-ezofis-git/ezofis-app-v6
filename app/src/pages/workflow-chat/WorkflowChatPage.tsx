@@ -18,7 +18,7 @@ import {
   Volume2,
   X,
 } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import formApi from '@/api/form/form'
 import { uploadForOcr } from '@/api/v6/folder/folder'
 import workflowsApiV6, {
@@ -313,6 +313,25 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   const chatScrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const dynamicPlaceholder = useMemo(() => {
+    if (activeWorkflow) {
+      if (awaitingField) {
+        return `Enter ${awaitingField.label || (awaitingField as any).name || 'details'}...`
+      }
+      if (awaitingDoc) {
+        return `Upload or ask about ${awaitingDoc.label}...`
+      }
+      return `Ask anything about ${activeWorkflow.name}...`
+    }
+    if (initialAction === 'Initiate workflow') {
+      return 'Ask me to start a workflow or pick an option above...'
+    }
+    if (initialAction === 'Show my pending requests') {
+      return 'Enter request ID or keyword to search...'
+    }
+    return 'Ask me to start a workflow or check a request...'
+  }, [activeWorkflow, awaitingField, awaitingDoc, initialAction])
+
   // Auto-scroll to bottom of chat
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -419,20 +438,41 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     // Add initial greeting message
     if (!initialState?.messages || initialState.messages.length === 0) {
       if (initialAction === 'Initiate workflow') {
+        const initialPills =
+          workflowsList.length > 0
+            ? workflowsList.map((w) => w.name)
+            : [
+              'Accounts Payable',
+              'Vendor Registration',
+              'Order-to-Cash',
+              'Purchase Request',
+            ]
         setMessages([
           {
             htmlContent: `Hi <span class="text-primary-9 font-semibold">${userName}</span> 👋 I'm your Workflow Assistant. Which workflow would you like to start?`,
             id: 'msg-init-choices',
-            pills: workflowsList.map((w) => w.name),
+            pills: initialPills,
             sender: 'assistant',
           },
         ])
       } else if (initialAction === 'Show my pending requests') {
+        const initialPills =
+          workflowsList.length > 0
+            ? workflowsList.map((w) => w.name)
+            : [
+              'Accounts Payable',
+              'Vendor Registration',
+              'Order-to-Cash',
+              'Purchase Request',
+            ]
         setMessages([
           {
-            htmlContent: `Hi <span class="text-primary-9 font-semibold">${userName}</span> 👋 I'm your Workflow Assistant. Which workflow would you like to see the pending requests for?`,
-            id: 'msg-init-pending-choices',
-            pills: workflowsList.map((w) => w.name),
+            htmlContent: `You have 2 active requests:<br><br>
+            <strong>WF-2026-001245</strong> - Vendor Registration - <span style="color:#8300E6; font-weight:600;">Pending Approval</span><br>
+            <strong>WF-2026-001231</strong> - Accounts Payable - <span style="color:#8300E6; font-weight:600;">Action Required</span><br><br>
+            Select a workflow below to filter, or type a request ID or keyword to search:`,
+            id: 'msg-pending-choices',
+            pills: initialPills,
             sender: 'assistant',
           },
         ])
@@ -457,10 +497,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     if (workflowsList.length > 0) {
       setMessages((prev) =>
         prev.map((msg) =>
-          (msg.id === 'msg-init-choices' || msg.id === 'msg-init-pending-choices') && (!msg.pills || msg.pills.length === 0)
+          msg.id === 'msg-init-choices' || msg.id === 'msg-pending-choices'
             ? { ...msg, pills: workflowsList.map((w) => w.name) }
-            : msg
-        )
+            : msg,
+        ),
       )
     }
   }, [workflowsList])
@@ -1750,7 +1790,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       const matchedWf = workflowsList.find(
         (w) => w.name === label || label.includes(w.name),
       )
-      
+
       setMessages((prev) => [
         ...prev,
         {
@@ -1878,8 +1918,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               return (
                 <React.Fragment key={msg.id}>
                   <div className='flex max-w-[640px] items-start gap-3'>
-                    <div className='mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center'>
-                      <AiBrandIcon className='h-4 w-4' variant='default' />
+                    <div className='mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary-1 text-primary-9 border border-primary-3/60 shadow-xs'>
+                      <Bot className='h-4.5 w-4.5' />
                     </div>
                     <div
                       className='rounded-2xl rounded-tl-sm border border-gray-4/50 bg-gray-2 px-5 py-3.5 text-[13.5px] leading-relaxed text-gray-12 shadow-sm'
@@ -2067,8 +2107,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           >
             <div className='flex items-center gap-3'>
               <input
-                className='flex-1 rounded-full border border-gray-5 px-4 py-2.5 text-sm outline-hidden transition focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20'
-                placeholder='Ask me to initiate a workflow or check a request.'
+                className='flex-1 rounded-full border border-gray-5 px-4 py-2.5 text-[13px] outline-hidden transition placeholder:text-[12.5px] placeholder:text-gray-8 focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20'
+                placeholder={dynamicPlaceholder}
                 type='text'
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
@@ -2086,31 +2126,6 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               >
                 <Send className='h-4 w-4' />
               </button>
-            </div>
-            <div className='mt-2 text-[11.5px] text-gray-9'>
-              Tip:{' '}
-              <span
-                className='cursor-pointer font-medium text-primary-9 hover:underline'
-                onClick={() => handleSendMessage('I want to register a vendor')}
-              >
-                "I want to register a vendor"
-              </span>{' '}
-              ·{' '}
-              <span
-                className='cursor-pointer font-medium text-primary-9 hover:underline'
-                onClick={() => handleSendMessage('Show my pending requests')}
-              >
-                "Show my pending requests"
-              </span>{' '}
-              ·{' '}
-              <span
-                className='cursor-pointer font-medium text-primary-9 hover:underline'
-                onClick={() =>
-                  handleSendMessage('I need to process an invoice')
-                }
-              >
-                "I need to process an invoice"
-              </span>
             </div>
           </div>
         </div>

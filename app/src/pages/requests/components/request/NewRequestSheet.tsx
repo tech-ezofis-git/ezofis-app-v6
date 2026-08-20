@@ -2,6 +2,8 @@ import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import ApiPlayground from '@/components/playground/ApiPlayground'
 import requestStore from '../../stores/useRequestStore'
+import { isAccountsPayableWorkflow } from '../../utils/workflow.utils'
+import WorkflowRequest from '../workflow-request/WorkflowRequest'
 import NewRequestFileUpload from './components/newrequest/FileUpload'
 import Header from './components/newrequest/Header'
 import PoSetupFlowPage from './components/newrequest/poFlow/PoSetupFlowPage'
@@ -13,7 +15,13 @@ interface Props {
 const NewRequestSheet = ({ onClose }: Props) => {
   const { t } = useLingui()
   const { newRequestMeta } = requestStore((state) => state)
+  const rawWorkflow = requestStore((state) => state.rawWorkflowData)
   const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false)
+
+  // Accounts Payable workflows keep using the existing "Intelligent AP
+  // Agent" file upload flow below; every other workflow gets its form
+  // rendered dynamically instead (see WorkflowRequest).
+  const isAccountsPayable = isAccountsPayableWorkflow(rawWorkflow)
 
   const newRequestEndpoints = [
     {
@@ -73,8 +81,10 @@ const NewRequestSheet = ({ onClose }: Props) => {
 
         {newRequestMeta === 'po' ? (
           <PoSetupFlowPage onClose={onClose} />
-        ) : (
+        ) : isAccountsPayable ? (
           <NewRequestFileUpload onClose={onClose} />
+        ) : (
+          <WorkflowRequest workflow={rawWorkflow} onClose={onClose} />
         )}
       </div>
 

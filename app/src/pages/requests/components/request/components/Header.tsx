@@ -6,11 +6,11 @@ import { getUserListQueryOptions } from '@/api/userQueries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 // import InputSelect from '@/components/base/inputs/InputSelect'
 import { localizeRequestStatus } from '@/pages/requests/utils/localizeRequestUi'
 import cn from '@/utils/cn'
@@ -35,6 +35,11 @@ interface HeaderProps {
   poValue?: string | number
   raisedBy?: any
   showApprove?: boolean
+  /** Generic (non-Accounts-Payable) requests: show only the ticket number
+   * and action buttons — no PO/currency badges, status pill, AI Insights,
+   * or Share, all of which are AP-specific or not yet wired for a generic
+   * workflow instance. */
+  simple?: boolean
   stage?: any
   status?: string
   ticketUserId?: string
@@ -120,6 +125,7 @@ const Header: React.FC<HeaderProps> = ({
   requestNo,
   rightView: _rightView,
   showApprove: _showApprove,
+  simple = false,
   stage: _stage,
   status = 'Pending Review',
   ticketUserId,
@@ -132,7 +138,7 @@ const Header: React.FC<HeaderProps> = ({
   onPrev,
   onShare,
 }) => {
-  const { t, i18n } = useLingui()
+  const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
   const [showShare, setShowShare] = React.useState(false)
@@ -399,6 +405,94 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   console.log('Action value', actions)
+
+  if (simple) {
+    return (
+      <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
+        <div className='flex items-center gap-4 p-0'>
+          <IconButton
+            className='cursor-pointer hover:bg-[var(--gray-2)]'
+            color='gray'
+            icon='tabler:arrow-left'
+            size='sm'
+            variant='ghost'
+            onClick={onBack}
+          />
+          <div className='flex items-center gap-3'>
+            <Tooltip content={t`Previous Request`} position='bottom'>
+              <IconButton
+                className='size-7 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onPrev}
+                icon='tabler:chevron-left'
+                size='sm'
+                variant='ghost'
+                onClick={onPrev}
+              />
+            </Tooltip>
+            <h1 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
+              {requestNo}
+            </h1>
+            <Tooltip content={t`Next Request`} position='bottom'>
+              <IconButton
+                className='size-7 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onNext}
+                icon='tabler:chevron-right'
+                size='sm'
+                variant='ghost'
+                onClick={onNext}
+              />
+            </Tooltip>
+          </div>
+        </div>
+
+        {!isProcessing && (
+          <div className='flex items-center gap-2'>
+            {actions?.map((action: any) => {
+              const label = String(action?.label || '').toLowerCase()
+              let btnColor: 'gray' | 'primary' | 'secondary' | 'red' | 'green' =
+                'primary'
+              let borderClass =
+                'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+              let defaultIcon = action?.icon
+              if (!defaultIcon) {
+                if (label.includes('approve')) defaultIcon = 'lucide:check'
+                else if (label.includes('reject')) defaultIcon = 'lucide:x'
+                else defaultIcon = 'lucide:arrow-right'
+              }
+              if (label.includes('approve')) {
+                btnColor = 'green'
+                borderClass =
+                  'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
+              } else if (label.includes('reject')) {
+                btnColor = 'red'
+                borderClass =
+                  'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
+              }
+              return (
+                <Button
+                  color={btnColor}
+                  icon={defaultIcon}
+                  iconClass='size-4'
+                  key={action?.value}
+                  label={action?.label}
+                  loading={approveLoading}
+                  size='md'
+                  variant='subtle'
+                  className={cn(
+                    borderClass,
+                    'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                  )}
+                  onClick={() => onApprove?.(action?.value)}
+                />
+              )
+            })}
+          </div>
+        )}
+      </OverlayHeaderWrapper>
+    )
+  }
 
   return (
     <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
@@ -705,9 +799,7 @@ const Header: React.FC<HeaderProps> = ({
                         <div className='flex flex-col'>
                           <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
                             <div className='flex items-center gap-2'>
-                              <AiBrandIcon
-                                className='size-[20px] text-[var(--primary-9)]'
-                              />
+                              <AiBrandIcon className='size-[20px] text-[var(--primary-9)]' />
                               <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
                                 {t`Invoice Decision Details`}
                               </span>

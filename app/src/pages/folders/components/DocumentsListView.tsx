@@ -30,7 +30,7 @@ import {
 import { matchesAnyFilterValue } from '../utils/multiFilterValues'
 import { type BreadcrumbItem } from './Breadcrumbs'
 import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
-import { FolderFilterBar } from './FolderFilterBar'
+import { FolderFilterBar, matchesSearchText } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
 import { Button, EllipsisText, StatusPill } from './Ui'
 
@@ -391,10 +391,14 @@ export function DocumentsListView({
     Boolean(String(searchQuery || '').trim()) ||
     Object.values(fileFilters).some((value) => Boolean(String(value || '').trim()))
 
-  // Client OR-match for multi-select (same field); AND across different fields.
+  // Client OR-match for multi-select (same field); AND across different fields; plus searchQuery.
   const visibleFiles = useMemo(() => {
-    return normalizedFiles.filter((file) =>
-      Object.entries(fileFilters).every(([key, value]) => {
+    return normalizedFiles.filter((file) => {
+      if (searchQuery && !matchesSearchText(file, searchQuery)) {
+        return false
+      }
+
+      return Object.entries(fileFilters).every(([key, value]) => {
         if (!value) return true
 
         if (key === '__status' || normalizeKey(key) === 'status') {
@@ -416,9 +420,9 @@ export function DocumentsListView({
             )
 
         return matchesAnyFilterValue(String(fieldValue ?? ''), value)
-      }),
-    )
-  }, [folderContextFilters, normalizedFiles, fileFilters])
+      })
+    })
+  }, [folderContextFilters, normalizedFiles, fileFilters, searchQuery])
 
   const selectedVisibleCount = visibleFiles.filter((file) =>
     selectedIds.includes(getFileId(file)),
@@ -735,7 +739,7 @@ export function DocumentsListView({
           itemFilterFields={itemFilterFields}
           refreshing={refreshing}
           repositoryId={repositoryId}
-          searchPlaceholder={t`Search invoice, supplier, PO...`}
+          searchPlaceholder={t`Search by name or metadata...`}
           searchQuery={searchQuery}
           view={view}
           afterSearchActions={
@@ -812,7 +816,7 @@ export function DocumentsListView({
           ) : (
             <DataTable
               component={<div />}
-              isLoading={loading || loadingPage || refreshing}
+              isLoading={(loading || loadingPage) && visibleFiles.length === 0}
               pageSize={Math.max(5, visibleFiles.length || pageSize)}
               table={table}
               isSticky

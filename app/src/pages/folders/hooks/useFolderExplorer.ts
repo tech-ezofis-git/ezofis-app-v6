@@ -33,10 +33,12 @@ import {
   getFolderPageMeta,
   getRepositoryIdFromFolder,
   getRepositoryRootNodeId,
+  mergeFilesById,
   mergeFoldersById,
   syncTreeChildren,
   updateTreeNode,
 } from '../utils/folderExplorerUtils'
+import { matchesSearchText } from '../components/FolderFilterBar'
 import useEmbedMode from '@/hooks/useEmbedMode'
 import { resolveShareContext } from '../utils/shareContextStorage'
 
@@ -97,7 +99,7 @@ export function useFolderExplorer() {
   const folderSearchRef = useRef(folderSearch)
   const fileSearchRef = useRef(fileSearch)
   const skipFilterReloadRef = useRef(false)
-  const skipSearchReloadRef = useRef(false)
+  const lastExecutedSearchRef = useRef({ folderSearch: '', fileSearch: '' })
   const deferFilterApiRef = useRef(false)
   const deferFilterSnapshotRef = useRef('')
 
@@ -272,8 +274,20 @@ export function useFolderExplorer() {
   }) => {
     const requestId = ++requestSeqRef.current
 
+    const isSearchCall = Boolean(
+      (folderSearch !== undefined
+        ? folderSearch
+        : folderSearchRef.current
+      ).trim() ||
+        (fileSearch !== undefined
+          ? fileSearch
+          : fileSearchRef.current
+        ).trim(),
+    )
+
     if (folderPageOnly) setLoadingFolders(true)
     else if (pageOnly) setLoadingPage(true)
+    else if (isSearchCall) setRefreshing(true)
     else setLoading(true)
 
     setError('')
@@ -302,11 +316,27 @@ export function useFolderExplorer() {
       const nextFolderPage = getFolderPageMeta(response)
 
       setBreadcrumbs(response.breadcrumbs)
-      setFolders((previous) =>
-        appendFolders
-          ? mergeFoldersById(previous, response.folders || [])
-          : response.folders || [],
-      )
+      const activeFileSearch = (
+        fileSearch !== undefined ? fileSearch : fileSearchRef.current
+      ).trim()
+      const activeFolderSearch = (
+        folderSearch !== undefined ? folderSearch : folderSearchRef.current
+      ).trim()
+
+      setFolders((previous) => {
+        const apiFolders = response.folders || []
+        if (appendFolders) {
+          return mergeFoldersById(previous, apiFolders)
+        }
+        if (!activeFolderSearch) {
+          return apiFolders
+        }
+        const clientMatched = previous.filter((folder) =>
+          matchesSearchText(folder, activeFolderSearch),
+        )
+        return mergeFoldersById(clientMatched, apiFolders)
+      })
+
       syncFolderFilterOptionSource(response.folders || [], {
         append: appendFolders,
         folderFilters: folderFilters ?? folderFiltersRef.current,
@@ -320,7 +350,18 @@ export function useFolderExplorer() {
         files: folderPageOnly ? [] : response.files || [],
         folders: response.folders || [],
       })
-      setFiles((previous) => (folderPageOnly ? previous : response.files || []))
+
+      setFiles((previous) => {
+        if (folderPageOnly) return previous
+        const apiFiles = response.files || []
+        if (!activeFileSearch) {
+          return apiFiles
+        }
+        const clientMatched = previous.filter((file) =>
+          matchesSearchText(file, activeFileSearch),
+        )
+        return mergeFilesById(clientMatched, apiFiles)
+      })
       setFileColumns(response.fileColumns || [])
       setCurrentFolderGroupField(response.currentFolderGroupField || '')
       setFilePage(response.filePage)
@@ -376,6 +417,7 @@ export function useFolderExplorer() {
         setLoading(false)
         setLoadingPage(false)
         setLoadingFolders(false)
+        setRefreshing(false)
         if (folderPageOnly) folderLoadLockRef.current = false
       }
     }
@@ -504,7 +546,7 @@ export function useFolderExplorer() {
     folderLoadLockRef.current = false
     lastRequestedFolderPageRef.current[activeFolder] = 1
     skipFilterReloadRef.current = true
-    skipSearchReloadRef.current = true
+    lastExecutedSearchRef.current = { folderSearch: '', fileSearch: '' }
     setFolderSearch('')
     setFileSearch('')
 
@@ -542,8 +584,14 @@ export function useFolderExplorer() {
   useEffect(() => {
     if (!activeFolder) return
 
-    if (skipSearchReloadRef.current) {
-      skipSearchReloadRef.current = false
+    const trimmedFolder = folderSearch.trim()
+    const trimmedFile = fileSearch.trim()
+    const lastExecuted = lastExecutedSearchRef.current
+
+    if (
+      lastExecuted.folderSearch === trimmedFolder &&
+      lastExecuted.fileSearch === trimmedFile
+    ) {
       return
     }
 
@@ -551,6 +599,10 @@ export function useFolderExplorer() {
       cursorByFolderRef.current[activeFolder] = { 1: null }
       folderLoadLockRef.current = false
       lastRequestedFolderPageRef.current[activeFolder] = 1
+      lastExecutedSearchRef.current = {
+        folderSearch: trimmedFolder,
+        fileSearch: trimmedFile,
+      }
 
       try {
         await loadFolderContent({
@@ -560,8 +612,8 @@ export function useFolderExplorer() {
           listAllFiles: viewMode === 'list',
           page: 1,
           pageSizeValue: pageSizeRef.current,
-          folderSearch: folderSearch.trim(),
-          fileSearch: fileSearch.trim(),
+          folderSearch: trimmedFolder,
+          fileSearch: trimmedFile,
           syncTree: viewMode === 'grid',
         })
       } catch (exception: any) {

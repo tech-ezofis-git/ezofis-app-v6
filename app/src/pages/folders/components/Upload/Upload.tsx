@@ -12,6 +12,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
@@ -54,7 +55,163 @@ type RepositoryField = {
   sqlColumnName: string
 }
 
-type ResultTab = 'fields' | 'json'
+interface JsonNodeProps {
+  data: unknown
+  name?: string
+  isLast?: boolean
+  level?: number
+}
+
+function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  if (data === null || data === undefined) {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='italic text-gray-500'>null</span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'boolean') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='font-semibold text-blue-600 dark:text-blue-400'>
+          {String(data)}
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'number') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='font-medium text-amber-600 dark:text-amber-400'>
+          {data}
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'string') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5 break-all'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='text-emerald-700 dark:text-emerald-400'>
+          "{data}"
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  const isArray = Array.isArray(data)
+  const isObject = typeof data === 'object' && data !== null
+  if (!isObject) return null
+
+  const keys = Object.keys(data as Record<string, unknown>)
+  const openBracket = isArray ? '[' : '{'
+  const closeBracket = isArray ? ']' : '}'
+  const itemCount = keys.length
+
+  return (
+    <div className='font-mono text-xs leading-5'>
+      <div className='flex items-center gap-1'>
+        <button
+          type='button'
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className='flex size-4 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)]'
+        >
+          <Icon
+            name='tabler:chevron-right'
+            className={`size-3 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
+          />
+        </button>
+
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+
+        <span className='font-bold text-[var(--gray-12)]'>
+          {openBracket}
+        </span>
+
+        {isCollapsed ? (
+          <button
+            type='button'
+            onClick={() => setIsCollapsed(false)}
+            className='mx-1 rounded bg-[var(--gray-3)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)]'
+          >
+            {itemCount} {itemCount === 1 ? 'item' : 'items'} ...
+          </button>
+        ) : null}
+
+        {isCollapsed ? (
+          <span className='font-bold text-[var(--gray-12)]'>
+            {closeBracket}
+            {!isLast && ','}
+          </span>
+        ) : null}
+      </div>
+
+      {!isCollapsed && (
+        <div className='ml-2 border-l border-[var(--gray-4)]/70 pl-2.5'>
+          {keys.map((key, index) => {
+            const childData = (data as Record<string, any>)[key]
+            const isChildLast = index === keys.length - 1
+            return (
+              <JsonNode
+                key={key}
+                data={childData}
+                name={isArray ? undefined : key}
+                isLast={isChildLast}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      {!isCollapsed && (
+        <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+          <div className='size-4 shrink-0' />
+          <span className='font-bold text-[var(--gray-12)]'>
+            {closeBracket}
+          </span>
+          {!isLast && <span className='text-gray-400'>,</span>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 type UploadProps = {
   folderId: string | number | null
   initialFile?: File | null
@@ -240,6 +397,70 @@ const extractOcrFieldMap = (response: unknown) => {
   return fieldMap
 }
 
+const extractOcrJsonAndText = (response: unknown) => {
+  let ocrJsonVal: any = []
+  let ocrTextVal: any = ''
+
+  if (!response || typeof response !== 'object') {
+    return { ocrJson: ocrJsonVal, ocrText: ocrTextVal }
+  }
+
+  const payload = response as Record<string, unknown>
+  const dataObj =
+    (payload.data as Record<string, unknown> | undefined) ?? payload
+
+  // 1. Parse ocrJson if it is a JSON string or object
+  const rawJson = dataObj.ocrJson ?? payload.ocrJson
+  let parsedJsonObj: Record<string, unknown> | null = null
+
+  if (rawJson != null) {
+    if (typeof rawJson === 'string') {
+      try {
+        parsedJsonObj = JSON.parse(rawJson) as Record<string, unknown>
+      } catch {
+        // invalid JSON string
+      }
+    } else if (typeof rawJson === 'object' && rawJson !== null) {
+      parsedJsonObj = rawJson as Record<string, unknown>
+    }
+  }
+
+  // 2. Extract ocrText (checks parsed ocrJson first, then root/dataObj level)
+  const rawText =
+    parsedJsonObj?.ocrText ??
+    dataObj.ocrText ??
+    payload.ocrText ??
+    dataObj.text ??
+    payload.text ??
+    ''
+
+  if (typeof rawText === 'string') {
+    ocrTextVal = rawText
+  } else if (rawText && typeof rawText === 'object') {
+    ocrTextVal =
+      typeof rawText === 'object' && Object.keys(rawText).length === 0
+        ? ''
+        : rawText
+  } else {
+    ocrTextVal = String(rawText || '')
+  }
+
+  // 3. Extract ocrResult to pass as ocrJson (checks parsed ocrJson first, then root/dataObj level)
+  let ocrResult =
+    parsedJsonObj?.ocrResult ??
+    parsedJsonObj?.fields ??
+    dataObj.ocrResult ??
+    payload.ocrResult ??
+    dataObj.ocrFieldList ??
+    payload.ocrFieldList
+
+  if (ocrResult !== undefined && ocrResult !== null) {
+    ocrJsonVal = ocrResult
+  }
+
+  return { ocrJson: ocrJsonVal, ocrText: ocrTextVal }
+}
+
 const getFileNameWithoutExtension = (fileName: string) => {
   if (!fileName) return ''
   const lastDotIndex = fileName.lastIndexOf('.')
@@ -405,6 +626,8 @@ export default function Upload({
 
   const [ocrExtractedValues, setOcrExtractedValues] = useState<Record<string, string>>({})
   const [masterSyncedValues, setMasterSyncedValues] = useState<Record<string, string>>({})
+  const [rawOcrJson, setRawOcrJson] = useState<any>({})
+  const [rawOcrText, setRawOcrText] = useState<string>('')
 
   const masterFormSyncData = useMemo(() => {
     if (!repositoryData?.storageDrive || !repositoryData.storageDrive.includes('[')) return null
@@ -690,6 +913,10 @@ export default function Upload({
           return
         }
 
+        const { ocrJson, ocrText } = extractOcrJsonAndText(data)
+        setRawOcrJson(ocrJson)
+        setRawOcrText(ocrText)
+
         const mappedValues = mapOcrResponseToFieldValues(
           data,
           repositoryFields,
@@ -762,6 +989,8 @@ export default function Upload({
     setFieldValues(getInitialValues(repositoryFields))
     setOcrExtractedValues({})
     setMasterSyncedValues({})
+    setRawOcrJson({})
+    setRawOcrText('')
     resetInput()
   }
 
@@ -850,11 +1079,16 @@ export default function Upload({
   }, [])
 
   const buildUploadMetadata = () => {
-    return repositoryFields.reduce<Record<string, string>>((acc, field) => {
+    const meta = repositoryFields.reduce<Record<string, any>>((acc, field) => {
       const key = field.sqlColumnName || field.name
       acc[key] = fieldValues[getFieldKey(field)] ?? ''
       return acc
     }, {})
+
+    meta.ocrJson = rawOcrJson ?? []
+    meta.ocrText = rawOcrText ?? ''
+
+    return meta
   }
 
   const buildMetadata = () => {
@@ -870,10 +1104,13 @@ export default function Upload({
       }
     })
 
-    const values = fields.reduce<Record<string, string>>((acc, field) => {
+    const values = fields.reduce<Record<string, any>>((acc, field) => {
       acc[field.sqlColumnName || field.id] = field.value
       return acc
     }, {})
+
+    values.ocrJson = rawOcrJson ?? []
+    values.ocrText = rawOcrText ?? ''
 
     return {
       fields,
@@ -900,6 +1137,13 @@ export default function Upload({
 
     return true
   }
+
+  const filledFieldsCount = useMemo(() => {
+    return repositoryFields.filter((field) => {
+      const value = fieldValues[getFieldKey(field)]
+      return Boolean(String(value ?? '').trim())
+    }).length
+  }, [repositoryFields, fieldValues])
 
   const uploadFile = async () => {
     if (!fileData) {
@@ -1007,18 +1251,22 @@ export default function Upload({
       const currentValue = fieldValues[fieldKey]
 
       // Icon if value is from OCR or Master Sync
-      if (repositoryData?.storageDrive?.includes('[') && currentValue) {
+      if (currentValue) {
         if (currentValue === syncValue) {
           elements.push(
-            <div key="master-icon" className="mr-1 flex items-center justify-center text-[var(--indigo-11)]" title="Master Sync Data">
-              <Icon className="size-4" name="lucide:database" />
-            </div>
+            <Tooltip key="master-icon" content={t`Master Sync Data`} position="top">
+              <div className="flex items-center justify-center text-[var(--indigo-11)] transition-colors hover:text-[var(--indigo-9)]">
+                <Icon className="size-4" name="lucide:database" />
+              </div>
+            </Tooltip>
           )
         } else if (currentValue === ocrValue) {
           elements.push(
-            <div key="ocr-icon" className="mr-1 flex items-center justify-center text-[var(--primary-11)]" title="OCR Extracted Data">
-              <Icon className="size-4" name="tabler:scan" />
-            </div>
+            <Tooltip key="ocr-icon" content={t`OCR Extracted Data`} position="top">
+              <div className="flex items-center justify-center text-[var(--primary-11)] transition-colors hover:text-[var(--primary-9)]">
+                <Icon className="size-4" name="tabler:scan" />
+              </div>
+            </Tooltip>
           )
         }
       }
@@ -1026,35 +1274,37 @@ export default function Upload({
       if (matchingSyncName) {
         const isThisFieldSyncing = syncingField === matchingSyncName
         elements.push(
-          <Button
-            key="sync-btn"
-            aria-label={t`Sync`}
-            onClick={() => handleSync(toTextValue(value), matchingSyncName)}
-            disabled={!value || syncingField !== null}
-            className={cn(
-              'mr-1 flex h-[20px] w-[40px] items-center justify-center gap-1',
-              'rounded-[4px] px-1.5',
-              'text-[10px] font-medium uppercase tracking-[0.04em]',
-              'transition-colors',
-              isThisFieldSyncing
-                ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
-                : value
-                  ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
-                  : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
-            )}
-          >
-            {isThisFieldSyncing && (
-              <Icon className='size-2.5 animate-spin' name='tabler:loader' />
-            )}
-            <span className='text-[9px]'> {t`SYNC`}</span>
-          </Button>
+          <Tooltip key="sync-btn-tooltip" content={t`Sync Master Data`} position="top" disabled={!value}>
+            <Button
+              key="sync-btn"
+              aria-label={t`Sync`}
+              onClick={() => handleSync(toTextValue(value), matchingSyncName)}
+              disabled={!value || syncingField !== null}
+              className={cn(
+                'flex h-[20px] w-[40px] items-center justify-center gap-1',
+                'rounded-[4px] px-1.5',
+                'text-[10px] font-medium uppercase tracking-[0.04em]',
+                'transition-colors',
+                isThisFieldSyncing
+                  ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
+                  : value
+                    ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
+                    : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
+              )}
+            >
+              {isThisFieldSyncing && (
+                <Icon className='size-2.5 animate-spin' name='tabler:loader' />
+              )}
+              <span className='text-[9px]'> {t`SYNC`}</span>
+            </Button>
+          </Tooltip>
         )
       }
 
       if (elements.length === 0) return undefined
 
       return (
-        <div className="flex items-center gap-1">
+        <div className="flex w-full items-center justify-end pr-2.5 gap-1.5">
           {elements}
         </div>
       )
@@ -1202,9 +1452,35 @@ export default function Upload({
     )
   }
 
+  const parsedJsonData = useMemo(() => {
+    if (
+      rawOcrJson &&
+      (Array.isArray(rawOcrJson)
+        ? rawOcrJson.length > 0
+        : Object.keys(rawOcrJson).length > 0)
+    ) {
+      return rawOcrJson
+    }
+    const meta = buildMetadata() as Record<string, any>
+    if (meta.ocrJson) {
+      try {
+        return typeof meta.ocrJson === 'string'
+          ? JSON.parse(meta.ocrJson)
+          : meta.ocrJson
+      } catch {
+        return meta.ocrJson
+      }
+    }
+    return meta
+  }, [rawOcrJson, fieldValues, repositoryFields])
+
+  const displayJsonContent = useMemo(() => {
+    return safeJson(parsedJsonData)
+  }, [parsedJsonData])
+
   const copyMetadata = async () => {
-    await navigator.clipboard.writeText(safeJson(buildMetadata()))
-    showToast({ message: t`Metadata copied.`, variant: 'success' })
+    await navigator.clipboard.writeText(displayJsonContent)
+    showToast({ message: t`JSON copied to clipboard.`, variant: 'success' })
   }
 
   if (!fileData) {
@@ -1459,10 +1735,10 @@ export default function Upload({
 
         <div className='grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
           <AnimateSlideUp className='flex h-[560px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-            <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
+            <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
               <div className='flex min-w-0 items-center gap-3'>
-                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
-                  <FileText size={20} />
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
+                  <FileText size={18} />
                 </div>
                 <div className='min-w-0'>
                   <h2 className='text-base font-bold text-[var(--gray-13)]'>
@@ -1477,7 +1753,7 @@ export default function Upload({
 
             <div
               className={[
-                'm-6 min-h-0 flex-1 overflow-hidden rounded-xl border transition-all',
+                'm-4 min-h-0 flex-1 overflow-hidden rounded-xl border transition-all',
                 isDragOver
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)]'
                   : 'border-[var(--gray-4)] bg-[var(--gray-1)]',
@@ -1517,9 +1793,9 @@ export default function Upload({
             className='flex h-[900px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
             delay={0.08}
           >
-            <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
+            <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
               <div className='flex min-w-0 items-center gap-3'>
-                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
                   <Icon className='size-5' name='tabler:code' />
                 </div>
                 <div>
@@ -1529,7 +1805,7 @@ export default function Upload({
                   <p className='text-xs font-medium text-[var(--gray-9)]'>
                     {isAnalyzing
                       ? t`Extracting fields...`
-                      : t`${repositoryFields.length} fields ready`}
+                      : t`${filledFieldsCount} of ${repositoryFields.length} fields ready`}
                   </p>
                 </div>
               </div>
@@ -1562,7 +1838,7 @@ export default function Upload({
               </div>
             </div>
 
-            <div className='relative min-h-0 flex-1 overflow-hidden p-5'>
+            <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
               {isAnalyzing ? (
                 <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface/80 backdrop-blur-[1px]'>
                   <Icon
@@ -1590,7 +1866,7 @@ export default function Upload({
                 return (
                   <div className='flex h-full flex-col'>
                     {syncRepoFields.length > 0 && (
-                      <div className='shrink-0 p-4 pb-2'>
+                      <div className='shrink-0 pb-3'>
                         <div className='grid grid-cols-1 gap-4'>
                           {syncRepoFields.map((field) => (
                             <div
@@ -1604,7 +1880,7 @@ export default function Upload({
                       </div>
                     )}
 
-                    <div className='min-h-0 flex-1 overflow-y-auto p-4 pt-2 pr-2'>
+                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto pr-1.5'>
                       <div className='grid grid-cols-1 gap-4'>
                         {otherRepoFields.map((field) => (
                           <div className='space-y-1.5' key={field.id}>
@@ -1622,19 +1898,22 @@ export default function Upload({
                   </div>
                 )
               })() : (
-                <div className='relative h-full max-h-full'>
-                  <button
-                    aria-label={t`Copy JSON`}
-                    className='absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border border-[var(--gray-3)] bg-surface/95 px-2.5 py-1.5 text-xs font-semibold text-[var(--gray-11)] shadow-sm backdrop-blur-sm hover:bg-[var(--gray-2)]'
-                    type='button'
-                    onClick={copyMetadata}
-                  >
-                    <Copy size={14} />
-                    {t`Copy`}
-                  </button>
-                  <pre className='h-full max-h-full overflow-auto rounded-xl bg-[var(--gray-1)] p-4 pt-12 text-xs leading-6 text-[var(--gray-12)]'>
-                    {safeJson(buildMetadata())}
-                  </pre>
+                <div className='relative flex h-full min-h-0 flex-1 flex-col'>
+                  <div className='absolute top-2.5 right-3.5 z-20'>
+                    <Tooltip content={t`Copy JSON`} position='top'>
+                      <button
+                        aria-label={t`Copy JSON`}
+                        className='flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--gray-4)] bg-surface/90 text-[var(--gray-11)] shadow-sm backdrop-blur-md transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
+                        type='button'
+                        onClick={copyMetadata}
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                  <div className='ez-scrollbar h-full max-h-full min-h-0 flex-1 overflow-auto rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-3 pt-2.5 pr-14 text-xs leading-5 text-[var(--gray-12)]'>
+                    <JsonNode data={parsedJsonData} />
+                  </div>
                 </div>
               )}
             </div>

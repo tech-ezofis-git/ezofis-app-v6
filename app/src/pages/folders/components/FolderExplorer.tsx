@@ -539,6 +539,7 @@ export function FolderExplorer() {
               fileFilters={fileFilters}
               filePage={filePage}
               files={files}
+              fileSearch={fileSearch}
               folderContextFilters={folderContextFilters}
               folderFilters={folderFilters}
               folderHasMore={folderHasMore}

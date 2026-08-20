@@ -1945,6 +1945,7 @@ const InboxList: React.FC<InboxListProps> = ({
                 isLoading={isLoading}
                 isReloading={isRefetching}
                 table={table} // Pass the instance
+                workflow={workflow}
                 onNewRequest={() => openNewRequest('request')}
                 onReload={onRefresh}
                 onRowClick={onRowClick}
