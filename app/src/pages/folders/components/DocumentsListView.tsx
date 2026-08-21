@@ -786,7 +786,7 @@ export function DocumentsListView({
               loadingFolders={false}
               loadingPage={loadingPage}
               onLoadMoreFolders={() => undefined}
-              onOpenFolder={(id) => onBreadcrumbSelect(id)}
+              onOpenFolder={(id) => _onBreadcrumbSelect(id)}
               onReload={handleRefresh}
               rowSize='default'
               folderBodyMaxHeight={

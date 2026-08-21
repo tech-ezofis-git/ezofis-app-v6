@@ -1194,6 +1194,7 @@ const InboxList: React.FC<InboxListProps> = ({
   // const [rowSize, setRowSize] = useState<RowSize>('default')
 
   const [filterFields, setFilterFields] = useState<V6FilterField[]>([])
+  const [isFilterFieldsLoaded, setIsFilterFieldsLoaded] = useState(false)
 
   const dueDateFilterOptions = useMemo(
     () =>
@@ -1220,14 +1221,18 @@ const InboxList: React.FC<InboxListProps> = ({
   )
 
   useEffect(() => {
+    setIsFilterFieldsLoaded(false)
     if (workflow?.id) {
       workflowsApiV6.getFilterFields(String(workflow.id)).then((res) => {
         if (res.data?.fields) {
           setFilterFields(res.data.fields)
         }
+      }).finally(() => {
+        setIsFilterFieldsLoaded(true)
       })
     } else {
       setFilterFields([])
+      setIsFilterFieldsLoaded(true)
     }
   }, [workflow?.id])
 
@@ -1250,6 +1255,7 @@ const InboxList: React.FC<InboxListProps> = ({
     ...rest
   } = useDataTableState({
     initialVisibilityState,
+    storageKey: 'ezofis_requests_inbox_table_state',
   })
 
   // ✅ Sync groupState with parent
@@ -1339,7 +1345,7 @@ const InboxList: React.FC<InboxListProps> = ({
   }, [searchState])
 
   React.useEffect(() => {
-    if (onFilterClausesChange) {
+    if (onFilterClausesChange && isFilterFieldsLoaded) {
       const clauses = buildV6FilterClauses(
         activeFiltersMap,
         filterFields,
@@ -1354,6 +1360,7 @@ const InboxList: React.FC<InboxListProps> = ({
     activeQuickFilters,
     debouncedSearchState,
     onFilterClausesChange,
+    isFilterFieldsLoaded,
   ])
 
   const [controlOptionsMap, setControlOptionsMap] = useState<

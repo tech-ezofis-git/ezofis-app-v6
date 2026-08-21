@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 export const getProcessingStatusText = (startTime?: string) => {
   if (!startTime) return 'We are processing your file...'
@@ -120,30 +121,32 @@ type Store = {
   workflowRefresh: () => void
 }
 
-const requestStore = create<Store>((set) => ({
-  activeQuickFilters: [],
-  activeTabValue: null,
-  isClosed: false,
-  isMaximized: false,
-  isPlaygroundOpen: false,
-  isRequestOpen: false,
-  jobMappings: getInitialJobMappings(),
-  jobStatuses: getInitialJobStatuses(),
-  newRequest: false,
-  newRequestMeta: null,
-  pendingDeepLink: null,
-  pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
-  pendingOpenNewRequest: false,
-  playgroundContext: null,
-  processingProcesses: [],
-  rawWorkflowData: null,
-  reloadMeta: false,
-  repoData: null,
-  requestListTab: 'Inbox', // Default
-  selectedItem: null,
-  selectedWorkflow: null,
-  selectedWorkflowId: null,
-  summaryCache: {},
+const requestStore = create<Store>()(
+  persist(
+    (set) => ({
+      activeQuickFilters: [],
+      activeTabValue: null,
+      isClosed: false,
+      isMaximized: false,
+      isPlaygroundOpen: false,
+      isRequestOpen: false,
+      jobMappings: getInitialJobMappings(),
+      jobStatuses: getInitialJobStatuses(),
+      newRequest: false,
+      newRequestMeta: null,
+      pendingDeepLink: null,
+      pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
+      pendingOpenNewRequest: false,
+      playgroundContext: null,
+      processingProcesses: [],
+      rawWorkflowData: null,
+      reloadMeta: false,
+      repoData: null,
+      requestListTab: 'Inbox', // Default
+      selectedItem: null,
+      selectedWorkflow: null,
+      selectedWorkflowId: null,
+      summaryCache: {},
   addProcessingProcess: (process) =>
     set((state) => ({
       processingProcesses: [
@@ -244,6 +247,24 @@ const requestStore = create<Store>((set) => ({
   setPlaygroundContext: (context) => set({ playgroundContext: context }),
   setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
   setRequestListTab: (tab) => set({ requestListTab: tab }),
-}))
+    }),
+    {
+      name: 'v6_request_store',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        newRequest: state.newRequest,
+        newRequestMeta: state.newRequestMeta,
+        isRequestOpen: state.isRequestOpen,
+        selectedItem: state.selectedItem,
+        selectedWorkflow: state.selectedWorkflow,
+        selectedWorkflowId: state.selectedWorkflowId,
+        activeTabValue: state.activeTabValue,
+        requestListTab: state.requestListTab,
+        activeQuickFilters: state.activeQuickFilters,
+        rawWorkflowData: state.rawWorkflowData,
+      }),
+    }
+  )
+)
 
 export default requestStore

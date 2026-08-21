@@ -62,17 +62,42 @@ const findDeepData = (obj: any): any[] | null => {
   return null
 }
 
+const SESSION_KEY = 'ezofis_forms_table_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 const FormsPage = () => {
   const { t } = useLingui()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [showAiBuilder, setShowAiBuilder] = useState(false)
+  const storedState = useMemo(() => getStoredState(), [])
+  const [page, setPage] = useState(storedState?.page ?? 1)
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 10)
+  const [showAiBuilder, setShowAiBuilder] = useState(storedState?.showAiBuilder ?? false)
   const [deletingForm, setDeletingForm] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {},
+  )
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ activeFilters, page, pageSize, showAiBuilder }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [page, pageSize, activeFilters, showAiBuilder])
   const session = authUserStore((state) => state.session)
   const loggedInUser = session?.firstName
     ? `${session.firstName} ${session.lastName || ''}`.trim()
@@ -94,6 +119,7 @@ const FormsPage = () => {
     ...restState
   } = useDataTableState({
     initialVisibilityState,
+    storageKey: SESSION_KEY,
   })
 
   const groupBy = ''

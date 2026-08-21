@@ -9,7 +9,7 @@ import {
   type SortingState as SortState,
   type VisibilityState,
 } from '@tanstack/react-table'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SearchState } from '../types'
 import getPinStateWithDefaults from '../helpers/getPinStateWithDefaults'
 
@@ -37,29 +37,85 @@ export interface DataTableState {
 export interface DataTableStateProps {
   initialPinState?: PinState
   initialVisibilityState?: VisibilityState
+  storageKey?: string
 }
 
 export default function useDataTableState({
   initialPinState,
   initialVisibilityState,
+  storageKey,
 }: DataTableStateProps): DataTableState {
   const newInitialVisibilityState = { ...initialVisibilityState, group: false }
   const newInitialPinState = getPinStateWithDefaults(initialPinState)
 
-  const [expandState, setExpandState] = useState<ExpandedState>({})
-  const [filtersState, setFiltersState] = useState<filtersState>([])
-  const [groupState, setGroupState] = useState<GroupState>([])
-  const [orderState, setOrderState] = useState<OrderState>([])
-  const [pinState, setPinState] = useState<PinState>(newInitialPinState)
-  const [searchState, setSearchState] = useState<SearchState>({
-    id: '',
-    value: '',
-  })
-  const [selectState, setSelectState] = useState<SelectState>({})
-  const [sortState, setSortState] = useState<SortState>([])
-  const [visibilityState, setVisibilityState] = useState<VisibilityState>(
-    newInitialVisibilityState,
+  function getStoredState<T>(key: string, fallback: T): T {
+    try {
+      const stored = sessionStorage.getItem(key)
+      if (!stored || stored === 'undefined' || stored === 'null') {
+        return fallback
+      }
+      const parsed = JSON.parse(stored)
+      return parsed !== null && parsed !== undefined ? parsed : fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  const [expandState, setExpandState] = useState<ExpandedState>(
+    storageKey ? getStoredState(`${storageKey}_expand`, {}) : {}
   )
+  const [filtersState, setFiltersState] = useState<filtersState>(
+    storageKey ? getStoredState(`${storageKey}_filters`, []) : []
+  )
+  const [groupState, setGroupState] = useState<GroupState>(
+    storageKey ? getStoredState(`${storageKey}_group`, []) : []
+  )
+  const [orderState, setOrderState] = useState<OrderState>(
+    storageKey ? getStoredState(`${storageKey}_order`, []) : []
+  )
+  const [pinState, setPinState] = useState<PinState>(
+    storageKey ? getStoredState(`${storageKey}_pin`, newInitialPinState) : newInitialPinState
+  )
+  const [searchState, setSearchState] = useState<SearchState>(
+    storageKey ? getStoredState(`${storageKey}_search`, { id: '', value: '' }) : { id: '', value: '' }
+  )
+  const [selectState, setSelectState] = useState<SelectState>(
+    storageKey ? getStoredState(`${storageKey}_select`, {}) : {}
+  )
+  const [sortState, setSortState] = useState<SortState>(
+    storageKey ? getStoredState(`${storageKey}_sort`, []) : []
+  )
+  const [visibilityState, setVisibilityState] = useState<VisibilityState>(
+    storageKey ? getStoredState(`${storageKey}_visibility`, newInitialVisibilityState) : newInitialVisibilityState
+  )
+
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      sessionStorage.setItem(`${storageKey}_expand`, JSON.stringify(expandState))
+      sessionStorage.setItem(`${storageKey}_filters`, JSON.stringify(filtersState))
+      sessionStorage.setItem(`${storageKey}_group`, JSON.stringify(groupState))
+      sessionStorage.setItem(`${storageKey}_order`, JSON.stringify(orderState))
+      sessionStorage.setItem(`${storageKey}_pin`, JSON.stringify(pinState))
+      sessionStorage.setItem(`${storageKey}_search`, JSON.stringify(searchState))
+      sessionStorage.setItem(`${storageKey}_select`, JSON.stringify(selectState))
+      sessionStorage.setItem(`${storageKey}_sort`, JSON.stringify(sortState))
+      sessionStorage.setItem(`${storageKey}_visibility`, JSON.stringify(visibilityState))
+    } catch {
+      // ignore
+    }
+  }, [
+    storageKey,
+    expandState,
+    filtersState,
+    groupState,
+    orderState,
+    pinState,
+    searchState,
+    selectState,
+    sortState,
+    visibilityState,
+  ])
 
   return {
     expandState,
