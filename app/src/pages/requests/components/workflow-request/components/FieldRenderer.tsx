@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import type { Option } from '@/types/option'
-import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
+import { uploadForOcr } from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
@@ -28,14 +28,19 @@ interface Props {
   field: any
   repositoryId: string | undefined
   value: any
+  repoFieldHints?: string[]
   viewOnly?: boolean
   onChange: (value: any) => void
+  onOcrFieldList?: (
+    list: { name?: string; value?: string }[] | undefined,
+  ) => void
 }
 
 interface StagedFileValue {
-  fileId: string
   fileName: string
-  repositoryId: string
+  fileId?: string
+  rawFile?: File
+  repositoryId?: string
 }
 
 // Renders a single form-builder field using the app's existing
@@ -44,10 +49,12 @@ interface StagedFileValue {
 // placeholder instead of silently disappearing.
 const FieldRenderer = ({
   field,
+  repoFieldHints,
   repositoryId,
   value,
   viewOnly,
   onChange,
+  onOcrFieldList,
 }: Props) => {
   const { t } = useLingui()
   const [isUploading, setIsUploading] = useState(false)
@@ -196,11 +203,13 @@ const FieldRenderer = ({
 
       const staged: StagedFileValue | null = value || null
 
-      // Per the "Normal Workflow — Frontend Integration Guide": a file
-      // isn't sent with the request at submit time. It's uploaded up front
-      // via uploadAndIndex.uploadWithOcr (which stages it + runs OCR), and
-      // only the resulting { fileId, repositoryId } is kept here — that
-      // pair is what actually goes on the request as `stagedFiles`.
+      // Two-phase, matching the repository's mandatory-field rules: this
+      // is phase 1 only — an OCR-only peek (uploadForOcr, nothing
+      // persisted) to auto-fill matching fields. The file itself is kept
+      // as `rawFile` and only actually staged (uploadWithOcr, which is
+      // what produces the fileId used in `stagedFiles`) at submit time,
+      // after mandatory fields are confirmed filled — see
+      // useWorkflowForm's stagePendingFiles().
       const handleFiles = async (files: FileList | null) => {
         const file = files?.[0]
         if (!file) return
@@ -213,27 +222,26 @@ const FieldRenderer = ({
           return
         }
 
+        onChange({ fileName: file.name, rawFile: file, repositoryId })
+
         setIsUploading(true)
-        const { data, error } = await uploadAndIndexApi.uploadWithOcr({
-          file,
+        const { data, error } = await uploadForOcr(
           repositoryId,
-        })
+          file,
+          repoFieldHints || [],
+        )
         setIsUploading(false)
 
         if (error || !data) {
           const fileName = file.name
           showToast({
-            message: error || t`Failed to upload ${fileName}.`,
+            message: error || t`Failed to run OCR on ${fileName}.`,
             variant: 'error',
           })
           return
         }
 
-        onChange({
-          fileId: data.fileId,
-          fileName: data.fileName || file.name,
-          repositoryId: data.repositoryId || repositoryId,
-        })
+        onOcrFieldList?.(data.ocrFieldList)
       }
 
       const ext = staged ? getFileExtension(staged.fileName) : ''

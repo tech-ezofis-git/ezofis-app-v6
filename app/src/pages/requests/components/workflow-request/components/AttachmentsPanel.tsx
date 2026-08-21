@@ -8,9 +8,15 @@ import { formatFileSize, getFileExtension } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
 
 export interface AttachmentEntry {
-  fileId: string
   fileName: string
+  localId: string
   repositoryId: string
+  // Set once the file is actually staged (uploadWithOcr) — deferred to
+  // submit time, after mandatory-field validation passes. Until then this
+  // carries `rawFile` instead: OCR has already run against it (via
+  // uploadForOcr), but nothing's been persisted to the stage table yet.
+  fileId?: string
+  rawFile?: File
   size?: number
 }
 
@@ -18,7 +24,7 @@ interface Props {
   attachments: AttachmentEntry[]
   isUploading: boolean
   onAdd: (files: FileList | null) => void
-  onRemove: (fileId: string) => void
+  onRemove: (localId: string) => void
 }
 
 // General, request-level attachments (not tied to a specific form field) —
@@ -76,7 +82,7 @@ const AttachmentsPanel = ({
             return (
               <div
                 className='group flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 transition-colors hover:border-gray-4'
-                key={file.fileId}
+                key={file.localId}
               >
                 <div
                   className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${styles.wrap}`}
@@ -98,7 +104,7 @@ const AttachmentsPanel = ({
                   aria-label={t`Remove attachment`}
                   className='flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 opacity-0 transition-all group-hover:opacity-100 hover:bg-red-2 hover:text-red-9 active:scale-90'
                   type='button'
-                  onClick={() => onRemove(file.fileId)}
+                  onClick={() => onRemove(file.localId)}
                 >
                   <Icon className='size-3.5' name='tabler:x' />
                 </button>

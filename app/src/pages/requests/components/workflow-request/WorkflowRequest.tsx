@@ -24,6 +24,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const {
     addAttachment,
     addComment,
+    applyOcrFieldList,
     attachments,
     commentDraft,
     comments,
@@ -34,6 +35,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     loadError,
     panels,
     removeAttachment,
+    repoFieldHints,
     submit,
     submitError,
     setCommentDraft,
@@ -91,8 +93,10 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           <WorkflowFormRenderer
             formModel={formModel}
             panels={panels}
+            repoFieldHints={repoFieldHints}
             repositoryId={workflow?.repositoryId}
             onFieldChange={setFieldValue}
+            onOcrFieldList={applyOcrFieldList}
           />
         </div>
         <WorkflowRequestSidebar

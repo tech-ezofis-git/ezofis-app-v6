@@ -13,9 +13,13 @@ import {
 interface Props {
   formModel: Record<string, any>
   panels: any[]
+  repoFieldHints?: string[]
   repositoryId?: string
   viewOnly?: boolean
   onFieldChange: (fieldId: string, value: any) => void
+  onOcrFieldList?: (
+    list: { name?: string; value?: string }[] | undefined,
+  ) => void
 }
 
 // Renders a workflow's formJson.panels using the app's existing form-control
@@ -27,9 +31,11 @@ interface Props {
 const WorkflowFormRenderer = ({
   formModel,
   panels,
+  repoFieldHints,
   repositoryId,
   viewOnly,
   onFieldChange,
+  onOcrFieldList,
 }: Props) => {
   return (
     <ScrollArea height='100%'>
@@ -112,10 +118,12 @@ const WorkflowFormRenderer = ({
                         >
                           <FieldRenderer
                             field={field}
+                            repoFieldHints={repoFieldHints}
                             repositoryId={repositoryId}
                             value={formModel[field.id]}
                             viewOnly={viewOnly}
                             onChange={(value) => onFieldChange(field.id, value)}
+                            onOcrFieldList={onOcrFieldList}
                           />
                         </div>
                       ))}

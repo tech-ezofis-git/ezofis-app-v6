@@ -28,6 +28,7 @@ import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import { buildV6FilterClauses } from '../utils/requestFilterMapper'
+import { isAccountsPayableWorkflow } from '../utils/workflow.utils'
 
 interface InboxListProps {
   data: TableGroup[]
@@ -1462,6 +1463,21 @@ const InboxList: React.FC<InboxListProps> = ({
     return fields
   }, [filterFields, columns])
 
+  // The 5 AP quick-filter chips (Due Date/Matched/Discrepancies/High
+  // Value/Supplier) don't mean anything for a generic workflow. For those,
+  // default to showing the workflow's own first two filterable fields as
+  // chips instead, with the rest still reachable via the "+" picker.
+  const isAccountsPayable = isAccountsPayableWorkflow(workflow)
+  const genericDefaultFilterFields = useMemo<DynamicFilterField[]>(
+    () => (isAccountsPayable ? [] : optionalFilterFields.slice(0, 2)),
+    [isAccountsPayable, optionalFilterFields],
+  )
+  const genericPickerFilterFields = useMemo<DynamicFilterField[]>(
+    () =>
+      isAccountsPayable ? optionalFilterFields : optionalFilterFields.slice(2),
+    [isAccountsPayable, optionalFilterFields],
+  )
+
   const handleFilterChange = (id: string, values: string | string[]) => {
     const store = requestStore.getState()
     const newFilters = store.activeQuickFilters.filter(
@@ -1787,7 +1803,7 @@ const InboxList: React.FC<InboxListProps> = ({
           customSearchComponent={<TableSearch table={table as any} />}
           dataset={flatRows}
           isLoading={isLoading || isRefetching}
-          optionalFields={optionalFilterFields}
+          optionalFields={genericPickerFilterFields}
           onFieldOpen={handleFieldOpen}
           searchPlaceholder={t`Search invoice, supplier, PO...`}
           searchQuery={searchState?.value || ''}
@@ -1802,14 +1818,18 @@ const InboxList: React.FC<InboxListProps> = ({
             'status': activeFiltersMap.status || [],
             'Supplier Name': activeFiltersMap.supplier || [],
           }}
-          fields={[
-            {
-              id: 'Supplier Name',
-              label: t`Supplier`,
-              valueGetter: (row) => getRowColumnValue(row, 'vendor'),
-            },
-          ]}
-          quickFilters={[
+          fields={
+            isAccountsPayable
+              ? [
+                  {
+                    id: 'Supplier Name',
+                    label: t`Supplier`,
+                    valueGetter: (row) => getRowColumnValue(row, 'vendor'),
+                  },
+                ]
+              : genericDefaultFilterFields
+          }
+          quickFilters={!isAccountsPayable ? [] : [
             {
               icon: 'tabler:calendar-due',
               id: 'due_date',

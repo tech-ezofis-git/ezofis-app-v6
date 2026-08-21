@@ -22,6 +22,7 @@ import {
 } from '@/pages/requests/utils/dynamicTable.utils'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import {
+  getGenericStageInfo,
   isAccountsPayableWorkflow,
   safeParse,
 } from '@/pages/requests/utils/workflow.utils'
@@ -29,6 +30,7 @@ import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
+import GenericStagePill from '../GenericStagePill'
 import HoverExpandableText from '../HoverExpandableText'
 import DynamicTableCell from './components/DynamicTableCell'
 // ✅ Your generic FileSheet (React version)
@@ -58,7 +60,13 @@ export const resolveFormJson = (
     }
   }
 
-  return [raw]
+  // Already an object (getFormDataById parses formJson before it lands on
+  // selectedWorkflow) — return it as-is, matching the string branch's
+  // shape. Wrapping it in [raw] here used to break getFormPanels(): it
+  // only pulls `.panels` off a plain object, not off an array, so the
+  // wrapped form's real panels were silently dropped and every dynamic
+  // column/chip that reads them (grid card, table columns) came back empty.
+  return raw
 }
 
 // ✅ Local component for summary badges with hover cards
@@ -1284,6 +1292,7 @@ const getBaseColumns = (
   activeTab: string | undefined,
   onRowClick: (item: any, tab: string) => void,
   isAccountsPayable: boolean,
+  workflow: WorkflowOption | null,
 ): Column[] => {
   const columns: Column[] = [
     {
@@ -1338,13 +1347,16 @@ const getBaseColumns = (
       {
         id: 'status',
         label: 'Status',
-        size: 160,
+        size: 220,
         renderCell: (row: any) => {
-          const statusText = row?.status || row?.stage || '-'
+          const { currentLabel, isTerminal, previousLabel } =
+            getGenericStageInfo(workflow, row)
           return (
-            <span className='inline-flex items-center gap-1 rounded-md border border-[var(--gray-4)] bg-[var(--gray-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gray-11)]'>
-              {statusText}
-            </span>
+            <GenericStagePill
+              currentLabel={currentLabel}
+              isTerminal={isTerminal}
+              previousLabel={previousLabel}
+            />
           )
         },
       },
@@ -1706,6 +1718,7 @@ export const useDynamicColumns = (
       activeTab,
       onRowClick,
       isAccountsPayable,
+      workflow,
     )
 
     const form = resolveFormJson(workflow)
