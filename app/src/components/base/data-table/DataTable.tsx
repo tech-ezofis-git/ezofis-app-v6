@@ -79,6 +79,7 @@ interface Props<TData> extends ComponentProps<'table'> {
   onLoadMore?: () => void
 
   onReload: () => void
+  onRowClick?: (row: any) => void
   onRowSizeChange?: (rowSize: RowSize) => void
 }
 
@@ -134,6 +135,7 @@ const DataTable = <TData,>({
   onEmptyPrimaryAction,
   onLoadMore,
   onReload,
+  onRowClick,
   onRowSizeChange,
 }: Props<TData>) => {
   const [internalRowSize, setInternalRowSize] = useState<RowSize>('default')
@@ -491,8 +493,12 @@ const DataTable = <TData,>({
 
                   return (
                     <Tr
-                      className='relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]'
+                      className={cn(
+                        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
+                        onRowClick && 'cursor-pointer'
+                      )}
                       key={row.id}
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const allowOverflow = shouldAllowCellOverflow(

@@ -93,6 +93,8 @@ type FolderTableDataTableSplitProps = {
 
   folderTotalCount?: number
 
+  hideFolderActions?: boolean
+
   loading?: boolean
 
   loadingFolders?: boolean
@@ -1117,7 +1119,7 @@ export function FolderDataTableSection({
       }),
 
       folderColumnHelper.accessor('createdBy', {
-        header: () => <EllipsisText lines={1} value={t`Created By Name`} />,
+        header: () => <EllipsisText lines={1} value={t`Created By`} />,
         id: 'createdBy',
         maxSize: 180,
         meta: EXPLORER_CELL_META,
@@ -1131,58 +1133,58 @@ export function FolderDataTableSection({
       ...(hideFolderActions
         ? []
         : [
-            folderColumnHelper.display({
-              enableResizing: false,
-              enableSorting: false,
-              header: '',
-              id: 'actions',
-              maxSize: 72,
-              meta: EXPLORER_CELL_META,
-              minSize: 56,
-              size: 64,
+          folderColumnHelper.display({
+            enableResizing: false,
+            enableSorting: false,
+            header: '',
+            id: 'actions',
+            maxSize: 72,
+            meta: EXPLORER_CELL_META,
+            minSize: 56,
+            size: 64,
 
-              cell: ({ row }) => {
-                const folderId = row.original.id
+            cell: ({ row }) => {
+              const folderId = row.original.id
 
-                return (
-                  <div
-                    className='flex items-center justify-end'
-                    onClick={(event) => event.stopPropagation()}
+              return (
+                <div
+                  className='flex items-center justify-end'
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Menu
+                    position='bottom-end'
+                    withinPortal
+                    width={200}
+                    target={
+                      <button
+                        className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
+                        disabled={loadingFolders}
+                        type='button'
+                      >
+                        <DynamicIcon className='h-4 w-4' name='more' />
+                      </button>
+                    }
                   >
-                    <Menu
-                      position='bottom-end'
-                      withinPortal
-                      width={200}
-                      target={
-                        <button
-                          className='flex h-8 w-8 items-center justify-center rounded-lg text-gray-13 transition-all hover:bg-gray-5 disabled:cursor-not-allowed disabled:opacity-40'
-                          disabled={loadingFolders}
-                          type='button'
-                        >
-                          <DynamicIcon className='h-4 w-4' name='more' />
-                        </button>
-                      }
-                    >
-                      <MenuItem
-                        icon='lucide:folder'
-                        label={t`Open`}
-                        onClick={() => onOpenFolder(folderId)}
-                      />
-                      <MenuItem icon='lucide:pencil' label={t`Rename`} />
-                      <MenuItem icon='lucide:share-2' label={t`Share`} />
-                      <MenuDivider />
-                      <MenuItem
-                        className='text-red-9'
-                        icon='lucide:trash-2'
-                        iconClass='text-red-9'
-                        label={t`Delete`}
-                      />
-                    </Menu>
-                  </div>
-                )
-              },
-            }),
-          ]),
+                    <MenuItem
+                      icon='lucide:folder'
+                      label={t`Open`}
+                      onClick={() => onOpenFolder(folderId)}
+                    />
+                    <MenuItem icon='lucide:pencil' label={t`Rename`} />
+                    <MenuItem icon='lucide:share-2' label={t`Share`} />
+                    <MenuDivider />
+                    <MenuItem
+                      className='text-red-9'
+                      icon='lucide:trash-2'
+                      iconClass='text-red-9'
+                      label={t`Delete`}
+                    />
+                  </Menu>
+                </div>
+              )
+            },
+          }),
+        ]),
     ],
 
     [hideFolderActions, loadingFolders, loadingPage, onOpenFolder, t],
@@ -1234,6 +1236,7 @@ export function FolderDataTableSection({
         stickyHeader
         onLoadMore={handleFolderScroll}
         onReload={onReload || (() => undefined)}
+        onRowClick={(row) => onOpenFolder(row.original.id)}
       />
     </section>
   )

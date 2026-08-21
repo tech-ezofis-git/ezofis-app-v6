@@ -894,6 +894,7 @@ export const folderApi = {
     )
   },
 
+
   async getDocumentDetail(
     repositoryId: string,
     itemId: string,

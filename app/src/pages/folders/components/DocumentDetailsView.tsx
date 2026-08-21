@@ -2,6 +2,8 @@ import { ArrowLeft, CheckCircle2, Loader2, PenLine, ScanText } from 'lucide-reac
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
+import IconButton from '@/components/base/button/IconButton'
+
 import {
   collectSignRequestFields,
   createSignRequest,
@@ -50,12 +52,13 @@ import {
 import FolderSharePopover from './FolderSharePopover'
 import { DynamicIcon } from './icons'
 import { Button, Card, PrimaryButton, StatusPill } from './Ui'
-
+import Buttons from '@/components/base/button/Button'
 const EMPTY_SIGNATURE_FIELDS: SignRequestFieldDto[] = []
 
 type CommentItem = {
   actorName?: string
   author?: string
+  authorEmail?: string
   authorName?: string
   authorUserId?: string
   body?: string
@@ -306,8 +309,13 @@ export function DocumentDetailsView({
   const [comments, setComments] = useState<CommentItem[]>([])
   const [commentsLoading, setCommentsLoading] = useState(false)
   const [commentsLoaded, setCommentsLoaded] = useState(false)
+  const [commentsPage, setCommentsPage] = useState(1)
+  const [commentsHasMore, setCommentsHasMore] = useState(true)
+  const [commentsLoadingMore, setCommentsLoadingMore] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [savingComment, setSavingComment] = useState(false)
+  const commentsEndRef = useRef<HTMLDivElement | null>(null)
+  const commentsContainerRef = useRef<HTMLDivElement | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewMimeType, setPreviewMimeType] = useState<string | null>(null)
   const [previewKind, setPreviewKind] = useState<DocumentPreviewKind | null>(
@@ -403,19 +411,19 @@ export function DocumentDetailsView({
 
       const pendingForUser = currentUserEmail
         ? activeRequests.find((request) => {
-            return (request.signers || []).some((signer) => {
-              const email = String(signer.email || '')
-                .trim()
-                .toLowerCase()
-              const signerStatus = String(signer.status || '').toUpperCase()
-              return (
-                email === currentUserEmail &&
-                !signerStatus.includes('SIGNED') &&
-                !signerStatus.includes('DECLINE') &&
-                !signerStatus.includes('CANCEL')
-              )
-            })
+          return (request.signers || []).some((signer) => {
+            const email = String(signer.email || '')
+              .trim()
+              .toLowerCase()
+            const signerStatus = String(signer.status || '').toUpperCase()
+            return (
+              email === currentUserEmail &&
+              !signerStatus.includes('SIGNED') &&
+              !signerStatus.includes('DECLINE') &&
+              !signerStatus.includes('CANCEL')
+            )
           })
+        })
         : undefined
 
       // Latest active request — so the owner also sees marked places after refresh.
@@ -458,10 +466,10 @@ export function DocumentDetailsView({
           fields = fromDto.length
             ? fromDto
             : loadSignRequestFields({
-                itemId: id,
-                repositoryId,
-                signRequestId: requestId,
-              })
+              itemId: id,
+              repositoryId,
+              signRequestId: requestId,
+            })
         }
       } else if (requestId && !fields.length) {
         const detail = await getSignRequest({ signRequestId: requestId })
@@ -578,9 +586,9 @@ export function DocumentDetailsView({
           id,
           useShareToken
             ? {
-                shareToken: shareCtx.shareToken,
-                tenantId: shareCtx.sourceTenantId,
-              }
+              shareToken: shareCtx.shareToken,
+              tenantId: shareCtx.sourceTenantId,
+            }
             : undefined,
         )
         if (mounted) setData(response as WorkspaceDocumentDetail)
@@ -707,10 +715,17 @@ export function DocumentDetailsView({
           pageSize: 50,
         })
         if (mounted) {
-          setComments(
-            Array.isArray(response?.comments) ? response.comments : [],
-          )
+          const fetchedComments = Array.isArray(response?.comments) ? response.comments : []
+          setComments(fetchedComments.reverse())
+          setCommentsPage(1)
+          setCommentsHasMore(fetchedComments.length === 50)
           setCommentsLoaded(true)
+
+          setTimeout(() => {
+            if (commentsEndRef.current) {
+              commentsEndRef.current.scrollIntoView({ behavior: 'auto' })
+            }
+          }, 100)
         }
       } catch {
         if (mounted) {
@@ -726,7 +741,40 @@ export function DocumentDetailsView({
     return () => {
       mounted = false
     }
-  }, [tab, repositoryId, id, commentsLoaded])
+  }, [tab, repositoryId, id, commentsLoaded, inviteToken])
+
+  const handleCommentsScroll = async (e: any) => {
+    const target = e.target as HTMLDivElement
+    if (target.scrollTop === 0 && commentsHasMore && !commentsLoadingMore) {
+      setCommentsLoadingMore(true)
+      const previousScrollHeight = target.scrollHeight
+      try {
+        const nextPage = commentsPage + 1
+        const response = await folderApi.getDocumentComments(repositoryId, id, {
+          page: nextPage,
+          pageSize: 50,
+        })
+        const fetchedComments = Array.isArray(response?.comments) ? response.comments : []
+        if (fetchedComments.length > 0) {
+          setComments((prev) => [...fetchedComments.reverse(), ...prev])
+          setCommentsPage(nextPage)
+          setCommentsHasMore(fetchedComments.length === 50)
+
+          setTimeout(() => {
+            if (commentsContainerRef.current) {
+              commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight - previousScrollHeight
+            }
+          }, 0)
+        } else {
+          setCommentsHasMore(false)
+        }
+      } catch (error) {
+        console.error('Failed to load more comments:', error)
+      } finally {
+        setCommentsLoadingMore(false)
+      }
+    }
+  }
 
   useEffect(() => {
     let mounted = true
@@ -966,7 +1014,6 @@ export function DocumentDetailsView({
       })
       setCommentText('')
       setCommentsLoaded(false)
-      setTab('comments')
     } finally {
       setSavingComment(false)
     }
@@ -1618,98 +1665,98 @@ export function DocumentDetailsView({
                     if (open && autoOpenShare) onShareOpened?.()
                   }}
                   onShare={async (shares, message, meta) => {
-                      if (!id || !repositoryId) {
-                        showToast({
-                          message: t`Missing file context for share`,
-                          variant: 'error',
-                        })
-                        return false
-                      }
-                      try {
-                        const viewShares = shares.filter(
-                          (share) =>
-                            share.permission !== 'Sign' && share.action !== 2,
-                        )
-                        const signShares = shares.filter(
-                          (share) =>
-                            share.permission === 'Sign' || share.action === 2,
-                        )
+                    if (!id || !repositoryId) {
+                      showToast({
+                        message: t`Missing file context for share`,
+                        variant: 'error',
+                      })
+                      return false
+                    }
+                    try {
+                      const viewShares = shares.filter(
+                        (share) =>
+                          share.permission !== 'Sign' && share.action !== 2,
+                      )
+                      const signShares = shares.filter(
+                        (share) =>
+                          share.permission === 'Sign' || share.action === 2,
+                      )
 
-                        // View → share API only
-                        for (const share of viewShares) {
-                          await folderApi.inviteToShare({
-                            email: share.email,
-                            itemId: id,
-                            message:
-                              message ||
-                              (data?.fileName
-                                ? t`Please review this file: ${data.fileName}`
-                                : t`Please review this file`),
-                            permission: 'Can View',
-                            repositoryId,
-                          })
-                        }
-
-                        // Sign → sign API only (no share invite)
-                        if (signShares.length) {
-                          const created = await createSignRequest({
-                            itemId: id,
-                            message:
-                              message ||
-                              t`Please sign this document. You can place your signature anywhere.`,
-                            repositoryId,
-                            signers: signShares.map((share, index) => ({
-                              email: share.email.trim(),
-                              name:
-                                share.email.split('@')[0] || share.email.trim(),
-                              order: index + 1,
-                            })),
-                            signingMode:
-                              meta?.signingMode ||
-                              (signShares.length === 1
-                                ? 'single'
-                                : 'multiple'),
-                          })
-                          if (created.error || !created.data?.signRequestId) {
-                            throw new Error(
-                              String(
-                                created.error ||
-                                  'Unable to create sign request',
-                              ),
-                            )
-                          }
-                        }
-
-                        setSharedEmails((prev) => {
-                          const next = new Set(prev)
-                          shares.forEach((share) =>
-                            next.add(share.email.trim().toLowerCase()),
-                          )
-                          return [...next]
-                        })
-                        setSharedRoles((prev) => {
-                          const next = { ...prev }
-                          shares.forEach((share) => {
-                            const email = share.email.trim().toLowerCase()
-                            next[email] =
-                              share.permission === 'Sign' || share.action === 2
-                                ? 'Sign'
-                                : 'View'
-                          })
-                          return next
-                        })
-                        return true
-                      } catch (error) {
-                        showToast({
+                      // View → share API only
+                      for (const share of viewShares) {
+                        await folderApi.inviteToShare({
+                          email: share.email,
+                          itemId: id,
                           message:
-                            error instanceof Error
-                              ? error.message
-                              : t`Failed to invite`,
-                          variant: 'error',
+                            message ||
+                            (data?.fileName
+                              ? t`Please review this file: ${data.fileName}`
+                              : t`Please review this file`),
+                          permission: 'Can View',
+                          repositoryId,
                         })
-                        return false
                       }
-                    }}
+
+                      // Sign → sign API only (no share invite)
+                      if (signShares.length) {
+                        const created = await createSignRequest({
+                          itemId: id,
+                          message:
+                            message ||
+                            t`Please sign this document. You can place your signature anywhere.`,
+                          repositoryId,
+                          signers: signShares.map((share, index) => ({
+                            email: share.email.trim(),
+                            name:
+                              share.email.split('@')[0] || share.email.trim(),
+                            order: index + 1,
+                          })),
+                          signingMode:
+                            meta?.signingMode ||
+                            (signShares.length === 1
+                              ? 'single'
+                              : 'multiple'),
+                        })
+                        if (created.error || !created.data?.signRequestId) {
+                          throw new Error(
+                            String(
+                              created.error ||
+                              'Unable to create sign request',
+                            ),
+                          )
+                        }
+                      }
+
+                      setSharedEmails((prev) => {
+                        const next = new Set(prev)
+                        shares.forEach((share) =>
+                          next.add(share.email.trim().toLowerCase()),
+                        )
+                        return [...next]
+                      })
+                      setSharedRoles((prev) => {
+                        const next = { ...prev }
+                        shares.forEach((share) => {
+                          const email = share.email.trim().toLowerCase()
+                          next[email] =
+                            share.permission === 'Sign' || share.action === 2
+                              ? 'Sign'
+                              : 'View'
+                        })
+                        return next
+                      })
+                      return true
+                    } catch (error) {
+                      showToast({
+                        message:
+                          error instanceof Error
+                            ? error.message
+                            : t`Failed to invite`,
+                        variant: 'error',
+                      })
+                      return false
+                    }
+                  }}
                 />
               </div>
             </>
@@ -1719,11 +1766,10 @@ export function DocumentDetailsView({
               ref={signTriggerRef}
               aria-label={t`Sign`}
               aria-expanded={isSigning}
-              className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
-                isSigning
-                  ? 'border-primary-6 bg-primary-1 text-primary-9'
-                  : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
-              }`}
+              className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${isSigning
+                ? 'border-primary-6 bg-primary-1 text-primary-9'
+                : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
+                }`}
               disabled={!previewUrl || isPreviewLoading}
               type='button'
               onClick={() => {
@@ -1782,11 +1828,10 @@ export function DocumentDetailsView({
 
       <div className='ez-detail-scroll min-h-0 flex-1 overflow-y-auto p-5'>
         <div
-          className={`grid gap-5 ${
-            forceSigning && infoCards.length === 0
-              ? 'grid-cols-1'
-              : 'grid-cols-[minmax(0,1fr)_400px]'
-          }`}
+          className={`grid gap-5 ${forceSigning && infoCards.length === 0
+            ? 'grid-cols-1'
+            : 'grid-cols-[minmax(0,1fr)_400px]'
+            }`}
         >
           <main className='min-w-0 space-y-4'>
             {data.alert ? (
@@ -1880,11 +1925,10 @@ export function DocumentDetailsView({
               ) : null}
 
               <div
-                className={`ez-detail-scroll overflow-hidden bg-gray-1 ${
-                  isSigning || assignedFields.length > 0
-                    ? 'h-[min(72vh,820px)]'
-                    : 'h-[560px]'
-                }`}
+                className={`ez-detail-scroll overflow-hidden bg-gray-1 ${isSigning || assignedFields.length > 0
+                  ? 'h-[min(72vh,820px)]'
+                  : 'h-[560px]'
+                  }`}
               >
                 {hasValidFileUrl || isPreviewLoading ? (
                   <div
@@ -1932,9 +1976,8 @@ export function DocumentDetailsView({
                       <tr className='text-left text-gray-10'>
                         {lineItemColumns.map((key, index) => (
                           <th
-                            className={`sticky top-0 z-30 whitespace-nowrap border-b border-gray-3 px-3 py-3 text-left text-[12px] font-semibold tracking-wide text-gray-10 ${lineItemStickyClass(index, 'th')} ${
-                              index < 2 ? 'z-40' : ''
-                            }`}
+                            className={`sticky top-0 z-30 whitespace-nowrap border-b border-gray-3 px-3 py-3 text-left text-[12px] font-semibold tracking-wide text-gray-10 ${lineItemStickyClass(index, 'th')} ${index < 2 ? 'z-40' : ''
+                              }`}
                             key={key}
                           >
                             {formatLineItemHeader(key)}
@@ -1968,297 +2011,361 @@ export function DocumentDetailsView({
 
             {!forceSigning ? (
               <>
-            <div className='flex w-fit gap-1 rounded-xl bg-gray-2 p-1'>
-              {tabs.map((item) => (
-                <button
-                  className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-all active:scale-95 ${tab === item.key ? 'bg-surface-primary text-gray-13 shadow-sm ring-1 ring-gray-3' : 'text-gray-10 hover:bg-gray-4 hover:text-gray-12'}`}
-                  key={item.key}
-                  onClick={() => setTab(item.key)}
-                >
-                  <DynamicIcon className='h-4 w-4' name={item.icon} />
-                  {item.label} {item.count ? `(${item.count})` : ''}
-                </button>
-              ))}
-            </div>
-
-            <Card className='flex max-h-[min(52vh,480px)] min-h-[320px] flex-col overflow-hidden p-0'>
-              {tab === 'timeline' ? (
-                <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
-              {timelineLoading ? (
-                  <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                    {t`Loading timeline...`}
-                  </div>
-                ) : timeline.length ? (
-                  <div className='space-y-4'>
-                    {timeline.map((item, index) => (
-                      <div
-                        className='flex gap-3'
-                        key={`${item.id || item.title}-${index}`}
-                      >
-                        <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
-                          <DynamicIcon
-                            className='h-4 w-4'
-                            name={eventIconMap[item.eventType || ''] || 'clock'}
-                          />
-                        </span>
-                        <div>
-                          <b className='text-[13px] font-semibold text-gray-13'>
-                            {item.title}
-                          </b>
-                          <p className='mt-0.5 text-[12px] text-gray-10'>
-                            {[
-                              item.actorName || item.actorType,
-                              formatDateTime(item.createdAtUtc),
-                            ]
-                              .filter(Boolean)
-                              .join(' · ')}
-                          </p>
-                          {item.description ? (
-                            <p className='mt-1 text-[13px] text-gray-10'>
-                              {item.description}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <NoDataState
-                    description={t`No activity timeline is available for this document.`}
-                    icon='clock'
-                    title={t`No timeline found`}
-                  />
-                )}
+                <div className='flex w-fit gap-1 rounded-xl bg-gray-2 p-1'>
+                  {tabs.map((item) => (
+                    <button
+                      className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-all active:scale-95 ${tab === item.key ? 'bg-surface-primary text-gray-13 shadow-sm ring-1 ring-gray-3' : 'text-gray-10 hover:bg-gray-4 hover:text-gray-12'}`}
+                      key={item.key}
+                      onClick={() => setTab(item.key)}
+                    >
+                      <DynamicIcon className='h-4 w-4' name={item.icon} />
+                      {item.label} {item.count ? `(${item.count})` : ''}
+                    </button>
+                  ))}
                 </div>
-              ) : null}
 
-              {tab === 'comments' ? (
-                <div className='flex min-h-0 flex-1 flex-col'>
-                  <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
-                    {commentsLoading ? (
-                      <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                        {t`Loading comments...`}
-                      </div>
-                    ) : comments.length ? (
-                      <div className='space-y-4'>
-                        {comments.map((item, index) => {
-                          const author =
-                            item.authorName ||
-                            item.author ||
-                            item.actorName ||
-                            t`User`
-                          const message =
-                            item.body ||
-                            item.message ||
-                            item.comment ||
-                            item.text ||
-                            ''
-                          const isMine = item.authorUserId === currentUserEmail
-
-                          return (
+                <Card className='flex max-h-[min(52vh,480px)] min-h-[320px] flex-col overflow-hidden p-0'>
+                  {tab === 'timeline' ? (
+                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
+                      {timelineLoading ? (
+                        <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
+                          {t`Loading timeline...`}
+                        </div>
+                      ) : timeline.length ? (
+                        <div className='space-y-4'>
+                          {timeline.map((item, index) => (
                             <div
-                              className={`flex gap-3 ${isMine ? 'justify-end' : 'justify-start'}`}
-                              key={`${item.id || author}-${index}`}
+                              className='flex gap-3'
+                              key={`${item.id || item.title}-${index}`}
                             >
-                              {!isMine && (
-                                <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-[12px] font-semibold text-blue-11'>
-                                  {author.charAt(0).toUpperCase()}
-                                </span>
-                              )}
-
-                              <div
-                                className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${
-                                  isMine
-                                    ? 'bg-violet-9 text-white'
-                                    : 'bg-gray-2 text-gray-13'
-                                }`}
-                              >
-                                <div className='flex items-center gap-3'>
-                                  <b className='text-[13px] font-semibold'>
-                                    {isMine ? t`You` : author}
-                                  </b>
-
-                                  <span
-                                    className={`text-[11px] ${isMine ? 'text-violet-1' : 'text-gray-10'}`}
-                                  >
-                                    {formatDateTime(
-                                      item.createdAtUtc || item.date,
-                                    )}
-                                  </span>
-                                </div>
-
-                                <p className='mt-1 text-[13px] leading-5 whitespace-pre-wrap'>
-                                  {message}
+                              <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
+                                <DynamicIcon
+                                  className='h-4 w-4'
+                                  name={eventIconMap[item.eventType || ''] || 'clock'}
+                                />
+                              </span>
+                              <div>
+                                <b className='text-[13px] font-semibold text-gray-13'>
+                                  {item.title}
+                                </b>
+                                <p className='mt-0.5 text-[12px] text-gray-10'>
+                                  {[
+                                    item.actorName || item.actorType,
+                                    formatDateTime(item.createdAtUtc),
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
                                 </p>
+                                {item.description ? (
+                                  <p className='mt-1 text-[13px] text-gray-10'>
+                                    {item.description}
+                                  </p>
+                                ) : null}
                               </div>
                             </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <NoDataState
-                        description={t`No comments are available for this document. Add the first comment to start collaboration.`}
-                        icon='messageSquare'
-                        title={t`No comments found`}
-                      />
-                    )}
-                  </div>
-
-                  <div className='shrink-0 border-t border-gray-3 bg-surface-primary p-4'>
-                    <div className='flex items-center gap-3'>
-                      <textarea
-                        className='h-12 flex-1 resize-none rounded-lg border border-gray-3 bg-white px-4 py-3 text-[13px] text-gray-13 outline-none focus:border-blue-7'
-                        placeholder={t`Add a comment...`}
-                        rows={1}
-                        value={commentText}
-                        onChange={(event) => setCommentText(event.target.value)}
-                      />
-
-                      <PrimaryButton
-                        className='h-12 shrink-0 px-6 text-[13px]'
-                        disabled={!commentText.trim() || savingComment}
-                        onClick={saveComment}
-                      >
-                        {savingComment ? t`Posting...` : t`Post`}
-                      </PrimaryButton>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {tab === 'relatedDocs' ? (
-                <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
-                {relatedDocsLoading ? (
-                  <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                    {t`Loading related documents...`}
-                  </div>
-                ) : relatedDocs.length ? (
-                  <div className='space-y-2'>
-                    {relatedDocs.map((item) => {
-                      const sizeLabel = formatRelatedFileSize(item.fileSize)
-                      const dateLabel = item.createdAtUtc
-                        ? formatUtcToLocalDate(item.createdAtUtc, '')
-                        : ''
-                      const secondary = [
-                        dateLabel,
-                        item.repositoryName || item.supplier || null,
-                      ]
-                        .filter(Boolean)
-                        .join(' • ')
-                      const ext = String(
-                        item.fileType ||
-                          item.fileName.split('.').pop() ||
-                          'pdf',
-                      )
-                        .replace(/^\./, '')
-                        .toLowerCase()
-
-                      return (
-                        <div
-                          key={`${item.repositoryId}:${item.id}`}
-                          className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface-primary px-3 py-2.5 transition-colors hover:border-gray-5 hover:bg-gray-1'
-                        >
-                          <button
-                            type='button'
-                            className='flex min-w-0 flex-1 items-center gap-3 text-left'
-                            onClick={() => {
-                              onOpenRelatedDocument?.({
-                                id: item.id,
-                                repositoryId: item.repositoryId,
-                              })
-                            }}
-                          >
-                            <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-2'>
-                              <DynamicIcon
-                                className='h-4 w-4 text-red-9'
-                                name='fileText'
-                              />
-                            </span>
-                            <span className='min-w-0 flex-1'>
-                              <span className='flex min-w-0 flex-wrap items-baseline gap-x-1.5'>
-                                <b className='truncate text-[13px] font-semibold text-gray-13'>
-                                  {item.fileName}
-                                </b>
-                                {sizeLabel ? (
-                                  <span className='shrink-0 text-[12px] text-gray-9'>
-                                    ({sizeLabel})
-                                  </span>
-                                ) : ext ? (
-                                  <span className='shrink-0 text-[12px] uppercase text-gray-9'>
-                                    {ext}
-                                  </span>
-                                ) : null}
-                              </span>
-                              {secondary ? (
-                                <span className='mt-0.5 block truncate text-[12px] text-gray-9'>
-                                  {secondary}
-                                </span>
-                              ) : null}
-                            </span>
-                          </button>
-
-                          <Tooltip content={t`Download`} position='top'>
-                            <button
-                              type='button'
-                              aria-label={t`Download`}
-                              className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-                              onClick={async (event) => {
-                                event.stopPropagation()
-                                try {
-                                  const response = await fileApi.viewBinaryV6(
-                                    item.repositoryId,
-                                    item.id,
-                                    'attachment',
-                                  )
-                                  if (!(response?.data instanceof Blob)) {
-                                    throw new Error(
-                                      toUiErrorMessage(
-                                        response?.error,
-                                        t`Unable to download file`,
-                                      ),
-                                    )
-                                  }
-                                  const downloadUrl = URL.createObjectURL(
-                                    response.data,
-                                  )
-                                  const link = document.createElement('a')
-                                  link.href = downloadUrl
-                                  link.download = item.fileName || 'document'
-                                  document.body.appendChild(link)
-                                  link.click()
-                                  link.remove()
-                                  URL.revokeObjectURL(downloadUrl)
-                                } catch (exception: any) {
-                                  showToast({
-                                    message: toUiErrorMessage(
-                                      exception?.message || exception,
-                                      t`Unable to download file`,
-                                    ),
-                                    variant: 'error',
-                                  })
-                                }
-                              }}
-                            >
-                              <DynamicIcon
-                                className='h-4 w-4'
-                                name='download'
-                              />
-                            </button>
-                          </Tooltip>
+                          ))}
                         </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <NoDataState
-                    description={t`No related documents are linked with this file yet.`}
-                    icon='paperclip'
-                    title={t`Related documents not found`}
-                  />
-                )}
-                </div>
-              ) : null}
-            </Card>
+                      ) : (
+                        <NoDataState
+                          description={t`No activity timeline is available for this document.`}
+                          icon='clock'
+                          title={t`No timeline found`}
+                        />
+                      )}
+                    </div>
+                  ) : null}
+
+                  {tab === 'comments' ? (
+                    <div className='flex min-h-0 flex-1 flex-col'>
+                      <div
+                        className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'
+                        ref={commentsContainerRef}
+                        onScroll={handleCommentsScroll}
+                      >
+                        {commentsLoadingMore ? (
+                          <div className='py-4 text-center text-[12px] font-semibold text-gray-10'>
+                            {t`Loading older comments...`}
+                          </div>
+                        ) : null}
+                        {commentsLoading && comments.length === 0 ? (
+                          <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
+                            {t`Loading comments...`}
+                          </div>
+                        ) : comments.length ? (
+                          <div className='flex flex-col gap-2'>
+                            {(() => {
+                              let lastDateHeader = ''
+                              return comments.map((item, index) => {
+                                const author =
+                                  item.authorName ||
+                                  item.author ||
+                                  item.actorName ||
+                                  t`User`
+                                const message =
+                                  item.body ||
+                                  item.message ||
+                                  item.comment ||
+                                  item.text ||
+                                  ''
+                                const isMine = item.authorEmail === currentUserEmail || item.authorName === currentUserEmail || item.authorUserId === currentUserEmail
+
+                                let dateHeader = ''
+                                const dateStr = item.createdAtUtc || item.date
+                                let messageTime = ''
+
+                                if (dateStr) {
+                                  const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z')
+                                  if (!isNaN(d.getTime())) {
+                                    messageTime = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
+                                    const today = new Date()
+                                    const yesterday = new Date(today)
+                                    yesterday.setDate(yesterday.getDate() - 1)
+
+                                    const isSameDay = (d1: Date, d2: Date) =>
+                                      d1.getFullYear() === d2.getFullYear() &&
+                                      d1.getMonth() === d2.getMonth() &&
+                                      d1.getDate() === d2.getDate()
+
+                                    if (isSameDay(d, today)) dateHeader = t`Today`
+                                    else if (isSameDay(d, yesterday)) dateHeader = t`Yesterday`
+                                    else {
+                                      const diffTime = Math.abs(today.getTime() - d.getTime())
+                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                                      if (diffDays <= 7) {
+                                        dateHeader = d.toLocaleDateString(undefined, { weekday: 'long' })
+                                      } else {
+                                        dateHeader = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                                      }
+                                    }
+                                  }
+                                }
+
+                                const showDateHeader = dateHeader && dateHeader !== lastDateHeader
+                                if (showDateHeader) {
+                                  lastDateHeader = dateHeader
+                                }
+
+                                return (
+                                  <div key={`${item.id || author}-${index}`}>
+                                    {showDateHeader && (
+                                      <div className='my-4 flex justify-center'>
+                                        <span className='px-3 py-1 text-[12px] font-medium text-gray-10'>
+                                          {dateHeader}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div
+                                      className={`mb-1.5 flex gap-3 ${isMine ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                      {!isMine && (
+                                        <div className='flex flex-col justify-end pb-1'>
+                                          <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-[12px] font-semibold text-blue-11'>
+                                            {author.charAt(0).toUpperCase()}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      <div
+                                        className={`relative flex min-w-[100px] max-w-[75%] flex-col px-3 py-2 shadow-sm ${isMine
+                                          ? 'rounded-2xl rounded-br-none border border-gray-3 bg-surface-primary text-gray-13'
+                                          : 'rounded-2xl rounded-bl-none bg-gray-3 text-gray-13'
+                                          }`}
+                                      >
+                                        <p className='break-words whitespace-pre-wrap pb-1 text-[13px] leading-5'>
+                                          {message}
+                                        </p>
+
+                                        <div className={`flex items-end gap-2 mt-0.5 ${!isMine ? 'justify-between' : 'justify-end'}`}>
+                                          {!isMine && (
+                                            <span className='truncate text-[10px] text-gray-9 max-w-[120px]' title={author}>
+                                              {author}
+                                            </span>
+                                          )}
+
+                                          <span className='shrink-0 text-[10px] text-gray-9'>
+                                            {messageTime}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            })()}
+                            <div ref={commentsEndRef} />
+                          </div>
+                        ) : (
+                          <NoDataState
+                            description={t`No comments are available for this document. Add the first comment to start collaboration.`}
+                            icon='messageSquare'
+                            title={t`No comments found`}
+                          />
+                        )}
+                      </div>
+
+                      <div className='shrink-0 border-t border-gray-3 bg-surface-primary p-4'>
+                        <div className='flex items-center gap-3'>
+                          <textarea
+                            className='h-12 flex-1 resize-none rounded-lg border border-gray-3 bg-white px-4 py-3 text-[13px] text-gray-13 outline-none focus:border-blue-7'
+                            placeholder={t`Add a comment...`}
+                            rows={1}
+                            value={commentText}
+                            onChange={(event) => setCommentText(event.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault()
+                                saveComment()
+                              }
+                            }}
+                          />
+
+                          <Buttons
+                            color='primary'
+                            icon='lucide:send'
+                            size='sm'
+                            variant='solid'
+                            className='px-3 py-3'
+                            onClick={saveComment}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {tab === 'relatedDocs' ? (
+                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
+                      {relatedDocsLoading ? (
+                        <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
+                          {t`Loading related documents...`}
+                        </div>
+                      ) : relatedDocs.length ? (
+                        <div className='space-y-2'>
+                          {relatedDocs.map((item) => {
+                            const sizeLabel = formatRelatedFileSize(item.fileSize)
+                            const dateLabel = item.createdAtUtc
+                              ? formatUtcToLocalDate(item.createdAtUtc, '')
+                              : ''
+                            const secondary = [
+                              dateLabel,
+                              item.repositoryName || item.supplier || null,
+                            ]
+                              .filter(Boolean)
+                              .join(' • ')
+                            const ext = String(
+                              item.fileType ||
+                              item.fileName.split('.').pop() ||
+                              'pdf',
+                            )
+                              .replace(/^\./, '')
+                              .toLowerCase()
+
+                            return (
+                              <div
+                                key={`${item.repositoryId}:${item.id}`}
+                                className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface-primary px-3 py-2.5 transition-colors hover:border-gray-5 hover:bg-gray-1'
+                              >
+                                <button
+                                  type='button'
+                                  className='flex min-w-0 flex-1 items-center gap-3 text-left'
+                                  onClick={() => {
+                                    onOpenRelatedDocument?.({
+                                      id: item.id,
+                                      repositoryId: item.repositoryId,
+                                    })
+                                  }}
+                                >
+                                  <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-2'>
+                                    <DynamicIcon
+                                      className='h-4 w-4 text-red-9'
+                                      name='fileText'
+                                    />
+                                  </span>
+                                  <span className='min-w-0 flex-1'>
+                                    <span className='flex min-w-0 flex-wrap items-baseline gap-x-1.5'>
+                                      <b className='truncate text-[13px] font-semibold text-gray-13'>
+                                        {item.fileName}
+                                      </b>
+                                      {sizeLabel ? (
+                                        <span className='shrink-0 text-[12px] text-gray-9'>
+                                          ({sizeLabel})
+                                        </span>
+                                      ) : ext ? (
+                                        <span className='shrink-0 text-[12px] uppercase text-gray-9'>
+                                          {ext}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    {secondary ? (
+                                      <span className='mt-0.5 block truncate text-[12px] text-gray-9'>
+                                        {secondary}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </button>
+
+                                <Tooltip content={t`Download`} position='top'>
+                                  <button
+                                    type='button'
+                                    aria-label={t`Download`}
+                                    className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+                                    onClick={async (event) => {
+                                      event.stopPropagation()
+                                      try {
+                                        const response = await fileApi.viewBinaryV6(
+                                          item.repositoryId,
+                                          item.id,
+                                          'attachment',
+                                        )
+                                        if (!(response?.data instanceof Blob)) {
+                                          throw new Error(
+                                            toUiErrorMessage(
+                                              response?.error,
+                                              t`Unable to download file`,
+                                            ),
+                                          )
+                                        }
+                                        const downloadUrl = URL.createObjectURL(
+                                          response.data,
+                                        )
+                                        const link = document.createElement('a')
+                                        link.href = downloadUrl
+                                        link.download = item.fileName || 'document'
+                                        document.body.appendChild(link)
+                                        link.click()
+                                        link.remove()
+                                        URL.revokeObjectURL(downloadUrl)
+                                      } catch (exception: any) {
+                                        showToast({
+                                          message: toUiErrorMessage(
+                                            exception?.message || exception,
+                                            t`Unable to download file`,
+                                          ),
+                                          variant: 'error',
+                                        })
+                                      }
+                                    }}
+                                  >
+                                    <DynamicIcon
+                                      className='h-4 w-4'
+                                      name='download'
+                                    />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <NoDataState
+                          description={t`No related documents are linked with this file yet.`}
+                          icon='paperclip'
+                          title={t`Related documents not found`}
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                </Card>
               </>
             ) : null}
           </main>
@@ -2286,9 +2393,8 @@ export function DocumentDetailsView({
                       return (
                         <button
                           type='button'
-                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${
-                            isActive ? 'bg-gray-2 ring-1 ring-primary-5/30 z-10' : 'hover:bg-gray-1'
-                          } ${hasPdfMatch ? '' : 'cursor-default'}`}
+                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${isActive ? 'bg-gray-2 ring-1 ring-primary-5/30 z-10' : 'hover:bg-gray-1'
+                            } ${hasPdfMatch ? '' : 'cursor-default'}`}
                           key={rowKey}
                           onClick={() => {
                             if (!hasPdfMatch) return
