@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import formApi from '@/api/form/form'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
-import ApiPlayground, {
-  type ApiPlaygroundContext,
-} from '@/components/playground/ApiPlayground'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
 import authUserStore from '@/stores/authUserStore'
-import cn from '@/utils/cn'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
@@ -856,11 +854,11 @@ const Request = ({
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [rightView, setRightView] = useState<
-    'analysis' | 'comments' | 'attachments' | 'forms'
-  >('analysis')
+    'overview' | 'history' | 'attachments' | 'comments'
+  >('overview')
   const [isEditing, setIsEditing] = useState<boolean>(false)
-  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false)
-  const [playgroundContext, setPlaygroundContext] = useState<any>(null)
+  const openPlayground = usePlaygroundStore((state) => state.open)
+  const setPlaygroundContext = usePlaygroundStore((state) => state.setContext)
 
   // Determine if it was known to be processing initially
   const initialProcessing =
@@ -1455,53 +1453,29 @@ const Request = ({
               selectedItem?.vendor ||
               '',
           }
-          setPlaygroundContext({
+          const context: ApiPlaygroundContext = {
             actionName: action?.label || 'Paid',
             document: docInfo,
             endpoint:
               action?.endpoint ||
               'https://demo.ezofis.com/V6Playground/apikey.html',
-            // model: action?.model || 'gemini-2.0-flash-exp',
-            // provider: action?.provider || 'gemini',
             requestPayload: docInfo,
-          })
-          setIsPlaygroundOpen(true)
+          }
+          setPlaygroundContext(context)
+          openPlayground()
         }
       } catch (err) {
         console.error('Error parsing autoOpenPlaygroundAction:', err)
       }
     }
-  }, [selectedItem, formModel, currency, poVal])
-
-  const handleOpenPlayground = (ctx: ApiPlaygroundContext = {}) => {
-    const docInfo = {
-      amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
-      currency: currency || formModel?.['Currency'] || 'USD',
-      invoiceNumber:
-        formModel?.['Invoice Number'] ||
-        formModel?.['Invoice No'] ||
-        selectedItem?.invoiceNumber ||
-        '',
-      poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
-      requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
-      vendor:
-        formModel?.['Supplier Name'] ||
-        formModel?.['Vendor Name'] ||
-        selectedItem?.vendor ||
-        '',
-    }
-    const document = {
-      ...docInfo,
-      ...(ctx.document || {}),
-    }
-
-    setPlaygroundContext({
-      ...ctx,
-      document,
-      requestPayload: ctx.requestPayload || ctx.payload || document,
-    })
-    setIsPlaygroundOpen(true)
-  }
+  }, [
+    selectedItem,
+    formModel,
+    currency,
+    poVal,
+    setPlaygroundContext,
+    openPlayground,
+  ])
 
   const agentDecision = currentAgentData?.decision || selectedItem?.decision
 
@@ -1689,20 +1663,14 @@ const Request = ({
           onBack={onBack || closeRequest}
           onManualCorrection={() => setIsEditing(!isEditing)}
           onNext={onNext}
-          onOpenPlayground={handleOpenPlayground}
           onPrev={onPrev}
           onShare={handleShare}
         />
       </div>
 
-      {/* Tab Content + Playground Drawer */}
+      {/* Tab Content */}
       <div className='flex min-h-0 w-full flex-1 overflow-hidden'>
-        <div
-          className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out',
-            isPlaygroundOpen ? 'w-full lg:w-[75%]' : 'w-full',
-          )}
-        >
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           <AnimateFadeIn
             className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'
             delay={0.6}
@@ -1710,6 +1678,7 @@ const Request = ({
             {isGenericWorkflow ? (
               <GenericRequestOverview
                 rawWorkflowData={rawWorkflowData}
+                rightView={rightView}
                 selectedItem={request || selectedItem}
               />
             ) : (
@@ -1731,20 +1700,10 @@ const Request = ({
                 workflowId={resolvedWorkflowId}
                 setFormModel={setFormModel}
                 setRightView={setRightView}
-                onOpenPlayground={handleOpenPlayground}
               />
             )}
           </AnimateFadeIn>
         </div>
-
-        {isPlaygroundOpen && (
-          <div className='animate-in slide-in-from-right flex h-full w-full min-w-[320px] shrink-0 flex-col overflow-hidden border-l border-[var(--gray-3)] bg-surface duration-300 ease-in-out lg:w-[25%]'>
-            <ApiPlayground
-              context={playgroundContext}
-              onClose={() => setIsPlaygroundOpen(false)}
-            />
-          </div>
-        )}
       </div>
     </div>
   )

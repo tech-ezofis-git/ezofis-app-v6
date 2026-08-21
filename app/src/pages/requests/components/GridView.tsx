@@ -25,6 +25,7 @@ import requestStore, {
 } from '@/pages/requests/stores/useRequestStore'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import { isAccountsPayableWorkflow } from '@/pages/requests/utils/workflow.utils'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import GenericGridCard from './GenericGridCard'
@@ -889,8 +890,10 @@ const GridRowItem = memo(
       typeof row?._originalIndex === 'number' ? row._originalIndex : index
     const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-    const { isPlaygroundOpen, jobMappings, jobStatuses, processingProcesses } =
-      requestStore((state) => state)
+    const { jobMappings, jobStatuses, processingProcesses } = requestStore(
+      (state) => state,
+    )
+    const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
     const isAskAIOpen = useAskAIStore((state) => state.isOpen)
     const isSidebarOpen = isPlaygroundOpen || isAskAIOpen
     const matchingProc = useMemo(() => {

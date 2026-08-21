@@ -20,23 +20,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
-import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import '@react-pdf-viewer/core/lib/styles/index.css'
 import {
   localizeRequestFieldLabel,
   localizeRequestStatus,
 } from '@/pages/requests/utils/localizeRequestUi'
-import '@react-pdf-viewer/core/lib/styles/index.css'
-import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 import { getMockDB, startSupplierVerification } from '@/services/mockBackend'
 import authUserStore from '@/stores/authUserStore'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import {
   buildFieldMetaMap,
@@ -575,7 +575,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 
@@ -990,9 +990,9 @@ const FormCard = ({
   const isPerfectMatch = isUsingPo
   const effectiveScore =
     score !== undefined &&
-      score !== null &&
-      Number(score) < 100 &&
-      isPerfectMatch
+    score !== null &&
+    Number(score) < 100 &&
+    isPerfectMatch
       ? 100
       : score
 
@@ -1033,10 +1033,13 @@ const FormCard = ({
     if (norm === 'manual') {
       return (
         <span
-          title='Source: Manual Entry'
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--orange-3)] bg-[var(--orange-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--orange-10)]'
+          title='Source: Manual Entry'
         >
-          <Icon name='lucide:pencil' className='h-2.5 w-2.5 text-[var(--orange-9)]' />
+          <Icon
+            className='h-2.5 w-2.5 text-[var(--orange-9)]'
+            name='lucide:pencil'
+          />
           <span>Manual</span>
         </span>
       )
@@ -1044,10 +1047,13 @@ const FormCard = ({
     if (norm === 'po_master' || norm === 'po') {
       return (
         <span
-          title='Source: PO Master (ERP/Excel Data)'
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-3)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--blue-10)]'
+          title='Source: PO Master (ERP/Excel Data)'
         >
-          <Icon name='lucide:database' className='h-2.5 w-2.5 text-[var(--blue-9)]' />
+          <Icon
+            className='h-2.5 w-2.5 text-[var(--blue-9)]'
+            name='lucide:database'
+          />
           <span>PO Master</span>
         </span>
       )
@@ -1055,8 +1061,8 @@ const FormCard = ({
     if (norm === 'ai' || norm === 'ai_agent') {
       return (
         <span
-          title='Source: AI Inferred'
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--primary-3)] bg-[var(--primary-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--primary-10)]'
+          title='Source: AI Inferred'
         >
           <AiBrandIcon className='size-[10px] shrink-0' />
           <span>AI</span>
@@ -1065,10 +1071,13 @@ const FormCard = ({
     }
     return (
       <span
-        title='Source: OCR Document'
         className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--teal-3)] bg-[var(--teal-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--teal-10)]'
+        title='Source: OCR Document'
       >
-        <Icon name='lucide:scan-text' className='h-2.5 w-2.5 text-[var(--teal-9)]' />
+        <Icon
+          className='h-2.5 w-2.5 text-[var(--teal-9)]'
+          name='lucide:scan-text'
+        />
         <span>OCR</span>
       </span>
     )
@@ -1116,9 +1125,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-          (opt: any) =>
-            String(opt.id).toLowerCase() === localValue.toLowerCase(),
-        ) || (localValue ? { id: localValue, name: localValue } : null)
+            (opt: any) =>
+              String(opt.id).toLowerCase() === localValue.toLowerCase(),
+          ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1179,10 +1188,10 @@ const FormCard = ({
         </div>
         <div className='min-w-0 flex-1'>
           <div className='mb-0.5 flex items-center justify-between gap-2'>
-            <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate min-w-0'>
+            <p className='min-w-0 truncate text-[10px] font-semibold text-[var(--gray-11)]'>
               {label}
             </p>
-            <div className='flex items-center gap-1.5 shrink-0'>
+            <div className='flex shrink-0 items-center gap-1.5'>
               {isLoading ? (
                 <div className='h-3.5 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
               ) : (
@@ -1200,6 +1209,7 @@ const FormCard = ({
                       )}
                     >
                       <Icon
+                        className='h-2.5 w-2.5 shrink-0'
                         name={
                           Number(effectiveScore) >= 90
                             ? 'lucide:circle-check'
@@ -1207,7 +1217,6 @@ const FormCard = ({
                               ? 'lucide:alert-circle'
                               : 'lucide:alert-triangle'
                         }
-                        className='h-2.5 w-2.5 shrink-0'
                       />
                       <span>{Math.round(Number(effectiveScore))}%</span>
                     </span>
@@ -1246,10 +1255,10 @@ const FormCard = ({
       </div>
       <div className='min-w-0 flex-1'>
         <div className='mb-0.5 flex items-center justify-between gap-2'>
-          <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate min-w-0'>
+          <p className='min-w-0 truncate text-[10px] font-semibold text-[var(--gray-11)]'>
             {label}
           </p>
-          <div className='flex items-center gap-1.5 shrink-0'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {isLoading ? (
               <div className='h-3.5 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
             ) : (
@@ -1267,6 +1276,7 @@ const FormCard = ({
                     )}
                   >
                     <Icon
+                      className='h-2.5 w-2.5 shrink-0'
                       name={
                         Number(effectiveScore) >= 90
                           ? 'lucide:circle-check'
@@ -1274,7 +1284,6 @@ const FormCard = ({
                             ? 'lucide:alert-circle'
                             : 'lucide:alert-triangle'
                       }
-                      className='h-2.5 w-2.5 shrink-0'
                     />
                     <span>{Math.round(Number(effectiveScore))}%</span>
                   </span>
@@ -1296,7 +1305,7 @@ const FormCard = ({
                   value === null ||
                   value === undefined ||
                   value === '') &&
-                'font-medium text-[var(--gray-9)]',
+                  'font-medium text-[var(--gray-9)]',
               )}
             >
               {value === null || value === undefined || value === ''
@@ -1305,6 +1314,7 @@ const FormCard = ({
             </p>
             {canSwitchSources && (
               <div
+                className='group/suggest animate-in fade-in zoom-in-95 mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all duration-200 hover:bg-[var(--primary-2)] active:scale-98'
                 role='button'
                 tabIndex={0}
                 title={
@@ -1312,7 +1322,6 @@ const FormCard = ({
                     ? `Switch to Invoice: ${invoiceValue}`
                     : `Switch to PO: ${poValue}`
                 }
-                className='group/suggest mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all hover:bg-[var(--primary-2)] active:scale-98 animate-in fade-in zoom-in-95 duration-200'
                 onClick={(e) => {
                   e.stopPropagation()
                   applySourceValue(isUsingPo ? invoiceValue : poValue)
@@ -1326,11 +1335,14 @@ const FormCard = ({
                 }}
               >
                 <div className='flex min-w-0 items-center gap-1.5'>
-                  <AiBrandIcon className='size-[13px] shrink-0' variant='outline-purple' />
-                  <span className='font-semibold text-[var(--primary-9)] shrink-0'>
+                  <AiBrandIcon
+                    className='size-[13px] shrink-0'
+                    variant='outline-purple'
+                  />
+                  <span className='shrink-0 font-semibold text-[var(--primary-9)]'>
                     {isUsingPo ? 'Invoice' : 'PO Master'}
                   </span>
-                  <span className='text-[var(--primary-9)]/60 shrink-0'>·</span>
+                  <span className='shrink-0 text-[var(--primary-9)]/60'>·</span>
                   <span className='truncate font-bold text-[var(--gray-13)]'>
                     {isUsingPo ? invoiceValue : poValue}
                   </span>
@@ -1568,9 +1580,8 @@ const toPlaygroundAmount = (value: any) => {
 }
 
 const Overview = (props: any) => {
-  const { t, i18n } = useLingui()
+  const { i18n, t } = useLingui()
   const {
-    actions,
     agentData,
     allowedLabels,
     formDefinition,
@@ -1585,7 +1596,6 @@ const Overview = (props: any) => {
     transactionId,
     workflowId,
     setFormModel,
-    onOpenPlayground,
   } = props
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
@@ -1600,9 +1610,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-      selectedItem?.instanceId ||
-      processId ||
-      '',
+        selectedItem?.instanceId ||
+        processId ||
+        '',
     )
   }, [selectedItem, processId])
 
@@ -1808,18 +1818,6 @@ const Overview = (props: any) => {
     () => hasMatterValidationData(agentData),
     [agentData],
   )
-  const paidAction = useMemo(() => {
-    return (
-      actions?.find(
-        (act: any) => String(act?.label || '').toLowerCase() === 'paid',
-      ) || {
-        endpoint: 'https://demo.ezofis.com/V6Playground/apikey.html',
-        label: 'Paid',
-        // model: 'gemini-2.0-flash-exp',
-        // provider: 'gemini',
-      }
-    )
-  }, [actions])
   const analysisCardCount =
     3 +
     (showGlValidation ? 1 : 0) +
@@ -1915,8 +1913,7 @@ const Overview = (props: any) => {
       setSupplierCheckState({ status: 'not_run' })
       showToast({
         message:
-          error?.message ||
-          t`Verification failed. 1 credit has been refunded.`,
+          error?.message || t`Verification failed. 1 credit has been refunded.`,
         variant: 'error',
       })
     }
@@ -2048,6 +2045,12 @@ const Overview = (props: any) => {
       ],
     }
   }, [invoiceSummary])
+
+  const setPlaygroundContext = usePlaygroundStore((state) => state.setContext)
+  useEffect(() => {
+    setPlaygroundContext(apiPlaygroundContext)
+    return () => setPlaygroundContext(null)
+  }, [apiPlaygroundContext, setPlaygroundContext])
 
   const [activeBackOrderTab, setActiveBackOrderTab] =
     useState<string>('current')
@@ -2943,9 +2946,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-        selectedItem?.repositoryId ||
-        repositoryId ||
-        '',
+          selectedItem?.repositoryId ||
+          repositoryId ||
+          '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -3209,10 +3212,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                      No matching fields
-                    </div>
-                  )}
+                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                    No matching fields
+                  </div>
+                )}
               </div>
             </menu>
           )}
@@ -3232,9 +3235,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
                       analysisCardCount === 5 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -3358,14 +3361,14 @@ const Overview = (props: any) => {
                         align='left'
                         icon={Store}
                         isLoading={isCurrentlyProcessing}
-                        status={localizeRequestStatus(
-                          i18n,
-                          supplierCheckState.data?.status || 'Verified',
-                        )}
                         title={t`Supplier Verification`}
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          supplierCheckState.data?.status || 'Verified',
+                        )}
                         statusType={
                           supplierCheckState.data?.statusType || 'success'
                         }
@@ -3382,10 +3385,6 @@ const Overview = (props: any) => {
                         align='right'
                         icon={ListFilter}
                         isSelected={activeDetailView === 'gl_matching'}
-                        status={localizeRequestStatus(
-                          i18n,
-                          glValidationDisplay.status,
-                        )}
                         statusType={glValidationDisplay.statusType}
                         title={t`GL Account Matching`}
                         isLoading={
@@ -3393,6 +3392,10 @@ const Overview = (props: any) => {
                           (!glValidationDisplay?.account ||
                             glValidationDisplay.account === 'Not Available')
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          glValidationDisplay.status,
+                        )}
                         value={
                           glValidationDisplay.account ||
                           glValidationDisplay.status
@@ -3401,15 +3404,11 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                      backOrderDisplay?.status === 'Detected' ? (
+                    backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         align='right'
                         icon={PackageX}
                         isSelected={activeDetailView === 'back_order'}
-                        status={localizeRequestStatus(
-                          i18n,
-                          backOrderDisplay.status,
-                        )}
                         statusType={backOrderDisplay.statusType}
                         title={t`Back Order`}
                         value={backOrderDisplay.value}
@@ -3418,6 +3417,10 @@ const Overview = (props: any) => {
                           (!backOrderDisplay?.value ||
                             backOrderDisplay.value === '---')
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          backOrderDisplay.status,
+                        )}
                         onClick={() => {
                           setActiveDetailView('back_order')
                           setActiveBackOrderTab('current')
@@ -3453,10 +3456,6 @@ const Overview = (props: any) => {
                         align='right'
                         icon={Briefcase}
                         isSelected={activeDetailView === 'matter_validation'}
-                        status={localizeRequestStatus(
-                          i18n,
-                          matterValidationDisplay.status,
-                        )}
                         statusType={matterValidationDisplay.statusType}
                         title={t`Matter Validation`}
                         value={matterValidationDisplay.value}
@@ -3465,6 +3464,10 @@ const Overview = (props: any) => {
                           (!matterValidationDisplay?.value ||
                             matterValidationDisplay.value === '---')
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          matterValidationDisplay.status,
+                        )}
                         onClick={() => setActiveDetailView('matter_validation')}
                       />
                     )}
@@ -3531,15 +3534,6 @@ const Overview = (props: any) => {
                           </button>
                         ))}
                       </div>
-                      {onOpenPlayground && (
-                        <div className='animate-in fade-in pb-2.5 duration-300'>
-                          <PaidActionApiTrigger
-                            action={paidAction}
-                            context={apiPlaygroundContext}
-                            onTrigger={onOpenPlayground}
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -3629,7 +3623,7 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             agentData?.duplicate_check?.status ||
-                            'No Duplicate',
+                              'No Duplicate',
                           )}
                           statusType={
                             agentData?.duplicate_check?.status === 'Duplicate'
@@ -3701,11 +3695,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'supplier_verification' && (
                         <DetailReportView
                           icon={Store}
+                          title={t`Supplier Verification Registry`}
                           status={localizeRequestStatus(
                             i18n,
                             supplierCheckState.data?.status || 'Verified',
                           )}
-                          title={t`Supplier Verification Registry`}
                           statusType={
                             supplierCheckState.data?.statusType || 'success'
                           }
@@ -3804,16 +3798,16 @@ const Overview = (props: any) => {
                                 </div>
                                 {(agentData?.gl_validation?.reason ||
                                   agentData?.gl_matching?.reason) && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                      <span className='font-semibold text-[var(--gray-11)]'>
-                                        Matching Rationale
-                                      </span>
-                                      <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                        {agentData?.gl_validation?.reason ||
-                                          agentData?.gl_matching?.reason}
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Matching Rationale
+                                    </span>
+                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                      {agentData?.gl_validation?.reason ||
+                                        agentData?.gl_matching?.reason}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -3897,11 +3891,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'matter_validation' && (
                         <DetailReportView
                           icon={Briefcase}
+                          title={t`Legal Matter Association Check`}
                           status={localizeRequestStatus(
                             i18n,
                             matterValidationDisplay?.status || 'Unknown',
                           )}
-                          title={t`Legal Matter Association Check`}
                           statusType={
                             matterValidationDisplay?.statusType || 'default'
                           }
@@ -3933,18 +3927,18 @@ const Overview = (props: any) => {
                                 )}
                                 {agentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                      <span className='font-semibold text-[var(--gray-11)]'>
-                                        Compliance Note
-                                      </span>
-                                      <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
-                                        {
-                                          agentData.matter_validation
-                                            .validation_details.reason
-                                        }
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Compliance Note
+                                    </span>
+                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                      {
+                                        agentData.matter_validation
+                                          .validation_details.reason
+                                      }
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -3998,8 +3992,8 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ]?.recommendation
+                                        activeBackOrderTab
+                                      ]?.recommendation
                                 const recMeta =
                                   getRecommendationMeta(currentRec)
                                 return (
@@ -4059,8 +4053,8 @@ const Overview = (props: any) => {
                               activeBackOrderTab === 'current'
                                 ? backOrder
                                 : MOCK_PREVIOUS_BACKORDERS[
-                                activeBackOrderTab
-                                ] || {}
+                                    activeBackOrderTab
+                                  ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
                             const currencySymbol =
@@ -4132,8 +4126,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
@@ -4165,8 +4159,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               const items =
                                 currentData?.missing_qty_by_item || []
@@ -4334,130 +4328,131 @@ const Overview = (props: any) => {
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                           {!formModel ||
-                            Object.keys(formModel).length === 0 ||
-                            !Object.values(formModel).some(
-                              hasMeaningfulScalarValue,
-                            )
+                          Object.keys(formModel).length === 0 ||
+                          !Object.values(formModel).some(
+                            hasMeaningfulScalarValue,
+                          )
                             ? [
-                              'Supplier Name',
-                              'Invoice Number',
-                              'Invoice Date',
-                              'Invoice Amount',
-                              'PO Number',
-                              'Payment Terms',
-                              'Currency',
-                              'Tax Amount',
-                            ].map((label) => (
-                              <FormCard
-                                icon={getFieldIcon(label)}
-                                isLoading={isCurrentlyProcessing}
-                                key={label}
-                                label={localizeRequestFieldLabel(i18n, label)}
-                                options={getOptions(label)}
-                                type={getFieldType(label)}
-                                value={'-'}
-                                onChange={(newVal: string) =>
-                                  handleFieldChange(label, newVal)
-                                }
-                                onFocus={(val: any) =>
-                                  handleFieldFocus(val, label)
-                                }
-                              />
-                            ))
-                            : Object.entries(formModel || {})
-                              .filter(([key, val]) => {
-                                if (typeof val === 'object' && val !== null) {
-                                  if ('Invoice Value' in val) {
-                                    return true
+                                'Supplier Name',
+                                'Invoice Number',
+                                'Invoice Date',
+                                'Invoice Amount',
+                                'PO Number',
+                                'Payment Terms',
+                                'Currency',
+                                'Tax Amount',
+                              ].map((label) => (
+                                <FormCard
+                                  icon={getFieldIcon(label)}
+                                  isLoading={isCurrentlyProcessing}
+                                  key={label}
+                                  label={localizeRequestFieldLabel(i18n, label)}
+                                  options={getOptions(label)}
+                                  type={getFieldType(label)}
+                                  value={'-'}
+                                  onChange={(newVal: string) =>
+                                    handleFieldChange(label, newVal)
                                   }
-                                  return false
-                                }
-                                if (typeof val === 'string') {
-                                  const trimmed = val.trim()
-                                  if (
-                                    trimmed.startsWith('[') &&
-                                    trimmed.endsWith(']')
-                                  )
+                                  onFocus={(val: any) =>
+                                    handleFieldFocus(val, label)
+                                  }
+                                />
+                              ))
+                            : Object.entries(formModel || {})
+                                .filter(([key, val]) => {
+                                  if (typeof val === 'object' && val !== null) {
+                                    if ('Invoice Value' in val) {
+                                      return true
+                                    }
                                     return false
+                                  }
+                                  if (typeof val === 'string') {
+                                    const trimmed = val.trim()
+                                    if (
+                                      trimmed.startsWith('[') &&
+                                      trimmed.endsWith(']')
+                                    )
+                                      return false
+                                    if (
+                                      trimmed.startsWith('{') &&
+                                      trimmed.endsWith('}')
+                                    )
+                                      return false
+                                  }
+
                                   if (
-                                    trimmed.startsWith('{') &&
-                                    trimmed.endsWith('}')
+                                    !allowedLabels ||
+                                    allowedLabels.size === 0
+                                  ) {
+                                    return hasMeaningfulScalarValue(val)
+                                  }
+
+                                  return (
+                                    allowedLabels.has(key) ||
+                                    hasMeaningfulScalarValue(val)
                                   )
-                                    return false
-                                }
-
-                                if (
-                                  !allowedLabels ||
-                                  allowedLabels.size === 0
-                                ) {
-                                  return hasMeaningfulScalarValue(val)
-                                }
-
-                                return (
-                                  allowedLabels.has(key) ||
-                                  hasMeaningfulScalarValue(val)
-                                )
-                              })
-                              .map(([key, val]) => {
-                                const rawVal =
-                                  val &&
+                                })
+                                .map(([key, val]) => {
+                                  const rawVal =
+                                    val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                    ? val['Invoice Value']
-                                    : val
+                                      ? val['Invoice Value']
+                                      : val
 
-                                const fieldType = getFieldType(key)
-                                const displayValue =
-                                  fieldType === 'date' &&
+                                  const fieldType = getFieldType(key)
+                                  const displayValue =
+                                    fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                    ? null
-                                    : rawVal || '-'
+                                      ? null
+                                      : rawVal || '-'
 
-                                return (
-                                  <FormCard
-                                    icon={getFieldIcon(key)}
-                                    invoiceValue={
-                                      getFieldInvoiceValue(key) ?? displayValue
-                                    }
-                                    key={key}
-                                    label={localizeRequestFieldLabel(
-                                      i18n,
-                                      key,
-                                    )}
-                                    options={getOptions(key)}
-                                    poValue={getFieldPoValue(key)}
-                                    score={getFieldScore(key)}
-                                    type={fieldType}
-                                    value={displayValue}
-                                    highlight={(() => {
-                                      const normalized = key.toLowerCase()
-                                      if (normalized.includes('due date'))
-                                        return false
-                                      return (
-                                        normalized.includes('total') ||
-                                        normalized === 'due' ||
-                                        normalized.includes('total due')
-                                      )
-                                    })()}
-                                    isLoading={
-                                      isCurrentlyProcessing &&
-                                      (displayValue === null ||
-                                        displayValue === undefined ||
-                                        displayValue === '' ||
-                                        displayValue === '-')
-                                    }
-                                    onChange={(newVal: string) =>
-                                      handleFieldChange(key, newVal)
-                                    }
-                                    onFocus={(val: any) =>
-                                      handleFieldFocus(val, key)
-                                    }
-                                  />
-                                )
-                              })}
+                                  return (
+                                    <FormCard
+                                      icon={getFieldIcon(key)}
+                                      key={key}
+                                      options={getOptions(key)}
+                                      poValue={getFieldPoValue(key)}
+                                      score={getFieldScore(key)}
+                                      type={fieldType}
+                                      value={displayValue}
+                                      highlight={(() => {
+                                        const normalized = key.toLowerCase()
+                                        if (normalized.includes('due date'))
+                                          return false
+                                        return (
+                                          normalized.includes('total') ||
+                                          normalized === 'due' ||
+                                          normalized.includes('total due')
+                                        )
+                                      })()}
+                                      invoiceValue={
+                                        getFieldInvoiceValue(key) ??
+                                        displayValue
+                                      }
+                                      isLoading={
+                                        isCurrentlyProcessing &&
+                                        (displayValue === null ||
+                                          displayValue === undefined ||
+                                          displayValue === '' ||
+                                          displayValue === '-')
+                                      }
+                                      label={localizeRequestFieldLabel(
+                                        i18n,
+                                        key,
+                                      )}
+                                      onChange={(newVal: string) =>
+                                        handleFieldChange(key, newVal)
+                                      }
+                                      onFocus={(val: any) =>
+                                        handleFieldFocus(val, key)
+                                      }
+                                    />
+                                  )
+                                })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -4513,7 +4508,7 @@ const Overview = (props: any) => {
                             className={cn(
                               'space-y-2.5',
                               poLineItems.length > 0 &&
-                              'border-t border-[var(--gray-3)] pt-4',
+                                'border-t border-[var(--gray-3)] pt-4',
                             )}
                           >
                             <div className='flex items-center justify-between'>
@@ -4574,16 +4569,18 @@ const Overview = (props: any) => {
                               <RelatedDocumentsFinder
                                 attachedIds={attachedItemIds}
                                 instanceId={resolvedInstanceId}
+                                invoiceNumber={invoiceSummary.invoiceNumber}
+                                poNumber={invoiceSummary.poNumber}
+                                supplierName={supplierName}
+                                workflowId={workflowId}
                                 invoiceAmount={
                                   invoiceSummary.amount
                                     ? String(invoiceSummary.amount)
                                     : undefined
                                 }
-                                invoiceNumber={invoiceSummary.invoiceNumber}
-                                poNumber={invoiceSummary.poNumber}
-                                repositoryId={repositoryId || selectedItem?.repositoryId}
-                                supplierName={supplierName}
-                                workflowId={workflowId}
+                                repositoryId={
+                                  repositoryId || selectedItem?.repositoryId
+                                }
                                 onAttached={refetchAttachments}
                               />
 
@@ -4591,11 +4588,15 @@ const Overview = (props: any) => {
                                 enabled={true}
                                 formModel={formModel}
                                 instanceId={resolvedInstanceId}
-                                initialData={attachmentData || selectedItem?.attachments || []}
                                 processId={processId}
                                 selectedItem={selectedItem}
                                 transactionId={transactionId}
                                 workflowId={workflowId}
+                                initialData={
+                                  attachmentData ||
+                                  selectedItem?.attachments ||
+                                  []
+                                }
                                 repositoryId={
                                   repositoryId || selectedItem?.repositoryId
                                 }

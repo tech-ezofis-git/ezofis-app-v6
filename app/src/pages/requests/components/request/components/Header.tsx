@@ -19,7 +19,7 @@ interface HeaderProps {
   isLoading: boolean
   raisedAt: any
   requestNo: string
-  rightView: 'analysis' | 'comments' | 'attachments' | 'forms'
+  rightView: 'overview' | 'history' | 'attachments' | 'comments'
   actions?: any[]
   agentData?: any
   approveLoading?: boolean
@@ -45,13 +45,12 @@ interface HeaderProps {
   ticketUserId?: string
   totalAmount?: string
   setRightView: (
-    view: 'analysis' | 'comments' | 'attachments' | 'forms',
+    view: 'overview' | 'history' | 'attachments' | 'comments',
   ) => void
   onApprove?: (action: string) => void
   onBack?: () => void
   onManualCorrection?: () => void
   onNext?: () => void
-  onOpenPlayground?: (context: any) => void
   onPrev?: () => void
   onShare?: (
     shares: { action: number; email: string }[],
@@ -109,8 +108,8 @@ const Header: React.FC<HeaderProps> = ({
   actions,
   agentData,
   approveLoading,
-  attachmentCount: _attachmentCount,
-  commentsCount: _commentsCount,
+  attachmentCount = 0,
+  commentsCount = 0,
   currency,
   enableAIInsights = true,
   hideActions: _hideActions,
@@ -123,14 +122,14 @@ const Header: React.FC<HeaderProps> = ({
   raisedAt: _raisedAt,
   raisedBy: _raisedBy,
   requestNo,
-  rightView: _rightView,
+  rightView,
   showApprove: _showApprove,
   simple = false,
   stage: _stage,
   status = 'Pending Review',
   ticketUserId,
   totalAmount,
-  setRightView: _setRightView,
+  setRightView,
   onApprove,
   onBack,
   onManualCorrection: _onManualCorrection,
@@ -407,6 +406,33 @@ const Header: React.FC<HeaderProps> = ({
   console.log('Action value', actions)
 
   if (simple) {
+    const rightViewTabs: {
+      count: number
+      icon: string
+      id: 'overview' | 'history' | 'attachments' | 'comments'
+      label: string
+    }[] = [
+      {
+        count: 0,
+        icon: 'tabler:file-text',
+        id: 'overview',
+        label: t`Overview`,
+      },
+      { count: 0, icon: 'tabler:history', id: 'history', label: t`History` },
+      {
+        count: attachmentCount,
+        icon: 'tabler:paperclip',
+        id: 'attachments',
+        label: t`Attachments`,
+      },
+      {
+        count: commentsCount,
+        icon: 'tabler:message-circle',
+        id: 'comments',
+        label: t`Comments`,
+      },
+    ]
+
     return (
       <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
         <div className='flex items-center gap-4 p-0'>
@@ -447,49 +473,80 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {!isProcessing && (
-          <div className='flex items-center gap-2'>
-            {actions?.map((action: any) => {
-              const label = String(action?.label || '').toLowerCase()
-              let btnColor: 'gray' | 'primary' | 'secondary' | 'red' | 'green' =
-                'primary'
-              let borderClass =
-                'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
-              let defaultIcon = action?.icon
-              if (!defaultIcon) {
-                if (label.includes('approve')) defaultIcon = 'lucide:check'
-                else if (label.includes('reject')) defaultIcon = 'lucide:x'
-                else defaultIcon = 'lucide:arrow-right'
-              }
-              if (label.includes('approve')) {
-                btnColor = 'green'
-                borderClass =
-                  'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
-              } else if (label.includes('reject')) {
-                btnColor = 'red'
-                borderClass =
-                  'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
-              }
-              return (
-                <Button
-                  color={btnColor}
-                  icon={defaultIcon}
-                  iconClass='size-4'
-                  key={action?.value}
-                  label={action?.label}
-                  loading={approveLoading}
-                  size='md'
-                  variant='subtle'
+        <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-1'>
+            {rightViewTabs.map((tab) => (
+              <Tooltip content={tab.label} key={tab.id} position='bottom'>
+                <button
+                  aria-label={tab.label}
+                  type='button'
                   className={cn(
-                    borderClass,
-                    'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                    'relative flex size-8 cursor-pointer items-center justify-center rounded-lg transition-all hover:bg-[var(--gray-2)] active:scale-95',
+                    rightView === tab.id
+                      ? 'bg-[var(--primary-2)] text-[var(--primary-11)]'
+                      : 'text-[var(--gray-10)]',
                   )}
-                  onClick={() => onApprove?.(action?.value)}
-                />
-              )
-            })}
+                  onClick={() => setRightView(tab.id)}
+                >
+                  <Icon className='size-4' name={tab.icon} />
+                  {tab.count > 0 && (
+                    <span className='absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--primary-9)] px-1 text-[10px] font-bold text-white'>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              </Tooltip>
+            ))}
           </div>
-        )}
+
+          {!isProcessing && actions && actions.length > 0 && (
+            <div className='flex items-center gap-2 border-l border-[var(--gray-3)] pl-3'>
+              {actions.map((action: any) => {
+                const label = String(action?.label || '').toLowerCase()
+                let btnColor:
+                  | 'gray'
+                  | 'primary'
+                  | 'secondary'
+                  | 'red'
+                  | 'green' = 'primary'
+                let borderClass =
+                  'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+                let defaultIcon = action?.icon
+                if (!defaultIcon) {
+                  if (label.includes('approve')) defaultIcon = 'lucide:check'
+                  else if (label.includes('reject')) defaultIcon = 'lucide:x'
+                  else defaultIcon = 'lucide:arrow-right'
+                }
+                if (label.includes('approve')) {
+                  btnColor = 'green'
+                  borderClass =
+                    'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
+                } else if (label.includes('reject')) {
+                  btnColor = 'red'
+                  borderClass =
+                    'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
+                }
+                return (
+                  <Button
+                    color={btnColor}
+                    icon={defaultIcon}
+                    iconClass='size-4'
+                    key={action?.value}
+                    label={action?.label}
+                    loading={approveLoading}
+                    size='md'
+                    variant='subtle'
+                    className={cn(
+                      borderClass,
+                      'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                    )}
+                    onClick={() => onApprove?.(action?.value)}
+                  />
+                )
+              })}
+            </div>
+          )}
+        </div>
       </OverlayHeaderWrapper>
     )
   }

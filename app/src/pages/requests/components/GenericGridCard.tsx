@@ -1,5 +1,4 @@
 import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
 import { useMemo } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
@@ -14,7 +13,19 @@ import {
 } from './columns/useDynamicColumns'
 import GenericStagePill from './GenericStagePill'
 
-dayjs.extend(relativeTime)
+// Matches the "Xh Ym ago" granularity already used in the request-detail
+// History panel, instead of dayjs's coarser "8 hours ago".
+const formatTimeAgo = (date: any): string => {
+  const ms = Math.abs(Date.now() - dayjs(date).valueOf())
+  const secs = Math.floor(ms / 1000)
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ${mins % 60}m ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ${hours % 24}h ago`
+}
 
 interface Props {
   row: any
@@ -75,13 +86,13 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           <span className='truncate text-12 text-gray-9'>{raisedBy}</span>
         </div>
         {dynamicFields.length > 0 && (
-          <div className='mt-1.5 flex flex-wrap gap-1.5'>
-            {dynamicFields.slice(0, 3).map((col) => (
-              <span
-                className='rounded-full border border-gray-3 px-2 py-0.5 text-11 font-medium text-gray-11'
-                key={col.id}
-              >
-                {col.renderCell?.(row) ?? '-'}
+          <div className='mt-1.5 flex flex-wrap items-center gap-1.5'>
+            {dynamicFields.slice(0, 3).map((col, idx) => (
+              <span className='flex items-center gap-1.5' key={col.id}>
+                {idx > 0 && <span className='text-gray-6'>·</span>}
+                <span className='truncate text-11 font-medium text-gray-10'>
+                  {col.renderCell?.(row) ?? '-'}
+                </span>
               </span>
             ))}
           </div>
@@ -95,14 +106,9 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           previousLabel={previousLabel}
         />
         {raisedAt && (
-          <div className='flex flex-col items-end'>
-            <span className='text-11 text-gray-9'>
-              {dayjs(raisedAt).fromNow()}
-            </span>
-            <span className='text-12 font-bold text-gray-12'>
-              {dayjs(raisedAt).format('MMM D')}
-            </span>
-          </div>
+          <span className='text-12 font-semibold text-gray-10'>
+            {formatTimeAgo(raisedAt)}
+          </span>
         )}
       </div>
 

@@ -9,9 +9,7 @@ import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
 } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
-import ApiPlayground from '@/components/playground/ApiPlayground'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import cn from '@/utils/cn'
 import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
@@ -60,8 +58,12 @@ function getStoredState() {
 const RequestsPage = () => {
   const { t } = useLingui()
   const storedState = useMemo(() => getStoredState(), [])
-  const [activeTab, setActiveTab] = useState<string>(storedState?.activeTab ?? 'Inbox')
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>(storedState?.viewMode ?? 'grid')
+  const [activeTab, setActiveTab] = useState<string>(
+    storedState?.activeTab ?? 'Inbox',
+  )
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>(
+    storedState?.viewMode ?? 'grid',
+  )
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [workflowLoadStatus, setWorkflowLoadStatus] =
@@ -71,23 +73,22 @@ const RequestsPage = () => {
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] =
     useState<WorkflowOption | null>(requestStore.getState().selectedWorkflow)
-  const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>(storedState?.filterClauses ?? [])
+  const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>(
+    storedState?.filterClauses ?? [],
+  )
 
   const {
     clearPendingDeepLink,
     closeRequest,
     isClosed,
-    isPlaygroundOpen,
     openNewRequest,
     openRequest,
     pendingDeepLink,
     pendingOpenNewRequest,
-    playgroundContext,
     rawWorkflowData,
     reloadMeta,
     selectedItem,
     stopRefresh,
-    setIsPlaygroundOpen,
     setPendingOpenNewRequest,
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
@@ -108,7 +109,14 @@ const RequestsPage = () => {
     try {
       sessionStorage.setItem(
         SESSION_KEY,
-        JSON.stringify({ activeTab, viewMode, filterClauses, page, pageSize, groupBy }),
+        JSON.stringify({
+          activeTab,
+          filterClauses,
+          groupBy,
+          page,
+          pageSize,
+          viewMode,
+        }),
       )
     } catch {
       // ignore
@@ -599,12 +607,7 @@ const RequestsPage = () => {
   return (
     <>
       <div className='flex h-full min-h-0 w-full overflow-hidden'>
-        <div
-          className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out',
-            isPlaygroundOpen && !selectedItem ? 'w-full lg:w-[75%]' : 'w-full',
-          )}
-        >
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           {!selectedItem && (
             <Header
               // Pass state and setter to Header
@@ -668,16 +671,6 @@ const RequestsPage = () => {
               />
             ))}
         </div>
-
-        {/* API Playground Drawer for Inbox List page */}
-        {isPlaygroundOpen && !selectedItem && (
-          <div className='animate-in slide-in-from-right w-full border-l border-[var(--gray-3)] bg-surface duration-300 lg:w-[25%]'>
-            <ApiPlayground
-              context={playgroundContext}
-              onClose={() => setIsPlaygroundOpen(false)}
-            />
-          </div>
-        )}
       </div>
       <ProcessingBackgroundManager />
     </>

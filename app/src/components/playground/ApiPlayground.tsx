@@ -44,8 +44,8 @@ export interface ApiPlaygroundDocument {
   vendor?: string
 }
 
-interface ApiPlaygroundProps extends ApiPlaygroundContext {
-  context?: ApiPlaygroundContext
+interface ApiPlaygroundProps {
+  context?: ApiPlaygroundContext | null
   onClose: () => void
 }
 
@@ -95,11 +95,7 @@ const BTN_PRIMARY =
 const BTN_SECONDARY =
   'inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border-none bg-gray-2 px-3 py-1.5 text-12 font-medium text-text-primary shadow-sm transition-all hover:bg-gray-3 active:scale-95'
 
-export const ApiPlayground = ({
-  context,
-  onClose,
-  ...props
-}: ApiPlaygroundProps) => {
+export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const [apiKey, setApiKey] = useState<string>(() => {
@@ -123,31 +119,36 @@ export const ApiPlayground = ({
     setIsKeyGeneratedNow(true)
   }
 
-  const config = { ...context, ...props }
+  const config = context || {}
   const playgroundUrl =
     config.playgroundUrl || config.endpoint || DEFAULT_PLAYGROUND_URL
 
+  // No context registered for the current page — only show key generation.
+  const hasContext = Boolean(context)
+
   // Fallback to legacy single-endpoint if `endpoints` is not provided
-  const endpoints: ApiEndpointConfig[] = config.endpoints || [
-    {
-      apiEndpoint: config.apiEndpoint || config.endpoint,
-      apiPath: config.apiPath || '/api/v6/payments/process',
-      description: 'Interact with the primary API endpoint.',
-      headers: config.headers,
-      id: 'default',
-      method: config.method || 'POST',
-      requestPayload: config.requestPayload ||
-        config.payload || {
-          ...DEFAULT_DOCUMENT,
-          ...(config.document || {}),
+  const endpoints: ApiEndpointConfig[] = !hasContext
+    ? []
+    : config.endpoints || [
+        {
+          apiEndpoint: config.apiEndpoint || config.endpoint,
+          apiPath: config.apiPath || '/api/v6/payments/process',
+          description: 'Interact with the primary API endpoint.',
+          headers: config.headers,
+          id: 'default',
+          method: config.method || 'POST',
+          requestPayload: config.requestPayload ||
+            config.payload || {
+              ...DEFAULT_DOCUMENT,
+              ...(config.document || {}),
+            },
+          responsePayload: config.responsePayload || {
+            message: 'Action completed successfully',
+            success: true,
+          },
+          title: config.actionName || 'API Endpoint',
         },
-      responsePayload: config.responsePayload || {
-        message: 'Action completed successfully',
-        success: true,
-      },
-      title: config.actionName || 'API Endpoint',
-    },
-  ]
+      ]
 
   // Default to expanding the first endpoint only if there is exactly one
   const [expandedEndpoints, setExpandedEndpoints] = useState<
@@ -173,11 +174,11 @@ export const ApiPlayground = ({
     <div className='flex max-w-full items-center gap-2 overflow-hidden rounded-md border border-border-default bg-surface px-2 py-1.5'>
       <span className={cn(TEXT_MUTED, 'shrink-0 select-none')}>Token:</span>
       <span
+        title={showKey ? apiKey : undefined}
         className={cn(
           TEXT_CODE,
           'min-w-0 flex-1 truncate break-all text-text-primary',
         )}
-        title={showKey ? apiKey : undefined}
       >
         {displayToken}
       </span>
@@ -215,7 +216,10 @@ export const ApiPlayground = ({
       {/* Top Header */}
       <div className='flex items-center justify-between border-b border-border-default bg-gray-1 px-3 py-2'>
         <div className='flex items-center gap-1.5'>
-          <Icon className='h-4 w-4 text-primary-9' name='tabler:file-description' />
+          <Icon
+            className='h-4 w-4 text-primary-9'
+            name='tabler:file-description'
+          />
           <span className={TEXT_PRIMARY}>API Docs</span>
         </div>
         <div className='flex items-center gap-2'>
@@ -250,7 +254,9 @@ export const ApiPlayground = ({
                 ).format(
                   endpoints.map((e) => e.title.toLowerCase()),
                 )}. You can use this interactive sandbox to test these endpoints.`
-              : 'This API documentation details the available endpoints, required payloads, and interactive sandbox testing environments.')}
+              : hasContext
+                ? 'This API documentation details the available endpoints, required payloads, and interactive sandbox testing environments.'
+                : 'Generate a sandbox API key to authenticate your requests to the EzoFis API. Open this panel from a request to see endpoint-specific documentation and examples.')}
         </p>
 
         {/* API Authentication Setup Card */}
@@ -355,201 +361,239 @@ export const ApiPlayground = ({
           )}
         </div>
 
-        <div className='space-y-2'>
-          {endpoints.map((endpoint) => {
-            const isExpanded = expandedEndpoints[endpoint.id]
+        {hasContext && (
+          <div className='space-y-2'>
+            {endpoints.map((endpoint) => {
+              const isExpanded = expandedEndpoints[endpoint.id]
 
-            const requestHeaders = {
-              'Authorization': apiKey
-                ? `Bearer ${apiKey}`
-                : 'Bearer <YOUR_API_TOKEN>',
-              'Content-Type': 'application/json',
-              ...endpoint.headers,
-            }
+              const requestHeaders = {
+                'Authorization': apiKey
+                  ? `Bearer ${apiKey}`
+                  : 'Bearer <YOUR_API_TOKEN>',
+                'Content-Type': 'application/json',
+                ...endpoint.headers,
+              }
 
-            const baseHost = getV6ApiBaseUrl()
-            const fullApiEndpoint =
-              endpoint.apiEndpoint ||
-              (endpoint.apiPath.startsWith('http')
-                ? endpoint.apiPath
-                : `${baseHost}${endpoint.apiPath.startsWith('/') ? '' : '/'}${endpoint.apiPath}`)
+              const baseHost = getV6ApiBaseUrl()
+              const fullApiEndpoint =
+                endpoint.apiEndpoint ||
+                (endpoint.apiPath.startsWith('http')
+                  ? endpoint.apiPath
+                  : `${baseHost}${endpoint.apiPath.startsWith('/') ? '' : '/'}${endpoint.apiPath}`)
 
-            const headerLines = Object.entries(requestHeaders)
-              .map(([key, value]) => `  -H "${key}: ${value}" \\`)
-              .join('\n')
+              const headerLines = Object.entries(requestHeaders)
+                .map(([key, value]) => `  -H "${key}: ${value}" \\`)
+                .join('\n')
 
-            const curlCode = endpoint.requestPayload
-              ? `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}\n  -d '${stringifyJson(endpoint.requestPayload).replace(/\n/g, '\n  ')}'`
-              : `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}`
+              const curlCode = endpoint.requestPayload
+                ? `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}\n  -d '${stringifyJson(endpoint.requestPayload).replace(/\n/g, '\n  ')}'`
+                : `curl -X ${endpoint.method} ${fullApiEndpoint} \\\n${headerLines}`
 
-            return (
-              <div
-                className='overflow-hidden rounded-lg border border-border-default bg-surface'
-                key={endpoint.id}
-              >
-                {/* Accordion Header */}
-                <button
-                  className='flex w-full cursor-pointer items-center justify-between border-none bg-gray-1 px-3 py-2 text-left transition-colors hover:bg-gray-2'
-                  type='button'
-                  onClick={() => toggleEndpoint(endpoint.id)}
+              return (
+                <div
+                  className='overflow-hidden rounded-lg border border-border-default bg-surface'
+                  key={endpoint.id}
                 >
-                  <div className='flex min-w-0 flex-1 flex-col gap-0.5 pr-2'>
-                    <div className='flex items-center gap-1.5'>
-                      <span
-                        className={cn(
-                          TEXT_METHOD,
-                          'shrink-0 rounded border bg-white px-1.5 py-0.5',
-                          endpoint.method === 'GET'
-                            ? 'border-blue-9 text-blue-9'
-                            : endpoint.method === 'POST'
-                              ? 'border-green-9 text-green-9'
-                              : endpoint.method === 'PUT'
-                                ? 'border-orange-9 text-orange-9'
-                                : endpoint.method === 'DELETE'
-                                  ? 'border-red-9 text-red-9'
-                                  : 'border-border-default text-text-secondary',
-                        )}
-                      >
-                        {endpoint.method}
-                      </span>
-                      <span className={cn(TEXT_PRIMARY, 'truncate')}>
-                        {endpoint.title}
-                      </span>
-                    </div>
-                    {!isExpanded && endpoint.description && (
-                      <span className={cn(TEXT_MUTED, 'truncate')}>
-                        {endpoint.description}
-                      </span>
-                    )}
-                  </div>
-                  <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-border-default'>
-                    <Icon
-                      name='tabler:chevron-down'
-                      className={cn(
-                        'h-3.5 w-3.5 text-text-secondary transition-transform duration-200',
-                        isExpanded ? 'rotate-180' : 'rotate-0',
-                      )}
-                    />
-                  </div>
-                </button>
-
-                {/* Accordion Content */}
-                {isExpanded && (
-                  <div className='space-y-3 border-t border-border-default p-3'>
-                    {endpoint.description && (
-                      <p className={cn(TEXT_SECONDARY, 'leading-snug')}>
-                        {endpoint.description}
-                      </p>
-                    )}
-
-                    {/* Full Endpoint Details */}
-                    <div className='space-y-1.5'>
-                      <div className='flex items-center justify-between gap-2'>
-                        <h4 className={TEXT_SECTION}>Endpoint URL</h4>
-                        <a
-                          className={BTN_PRIMARY}
-                          href={playgroundUrl}
-                          rel='noopener noreferrer'
-                          target='_blank'
-                        >
-                          <Icon
-                            className='h-3.5 w-3.5'
-                            name='tabler:external-link'
-                          />
-                          Try it out
-                        </a>
-                      </div>
-                      <div className='flex items-start gap-1.5 rounded-md border border-border-default bg-gray-1 px-2.5 py-1.5'>
+                  {/* Accordion Header */}
+                  <button
+                    className='flex w-full cursor-pointer items-center justify-between border-none bg-gray-1 px-3 py-2 text-left transition-colors hover:bg-gray-2'
+                    type='button'
+                    onClick={() => toggleEndpoint(endpoint.id)}
+                  >
+                    <div className='flex min-w-0 flex-1 flex-col gap-0.5 pr-2'>
+                      <div className='flex items-center gap-1.5'>
                         <span
                           className={cn(
-                            TEXT_CODE,
-                            'flex-1 break-all text-text-primary',
+                            TEXT_METHOD,
+                            'shrink-0 rounded border bg-white px-1.5 py-0.5',
+                            endpoint.method === 'GET'
+                              ? 'border-blue-9 text-blue-9'
+                              : endpoint.method === 'POST'
+                                ? 'border-green-9 text-green-9'
+                                : endpoint.method === 'PUT'
+                                  ? 'border-orange-9 text-orange-9'
+                                  : endpoint.method === 'DELETE'
+                                    ? 'border-red-9 text-red-9'
+                                    : 'border-border-default text-text-secondary',
                           )}
                         >
-                          {fullApiEndpoint}
+                          {endpoint.method}
                         </span>
-                        <button
-                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
-                          title='Copy Endpoint'
-                          type='button'
-                          onClick={() =>
-                            copyToClipboard(
-                              fullApiEndpoint,
-                              `endpoint-${endpoint.id}`,
-                            )
-                          }
-                        >
-                          <Icon
-                            className='h-3.5 w-3.5'
-                            name={
-                              copiedId === `endpoint-${endpoint.id}`
-                                ? 'tabler:check'
-                                : 'tabler:copy'
-                            }
-                          />
-                        </button>
+                        <span className={cn(TEXT_PRIMARY, 'truncate')}>
+                          {endpoint.title}
+                        </span>
                       </div>
+                      {!isExpanded && endpoint.description && (
+                        <span className={cn(TEXT_MUTED, 'truncate')}>
+                          {endpoint.description}
+                        </span>
+                      )}
                     </div>
-
-                    {/* Headers */}
-                    <div className='space-y-1.5'>
-                      <h4 className={TEXT_SECTION}>Headers</h4>
-                      <div className='overflow-hidden rounded-md border border-border-default bg-surface'>
-                        <div
-                          className={cn(
-                            TEXT_SECTION,
-                            'grid grid-cols-3 border-b border-border-default bg-gray-1 px-2.5 py-1',
-                          )}
-                        >
-                          <span>Header</span>
-                          <span className='col-span-2'>Value</span>
-                        </div>
-                        {Object.entries(requestHeaders).map(
-                          ([key, value], index) => (
-                            <div
-                              key={key}
-                              className={cn(
-                                TEXT_CODE,
-                                'grid grid-cols-3 px-2.5 py-1.5',
-                                index <
-                                  Object.entries(requestHeaders).length - 1 &&
-                                  'border-b border-border-default',
-                              )}
-                            >
-                              <span className='text-text-primary'>{key}</span>
-                              <span className='col-span-2 text-text-secondary'>
-                                {value}
-                              </span>
-                            </div>
-                          ),
+                    <div className='flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-border-default'>
+                      <Icon
+                        name='tabler:chevron-down'
+                        className={cn(
+                          'h-3.5 w-3.5 text-text-secondary transition-transform duration-200',
+                          isExpanded ? 'rotate-180' : 'rotate-0',
                         )}
-                      </div>
+                      />
                     </div>
+                  </button>
 
-                    {/* Request Payload */}
-                    {endpoint.requestPayload && (
+                  {/* Accordion Content */}
+                  {isExpanded && (
+                    <div className='space-y-3 border-t border-border-default p-3'>
+                      {endpoint.description && (
+                        <p className={cn(TEXT_SECONDARY, 'leading-snug')}>
+                          {endpoint.description}
+                        </p>
+                      )}
+
+                      {/* Full Endpoint Details */}
                       <div className='space-y-1.5'>
                         <div className='flex items-center justify-between gap-2'>
-                          <h4 className={TEXT_SECTION}>Request Payload</h4>
+                          <h4 className={TEXT_SECTION}>Endpoint URL</h4>
+                          <a
+                            className={BTN_PRIMARY}
+                            href={playgroundUrl}
+                            rel='noopener noreferrer'
+                            target='_blank'
+                          >
+                            <Icon
+                              className='h-3.5 w-3.5'
+                              name='tabler:external-link'
+                            />
+                            Try it out
+                          </a>
+                        </div>
+                        <div className='flex items-start gap-1.5 rounded-md border border-border-default bg-gray-1 px-2.5 py-1.5'>
+                          <span
+                            className={cn(
+                              TEXT_CODE,
+                              'flex-1 break-all text-text-primary',
+                            )}
+                          >
+                            {fullApiEndpoint}
+                          </span>
                           <button
                             className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
-                            title={
-                              copiedId === `payload-${endpoint.id}`
-                                ? 'Copied!'
-                                : 'Copy'
-                            }
+                            title='Copy Endpoint'
                             type='button'
                             onClick={() =>
                               copyToClipboard(
-                                stringifyJson(endpoint.requestPayload),
-                                `payload-${endpoint.id}`,
+                                fullApiEndpoint,
+                                `endpoint-${endpoint.id}`,
                               )
                             }
                           >
                             <Icon
                               className='h-3.5 w-3.5'
                               name={
+                                copiedId === `endpoint-${endpoint.id}`
+                                  ? 'tabler:check'
+                                  : 'tabler:copy'
+                              }
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Headers */}
+                      <div className='space-y-1.5'>
+                        <h4 className={TEXT_SECTION}>Headers</h4>
+                        <div className='overflow-hidden rounded-md border border-border-default bg-surface'>
+                          <div
+                            className={cn(
+                              TEXT_SECTION,
+                              'grid grid-cols-3 border-b border-border-default bg-gray-1 px-2.5 py-1',
+                            )}
+                          >
+                            <span>Header</span>
+                            <span className='col-span-2'>Value</span>
+                          </div>
+                          {Object.entries(requestHeaders).map(
+                            ([key, value], index) => (
+                              <div
+                                key={key}
+                                className={cn(
+                                  TEXT_CODE,
+                                  'grid grid-cols-3 px-2.5 py-1.5',
+                                  index <
+                                    Object.entries(requestHeaders).length - 1 &&
+                                    'border-b border-border-default',
+                                )}
+                              >
+                                <span className='text-text-primary'>{key}</span>
+                                <span className='col-span-2 text-text-secondary'>
+                                  {value}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Request Payload */}
+                      {endpoint.requestPayload && (
+                        <div className='space-y-1.5'>
+                          <div className='flex items-center justify-between gap-2'>
+                            <h4 className={TEXT_SECTION}>Request Payload</h4>
+                            <button
+                              className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
+                              type='button'
+                              title={
                                 copiedId === `payload-${endpoint.id}`
+                                  ? 'Copied!'
+                                  : 'Copy'
+                              }
+                              onClick={() =>
+                                copyToClipboard(
+                                  stringifyJson(endpoint.requestPayload),
+                                  `payload-${endpoint.id}`,
+                                )
+                              }
+                            >
+                              <Icon
+                                className='h-3.5 w-3.5'
+                                name={
+                                  copiedId === `payload-${endpoint.id}`
+                                    ? 'tabler:check'
+                                    : 'tabler:copy'
+                                }
+                              />
+                            </button>
+                          </div>
+                          <pre
+                            className={cn(
+                              TEXT_CODE,
+                              'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-green-9 select-all',
+                            )}
+                          >
+                            {stringifyJson(endpoint.requestPayload)}
+                          </pre>
+                        </div>
+                      )}
+
+                      {/* cURL Snippet */}
+                      <div className='space-y-1.5'>
+                        <div className='flex items-center justify-between gap-2'>
+                          <h4 className={TEXT_SECTION}>cURL Example</h4>
+                          <button
+                            className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
+                            type='button'
+                            title={
+                              copiedId === `curl-${endpoint.id}`
+                                ? 'Copied!'
+                                : 'Copy'
+                            }
+                            onClick={() =>
+                              copyToClipboard(curlCode, `curl-${endpoint.id}`)
+                            }
+                          >
+                            <Icon
+                              className='h-3.5 w-3.5'
+                              name={
+                                copiedId === `curl-${endpoint.id}`
                                   ? 'tabler:check'
                                   : 'tabler:copy'
                               }
@@ -559,70 +603,34 @@ export const ApiPlayground = ({
                         <pre
                           className={cn(
                             TEXT_CODE,
-                            'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-green-9 select-all',
+                            'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-blue-9 select-all',
                           )}
                         >
-                          {stringifyJson(endpoint.requestPayload)}
+                          {curlCode}
                         </pre>
                       </div>
-                    )}
 
-                    {/* cURL Snippet */}
-                    <div className='space-y-1.5'>
-                      <div className='flex items-center justify-between gap-2'>
-                        <h4 className={TEXT_SECTION}>cURL Example</h4>
-                        <button
-                          className='flex cursor-pointer items-center justify-center rounded border-none bg-transparent p-0.5 text-text-muted transition-colors hover:bg-gray-3 hover:text-text-primary'
-                          title={
-                            copiedId === `curl-${endpoint.id}`
-                              ? 'Copied!'
-                              : 'Copy'
-                          }
-                          type='button'
-                          onClick={() =>
-                            copyToClipboard(curlCode, `curl-${endpoint.id}`)
-                          }
-                        >
-                          <Icon
-                            className='h-3.5 w-3.5'
-                            name={
-                              copiedId === `curl-${endpoint.id}`
-                                ? 'tabler:check'
-                                : 'tabler:copy'
-                            }
-                          />
-                        </button>
-                      </div>
-                      <pre
-                        className={cn(
-                          TEXT_CODE,
-                          'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-blue-9 select-all',
-                        )}
-                      >
-                        {curlCode}
-                      </pre>
+                      {/* Response Snippet */}
+                      {endpoint.responsePayload && (
+                        <div className='space-y-1.5'>
+                          <h4 className={TEXT_SECTION}>Response Payload</h4>
+                          <pre
+                            className={cn(
+                              TEXT_CODE,
+                              'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-orange-9',
+                            )}
+                          >
+                            {stringifyJson(endpoint.responsePayload)}
+                          </pre>
+                        </div>
+                      )}
                     </div>
-
-                    {/* Response Snippet */}
-                    {endpoint.responsePayload && (
-                      <div className='space-y-1.5'>
-                        <h4 className={TEXT_SECTION}>Response Payload</h4>
-                        <pre
-                          className={cn(
-                            TEXT_CODE,
-                            'scrollbar overflow-x-auto rounded-md border border-gray-12 bg-gray-13 p-2.5 leading-snug whitespace-pre-wrap text-orange-9',
-                          )}
-                        >
-                          {stringifyJson(endpoint.responsePayload)}
-                        </pre>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

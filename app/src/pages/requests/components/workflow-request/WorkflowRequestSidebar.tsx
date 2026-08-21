@@ -5,6 +5,7 @@ import AttachmentsPanel, {
 import CommentsPanel, { type LocalComment } from './components/CommentsPanel'
 
 interface Props {
+  activePanel: 'attachments' | 'comments'
   attachments: AttachmentEntry[]
   commentDraft: string
   comments: LocalComment[]
@@ -15,10 +16,11 @@ interface Props {
   onSendComment: () => void
 }
 
-// Right-hand rail alongside the dynamic form: general attachments +
-// initiator notes. Kept as a separate module so it can be reused (or
-// dropped) independent of the form column.
+// Right-hand rail alongside the dynamic form, toggled open from the header's
+// Attachments/Comments icon buttons — shows whichever one is active, not
+// both at once, so the form gets the full width back when it's closed.
 const WorkflowRequestSidebar = ({
+  activePanel,
   attachments,
   commentDraft,
   comments,
@@ -30,21 +32,22 @@ const WorkflowRequestSidebar = ({
 }: Props) => {
   return (
     <div className='flex w-[340px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-gray-3 bg-gray-1 p-4'>
-      <AnimateSlideUp delay={0.1}>
-        <AttachmentsPanel
-          attachments={attachments}
-          isUploading={isUploadingAttachment}
-          onAdd={onAddAttachment}
-          onRemove={onRemoveAttachment}
-        />
-      </AnimateSlideUp>
-      <AnimateSlideUp delay={0.2}>
-        <CommentsPanel
-          comments={comments}
-          draft={commentDraft}
-          onDraftChange={onCommentDraftChange}
-          onSend={onSendComment}
-        />
+      <AnimateSlideUp delay={0.05}>
+        {activePanel === 'attachments' ? (
+          <AttachmentsPanel
+            attachments={attachments}
+            isUploading={isUploadingAttachment}
+            onAdd={onAddAttachment}
+            onRemove={onRemoveAttachment}
+          />
+        ) : (
+          <CommentsPanel
+            comments={comments}
+            draft={commentDraft}
+            onDraftChange={onCommentDraftChange}
+            onSend={onSendComment}
+          />
+        )}
       </AnimateSlideUp>
     </div>
   )

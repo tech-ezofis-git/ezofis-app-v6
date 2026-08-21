@@ -24,7 +24,7 @@ export const isIgnorableField = (field: any) => {
 
 export const isParentField = (field: any) => {
   const pid = field?.parentId
-  return pid === 0 || pid === '0'
+  return pid === undefined || pid === null || pid === 0 || pid === '0'
 }
 
 export const getFieldKey = (field: any) =>

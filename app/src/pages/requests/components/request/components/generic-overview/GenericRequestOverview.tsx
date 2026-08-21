@@ -1,7 +1,4 @@
-import { useLingui } from '@lingui/react/macro'
-import { useMemo, useState } from 'react'
-import Tab from '@/components/base/tabs/Tab'
-import Tabs from '@/components/base/tabs/Tabs'
+import { useMemo } from 'react'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import Attachments from '../sections/attachment/Attachments'
 import Comments from '../sections/comment/Comments'
@@ -9,6 +6,7 @@ import History from '../sections/history/History'
 
 interface Props {
   rawWorkflowData: any
+  rightView: 'overview' | 'history' | 'attachments' | 'comments'
   selectedItem: any
 }
 
@@ -28,16 +26,16 @@ const safeParseFormData = (formData: unknown): Record<string, any> => {
   return {}
 }
 
-type TabId = 'overview' | 'history' | 'attachments' | 'comments'
-
 // Generic (non-Accounts-Payable) request detail: the submitted form
 // rendered read-only with the same component used to compose it in New
-// Request, plus History/Attachments/Comments — the same tabs the AP detail
-// view has, using the existing workflow-agnostic components for those.
-const GenericRequestOverview = ({ rawWorkflowData, selectedItem }: Props) => {
-  const { t } = useLingui()
-  const [activeTab, setActiveTab] = useState<TabId>('overview')
-
+// Request, always visible on the left; History/Attachments/Comments open
+// as a right-side panel driven by the header's icon buttons (rightView),
+// using the existing workflow-agnostic components for those.
+const GenericRequestOverview = ({
+  rawWorkflowData,
+  rightView,
+  selectedItem,
+}: Props) => {
   const panels = useMemo(
     () => rawWorkflowData?.formJson?.panels || [],
     [rawWorkflowData],
@@ -52,63 +50,54 @@ const GenericRequestOverview = ({ rawWorkflowData, selectedItem }: Props) => {
   const processId = selectedItem?.processId
   const repositoryId = rawWorkflowData?.repositoryId
 
+  const showSidePanel = rightView !== 'overview'
+
   return (
-    <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-      <div className='border-b border-gray-3 px-6'>
-        <Tabs
-          color='primary'
-          tabClassName='py-3'
-          value={activeTab}
-          onChange={(val) => setActiveTab(val as TabId)}
-        >
-          <Tab label={t`Overview`} value='overview' />
-          <Tab label={t`History`} value='history' />
-          <Tab label={t`Attachments`} value='attachments' />
-          <Tab label={t`Comments`} value='comments' />
-        </Tabs>
+    <div className='flex min-h-0 flex-1 overflow-hidden'>
+      <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+        <WorkflowFormRenderer
+          formModel={formModel}
+          panels={panels}
+          viewOnly
+          onFieldChange={() => {}}
+        />
       </div>
 
-      <div className='min-h-0 flex-1 overflow-hidden'>
-        {activeTab === 'overview' && (
-          <WorkflowFormRenderer
-            formModel={formModel}
-            panels={panels}
-            viewOnly
-            onFieldChange={() => {}}
-          />
-        )}
-        {activeTab === 'history' && (
-          <div className='h-full overflow-y-auto px-6 py-4'>
-            <History
-              enabled
-              instanceId={instanceId}
-              processId={processId}
-              workflowId={workflowId}
-            />
-          </div>
-        )}
-        {activeTab === 'attachments' && (
-          <div className='h-full overflow-y-auto px-6 py-4'>
-            <Attachments
-              enabled
-              instanceId={instanceId}
-              processId={processId}
-              repositoryId={repositoryId}
-              workflowId={workflowId}
-            />
-          </div>
-        )}
-        {activeTab === 'comments' && (
-          <div className='h-full overflow-hidden px-6 py-4'>
-            <Comments
-              enabled
-              instanceId={instanceId}
-              processId={processId}
-              workflowId={workflowId}
-            />
-          </div>
-        )}
-      </div>
+      {showSidePanel && (
+        <div className='flex w-[380px] shrink-0 flex-col overflow-y-auto border-l border-gray-3 bg-gray-1'>
+          {rightView === 'history' && (
+            <div className='px-4 py-4'>
+              <History
+                instanceId={instanceId}
+                processId={processId}
+                workflowId={workflowId}
+                enabled
+              />
+            </div>
+          )}
+          {rightView === 'attachments' && (
+            <div className='px-4 py-4'>
+              <Attachments
+                instanceId={instanceId}
+                processId={processId}
+                repositoryId={repositoryId}
+                workflowId={workflowId}
+                enabled
+              />
+            </div>
+          )}
+          {rightView === 'comments' && (
+            <div className='flex h-full flex-col px-4 py-4'>
+              <Comments
+                instanceId={instanceId}
+                processId={processId}
+                workflowId={workflowId}
+                enabled
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
