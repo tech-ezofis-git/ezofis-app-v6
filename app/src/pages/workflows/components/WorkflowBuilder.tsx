@@ -96,6 +96,7 @@ const initialNodes: Node[] = [
       iconColor: 'var(--color-secondary-9)',
       label: 'Workflow Success',
       subLabel: 'Automated Process End',
+      type: 'end',
       warning: true,
     },
     id: initialEndId,

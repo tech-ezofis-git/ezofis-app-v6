@@ -14,6 +14,7 @@ interface IntegrationItem {
   label: string
   type: 'popular' | 'highlight'
   actions?: string[]
+  nodeType?: 'action' | 'end' | 'trigger'
 }
 
 type TabType = 'explore' | 'apps' | 'agents' | 'triggers'
@@ -72,7 +73,9 @@ const AddNodeMenu = () => {
               label: item.label,
               subLabel: item.description,
               toolType: item.label,
-              type: item.category === 'triggers' ? 'trigger' : 'action',
+              type:
+                item.nodeType ??
+                (item.category === 'triggers' ? 'trigger' : 'action'),
             },
           }
         }
@@ -107,7 +110,9 @@ const AddNodeMenu = () => {
               label: item.label,
               subLabel: item.description,
               toolType: item.label,
-              type: item.category === 'triggers' ? 'trigger' : 'action',
+              type:
+                item.nodeType ??
+                (item.category === 'triggers' ? 'trigger' : 'action'),
             },
             id: newNodeId,
             // Align X with source, Place Y at source Y + GAP
@@ -333,6 +338,16 @@ const AddNodeMenu = () => {
       icon: 'lucide:split',
       iconColor: '#f97316',
       label: 'Condition',
+      type: 'highlight',
+    },
+    {
+      bgColor: 'bg-secondary-3',
+      category: 'triggers',
+      description: 'Mark this branch as complete',
+      icon: 'lucide:party-popper',
+      iconColor: 'var(--color-secondary-9)',
+      label: 'End',
+      nodeType: 'end',
       type: 'highlight',
     },
   ]
