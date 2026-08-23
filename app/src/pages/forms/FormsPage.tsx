@@ -473,11 +473,6 @@ const FormsPage = () => {
     return (
       <AiFormBuilder
         onBack={() => setShowAiBuilder(false)}
-        onStartFromScratch={() => {
-          useFormStore.getState().resetForm()
-          setShowAiBuilder(false)
-          navigate({ to: '/form-builder' })
-        }}
         onApply={(payload) => {
           useFormStore.getState().loadForm(payload)
           setShowAiBuilder(false)

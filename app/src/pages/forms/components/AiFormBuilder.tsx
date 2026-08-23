@@ -1,62 +1,187 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { Textarea } from '@mantine/core'
 import { motion } from 'motion/react'
-import Button from '@/components/base/button/Button'
+import { useEffect, useMemo, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
-import Icon from '@/components/base/icon/Icon'
+import InputSegmentedControl from '@/components/base/inputs/InputSegmentedControl'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   buildFormPayloadFromAiSuggestion,
-  generateFormConfigViaQwen,
-  type AiFormConfigSuggestion,
-  type AiGeneratedField,
   type FormTypeOption,
+  generateFormConfigViaQwen,
 } from '@/services/ai/formConfig'
-import cn from '@/utils/cn'
 
 interface AiFormBuilderProps {
-  onBack: () => void
   onApply: (payload: any) => void
-  onStartFromScratch: () => void
+  onBack: () => void
 }
 
-interface ChatMessage {
-  id: string
-  role: 'assistant' | 'user'
-  text: string
-  chips?: Array<{ label: string; value: string; icon?: string }>
-  component?: 'TYPE_SELECTOR' | 'DETAILS_FORM' | 'GENERATED_CARD'
-}
+const FORM_TYPE_OPTIONS = [
+  { id: 'WORKFLOW', name: 'Workflow Form' },
+  { id: 'MASTER', name: 'Master Form' },
+]
 
-const FIELD_TYPE_OPTIONS = [
-  { label: 'Short Text', value: 'SHORT_TEXT' },
-  { label: 'Long Text', value: 'LONG_TEXT' },
-  { label: 'Number', value: 'NUMBER' },
-  { label: 'Date', value: 'DATE' },
-  { label: 'Time', value: 'TIME' },
-  { label: 'Date & Time', value: 'DATE_TIME' },
-  { label: 'Single Select', value: 'SINGLE_SELECT' },
-  { label: 'Multi Select', value: 'MULTI_SELECT' },
-  { label: 'Single Choice', value: 'SINGLE_CHOICE' },
-  { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
-  { label: 'Email', value: 'EMAIL' },
-  { label: 'Phone Number', value: 'PHONE_NUMBER' },
-  { label: 'Address', value: 'ADDRESS' },
-  { label: 'Currency', value: 'CURRENCY_AMOUNT' },
-  { label: 'File Upload', value: 'FILE_UPLOAD' },
-  { label: 'Signature', value: 'SIGNATURE' },
-  { label: 'Star Rating', value: 'RATING' },
-  { label: 'Yes/No Toggle', value: 'YES_NO_TOGGLE' },
-  { label: 'Counter', value: 'COUNTER' },
-  { label: 'Table', value: 'TABLE' },
-  { label: 'Password', value: 'PASSWORD' },
-  { label: 'Heading', value: 'HEADING' },
-  { label: 'Paragraph', value: 'TEXT_BUILDER' },
-  { label: 'Divider', value: 'DIVIDER' },
+const SAMPLE_PROMPTS = [
+  {
+    label: 'General Feedback Form',
+    prompt:
+      'A general feedback form to collect ratings, comments and suggestions from users.',
+  },
+  {
+    label: 'Employee Onboarding',
+    prompt:
+      'An employee onboarding form to collect personal details, department, joining date and required documents.',
+  },
+  {
+    label: 'Leave Request',
+    prompt:
+      'A leave request form with employee name, leave type, start date, end date and reason.',
+  },
 ]
 
 const SESSION_KEY = 'ezofis_aiformbuilder_state'
+
+export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
+  const { t } = useLingui()
+  const storedState = useMemo(() => getStoredState(), [])
+
+  const [formType, setFormType] = useState<FormTypeOption>(
+    storedState?.formType ?? 'WORKFLOW',
+  )
+  const [prompt, setPrompt] = useState(storedState?.prompt ?? '')
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ formType, prompt }))
+    } catch {
+      // ignore
+    }
+  }, [formType, prompt])
+
+  const handleGenerate = async () => {
+    const text = prompt.trim()
+    if (!text) {
+      showToast({
+        message: t`Please describe what form you want to create`,
+        variant: 'error',
+      })
+      return
+    }
+
+    setIsGenerating(true)
+
+    try {
+      const result = await generateFormConfigViaQwen({
+        description: text,
+        formType,
+        name: text.length <= 40 ? text : `${text.slice(0, 40)}...`,
+        prompt: text,
+      })
+      const payload = buildFormPayloadFromAiSuggestion(result)
+
+      showToast({ message: t`Opening Form Builder...`, variant: 'success' })
+      onApply(payload)
+    } catch (error) {
+      console.error('Form generation error:', error)
+      showToast({
+        message: t`Something went wrong. Please try again.`,
+        variant: 'error',
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return (
+    <motion.div
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      className='flex h-full min-h-0 w-full flex-col overflow-hidden bg-surface-primary text-gray-12'
+      initial={{ opacity: 0, scale: 0.98, y: 12 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <div className='flex shrink-0 items-center gap-3 border-b border-gray-4 bg-surface-primary px-6 py-3.5 shadow-xs'>
+        <IconButton
+          ariaLabel={t`Back`}
+          color='gray'
+          icon='lucide:arrow-left'
+          size='sm'
+          variant='ghost'
+          onClick={onBack}
+        />
+        <h2 className='text-sm font-semibold text-gray-12'>{t`New Form`}</h2>
+      </div>
+
+      <div className='flex flex-1 flex-col items-center justify-center gap-8 overflow-y-auto p-6'>
+        <div className='flex flex-col items-center gap-3 text-center'>
+          <div className='bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex h-12 w-12 items-center justify-center rounded-2xl'>
+            <AiBrandIcon className='size-6' variant='outline-purple' />
+          </div>
+          <h1 className='text-xl font-semibold text-gray-12 md:text-2xl'>
+            {t`What form shall we create?`}
+          </h1>
+        </div>
+
+        <div className='w-full max-w-2xl rounded-3xl border border-gray-4 bg-surface-primary p-4 shadow-sm transition-colors focus-within:border-primary-9'>
+          <Textarea
+            disabled={isGenerating}
+            maxRows={6}
+            minRows={2}
+            placeholder={t`Describe the form you want to create...`}
+            value={prompt}
+            autosize
+            classNames={{
+              input:
+                'border-none bg-transparent p-0 text-base text-gray-12 placeholder:text-gray-8 focus:outline-none',
+            }}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleGenerate()
+              }
+            }}
+          />
+
+          <div className='mt-3 flex items-center justify-between gap-3'>
+            <div className='w-56'>
+              <InputSegmentedControl
+                options={FORM_TYPE_OPTIONS}
+                value={FORM_TYPE_OPTIONS.find((o) => o.id === formType)!}
+                onChange={(option) => setFormType(option.id as FormTypeOption)}
+              />
+            </div>
+
+            <IconButton
+              ariaLabel={t`Send`}
+              color='primary'
+              disabled={!prompt.trim() || isGenerating}
+              icon='lucide:arrow-up'
+              loading={isGenerating}
+              size='md'
+              variant='solid'
+              onClick={handleGenerate}
+            />
+          </div>
+        </div>
+
+        <div className='flex w-full max-w-2xl flex-wrap items-center justify-center gap-2'>
+          {SAMPLE_PROMPTS.map((sample) => (
+            <button
+              className='inline-flex items-center gap-1.5 rounded-full border border-gray-4 bg-surface-primary px-3.5 py-2 text-xs font-medium text-gray-11 transition-colors hover:border-primary-9 hover:text-primary-9'
+              key={sample.label}
+              type='button'
+              onClick={() => setPrompt(sample.prompt)}
+            >
+              {sample.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
 
 function getStoredState() {
   try {
@@ -65,562 +190,4 @@ function getStoredState() {
   } catch {
     return null
   }
-}
-
-export default function AiFormBuilder({
-  onBack,
-  onApply,
-  onStartFromScratch,
-}: AiFormBuilderProps) {
-  const { t } = useLingui()
-
-  const storedState = useMemo(() => getStoredState(), [])
-
-  const [messages, setMessages] = useState<ChatMessage[]>(storedState?.messages ?? [
-    {
-      chips: [
-        { icon: 'lucide:git-pull-request', label: t`Workflow Form`, value: 'WORKFLOW' },
-        { icon: 'lucide:database', label: t`Master Form`, value: 'MASTER' },
-      ],
-      component: 'TYPE_SELECTOR',
-      id: 'msg-1',
-      role: 'assistant',
-      text: t`Hello! I am your Form Assistant. What type of form would you like to create today?`,
-    },
-  ])
-
-  const [selectedType, setSelectedType] = useState<FormTypeOption>(storedState?.selectedType ?? 'WORKFLOW')
-  const [isTypeSelected, setIsTypeSelected] = useState(storedState?.isTypeSelected ?? false)
-  const [formName, setFormName] = useState(storedState?.formName ?? '')
-  const [description, setDescription] = useState(storedState?.description ?? '')
-  const [chatInput, setChatInput] = useState(storedState?.chatInput ?? '')
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [isThinking, setIsThinking] = useState(false)
-  const [suggestion, setSuggestion] = useState<AiFormConfigSuggestion | null>(storedState?.suggestion ?? null)
-
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify({
-          messages,
-          selectedType,
-          isTypeSelected,
-          formName,
-          description,
-          chatInput,
-          suggestion,
-        })
-      )
-    } catch {
-      // ignore
-    }
-  }, [messages, selectedType, isTypeSelected, formName, description, chatInput, suggestion])
-
-  const chatEndRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isGenerating, isThinking])
-
-  const handleSelectType = (typeValue: string) => {
-    const typeLabel =
-      typeValue === 'WORKFLOW' ? t`Workflow Form` : t`Master Form`
-
-    setSelectedType(typeValue as FormTypeOption)
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        text: typeLabel,
-      },
-    ])
-
-    setIsThinking(true)
-
-    setTimeout(() => {
-      setIsThinking(false)
-      setIsTypeSelected(true)
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `ast-${Date.now()}`,
-          role: 'assistant',
-          text: t`Let's set up your form. What would you like to name it, and what's it for? (e.g., "Vendor Onboarding" — used to collect new vendor details before approval.)`,
-        },
-      ])
-    }, 900)
-  }
-
-  const handleGenerate = async (
-    overrideName?: string,
-    overrideDesc?: string,
-    extraPrompt?: string,
-  ) => {
-    const promptText = (overrideDesc || description || extraPrompt || overrideName || formName).trim()
-    const rawTitle = (overrideName || formName || promptText).trim()
-    const finalDesc = (overrideDesc || description || promptText).trim()
-
-    if (!promptText && !rawTitle) {
-      showToast({
-        message: t`Please describe what form you want to create`,
-        variant: 'error',
-      })
-      return
-    }
-
-    const displayName = rawTitle.length <= 40 ? rawTitle : rawTitle.substring(0, 40) + '...'
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        text: promptText,
-      },
-    ])
-
-    const startTime = Date.now()
-    setIsGenerating(true)
-
-    try {
-      const result = await generateFormConfigViaQwen({
-        description: finalDesc,
-        formType: selectedType,
-        name: displayName,
-        prompt: promptText,
-      })
-
-      // Ensure AI loader shows for at least 1.8 seconds to feel lively
-      const elapsedTime = Date.now() - startTime
-      if (elapsedTime < 1800) {
-        await new Promise((res) => setTimeout(res, 1800 - elapsedTime))
-      }
-
-      setSuggestion(result)
-
-      const totalFields = result.panels.reduce(
-        (acc, p) => acc + p.fields.length,
-        0,
-      )
-      const payload = buildFormPayloadFromAiSuggestion(result)
-
-      setIsGenerating(false)
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `ast-resp-${Date.now()}`,
-          role: 'assistant',
-          text: t`I've built the "${result.name}" form layout with ${result.panels.length} sections and ${totalFields} fields! Opening fields in Form Builder...`,
-        },
-      ])
-
-      setTimeout(() => {
-        showToast({
-          message: t`Opening Form Builder...`,
-          variant: 'success',
-        })
-        onApply(payload)
-      }, 1400)
-    } catch (error) {
-      console.error('Form generation error:', error)
-      const fallbackConfig: AiFormConfigSuggestion = {
-        description: finalDesc,
-        formType: selectedType,
-        name: displayName,
-        panels: [
-          {
-            description: 'General details section',
-            fields: [
-              {
-                isMandatory: true,
-                label: 'Full Name',
-                placeholder: 'Enter name',
-                size: 'col-6',
-                type: 'FULL_NAME',
-              },
-              {
-                isMandatory: true,
-                label: 'Email Address',
-                placeholder: 'Enter email',
-                size: 'col-6',
-                type: 'EMAIL',
-              },
-              {
-                isMandatory: false,
-                label: 'Description & Notes',
-                placeholder: 'Enter details...',
-                size: 'col-12',
-                type: 'LONG_TEXT',
-              },
-            ],
-            title: 'General Information',
-          },
-        ],
-        reply: 'Generated sample form layout.',
-        source: 'local',
-      }
-      const fallbackPayload = buildFormPayloadFromAiSuggestion(fallbackConfig)
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `ast-resp-${Date.now()}`,
-          role: 'assistant',
-          text: t`I've prepared the "${displayName}" form fields! Opening in Form Builder...`,
-        },
-      ])
-
-      setIsGenerating(false)
-
-      setTimeout(() => {
-        onApply(fallbackPayload)
-      }, 1400)
-    }
-  }
-
-  const handleSendPrompt = () => {
-    if (!chatInput.trim()) return
-    const text = chatInput.trim()
-    setChatInput('')
-    handleGenerate(text, text, text)
-  }
-
-  const handleAddField = (panelIdx: number) => {
-    if (!suggestion) return
-    const updated = { ...suggestion }
-    const newField: AiGeneratedField = {
-      isMandatory: false,
-      label: `New Field ${updated.panels[panelIdx].fields.length + 1}`,
-      placeholder: '',
-      size: 'col-6',
-      type: 'SHORT_TEXT',
-    }
-    updated.panels[panelIdx].fields.push(newField)
-    setSuggestion({ ...updated })
-  }
-
-  const handleRemoveField = (panelIdx: number, fieldIdx: number) => {
-    if (!suggestion) return
-    const updated = { ...suggestion }
-    updated.panels[panelIdx].fields.splice(fieldIdx, 1)
-    setSuggestion({ ...updated })
-  }
-
-  const handleUpdateField = (
-    panelIdx: number,
-    fieldIdx: number,
-    updates: Partial<AiGeneratedField>,
-  ) => {
-    if (!suggestion) return
-    const updated = { ...suggestion }
-    updated.panels[panelIdx].fields[fieldIdx] = {
-      ...updated.panels[panelIdx].fields[fieldIdx],
-      ...updates,
-    }
-    setSuggestion({ ...updated })
-  }
-
-  const handleApply = () => {
-    if (!suggestion) return
-    const payload = buildFormPayloadFromAiSuggestion(suggestion)
-    showToast({
-      message: t`Opening Form Builder...`,
-      variant: 'success',
-    })
-    onApply(payload)
-  }
-
-  return (
-    <motion.div
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      className='bg-surface-primary flex h-full min-h-0 w-full flex-col overflow-hidden text-gray-12'
-      initial={{ opacity: 0, scale: 0.98, y: 12 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {/* Top Bar */}
-      <motion.div
-        animate={{ opacity: 1, y: 0 }}
-        className='flex items-center justify-between border-b border-gray-4 bg-surface-primary px-6 py-3.5 shadow-xs'
-        initial={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-      >
-        <div className='flex items-center gap-3'>
-          <IconButton
-            ariaLabel='Back'
-            color='gray'
-            icon='lucide:arrow-left'
-            size='sm'
-            variant='ghost'
-            onClick={onBack}
-          />
-          <div className='flex items-center gap-2.5'>
-            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400'>
-              <AiBrandIcon className='size-4' variant='outline-purple' />
-            </div>
-            <div>
-              <h2 className='text-sm font-semibold text-gray-12'>
-                {t`Form Assistant`}
-              </h2>
-              <p className='text-[11px] text-gray-10'>
-                {t`Chat to build your form`}
-              </p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Chat Messages Timeline */}
-      <div className='flex-1 overflow-y-auto p-4 md:p-6 space-y-5 bg-gray-1/30'>
-        <div className='mx-auto max-w-3xl space-y-5'>
-          {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              animate={{ opacity: 1, y: 0 }}
-              className={cn(
-                'flex gap-3',
-                msg.role === 'user' ? 'justify-end' : 'justify-start',
-              )}
-              initial={{ opacity: 0, y: 12 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-            >
-              {msg.role === 'assistant' && (
-                <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400'>
-                  <AiBrandIcon className='size-4' variant='outline-purple' />
-                </div>
-              )}
-
-              <div
-                className={cn(
-                  'max-w-[85%] space-y-3',
-                  msg.role === 'user' ? 'items-end' : 'items-start',
-                )}
-              >
-                {/* Bubble Text */}
-                <div
-                  className={cn(
-                    'rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-xs',
-                    msg.role === 'user'
-                      ? 'bg-primary-9 text-white font-medium rounded-tr-xs'
-                      : 'border border-gray-4 bg-surface-primary text-gray-12 rounded-tl-xs',
-                  )}
-                >
-                  {msg.text}
-                </div>
-
-                {/* Chips Component */}
-                {msg.component === 'TYPE_SELECTOR' && msg.chips && (
-                  <div className='flex flex-wrap gap-2 pt-1'>
-                    {msg.chips.map((chip) => (
-                      <motion.button
-                        key={chip.value}
-                        whileHover={{ scale: 1.04, y: -1 }}
-                        whileTap={{ scale: 0.96 }}
-                        className='inline-flex items-center gap-2 rounded-full border border-primary-4 bg-surface-primary px-3.5 py-2 text-xs font-semibold text-primary-9 transition-all hover:border-primary-9 hover:bg-primary-3 focus:outline-none focus:ring-2 focus:ring-primary-5 shadow-xs'
-                        onClick={() => handleSelectType(chip.value)}
-                      >
-                        {chip.icon && (
-                          <Icon className='h-3.5 w-3.5' name={chip.icon} />
-                        )}
-                        <span>{chip.label}</span>
-                      </motion.button>
-                    ))}
-                  </div>
-                )}
-
-
-
-                {/* Generated Form Card Component */}
-                {msg.component === 'GENERATED_CARD' && suggestion && (
-                  <motion.div
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className='w-full space-y-4 rounded-2xl border border-primary-4 bg-surface-primary p-5 shadow-sm'
-                    initial={{ opacity: 0, scale: 0.97, y: 12 }}
-                    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  >
-                    <div className='flex items-center justify-between border-b border-gray-3 pb-3'>
-                      <div>
-                        <h4 className='text-sm font-bold text-gray-12'>
-                          {suggestion.name}
-                        </h4>
-                        <span className='mt-0.5 inline-block rounded-md bg-primary-3 px-2 py-0.5 text-[10px] font-semibold text-primary-9 uppercase'>
-                          {suggestion.formType} FORM
-                        </span>
-                      </div>
-                      <Button
-                        color='primary'
-                        icon='lucide:arrow-right'
-                        size='sm'
-                        variant='solid'
-                        onClick={handleApply}
-                      >
-                        {t`Open in Form Builder`}
-                      </Button>
-                    </div>
-
-                    {/* Panels */}
-                    <div className='space-y-4'>
-                      {suggestion.panels.map((panel, pIdx) => (
-                        <div
-                          key={pIdx}
-                          className='rounded-xl border border-gray-3 bg-gray-1/30 p-3.5'
-                        >
-                          <div className='flex items-center justify-between border-b border-gray-3 pb-2'>
-                            <h5 className='text-xs font-semibold text-gray-12'>
-                              {panel.title}
-                            </h5>
-                            <Button
-                              color='gray'
-                              icon='lucide:plus'
-                              size='xs'
-                              variant='subtle'
-                              onClick={() => handleAddField(pIdx)}
-                            >
-                              {t`Add Field`}
-                            </Button>
-                          </div>
-
-                          <div className='mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2'>
-                            {panel.fields.map((f, fIdx) => (
-                              <div
-                                key={fIdx}
-                                className='rounded-lg border border-gray-4 bg-surface-primary p-2.5 text-xs'
-                              >
-                                <div className='flex items-center justify-between gap-1'>
-                                  <input
-                                    className='flex-1 border-b border-transparent bg-transparent text-xs font-medium text-gray-12 outline-none focus:border-primary-9'
-                                    value={f.label}
-                                    onChange={(e) =>
-                                      handleUpdateField(pIdx, fIdx, {
-                                        label: e.target.value,
-                                      })
-                                    }
-                                  />
-                                  <IconButton
-                                    ariaLabel='Delete'
-                                    color='red'
-                                    icon='lucide:trash-2'
-                                    size='xs'
-                                    variant='subtle'
-                                    onClick={() => handleRemoveField(pIdx, fIdx)}
-                                  />
-                                </div>
-                                <div className='mt-2 flex items-center justify-between gap-2 text-[10px] text-gray-10'>
-                                  <select
-                                    className='min-w-0 flex-1 truncate rounded-md border border-gray-4 bg-gray-2/60 px-2 py-1 text-xs font-medium text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3 cursor-pointer'
-                                    value={f.type}
-                                    onChange={(e) =>
-                                      handleUpdateField(pIdx, fIdx, {
-                                        type: e.target.value,
-                                      })
-                                    }
-                                  >
-                                    {FIELD_TYPE_OPTIONS.map((opt) => (
-                                      <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <label className='flex shrink-0 items-center gap-1.5 cursor-pointer select-none text-xs font-medium text-gray-11 hover:text-gray-12'>
-                                    <input
-                                      checked={f.isMandatory || false}
-                                      className='rounded border-gray-4 text-primary-9 focus:ring-primary-3 cursor-pointer'
-                                      type='checkbox'
-                                      onChange={(e) =>
-                                        handleUpdateField(pIdx, fIdx, {
-                                          isMandatory: e.target.checked,
-                                        })
-                                      }
-                                    />
-                                    <span>{t`Required`}</span>
-                                  </label>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Bottom Action Button */}
-                    <div className='flex items-center justify-end border-t border-gray-3 pt-3 mt-4'>
-                      <Button
-                        color='primary'
-                        icon='lucide:arrow-right'
-                        size='sm'
-                        variant='solid'
-                        onClick={handleApply}
-                      >
-                        {t`Open in Form Builder`}
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-
-          {(isThinking || isGenerating) && (
-            <motion.div
-              animate={{ opacity: 1 }}
-              className='flex items-center gap-3 text-xs text-purple-600 dark:text-purple-400'
-            >
-              <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 shadow-sm'>
-                <AiBrandIcon className='size-4 animate-spin' variant='outline-purple' />
-              </div>
-              <div className='flex items-center gap-1.5 font-medium'>
-                <span className='animate-pulse'>
-                  {isThinking
-                    ? t`Form Assistant is thinking...`
-                    : t`Analyzing requirements & building form fields...`}
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          <div ref={chatEndRef} />
-        </div>
-      </div>
-
-      {/* Chat Prompt Bar */}
-      {isTypeSelected && (
-        <motion.div
-          animate={{ opacity: 1, y: 0 }}
-          className='border-t border-gray-4 bg-surface-primary p-3 md:p-4'
-          initial={{ opacity: 0, y: 10 }}
-          transition={{ duration: 0.25 }}
-        >
-          <div className='mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-gray-4 bg-gray-1/40 px-4 py-2 focus-within:border-primary-9 focus-within:ring-2 focus-within:ring-primary-3'>
-            <input
-              className='flex-1 bg-transparent text-xs text-gray-12 outline-none placeholder:text-gray-10'
-              placeholder={
-                t`Describe what form you want to create (e.g. Vendor Onboarding, Employee Leave Request)...`
-              }
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  handleSendPrompt()
-                }
-              }}
-            />
-            <IconButton
-              ariaLabel='Send'
-              color='primary'
-              disabled={!chatInput.trim() || isGenerating}
-              icon='lucide:send'
-              size='sm'
-              variant='solid'
-              onClick={handleSendPrompt}
-            />
-          </div>
-        </motion.div>
-      )}
-    </motion.div>
-  )
 }
