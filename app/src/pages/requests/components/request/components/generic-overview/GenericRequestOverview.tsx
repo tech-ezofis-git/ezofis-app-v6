@@ -1,8 +1,10 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import Attachments from '../sections/attachment/Attachments'
 import Comments from '../sections/comment/Comments'
 import History from '../sections/history/History'
+import AttachmentPreviewPanel from './AttachmentPreviewPanel'
 
 interface Props {
   rawWorkflowData: any
@@ -52,6 +54,13 @@ const GenericRequestOverview = ({
 
   const showSidePanel = rightView !== 'overview'
 
+  const [selectedAttachment, setSelectedAttachment] =
+    useState<AttachmentItem | null>(null)
+
+  useEffect(() => {
+    setSelectedAttachment(null)
+  }, [rightView, selectedItem])
+
   return (
     <div className='flex min-h-0 flex-1 overflow-hidden'>
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
@@ -75,17 +84,27 @@ const GenericRequestOverview = ({
               />
             </div>
           )}
-          {rightView === 'attachments' && (
-            <div className='px-4 py-4'>
-              <Attachments
-                instanceId={instanceId}
-                processId={processId}
-                repositoryId={repositoryId}
-                workflowId={workflowId}
-                enabled
-              />
-            </div>
-          )}
+          {rightView === 'attachments' &&
+            (selectedAttachment ? (
+              <div className='flex h-full min-h-0 flex-col'>
+                <AttachmentPreviewPanel
+                  file={selectedAttachment}
+                  repositoryId={repositoryId}
+                  onBack={() => setSelectedAttachment(null)}
+                />
+              </div>
+            ) : (
+              <div className='px-4 py-4'>
+                <Attachments
+                  instanceId={instanceId}
+                  processId={processId}
+                  repositoryId={repositoryId}
+                  workflowId={workflowId}
+                  enabled
+                  onSelect={setSelectedAttachment}
+                />
+              </div>
+            ))}
           {rightView === 'comments' && (
             <div className='flex h-full flex-col px-4 py-4'>
               <Comments
