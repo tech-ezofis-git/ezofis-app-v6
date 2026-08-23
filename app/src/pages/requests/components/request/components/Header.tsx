@@ -345,6 +345,12 @@ const Header: React.FC<HeaderProps> = ({
     agentData?.reason ||
     agentData?.summary ||
     agentData?.['Extracted Invoice JSON']?.reason ||
+    agentData?.['Extracted Invoice JSON']?.summary ||
+    agentData?.decision_reason ||
+    agentData?.po_matching?.reason ||
+    agentData?.po_matching?.summary ||
+    agentData?.message ||
+    (agentData?.decision ? `Decision: ${agentData.decision}` : '') ||
     ''
 
   const renderHighlightedContent = (text: string) => {
@@ -701,30 +707,30 @@ const Header: React.FC<HeaderProps> = ({
                   >
                     <div className='flex flex-col gap-4'>
                       {/* AI Insights Section */}
-                      {insightContent && (
-                        <div className='flex flex-col'>
-                          <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
-                            <div className='flex items-center gap-2'>
-                              <AiBrandIcon
-                                className='size-[20px] text-[var(--primary-9)]'
-                              />
-                              <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
-                                {t`Invoice Decision Details`}
-                              </span>
-                            </div>
-                            <button
-                              aria-label={t`Close AI Insights`}
-                              className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
-                              onClick={() => setShowAIInsights(false)}
-                            >
-                              <Icon className='size-4' name='lucide:x' />
-                            </button>
+                      <div className='flex flex-col'>
+                        <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
+                          <div className='flex items-center gap-2'>
+                            <AiBrandIcon
+                              className='size-[20px] text-[var(--primary-9)]'
+                            />
+                            <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
+                              {t`Invoice Decision Details`}
+                            </span>
                           </div>
-                          <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
-                            {renderHighlightedContent(insightContent)}
-                          </p>
+                          <button
+                            aria-label={t`Close AI Insights`}
+                            className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                            onClick={() => setShowAIInsights(false)}
+                          >
+                            <Icon className='size-4' name='lucide:x' />
+                          </button>
                         </div>
-                      )}
+                        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
+                          {insightContent
+                            ? renderHighlightedContent(insightContent)
+                            : t`No decision details available for this request.`}
+                        </p>
+                      </div>
                     </div>
                   </motion.div>
                 )}

@@ -945,7 +945,11 @@ const Request = ({
   const hasAgentData = agentDataList.length > 0
 
   const currentAgentData = useMemo(() => {
-    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
+    return (
+      agentDataList.find((a: any) => a.id === selectedAgentId) ||
+      agentDataList[0] ||
+      {}
+    )
   }, [agentDataList, selectedAgentId])
 
   const invoiceHeader =
@@ -1103,12 +1107,15 @@ const Request = ({
   ])
 
   useEffect(() => {
-    if (hasAgentData && agentDataList.length > 0) {
-      setSelectedAgentId(agentDataList[0].id)
+    if (agentDataList.length > 0) {
+      const exists = agentDataList.some((a: any) => a.id === selectedAgentId)
+      if (!exists) {
+        setSelectedAgentId(agentDataList[0].id)
+      }
     } else {
       setSelectedAgentId(null)
     }
-  }, [request?._agentData, hasAgentData])
+  }, [agentDataList, selectedAgentId])
 
   useEffect(() => {
     const activeItem = request || selectedItem
@@ -1631,7 +1638,7 @@ const Request = ({
           attachmentCount={selectedItem?.attachmentCount || 0}
           commentsCount={selectedItem?.commentsCount || 0}
           currency={currency}
-          enableAIInsights={requestListTab !== 'Processed'}
+          enableAIInsights={true}
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}

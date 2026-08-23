@@ -55,6 +55,8 @@ type RepositoryField = {
   sqlColumnName: string
 }
 
+type ResultTab = 'fields' | 'json'
+
 interface JsonNodeProps {
   data: unknown
   name?: string
@@ -1085,9 +1087,6 @@ export default function Upload({
       return acc
     }, {})
 
-    meta.ocrJson = rawOcrJson ?? []
-    meta.ocrText = rawOcrText ?? ''
-
     return meta
   }
 
@@ -1169,6 +1168,20 @@ export default function Upload({
       const formData = new FormData()
       formData.append('file', fileData, fileData.name)
       formData.append('metadata', JSON.stringify(buildUploadMetadata()))
+
+      const ocrJsonStr =
+        typeof rawOcrJson === 'string'
+          ? rawOcrJson
+          : JSON.stringify(rawOcrJson ?? [])
+      formData.append('ocrJson', ocrJsonStr)
+
+      const ocrTextStr =
+        typeof rawOcrText === 'string'
+          ? rawOcrText
+          : typeof rawOcrText === 'object' && rawOcrText !== null
+            ? JSON.stringify(rawOcrText)
+            : String(rawOcrText ?? '')
+      formData.append('ocrText', ocrTextStr)
 
       const { data, error } = await UploadFiles(
         String(activeRepositoryId),

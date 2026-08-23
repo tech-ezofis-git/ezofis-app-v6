@@ -19,6 +19,8 @@ import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import showToast from '@/components/base/toast/showToast'
+import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
+import { getSearchHitDate, getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import {
   getRepositoryById,
   persistEditedDocumentToRepository,
@@ -2128,6 +2130,33 @@ export function DocumentDetailsView({
 
               {tab === 'relatedDocs' ? (
                 <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
+                  <RelatedDocumentsFinder
+                    attachedIds={
+                      new Set(relatedDocs.map((d) => String(d.id)))
+                    }
+                    documentId={id}
+                    metadata={data}
+                    repositoryId={repositoryId}
+                    supplierName={data?.fileName}
+                    onLinkDocument={(hit) => {
+                      const newDoc: RelatedDoc = {
+                        id: String(hit.id?.itemId || hit.id?.repositoryId || Date.now()),
+                        repositoryId: String(hit.id?.repositoryId || repositoryId || ''),
+                        fileName: getSearchHitTitle(hit),
+                        fileSize: 1024 * 150,
+                        fileType: hit.type || 'pdf',
+                        createdAtUtc: getSearchHitDate(hit) || new Date().toISOString(),
+                        repositoryName:
+                          hit.name && hit.name !== 'Main Repository'
+                            ? hit.name
+                            : 'Accounts Payable',
+                      }
+                      setRelatedDocs((prev) => [
+                        newDoc,
+                        ...prev.filter((d) => d.id !== newDoc.id),
+                      ])
+                    }}
+                  />
                 {relatedDocsLoading ? (
                   <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
                     {t`Loading related documents...`}
@@ -2139,9 +2168,13 @@ export function DocumentDetailsView({
                       const dateLabel = item.createdAtUtc
                         ? formatUtcToLocalDate(item.createdAtUtc, '')
                         : ''
+                      const repoName =
+                        item.repositoryName && item.repositoryName !== 'Main Repository'
+                          ? item.repositoryName
+                          : 'Accounts Payable'
                       const secondary = [
                         dateLabel,
-                        item.repositoryName || item.supplier || null,
+                        repoName || item.supplier || null,
                       ]
                         .filter(Boolean)
                         .join(' • ')

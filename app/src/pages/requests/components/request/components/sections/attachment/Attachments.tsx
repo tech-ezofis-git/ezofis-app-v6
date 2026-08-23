@@ -1,5 +1,5 @@
 import clsx, { type ClassValue } from 'clsx'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { twMerge } from 'tailwind-merge'
 import fileApi from '@/api/file/file'
@@ -12,6 +12,7 @@ import {
 } from '@/pages/requests/hooks/useAttachments'
 import authUserStore from '@/stores/authUserStore'
 import { formatUtcToLocalDate } from '@/utils/utcDate'
+import RelatedDocumentsFinder from '../overview/RelatedDocumentsFinder'
 
 type FileLike = AttachmentItem
 
@@ -160,7 +161,7 @@ export const getFileIcon = (ext: string): string => {
     gif: 'tabler:photo',
     jpeg: 'tabler:photo',
     jpg: 'tabler:photo',
-    pdf: 'vscode-icons:file-type-pdf2',
+    pdf: 'tabler:file-type-pdf',
     png: 'tabler:photo',
     ppt: 'tabler:file-type-ppt',
     pptx: 'tabler:file-type-ppt',
@@ -260,6 +261,62 @@ export default function Attachments({
 
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const attachedIds = useMemo(() => {
+    const set = new Set<string>()
+    files.forEach((f: any) => {
+      if (f.itemId) set.add(String(f.itemId))
+      if (f.id) set.add(String(f.id))
+    })
+    return set
+  }, [files])
+
+  const getValueFromKeys = (obj: any, keys: string[]): string => {
+    if (!obj) return ''
+    for (const k of keys) {
+      const val = obj[k]
+      if (val !== undefined && val !== null) {
+        if (typeof val === 'object' && 'Invoice Value' in val) {
+          return String(val['Invoice Value'] ?? '')
+        }
+        return String(val)
+      }
+    }
+    return ''
+  }
+
+  const invoiceAmount = getValueFromKeys(formModel, [
+    'Invoice Amount',
+    'invoice_amount',
+    'Amount',
+    'amount',
+    'Total',
+    'total',
+  ])
+  const invoiceNumber = getValueFromKeys(formModel, [
+    'Invoice Number',
+    'invoice_number',
+    'Invoice No',
+    'invoice_no',
+    'Inv Number',
+  ])
+  const poNumber = getValueFromKeys(formModel, [
+    'PO Number',
+    'po_number',
+    'PO No',
+    'po_no',
+    'Purchase Order',
+    'pono',
+    'poNumber',
+  ])
+  const supplierName = getValueFromKeys(formModel, [
+    'Supplier Name',
+    'supplier_name',
+    'Vendor Name',
+    'vendor_name',
+    'Supplier',
+    'Vendor',
+  ])
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -456,6 +513,19 @@ export default function Attachments({
         onChange={onFileChange}
       />
 
+      <RelatedDocumentsFinder
+        agentData={selectedItem || formModel}
+        attachedIds={attachedIds}
+        instanceId={targetInstanceId}
+        invoiceAmount={invoiceAmount}
+        invoiceNumber={invoiceNumber}
+        poNumber={poNumber}
+        repositoryId={repositoryId}
+        supplierName={supplierName}
+        workflowId={workflowId}
+        onAttached={refetch}
+      />
+
       {/* Upload Zone (Large dashed container when no files exist) */}
       {canUpload && !isLoading && files.length === 0 && (
         <div className='mb-4 shrink-0'>
@@ -579,7 +649,7 @@ export default function Attachments({
                   <div className='mt-0.5 flex items-center gap-2 flex-wrap'>
                     <span className='inline-flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
                       <Icon name='tabler:folder' className='size-3 text-[var(--primary-9)]' />
-                      {(file as any).folderName || (file.isAiMatch ? 'Procurement Ledger' : 'Main Repository')}
+                      {(file as any).folderName || (file as any).repositoryName || (file.isAiMatch ? 'Procurement Ledger' : 'Accounts Payable')}
                     </span>
                     {file.isAiMatch ? (
                       <span className='text-[11px] text-[var(--gray-9)]'>

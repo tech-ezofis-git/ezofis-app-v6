@@ -48,7 +48,6 @@ import Attachments from '../attachment/Attachments'
 import Comments from '../comment/Comments'
 import History from '../history/History'
 import LineItemTable from './LineItemTable'
-import RelatedDocumentsFinder from './RelatedDocumentsFinder'
 
 // --- Helpers ---
 
@@ -4570,25 +4569,8 @@ const Overview = (props: any) => {
                               </p>
                             </div>
                           ) : (
-                            <>
-                              <RelatedDocumentsFinder
-                                attachedIds={attachedItemIds}
-                                instanceId={resolvedInstanceId}
-                                invoiceAmount={
-                                  invoiceSummary.amount
-                                    ? String(invoiceSummary.amount)
-                                    : undefined
-                                }
-                                invoiceNumber={invoiceSummary.invoiceNumber}
-                                poNumber={invoiceSummary.poNumber}
-                                repositoryId={repositoryId || selectedItem?.repositoryId}
-                                supplierName={supplierName}
-                                workflowId={workflowId}
-                                onAttached={refetchAttachments}
-                              />
-
-                              <Attachments
-                                enabled={true}
+                            <Attachments
+                              enabled={true}
                                 formModel={formModel}
                                 instanceId={resolvedInstanceId}
                                 initialData={attachmentData || selectedItem?.attachments || []}
@@ -4609,7 +4591,6 @@ const Overview = (props: any) => {
                                     : setSelectedFile(file)
                                 }
                               />
-                            </>
                           )}
                         </div>
                       )}

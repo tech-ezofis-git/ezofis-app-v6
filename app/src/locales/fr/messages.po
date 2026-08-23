@@ -113,7 +113,7 @@ msgstr ""
 #~ msgid "{enabledCount} of {0} permissions enabled"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1132
+#: src/pages/folders/components/Upload/Upload.tsx:1134
 msgid "{fieldName} is mandatory."
 msgstr ""
 
@@ -122,7 +122,7 @@ msgid "{fileType} Viewer"
 msgstr "Visionneuse {fileType}"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:1808
+#: src/pages/folders/components/Upload/Upload.tsx:1810
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr ""
 
@@ -214,7 +214,7 @@ msgstr ""
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1597
+#: src/pages/folders/components/Upload/Upload.tsx:1599
 msgid "100% Accuracy"
 msgstr ""
 
@@ -589,7 +589,7 @@ msgstr "Montant"
 msgid "Amount: {0}"
 msgstr "Amount: {0}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:583
+#: src/pages/folders/components/Upload/Upload.tsx:585
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:45
 msgid "Analysis"
 msgstr "Analyse"
@@ -610,7 +610,7 @@ msgstr "Analyse du contexte et des mots-clés"
 msgid "Analyzing data structures for {repositoryName}..."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1705
+#: src/pages/folders/components/Upload/Upload.tsx:1707
 msgid "Analyzing document..."
 msgstr "Analyse du document..."
 
@@ -638,7 +638,7 @@ msgstr ""
 #~ msgid "Any"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1603
+#: src/pages/folders/components/Upload/Upload.tsx:1605
 msgid "Any Format"
 msgstr ""
 
@@ -848,7 +848,7 @@ msgstr ""
 #: src/pages/folders/components/EditMetadataView.tsx:355
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
-#: src/pages/folders/components/Upload/Upload.tsx:1492
+#: src/pages/folders/components/Upload/Upload.tsx:1494
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:19
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:907
@@ -908,7 +908,7 @@ msgid "Breadcrumb"
 msgstr ""
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
-#: src/pages/folders/components/Upload/Upload.tsx:1562
+#: src/pages/folders/components/Upload/Upload.tsx:1564
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:868
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
@@ -989,7 +989,7 @@ msgstr ""
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:174
 #: src/pages/folders/components/StartWorkflowView.tsx:210
-#: src/pages/folders/components/Upload/Upload.tsx:1940
+#: src/pages/folders/components/Upload/Upload.tsx:1942
 #: src/pages/forms/components/GenericFormImportModal.tsx:856
 #: src/pages/forms/FormEntriesPage.tsx:370
 #: src/pages/forms/FormEntriesPage.tsx:1977
@@ -1422,8 +1422,8 @@ msgstr ""
 #~ msgid "Copy"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1903
 #: src/pages/folders/components/Upload/Upload.tsx:1905
+#: src/pages/folders/components/Upload/Upload.tsx:1907
 msgid "Copy JSON"
 msgstr ""
 
@@ -1911,7 +1911,7 @@ msgstr ""
 msgid "Document Number"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1745
+#: src/pages/folders/components/Upload/Upload.tsx:1747
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
 msgid "Document Preview"
@@ -1946,7 +1946,7 @@ msgstr "Vous n'avez pas de fichier PO prêt ? Utilisez notre modèle pour garant
 msgid "Don't have an account?"
 msgstr "Vous n'avez pas de compte ?"
 
-#: src/pages/folders/components/Upload/Upload.tsx:584
+#: src/pages/folders/components/Upload/Upload.tsx:586
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1692
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1669
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1699
@@ -2040,7 +2040,7 @@ msgstr "Signature dessinée"
 #~ msgstr "Déposez des images ici ou cliquez pour sélectionner des fichiers"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
-#: src/pages/folders/components/Upload/Upload.tsx:1560
+#: src/pages/folders/components/Upload/Upload.tsx:1562
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:867
 msgid "Drop your file here, or"
@@ -2296,8 +2296,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/pages/folders/components/EditMetadataView.tsx:327
-#: src/pages/folders/components/Upload/Upload.tsx:1407
-#: src/pages/folders/components/Upload/Upload.tsx:1426
+#: src/pages/folders/components/Upload/Upload.tsx:1409
+#: src/pages/folders/components/Upload/Upload.tsx:1428
 msgid "Enter {label}"
 msgstr ""
 
@@ -2381,7 +2381,7 @@ msgstr ""
 msgid "Error uploading file"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1181
+#: src/pages/folders/components/Upload/Upload.tsx:1183
 msgid "Error uploading file: {error}"
 msgstr ""
 
@@ -2406,7 +2406,7 @@ msgstr ""
 msgid "Excel Spreadsheet"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1196
+#: src/pages/folders/components/Upload/Upload.tsx:1198
 msgid "Exception uploading file: {detail}"
 msgstr ""
 
@@ -2447,7 +2447,7 @@ msgstr ""
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1958
+#: src/pages/folders/components/Upload/Upload.tsx:1960
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1862
@@ -2463,8 +2463,8 @@ msgid "Export PDF"
 msgstr ""
 
 #: src/pages/folders/components/AiSummaryView.tsx:248
-#: src/pages/folders/components/Upload/Upload.tsx:1717
-#: src/pages/folders/components/Upload/Upload.tsx:1958
+#: src/pages/folders/components/Upload/Upload.tsx:1719
+#: src/pages/folders/components/Upload/Upload.tsx:1960
 msgid "Exporting..."
 msgstr "Exportation..."
 
@@ -2480,7 +2480,7 @@ msgstr "Extrait"
 msgid "EXTRACTED"
 msgstr "EXTRAIT"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1803
+#: src/pages/folders/components/Upload/Upload.tsx:1805
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3482
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
@@ -2490,11 +2490,11 @@ msgstr "Données extraites"
 msgid "Extracting data"
 msgstr "Extraction des données"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1849
+#: src/pages/folders/components/Upload/Upload.tsx:1851
 msgid "Extracting fields from document..."
 msgstr "Extraction des champs du document..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1807
+#: src/pages/folders/components/Upload/Upload.tsx:1809
 msgid "Extracting fields..."
 msgstr "Extraction des champs..."
 
@@ -2511,8 +2511,8 @@ msgstr "Extraction des métadonnées, vérification des doublons, validation de 
 msgid "Extracting textual metadata"
 msgstr "Extraction des métadonnées textuelles"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1407
-#: src/pages/folders/components/Upload/Upload.tsx:1426
+#: src/pages/folders/components/Upload/Upload.tsx:1409
+#: src/pages/folders/components/Upload/Upload.tsx:1428
 msgid "Extracting..."
 msgstr ""
 
@@ -2623,8 +2623,8 @@ msgstr "Type de champ"
 msgid "fields"
 msgstr "champs"
 
-#: src/pages/folders/components/Upload/Upload.tsx:585
-#: src/pages/folders/components/Upload/Upload.tsx:1824
+#: src/pages/folders/components/Upload/Upload.tsx:587
+#: src/pages/folders/components/Upload/Upload.tsx:1826
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:887
 msgid "Fields"
 msgstr "Champs"
@@ -2660,7 +2660,7 @@ msgstr "Colonne du fichier"
 msgid "File content could not be retrieved."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1188
+#: src/pages/folders/components/Upload/Upload.tsx:1190
 msgid "File exported successfully."
 msgstr "Fichier exporté avec succès."
 
@@ -2670,7 +2670,7 @@ msgid "File Ingestion & Parsing"
 msgstr "Ingestion et analyse du fichier"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:54
-#: src/pages/folders/components/Upload/Upload.tsx:1016
+#: src/pages/folders/components/Upload/Upload.tsx:1018
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:470
 msgid "File is too large. Max size is 4MB."
 msgstr "Le fichier est trop volumineux. Taille maximale : 4 Mo."
@@ -2698,7 +2698,7 @@ msgstr "Fichier téléversé avec succès"
 
 #: src/pages/folders/components/DocumentsListView.tsx:838
 #: src/pages/folders/components/FolderTable.tsx:905
-#: src/pages/folders/components/Upload/Upload.tsx:1516
+#: src/pages/folders/components/Upload/Upload.tsx:1518
 msgid "Files"
 msgstr "Fichiers"
 
@@ -3233,7 +3233,7 @@ msgstr ""
 msgid "Incremental Version"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1596
+#: src/pages/folders/components/Upload/Upload.tsx:1598
 msgid "Industry-leading extraction accuracy"
 msgstr ""
 
@@ -3332,7 +3332,7 @@ msgid "Interactive preview of your customized dashboard design for {repositoryNa
 msgstr ""
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:55
-#: src/pages/folders/components/Upload/Upload.tsx:1018
+#: src/pages/folders/components/Upload/Upload.tsx:1020
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:473
 msgid "Invalid file type. Please upload a PDF or Image."
 msgstr ""
@@ -3485,11 +3485,11 @@ msgstr "January"
 msgid "Job Title"
 msgstr "Intitulé du poste"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1836
+#: src/pages/folders/components/Upload/Upload.tsx:1838
 msgid "JSON"
 msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1483
+#: src/pages/folders/components/Upload/Upload.tsx:1485
 msgid "JSON copied to clipboard."
 msgstr ""
 
@@ -3628,7 +3628,7 @@ msgstr ""
 msgid "Light"
 msgstr "Clair"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1591
+#: src/pages/folders/components/Upload/Upload.tsx:1593
 msgid "Lightning Fast"
 msgstr "Ultra rapide"
 
@@ -3906,7 +3906,7 @@ msgstr ""
 msgid "Master Form"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1257
+#: src/pages/folders/components/Upload/Upload.tsx:1259
 msgid "Master Sync Data"
 msgstr ""
 
@@ -4340,7 +4340,7 @@ msgstr "Aucun document associé n'est encore lié à ce fichier."
 msgid "No related documents found. Try a different keyword or folder."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1893
+#: src/pages/folders/components/Upload/Upload.tsx:1895
 msgid "No repository fields configured."
 msgstr "Aucun champ de dépôt configuré."
 
@@ -4419,7 +4419,7 @@ msgstr ""
 #~ msgid "No users yet"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1019
+#: src/pages/folders/components/Upload/Upload.tsx:1021
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:474
 msgid "No valid files selected."
 msgstr ""
@@ -4486,15 +4486,15 @@ msgstr ""
 msgid "November"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1265
+#: src/pages/folders/components/Upload/Upload.tsx:1267
 msgid "OCR Extracted Data"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:964
+#: src/pages/folders/components/Upload/Upload.tsx:966
 msgid "OCR extraction failed: {detail}"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:910
+#: src/pages/folders/components/Upload/Upload.tsx:912
 msgid "OCR extraction failed: {error}"
 msgstr ""
 
@@ -4840,7 +4840,7 @@ msgstr ""
 msgid "Please review this file: {fileName}"
 msgstr "Veuillez réviser ce fichier : {fileName}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1150
+#: src/pages/folders/components/Upload/Upload.tsx:1152
 msgid "Please select a file first."
 msgstr "Veuillez d'abord sélectionner un fichier."
 
@@ -5047,7 +5047,7 @@ msgstr "Éléments de facture prioritaires nécessitant une attention aujourd'hu
 msgid "Priority"
 msgstr "Priorité"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1590
+#: src/pages/folders/components/Upload/Upload.tsx:1592
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Traitez les documents plus rapidement avec notre pipeline agentique"
 
@@ -5191,7 +5191,7 @@ msgstr ""
 msgid "Real-Time Dashboard"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:586
+#: src/pages/folders/components/Upload/Upload.tsx:588
 msgid "Received"
 msgstr ""
 
@@ -5341,11 +5341,11 @@ msgstr ""
 msgid "Repository Fields"
 msgstr "Champs du dépôt"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1061
+#: src/pages/folders/components/Upload/Upload.tsx:1063
 msgid "Repository ID is missing. Cannot run OCR."
 msgstr "ID du dépôt manquant. Impossible d'exécuter l'OCR."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1158
+#: src/pages/folders/components/Upload/Upload.tsx:1160
 msgid "Repository ID is missing. Cannot upload."
 msgstr "ID du dépôt manquant. Impossible de téléverser."
 
@@ -5486,7 +5486,7 @@ msgstr ""
 msgid "Review Column Mapping"
 msgstr "Réviser le mappage des colonnes"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1711
+#: src/pages/folders/components/Upload/Upload.tsx:1713
 msgid "Review fields before export..."
 msgstr "Révisez les champs avant l'export..."
 
@@ -6581,7 +6581,7 @@ msgstr "Suppliers"
 msgid "Suppliers to Chase"
 msgstr "Fournisseurs à relancer"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1602
+#: src/pages/folders/components/Upload/Upload.tsx:1604
 msgid "Support for PDF, images, and scanned documents"
 msgstr "Prise en charge des PDF, images et documents numérisés"
 
@@ -6596,7 +6596,7 @@ msgid "Supports Excel (.xlsx, .xls) and CSV formats"
 msgstr "Prend en charge les formats Excel (.xlsx, .xls) et CSV"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:111
-#: src/pages/folders/components/Upload/Upload.tsx:1566
+#: src/pages/folders/components/Upload/Upload.tsx:1568
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:871
 msgid "Supports PDF and Images · Max 4 MB"
 msgstr "Prend en charge PDF et images · Max 4 Mo"
@@ -6611,15 +6611,15 @@ msgstr ""
 msgid "Switch to Original Data"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1280
+#: src/pages/folders/components/Upload/Upload.tsx:1282
 msgid "Sync"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1298
+#: src/pages/folders/components/Upload/Upload.tsx:1300
 msgid "SYNC"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1277
+#: src/pages/folders/components/Upload/Upload.tsx:1279
 msgid "Sync Master Data"
 msgstr ""
 
@@ -7063,7 +7063,7 @@ msgstr ""
 #: src/pages/folders/components/DocumentSigningPage.tsx:1991
 #: src/pages/folders/components/FolderExplorer.tsx:294
 #: src/pages/folders/components/FolderFilterBar.tsx:695
-#: src/pages/folders/components/Upload/Upload.tsx:1515
+#: src/pages/folders/components/Upload/Upload.tsx:1517
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
 msgid "Upload"
 msgstr "Téléverser"
@@ -7080,8 +7080,8 @@ msgstr "Téléversez d'abord une image de signature."
 #~ msgid "Upload Configuration"
 #~ msgstr "Configuration du téléversement"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1505
-#: src/pages/folders/components/Upload/Upload.tsx:1519
+#: src/pages/folders/components/Upload/Upload.tsx:1507
+#: src/pages/folders/components/Upload/Upload.tsx:1521
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Téléversez des documents en toute sécurité, assignez des métadonnées et organisez les fichiers dans votre dépôt pour une recherche et une gestion efficaces."
 
@@ -7089,7 +7089,7 @@ msgstr "Téléversez des documents en toute sécurité, assignez des métadonné
 msgid "Upload failed"
 msgstr "Échec de l'envoi"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1501
+#: src/pages/folders/components/Upload/Upload.tsx:1503
 msgid "Upload Files"
 msgstr "Téléverser des fichiers"
 
