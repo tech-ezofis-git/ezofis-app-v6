@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { Accordion } from '@mantine/core'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
@@ -13,6 +14,8 @@ import {
 interface Props {
   formModel: Record<string, any>
   panels: any[]
+  hasAttemptedSubmit?: boolean
+  missingMandatoryFieldIds?: Set<string>
   repoFieldHints?: string[]
   repositoryId?: string
   viewOnly?: boolean
@@ -30,6 +33,8 @@ interface Props {
 // evaluated yet.
 const WorkflowFormRenderer = ({
   formModel,
+  hasAttemptedSubmit,
+  missingMandatoryFieldIds,
   panels,
   repoFieldHints,
   repositoryId,
@@ -37,6 +42,7 @@ const WorkflowFormRenderer = ({
   onFieldChange,
   onOcrFieldList,
 }: Props) => {
+  const { t } = useLingui()
   return (
     <ScrollArea height='100%'>
       <div className='w-full px-6 py-6'>
@@ -122,6 +128,12 @@ const WorkflowFormRenderer = ({
                             repositoryId={repositoryId}
                             value={formModel[field.id]}
                             viewOnly={viewOnly}
+                            error={
+                              hasAttemptedSubmit &&
+                              missingMandatoryFieldIds?.has(field.id)
+                                ? t`This field is required.`
+                                : undefined
+                            }
                             onChange={(value) => onFieldChange(field.id, value)}
                             onOcrFieldList={onOcrFieldList}
                           />

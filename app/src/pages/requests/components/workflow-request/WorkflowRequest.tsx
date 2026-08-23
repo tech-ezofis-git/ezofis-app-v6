@@ -33,10 +33,12 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     commentDraft,
     comments,
     formModel,
+    hasAttemptedSubmit,
     isLoadingForm,
     isSubmitting,
     isUploadingAttachment,
     loadError,
+    missingMandatoryFieldIds,
     panels,
     removeAttachment,
     repoFieldHints,
@@ -105,6 +107,8 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
             <WorkflowFormRenderer
               formModel={formModel}
+              hasAttemptedSubmit={hasAttemptedSubmit}
+              missingMandatoryFieldIds={missingMandatoryFieldIds}
               panels={panels}
               repoFieldHints={repoFieldHints}
               repositoryId={workflow?.repositoryId}

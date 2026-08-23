@@ -16,6 +16,12 @@ export interface AttachmentEntry {
   // carries `rawFile` instead: OCR has already run against it (via
   // uploadForOcr), but nothing's been persisted to the stage table yet.
   fileId?: string
+  // The uploadForOcr response, carried along so stagePendingFiles can
+  // forward the already-extracted data to uploadWithOcr instead of the
+  // backend re-running OCR (and getting an empty/blank result) a second
+  // time.
+  ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
+  ocrJson?: string
   rawFile?: File
   size?: number
 }

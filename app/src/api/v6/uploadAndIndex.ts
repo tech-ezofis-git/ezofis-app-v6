@@ -30,6 +30,14 @@ interface UploadWithOcrParams {
   repositoryId: string
   fields?: string[]
   filename?: string
+  // The already-extracted results from an earlier uploadForOcr call on this
+  // same file. When present, sent as the `fields` payload instead of the
+  // bare "Name,TYPE" hint strings — the hint strings only carry names, so
+  // the backend has nothing to echo back for value/type. ocrJson/ocrText
+  // are forwarded too so the backend doesn't have to run OCR again.
+  ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
+  ocrJson?: string
+  ocrText?: string
 }
 
 // Pre-ticket upload for the normal (non-AP-Agent) workflow flow — see the
@@ -40,6 +48,9 @@ const uploadWithOcr = async ({
   fields,
   file,
   filename,
+  ocrFieldList,
+  ocrJson,
+  ocrText,
   repositoryId,
 }: UploadWithOcrParams) => {
   const response: { data: UploadWithOcrResult | null; error: string } = {
@@ -51,9 +62,13 @@ const uploadWithOcr = async ({
     formData.append('file', file)
     formData.append('repositoryId', repositoryId)
     if (filename) formData.append('filename', filename)
-    if (fields && fields.length > 0) {
+    if (ocrFieldList && ocrFieldList.length > 0) {
+      formData.append('fields', JSON.stringify(ocrFieldList))
+    } else if (fields && fields.length > 0) {
       formData.append('fields', JSON.stringify(fields))
     }
+    if (ocrJson) formData.append('ocrJson', ocrJson)
+    if (ocrText) formData.append('ocrText', ocrText)
 
     const { data, status } = await axiosV6({
       data: formData,

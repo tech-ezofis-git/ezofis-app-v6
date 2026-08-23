@@ -135,6 +135,11 @@ export const findFormFieldIdByName = (
   return undefined
 }
 
+const isValueEmpty = (value: any): boolean =>
+  value === undefined ||
+  value === null ||
+  (typeof value === 'string' && value.trim() === '')
+
 // Repository-mandatory fields that either aren't on this form at all, or
 // are on the form but still empty — the submit-blocking check.
 export const getMissingMandatoryFields = (
@@ -146,14 +151,41 @@ export const getMissingMandatoryFields = (
   for (const name of mandatoryFieldNames) {
     const fieldId = findFormFieldIdByName(panels, name)
     if (!fieldId) continue // not represented on this form — can't validate
-    const value = formModel[fieldId]
-    const isEmpty =
-      value === undefined ||
-      value === null ||
-      (typeof value === 'string' && value.trim() === '')
-    if (isEmpty) missing.push(name)
+    if (isValueEmpty(formModel[fieldId])) missing.push(name)
   }
   return missing
+}
+
+// Same check as getMissingMandatoryFields, keyed by form field id instead of
+// repository field name — what the field-level `error` prop and the
+// auto-stage trigger both key off.
+export const getMissingMandatoryFieldIds = (
+  panels: any[],
+  formModel: Record<string, any>,
+  mandatoryFieldNames: string[],
+): Set<string> => {
+  const missing = new Set<string>()
+  for (const name of mandatoryFieldNames) {
+    const fieldId = findFormFieldIdByName(panels, name)
+    if (!fieldId) continue
+    if (isValueEmpty(formModel[fieldId])) missing.add(fieldId)
+  }
+  return missing
+}
+
+// uploadForOcr's `ocrJson` is a stringified blob of shape
+// `{ ocrResult: [...], ocrText: string, tokens: {...} }` — uploadWithOcr's
+// own `ocrText` field wants just the plain-text piece out of it.
+export const extractOcrText = (
+  ocrJson: string | undefined,
+): string | undefined => {
+  if (!ocrJson) return undefined
+  try {
+    const parsed = JSON.parse(ocrJson)
+    return typeof parsed?.ocrText === 'string' ? parsed.ocrText : undefined
+  } catch {
+    return undefined
+  }
 }
 
 // Maps an uploadForOcr/uploadWithOcr response's `ocrFieldList` (matched by

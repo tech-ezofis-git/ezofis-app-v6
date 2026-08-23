@@ -28,6 +28,7 @@ interface Props {
   field: any
   repositoryId: string | undefined
   value: any
+  error?: string
   repoFieldHints?: string[]
   viewOnly?: boolean
   onChange: (value: any) => void
@@ -39,6 +40,11 @@ interface Props {
 interface StagedFileValue {
   fileName: string
   fileId?: string
+  // Carried from the uploadForOcr response so stagePendingFiles can forward
+  // the already-extracted data to uploadWithOcr instead of the backend
+  // re-running OCR (and getting an empty/blank result) a second time.
+  ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
+  ocrJson?: string
   rawFile?: File
   repositoryId?: string
 }
@@ -48,6 +54,7 @@ interface StagedFileValue {
 // (TABLE, MATRIX, SIGNATURE, ADDRESS, RATING, ...) render a labeled
 // placeholder instead of silently disappearing.
 const FieldRenderer = ({
+  error,
   field,
   repoFieldHints,
   repositoryId,
@@ -64,6 +71,7 @@ const FieldRenderer = ({
 
   const common = {
     disabled: readOnly,
+    error,
     label: general.hideLabel ? undefined : field.label,
     placeholder: general.placeholder,
     required,
@@ -171,13 +179,19 @@ const FieldRenderer = ({
     case 'YES_NO_TOGGLE':
     case 'CONSENT':
       return (
-        <InputSwitch
-          checked={Boolean(value)}
-          description={general.tooltip}
-          disabled={readOnly}
-          label={field.label}
-          onChange={onChange}
-        />
+        <div>
+          <InputSwitch
+            checked={Boolean(value)}
+            description={general.tooltip}
+            disabled={readOnly}
+            error={error}
+            label={field.label}
+            onChange={onChange}
+          />
+          {error && (
+            <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
+          )}
+        </div>
       )
 
     case 'IMAGE_UPLOAD':
@@ -222,7 +236,8 @@ const FieldRenderer = ({
           return
         }
 
-        onChange({ fileName: file.name, rawFile: file, repositoryId })
+        const fileEntry = { fileName: file.name, rawFile: file, repositoryId }
+        onChange(fileEntry)
 
         setIsUploading(true)
         const { data, error } = await uploadForOcr(
@@ -242,6 +257,11 @@ const FieldRenderer = ({
         }
 
         onOcrFieldList?.(data.ocrFieldList)
+        onChange({
+          ...fileEntry,
+          ocrFieldList: data.ocrFieldList,
+          ocrJson: data.ocrJson,
+        })
       }
 
       const ext = staged ? getFileExtension(staged.fileName) : ''
@@ -288,6 +308,9 @@ const FieldRenderer = ({
               loadingText={t`Uploading…`}
               onFiles={handleFiles}
             />
+          )}
+          {error && (
+            <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
           )}
         </div>
       )
