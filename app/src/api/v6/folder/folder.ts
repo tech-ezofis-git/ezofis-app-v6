@@ -75,6 +75,7 @@ export interface RepositoryDto {
   stageTableName?: string
   storageDrive?: string
   storageProviderId?: string
+  fileCount?: any
 }
 
 export interface RepositoryFieldDto {
@@ -429,12 +430,12 @@ export const getRepositoryItemFilterFields = async (repositoryId: string) => {
     const payload = unwrap(data) as RepositoryItemFilterFieldsResponse
     const fields = Array.isArray(payload?.fields)
       ? payload.fields.filter(
-          (field) =>
-            Boolean(field?.sqlColumnName || field?.name) &&
-            !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
-              String(field?.dataType || '').toUpperCase(),
-            ),
-        )
+        (field) =>
+          Boolean(field?.sqlColumnName || field?.name) &&
+          !EXCLUDED_ITEM_FILTER_FIELD_DATA_TYPES.has(
+            String(field?.dataType || '').toUpperCase(),
+          ),
+      )
       : []
 
     response.data = { fields }
@@ -778,13 +779,13 @@ export const revokeRepositoryShare = async (payload: {
   return response
 }
 
-// Keep the API object extensible for existing imports.
-;(authApiV6 as any).getRepositoryItems = getRepositoryItems
-;(authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
-;(authApiV6 as any).shareRepositoryItem = shareRepositoryItem
-;(authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
-;(authApiV6 as any).getSharedWithMe = getSharedWithMe
-;(authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
+  // Keep the API object extensible for existing imports.
+  ; (authApiV6 as any).getRepositoryItems = getRepositoryItems
+  ; (authApiV6 as any).getRepositoryItemWorkspace = getRepositoryItemWorkspace
+  ; (authApiV6 as any).shareRepositoryItem = shareRepositoryItem
+  ; (authApiV6 as any).getRepositoryItemShares = getRepositoryItemShares
+  ; (authApiV6 as any).getSharedWithMe = getSharedWithMe
+  ; (authApiV6 as any).revokeRepositoryShare = revokeRepositoryShare
 
 export interface RepositoryItemCommentsDto {
   comments?: Array<Record<string, any>>
@@ -1090,8 +1091,8 @@ const fetchRepositoryItemAiSummary = async (payload: {
     const { data, status } = await axiosV6({
       headers: language
         ? {
-            'Accept-Language': language,
-          }
+          'Accept-Language': language,
+        }
         : undefined,
       method: 'POST',
       // AI generation can take a while on cache miss.
@@ -1107,7 +1108,7 @@ const fetchRepositoryItemAiSummary = async (payload: {
     response.data = {
       creditConsumed: Boolean(
         (payloadData as any)?.creditConsumed ??
-          (payloadData as any)?.CreditConsumed,
+        (payloadData as any)?.CreditConsumed,
       ),
       output:
         (payloadData as any)?.output ??
@@ -1182,10 +1183,10 @@ export const getRepositoryItemAiSummary = async (payload: {
   inflightAiSummaryRequests.set(key, request)
   return request
 }
-;(authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
-;(authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
-;(authApiV6 as any).getRepositoryItemRelated = getRepositoryItemRelated
-;(authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
-;(authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
-;(authApiV6 as any).uploadForOcr = uploadForOcr
-;(authApiV6 as any).UploadFiles = UploadFiles
+  ; (authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
+  ; (authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
+  ; (authApiV6 as any).getRepositoryItemRelated = getRepositoryItemRelated
+  ; (authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
+  ; (authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
+  ; (authApiV6 as any).uploadForOcr = uploadForOcr
+  ; (authApiV6 as any).UploadFiles = UploadFiles

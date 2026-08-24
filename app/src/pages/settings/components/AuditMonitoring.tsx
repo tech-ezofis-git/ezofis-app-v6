@@ -30,16 +30,40 @@ type AuditUserProps = {
 type Severity = 'info' | 'warning' | 'critical' | string
 
 const AUDIT_LOGS_PAGE_SIZE = 100
+const SESSION_KEY = 'ezofis_audit_monitoring_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
 
 export default function AuditMonitoring({ onBack }: AuditUserProps) {
   const { t } = useLingui()
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const storedState = useMemo(() => getStoredState(), [])
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {}
+  )
   const [eventsData, setEventsData] = useState<EventLog[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isReLoading, setIsReLoading] = useState(false)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(AUDIT_LOGS_PAGE_SIZE)
+  const [page, setPage] = useState(storedState?.page ?? 1)
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? AUDIT_LOGS_PAGE_SIZE)
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ activeFilters, page, pageSize }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [activeFilters, page, pageSize])
 
   const onPageChange = useCallback((nextPage: number) => {
     setPage(nextPage)
@@ -50,7 +74,7 @@ export default function AuditMonitoring({ onBack }: AuditUserProps) {
     setPage(1)
   }, [])
 
-  const eventsTable = useAuditEventsTable(eventsData)
+  const eventsTable = useAuditEventsTable(eventsData, SESSION_KEY)
   const searchQuery =
     eventsTable.tableSearchOptions.state.globalFilter?.value || ''
 
@@ -281,10 +305,10 @@ function SeverityBadge({ severity }: { severity: Severity }) {
   )
 }
 
-function useAuditEventsTable(rows: EventLog[]) {
+function useAuditEventsTable(rows: EventLog[], storageKey?: string) {
   const { t } = useLingui()
   const columnHelper = createColumnHelper<EventLog>()
-  const tableSearchOptions = useSettingsTableSearch()
+  const tableSearchOptions = useSettingsTableSearch(storageKey)
 
   const columns = useMemo(
     () => [

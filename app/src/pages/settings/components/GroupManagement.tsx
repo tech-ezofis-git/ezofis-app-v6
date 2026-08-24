@@ -50,6 +50,17 @@ import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 import { formatDatetime } from '@/utils/dayjs'
 
+const SESSION_KEY = 'ezofis_group_management_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 type GroupStep = {
   caption: string
   description: string
@@ -108,7 +119,10 @@ export default function GroupManagement({
     [i18n],
   )
   const [groups, setGroups] = useState<SettingsGroup[]>([])
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const storedState = useMemo(() => getStoredState(), [])
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {}
+  )
   const [userOptions, setUserOptions] = useState<SettingsOption[]>([])
   const [isLoadingGroups, setIsLoadingGroups] = useState(true)
   const [isLoadingGroupDetails, setIsLoadingGroupDetails] = useState(false)
@@ -117,14 +131,31 @@ export default function GroupManagement({
     null,
   )
   const [isDeletingGroup, setIsDeletingGroup] = useState(false)
-
-  const [isSetupOpen, setIsSetupOpen] = useState(false)
+  const [isSetupOpen, setIsSetupOpen] = useState(storedState?.isSetupOpen ?? false)
   const [editingGroupId, setEditingGroupId] = useState<string | number | null>(
-    null,
+    storedState?.editingGroupId ?? null,
   )
-  const [activeStep, setActiveStep] = useState(0)
-  const [draftGroup, setDraftGroup] = useState<SettingsGroup>(emptyGroup)
-  const [selectedMembers, setSelectedMembers] = useState<SettingsOption[]>([])
+  const [activeStep, setActiveStep] = useState(storedState?.activeStep ?? 0)
+  const [draftGroup, setDraftGroup] = useState<SettingsGroup>(storedState?.draftGroup ?? emptyGroup)
+  const [selectedMembers, setSelectedMembers] = useState<SettingsOption[]>(storedState?.selectedMembers ?? [])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          isSetupOpen,
+          editingGroupId,
+          activeStep,
+          draftGroup,
+          selectedMembers,
+          activeFilters,
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [isSetupOpen, editingGroupId, activeStep, draftGroup, selectedMembers, activeFilters])
 
   const filteredGroups = useMemo(() => {
     return groups.filter((group) => {
@@ -143,7 +174,7 @@ export default function GroupManagement({
     })
   }, [groups, activeFilters])
 
-  const tableSearchOptions = useSettingsTableSearch()
+  const tableSearchOptions = useSettingsTableSearch(SESSION_KEY)
 
   const loadGroupsRequestIdRef = useRef(0)
 

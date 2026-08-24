@@ -69,6 +69,7 @@ export interface FolderItem {
   hasChildren?: boolean
   modifiedText?: string
   sizeText?: string
+  createdByName?: string
 }
 
 export interface MetadataSection {

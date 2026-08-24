@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
 
 export const getProcessingStatusText = (startTime?: string) => {
   if (!startTime) return 'We are processing your file...'
@@ -65,7 +66,6 @@ type Store = {
   isClosed: boolean
   // UI State
   isMaximized: boolean
-  isPlaygroundOpen: boolean
   isRequestOpen: boolean
   jobMappings: Record<string, string>
   jobStatuses: Record<string, any>
@@ -79,7 +79,6 @@ type Store = {
   } | null
   pendingNav: any
   pendingOpenNewRequest: boolean
-  playgroundContext: any
   processingProcesses: any[]
   rawWorkflowData: any
   reloadMeta: boolean
@@ -102,14 +101,12 @@ type Store = {
   openNewRequest: (title: string) => void
   openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
   removeProcessingProcess: (id: string | number) => void
-  setIsPlaygroundOpen: (open: boolean) => void
   setJobMapping: (jobId: string | number, instanceId: string) => void
   setJobStatus: (id: string, status: any) => void
   setPendingDeepLink: (deepLink: Store['pendingDeepLink']) => void
 
   setPendingNav: (v: any) => void
   setPendingOpenNewRequest: (value: boolean) => void
-  setPlaygroundContext: (context: any) => void
   setRawWorkflowData: (data: any) => void
 
   setRequestListTab: (tab: string) => void
@@ -120,130 +117,158 @@ type Store = {
   workflowRefresh: () => void
 }
 
-const requestStore = create<Store>((set) => ({
-  activeQuickFilters: [],
-  activeTabValue: null,
-  isClosed: false,
-  isMaximized: false,
-  isPlaygroundOpen: false,
-  isRequestOpen: false,
-  jobMappings: getInitialJobMappings(),
-  jobStatuses: getInitialJobStatuses(),
-  newRequest: false,
-  newRequestMeta: null,
-  pendingDeepLink: null,
-  pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
-  pendingOpenNewRequest: false,
-  playgroundContext: null,
-  processingProcesses: [],
-  rawWorkflowData: null,
-  reloadMeta: false,
-  repoData: null,
-  requestListTab: 'Inbox', // Default
-  selectedItem: null,
-  selectedWorkflow: null,
-  selectedWorkflowId: null,
-  summaryCache: {},
-  addProcessingProcess: (process) =>
-    set((state) => ({
-      processingProcesses: [
-        ...state.processingProcesses,
-        {
-          ...process,
-          startTime: process.startTime || new Date().toISOString(),
-        },
-      ],
-    })),
-  cacheSummaryData: (reqNo, data) =>
-    set((state) => ({
-      summaryCache: { ...state.summaryCache, [reqNo]: data },
-    })),
-  clearPendingDeepLink: () => set({ pendingDeepLink: null }),
-  clearPendingNav: () => set({ pendingNav: null }),
-  clearQuickFilters: () => set({ activeQuickFilters: [] }),
-  closeNewRequest: () => set({ newRequest: false, newRequestMeta: null }),
-  closeRequest: () =>
-    set((state) => ({
+const requestStore = create<Store>()(
+  persist(
+    (set) => ({
+      activeQuickFilters: [],
       activeTabValue: null,
-      isClosed: !state.isClosed,
+      isClosed: false,
+      isMaximized: false,
       isRequestOpen: false,
-      selectedItem: null, // Optional: clear data on close
-    })),
-
-  handleSetRepoData: (data) => set({ repoData: data }),
-  openNewRequest: (title: string) =>
-    set({
-      newRequest: true,
-      newRequestMeta: title,
+      jobMappings: getInitialJobMappings(),
+      jobStatuses: getInitialJobStatuses(),
+      newRequest: false,
+      newRequestMeta: null,
+      pendingDeepLink: null,
+      pendingNav: null as null | { direction: 'NEXT' | 'PREV' },
       pendingOpenNewRequest: false,
+      processingProcesses: [],
+      rawWorkflowData: null,
+      reloadMeta: false,
+      repoData: null,
+      requestListTab: 'Inbox', // Default
+      selectedItem: null,
+      selectedWorkflow: null,
+      selectedWorkflowId: null,
+      summaryCache: {},
+      addProcessingProcess: (process) =>
+        set((state) => ({
+          processingProcesses: [
+            ...state.processingProcesses,
+            {
+              ...process,
+              startTime: process.startTime || new Date().toISOString(),
+            },
+          ],
+        })),
+      cacheSummaryData: (reqNo, data) =>
+        set((state) => ({
+          summaryCache: { ...state.summaryCache, [reqNo]: data },
+        })),
+      clearPendingDeepLink: () => set({ pendingDeepLink: null }),
+      clearPendingNav: () => set({ pendingNav: null }),
+      clearQuickFilters: () => set({ activeQuickFilters: [] }),
+      closeNewRequest: () => set({ newRequest: false, newRequestMeta: null }),
+      closeRequest: () =>
+        set((state) => ({
+          activeTabValue: null,
+          isClosed: !state.isClosed,
+          isRequestOpen: false,
+          selectedItem: null, // Optional: clear data on close
+        })),
+
+      handleSetRepoData: (data) => set({ repoData: data }),
+      openNewRequest: (title: string) =>
+        set({
+          newRequest: true,
+          newRequestMeta: title,
+          pendingOpenNewRequest: false,
+        }),
+      // FIX: Accept data when opening
+      openRequest: (item, workflow, tab) =>
+        set({
+          activeTabValue: tab,
+          isRequestOpen: true,
+          selectedItem: item,
+          selectedWorkflow: workflow,
+          selectedWorkflowId: workflow.id as number | string,
+        }),
+      removeProcessingProcess: (id) =>
+        set((state) => ({
+          processingProcesses: state.processingProcesses.filter(
+            (p) => (p.processId || p.id) !== id,
+          ),
+        })),
+      stopRefresh: () => set({ reloadMeta: false }),
+      toggleMaximize: () =>
+        set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
+      toggleQuickFilter: (filter) =>
+        set((state) => ({
+          activeQuickFilters: state.activeQuickFilters.includes(filter)
+            ? state.activeQuickFilters.filter((f) => f !== filter)
+            : [...state.activeQuickFilters, filter],
+        })),
+      updateProcessingProcess: (id, updates) =>
+        set((state) => ({
+          processingProcesses: state.processingProcesses.map((p) =>
+            (p.processId || p.id) === id ? { ...p, ...updates } : p,
+          ),
+        })),
+      workflowRefresh: () => set({ reloadMeta: true }),
+      setJobMapping: (jobId, instanceId) =>
+        set((state) => {
+          const stringJobId = String(jobId)
+          const nextMappings = {
+            ...state.jobMappings,
+            [stringJobId]: instanceId,
+          }
+          const jobKey = `job-${stringJobId}`
+          const existingStatus = state.jobStatuses[jobKey]
+          const nextStatuses = existingStatus
+            ? { ...state.jobStatuses, [instanceId]: existingStatus }
+            : state.jobStatuses
+          try {
+            localStorage.setItem(
+              'v6_job_mappings',
+              JSON.stringify(nextMappings),
+            )
+            if (existingStatus) {
+              localStorage.setItem(
+                'v6_job_statuses',
+                JSON.stringify(nextStatuses),
+              )
+            }
+          } catch {}
+          return {
+            jobMappings: nextMappings,
+            jobStatuses: nextStatuses,
+          }
+        }),
+      setJobStatus: (id, status) =>
+        set((state) => {
+          const nextStatuses = { ...state.jobStatuses, [id]: status }
+          try {
+            localStorage.setItem(
+              'v6_job_statuses',
+              JSON.stringify(nextStatuses),
+            )
+          } catch {}
+          return { jobStatuses: nextStatuses }
+        }),
+      setPendingDeepLink: (deepLink) => set({ pendingDeepLink: deepLink }),
+      setPendingNav: (v) => set({ pendingNav: v }),
+      setPendingOpenNewRequest: (value: boolean) =>
+        set({ pendingOpenNewRequest: value }),
+      setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
+      setRequestListTab: (tab) => set({ requestListTab: tab }),
     }),
-  // FIX: Accept data when opening
-  openRequest: (item, workflow, tab) =>
-    set({
-      activeTabValue: tab,
-      isRequestOpen: true,
-      selectedItem: item,
-      selectedWorkflow: workflow,
-      selectedWorkflowId: workflow.id as number | string,
-    }),
-  removeProcessingProcess: (id) =>
-    set((state) => ({
-      processingProcesses: state.processingProcesses.filter(
-        (p) => (p.processId || p.id) !== id,
-      ),
-    })),
-  stopRefresh: () => set({ reloadMeta: false }),
-  toggleMaximize: () =>
-    set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
-  toggleQuickFilter: (filter) =>
-    set((state) => ({
-      activeQuickFilters: state.activeQuickFilters.includes(filter)
-        ? state.activeQuickFilters.filter((f) => f !== filter)
-        : [...state.activeQuickFilters, filter],
-    })),
-  updateProcessingProcess: (id, updates) =>
-    set((state) => ({
-      processingProcesses: state.processingProcesses.map((p) =>
-        (p.processId || p.id) === id ? { ...p, ...updates } : p,
-      ),
-    })),
-  workflowRefresh: () => set({ reloadMeta: true }),
-  setIsPlaygroundOpen: (open) => set({ isPlaygroundOpen: open }),
-  setJobMapping: (jobId, instanceId) =>
-    set((state) => {
-      const stringJobId = String(jobId)
-      const nextMappings = { ...state.jobMappings, [stringJobId]: instanceId }
-      const jobKey = `job-${stringJobId}`
-      const existingStatus = state.jobStatuses[jobKey]
-      const nextStatuses = existingStatus
-        ? { ...state.jobStatuses, [instanceId]: existingStatus }
-        : state.jobStatuses
-      try {
-        localStorage.setItem('v6_job_mappings', JSON.stringify(nextMappings))
-        if (existingStatus) {
-          localStorage.setItem('v6_job_statuses', JSON.stringify(nextStatuses))
-        }
-      } catch {}
-      return {
-        jobMappings: nextMappings,
-        jobStatuses: nextStatuses,
-      }
-    }),
-  setJobStatus: (id, status) =>
-    set((state) => {
-      const nextStatuses = { ...state.jobStatuses, [id]: status }
-      try {
-        localStorage.setItem('v6_job_statuses', JSON.stringify(nextStatuses))
-      } catch {}
-      return { jobStatuses: nextStatuses }
-    }),
-  setPendingDeepLink: (deepLink) => set({ pendingDeepLink: deepLink }),
-  setPendingNav: (v) => set({ pendingNav: v }),
-  setPendingOpenNewRequest: (value: boolean) =>
-    set({ pendingOpenNewRequest: value }),
-  setPlaygroundContext: (context) => set({ playgroundContext: context }),
-  setRawWorkflowData: (data) => set({ rawWorkflowData: data }),
-  setRequestListTab: (tab) => set({ requestListTab: tab }),
-}))
+    {
+      name: 'v6_request_store',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        activeQuickFilters: state.activeQuickFilters,
+        activeTabValue: state.activeTabValue,
+        isRequestOpen: state.isRequestOpen,
+        newRequest: state.newRequest,
+        newRequestMeta: state.newRequestMeta,
+        rawWorkflowData: state.rawWorkflowData,
+        requestListTab: state.requestListTab,
+        selectedItem: state.selectedItem,
+        selectedWorkflow: state.selectedWorkflow,
+        selectedWorkflowId: state.selectedWorkflowId,
+      }),
+    },
+  ),
+)
 
 export default requestStore

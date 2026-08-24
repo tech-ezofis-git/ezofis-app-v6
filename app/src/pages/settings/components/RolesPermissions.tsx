@@ -219,6 +219,17 @@ const roleColumnHelper = createColumnHelper<Role>()
 const permissionColumnHelper = createColumnHelper<PermissionRow>()
 const userAssignmentColumnHelper = createColumnHelper<AssignedUser>()
 
+const SESSION_KEY = 'ezofis_roles_permissions_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 export default function RolesPermissions({ onBack }: RoleUserProps) {
   const { t } = useLingui()
   const [roles, setRoles] = useState<Role[]>([])
@@ -227,15 +238,44 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems)
   const [apiMenus, setApiMenus] = useState<V6MenuItem[]>([])
   const [users, setUsers] = useState<AssignedUser[]>(initialUsers)
-  const [isCreatingRole, setIsCreatingRole] = useState(false)
-  const [createStep, setCreateStep] = useState(0)
-  const [newRoleName, setNewRoleName] = useState('')
-  const [newRoleDescription, setNewRoleDescription] = useState('')
-  const [selectedUsers, setSelectedUsers] = useState<Option[]>([])
+  const storedState = useMemo(() => getStoredState(), [])
+
+  const [isCreatingRole, setIsCreatingRole] = useState(storedState?.isCreatingRole ?? false)
+  const [createStep, setCreateStep] = useState(storedState?.createStep ?? 0)
+  const [newRoleName, setNewRoleName] = useState(storedState?.newRoleName ?? '')
+  const [newRoleDescription, setNewRoleDescription] = useState(storedState?.newRoleDescription ?? '')
+  const [selectedUsers, setSelectedUsers] = useState<Option[]>(storedState?.selectedUsers ?? [])
   const [newPermissionRows, setNewPermissionRows] = useState<PermissionRow[]>(
-    [],
+    storedState?.newPermissionRows ?? [],
   )
-  const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(storedState?.editingRoleId ?? null)
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          isCreatingRole,
+          createStep,
+          newRoleName,
+          newRoleDescription,
+          selectedUsers,
+          newPermissionRows,
+          editingRoleId,
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [
+    isCreatingRole,
+    createStep,
+    newRoleName,
+    newRoleDescription,
+    selectedUsers,
+    newPermissionRows,
+    editingRoleId,
+  ])
   const [isLoadingRoles, setIsLoadingRoles] = useState(false)
   const [isLoadingRoleDetails, setIsLoadingRoleDetails] = useState(false)
   const [isLoadingRolePermissions, setIsLoadingRolePermissions] =

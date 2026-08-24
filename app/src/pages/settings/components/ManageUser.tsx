@@ -89,6 +89,17 @@ import SettingsSelectedChips from './SettingsSelectedChips'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 import { formatDatetime } from '@/utils/dayjs'
 
+const SESSION_KEY = 'ezofis_manage_user_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 type AppUser = SettingsUser
 type DraftUser = DraftSettingsUser
 type LoginType = 'Password' | 'GoogleSSO' | 'MS Entra ID' | 'LDAP/AD'
@@ -378,14 +389,36 @@ export default function ManageUser({
   const [users, setUsers] = useState<AppUser[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
 
-  const [isSetupOpen, setIsSetupOpen] = useState(false)
+  const storedState = useMemo(() => getStoredState(), [])
+
+  const [isSetupOpen, setIsSetupOpen] = useState(storedState?.isSetupOpen ?? false)
   const [editingUserId, setEditingUserId] = useState<string | number | null>(
-    null,
+    storedState?.editingUserId ?? null,
   )
-  const [activeStep, setActiveStep] = useState(0)
-  const [draftUser, setDraftUser] = useState<DraftUser>(emptyUser)
-  const [originalUser, setOriginalUser] = useState<DraftUser | null>(null)
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [activeStep, setActiveStep] = useState(storedState?.activeStep ?? 0)
+  const [draftUser, setDraftUser] = useState<DraftUser>(storedState?.draftUser ?? emptyUser)
+  const [originalUser, setOriginalUser] = useState<DraftUser | null>(storedState?.originalUser ?? null)
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {},
+  )
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          isSetupOpen,
+          editingUserId,
+          activeStep,
+          draftUser,
+          originalUser,
+          activeFilters,
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [isSetupOpen, editingUserId, activeStep, draftUser, originalUser, activeFilters])
   const [isSaving, setIsSaving] = useState(false)
   const [deletingUserId, setDeletingUserId] = useState<string | number | null>(
     null,
@@ -445,7 +478,7 @@ export default function ManageUser({
     })
   }, [users, activeFilters])
 
-  const tableSearchOptions = useSettingsTableSearch()
+  const tableSearchOptions = useSettingsTableSearch(SESSION_KEY)
   const loadUsersRequestIdRef = useRef(0)
   const loadGroupsRequestIdRef = useRef(0)
   const loadRolesRequestIdRef = useRef(0)

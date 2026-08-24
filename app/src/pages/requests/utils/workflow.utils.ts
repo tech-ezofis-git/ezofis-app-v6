@@ -96,3 +96,113 @@ export const safeParse = (data: any) => {
     return data
   }
 }
+
+// Extract the blocks array from any of the shapes a "workflow" object shows up
+// as in this module: the raw V6 workflow record (`workflowJson.blocks`), the
+// lightweight WorkflowOption used by the requests list (`flowJson` as a JSON
+// string), or an already-parsed flow object (`{ blocks, rules, settings }`).
+const extractBlocks = (workflow: any): any[] => {
+  if (!workflow) return []
+
+  if (Array.isArray(workflow.workflowJson?.blocks)) {
+    return workflow.workflowJson.blocks
+  }
+  if (Array.isArray(workflow.blocks)) {
+    return workflow.blocks
+  }
+
+  const flowJsonInput = workflow.flowJson ?? workflow.workflowJson
+  if (!flowJsonInput) return []
+
+  try {
+    const flow =
+      typeof flowJsonInput === 'string'
+        ? JSON.parse(flowJsonInput)
+        : flowJsonInput
+    if (Array.isArray(flow?.blocks)) return flow.blocks
+  } catch {
+    // ignore
+  }
+  return []
+}
+
+/**
+ * An Accounts Payable workflow is one built with the "Intelligent AP Agent"
+ * step from the workflow builder (block type `AP_AGENT` — see
+ * AddNodeMenu.tsx / StepFour.tsx's applyApAgentSettings). Every other
+ * workflow is treated as a generic, form-driven workflow.
+ */
+export const isAccountsPayableWorkflow = (workflow: any): boolean =>
+  extractBlocks(workflow).some((block: any) => block?.type === 'AP_AGENT')
+
+// Same shape-normalization as extractBlocks, but also returns `rules` —
+// needed to look up the step that preceded a given activity (rule.toBlockId
+// === activityId) for list/grid "previous stage" displays.
+export const extractWorkflowGraph = (
+  workflow: any,
+): { blocks: any[]; rules: any[] } => {
+  if (!workflow) return { blocks: [], rules: [] }
+
+  if (Array.isArray(workflow.workflowJson?.blocks)) {
+    return {
+      blocks: workflow.workflowJson.blocks,
+      rules: workflow.workflowJson.rules || [],
+    }
+  }
+  if (Array.isArray(workflow.blocks)) {
+    return { blocks: workflow.blocks, rules: workflow.rules || [] }
+  }
+
+  const flowJsonInput = workflow.flowJson ?? workflow.workflowJson
+  if (!flowJsonInput) return { blocks: [], rules: [] }
+
+  try {
+    const flow =
+      typeof flowJsonInput === 'string'
+        ? JSON.parse(flowJsonInput)
+        : flowJsonInput
+    return {
+      blocks: Array.isArray(flow?.blocks) ? flow.blocks : [],
+      rules: Array.isArray(flow?.rules) ? flow.rules : [],
+    }
+  } catch {
+    return { blocks: [], rules: [] }
+  }
+}
+
+export interface GenericStageInfo {
+  currentLabel: string
+  isTerminal: boolean
+  previousLabel: string | null
+}
+
+// Previous → Current stage for a list/grid row, without a per-row history
+// call: Current comes straight off the row (`stage`/`activityId`); Previous
+// comes from the workflow's own rule graph (the rule whose toBlockId is
+// this row's activityId tells us which block led here). Terminal = this
+// activity has no outgoing rule (nothing left to do) or is an ACTION/END
+// block, which drives the icon/color (done vs in-progress).
+export const getGenericStageInfo = (
+  workflow: any,
+  row: any,
+): GenericStageInfo => {
+  const { blocks, rules } = extractWorkflowGraph(workflow)
+  const activityId = row?.activityId
+  const currentLabel = row?.stage || row?.stageName || 'In Progress'
+
+  const incomingRule = rules.find((r: any) => r.toBlockId === activityId)
+  const previousBlock = blocks.find(
+    (b: any) => b.id === incomingRule?.fromBlockId,
+  )
+  const previousLabel = previousBlock?.settings?.label || null
+
+  const outgoingRule = rules.find((r: any) => r.fromBlockId === activityId)
+  const currentBlockType = blocks.find((b: any) => b.id === activityId)?.type
+  const isTerminal =
+    !outgoingRule ||
+    currentBlockType === 'ACTION' ||
+    currentBlockType === 'END' ||
+    row?.stageType === 'ACTION'
+
+  return { currentLabel, isTerminal, previousLabel }
+}

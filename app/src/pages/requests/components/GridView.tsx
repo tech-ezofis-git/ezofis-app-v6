@@ -1,10 +1,12 @@
 // import SummaryMetric from './SummaryMetric'
 import { type Table as TanstackTable } from '@tanstack/react-table'
+import dayjs from 'dayjs'
 // ✅ Motion
 import { motion, useReducedMotion } from 'framer-motion'
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
 import type { TableActionButton } from '@/components/base/data-table/TableActionBar'
 import type { RowSize } from '@/components/base/data-table/types'
+import type { WorkflowOption } from '@/pages/requests/types'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 // import TableFilters from '@/components/base/data-table/actions/TableFilters'
 import TableReload from '@/components/base/data-table/actions/TableReload'
@@ -12,8 +14,8 @@ import TableReload from '@/components/base/data-table/actions/TableReload'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import SummaryBadge from '@/components/common/SummaryBadge'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import showToast from '@/components/base/toast/showToast'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 // import RequestSummary from './RequestSummary'
 import FileSheet from '@/components/common/file-sheet/FileSheet'
@@ -22,9 +24,11 @@ import requestStore, {
   useProcessingStatusText,
 } from '@/pages/requests/stores/useRequestStore'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
+import { isAccountsPayableWorkflow } from '@/pages/requests/utils/workflow.utils'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
-import dayjs from 'dayjs'
+import GenericGridCard from './GenericGridCard'
 import HoverExpandableText from './HoverExpandableText'
 
 const GridRowSkeleton = ({ index }: { index: number }) => {
@@ -866,6 +870,7 @@ interface GridRowItemProps {
   isSelected: boolean
   row: any
   activeTab?: string
+  workflow?: WorkflowOption | null
   toggleRowSelection: (id: string | number, e: React.MouseEvent) => void
   onRowClick: (item: any, tab: string) => void
 }
@@ -878,14 +883,17 @@ const GridRowItem = memo(
     isSelected,
     row,
     toggleRowSelection,
+    workflow,
     onRowClick,
   }: GridRowItemProps) => {
     const originalIndex =
       typeof row?._originalIndex === 'number' ? row._originalIndex : index
     const rowId = row?.id || row?.processId || `item-${originalIndex}`
 
-    const { isPlaygroundOpen, jobMappings, jobStatuses, processingProcesses } =
-      requestStore((state) => state)
+    const { jobMappings, jobStatuses, processingProcesses } = requestStore(
+      (state) => state,
+    )
+    const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
     const isAskAIOpen = useAskAIStore((state) => state.isOpen)
     const isSidebarOpen = isPlaygroundOpen || isAskAIOpen
     const matchingProc = useMemo(() => {
@@ -909,10 +917,20 @@ const GridRowItem = memo(
 
     const defaultStatusText = useProcessingStatusText(
       matchingProc?.startTime ||
-      row?.raisedAt ||
-      row?.transaction_createdAt ||
-      row?.createdAt,
+        row?.raisedAt ||
+        row?.transaction_createdAt ||
+        row?.createdAt,
     )
+
+    if (!isAccountsPayableWorkflow(workflow)) {
+      return (
+        <GenericGridCard
+          row={row}
+          workflow={workflow ?? null}
+          onRowClick={onRowClick}
+        />
+      )
+    }
 
     const statusText =
       matchedJobStatus && !matchedJobStatus.isCompleted
@@ -939,10 +957,10 @@ const GridRowItem = memo(
       row._agentResponse || row._agentData?.[0] || row._agentData || {}
     const rawDecision = String(
       parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-      agentData?.decision ||
-      row.decision ||
-      row.status ||
-      '',
+        agentData?.decision ||
+        row.decision ||
+        row.status ||
+        '',
     ).toUpperCase()
     const aiInsight =
       agentData?.ai_insight ||
@@ -971,11 +989,11 @@ const GridRowItem = memo(
             ? 'border-r border-l border-r-[var(--primary-3)] border-b-[var(--primary-3)] border-l-[var(--primary-3)] bg-[var(--primary-1)] shadow-sm'
             : 'bg-[var(--surface)]',
           !isSelected &&
-          !row.isProcessing &&
-          'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
+            !row.isProcessing &&
+            'hover:z-10 hover:border-r hover:border-l hover:border-r-[var(--primary-4)] hover:border-b-[var(--primary-4)] hover:border-l-[var(--primary-4)] hover:bg-[var(--gray-1)] hover:shadow-sm',
           !isSelected &&
-          row.isProcessing &&
-          'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
+            row.isProcessing &&
+            'hover:border-r hover:border-l hover:border-r-[var(--orange-4)] hover:border-b-[var(--orange-4)] hover:border-l-[var(--orange-4)] hover:bg-[var(--orange-1)]/40 hover:shadow-sm',
         )}
         onClick={() => {
           onRowClick(row, 'Overview')
@@ -996,7 +1014,7 @@ const GridRowItem = memo(
                 checked={isSelected}
                 className='absolute inset-0 z-10 cursor-pointer opacity-0'
                 type='checkbox'
-                onChange={() => { }}
+                onChange={() => {}}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleRowSelection(rowId, e)
@@ -1036,8 +1054,8 @@ const GridRowItem = memo(
         <div className='flex min-w-0 flex-1 flex-col gap-1'>
           <div className='group/inv flex min-w-0 flex-nowrap items-center gap-2.5'>
             <h3
-              style={{ fontWeight: 500 }}
               className='shrink-0 text-[15px] tracking-tight whitespace-nowrap text-[var(--text-primary)] transition-colors group-hover:text-[var(--primary-9)] group-hover:underline'
+              style={{ fontWeight: 500 }}
             >
               {invoiceNo}
             </h3>
@@ -1045,12 +1063,12 @@ const GridRowItem = memo(
               <HoverExpandableText
                 className='text-[12px] font-medium text-[var(--gray-10)]'
                 fallbackText='Unknown Supplier'
+                text={supplierName}
                 normalMaxWidthClass={
                   isSidebarOpen
                     ? 'max-w-[100px]'
                     : 'max-w-[160px] sm:max-w-[200px] md:max-w-[260px]'
                 }
-                text={supplierName}
               />
             )}
             <div className='shrink-0'>
@@ -1115,7 +1133,10 @@ const GridRowItem = memo(
             aiInsight &&
             isSidebarOpen && (
               <div className='mt-0.5 flex min-w-0 items-center gap-1.5 text-[12px] font-medium text-[var(--primary-9)]'>
-                <AiBrandIcon className='size-3.5 shrink-0' variant='outline-purple' />
+                <AiBrandIcon
+                  className='size-3.5 shrink-0'
+                  variant='outline-purple'
+                />
                 <HoverExpandableText
                   className='text-[12px] font-medium text-[var(--primary-9)]'
                   expandStyle='inline'
@@ -1279,6 +1300,7 @@ interface GridViewProps<TData> {
   hideReload?: boolean
   isReloading?: boolean
   rowSize?: RowSize
+  workflow?: WorkflowOption | null
   onNewRequest?: () => void
   onReload?: () => void
   onRowClick: (item: any, tab: string) => void
@@ -1296,6 +1318,7 @@ const GridView = <TData,>({
   isReloading,
   rowSize: _rowSize,
   table,
+  workflow,
   onNewRequest,
   onReload,
   onRowClick,
@@ -1427,10 +1450,11 @@ const GridView = <TData,>({
         containerClassName='py-12'
         page={emptyPage}
         table={table as TanstackTable<any>}
-        onPrimaryAction={activeTab === 'Inbox' || !activeTab ? onNewRequest : undefined}
+        onPrimaryAction={
+          activeTab === 'Inbox' || !activeTab ? onNewRequest : undefined
+        }
       />
     )
-
   } else {
     content = (
       <div className='flex flex-col gap-2.5 px-2 pt-3 pb-4'>
@@ -1448,6 +1472,7 @@ const GridView = <TData,>({
               key={rowId}
               row={row}
               toggleRowSelection={toggleRowSelection}
+              workflow={workflow}
               onRowClick={onRowClick}
             />
           )
@@ -1534,30 +1559,30 @@ const GridView = <TData,>({
                   <>
                     {actionValidation.isValid && actionValidation.action
                       ? (() => {
-                        // const isVerify = actionValidation.action.label.toLowerCase() === 'verify'
-                        return (
-                          <button
-                            className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
-                            type='button'
-                            onClick={() => {
-                              showToast({
-                                message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
-                                variant: 'success',
-                              })
-                              exitSelectionMode()
-                            }}
-                          >
-                            {/* <Icon
+                          // const isVerify = actionValidation.action.label.toLowerCase() === 'verify'
+                          return (
+                            <button
+                              className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--green-3)] bg-[var(--green-2)] px-3 py-1.5 text-12 font-semibold text-[var(--green-11)] shadow-sm transition-all hover:bg-[var(--green-3)] hover:shadow-md active:scale-95'
+                              type='button'
+                              onClick={() => {
+                                showToast({
+                                  message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
+                                  variant: 'success',
+                                })
+                                exitSelectionMode()
+                              }}
+                            >
+                              {/* <Icon
                               className={cn(
                                 'size-4',
                                 isVerify ? 'text-[var(--green-9)]' : 'text-white'
                               )}
                               name='tabler:circle-check'
                             /> */}
-                            {getActionText(actionValidation.action.label)}
-                          </button>
-                        )
-                      })()
+                              {getActionText(actionValidation.action.label)}
+                            </button>
+                          )
+                        })()
                       : null}
 
                     {!actionValidation.isValid && (
@@ -1590,7 +1615,7 @@ const GridView = <TData,>({
                 {!hideReload && (
                   <TableReload
                     isReloading={isReloading || false}
-                    onReload={onReload || (() => { })}
+                    onReload={onReload || (() => {})}
                   />
                 )}
 
@@ -1604,7 +1629,7 @@ const GridView = <TData,>({
                     className={cn(
                       'inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--secondary-9)] px-3 py-1.5 text-12 font-semibold text-white shadow-sm transition-all hover:bg-[var(--secondary-10)] hover:shadow-md active:scale-95',
                       a.disabled &&
-                      'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
+                        'cursor-not-allowed opacity-60 hover:bg-[var(--secondary-9)]',
                       a.className,
                     )}
                     onClick={a.onClick}

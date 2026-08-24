@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import React, { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Column } from '@/components/base/data-table/types'
@@ -7,9 +8,9 @@ import IconButton from '@/components/base/button/IconButton'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import { motion, AnimatePresence } from 'framer-motion'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
 import {
   buildTableMeta,
@@ -20,12 +21,16 @@ import {
   isTableType,
 } from '@/pages/requests/utils/dynamicTable.utils'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
-import { safeParse } from '@/pages/requests/utils/workflow.utils'
+import {
+  getGenericStageInfo,
+  isAccountsPayableWorkflow,
+  safeParse,
+} from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
-import dayjs from 'dayjs'
 import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
+import GenericStagePill from '../GenericStagePill'
 import HoverExpandableText from '../HoverExpandableText'
 import DynamicTableCell from './components/DynamicTableCell'
 // ✅ Your generic FileSheet (React version)
@@ -39,7 +44,7 @@ const LINK_TEXT =
 
 const wrap = (content: React.ReactNode) => <WrapOnHoverCell value={content} />
 
-const resolveFormJson = (
+export const resolveFormJson = (
   workflow: WorkflowOption | null,
 ): Record<string, any> | any[] | null => {
   if (!workflow?.formJson) return null
@@ -55,7 +60,13 @@ const resolveFormJson = (
     }
   }
 
-  return [raw]
+  // Already an object (getFormDataById parses formJson before it lands on
+  // selectedWorkflow) — return it as-is, matching the string branch's
+  // shape. Wrapping it in [raw] here used to break getFormPanels(): it
+  // only pulls `.panels` off a plain object, not off an array, so the
+  // wrapped form's real panels were silently dropped and every dynamic
+  // column/chip that reads them (grid card, table columns) came back empty.
+  return raw
 }
 
 // ✅ Local component for summary badges with hover cards
@@ -732,6 +743,19 @@ const extractInvoiceDate = (row: any): string => {
   return '-'
 }
 
+// Backend `referenceNumber` values are long timestamp-based strings
+// (REQ-20260819095120360); `formEntryId` is a small sequential per-form
+// counter (1, 2, 3, ...) already returned on every process/instance
+// record, so it's what actually gives a short, human "REQ-1" style id.
+export const extractGenericRequestNumber = (row: any): string => {
+  if (!row) return '-'
+  const entryId = row.formEntryId
+  if (entryId !== undefined && entryId !== null && entryId !== '') {
+    return `REQ-${entryId}`
+  }
+  return row.requestNo || row.referenceNumber || '-'
+}
+
 const extractInvoiceNumber = (row: any): string => {
   if (!row) return '-'
 
@@ -819,16 +843,12 @@ const computeDueDateInfo = (
   return { calculationText, calculationTheme, termsDisplay }
 }
 
-const isStandardField = (field: any, label: string) => {
+export const isStandardField = (field: any, label: string) => {
   const lowerLabel = String(label || '').toLowerCase()
   const type = String(field.type ?? '').toUpperCase()
 
   // Skip file uploads and table controls — not useful as list/filter columns
-  if (
-    type === 'FILE_UPLOAD' ||
-    type === 'DYNAMIC_TABLE' ||
-    type === 'TABLE'
-  ) {
+  if (type === 'FILE_UPLOAD' || type === 'DYNAMIC_TABLE' || type === 'TABLE') {
     return true
   }
 
@@ -920,10 +940,10 @@ const StatusCell = ({
   const parsedForm = getParsedFormData(row)
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-    agentData?.decision ||
-    row.decision ||
-    row.status ||
-    '',
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
   ).toUpperCase()
 
   let iconName = 'tabler:clock'
@@ -1255,7 +1275,7 @@ const renderDynamicCell = (
   return renderCellByType(type, rawVal, row)
 }
 
-const getFormPanels = (form: any) => {
+export const getFormPanels = (form: any) => {
   if (!form) return []
   const panels =
     !Array.isArray(form) && Array.isArray(form?.panels) ? form.panels : []
@@ -1271,11 +1291,13 @@ const getBaseColumns = (
   selectedItem: any,
   activeTab: string | undefined,
   onRowClick: (item: any, tab: string) => void,
+  isAccountsPayable: boolean,
+  workflow: WorkflowOption | null,
 ): Column[] => {
   const columns: Column[] = [
     {
       id: 'requestNo',
-      label: 'Invoice Number',
+      label: isAccountsPayable ? 'Invoice Number' : 'Request No',
       size: 260,
       renderCell: (row: any, index = 0) => (
         <div className='flex min-w-0 items-center gap-3'>
@@ -1301,7 +1323,9 @@ const getBaseColumns = (
                     }
                   }}
                 >
-                  {extractInvoiceNumber(row)}
+                  {isAccountsPayable
+                    ? extractInvoiceNumber(row)
+                    : extractGenericRequestNumber(row)}
                 </button>
               }
             />
@@ -1315,6 +1339,41 @@ const getBaseColumns = (
   ]
 
   if (selectedItem) {
+    return columns
+  }
+
+  if (!isAccountsPayable) {
+    columns.push(
+      {
+        id: 'status',
+        label: 'Status',
+        size: 220,
+        renderCell: (row: any) => {
+          const { currentLabel, isTerminal, previousLabel } =
+            getGenericStageInfo(workflow, row)
+          return (
+            <GenericStagePill
+              currentLabel={currentLabel}
+              isTerminal={isTerminal}
+              previousLabel={previousLabel}
+            />
+          )
+        },
+      },
+      {
+        id: 'raisedBy',
+        label: 'Raised By',
+        size: 200,
+        renderCell: (row: any) => (
+          <HoverExpandableText
+            className='text-[13px] font-medium text-[var(--gray-11)]'
+            fallbackText='-'
+            normalMaxWidthClass='max-w-[180px]'
+            text={row?.raisedBy || '-'}
+          />
+        ),
+      },
+    )
     return columns
   }
 
@@ -1612,7 +1671,7 @@ const getBaseColumns = (
   return columns
 }
 
-const buildDynamicColumns = (
+export const buildDynamicColumns = (
   allPanels: any[],
   selectedItem: any,
   tableMetaByParentId: Map<string, any>,
@@ -1653,7 +1712,14 @@ export const useDynamicColumns = (
   activeTab?: string,
 ) => {
   return useMemo(() => {
-    const columns = getBaseColumns(selectedItem, activeTab, onRowClick)
+    const isAccountsPayable = isAccountsPayableWorkflow(workflow)
+    const columns = getBaseColumns(
+      selectedItem,
+      activeTab,
+      onRowClick,
+      isAccountsPayable,
+      workflow,
+    )
 
     const form = resolveFormJson(workflow)
     if (!form) {
@@ -1677,7 +1743,10 @@ export const useDynamicColumns = (
       selectedItem,
       tableMetaByParentId,
     )
-    columns.push(...dynamicCols)
+    // Generic workflows can have arbitrarily many form fields — keep the
+    // list scannable by showing only the first few as columns, same spot
+    // AP fills with its fixed PO/amount/date columns.
+    columns.push(...(isAccountsPayable ? dynamicCols : dynamicCols.slice(0, 3)))
 
     if (!selectedItem) {
       columns.push(makeActionsColumn(onRowClick))

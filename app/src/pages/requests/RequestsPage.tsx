@@ -9,9 +9,8 @@ import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
 } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
-import ApiPlayground from '@/components/playground/ApiPlayground'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
-import cn from '@/utils/cn'
+import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
@@ -19,8 +18,17 @@ import { ProcessingBackgroundManager } from './components/ProcessingBackgroundMa
 import Request from './components/request/Request'
 import { transformProcess, useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
+import { isAccountsPayableWorkflow } from './utils/workflow.utils'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
+
+const LAST_WORKFLOW_ID_KEY = 'v6_requests_last_workflow_id'
+
+const getLastSelectedWorkflowId = () =>
+  getFromLocalStorage<string>(LAST_WORKFLOW_ID_KEY, 'STRING')
+
+const setLastSelectedWorkflowId = (id: string | number) =>
+  setToLocalStorage(String(id), LAST_WORKFLOW_ID_KEY, 'STRING')
 
 function flattenRows(groups: any[]): any[] {
   const out: any[] = []
@@ -32,14 +40,30 @@ function flattenRows(groups: any[]): any[] {
     if (Array.isArray(node.children)) node.children.forEach(walk)
     if (Array.isArray(node.groups)) node.groups.forEach(walk)
   }
-    ; (groups || []).forEach(walk)
+  ;(groups || []).forEach(walk)
   return out
+}
+
+const SESSION_KEY = 'ezofis_requests_page_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
 }
 
 const RequestsPage = () => {
   const { t } = useLingui()
-  const [activeTab, setActiveTab] = useState<string>('Inbox')
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid')
+  const storedState = useMemo(() => getStoredState(), [])
+  const [activeTab, setActiveTab] = useState<string>(
+    storedState?.activeTab ?? 'Inbox',
+  )
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>(
+    storedState?.viewMode ?? 'grid',
+  )
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [workflowLoadStatus, setWorkflowLoadStatus] =
@@ -48,33 +72,56 @@ const RequestsPage = () => {
   const [workflow, setWorkflow] = useState<Option | null>(null)
   const [metaData, setMetaData] = useState<IRequestMeta>()
   const [selectedWorkflow, setSelectedWorkflow] =
-    useState<WorkflowOption | null>(null)
-  const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>([])
+    useState<WorkflowOption | null>(requestStore.getState().selectedWorkflow)
+  const [filterClauses, setFilterClauses] = useState<V6SearchFilterClause[]>(
+    storedState?.filterClauses ?? [],
+  )
 
   const {
     clearPendingDeepLink,
     closeRequest,
     isClosed,
-    isPlaygroundOpen,
     openNewRequest,
     openRequest,
     pendingDeepLink,
     pendingOpenNewRequest,
-    playgroundContext,
+    rawWorkflowData,
     reloadMeta,
     selectedItem,
     stopRefresh,
-    setIsPlaygroundOpen,
     setPendingOpenNewRequest,
     setRawWorkflowData: setRawWorflow,
     setRequestListTab,
   } = requestStore()
 
+  const isAccountsPayable = useMemo(
+    () => isAccountsPayableWorkflow(rawWorkflowData),
+    [rawWorkflowData],
+  )
+
   const navigate = useNavigate()
 
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(100)
-  const [groupBy, setGroupBy] = useState<string[]>([])
+  const [page, setPage] = useState(storedState?.page ?? 1)
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 100)
+  const [groupBy, setGroupBy] = useState<string[]>(storedState?.groupBy ?? [])
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          activeTab,
+          filterClauses,
+          groupBy,
+          page,
+          pageSize,
+          viewMode,
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [activeTab, viewMode, filterClauses, page, pageSize, groupBy])
 
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' and 'filterClauses' to the hook so it knows which API to call
@@ -109,7 +156,14 @@ const RequestsPage = () => {
       const options = mapPublishedWorkflowListToOptions(data)
       if (options.length > 0) {
         setAllWorkflow(options)
-        setWorkflow(options[0])
+        // Re-select whatever workflow was last active instead of always
+        // defaulting to the first one — this page remounts (and loses its
+        // local `workflow` state) whenever the user navigates away and
+        // back, or when the New Request panel opens/closes.
+        const lastId = getLastSelectedWorkflowId()
+        const restored =
+          lastId && options.find((opt) => String(opt.id) === String(lastId))
+        setWorkflow(restored || options[0])
       } else {
         setAllWorkflow([])
         setWorkflow(null)
@@ -176,6 +230,12 @@ const RequestsPage = () => {
           flowJson = wf.flowJson
         } else if (wf.flowJson) {
           flowJson = JSON.stringify(wf.flowJson)
+        } else if (wf.workflowJson) {
+          // The real V6 workflow detail response only returns workflowJson
+          // (no separate flowJson string) — fall back to it so consumers
+          // of selectedWorkflow.flowJson (getActionsForActivity, etc.)
+          // still see the actual blocks/rules instead of an empty flow.
+          flowJson = JSON.stringify(wf.workflowJson)
         }
 
         setSelectedWorkflow({
@@ -185,6 +245,7 @@ const RequestsPage = () => {
           name:
             wf.name ?? wf.settings?.general?.name ?? workflowName ?? 'Workflow',
           wFormId: wFormId || '',
+          workflowJson: wf.workflowJson,
         })
         setWorkflowLoadStatus('ready')
         setIsLoading(false)
@@ -244,8 +305,14 @@ const RequestsPage = () => {
 
     const isAlreadyOpen =
       !!selectedItem &&
-      ((currentInstId && targetInstId && String(currentInstId).toLowerCase() === String(targetInstId).toLowerCase()) ||
-        (currentTxId && targetTxId && String(currentTxId).toLowerCase() === String(targetTxId).toLowerCase()))
+      ((currentInstId &&
+        targetInstId &&
+        String(currentInstId).toLowerCase() ===
+          String(targetInstId).toLowerCase()) ||
+        (currentTxId &&
+          targetTxId &&
+          String(currentTxId).toLowerCase() ===
+            String(targetTxId).toLowerCase()))
 
     if (isAlreadyOpen) {
       console.log(
@@ -273,133 +340,137 @@ const RequestsPage = () => {
     }
 
     let cancelled = false
-      ; (async () => {
-        let row: any = null
-        const wfId = String(pendingDeepLink.workflowId)
-        const instId = pendingDeepLink.processId
-        const txId = pendingDeepLink.transactionId
+    ;(async () => {
+      let row: any = null
+      const wfId = String(pendingDeepLink.workflowId)
+      const instId = pendingDeepLink.processId
+      const txId = pendingDeepLink.transactionId
 
-        console.log(
-          '📌 [RequestsPage Step 8: Fetching single ticket instance from V6 API]',
-          { instId, txId, wfId },
+      console.log(
+        '📌 [RequestsPage Step 8: Fetching single ticket instance from V6 API]',
+        { instId, txId, wfId },
+      )
+
+      // 1. Primary: Fetch via V6 /Workflows/inbox, /sent, and /completed using instanceId
+      try {
+        const [inboxRes, sentRes, completedRes] = await Promise.all([
+          workflowsApiV6.getInboxList(wfId, 1, 10, instId, txId),
+          workflowsApiV6.getSentList(wfId, 1, 10, instId, txId),
+          workflowsApiV6.getCompletedList(wfId, 1, 10, instId, txId),
+        ])
+
+        console.log('📌 [RequestsPage Step 8.1: API Responses Received]', {
+          completedItemsCount: completedRes.data?.items?.length || 0,
+          inboxItemsCount: inboxRes.data?.items?.length || 0,
+          sentItemsCount: sentRes.data?.items?.length || 0,
+        })
+
+        const candidateItems = [
+          ...(inboxRes.data?.items || []),
+          ...(sentRes.data?.items || []),
+          ...(completedRes.data?.items || []),
+        ]
+
+        row = candidateItems.find(
+          (item: any) =>
+            String(item.workflowInstanceId || item.processId || item.id) ===
+              String(instId) ||
+            (txId && String(item.transactionId) === String(txId)),
         )
-
-        // 1. Primary: Fetch via V6 /Workflows/inbox, /sent, and /completed using instanceId
-        try {
-          const [inboxRes, sentRes, completedRes] = await Promise.all([
-            workflowsApiV6.getInboxList(wfId, 1, 10, instId, txId),
-            workflowsApiV6.getSentList(wfId, 1, 10, instId, txId),
-            workflowsApiV6.getCompletedList(wfId, 1, 10, instId, txId),
-          ])
-
-          console.log('📌 [RequestsPage Step 8.1: API Responses Received]', {
-            completedItemsCount: completedRes.data?.items?.length || 0,
-            inboxItemsCount: inboxRes.data?.items?.length || 0,
-            sentItemsCount: sentRes.data?.items?.length || 0,
-          })
-
-          const candidateItems = [
-            ...(inboxRes.data?.items || []),
-            ...(sentRes.data?.items || []),
-            ...(completedRes.data?.items || []),
-          ]
-
-          row = candidateItems.find(
-            (item: any) =>
-              String(item.workflowInstanceId || item.processId || item.id) ===
-                String(instId) ||
-              (txId && String(item.transactionId) === String(txId)),
-          )
-          if (row) {
-            console.log(
-              '📌 [RequestsPage Step 8.2: Found Ticket in V6 API Response]',
-              row,
-            )
-          }
-        } catch (e) {
-          console.warn('⚠️ V6 instance fetch error', e)
-        }
-
-        // 2. Secondary fallback: try getProcess rowInfo
-        if (!row) {
+        if (row) {
           console.log(
-            '📌 [RequestsPage Step 8.3: Trying getProcess rowInfo fallback]',
-          )
-          try {
-            row = await requestApi.getProcess(
-              pendingDeepLink.workflowId,
-              pendingDeepLink.processId,
-              pendingDeepLink.transactionId ?? pendingDeepLink.processId,
-            )
-            console.log(
-              '📌 [RequestsPage Step 8.4: getProcess rowInfo returned]',
-              row,
-            )
-          } catch (e) {
-            console.warn('⚠️ getProcess request failed', e)
-          }
-        }
-
-        // 3. Fallback: search currently loaded inboxResult items
-        if (!row && inboxResult?.data) {
-          console.log('📌 [RequestsPage Step 8.5: Searching inboxResult items]')
-          const allItems = inboxResult.data.flatMap(
-            (group: any) => group.items || [],
-          )
-          row = allItems.find(
-            (item: any) =>
-              String(item.processId || item.workflowInstanceId || item.id) ===
-                String(instId) ||
-              (txId && String(item.transactionId) === String(txId)),
-          )
-          if (row) {
-            console.log(
-              '📌 [RequestsPage Step 8.6: Found Ticket in inboxResult]',
-              row,
-            )
-          }
-        }
-
-        // Transform row to full InboxItem format if needed
-        let transformedRow = row
-        if (row && !row._actions) {
-          console.log(
-            '📌 [RequestsPage Step 9: Transforming raw process item via transformProcess...]',
-          )
-          transformedRow = transformProcess(
+            '📌 [RequestsPage Step 8.2: Found Ticket in V6 API Response]',
             row,
-            'Inbox',
-            0,
-            'Inbox',
-            selectedWorkflow,
           )
         }
+      } catch (e) {
+        console.warn('⚠️ V6 instance fetch error', e)
+      }
 
-        if (cancelled) return
-
-        if (transformedRow) {
+      // 2. Secondary fallback: try getProcess rowInfo
+      if (!row) {
+        console.log(
+          '📌 [RequestsPage Step 8.3: Trying getProcess rowInfo fallback]',
+        )
+        try {
+          row = await requestApi.getProcess(
+            pendingDeepLink.workflowId,
+            pendingDeepLink.processId,
+            pendingDeepLink.transactionId ?? pendingDeepLink.processId,
+          )
           console.log(
-            '🚀 [RequestsPage Step 10: Calling openRequest to open detail drawer!]',
-            {
-              selectedWorkflow,
-              tab: pendingDeepLink.tab ?? 'Details',
-              transformedRow,
-            },
+            '📌 [RequestsPage Step 8.4: getProcess rowInfo returned]',
+            row,
           )
-          closeRequest()
-          openRequest(transformedRow, selectedWorkflow, pendingDeepLink.tab ?? 'Details')
-        } else {
-          console.error(
-            '❌ [RequestsPage Error: Could not locate ticket item for instanceId]',
-            instId,
-          )
+        } catch (e) {
+          console.warn('⚠️ getProcess request failed', e)
         }
+      }
 
-        if (!cancelled) {
-          console.log('📌 [RequestsPage Step 11: Clearing pendingDeepLink]')
-          clearPendingDeepLink()
+      // 3. Fallback: search currently loaded inboxResult items
+      if (!row && inboxResult?.data) {
+        console.log('📌 [RequestsPage Step 8.5: Searching inboxResult items]')
+        const allItems = inboxResult.data.flatMap(
+          (group: any) => group.items || [],
+        )
+        row = allItems.find(
+          (item: any) =>
+            String(item.processId || item.workflowInstanceId || item.id) ===
+              String(instId) ||
+            (txId && String(item.transactionId) === String(txId)),
+        )
+        if (row) {
+          console.log(
+            '📌 [RequestsPage Step 8.6: Found Ticket in inboxResult]',
+            row,
+          )
         }
-      })()
+      }
+
+      // Transform row to full InboxItem format if needed
+      let transformedRow = row
+      if (row && !row._actions) {
+        console.log(
+          '📌 [RequestsPage Step 9: Transforming raw process item via transformProcess...]',
+        )
+        transformedRow = transformProcess(
+          row,
+          'Inbox',
+          0,
+          'Inbox',
+          selectedWorkflow,
+        )
+      }
+
+      if (cancelled) return
+
+      if (transformedRow) {
+        console.log(
+          '🚀 [RequestsPage Step 10: Calling openRequest to open detail drawer!]',
+          {
+            selectedWorkflow,
+            tab: pendingDeepLink.tab ?? 'Details',
+            transformedRow,
+          },
+        )
+        closeRequest()
+        openRequest(
+          transformedRow,
+          selectedWorkflow,
+          pendingDeepLink.tab ?? 'Details',
+        )
+      } else {
+        console.error(
+          '❌ [RequestsPage Error: Could not locate ticket item for instanceId]',
+          instId,
+        )
+      }
+
+      if (!cancelled) {
+        console.log('📌 [RequestsPage Step 11: Clearing pendingDeepLink]')
+        clearPendingDeepLink()
+      }
+    })()
 
     return () => {
       cancelled = true
@@ -414,6 +485,14 @@ const RequestsPage = () => {
     clearPendingDeepLink,
     navigate,
   ])
+
+  // Remember the active workflow so it survives this page remounting
+  // (navigating away and back, or opening/closing New Request).
+  useEffect(() => {
+    if (workflow?.id) {
+      setLastSelectedWorkflowId(workflow.id)
+    }
+  }, [workflow?.id])
 
   // Workflow Change Listener
   useEffect(() => {
@@ -458,6 +537,19 @@ const RequestsPage = () => {
   useEffect(() => {
     setRequestListTab(activeTab)
   }, [])
+
+  // Generic workflows use Inbox/Sent/Closed tabs; AP workflows use
+  // Inbox/Exceptions/Processed. If the workflow type changes while a tab
+  // that doesn't exist for the new type is active, fall back to Inbox.
+  useEffect(() => {
+    const validTabs = isAccountsPayable
+      ? ['Inbox', 'Exceptions', 'Processed']
+      : ['Inbox', 'Sent', 'Closed']
+    if (!validTabs.includes(activeTab)) {
+      handleTabChange('Inbox')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAccountsPayable])
 
   useEffect(() => {
     setupStore.getState().setIsActivatingAutomation(false)
@@ -515,18 +607,14 @@ const RequestsPage = () => {
   return (
     <>
       <div className='flex h-full min-h-0 w-full overflow-hidden'>
-        <div
-          className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out',
-            isPlaygroundOpen && !selectedItem ? 'w-full lg:w-[75%]' : 'w-full',
-          )}
-        >
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           {!selectedItem && (
             <Header
               // Pass state and setter to Header
               activeTab={activeTab}
               allWorkflows={allWorkflow}
               exceptionsCount={inboxResult?.exceptionsCount}
+              isAccountsPayable={isAccountsPayable}
               isLoading={isLoading}
               metaData={metaData}
               workflow={workflow}
@@ -583,16 +671,6 @@ const RequestsPage = () => {
               />
             ))}
         </div>
-
-        {/* API Playground Drawer for Inbox List page */}
-        {isPlaygroundOpen && !selectedItem && (
-          <div className='animate-in slide-in-from-right w-full border-l border-[var(--gray-3)] bg-surface duration-300 lg:w-[25%]'>
-            <ApiPlayground
-              context={playgroundContext}
-              onClose={() => setIsPlaygroundOpen(false)}
-            />
-          </div>
-        )}
       </div>
       <ProcessingBackgroundManager />
     </>

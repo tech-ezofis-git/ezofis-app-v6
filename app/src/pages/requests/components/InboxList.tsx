@@ -28,6 +28,7 @@ import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import { buildV6FilterClauses } from '../utils/requestFilterMapper'
+import { isAccountsPayableWorkflow } from '../utils/workflow.utils'
 
 interface InboxListProps {
   data: TableGroup[]
@@ -1193,6 +1194,7 @@ const InboxList: React.FC<InboxListProps> = ({
   // const [rowSize, setRowSize] = useState<RowSize>('default')
 
   const [filterFields, setFilterFields] = useState<V6FilterField[]>([])
+  const [isFilterFieldsLoaded, setIsFilterFieldsLoaded] = useState(false)
 
   const dueDateFilterOptions = useMemo(
     () =>
@@ -1219,14 +1221,18 @@ const InboxList: React.FC<InboxListProps> = ({
   )
 
   useEffect(() => {
+    setIsFilterFieldsLoaded(false)
     if (workflow?.id) {
       workflowsApiV6.getFilterFields(String(workflow.id)).then((res) => {
         if (res.data?.fields) {
           setFilterFields(res.data.fields)
         }
+      }).finally(() => {
+        setIsFilterFieldsLoaded(true)
       })
     } else {
       setFilterFields([])
+      setIsFilterFieldsLoaded(true)
     }
   }, [workflow?.id])
 
@@ -1249,6 +1255,7 @@ const InboxList: React.FC<InboxListProps> = ({
     ...rest
   } = useDataTableState({
     initialVisibilityState,
+    storageKey: 'ezofis_requests_inbox_table_state',
   })
 
   // ✅ Sync groupState with parent
@@ -1338,7 +1345,7 @@ const InboxList: React.FC<InboxListProps> = ({
   }, [searchState])
 
   React.useEffect(() => {
-    if (onFilterClausesChange) {
+    if (onFilterClausesChange && isFilterFieldsLoaded) {
       const clauses = buildV6FilterClauses(
         activeFiltersMap,
         filterFields,
@@ -1353,6 +1360,7 @@ const InboxList: React.FC<InboxListProps> = ({
     activeQuickFilters,
     debouncedSearchState,
     onFilterClausesChange,
+    isFilterFieldsLoaded,
   ])
 
   const [controlOptionsMap, setControlOptionsMap] = useState<
@@ -1461,6 +1469,21 @@ const InboxList: React.FC<InboxListProps> = ({
 
     return fields
   }, [filterFields, columns])
+
+  // The 5 AP quick-filter chips (Due Date/Matched/Discrepancies/High
+  // Value/Supplier) don't mean anything for a generic workflow. For those,
+  // default to showing the workflow's own first two filterable fields as
+  // chips instead, with the rest still reachable via the "+" picker.
+  const isAccountsPayable = isAccountsPayableWorkflow(workflow)
+  const genericDefaultFilterFields = useMemo<DynamicFilterField[]>(
+    () => (isAccountsPayable ? [] : optionalFilterFields.slice(0, 2)),
+    [isAccountsPayable, optionalFilterFields],
+  )
+  const genericPickerFilterFields = useMemo<DynamicFilterField[]>(
+    () =>
+      isAccountsPayable ? optionalFilterFields : optionalFilterFields.slice(2),
+    [isAccountsPayable, optionalFilterFields],
+  )
 
   const handleFilterChange = (id: string, values: string | string[]) => {
     const store = requestStore.getState()
@@ -1787,7 +1810,7 @@ const InboxList: React.FC<InboxListProps> = ({
           customSearchComponent={<TableSearch table={table as any} />}
           dataset={flatRows}
           isLoading={isLoading || isRefetching}
-          optionalFields={optionalFilterFields}
+          optionalFields={genericPickerFilterFields}
           onFieldOpen={handleFieldOpen}
           searchPlaceholder={t`Search invoice, supplier, PO...`}
           searchQuery={searchState?.value || ''}
@@ -1802,14 +1825,18 @@ const InboxList: React.FC<InboxListProps> = ({
             'status': activeFiltersMap.status || [],
             'Supplier Name': activeFiltersMap.supplier || [],
           }}
-          fields={[
-            {
-              id: 'Supplier Name',
-              label: t`Supplier`,
-              valueGetter: (row) => getRowColumnValue(row, 'vendor'),
-            },
-          ]}
-          quickFilters={[
+          fields={
+            isAccountsPayable
+              ? [
+                  {
+                    id: 'Supplier Name',
+                    label: t`Supplier`,
+                    valueGetter: (row) => getRowColumnValue(row, 'vendor'),
+                  },
+                ]
+              : genericDefaultFilterFields
+          }
+          quickFilters={!isAccountsPayable ? [] : [
             {
               icon: 'tabler:calendar-due',
               id: 'due_date',
@@ -1945,6 +1972,7 @@ const InboxList: React.FC<InboxListProps> = ({
                 isLoading={isLoading}
                 isReloading={isRefetching}
                 table={table} // Pass the instance
+                workflow={workflow}
                 onNewRequest={() => openNewRequest('request')}
                 onReload={onRefresh}
                 onRowClick={onRowClick}

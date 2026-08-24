@@ -1,6 +1,6 @@
 import { Combobox as MantineCombobox, useCombobox } from '@mantine/core'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
-import { Check, Folder } from 'lucide-react'
+import { Check, Folder, Plus } from 'lucide-react'
 import {
   type Dispatch,
   type ReactNode,
@@ -32,7 +32,9 @@ import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
+import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import ComboboxOptions from '@/components/base/inputs/select/ComboboxOptions'
@@ -75,6 +77,18 @@ import FolderStorageConnectorPanel, {
 import * as XLSX from 'xlsx'
 import DmsColumnMapping from './DmsColumnMapping'
 import MasterFieldSelectDropdown from './MasterFieldSelectDropdown'
+
+const SESSION_KEY = 'ezofis_dms_settings_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 type DmsFolderConfigurationProps = {
   onBack?: () => void
 }
@@ -95,6 +109,7 @@ type FieldRow = {
   level: number
   orderId: number
   system?: boolean
+  optionsJson?: string | null
 }
 
 type RepositoryRow = {
@@ -713,6 +728,7 @@ const mapApiFieldsToFieldRows = (
       isMandatory: Boolean(field.isMandatory),
       level: Number(field.level) || 0,
       orderId: Number(field.orderId) || index + 1,
+      optionsJson: field.optionsJson ? String(field.optionsJson) : null,
     })
   })
 
@@ -725,43 +741,300 @@ const mapApiFieldsToFieldRows = (
 
 const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
 
+function FieldOptionsConfiguration({
+  columnsLength,
+  row,
+  updateField,
+}: {
+  columnsLength: number
+  row: FieldRow
+  updateField: (id: string, updates: Partial<FieldRow>) => void
+}) {
+  const parsedOptions = useMemo(() => {
+    let parsed: any = { type: 'predefined', values: [] }
+    try {
+      if (row.optionsJson) {
+        const p = JSON.parse(row.optionsJson)
+        if (Array.isArray(p)) {
+          parsed = { type: 'predefined', values: p }
+        } else {
+          parsed = p
+        }
+      }
+    } catch { }
+    return parsed
+  }, [row.optionsJson])
+
+  const [optionsType, setOptionsType] = useState<string>(parsedOptions.type || 'predefined')
+  const [forms, setForms] = useState<any[]>([])
+  const [loadingForms, setLoadingForms] = useState(false)
+  const [fields, setFields] = useState<any[]>([])
+  const [loadingFields, setLoadingFields] = useState(false)
+
+  useEffect(() => {
+    if (optionsType === 'master' && forms.length === 0) {
+      let isMounted = true
+      setLoadingForms(true)
+      formApi.getForms({
+        currentPage: 1,
+        itemsPerPage: 1000,
+        mode: 'BROWSE',
+        sortBy: { criteria: 'name', order: 'ASC' },
+      }).then((res) => {
+        if (!isMounted) return
+        let loadedForms: any[] = []
+        console.log('forms', res?.data?.data?.[0]?.value)
+
+
+        if (res?.data?.data?.[0]?.value) {
+          loadedForms = res.data.data[0].value
+        } else if (Array.isArray(res.data)) {
+          if (res.data.length > 0 && res.data[0].value) {
+            loadedForms = res.data.flatMap((group: any) => group.value || [])
+          } else {
+            loadedForms = res.data
+          }
+        }
+        setForms(loadedForms)
+      }).finally(() => {
+        if (isMounted) setLoadingForms(false)
+      })
+      return () => { isMounted = false }
+    }
+  }, [optionsType])
+
+  useEffect(() => {
+    if (optionsType === 'master' && parsedOptions.masterFormId) {
+      let isMounted = true
+      setLoadingFields(true)
+      formApi.getFormDataById(parsedOptions.masterFormId).then((res) => {
+        if (!isMounted) return
+        
+        let allFields: any[] = []
+        let formJson = res.data?.formJson
+        
+        if (typeof formJson === 'string') {
+          try {
+            formJson = JSON.parse(formJson)
+          } catch {}
+        }
+        
+        if (formJson?.panels && Array.isArray(formJson.panels)) {
+          allFields = formJson.panels.flatMap((panel: any) => panel.fields || [])
+        } else if (formJson?.fields) {
+          allFields = formJson.fields
+        }
+        
+        setFields(allFields)
+      }).finally(() => {
+        if (isMounted) setLoadingFields(false)
+      })
+      return () => { isMounted = false }
+    } else if (optionsType === 'master' && !parsedOptions.masterFormId) {
+      setFields([])
+    }
+  }, [optionsType, parsedOptions.masterFormId])
+
+  const handleTypeChange = (val: number) => {
+    const typeMap: Record<number, string> = { 1: 'unique', 2: 'master', 3: 'predefined' }
+    const newType = typeMap[val] || 'predefined'
+    setOptionsType(newType)
+    updateField(row.id, { optionsJson: JSON.stringify({ type: newType, values: [] }) })
+  }
+
+  const currentTypeVal = optionsType === 'unique' ? 1 : optionsType === 'master' ? 2 : 3
+  console.log('forms', forms)
+  return (
+    <tr className='bg-gray-1/50 shadow-inner'>
+      <td colSpan={columnsLength} className='border-b border-[var(--gray-3)] px-12 py-5'>
+        <div className='flex max-w-md flex-col gap-4'>
+          <label className='text-13 font-medium text-gray-12'>
+            Options Configuration
+          </label>
+          <div>
+            <InputRadioGroup
+              options={[
+                { id: 1, name: 'Use unique column values as options' },
+                { id: 2, name: 'Use values from a master table as options' },
+                { id: 3, name: 'Use predefined values as options' },
+              ]}
+              value={currentTypeVal}
+              onChange={handleTypeChange}
+            />
+          </div>
+
+          {optionsType === 'predefined' && (
+            <div className='pt-1'>
+              <InputSelectMultiple
+                clearable
+                creatable
+                options={(parsedOptions.values || []).map((opt: string) => ({
+                  id: opt,
+                  name: opt,
+                  value: opt,
+                }))}
+                searchable
+                searchPlaceholder='Type an option and press Enter'
+                value={(parsedOptions.values || []).map((opt: string) => ({
+                  id: opt,
+                  name: opt,
+                  value: opt,
+                }))}
+                onChange={(newOptions) =>
+                  updateField(row.id, {
+                    optionsJson: JSON.stringify({
+                      ...parsedOptions,
+                      values: newOptions.map((o) => o.value || o.name),
+                    }),
+                  })
+                }
+              />
+            </div>
+          )}
+
+          {optionsType === 'master' && (
+            <div className='flex flex-col gap-4 pt-1'>
+              <InputSelect
+                label='Master Form'
+                loading={loadingForms}
+                options={forms.map((f) => ({ id: String(f.id), name: f.name }))}
+                searchable
+                searchPlaceholder='Search master form...'
+                value={
+                  parsedOptions.masterFormId
+                    ? { id: parsedOptions.masterFormId, name: forms.find(f => String(f.id) === parsedOptions.masterFormId)?.name || parsedOptions.masterFormId }
+                    : null
+                }
+                onChange={(selected) => {
+                  updateField(row.id, {
+                    optionsJson: JSON.stringify({
+                      ...parsedOptions,
+                      masterFormId: selected?.id || null,
+                      masterFieldId: null,
+                    }),
+                  })
+                }}
+              />
+              {parsedOptions.masterFormId && (
+                <InputSelect
+                  label='Master Field'
+                  loading={loadingFields}
+                  options={fields.map((f) => ({ id: f.id, name: f.label || f.name || f.id }))}
+                  searchable
+                  searchPlaceholder='Search field...'
+                  value={
+                    parsedOptions.masterFieldId
+                      ? { id: parsedOptions.masterFieldId, name: fields.find(f => f.id === parsedOptions.masterFieldId)?.label || fields.find(f => f.id === parsedOptions.masterFieldId)?.name || parsedOptions.masterFieldId }
+                      : null
+                  }
+                  onChange={(selected) => {
+                    updateField(row.id, {
+                      optionsJson: JSON.stringify({
+                        ...parsedOptions,
+                        masterFieldId: selected?.id || null,
+                      }),
+                    })
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export default function DmsFolderConfiguration({
   onBack,
 }: DmsFolderConfigurationProps) {
   const { t } = useLingui()
+  const storedState = useMemo(() => getStoredState(), [])
+
   // const [securityFolderName, setSecurityFolderName] = useState<string | null>(
   //   null,
   // )
   const [securityRepository, setSecurityRepository] = useState<RepositoryRow | null>(
-    null,
+    storedState?.securityRepository ?? null,
   )
-  const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(null)
-  const [originalFieldIds, setOriginalFieldIds] = useState<Set<string>>(new Set())
+  const [editingRepositoryId, setEditingRepositoryId] = useState<string | null>(
+    storedState?.editingRepositoryId ?? null,
+  )
+  const [originalFieldIds, setOriginalFieldIds] = useState<Set<string>>(
+    storedState?.originalFieldIds ? new Set(storedState.originalFieldIds) : new Set(),
+  )
   const [deletingRepositoryId, setDeletingRepositoryId] = useState<string | null>(
     null,
   )
   const [isDeletingRepository, setIsDeletingRepository] = useState(false)
-  const [showWizard, setShowWizard] = useState(false)
-  const [showAiBuilder, setShowAiBuilder] = useState(false)
-  const [step, setStep] = useState<WizardStep>(1)
-  const [fields, setFields] = useState<FieldRow[]>(defaultFields)
-  const [storage, setStorage] = useState('EZOFIS Drive')
+  const [showWizard, setShowWizard] = useState(storedState?.showWizard ?? false)
+  const [showAiBuilder, setShowAiBuilder] = useState(storedState?.showAiBuilder ?? false)
+  const [step, setStep] = useState<WizardStep>(storedState?.step ?? 1)
+  const [fields, setFields] = useState<FieldRow[]>(storedState?.fields ?? defaultFields)
+  const [storage, setStorage] = useState(storedState?.storage ?? 'EZOFIS Drive')
   const [storageConnectorId, setStorageConnectorId] = useState<string | null>(
-    null,
+    storedState?.storageConnectorId ?? null,
   )
   const [storageConnectorLabel, setStorageConnectorLabel] = useState<
     string | null
-  >(null)
+  >(storedState?.storageConnectorLabel ?? null)
   const [isSavingRepository, setIsSavingRepository] = useState(false)
   const [showConnectorError, setShowConnectorError] = useState(false)
-  const [versioning, setVersioning] = useState('Incremental Version')
-  const [displayMode, setDisplayMode] = useState('Show Latest Version Only')
-  const [folderName, setFolderName] = useState('')
-  const [description, setDescription] = useState('')
-  const [storageDrive, setStorageDrive] = useState<string | null>(null)
+  const [versioning, setVersioning] = useState(storedState?.versioning ?? 'Incremental Version')
+  const [displayMode, setDisplayMode] = useState(storedState?.displayMode ?? 'Show Latest Version Only')
+  const [folderName, setFolderName] = useState(storedState?.folderName ?? '')
+  const [description, setDescription] = useState(storedState?.description ?? '')
+  const [storageDrive, setStorageDrive] = useState<string | null>(storedState?.storageDrive ?? null)
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {}
+  )
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({
+          securityRepository,
+          editingRepositoryId,
+          originalFieldIds: Array.from(originalFieldIds),
+          showWizard,
+          showAiBuilder,
+          step,
+          fields,
+          storage,
+          storageConnectorId,
+          storageConnectorLabel,
+          versioning,
+          displayMode,
+          folderName,
+          description,
+          storageDrive,
+          activeFilters,
+        }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [
+    securityRepository,
+    editingRepositoryId,
+    originalFieldIds,
+    showWizard,
+    showAiBuilder,
+    step,
+    fields,
+    storage,
+    storageConnectorId,
+    storageConnectorLabel,
+    versioning,
+    displayMode,
+    folderName,
+    description,
+    storageDrive,
+    activeFilters,
+  ])
 
   const [repositories, setRepositories] = useState<RepositoryRow[]>([])
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [isLoadingRepositories, setIsLoadingRepositories] = useState(true)
   const [isLoadingEditRepository, setIsLoadingEditRepository] = useState(false)
 
@@ -1163,6 +1436,7 @@ export default function DmsFolderConfiguration({
         level: field.level,
         name: field.fieldName,
         orderId: field.orderId ?? index + 1,
+        optionsJson: field.optionsJson,
       })),
       name: trimmedName,
       storageDrive: null,
@@ -1268,6 +1542,7 @@ export default function DmsFolderConfiguration({
           level: field.level,
           name: field.fieldName,
           orderId: field.orderId ?? index + 1,
+          optionsJson: field.optionsJson,
         }
       }),
       name: trimmedName,
@@ -2170,7 +2445,7 @@ function FieldsTable({
           }
 
           return (
-            <div className='w-full max-w-[170px]'>
+            <div className='w-full max-w-[170px] py-1'>
               <InputSelect
                 classNames={{ input: 'h-8 text-12' }}
                 options={fieldTypeOptions}
@@ -2371,6 +2646,20 @@ function FieldsTable({
     <SettingsSortableDataTable
       rowClassName='group'
       table={table}
+      renderSubComponent={(row) => {
+        if (editingRowId !== row.id) return null
+
+        const hasOptions = ['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(row.dataType)
+        if (!hasOptions) return null
+
+        return (
+          <FieldOptionsConfiguration
+            columnsLength={columns.length}
+            row={row}
+            updateField={updateField}
+          />
+        )
+      }}
       getRowClassName={(row) =>
         !row.includeInFolderStructure ? 'bg-[var(--gray-1)]/70' : undefined
       }
@@ -2510,7 +2799,7 @@ function useRepositoryTable(
 ) {
   const { t } = useLingui()
   const columnHelper = createColumnHelper<RepositoryRow>()
-  const tableSearchOptions = useSettingsTableSearch()
+  const tableSearchOptions = useSettingsTableSearch(SESSION_KEY)
   const {
     page,
     pageSize,
@@ -2800,6 +3089,7 @@ function WizardContent({
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
   const [newIsFolder, setNewIsFolder] = useState(false)
   const [newIsMandatory, setNewIsMandatory] = useState(false)
+  const [newFieldOptions, setNewFieldOptions] = useState<string[]>([])
   const [newFieldIcon, setNewFieldIcon] = useState<SelectOption | null>(
     folderIconOptions.find((option) => option.value === 'folder') || null,
   )
@@ -3090,10 +3380,12 @@ function WizardContent({
           isMandatory: newIsFolder || newIsMandatory,
           level: 0,
           orderId: prev.length + 1,
+          optionsJson: newFieldOptions.length > 0 ? JSON.stringify(newFieldOptions) : null,
         },
       ]),
     )
     setNewFieldName('')
+    setNewFieldOptions([])
     setNewFieldType(String(fieldTypeOptions[0]?.value || 'SHORT_TEXT'))
     setNewIsFolder(false)
     setNewIsMandatory(false)
@@ -3187,6 +3479,19 @@ function WizardContent({
                       }}
                     />
                   </div>
+
+                  {['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(newFieldType) && (
+                    <div className='flex flex-col gap-2'>
+                      <label className='text-13 font-medium text-gray-11'>Options</label>
+                      <TagsInput
+                        data={[]}
+                        placeholder="Type an option and press Enter"
+                        value={newFieldOptions}
+                        onChange={setNewFieldOptions}
+                        clearable
+                      />
+                    </div>
+                  )}
 
                   <div className='flex flex-wrap items-center justify-between gap-3'>
                     <div className='flex flex-wrap items-center gap-5'>

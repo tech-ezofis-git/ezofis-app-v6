@@ -894,6 +894,7 @@ export const folderApi = {
     )
   },
 
+
   async getDocumentDetail(
     repositoryId: string,
     itemId: string,
@@ -1475,6 +1476,7 @@ export const folderApi = {
       modifiedByName: repository.modifiedByName,
       storageProviderId: repository.storageProviderId,
       title: repository.name,
+      fileCount: repository.fileCount,
     }))
 
     return [

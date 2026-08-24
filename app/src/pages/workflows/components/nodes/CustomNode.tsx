@@ -12,7 +12,7 @@ import useWorkflowStore from '../../stores/useWorkflowStore'
 
 const CustomNode = ({ data, id, selected }: NodeProps) => {
   const isTrigger = data.type === 'trigger'
-  const isEndNode = data.label === 'Workflow Success'
+  const isEndNode = data.type === 'end'
   const isDeletable = !isTrigger && !isEndNode
   const hasWarning = data.warning
   const { screenToFlowPosition, setNodes } = useReactFlow()

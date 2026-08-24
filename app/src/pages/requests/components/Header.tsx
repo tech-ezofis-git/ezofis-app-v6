@@ -23,6 +23,7 @@ interface Props {
     onClick: () => void
   }[]
   exceptionsCount?: number
+  isAccountsPayable?: boolean
   metaData?: IRequestMeta
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
@@ -33,6 +34,7 @@ const Header = ({
   activeTab,
   allWorkflows,
   exceptionsCount,
+  isAccountsPayable = true,
   isLoading,
   metaData,
   workflow,
@@ -43,6 +45,8 @@ const Header = ({
   const processedCount =
     Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
   const inboxCount = Number(metaData?.inboxCount ?? 0)
+  const sentCount = Number(metaData?.sentCount ?? 0)
+  const completedCount = Number(metaData?.completedCount ?? 0)
   const resolvedExceptionsCount = exceptionsCount ?? 0
 
   console.log(allWorkflows)
@@ -55,26 +59,45 @@ const Header = ({
         value={activeTab}
         onChange={(val) => setActiveTab(val as string)}
       >
-        <Tab
-          label={
-            isLoading ? t`Invoices` : t`Invoices (${inboxCount})`
-          }
-          value='Inbox'
-        />
-        <Tab
-          value='Exceptions'
-          label={
-            isLoading
-              ? t`Exceptions`
-              : t`Exceptions (${resolvedExceptionsCount})`
-          }
-        />
-        <Tab
-          label={
-            isLoading ? t`Processed` : t`Processed (${processedCount})`
-          }
-          value='Processed'
-        />
+        {isAccountsPayable ? (
+          <>
+            <Tab
+              label={isLoading ? t`Invoices` : t`Invoices (${inboxCount})`}
+              value='Inbox'
+            />
+            <Tab
+              value='Exceptions'
+              label={
+                isLoading
+                  ? t`Exceptions`
+                  : t`Exceptions (${resolvedExceptionsCount})`
+              }
+            />
+            <Tab
+              value='Processed'
+              label={
+                isLoading ? t`Processed` : t`Processed (${processedCount})`
+              }
+            />
+          </>
+        ) : (
+          <>
+            <Tab
+              label={isLoading ? t`Inbox` : t`Inbox (${inboxCount})`}
+              value='Inbox'
+            />
+            <Tab
+              label={isLoading ? t`Sent` : t`Sent (${sentCount})`}
+              value='Sent'
+            />
+            <Tab
+              value='Closed'
+              label={
+                isLoading ? t`Completed` : t`Completed (${completedCount})`
+              }
+            />
+          </>
+        )}
       </Tabs>
 
       <div className='flex items-center gap-2'>
