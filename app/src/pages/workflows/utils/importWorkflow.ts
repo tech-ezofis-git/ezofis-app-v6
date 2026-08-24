@@ -433,24 +433,41 @@ export const importWorkflow = (
     }
   })
 
-  const edges: Edge[] = Array.isArray(legacyJson.rules)
-    ? legacyJson.rules.map((rule: any) => {
-        return {
-          data: {
-            action: rule.proceedAction, // Map legacy proceedAction to the new builder's expected 'action' field
-            confirm: rule.confirm,
-            passwordAccess: rule.passwordAccess,
-            proceedAction: rule.proceedAction,
-            remarks: rule.remarks,
-            signature: rule.signature,
-          },
-          id: rule.id,
-          source: rule.fromBlockId,
-          target: rule.toBlockId,
-          type: 'custom',
-        }
-      })
+  let edges: Edge[] = Array.isArray(legacyJson.rules)
+    ? (legacyJson.rules
+        .map((rule: any) => {
+          const sourceId = rule.fromBlockId || rule.from
+          const targetId = rule.toBlockId || rule.to
+          if (!sourceId || !targetId) return null
+          return {
+            data: {
+              action: rule.proceedAction,
+              confirm: rule.confirm,
+              passwordAccess: rule.passwordAccess,
+              proceedAction: rule.proceedAction,
+              remarks: rule.remarks,
+              signature: rule.signature,
+            },
+            id: String(rule.id || `e_${sourceId}_${targetId}`),
+            source: String(sourceId),
+            target: String(targetId),
+            type: 'custom',
+          }
+        })
+        .filter(Boolean) as Edge[])
     : []
+
+  if (edges.length === 0 && nodes.length > 1) {
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({
+        data: {},
+        id: `e_${nodes[i].id}_${nodes[i + 1].id}`,
+        source: nodes[i].id,
+        target: nodes[i + 1].id,
+        type: 'custom',
+      })
+    }
+  }
 
   return { edges, nodes }
 }

@@ -115,8 +115,12 @@ export const getField = (fieldType: string) => {
       s.iconType = 'NUMBER'
       s.iconCount = 10
       break
+    case 'FILE_UPLOAD':
     case 'IMAGE_UPLOAD':
-      baseField.settings.validation.allowedFileTypes = ['IMAGE'] as string[]
+      baseField.settings.general.size = 'col-12'
+      if (fieldType.toUpperCase() === 'IMAGE_UPLOAD') {
+        baseField.settings.validation.allowedFileTypes = ['IMAGE'] as string[]
+      }
       break
     case 'CONSENT':
       baseField.label = 'Consent'

@@ -1,59 +1,51 @@
 import { useLingui } from '@lingui/react/macro'
 import { Textarea } from '@mantine/core'
 import { motion } from 'motion/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
-import InputSegmentedControl from '@/components/base/inputs/InputSegmentedControl'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import {
-  buildFormPayloadFromAiSuggestion,
-  type FormTypeOption,
-  generateFormConfigViaQwen,
-} from '@/services/ai/formConfig'
+import { generateWorkflowConfigViaQwen } from '@/services/ai/workflowConfig'
 
-interface AiFormBuilderProps {
-  onApply: (payload: any) => void
+interface AiWorkflowBuilderProps {
+  onApply: (payload: any, promptName: string) => void
   onBack: () => void
 }
 
-const FORM_TYPE_OPTIONS = [
-  { id: 'WORKFLOW', name: 'Workflow Form' },
-  { id: 'MASTER', name: 'Master Form' },
-]
-
 const SAMPLE_PROMPTS = [
   {
-    label: 'Accounts Receivable Invoice',
+    label: 'Accounts Receivable',
     prompt:
-      'An accounts receivable form with customer name, invoice number, due date, billing amount, payment terms, and collection status.',
+      'An accounts receivable workflow to track customer invoicing, payment collection, credit checks, and revenue posting.',
   },
   {
     label: 'Order to Pay',
     prompt:
-      'An order to pay form with order ID, customer details, itemized goods, payment method, and fulfillment status.',
+      'An order to pay process workflow for sales order intake, credit validation, order fulfillment, billing, and payment processing.',
   },
   {
-    label: 'Purchase Order Request',
+    label: 'Purchase Requisition Approval',
     prompt:
-      'A purchase order request form with requisition number, vendor name, item description, quantity, unit price and total cost.',
+      'A purchase requisition approval workflow with department head review, budget validation, purchasing agent assignment and PO generation.',
   },
   {
     label: 'Employee Onboarding',
     prompt:
-      'An employee onboarding form to collect personal details, department, joining date and required documents.',
+      'An employee onboarding workflow with HR review, IT equipment provisioning, manager approval and document collection.',
   },
   {
-    label: 'Leave Request',
+    label: 'Contract Review & Signing',
     prompt:
-      'A leave request form with employee name, leave type, start date, end date and reason.',
+      'A contract review workflow with legal team assessment, executive sign-off, digital signature collection and repository archiving.',
   },
 ]
 
-export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
+export default function AiWorkflowBuilder({
+  onApply,
+  onBack,
+}: AiWorkflowBuilderProps) {
   const { t } = useLingui()
 
-  const [formType, setFormType] = useState<FormTypeOption>('WORKFLOW')
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -61,7 +53,7 @@ export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
     const text = prompt.trim()
     if (!text) {
       showToast({
-        message: t`Please describe what form you want to create`,
+        message: t`Please describe what workflow you want to create`,
         variant: 'error',
       })
       return
@@ -70,17 +62,16 @@ export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
     setIsGenerating(true)
 
     try {
-      const result = await generateFormConfigViaQwen({
+      const workflowPayload = await generateWorkflowConfigViaQwen({
         description: text,
-        formType,
         name: text.length <= 40 ? text : `${text.slice(0, 40)}...`,
         prompt: text,
       })
-      const payload = buildFormPayloadFromAiSuggestion(result)
 
-      onApply(payload)
+      const name = text.length <= 40 ? text : `${text.slice(0, 40)}...`
+      onApply(workflowPayload, name)
     } catch (error) {
-      console.error('Form generation error:', error)
+      console.error('Workflow generation error:', error)
       showToast({
         message: t`Something went wrong. Please try again.`,
         variant: 'error',
@@ -106,7 +97,7 @@ export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
           variant='ghost'
           onClick={onBack}
         />
-        <h2 className='text-sm font-semibold text-gray-12'>{t`New Form`}</h2>
+        <h2 className='text-sm font-semibold text-gray-12'>{t`New Workflow`}</h2>
       </div>
 
       <div className='flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto p-6 pt-12 sm:pt-16 md:pt-20 lg:pt-24'>
@@ -115,7 +106,7 @@ export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
             <AiBrandIcon className='size-6' variant='outline-purple' />
           </div>
           <h1 className='text-xl font-semibold text-gray-12 md:text-2xl'>
-            {t`What form shall we create?`}
+            {t`What workflow shall we create?`}
           </h1>
         </div>
 
@@ -125,7 +116,7 @@ export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
               disabled={isGenerating}
               maxRows={6}
               minRows={2}
-              placeholder={t`Describe the form you want to create...`}
+              placeholder={t`Describe the workflow you want to create...`}
               value={prompt}
               autosize
               classNames={{
@@ -141,15 +132,7 @@ export default function AiFormBuilder({ onApply, onBack }: AiFormBuilderProps) {
               }}
             />
 
-            <div className='mt-3 flex items-center justify-between gap-3'>
-              <div className='w-56'>
-                <InputSegmentedControl
-                  options={FORM_TYPE_OPTIONS}
-                  value={FORM_TYPE_OPTIONS.find((o) => o.id === formType)!}
-                  onChange={(option) => setFormType(option.id as FormTypeOption)}
-                />
-              </div>
-
+            <div className='mt-3 flex items-center justify-end gap-3'>
               <IconButton
                 ariaLabel={t`Send`}
                 color='primary'

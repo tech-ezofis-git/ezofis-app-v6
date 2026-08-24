@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { useMemo } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { buildTableMeta } from '../utils/dynamicTable.utils'
@@ -15,8 +16,10 @@ import GenericStagePill from './GenericStagePill'
 
 // Matches the "Xh Ym ago" granularity already used in the request-detail
 // History panel, instead of dayjs's coarser "8 hours ago".
-const formatTimeAgo = (date: any): string => {
+const formatRunningTime = (date: any): string => {
+  if (!date) return ''
   const ms = Math.abs(Date.now() - dayjs(date).valueOf())
+  if (Number.isNaN(ms)) return ''
   const secs = Math.floor(ms / 1000)
   if (secs < 60) return `${secs}s ago`
   const mins = Math.floor(secs / 60)
@@ -49,9 +52,36 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
   }, [workflow])
 
   const requestNo = extractGenericRequestNumber(row)
-  const raisedBy = row?.raisedBy || row?.transactionCreatedByEmail || '-'
-  const raisedAt =
-    row?.raisedAt || row?.createdAtUtc || row?.transactionCreatedAt
+  const raisedBy =
+    row?.createdByName ||
+    row?.createdByEmail ||
+    row?.transactionCreatedByEmail ||
+    row?.raisedBy ||
+    row?.createdBy ||
+    row?.userName ||
+    '-'
+  const startedAt =
+    row?.startedAtUtc ||
+    row?.createdAtUtc ||
+    row?.createdAt ||
+    row?.raisedAt ||
+    row?.createdOn
+  const lastActionBy =
+    row?.transactionCreatedByEmail ||
+    row?.lastActionBy ||
+    row?.lastActionUser ||
+    row?.updatedBy ||
+    raisedBy
+  const lastActionAt =
+    row?.transactionCreatedAt ||
+    row?.lastActionDate ||
+    row?.lastAction?.date ||
+    row?.lastAction?.createdAt ||
+    row?.lastActionAt ||
+    row?.updatedAt ||
+    row?.actionDate ||
+    startedAt
+
   const { currentLabel, isTerminal, previousLabel } = getGenericStageInfo(
     workflow,
     row,
@@ -78,13 +108,18 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
       </div>
 
       <div className='min-w-0 flex-1'>
-        <div className='flex items-center gap-1.5'>
+        {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
+        <div className='flex items-center gap-2 flex-wrap'>
           <span className='shrink-0 text-13 font-bold text-gray-13'>
             {requestNo}
           </span>
-          <span className='text-gray-6'>·</span>
-          <span className='truncate text-12 text-gray-9'>{raisedBy}</span>
+          <GenericStagePill
+            currentLabel={currentLabel}
+            isTerminal={isTerminal}
+            previousLabel={previousLabel}
+          />
         </div>
+
         {dynamicFields.length > 0 && (
           <div className='mt-1.5 flex flex-wrap items-center gap-1.5'>
             {dynamicFields.slice(0, 3).map((col, idx) => (
@@ -99,17 +134,47 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         )}
       </div>
 
-      <div className='hidden shrink-0 items-center gap-6 md:flex'>
-        <GenericStagePill
-          currentLabel={currentLabel}
-          isTerminal={isTerminal}
-          previousLabel={previousLabel}
-        />
-        {raisedAt && (
-          <span className='text-12 font-semibold text-gray-10'>
-            {formatTimeAgo(raisedAt)}
-          </span>
-        )}
+      {/* Right Side: Raised By & Date + Running Time from Last Action */}
+      <div className='hidden shrink-0 items-center gap-5 text-12 md:flex'>
+        <div className='flex flex-col items-end gap-0.5 text-right'>
+          {raisedBy && raisedBy !== '-' && (
+            <Tooltip content={`Raised By: ${raisedBy}`} position='bottom'>
+              <div className='flex items-center gap-1.5 font-medium text-gray-11'>
+                <Icon className='size-3.5 text-gray-8' name='tabler:user' />
+                <span className='max-w-[150px] truncate'>{raisedBy}</span>
+              </div>
+            </Tooltip>
+          )}
+          {startedAt && (
+            <Tooltip
+              content={`Raised Date: ${dayjs(startedAt).format('DD-MMM-YYYY hh:mm A')}`}
+              position='bottom'
+            >
+              <div className='flex items-center gap-1 text-11 text-gray-9'>
+                <Icon className='size-3 text-gray-7' name='tabler:calendar' />
+                <span>{dayjs(startedAt).format('DD-MMM-YYYY hh:mm A')}</span>
+              </div>
+            </Tooltip>
+          )}
+        </div>
+
+        <div className='flex flex-col items-end gap-0.5 text-right'>
+          {lastActionAt && (
+            <Tooltip
+              content={
+                lastActionBy && lastActionBy !== '-'
+                  ? `Last action by ${lastActionBy}`
+                  : 'Time running from last action'
+              }
+              position='bottom'
+            >
+              <span className='inline-flex items-center gap-1 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-11 font-semibold text-orange-11'>
+                <Icon className='size-3 text-orange-9' name='tabler:clock' />
+                <span>{formatRunningTime(lastActionAt)}</span>
+              </span>
+            </Tooltip>
+          )}
+        </div>
       </div>
 
       <Icon

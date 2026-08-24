@@ -1,15 +1,36 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import AiWorkflowBuilder from './components/AiWorkflowBuilder'
 import Table from './components/Table'
+import useWorkflowStore from './stores/useWorkflowStore'
 
 const WorkflowsPage = () => {
   const navigate = useNavigate()
+  const [showAiBuilder, setShowAiBuilder] = useState(false)
 
   const handleCreate = () => {
-    // Note: workflow builder routing uses 'new' as template identifier parameter
-    navigate({
-      params: { workflowId: 'new' },
-      to: '/workflow-builder/$workflowId',
-    })
+    setShowAiBuilder(true)
+  }
+
+  if (showAiBuilder) {
+    return (
+      <AiWorkflowBuilder
+        onBack={() => setShowAiBuilder(false)}
+        onApply={(payload, promptName) => {
+          if (payload) {
+            useWorkflowStore.getState().loadLegacyWorkflow(payload)
+            if (promptName) {
+              useWorkflowStore.getState().setWorkflowName(promptName)
+            }
+          }
+          setShowAiBuilder(false)
+          navigate({
+            params: { workflowId: 'new' },
+            to: '/workflow-builder/$workflowId',
+          })
+        }}
+      />
+    )
   }
 
   return (

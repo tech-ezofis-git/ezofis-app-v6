@@ -1,4 +1,4 @@
-import { Combobox as MantineCombobox, useCombobox } from '@mantine/core'
+import { Combobox as MantineCombobox, TagsInput, useCombobox } from '@mantine/core'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import { Check, Folder, Plus } from 'lucide-react'
 import {

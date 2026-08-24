@@ -15,42 +15,19 @@ interface Props {
 const GenericStagePill = ({
   currentLabel,
   isTerminal,
-  previousLabel,
+  previousLabel: _previousLabel,
 }: Props) => {
   return (
-    <div className='flex items-center gap-1.5 text-12'>
-      {previousLabel && (
-        <>
-          <span className='flex items-center gap-1 text-gray-9'>
-            <Icon
-              className='size-3.5 text-green-9'
-              name='tabler:circle-check'
-            />
-            <span className='truncate font-medium'>{previousLabel}</span>
-          </span>
-          <span className='text-gray-5'>—</span>
-        </>
+    <span
+      className={cn(
+        'inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-colors',
+        isTerminal
+          ? 'border-green-3 bg-green-1 text-green-9 dark:border-green-9/30 dark:bg-green-950/40 dark:text-green-400'
+          : 'border-purple-3 bg-purple-1 text-purple-9 dark:border-purple-9/30 dark:bg-purple-950/40 dark:text-purple-400',
       )}
-      <span
-        className={cn(
-          'flex items-center gap-1.5 font-bold',
-          isTerminal ? 'text-green-9' : 'text-primary-9',
-        )}
-      >
-        <span
-          className={cn(
-            'flex size-4 shrink-0 items-center justify-center rounded-full',
-            isTerminal ? 'bg-green-9' : 'bg-primary-9',
-          )}
-        >
-          <Icon
-            className='size-2.5 text-white'
-            name={isTerminal ? 'tabler:flag-filled' : 'tabler:user-filled'}
-          />
-        </span>
-        <span className='truncate'>{currentLabel}</span>
-      </span>
-    </div>
+    >
+      {currentLabel}
+    </span>
   )
 }
 

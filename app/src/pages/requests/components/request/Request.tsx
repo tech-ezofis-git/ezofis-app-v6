@@ -1620,7 +1620,57 @@ const Request = ({
           percent={jobStatus?.percent}
           poNumber={poVal}
           poValue={poValue}
-          raisedAt={request?.createdAt}
+          stage={
+            selectedItem?.lastActionStageName ||
+            selectedItem?.currentStage ||
+            selectedItem?.stageName ||
+            selectedItem?.stage ||
+            selectedItem?.stepName ||
+            request?.lastActionStageName ||
+            request?.currentStage ||
+            request?.stageName ||
+            request?.stage
+          }
+          raisedBy={
+            selectedItem?.transactionCreatedByEmail ||
+            selectedItem?.createdByName ||
+            selectedItem?.createdByEmail ||
+            selectedItem?.createdBy ||
+            selectedItem?.raisedBy ||
+            selectedItem?.userName ||
+            selectedItem?.creatorName ||
+            request?.transactionCreatedByEmail ||
+            request?.createdByName ||
+            request?.createdBy ||
+            request?.userName ||
+            authUserStore.getState().session?.name
+          }
+          raisedAt={
+            selectedItem?.transactionCreatedAt ||
+            selectedItem?.createdAtUtc ||
+            selectedItem?.createdAt ||
+            selectedItem?.createdOn ||
+            selectedItem?.raisedAt ||
+            selectedItem?.date ||
+            request?.transactionCreatedAt ||
+            request?.createdAtUtc ||
+            request?.createdAt
+          }
+          lastActionAt={
+            selectedItem?.lastActionDate ||
+            selectedItem?.lastAction?.date ||
+            selectedItem?.lastAction?.createdAt ||
+            selectedItem?.lastActionAt ||
+            selectedItem?.updatedAt ||
+            selectedItem?.actionDate ||
+            selectedItem?.transactionCreatedAt ||
+            selectedItem?.createdAtUtc ||
+            selectedItem?.createdAt ||
+            request?.updatedAt ||
+            request?.transactionCreatedAt ||
+            request?.createdAtUtc ||
+            request?.createdAt
+          }
           rightView={rightView}
           showApprove={requestListTab === 'Inbox'}
           simple={isGenericWorkflow}

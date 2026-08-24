@@ -135,10 +135,7 @@ const useWorkflowStore = create<Store>()((set) => ({
         workflowDescription: legacyJson.settings?.general?.description || '',
         workflowId: legacyJson.id || null,
         workflowName: legacyJson.settings?.general?.name || 'Imported Workflow',
-        workflowStatus:
-          legacyJson.settings?.publish?.publishOption === 'PUBLISHED'
-            ? 'published'
-            : 'draft',
+        workflowStatus: 'draft',
       })
     })
   },

@@ -1346,7 +1346,7 @@ const getBaseColumns = (
     columns.push(
       {
         id: 'status',
-        label: 'Status',
+        label: 'Current Stage',
         size: 220,
         renderCell: (row: any) => {
           const { currentLabel, isTerminal, previousLabel } =
@@ -1363,15 +1363,55 @@ const getBaseColumns = (
       {
         id: 'raisedBy',
         label: 'Raised By',
-        size: 200,
+        size: 180,
         renderCell: (row: any) => (
           <HoverExpandableText
             className='text-[13px] font-medium text-[var(--gray-11)]'
             fallbackText='-'
-            normalMaxWidthClass='max-w-[180px]'
-            text={row?.raisedBy || '-'}
+            normalMaxWidthClass='max-w-[160px]'
+            text={
+              row?.transactionCreatedByEmail ||
+              row?.createdByName ||
+              row?.createdByEmail ||
+              row?.raisedBy ||
+              row?.createdBy ||
+              row?.userName ||
+              '-'
+            }
           />
         ),
+      },
+      {
+        id: 'lastActionAt',
+        label: 'Time Running',
+        size: 160,
+        renderCell: (row: any) => {
+          const lastActionAt =
+            row?.lastActionDate ||
+            row?.lastAction?.createdAt ||
+            row?.updatedAt ||
+            row?.transactionCreatedAt ||
+            row?.createdAtUtc ||
+            row?.raisedAt ||
+            row?.createdAt
+          const ms = Math.abs(Date.now() - dayjs(lastActionAt).valueOf())
+          let runningStr = '-'
+          if (!Number.isNaN(ms)) {
+            const mins = Math.floor(ms / 60000)
+            const hours = Math.floor(mins / 60)
+            const days = Math.floor(hours / 24)
+            if (days > 0) runningStr = `${days}d ${hours % 24}h ago`
+            else if (hours > 0) runningStr = `${hours}h ${mins % 60}m ago`
+            else if (mins > 0) runningStr = `${mins}m ago`
+            else runningStr = 'Just now'
+          }
+          return (
+            <span className='inline-flex items-center gap-1.5 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-[11px] font-medium text-orange-11'>
+              <Icon className='size-3 text-orange-9' name='tabler:clock' />
+              <span>{runningStr}</span>
+            </span>
+          )
+        },
       },
     )
     return columns

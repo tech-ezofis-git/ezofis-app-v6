@@ -182,86 +182,187 @@ function extractPanelsFromRawJson(parsed: any): AiGeneratedPanel[] {
 export function buildLocalFormConfig(
   options: GenerateFormConfigOptions,
 ): AiFormConfigSuggestion {
-  const isWorkflow = options.formType === 'WORKFLOW'
-  const isMaster = options.formType === 'MASTER'
+  const promptText = (options.prompt || options.description || options.name || '').toLowerCase()
 
-  const defaultPanels: AiGeneratedPanel[] = [
-    {
-      description: `Core parameters and details for ${options.name}`,
-      fields: [
-        {
-          isMandatory: true,
-          label: isMaster ? 'Entity Name' : 'Request Title',
-          placeholder: 'Enter title or name',
-          size: 'col-6',
-          type: 'SHORT_TEXT',
-        },
-        {
-          isMandatory: true,
-          label: isMaster ? 'Category / Type' : 'Priority Level',
-          options: isMaster
-            ? ['Category A', 'Category B', 'Category C']
-            : ['Low', 'Medium', 'High', 'Urgent'],
-          placeholder: 'Select option',
-          size: 'col-6',
-          type: 'SINGLE_SELECT',
-        },
-        {
-          isMandatory: false,
-          label: 'Request / Reference Date',
-          placeholder: 'Select date',
-          size: 'col-6',
-          type: 'DATE',
-        },
-        {
-          isMandatory: false,
-          label: isMaster ? 'Status' : 'Department',
-          options: isMaster
-            ? ['Active', 'Pending', 'Archived']
-            : ['Operations', 'Finance', 'HR', 'IT'],
-          placeholder: 'Select value',
-          size: 'col-6',
-          type: 'SINGLE_SELECT',
-        },
-      ],
-      title: 'General Information',
-    },
-    {
-      description: 'Specific notes and documentation',
-      fields: [
-        {
-          isMandatory: false,
-          label: 'Detailed Description / Purpose',
-          placeholder: 'Provide complete details...',
-          size: 'col-12',
-          type: 'LONG_TEXT',
-        },
-        {
-          isMandatory: false,
-          label: 'Attachment / Supporting Document',
-          placeholder: 'Upload document',
-          size: 'col-6',
-          type: 'FILE_UPLOAD',
-        },
-        {
-          isMandatory: false,
-          label: isWorkflow ? 'Estimated Cost' : 'Amount',
-          placeholder: '0.00',
-          size: 'col-6',
-          type: 'CURRENCY_AMOUNT',
-        },
-      ],
-      title: 'Detailed Specifications',
-    },
-  ]
+  let generatedPanels: AiGeneratedPanel[] = []
+
+  if (promptText.includes('onboarding') || promptText.includes('employee')) {
+    generatedPanels = [
+      {
+        description: 'Employee details and joining parameters',
+        fields: [
+          { isMandatory: true, label: 'Full Name', placeholder: 'Enter employee full name', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Department', options: ['Engineering', 'Finance', 'Human Resources', 'Sales', 'Operations'], placeholder: 'Select department', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: true, label: 'Job Title', placeholder: 'e.g. Senior Software Engineer', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Joining Date', placeholder: 'Select joining date', size: 'col-6', type: 'DATE' },
+          { isMandatory: true, label: 'Employment Type', options: ['Full Time', 'Part Time', 'Contractor', 'Intern'], placeholder: 'Select type', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: true, label: 'Work Email', placeholder: 'employee@company.com', size: 'col-6', type: 'EMAIL' },
+          { isMandatory: false, label: 'Contact Phone', placeholder: '+1 234 567 8900', size: 'col-6', type: 'PHONE_NUMBER' },
+          { isMandatory: false, label: 'Emergency Contact Name', placeholder: 'Enter contact name', size: 'col-6', type: 'SHORT_TEXT' },
+        ],
+        title: 'Personal & Position Details',
+      },
+      {
+        description: 'Identity documents and certifications',
+        fields: [
+          { isMandatory: true, label: 'Identity / Passport Document', placeholder: 'Upload Passport or National ID', size: 'col-12', type: 'FILE_UPLOAD' },
+          { isMandatory: false, label: 'Resume / Offer Letter', placeholder: 'Upload offer letter or resume', size: 'col-12', type: 'FILE_UPLOAD' },
+        ],
+        title: 'Required Documentation',
+      },
+    ]
+  } else if (promptText.includes('leave') || promptText.includes('vacation') || promptText.includes('time off')) {
+    generatedPanels = [
+      {
+        description: 'Leave request parameters and dates',
+        fields: [
+          { isMandatory: true, label: 'Employee Name', placeholder: 'Enter employee name', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Leave Type', options: ['Annual Leave', 'Sick Leave', 'Casual Leave', 'Maternity / Paternity', 'Unpaid Leave'], placeholder: 'Select leave type', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: true, label: 'Start Date', placeholder: 'Select start date', size: 'col-6', type: 'DATE' },
+          { isMandatory: true, label: 'End Date', placeholder: 'Select end date', size: 'col-6', type: 'DATE' },
+          { isMandatory: false, label: 'Total Number of Days', placeholder: 'e.g. 5', size: 'col-6', type: 'NUMBER' },
+          { isMandatory: false, label: 'Handover Person / Contact', placeholder: 'Enter colleague name', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Reason for Leave', placeholder: 'Provide detailed reason...', size: 'col-12', type: 'LONG_TEXT' },
+          { isMandatory: false, label: 'Medical Certificate / Document', placeholder: 'Upload supporting document', size: 'col-12', type: 'FILE_UPLOAD' },
+        ],
+        title: 'Leave Request Information',
+      },
+    ]
+  } else if (promptText.includes('purchase') || promptText.includes('requisition') || promptText.includes('po')) {
+    generatedPanels = [
+      {
+        description: 'Requisition details and cost estimation',
+        fields: [
+          { isMandatory: true, label: 'Requisition Title', placeholder: 'e.g. IT Laptops Purchase', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Requesting Department', options: ['IT', 'Operations', 'Finance', 'Marketing', 'Facilities'], placeholder: 'Select department', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: true, label: 'Vendor / Supplier Name', placeholder: 'Enter vendor name', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Estimated Total Cost', placeholder: '0.00', size: 'col-6', type: 'CURRENCY_AMOUNT' },
+          { isMandatory: true, label: 'Required Delivery Date', placeholder: 'Select date', size: 'col-6', type: 'DATE' },
+          { isMandatory: false, label: 'Budget Code', placeholder: 'e.g. CAPEX-2026-09', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Business Justification', placeholder: 'Explain why this purchase is required...', size: 'col-12', type: 'LONG_TEXT' },
+          { isMandatory: false, label: 'Vendor Quotation Attachment', placeholder: 'Upload quote', size: 'col-12', type: 'FILE_UPLOAD' },
+        ],
+        title: 'Purchase Requisition Details',
+      },
+    ]
+  } else if (promptText.includes('invoice') || promptText.includes('accounts payable') || promptText.includes('ap')) {
+    generatedPanels = [
+      {
+        description: 'Vendor & invoice header parameters',
+        fields: [
+          { isMandatory: true, label: 'Vendor Name', placeholder: 'Enter supplier name', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Invoice Number', placeholder: 'e.g. INV-99481', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'PO Number', placeholder: 'e.g. PO-2026-104', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Invoice Date', placeholder: 'Select invoice date', size: 'col-6', type: 'DATE' },
+          { isMandatory: true, label: 'Total Invoice Amount', placeholder: '0.00', size: 'col-6', type: 'CURRENCY_AMOUNT' },
+          { isMandatory: false, label: 'Tax Amount', placeholder: '0.00', size: 'col-6', type: 'CURRENCY_AMOUNT' },
+          { isMandatory: true, label: 'Currency', options: ['USD', 'EUR', 'GBP', 'AED', 'SAR', 'INR'], placeholder: 'Select currency', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: false, label: 'Payment Terms', options: ['Net 30', 'Net 60', 'Immediate', 'Due upon receipt'], placeholder: 'Select terms', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: true, label: 'Original Invoice File', placeholder: 'Upload scanned invoice PDF', size: 'col-12', type: 'FILE_UPLOAD' },
+        ],
+        title: 'Invoice Information',
+      },
+    ]
+  } else if (promptText.includes('feedback')) {
+    generatedPanels = [
+      {
+        description: 'User ratings and detailed feedback',
+        fields: [
+          { isMandatory: true, label: 'Respondent Name', placeholder: 'Enter your full name', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: 'Email Address', placeholder: 'yourname@example.com', size: 'col-6', type: 'EMAIL' },
+          { isMandatory: true, label: 'Feedback Category', options: ['Product Experience', 'Customer Service', 'Bug Report', 'Feature Request'], placeholder: 'Select category', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: true, label: 'Overall Rating', placeholder: 'Rate 1 to 5', size: 'col-6', type: 'RATING' },
+          { isMandatory: true, label: 'Detailed Comments & Suggestions', placeholder: 'Share your detailed feedback...', size: 'col-12', type: 'LONG_TEXT' },
+        ],
+        title: 'Feedback Details',
+      },
+    ]
+  } else {
+    const isWorkflow = options.formType === 'WORKFLOW'
+    const isMaster = options.formType === 'MASTER'
+
+    generatedPanels = [
+      {
+        description: `Core parameters and details for ${options.name}`,
+        fields: [
+          { isMandatory: true, label: isMaster ? 'Entity Name' : 'Request Title', placeholder: 'Enter title or name', size: 'col-6', type: 'SHORT_TEXT' },
+          { isMandatory: true, label: isMaster ? 'Category / Type' : 'Priority Level', options: isMaster ? ['Category A', 'Category B', 'Category C'] : ['Low', 'Medium', 'High', 'Urgent'], placeholder: 'Select option', size: 'col-6', type: 'SINGLE_SELECT' },
+          { isMandatory: false, label: 'Request / Reference Date', placeholder: 'Select date', size: 'col-6', type: 'DATE' },
+          { isMandatory: false, label: isMaster ? 'Status' : 'Department', options: isMaster ? ['Active', 'Pending', 'Archived'] : ['Operations', 'Finance', 'HR', 'IT'], placeholder: 'Select value', size: 'col-6', type: 'SINGLE_SELECT' },
+        ],
+        title: 'General Information',
+      },
+      {
+        description: 'Specific notes and documentation',
+        fields: [
+          { isMandatory: false, label: 'Detailed Description / Purpose', placeholder: 'Provide complete details...', size: 'col-12', type: 'LONG_TEXT' },
+          { isMandatory: false, label: 'Attachment / Supporting Document', placeholder: 'Upload document', size: 'col-12', type: 'FILE_UPLOAD' },
+          { isMandatory: false, label: isWorkflow ? 'Estimated Cost' : 'Amount', placeholder: '0.00', size: 'col-6', type: 'CURRENCY_AMOUNT' },
+        ],
+        title: 'Detailed Specifications',
+      },
+    ]
+  }
+
+  const meta = generateSimpleFormMeta(options.prompt || options.description || options.name)
 
   return {
-    description: options.description,
+    description: meta.description,
     formType: options.formType,
-    name: options.name,
-    panels: defaultPanels,
-    reply: `Created a standard ${options.formType.toLowerCase()} form structure for "${options.name}" with 2 organized sections.`,
+    name: meta.name,
+    panels: generatedPanels,
+    reply: `Created form structure for "${meta.name}".`,
     source: 'local',
+  }
+}
+
+export function generateSimpleFormMeta(promptText: string): { description: string; name: string } {
+  const lower = (promptText || '').toLowerCase().trim()
+
+  if (lower.includes('onboarding') || lower.includes('employee')) {
+    return {
+      description: 'Form to collect new employee details, position info, and identity documents.',
+      name: 'Employee Onboarding Form',
+    }
+  }
+  if (lower.includes('leave') || lower.includes('vacation') || lower.includes('time off')) {
+    return {
+      description: 'Form for employees to submit leave requests, dates, and handover notes.',
+      name: 'Leave Request Form',
+    }
+  }
+  if (lower.includes('purchase') || lower.includes('requisition') || lower.includes('po')) {
+    return {
+      description: 'Form to request items, estimated costs, vendor details, and budget approval.',
+      name: 'Purchase Requisition Form',
+    }
+  }
+  if (lower.includes('invoice') || lower.includes('accounts payable') || lower.includes('ap')) {
+    return {
+      description: 'Form to capture vendor invoice data, line items, currency, and attachments.',
+      name: 'Accounts Payable Invoice Form',
+    }
+  }
+  if (lower.includes('feedback')) {
+    return {
+      description: 'Form to collect user ratings, feedback category, and detailed comments.',
+      name: 'General Feedback Form',
+    }
+  }
+
+  let clean = promptText
+    .replace(/^a\s+/i, '')
+    .replace(/^an\s+/i, '')
+    .replace(/^the\s+/i, '')
+    .trim()
+  if (!clean) clean = 'Custom Form'
+  clean = clean.split('.')[0]
+  if (clean.length > 35) clean = `${clean.slice(0, 35).trim()}...`
+
+  const name = clean.toLowerCase().includes('form') ? clean : `${clean} Form`
+  return {
+    description: `Custom form layout generated for ${clean.toLowerCase()}.`,
+    name: name.charAt(0).toUpperCase() + name.slice(1),
   }
 }
 
@@ -299,14 +400,16 @@ export async function generateFormConfigViaQwen(
       return buildLocalFormConfig(options)
     }
 
+    const meta = generateSimpleFormMeta(parsed?.name || options.prompt || options.description || options.name)
+
     return {
-      description: String(parsed?.description || options.description),
+      description: String(parsed?.description || meta.description),
       formType: options.formType,
-      name: String(parsed?.name || options.name),
+      name: String(parsed?.name || meta.name),
       panels,
       reply:
         String(parsed?.reply || '').trim() ||
-        `Generated a complete ${options.formType.toLowerCase()} form layout for "${options.name}".`,
+        `Generated a complete ${options.formType.toLowerCase()} form layout for "${meta.name}".`,
       source: 'qwen',
     }
   } catch (error) {

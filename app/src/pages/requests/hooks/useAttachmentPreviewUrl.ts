@@ -54,7 +54,7 @@ const fetchLegacyBinary = async (
       tId,
       uId,
       rId,
-      Number(itemId) || selectedFileId,
+      Number(itemId || selectedFileId || 0),
       2,
     )
 

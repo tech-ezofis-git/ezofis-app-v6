@@ -537,13 +537,13 @@ export default function GroupManagement({
         isSaving={isSavingGroup}
         selectedMembers={selectedMembers}
         userOptions={userOptions}
-        onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
+        onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={() => setIsSetupOpen(false)}
         onChange={setDraftGroup}
         onMembersChange={setSelectedMembers}
         onNext={() =>
-          setActiveStep((step) => Math.min(step + 1, 2))
+          setActiveStep((step: number) => Math.min(step + 1, 2))
         }
         onSave={saveGroup}
         onStepChange={setActiveStep}

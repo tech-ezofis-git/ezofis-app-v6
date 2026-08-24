@@ -1225,7 +1225,7 @@ export default function ManageUser({
         locationOptions={locationSelectOptions}
         managerOptions={managerOptions}
         roleOptions={apiRoleOptions}
-        onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
+        onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={() => {
           setOriginalUser(null)
@@ -1233,7 +1233,7 @@ export default function ManageUser({
         }}
         onChange={setDraftUser}
         onNext={() =>
-          setActiveStep((step) => Math.min(step + 1, 4))
+          setActiveStep((step: number) => Math.min(step + 1, 4))
         }
         onSave={saveUser}
         onStepChange={setActiveStep}

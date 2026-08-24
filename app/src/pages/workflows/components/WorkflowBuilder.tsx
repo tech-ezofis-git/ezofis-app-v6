@@ -179,10 +179,11 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     if (loadedNodes && loadedEdges) {
       setNodes(loadedNodes)
       setEdges(loadedEdges)
-      // Wait for nodes to render before fitting the viewport
-      requestAnimationFrame(() => {
-        fitView({ duration: 300, padding: 0.2 })
-      })
+      // Wait for nodes to render before fitting the viewport to show all nodes
+      const timer = setTimeout(() => {
+        fitView({ duration: 400, maxZoom: 1.0, padding: 0.2 })
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [loadedNodes, loadedEdges, setNodes, setEdges, fitView])
 

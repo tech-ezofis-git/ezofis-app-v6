@@ -510,35 +510,6 @@ const QuestionCard = ({
                   Drag and drop or scan to upload
                 </span>
               </div>
-
-              <div className='space-y-1.5 px-1'>
-                <div className='bg-gray-50/50 group/file flex items-center justify-between rounded-lg border border-gray-1/50 p-2'>
-                  <div className='flex items-center gap-2.5 overflow-hidden'>
-                    <div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded border border-gray-1 bg-white'>
-                      <Icon
-                        className='text-blue-500'
-                        height={14}
-                        name='lucide:file-text'
-                        width={14}
-                      />
-                    </div>
-                    <div className='flex min-w-0 flex-col'>
-                      <span className='truncate text-[11px] font-bold tracking-tight text-gray-12 uppercase'>
-                        Invoice_March_2024.pdf
-                      </span>
-                      <span className='text-[9px] text-gray-5'>
-                        2.4 MB • Uploaded
-                      </span>
-                    </div>
-                  </div>
-                  <Icon
-                    className='cursor-pointer text-gray-3 opacity-0 transition-opacity group-hover/file:opacity-100 hover:text-error-main'
-                    height={14}
-                    name='lucide:x'
-                    width={14}
-                  />
-                </div>
-              </div>
             </div>
           ) : question.type === 'RATING' ? (
             <div

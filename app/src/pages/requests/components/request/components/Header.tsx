@@ -30,6 +30,7 @@ interface HeaderProps {
   hideActions?: boolean
   isEditing?: boolean
   isProcessing?: boolean
+  lastActionAt?: any
   percent?: number
   poNumber?: string
   poValue?: string | number
@@ -81,6 +82,7 @@ const getInitials = (user: any): string => {
 }
 
 const getDisplayName = (user: any): string => {
+  if (typeof user === 'string') return user
   const first = user.firstName || user.FirstName || ''
   const last = user.lastName || user.LastName || ''
   if (first && last) return `${first} ${last}`
@@ -97,12 +99,43 @@ const getDisplayName = (user: any): string => {
 const getEmail = (user: any): string =>
   user.email || user.Email || user.loginName || ''
 
-// const roleOptions = [
-//   { id: 'View', name: 'View' },
-//   { id: 'Verify', name: 'Verify' },
-//   { id: 'Approve', name: 'Approve' },
-//   { id: 'Paid', name: 'Paid' },
-// ]
+const formatElapsedTime = (startDateStr?: string | number | Date) => {
+  if (!startDateStr) return ''
+  const start = new Date(startDateStr).getTime()
+  if (Number.isNaN(start)) return ''
+  const now = new Date().getTime()
+  const diffMs = Math.max(0, now - start)
+
+  const diffMins = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffDays > 0) {
+    const remHours = diffHours % 24
+    return `${diffDays}d ${remHours}h running`
+  }
+  if (diffHours > 0) {
+    const remMins = diffMins % 60
+    return `${diffHours}h ${remMins}m running`
+  }
+  if (diffMins > 0) {
+    return `${diffMins}m running`
+  }
+  return 'Just now'
+}
+
+const formatRaisedDate = (dateStr?: string | number | Date) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return String(dateStr)
+  return d.toLocaleDateString(undefined, {
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 const Header: React.FC<HeaderProps> = ({
   actions,
@@ -116,16 +149,17 @@ const Header: React.FC<HeaderProps> = ({
   isEditing = false,
   isLoading: _isLoading,
   isProcessing = false,
+  lastActionAt,
   percent,
   poNumber,
   poValue,
-  raisedAt: _raisedAt,
-  raisedBy: _raisedBy,
+  raisedAt,
+  raisedBy,
   requestNo,
   rightView,
   showApprove: _showApprove,
   simple = false,
-  stage: _stage,
+  stage,
   status = 'Pending Review',
   ticketUserId,
   totalAmount,
@@ -140,6 +174,13 @@ const Header: React.FC<HeaderProps> = ({
   const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
+
+  const raisedByDisplay =
+    typeof raisedBy === 'object' && raisedBy
+      ? getDisplayName(raisedBy)
+      : raisedBy
+        ? String(raisedBy)
+        : null
   const [showShare, setShowShare] = React.useState(false)
   const [shareSearch, setShareSearch] = React.useState('')
   const [shareMessage, setShareMessage] = React.useState('')
@@ -420,7 +461,7 @@ const Header: React.FC<HeaderProps> = ({
     }[] = [
         {
           count: 0,
-          icon: 'tabler:file-text',
+          icon: 'tabler:layout-dashboard',
           id: 'overview',
           label: t`Overview`,
         },
@@ -476,10 +517,45 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onNext}
               />
             </Tooltip>
+
+            {stage && (
+              <span className='animate-in fade-in slide-in-from-left-2 inline-flex items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs dark:border-purple-9/30 dark:bg-purple-950/40 dark:text-purple-400'>
+                {stage}
+              </span>
+            )}
           </div>
         </div>
 
         <div className='flex items-center gap-3'>
+          {(raisedByDisplay || raisedAt || lastActionAt) && (
+            <div className='hidden md:flex items-center gap-3 border-r border-[var(--gray-3)] pr-3 text-[12px] text-[var(--gray-11)]'>
+              {raisedByDisplay && (
+                <div className='flex items-center gap-1.5' title={t`Raised By`}>
+                  <Icon className='size-3.5 text-[var(--gray-9)]' name='lucide:user' />
+                  <span className='font-medium text-[var(--gray-12)]'>
+                    {raisedByDisplay}
+                  </span>
+                </div>
+              )}
+
+              {raisedAt && (
+                <div className='flex items-center gap-1.5' title={t`Raised Date`}>
+                  <Icon className='size-3.5 text-[var(--gray-9)]' name='lucide:calendar' />
+                  <span>{formatRaisedDate(raisedAt)}</span>
+                </div>
+              )}
+
+              {(lastActionAt || raisedAt) && (
+                <div
+                  className='flex items-center gap-1.5 rounded-full border border-orange-4 bg-orange-2 px-2.5 py-0.5 text-[11px] font-medium text-orange-11'
+                  title={t`Time running from last action`}
+                >
+                  <Icon className='size-3 text-orange-9' name='lucide:clock' />
+                  <span>{formatElapsedTime(lastActionAt || raisedAt)}</span>
+                </div>
+              )}
+            </div>
+          )}
           <div className='flex items-center gap-1'>
             {rightViewTabs.map((tab) => (
               <Tooltip content={tab.label} key={tab.id} position='bottom'>

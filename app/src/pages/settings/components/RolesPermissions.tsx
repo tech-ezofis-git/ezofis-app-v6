@@ -649,13 +649,13 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         selectedUsers={selectedUsers}
         submitLabel={editingRoleId ? t`Update Role` : t`Save Role`}
         userOptions={userOptions}
-        onBack={() => setCreateStep((step) => Math.max(step - 1, 0))}
+        onBack={() => setCreateStep((step: number) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={resetCreateRole}
         onCreate={saveRole}
         onDescriptionChange={setNewRoleDescription}
         onNext={() =>
-          setCreateStep((step) => Math.min(step + 1, 2))
+          setCreateStep((step: number) => Math.min(step + 1, 2))
         }
         onRoleNameChange={setNewRoleName}
         onSelectedUsersChange={setSelectedUsers}
