@@ -2,14 +2,21 @@ import { useLingui } from '@lingui/react/macro'
 import { Textarea } from '@mantine/core'
 import { motion } from 'motion/react'
 import { useState } from 'react'
+import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
-import { generateWorkflowConfigViaQwen } from '@/services/ai/workflowConfig'
+import {
+  generateWorkflowConfigViaQwen,
+  shortenDescription,
+  shortenWorkflowName,
+} from '@/services/ai/workflowConfig'
 
 interface AiWorkflowBuilderProps {
   onApply: (payload: any, promptName: string) => void
   onBack: () => void
+  onManualCreate?: () => void
 }
 
 const SAMPLE_PROMPTS = [
@@ -21,33 +28,42 @@ const SAMPLE_PROMPTS = [
   {
     label: 'Order to Pay',
     prompt:
-      'An order to pay process workflow for sales order intake, credit validation, order fulfillment, billing, and payment processing.',
+      'An order to pay workflow for sales order intake, fulfillment, billing, and payment processing.',
   },
   {
-    label: 'Purchase Requisition Approval',
+    label: 'Purchase Requisition',
     prompt:
-      'A purchase requisition approval workflow with department head review, budget validation, purchasing agent assignment and PO generation.',
+      'A purchase requisition workflow to request items, obtain manager approval, generate POs, and verify delivery.',
   },
   {
     label: 'Employee Onboarding',
     prompt:
-      'An employee onboarding workflow with HR review, IT equipment provisioning, manager approval and document collection.',
+      'An employee onboarding workflow for HR document verification, IT account setup, equipment allocation, and manager welcome.',
   },
   {
-    label: 'Contract Review & Signing',
+    label: 'Leave Request',
     prompt:
-      'A contract review workflow with legal team assessment, executive sign-off, digital signature collection and repository archiving.',
+      'A leave request workflow for employees to submit time-off, manager approval, HR balance updates, and coverage sign-off.',
   },
 ]
 
 export default function AiWorkflowBuilder({
   onApply,
   onBack,
+  onManualCreate,
 }: AiWorkflowBuilderProps) {
   const { t } = useLingui()
 
   const [prompt, setPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleManual = () => {
+    if (onManualCreate) {
+      onManualCreate()
+    } else {
+      onApply(null, '')
+    }
+  }
 
   const handleGenerate = async () => {
     const text = prompt.trim()
@@ -62,14 +78,16 @@ export default function AiWorkflowBuilder({
     setIsGenerating(true)
 
     try {
+      const shortName = shortenWorkflowName(text)
+      const shortDesc = shortenDescription(text)
       const workflowPayload = await generateWorkflowConfigViaQwen({
-        description: text,
-        name: text.length <= 40 ? text : `${text.slice(0, 40)}...`,
+        description: shortDesc,
+        name: shortName,
         prompt: text,
       })
 
-      const name = text.length <= 40 ? text : `${text.slice(0, 40)}...`
-      onApply(workflowPayload, name)
+      const finalName = shortenWorkflowName(workflowPayload.name || shortName)
+      onApply(workflowPayload, finalName)
     } catch (error) {
       console.error('Workflow generation error:', error)
       showToast({
@@ -88,19 +106,29 @@ export default function AiWorkflowBuilder({
       initial={{ opacity: 0, scale: 0.98, y: 12 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className='flex shrink-0 items-center gap-3 border-b border-gray-4 bg-surface-primary px-6 py-3.5 shadow-xs'>
-        <IconButton
-          ariaLabel={t`Back`}
+      <div className='flex shrink-0 items-center justify-between border-b border-gray-4 bg-surface-primary px-6 py-3.5 shadow-xs'>
+        <div className='flex items-center gap-3'>
+          <IconButton
+            ariaLabel={t`Back`}
+            color='gray'
+            icon='lucide:arrow-left'
+            size='sm'
+            variant='ghost'
+            onClick={onBack}
+          />
+          <h2 className='text-sm font-semibold text-gray-12'>{t`New Workflow`}</h2>
+        </div>
+        <Button
           color='gray'
-          icon='lucide:arrow-left'
+          icon='lucide:pencil'
+          label={t`Build Manually`}
           size='sm'
-          variant='ghost'
-          onClick={onBack}
+          variant='subtle'
+          onClick={handleManual}
         />
-        <h2 className='text-sm font-semibold text-gray-12'>{t`New Workflow`}</h2>
       </div>
 
-      <div className='flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto p-6 pt-12 sm:pt-16 md:pt-20 lg:pt-24'>
+      <div className='flex flex-1 flex-col items-center justify-start gap-6 overflow-y-auto p-6 pt-6 sm:pt-8 md:pt-10'>
         <div className='flex flex-col items-center gap-3 text-center'>
           <div className='bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex h-12 w-12 items-center justify-center rounded-2xl'>
             <AiBrandIcon className='size-6' variant='outline-purple' />
@@ -164,6 +192,18 @@ export default function AiWorkflowBuilder({
                 </button>
               )
             })}
+          </div>
+
+          <div className='mt-2 flex items-center justify-center gap-2 text-xs text-gray-9'>
+            <span>{t`Or prefer to build from scratch?`}</span>
+            <button
+              type='button'
+              className='inline-flex items-center gap-1 font-semibold text-primary-9 hover:underline'
+              onClick={handleManual}
+            >
+              <Icon className='size-3.5' name='lucide:pencil' />
+              <span>{t`Build Manually`}</span>
+            </button>
           </div>
         </div>
       </div>

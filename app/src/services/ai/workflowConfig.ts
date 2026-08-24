@@ -3,6 +3,102 @@ import {
   parseJsonFromModelContent,
   qwenChatCompletions,
 } from '@/services/ai/qwen'
+
+const ACRONYMS = new Set([
+  'AP',
+  'AR',
+  'HR',
+  'PO',
+  'IT',
+  'ERP',
+  'ID',
+  'VAT',
+  'GST',
+  'SLA',
+  'KPI',
+  'DMS',
+  'CRM',
+  'API',
+])
+
+export function shortenWorkflowName(input: string): string {
+  if (!input) return 'Custom Workflow'
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/^(create|build|make|generate|design|setup|new)\s+(a|an|the)?\s*/i, '')
+    .replace(/^(a|an|the)\s+/i, '')
+    .replace(/\s+(workflow|form|process|layout|system)\s+for\s+/i, ' ')
+    .replace(/\s+for\s+/i, ' ')
+    .replace(/\s+(with|to|that|which|and)\s+.*$/i, '')
+    .replace(/[^a-zA-Z0-9\s&/-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleaned) cleaned = input.trim().split('.')[0]
+
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  if (
+    words.length > 1 &&
+    ['workflow', 'process'].includes(words[words.length - 1].toLowerCase())
+  ) {
+    words.pop()
+  }
+
+  let shortWords = words.slice(0, 3)
+  if (shortWords.length > 0 && ['&', '-', '/'].includes(shortWords[shortWords.length - 1])) {
+    shortWords.pop()
+  }
+
+  let result = shortWords.join(' ')
+
+  if (result.length > 25) {
+    result = result.slice(0, 25).trim()
+  }
+
+  if (!result) return 'Custom Workflow'
+
+  return result
+    .split(' ')
+    .map((w) => {
+      const upper = w.toUpperCase()
+      if (ACRONYMS.has(upper)) return upper
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    })
+    .join(' ')
+}
+
+export function shortenDescription(input: string, maxChars = 75): string {
+  if (!input) return ''
+
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^(this\s+(is\s+a\s+)?(workflow|process|form)\s+(designed|built|created)\s+to\s+)/i, 'Workflow for ')
+    .replace(/^an?\s+(automated|end-to-end)\s+/i, '')
+    .replace(/^this\s+workflow\s+(allows|manages|handles|tracks)\s+/i, 'Workflow to $1 ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (cleaned.includes('.')) {
+    const firstSentence = cleaned.split('.')[0].trim()
+    if (firstSentence.length >= 12) {
+      cleaned = firstSentence + '.'
+    }
+  }
+
+  if (!cleaned.endsWith('.') && !cleaned.endsWith('!') && !cleaned.endsWith('?')) {
+    cleaned += '.'
+  }
+
+  if (cleaned.length > maxChars) {
+    const trimmed = cleaned.slice(0, maxChars)
+    const lastSpace = trimmed.lastIndexOf(' ')
+    cleaned = (lastSpace > 15 ? trimmed.slice(0, lastSpace) : trimmed).trim() + '...'
+  }
+
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
 
 export interface GenerateWorkflowConfigOptions {
@@ -416,56 +512,47 @@ export function generateSimpleWorkflowMeta(promptText: string): { description: s
       name: 'Accounts Receivable Workflow',
     }
   }
-  if (lower.includes('order to pay') || lower.includes('order to cash') || lower.includes('order')) {
+  if (lower.includes('order to pay') || lower.includes('order to cash') || lower.includes('o2p')) {
     return {
       description: 'End-to-end process workflow for sales order intake, fulfillment, billing, and payment processing.',
-      name: 'Order to Pay Process Workflow',
+      name: 'Order to Pay',
     }
   }
   if (lower.includes('onboarding') || lower.includes('employee')) {
     return {
       description: 'Automated multi-stage approval workflow for HR verification, IT setup, and manager sign-off.',
-      name: 'Employee Onboarding Workflow',
+      name: 'Employee Onboarding',
     }
   }
   if (lower.includes('leave') || lower.includes('vacation') || lower.includes('time off')) {
     return {
       description: 'Automated workflow for manager review and HR balance verification.',
-      name: 'Leave Request Approval Workflow',
+      name: 'Leave Request',
     }
   }
   if (lower.includes('purchase') || lower.includes('requisition') || lower.includes('po')) {
     return {
       description: 'Approval and verification workflow for purchasing requisitions and PO generation.',
-      name: 'Purchase Requisition Workflow',
+      name: 'Purchase Requisition',
     }
   }
   if (lower.includes('contract') || lower.includes('signing') || lower.includes('legal')) {
     return {
       description: 'Multi-stage workflow for legal assessment, executive sign-off, and contract archiving.',
-      name: 'Contract Review & Signing Workflow',
+      name: 'Contract Review',
     }
   }
   if (lower.includes('invoice') || lower.includes('accounts payable') || lower.includes('ap')) {
     return {
       description: 'End-to-end invoice processing workflow with OCR extraction, matching, and ERP export.',
-      name: 'Accounts Payable Workflow',
+      name: 'Accounts Payable',
     }
   }
 
-  let clean = promptText
-    .replace(/^a\s+/i, '')
-    .replace(/^an\s+/i, '')
-    .replace(/^the\s+/i, '')
-    .trim()
-  if (!clean) clean = 'Custom Workflow'
-  clean = clean.split('.')[0]
-  if (clean.length > 35) clean = `${clean.slice(0, 35).trim()}...`
-
-  const name = clean.toLowerCase().includes('workflow') ? clean : `${clean} Workflow`
+  const name = shortenWorkflowName(promptText)
   return {
-    description: `Automated process workflow configured for ${clean.toLowerCase()}.`,
-    name: name.charAt(0).toUpperCase() + name.slice(1),
+    description: `Automated process workflow configured for ${name.toLowerCase()}.`,
+    name,
   }
 }
 
@@ -487,12 +574,17 @@ export async function generateWorkflowConfigViaQwen(
     },
     {
       content: `Design a workflow for: "${promptText}".
-Return a JSON object with "blocks" array and "rules" array.
+Return a JSON object with:
+- "name": short & meaningful title (1-3 words max, e.g. "AP Invoice", "Purchase Requisition", "Leave Request")
+- "description": short 1-sentence description (max 10-12 words)
+- "blocks": array of nodes
+- "rules": array of transitions
+
 Block types: "START", "INTERNAL_ACTOR", "CONDITION", "END".
 Each block should have: { "id": "b1", "type": "START", "settings": { "label": "Step Name" }, "left": 50, "top": 50, "width": 175, "height": 90, "color": "#2BCCBA", "icon": "mdi-flag" }
 Rules: { "id": "r1", "from": "b1", "to": "b2", "ruleName": "" }
 Increment "left" position by 230 for each step so nodes are horizontally aligned cleanly.
-Respond ONLY with JSON shape: { "blocks": [...], "rules": [...] }`,
+Respond ONLY with JSON shape: { "name": string, "description": string, "blocks": [...], "rules": [...] }`,
       role: 'user' as const,
     },
   ]
@@ -507,8 +599,10 @@ Respond ONLY with JSON shape: { "blocks": [...], "rules": [...] }`,
     const parsed = parseJsonFromModelContent<any>(content)
     if (parsed && Array.isArray(parsed.blocks) && parsed.blocks.length > 0) {
       const basePayload = JSON.parse(JSON.stringify(apSetupPayloads.workflowPayload))
-      const wfName = parsed.name || meta.name
-      const wfDesc = parsed.description || meta.description
+      const rawWfName = parsed.name || meta.name
+      const wfName = shortenWorkflowName(rawWfName)
+      const rawWfDesc = parsed.description || options.description || meta.description
+      const wfDesc = shortenDescription(rawWfDesc)
       if (basePayload.settings?.general) {
         basePayload.settings.general.name = wfName
         basePayload.settings.general.description = wfDesc

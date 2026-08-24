@@ -473,10 +473,14 @@ const FormsPage = () => {
     return (
       <AiFormBuilder
         onBack={() => setShowAiBuilder(false)}
+        onManualCreate={openFormBuilder}
         onApply={(payload) => {
-          useFormStore.getState().loadForm(payload)
-          setShowAiBuilder(false)
-          navigate({ to: '/form-builder' })
+          if (payload) {
+            useFormStore.getState().loadForm(payload)
+          } else {
+            useFormStore.getState().resetForm()
+          }
+          void navigate({ to: '/form-builder' })
         }}
       />
     )

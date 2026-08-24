@@ -16,15 +16,23 @@ const WorkflowsPage = () => {
     return (
       <AiWorkflowBuilder
         onBack={() => setShowAiBuilder(false)}
+        onManualCreate={() => {
+          useWorkflowStore.getState().resetWorkflow()
+          void navigate({
+            params: { workflowId: 'new' },
+            to: '/workflow-builder/$workflowId',
+          })
+        }}
         onApply={(payload, promptName) => {
           if (payload) {
             useWorkflowStore.getState().loadLegacyWorkflow(payload)
             if (promptName) {
               useWorkflowStore.getState().setWorkflowName(promptName)
             }
+          } else {
+            useWorkflowStore.getState().resetWorkflow()
           }
-          setShowAiBuilder(false)
-          navigate({
+          void navigate({
             params: { workflowId: 'new' },
             to: '/workflow-builder/$workflowId',
           })
