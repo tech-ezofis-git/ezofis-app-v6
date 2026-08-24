@@ -36,13 +36,12 @@
     direction: ltr;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    html.theme-transitions,
-    html.theme-transitions *,
-    html.theme-transitions *::before,
-    html.theme-transitions *::after {
-      transition: var(--transition-theme) !important;
-    }
+  /* Instant, synchronized theme switching across all components without transition lag */
+  html.theme-transitions,
+  html.theme-transitions *,
+  html.theme-transitions *::before,
+  html.theme-transitions *::after {
+    transition: none !important;
   }
 
   body {

@@ -48,7 +48,6 @@ import Attachments from '../attachment/Attachments'
 import Comments from '../comment/Comments'
 import History from '../history/History'
 import LineItemTable from './LineItemTable'
-import RelatedDocumentsFinder from './RelatedDocumentsFinder'
 
 // --- Helpers ---
 
@@ -4565,52 +4564,32 @@ const Overview = (props: any) => {
                               </p>
                             </div>
                           ) : (
-                            <>
-                              <RelatedDocumentsFinder
-                                attachedIds={attachedItemIds}
-                                instanceId={resolvedInstanceId}
-                                invoiceNumber={invoiceSummary.invoiceNumber}
-                                poNumber={invoiceSummary.poNumber}
-                                supplierName={supplierName}
-                                workflowId={workflowId}
-                                invoiceAmount={
-                                  invoiceSummary.amount
-                                    ? String(invoiceSummary.amount)
-                                    : undefined
-                                }
-                                repositoryId={
-                                  repositoryId || selectedItem?.repositoryId
-                                }
-                                onAttached={refetchAttachments}
-                              />
-
-                              <Attachments
-                                enabled={true}
-                                formModel={formModel}
-                                instanceId={resolvedInstanceId}
-                                processId={processId}
-                                selectedItem={selectedItem}
-                                transactionId={transactionId}
-                                workflowId={workflowId}
-                                initialData={
-                                  attachmentData ||
-                                  selectedItem?.attachments ||
-                                  []
-                                }
-                                repositoryId={
-                                  repositoryId || selectedItem?.repositoryId
-                                }
-                                onSelect={(file) =>
-                                  selectedFile?.id === file.id
-                                    ? (setIsViewerLoading(true),
-                                      setTimeout(
-                                        () => setIsViewerLoading(false),
-                                        500,
-                                      ))
-                                    : setSelectedFile(file)
-                                }
-                              />
-                            </>
+                            <Attachments
+                              enabled={true}
+                              formModel={formModel}
+                              instanceId={resolvedInstanceId}
+                              processId={processId}
+                              selectedItem={selectedItem}
+                              transactionId={transactionId}
+                              workflowId={workflowId}
+                              initialData={
+                                attachmentData ||
+                                selectedItem?.attachments ||
+                                []
+                              }
+                              repositoryId={
+                                repositoryId || selectedItem?.repositoryId
+                              }
+                              onSelect={(file) =>
+                                selectedFile?.id === file.id
+                                  ? (setIsViewerLoading(true),
+                                    setTimeout(
+                                      () => setIsViewerLoading(false),
+                                      500,
+                                    ))
+                                  : setSelectedFile(file)
+                              }
+                            />
                           )}
                         </div>
                       )}

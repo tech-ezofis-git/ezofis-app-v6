@@ -236,14 +236,14 @@ export default function Comments({
               <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
                 {/* Header (Name & Time) */}
                 <div className='flex items-baseline gap-2'>
-                  <span className='text-13 font-bold text-gray-13'>{name}</span>
-                  <span className='text-11 font-medium text-gray-9'>
+                  <span className='text-[13px] font-bold text-[var(--gray-13)]'>{name}</span>
+                  <span className='text-[11px] font-medium text-[var(--gray-9)]'>
                     {timeDisplay}
                   </span>
                 </div>
 
                 {/* Text */}
-                <div className='text-13 leading-relaxed font-medium whitespace-pre-wrap text-gray-11'>
+                <div className='text-[13px] leading-relaxed font-medium whitespace-pre-wrap text-[var(--gray-12)]'>
                   {formatCommentText(c?.comments)}
                 </div>
 
@@ -259,10 +259,10 @@ export default function Comments({
                         : `Doc-${fid}`
                       return (
                         <div
-                          className='flex items-center gap-1 rounded-md border border-gray-4 bg-gray-2 px-1.5 py-0.5 text-11 font-semibold text-gray-11'
+                          className='flex items-center gap-1 rounded-md border border-[var(--gray-4)] bg-[var(--gray-2)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--gray-12)]'
                           key={String(fid)}
                         >
-                          <Icon className='size-3' name='tabler:file' />
+                          <Icon className='size-3 text-[var(--primary-9)]' name='tabler:file' />
                           <span className='max-w-[120px] truncate'>
                             {fileName}
                           </span>
@@ -278,13 +278,13 @@ export default function Comments({
       </div>
 
       {/* Input Area */}
-      <div className='border-t border-gray-3 bg-transparent px-4 py-3'>
+      <div className='border-t border-[var(--gray-3)] bg-transparent px-4 py-3'>
         <div className='flex flex-col gap-2'>
           {/* File Picker (Conditional) */}
           {!!fileOptions.length && (
             <div className='relative w-full'>
               <select
-                className='w-full cursor-pointer appearance-none rounded border-none bg-gray-1 py-1 pr-4 pl-6 text-11 font-semibold text-gray-11 transition-colors outline-none hover:bg-gray-2'
+                className='w-full cursor-pointer appearance-none rounded-lg border border-[var(--gray-3)] bg-surface py-1 pr-4 pl-6 text-[11px] font-semibold text-[var(--gray-11)] transition-colors outline-none hover:bg-[var(--gray-2)]'
                 value={String(attachFileId)}
                 onChange={(e) => setAttachFileId(e.target.value)}
               >
@@ -296,7 +296,7 @@ export default function Comments({
                 ))}
               </select>
               <Icon
-                className='absolute top-1.5 left-1.5 size-3 text-gray-9'
+                className='absolute top-1.5 left-1.5 size-3 text-[var(--gray-9)]'
                 name='tabler:paperclip'
               />
             </div>
@@ -307,7 +307,7 @@ export default function Comments({
             {/* Current User Avatar */}
             <div
               className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold',
+                'flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold',
                 getAvatarColors(myInitials, true),
               )}
             >
@@ -315,9 +315,9 @@ export default function Comments({
             </div>
 
             {/* Input Box */}
-            <div className='flex-1 overflow-hidden rounded-xl border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:bg-surface focus-within:ring-1 focus-within:ring-primary-4'>
+            <div className='flex-1 overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface transition-all focus-within:border-[var(--primary-6)] focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
               <textarea
-                className='w-full resize-none bg-transparent px-3 py-2 text-13 font-medium text-gray-12 placeholder:text-gray-8 focus:outline-none'
+                className='w-full resize-none bg-transparent px-3 py-2 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:outline-none'
                 placeholder={t`Add a comment...`}
                 ref={textareaRef}
                 rows={1}

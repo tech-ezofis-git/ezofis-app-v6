@@ -153,25 +153,38 @@ const formatBytes = (bytes?: number) => {
 //     return allowed.includes(ext.toLowerCase())
 // }
 
-export const getFileIcon = (ext: string): string => {
+export const getFileIcon = (fileNameOrExt: string): string => {
+  if (!fileNameOrExt) return 'vscode-icons:file-type-text'
+  const parts = fileNameOrExt.split('.')
+  const ext = (parts.length > 1 ? parts.pop() || '' : fileNameOrExt)
+    .toLowerCase()
+    .trim()
+    .replace(/^\./, '')
+
   const iconMap: Record<string, string> = {
-    csv: 'tabler:file-type-csv',
-    doc: 'tabler:file-type-doc',
-    docx: 'tabler:file-type-doc',
-    gif: 'tabler:photo',
-    jpeg: 'tabler:photo',
-    jpg: 'tabler:photo',
-    pdf: 'tabler:file-type-pdf',
-    png: 'tabler:photo',
-    ppt: 'tabler:file-type-ppt',
-    pptx: 'tabler:file-type-ppt',
-    rtf: 'tabler:file-text',
-    txt: 'tabler:file-type-txt',
-    webp: 'tabler:photo',
-    xls: 'tabler:file-type-xls',
-    xlsx: 'tabler:file-type-xls',
+    csv: 'vscode-icons:file-type-excel',
+    doc: 'vscode-icons:file-type-word',
+    docx: 'vscode-icons:file-type-word',
+    gif: 'vscode-icons:file-type-image',
+    jpeg: 'vscode-icons:file-type-image',
+    jpg: 'vscode-icons:file-type-image',
+    pdf: 'vscode-icons:file-type-pdf2',
+    png: 'vscode-icons:file-type-image',
+    ppt: 'vscode-icons:file-type-powerpoint',
+    pptx: 'vscode-icons:file-type-powerpoint',
+    rtf: 'vscode-icons:file-type-text',
+    svg: 'vscode-icons:file-type-image',
+    txt: 'vscode-icons:file-type-text',
+    webp: 'vscode-icons:file-type-image',
+    xls: 'vscode-icons:file-type-excel',
+    xlsx: 'vscode-icons:file-type-excel',
+    zip: 'vscode-icons:file-type-zip',
+    rar: 'vscode-icons:file-type-zip',
+    '7z': 'vscode-icons:file-type-zip',
+    json: 'vscode-icons:file-type-json',
+    xml: 'vscode-icons:file-type-xml',
   }
-  return iconMap[ext] || 'tabler:file'
+  return iconMap[ext] || 'vscode-icons:file-type-text'
 }
 
 export const getFileIconClasses = (ext: string) => {

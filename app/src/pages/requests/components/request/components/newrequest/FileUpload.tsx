@@ -33,7 +33,7 @@ import {
   AnimateSlideUp,
   AnimateStagger,
 } from '../../../../../../components/common/animations'
-import { IMAGE_ACCEPT, isImage, isPdf, MAX_SIZE, PDF_ACCEPT } from './utils'
+import { DOCUMENT_ACCEPT, IMAGE_ACCEPT, isImage, isPdf, isSupportedDocument, MAX_SIZE, PDF_ACCEPT } from './utils'
 
 type SampleDocument = {
   description: string
@@ -467,10 +467,10 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
 
   const getUploadErrorMessage = (files: File[]): string => {
     const tooLarge = files.some((f) => f.size > MAX_SIZE)
-    if (tooLarge) return t`File is too large. Max size is 4MB.`
-    const invalidType = files.some((f) => !isPdf(f) && !isImage(f))
+    if (tooLarge) return t`File is too large. Max size is 50MB.`
+    const invalidType = files.some((f) => !isSupportedDocument(f))
     if (invalidType)
-      return t`Invalid file type. Please upload a PDF or Image.`
+      return t`Invalid file type. Please upload a supported document.`
     return t`No valid files selected.`
   }
 
@@ -582,7 +582,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
   ) => {
     const files = Array.from(fileList ?? [])
     const validFiles = files.filter(
-      (f) => (isPdf(f) || isImage(f)) && f.size <= MAX_SIZE,
+      (f) => isSupportedDocument(f) && f.size <= MAX_SIZE,
     )
 
     console.log('Files selected:', files)
@@ -868,14 +868,14 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                       <span className='text-[var(--primary-9)]'>{t`browse`}</span>
                     </h2>
                     <p className='text-xs font-medium text-[var(--gray-9)]'>
-                      {t`Supports PDF and Images · Max 4 MB`}
+                      {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB`}
                     </p>
                   </div>
                 </AnimateStagger>
               )}
 
               <input
-                accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
+                accept={DOCUMENT_ACCEPT}
                 className='hidden'
                 ref={invoiceInputRef}
                 type='file'

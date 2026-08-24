@@ -5,11 +5,12 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useLingui } from '@lingui/react/macro'
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
+import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import { FolderDataTableSection } from './FolderTable'
 import type { Option } from '@/types/option'
 import type {
@@ -249,9 +250,50 @@ const getColumnWidth = (key: string, label?: string, dataType?: string) => {
   return Math.min(Math.max(labelWidth, 140), 260)
 }
 
+export const isAccountsPayableFolder = (
+  repositoryTitleOrId?: string,
+  breadcrumbs?: Array<{ label?: string; title?: string }>,
+  files?: any[],
+): boolean => {
+  const normalize = (val?: string) =>
+    (val || '').toLowerCase().replace(/[^a-z]/g, '')
+
+  const repoNorm = normalize(repositoryTitleOrId)
+  if (repoNorm.includes('accountspayable') || repoNorm.includes('payables')) {
+    return true
+  }
+
+  if (
+    breadcrumbs?.some((b) => {
+      const text = normalize(b.label || b.title)
+      return text.includes('accountspayable') || text.includes('payables')
+    })
+  ) {
+    return true
+  }
+
+  if (
+    files?.some((f) => {
+      const status = String(f?.status ?? f?.Status ?? '').trim()
+      return Boolean(
+        status &&
+          status !== '-' &&
+          status !== 'null' &&
+          status !== 'undefined' &&
+          status !== '—',
+      )
+    })
+  ) {
+    return true
+  }
+
+  return false
+}
+
 const buildRepositoryColumns = (
   fileColumns: DynamicRepositoryColumn[],
   labels: { currentStage: string; name: string },
+  isAccountsPayable: boolean = false,
 ): DynamicColumn[] => {
   const normalColumns = fileColumns.filter(
     (column) => !isHiddenFileKey(column.key) && !isPrimaryNameKey(column.key),
@@ -263,11 +305,15 @@ const buildRepositoryColumns = (
       label: labels.name,
       minWidth: 220,
     },
-    {
-      key: '__status',
-      label: labels.currentStage,
-      minWidth: 140,
-    },
+    ...(isAccountsPayable
+      ? [
+          {
+            key: '__status',
+            label: labels.currentStage,
+            minWidth: 140,
+          },
+        ]
+      : []),
     ...normalColumns.map((column) => {
       const label = column.label || toTitle(column.key)
 
@@ -283,7 +329,7 @@ const buildRepositoryColumns = (
 
 export function DocumentsListView({
   activeRepositoryId = '',
-  breadcrumbs: _breadcrumbs,
+  breadcrumbs = [],
   currentFolderGroupField = '',
   error = '',
   fileColumns = [],
@@ -298,7 +344,7 @@ export function DocumentsListView({
   loading = false,
   loadingPage = false,
   onAiSummary,
-  onBreadcrumbSelect: _onBreadcrumbSelect,
+  onBreadcrumbSelect,
   onEdit,
   onFiltersChange,
   onFilterMenuOpenChange,
@@ -327,6 +373,17 @@ export function DocumentsListView({
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState(searchQueryProp)
   const menuRef = useRef<HTMLDivElement | null>(null)
+
+  const handleOpenFolder = useCallback(
+    (id: string) => {
+      if (onRepositoryChange) {
+        onRepositoryChange(id)
+      } else if (onBreadcrumbSelect) {
+        onBreadcrumbSelect(id)
+      }
+    },
+    [onBreadcrumbSelect, onRepositoryChange],
+  )
 
   const normalizedFiles = useMemo(() => files as AnyFileItem[], [files])
 
@@ -366,13 +423,27 @@ export function DocumentsListView({
     return () => window.clearTimeout(timer)
   }, [onSearchChange, searchQuery])
 
+  const isAPFolder = useMemo(
+    () =>
+      isAccountsPayableFolder(
+        selectedRepositoryOption?.name || activeRepositoryId,
+        breadcrumbs,
+        normalizedFiles,
+      ),
+    [activeRepositoryId, breadcrumbs, normalizedFiles, selectedRepositoryOption],
+  )
+
   const columns = useMemo(
     () =>
-      buildRepositoryColumns(fileColumns, {
-        currentStage: t`Current Stage`,
-        name: t`Name`,
-      }),
-    [fileColumns, t],
+      buildRepositoryColumns(
+        fileColumns,
+        {
+          currentStage: t`Current Stage`,
+          name: t`Name`,
+        },
+        isAPFolder,
+      ),
+    [fileColumns, isAPFolder, t],
   )
 
   const currentPage = filePage?.page || 1
@@ -584,6 +655,8 @@ export function DocumentsListView({
 
         if (column.key === '__name') {
           const fileId = getFileId(row.original)
+          const fileName = value !== '-' ? value : row.original.name || row.original.fileName || ''
+          const iconName = getFileIcon(fileName)
 
           return (
             <button
@@ -592,9 +665,9 @@ export function DocumentsListView({
               type='button'
               onClick={() => onOpenFile(fileId)}
             >
-              <DynamicIcon
-                className='h-5 w-5 shrink-0 text-[#4f5b88]'
-                name='fileText'
+              <Icon
+                className='size-5 shrink-0'
+                name={iconName}
               />
               <EllipsisText
                 className='font-semibold text-gray-13'
@@ -648,7 +721,9 @@ export function DocumentsListView({
       },
     }
 
-    return [selectColumn, ...dynamicColumns, actionColumn]
+    return selectionEnabled
+      ? [selectColumn, ...dynamicColumns, actionColumn]
+      : [...dynamicColumns, actionColumn]
   }, [
     allVisibleSelected,
     columns,
@@ -786,7 +861,7 @@ export function DocumentsListView({
               loadingFolders={false}
               loadingPage={loadingPage}
               onLoadMoreFolders={() => undefined}
-              onOpenFolder={(id) => _onBreadcrumbSelect(id)}
+              onOpenFolder={handleOpenFolder}
               onReload={handleRefresh}
               rowSize='default'
               folderBodyMaxHeight={
@@ -827,19 +902,19 @@ export function DocumentsListView({
                   </div>
                   <b className='text-gray-13'>{t`No documents found`}</b>
                   <p className='max-w-[460px] text-sm text-gray-10'>
-                    {t`This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content.`}
+                    {t`This folder does not contain any folders or files yet.`}
                   </p>
-                  {onUploadFile || onUpload ? (
-                    <EmptyFolderUploadDropzone
-                      className='mt-4'
+                  {onUpload && (
+                    <button
+                      className='mt-4 flex items-center gap-2 rounded-xl bg-[var(--primary-9)] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--primary-10)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
                       disabled={uploadDisabled}
-                      onFileSelected={(file) => {
-                        if (onUploadFile) onUploadFile(file)
-                        else onUpload?.()
-                      }}
-                      onOpenUpload={onUpload}
-                    />
-                  ) : null}
+                      type='button'
+                      onClick={onUpload}
+                    >
+                      <Icon className='size-4' name='tabler:upload' />
+                      {t`Upload Documents`}
+                    </button>
+                  )}
                 </div>
               )
             ) : visibleFiles.length > 0 || loading || loadingPage || refreshing ? (

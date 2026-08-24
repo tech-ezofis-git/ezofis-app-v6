@@ -1984,9 +1984,15 @@ const InboxList: React.FC<InboxListProps> = ({
 
       {/* Footer */}
       {!selectedItem && (
-        <div className='z-10 shrink-0 bg-primary-1 pt-2'>
+        <div className='z-10 shrink-0 border-t border-[var(--gray-3)] bg-surface pt-2'>
           <Pagination
-            itemLabel={t`Requests`}
+            itemLabel={
+              activeTab === 'Exceptions'
+                ? t`Exceptions`
+                : activeTab === 'Processed'
+                  ? t`Processed`
+                  : t`Requests`
+            }
             page={page}
             pageSize={pageSize}
             showPageNumbers={false}

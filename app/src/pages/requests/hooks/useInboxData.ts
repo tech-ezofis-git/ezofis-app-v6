@@ -479,11 +479,18 @@ export const useInboxData = (
               .filter((group) => group.items.length > 0)
           : groupedData
 
+      const tabTotalItems =
+        activeTab === 'Exceptions'
+          ? exceptionsCount
+          : activeTab === 'Inbox'
+            ? inboxTabCount
+            : totalItems
+
       return {
         data: filteredGroupedData,
         exceptionsCount,
         inboxTabCount,
-        totalItems,
+        totalItems: tabTotalItems,
       }
     },
   })

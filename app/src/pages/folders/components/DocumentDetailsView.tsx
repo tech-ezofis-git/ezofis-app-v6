@@ -21,6 +21,8 @@ import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import showToast from '@/components/base/toast/showToast'
+import Icon from '@/components/base/icon/Icon'
+import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
 import { getSearchHitDate, getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import {
@@ -1863,9 +1865,9 @@ export function DocumentDetailsView({
             <Card className='overflow-hidden'>
               <div className='flex items-center justify-between gap-3 border-b border-gray-3 px-5 py-4'>
                 <div className='flex min-w-0 items-center gap-3'>
-                  <DynamicIcon
-                    className='h-5 w-5 shrink-0 text-red-8'
-                    name='fileText'
+                  <Icon
+                    className='size-6 shrink-0'
+                    name={getFileIcon(data.fileName)}
                   />
                   <b className='truncate text-[16px] font-semibold text-gray-13'>
                     {data.fileName}
@@ -2206,10 +2208,10 @@ export function DocumentDetailsView({
                         )}
                       </div>
 
-                      <div className='shrink-0 border-t border-gray-3 bg-surface-primary p-4'>
+                      <div className='shrink-0 border-t border-[var(--gray-3)] bg-surface p-4'>
                         <div className='flex items-center gap-3'>
                           <textarea
-                            className='h-12 flex-1 resize-none rounded-lg border border-gray-3 bg-white px-4 py-3 text-[13px] text-gray-13 outline-none focus:border-blue-7'
+                            className='h-12 flex-1 resize-none rounded-xl border border-[var(--gray-4)] bg-surface px-4 py-3 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] outline-none transition-all focus:border-[var(--primary-6)] focus:ring-1 focus:ring-[var(--primary-4)]'
                             placeholder={t`Add a comment...`}
                             rows={1}
                             value={commentText}
@@ -2308,10 +2310,10 @@ export function DocumentDetailsView({
                                     })
                                   }}
                                 >
-                                  <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-2'>
-                                    <DynamicIcon
-                                      className='h-4 w-4 text-red-9'
-                                      name='fileText'
+                                  <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] border border-[var(--gray-3)]'>
+                                    <Icon
+                                      className='size-5 shrink-0'
+                                      name={getFileIcon(item.fileName)}
                                     />
                                   </span>
                                   <span className='min-w-0 flex-1'>

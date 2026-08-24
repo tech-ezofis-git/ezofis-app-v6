@@ -248,11 +248,7 @@ const FieldRenderer = ({
         setIsUploading(false)
 
         if (error || !data) {
-          const fileName = file.name
-          showToast({
-            message: error || t`Failed to run OCR on ${fileName}.`,
-            variant: 'error',
-          })
+          console.warn('[uploadForOcr] OCR extraction warning:', error || 'OCR data unavailable')
           return
         }
 

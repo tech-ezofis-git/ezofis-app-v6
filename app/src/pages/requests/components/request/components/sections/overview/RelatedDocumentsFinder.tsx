@@ -601,7 +601,7 @@ const RelatedDocumentsFinder = ({
   }
 
   return (
-    <div className='animate-in fade-in zoom-in-95 fill-mode-both mb-0 rounded-2xl border border-[var(--primary-3)] border-l-4 border-l-[var(--primary-9)] bg-gradient-to-b from-[var(--primary-1)]/40 to-surface shadow-xs transition-all duration-300'>
+    <div className='animate-in fade-in zoom-in-95 fill-mode-both mb-4 rounded-2xl border border-[var(--primary-3)] border-l-4 border-l-[var(--primary-9)] bg-gradient-to-b from-[var(--primary-1)]/40 to-surface shadow-xs transition-all duration-300'>
       {stage === 'intro' ? (
         <div className='flex items-start justify-between gap-3 p-3.5 sm:p-4'>
           <div className='flex items-start gap-3 min-w-0'>
@@ -611,7 +611,7 @@ const RelatedDocumentsFinder = ({
                 {t`Find related documents`}
               </h4>
               <p className='mt-0.5 text-xs text-[var(--gray-9)] line-clamp-2'>
-                {t`Look for the purchase order, receipt, contract or any file that belongs with this document.`}
+                {t`Search and link related documents, contracts, records or files associated with this document.`}
               </p>
             </div>
           </div>
@@ -636,7 +636,7 @@ const RelatedDocumentsFinder = ({
                   {t`Find related documents`}
                 </span>
                 <p className='mt-0.5 truncate text-[11.5px] text-[var(--gray-9)]'>
-                  {t`Look for the purchase order, receipt, contract or any file that belongs with this document.`}
+                  {t`Search and link related documents, contracts, records or files associated with this document.`}
                 </p>
               </div>
             </div>
@@ -667,7 +667,7 @@ const RelatedDocumentsFinder = ({
               />
               <input
                 className='min-w-0 flex-1 border-none bg-transparent text-xs font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:ring-0 focus:outline-none'
-                placeholder={t`Search by document name, reference, PO, vendor or keywords...`}
+                placeholder={t`Search by document name, reference number, or keywords...`}
                 ref={keywordRef}
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}

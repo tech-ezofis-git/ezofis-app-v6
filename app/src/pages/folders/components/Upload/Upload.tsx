@@ -17,9 +17,11 @@ import DocumentPreviewViewer from '@/components/common/document-preview/Document
 import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
 import {
+  DOCUMENT_ACCEPT,
   IMAGE_ACCEPT,
   isImage,
   isPdf,
+  isSupportedDocument,
   MAX_SIZE,
   PDF_ACCEPT,
 } from '../../../requests/components/request/components/newrequest/utils'
@@ -907,11 +909,8 @@ export default function Upload({
         if (requestId !== ocrRequestIdRef.current) return
 
         if (error) {
-          setOcrStatus('error')
-          showToast({
-            message: t`OCR extraction failed: ${error}`,
-            variant: 'error',
-          })
+          console.warn('[uploadForOcr] OCR extraction failed/unavailable:', error)
+          setOcrStatus('idle')
           return
         }
 
@@ -1006,22 +1005,21 @@ export default function Upload({
   const handleInvoiceFiles = (fileList: FileList | File[] | null) => {
     const files = Array.from(fileList ?? [])
     const validFiles = files.filter(
-      (file) => (isPdf(file) || isImage(file)) && file.size <= MAX_SIZE,
+      (file) => isSupportedDocument(file) && file.size <= MAX_SIZE,
     )
 
     if (!validFiles.length && files.length > 0) {
       const tooLarge = files.some((file) => file.size > MAX_SIZE)
-      const invalidType = files.some((file) => !isPdf(file) && !isImage(file))
+      const invalidType = files.some((file) => !isSupportedDocument(file))
 
       showToast({
         message: tooLarge
-          ? t`File is too large. Max size is 4MB.`
+          ? t`File is too large. Max size is 50MB.`
           : invalidType
-            ? t`Invalid file type. Please upload a PDF or Image.`
+            ? t`Invalid file type. Please upload a supported document.`
             : t`No valid files selected.`,
         variant: 'error',
       })
-
       resetInput()
       return
     }
@@ -1576,13 +1574,13 @@ export default function Upload({
                           </span>
                         </h2>
                         <p className='text-xs font-medium text-[var(--gray-9)]'>
-                          {t`Supports PDF and Images · Max 4 MB`}
+                          {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB`}
                         </p>
                       </div>
                     </AnimateStagger>
 
                     <input
-                      accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
+                      accept={DOCUMENT_ACCEPT}
                       className='hidden'
                       ref={invoiceInputRef}
                       type='file'
@@ -1794,7 +1792,7 @@ export default function Upload({
             </div>
 
             <input
-              accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
+              accept={DOCUMENT_ACCEPT}
               className='hidden'
               ref={invoiceInputRef}
               type='file'

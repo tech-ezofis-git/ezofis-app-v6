@@ -98,9 +98,9 @@ const CommentsPanel = ({ comments, draft, onDraftChange, onSend }: Props) => {
         <div className='flex size-8 shrink-0 items-center justify-center rounded-full border border-primary-4 bg-primary-3 text-13 font-bold text-primary-9'>
           {initials}
         </div>
-        <div className='flex-1 overflow-hidden rounded-xl border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:bg-surface focus-within:ring-1 focus-within:ring-primary-4'>
+        <div className='flex-1 overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface transition-all focus-within:border-[var(--primary-6)] focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
           <textarea
-            className='w-full resize-none bg-transparent px-3 py-2 text-13 font-medium text-gray-12 placeholder:text-gray-8 focus:outline-none'
+            className='w-full resize-none bg-transparent px-3 py-2 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:outline-none'
             placeholder={t`Add a comment...`}
             ref={textareaRef}
             rows={1}

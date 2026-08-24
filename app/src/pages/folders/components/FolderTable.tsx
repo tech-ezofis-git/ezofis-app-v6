@@ -15,10 +15,13 @@ import {
 } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import IconButton from '@/components/base/button/IconButton'
+import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import MenuDivider from '@/components/base/menu/MenuDivider'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
+import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
+import { isAccountsPayableFolder } from './DocumentsListView'
 import type { DynamicRepositoryColumn } from '../api/folderApi'
 import { mergeFileExplorerFilters } from '../api/folderApi'
 import type {
@@ -544,20 +547,20 @@ function EmptyState({
         </h3>
 
         <p className='mt-2 max-w-[460px] text-[14px] leading-6 font-medium text-gray-10'>
-          {t`This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content.`}
+          {t`This folder does not contain any folders or files yet.`}
         </p>
 
-        {onUploadFile || onUpload ? (
-          <EmptyFolderUploadDropzone
-            className='mt-6'
+        {onUpload && (
+          <button
+            className='mt-4 flex items-center gap-2 rounded-xl bg-[var(--primary-9)] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--primary-10)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
             disabled={uploadDisabled}
-            onFileSelected={(file) => {
-              if (onUploadFile) onUploadFile(file)
-              else onUpload?.()
-            }}
-            onOpenUpload={onUpload}
-          />
-        ) : null}
+            type='button'
+            onClick={onUpload}
+          >
+            <Icon className='size-4' name='tabler:upload' />
+            {t`Upload Documents`}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -685,6 +688,12 @@ function FileDataTableSection({
   )
 
   const fileColumns = useMemo(() => {
+    const isAPFolder = isAccountsPayableFolder(
+      folderContextFilters?.repositoryId || folderContextFilters?.repositoryTitle,
+      undefined,
+      filteredFiles,
+    )
+
     const normalColumns = columns.filter(
       (column) =>
         !hiddenFirstColumnKeys.includes(column.key) &&
@@ -696,10 +705,14 @@ function FileDataTableSection({
         key: '__name',
         label: t`Name`,
       } as DynamicRepositoryColumn,
-      {
-        key: '__status',
-        label: t`Current Stage`,
-      } as DynamicRepositoryColumn,
+      ...(isAPFolder
+        ? [
+            {
+              key: '__status',
+              label: t`Current Stage`,
+            } as DynamicRepositoryColumn,
+          ]
+        : []),
       ...normalColumns,
     ]
 
@@ -720,6 +733,9 @@ function FileDataTableSection({
           const value = String(getValue() || '-')
 
           if (index === 0) {
+            const fileName = value !== '-' ? value : row.original.name || row.original.fileName || ''
+            const iconName = getFileIcon(fileName)
+
             return (
               <button
                 className={EXPLORER_NAME_BUTTON_CLASS}
@@ -727,9 +743,9 @@ function FileDataTableSection({
                 onClick={() => onOpenFile(fileId)}
               >
                 <span className={EXPLORER_ICON_WRAP_CLASS}>
-                  <DynamicIcon
-                    className={EXPLORER_ICON_CLASS}
-                    name='fileText'
+                  <Icon
+                    className='size-4 shrink-0'
+                    name={iconName}
                   />
                 </span>
                 <span className={EXPLORER_NAME_TEXT_WRAP_CLASS}>
@@ -1095,15 +1111,23 @@ export function FolderDataTableSection({
       }),
 
       folderColumnHelper.accessor('items', {
-        header: () => <EllipsisText lines={1} value={t`Items`} />,
+        header: () => <EllipsisText lines={1} value={t`Files`} />,
         id: 'items',
         maxSize: 140,
         meta: EXPLORER_CELL_META,
         minSize: 100,
         size: 120,
-        cell: ({ getValue }) => (
-          <ExplorerValue value={String(getValue() || '-')} />
-        ),
+        cell: ({ getValue }) => {
+          const raw = String(getValue() || '-').trim()
+          if (raw === '-' || raw === '') return <ExplorerValue value='-' />
+          const num = Number(raw)
+          const displayText = !isNaN(num)
+            ? num === 1
+              ? t`1 file`
+              : t`${num} files`
+            : raw
+          return <ExplorerValue value={displayText} />
+        },
       }),
 
       folderColumnHelper.accessor('modified', {

@@ -8,6 +8,13 @@ import {
 export function applyResolvedTheme(resolved: ResolvedTheme) {
   document.documentElement.setAttribute('data-mantine-color-scheme', resolved)
   document.documentElement.setAttribute('data-resolved-theme', resolved)
+  if (resolved === 'dark') {
+    document.documentElement.classList.add('dark')
+    document.documentElement.classList.remove('light')
+  } else {
+    document.documentElement.classList.add('light')
+    document.documentElement.classList.remove('dark')
+  }
   document.documentElement.style.colorScheme = resolved
 }
 
