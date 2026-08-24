@@ -44,7 +44,7 @@ msgid "{0} fields"
 msgstr "{0} medan"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1754
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1908
 msgid "{0} fields configured"
 msgstr "{0} medan dikonfigurasi"
 
@@ -321,7 +321,7 @@ msgstr ""
 msgid "Account Expiry Date"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:981
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:985
 msgid "Accounts Payable"
 msgstr ""
 
@@ -329,11 +329,11 @@ msgstr ""
 msgid "Accounts Payable Automation"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1001
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1005
 msgid "Accounts payable folder"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:982
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:986
 msgid "Accounts Receivable"
 msgstr ""
 
@@ -413,8 +413,8 @@ msgstr ""
 #~ msgid "Add extra instructions for the user..."
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:656
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:664
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:659
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:667
 msgid "Add field"
 msgstr ""
 
@@ -501,15 +501,15 @@ msgstr ""
 msgid "AI EXTRACTION"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1812
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1966
 msgid "AI fields"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2011
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2165
 msgid "AI Folder Builder"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:221
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:224
 msgid "AI generated"
 msgstr ""
 
@@ -754,7 +754,7 @@ msgstr ""
 msgid "Archived"
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:499
+#: src/pages/forms/FormsPage.tsx:503
 msgid "Are you sure you want to delete"
 msgstr ""
 
@@ -895,16 +895,20 @@ msgstr ""
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 #: src/pages/folders/components/Upload/Upload.tsx:1503
-#: src/pages/forms/components/AiFormBuilder.tsx:102
+#: src/pages/forms/components/AiFormBuilder.tsx:122
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:906
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3972
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2002
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1790
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1828
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1840
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1852
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2156
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
 #: src/pages/settings/components/SettingsWizardLayout.tsx:195
-#: src/pages/workflows/components/AiWorkflowBuilder.tsx:93
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:112
 msgid "Back"
 msgstr ""
 
@@ -928,7 +932,7 @@ msgstr ""
 msgid "Back to PO Setup"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1720
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1874
 msgid "Back to review"
 msgstr ""
 
@@ -974,6 +978,13 @@ msgstr ""
 msgid "browse files"
 msgstr ""
 
+#: src/pages/forms/components/AiFormBuilder.tsx:134
+#: src/pages/forms/components/AiFormBuilder.tsx:223
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:124
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:205
+msgid "Build Manually"
+msgstr ""
+
 #: src/pages/forms/FormEntriesPage.tsx:2124
 msgid "Bulk Import"
 msgstr ""
@@ -999,7 +1010,7 @@ msgstr ""
 msgid "By agent, stacked"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:942
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:946
 msgid "By customer"
 msgstr ""
 
@@ -1007,11 +1018,11 @@ msgstr ""
 msgid "By department performance"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:938
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:942
 msgid "By document type"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:934
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:938
 msgid "By employee"
 msgstr ""
 
@@ -1023,7 +1034,7 @@ msgstr ""
 msgid "By risk & compliance"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:930
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:934
 msgid "By supplier / vendor"
 msgstr ""
 
@@ -1048,7 +1059,7 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:370
 #: src/pages/forms/FormEntriesPage.tsx:1977
 #: src/pages/forms/FormEntriesPage.tsx:2072
-#: src/pages/forms/FormsPage.tsx:519
+#: src/pages/forms/FormsPage.tsx:523
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:660
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
@@ -1130,13 +1141,13 @@ msgstr ""
 msgid "Change Theme"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:586
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:718
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:589
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:721
 msgid "Change to folder field"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:586
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:717
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:589
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:720
 msgid "Change to normal field"
 msgstr ""
 
@@ -1173,7 +1184,7 @@ msgstr ""
 msgid "Choose signature"
 msgstr "Pilih tandatangan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:890
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:894
 msgid "Choose where documents in this folder will be stored and accessed."
 msgstr "Pilih tempat dokumen dalam folder ini akan disimpan dan diakses."
 
@@ -1312,7 +1323,7 @@ msgstr "Lengkap"
 msgid "Complete document match."
 msgstr "Padanan dokumen lengkap."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2014
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2168
 msgid "Complete each stage, then continue"
 msgstr "Lengkapkan setiap peringkat, kemudian teruskan"
 
@@ -1370,7 +1381,7 @@ msgid "Configuration"
 msgstr "Konfigurasi"
 
 #. placeholder {0}: suggestion.folderName
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1265
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1282
 msgid "Configuration for “{0}” is ready. Review each step and continue through the remaining options."
 msgstr "Konfigurasi untuk “{0}” sedia. Semak setiap langkah dan teruskan melalui pilihan yang tinggal."
 
@@ -1457,8 +1468,8 @@ msgstr ""
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:101
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:97
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1154
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1669
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1699
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1778
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1816
 #: src/pages/settings/components/SettingsWizardLayout.tsx:77
 #: src/pages/sign-in/components/SignInForm.tsx:645
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:331
@@ -1512,15 +1523,15 @@ msgstr ""
 msgid "Could not copy link"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1172
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1186
 msgid "Could not generate description. You can retry with another folder name."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1233
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1250
 msgid "Could not generate fields. Try Recommend fields again."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1273
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1290
 msgid "Could not generate folder configuration. Try again."
 msgstr ""
 
@@ -1592,7 +1603,7 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:1249
 #: src/pages/forms/FormEntriesPage.tsx:2143
 #: src/pages/forms/FormsPage.tsx:227
-#: src/pages/forms/FormsPage.tsx:608
+#: src/pages/forms/FormsPage.tsx:612
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2862
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2864
 #: src/pages/workflows/components/Table.tsx:81
@@ -1601,7 +1612,7 @@ msgid "Created By"
 msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:2151
-#: src/pages/forms/FormsPage.tsx:619
+#: src/pages/forms/FormsPage.tsx:623
 #: src/pages/settings/components/AuditMonitoring.tsx:359
 #: src/pages/workflows/components/Table.tsx:473
 msgid "Created Date"
@@ -1679,7 +1690,7 @@ msgstr ""
 msgid "Currently Shared With"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:965
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:969
 msgid "Custom API"
 msgstr ""
 
@@ -1781,7 +1792,7 @@ msgstr ""
 msgid "December"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:895
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:899
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr ""
 
@@ -1794,7 +1805,7 @@ msgstr ""
 msgid "Default Storage"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:885
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:889
 msgid "Define metadata fields used for search, filtering, and folder structure."
 msgstr ""
 
@@ -1829,7 +1840,7 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:497
+#: src/pages/forms/FormsPage.tsx:501
 msgid "Delete Form"
 msgstr ""
 
@@ -1866,7 +1877,7 @@ msgstr ""
 msgid "Delete User"
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:532
+#: src/pages/forms/FormsPage.tsx:536
 msgid "Deleting form..."
 msgstr ""
 
@@ -1892,11 +1903,11 @@ msgstr ""
 #~ msgid "Department-wise spend"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1487
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1577
 msgid "Describe structure or fields…"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:128
+#: src/pages/forms/components/AiFormBuilder.tsx:157
 msgid "Describe the form you want to create..."
 msgstr ""
 
@@ -1908,7 +1919,7 @@ msgstr ""
 msgid "Describe the purpose of this group..."
 msgstr ""
 
-#: src/pages/workflows/components/AiWorkflowBuilder.tsx:119
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:147
 msgid "Describe the workflow you want to create..."
 msgstr ""
 
@@ -1925,6 +1936,7 @@ msgid "Describe your custom dashboard design or metric requirements..."
 msgstr ""
 
 #: src/pages/forms/FormsPage.tsx:202
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1714
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2770
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2772
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3335
@@ -1942,13 +1954,13 @@ msgstr ""
 #~ msgid "Description *"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1738
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1892
 msgid "Description pending"
 msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1163
-msgid "Description ready: “{description}” Review it below, then continue to Storage."
-msgstr ""
+#~ msgid "Description ready: “{description}” Review it below, then continue to Storage."
+#~ msgstr ""
 
 #. placeholder {0}: response?.headers.length
 #. placeholder {1}: response?.rowCount
@@ -2024,8 +2036,8 @@ msgstr "Belum ada akaun?"
 
 #: src/pages/folders/components/Upload/Upload.tsx:588
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1692
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1669
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1699
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1777
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1816
 msgid "Done"
 msgstr "Selesai"
 
@@ -2078,7 +2090,7 @@ msgstr "Memuat turun..."
 msgid "DPO"
 msgstr "DPO"
 
-#: src/pages/forms/FormsPage.tsx:601
+#: src/pages/forms/FormsPage.tsx:605
 #: src/pages/workflows/components/Table.tsx:455
 msgid "Draft"
 msgstr "Draf"
@@ -2248,11 +2260,11 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:1286
 #: src/pages/forms/FormsPage.tsx:279
 #: src/pages/requests/components/Table.tsx:113
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1798
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1928
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1947
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1966
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1987
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1952
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2082
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2101
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2120
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2141
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2904
 #: src/pages/settings/components/GroupManagement.tsx:480
 #: src/pages/settings/components/ManageUser.tsx:1030
@@ -2397,7 +2409,7 @@ msgstr ""
 msgid "Enter first name"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1485
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1575
 msgid "Enter folder name…"
 msgstr ""
 
@@ -2605,9 +2617,9 @@ msgstr ""
 #~ msgid "EZOFIS AI Summary"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:297
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:915
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:972
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:300
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:919
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:976
 msgid "EZOFIS Drive"
 msgstr "EZOFIS Drive"
 
@@ -2619,7 +2631,7 @@ msgstr ""
 msgid "Failed to attach document."
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:541
+#: src/pages/forms/FormsPage.tsx:545
 msgid "Failed to delete form"
 msgstr "Gagal to delete form"
 
@@ -2694,7 +2706,7 @@ msgstr "February"
 msgid "Field Matching"
 msgstr "Pemadanan Medan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:613
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:616
 msgid "Field name"
 msgstr "Nama medan"
 
@@ -2702,7 +2714,7 @@ msgstr "Nama medan"
 #~ msgid "Field Settings"
 #~ msgstr "Tetapan Medan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:434
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:437
 msgid "Field type"
 msgstr "Jenis medan"
 
@@ -2714,12 +2726,12 @@ msgstr "medan"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
 #: src/pages/folders/components/Upload/Upload.tsx:1835
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:887
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:891
 msgid "Fields"
 msgstr "Medan"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1809
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1963
 msgid "Fields ({0})"
 msgstr "Medan ({0})"
 
@@ -2733,7 +2745,7 @@ msgstr "Medan Sepadan"
 msgid "Fields Needing Review"
 msgstr "Medan Perlu Semakan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1755
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1909
 msgid "Fields pending"
 msgstr "Medan menunggu"
 
@@ -2839,7 +2851,7 @@ msgstr "Flat"
 msgid "Folder"
 msgstr "Folder"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1164
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1178
 msgid "Folder “{folderName}” is ready. Continue to choose a storage provider."
 msgstr "Folder “{folderName}” sedia. Teruskan untuk pilih pembekal storan."
 
@@ -2856,27 +2868,35 @@ msgstr ""
 #~ msgid "Folder created successfully."
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1603
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1776
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1693
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1930
 msgid "Folder details"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:882
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:886
 msgid "Folder Details"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:595
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:727
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1177
+msgid "Folder details ready: “{dbDescription}” Review requirements & description below, then continue."
+msgstr ""
+
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1322
+msgid "Folder details updated. Regenerating recommended fields for “{nameTrimmed}”…"
+msgstr ""
+
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:598
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:730
 msgid "Folder field — click for normal"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:639
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:642
 msgid "Folder fields are mandatory"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2137
-#~ msgid "Folder Name"
-#~ msgstr ""
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1698
+msgid "Folder Name"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3321
 msgid "Folder Name *"
@@ -2887,7 +2907,11 @@ msgstr ""
 #~ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1405
-msgid "Folder name recorded as “{folderName}”. Generating a business description now…"
+#~ msgid "Folder name recorded as “{folderName}”. Generating a business description now…"
+#~ msgstr ""
+
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1495
+msgid "Folder name recorded as “{folderName}”. Generating details now…"
 msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2320
@@ -2950,7 +2974,7 @@ msgstr ""
 #~ msgid "Form cannot be submitted without this."
 #~ msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:546
+#: src/pages/forms/FormsPage.tsx:550
 msgid "Form deleted successfully"
 msgstr ""
 
@@ -3006,24 +3030,24 @@ msgstr ""
 msgid "Generate Dashboard Design"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:709
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1631
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1743
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1788
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1854
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1906
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:712
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1733
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1897
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1942
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2008
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2060
 msgid "Generated by AI"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1593
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1683
 msgid "Generating description…"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1442
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1532
 msgid "Generating recommended fields for this folder…"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1595
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1685
 msgid "Generating recommended fields…"
 msgstr ""
 
@@ -3063,9 +3087,9 @@ msgstr ""
 msgid "Google"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:299
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:917
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:974
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:302
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:921
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:978
 msgid "Google Drive"
 msgstr ""
 
@@ -3243,9 +3267,9 @@ msgstr ""
 msgid "Hold"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1293
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1335
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1685
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1344
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1421
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1803
 msgid "How should documents be organized? Choose Recommend fields or another option."
 msgstr ""
 
@@ -3257,11 +3281,11 @@ msgstr ""
 msgid "How should your dashboard be organized? Choose a template or describe your custom design."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:983
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:987
 msgid "HR Documents"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:992
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:996
 msgid "HR payslips folder"
 msgstr ""
 
@@ -3336,7 +3360,7 @@ msgstr ""
 msgid "Incoming workload volumes over the last 6 months"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:951
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:955
 msgid "Incremental Version"
 msgstr ""
 
@@ -3412,8 +3436,8 @@ msgid "Instant Processing"
 msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Integrations.tsx:62
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:902
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1976
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:906
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2130
 msgid "Integrations"
 msgstr ""
 
@@ -3707,11 +3731,11 @@ msgstr "Lancarkan Aliran Kerja"
 msgid "Ledger Verification Note:"
 msgstr "Nota Pengesahan Lejar:"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:984
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:988
 msgid "Legal Contracts"
 msgstr "Kontrak Undang-undang"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:996
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1000
 msgid "Legal contracts folder"
 msgstr "Folder kontrak undang-undang"
 
@@ -3723,7 +3747,7 @@ msgstr "Folder kontrak undang-undang"
 msgid "Legal Matter Association Check"
 msgstr "Semakan Perkaitan Matter Undang-undang"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:284
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:287
 msgid "Less"
 msgstr "Kurang"
 
@@ -3938,8 +3962,8 @@ msgstr ""
 #~ msgid "Mandatory"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:641
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:782
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:644
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:785
 msgid "Mandatory — click to make optional"
 msgstr ""
 
@@ -4004,13 +4028,13 @@ msgstr ""
 msgid "Mark all as read"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:628
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:772
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:631
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:775
 msgid "Mark as mandatory"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:627
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:772
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:630
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:775
 msgid "Mark as optional"
 msgstr ""
 
@@ -4125,7 +4149,7 @@ msgstr ""
 msgid "Microsoft"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:963
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:967
 msgid "Microsoft Dynamics"
 msgstr ""
 
@@ -4162,13 +4186,13 @@ msgid "Modified At"
 msgstr "Modified At"
 
 #: src/pages/forms/FormsPage.tsx:240
-#: src/pages/forms/FormsPage.tsx:613
+#: src/pages/forms/FormsPage.tsx:617
 #: src/pages/workflows/components/Table.tsx:94
 #: src/pages/workflows/components/Table.tsx:467
 msgid "Modified By"
 msgstr "Modified By"
 
-#: src/pages/forms/FormsPage.tsx:624
+#: src/pages/forms/FormsPage.tsx:628
 #: src/pages/workflows/components/Table.tsx:478
 msgid "Modified Date"
 msgstr "Modified Tarikh"
@@ -4213,7 +4237,7 @@ msgstr "Trend invois bulanan"
 #~ msgid "Monthly payment trend"
 #~ msgstr "Trend pembayaran bulanan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:273
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:276
 msgid "More (+{hiddenCount})"
 msgstr "Lagi (+{hiddenCount})"
 
@@ -4248,7 +4272,7 @@ msgstr "T/B"
 #: src/pages/folders/components/FolderTable.tsx:1078
 #: src/pages/forms/FormEntriesPage.tsx:2134
 #: src/pages/forms/FormsPage.tsx:167
-#: src/pages/forms/FormsPage.tsx:591
+#: src/pages/forms/FormsPage.tsx:595
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:603
 #: src/pages/settings/components/ManageUser.tsx:863
@@ -4279,8 +4303,8 @@ msgstr ""
 #~ msgid "New Folder Setup"
 #~ msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:109
-#: src/pages/forms/FormsPage.tsx:571
+#: src/pages/forms/components/AiFormBuilder.tsx:129
+#: src/pages/forms/FormsPage.tsx:575
 msgid "New Form"
 msgstr ""
 
@@ -4314,7 +4338,7 @@ msgstr ""
 #~ msgid "New User Setup"
 #~ msgstr ""
 
-#: src/pages/workflows/components/AiWorkflowBuilder.tsx:100
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:119
 #: src/pages/workflows/components/Table.tsx:437
 msgid "New Workflow"
 msgstr ""
@@ -4434,9 +4458,9 @@ msgstr ""
 #~ msgid "No groups yet"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:960
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1767
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1980
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:964
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1921
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2134
 msgid "No integrations"
 msgstr ""
 
@@ -4567,7 +4591,7 @@ msgstr ""
 msgid "No timeline found"
 msgstr "Tiada garis masa ditemui"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:475
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:478
 msgid "No types found"
 msgstr ""
 
@@ -4594,8 +4618,8 @@ msgstr ""
 msgid "Non-sequential"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:596
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:728
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:599
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:731
 msgid "Normal field — click for folder"
 msgstr ""
 
@@ -4671,9 +4695,9 @@ msgstr ""
 msgid "On Boarding"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:298
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:916
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:973
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:301
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:920
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:977
 msgid "OneDrive"
 msgstr ""
 
@@ -4706,8 +4730,8 @@ msgstr ""
 msgid "Opening sign request..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:642
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:783
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:645
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:786
 msgid "Optional — click to make mandatory"
 msgstr ""
 
@@ -4719,7 +4743,7 @@ msgstr ""
 msgid "Optional supporting documents"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:900
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:904
 msgid "Optionally connect ERP or other systems so data can sync with this folder."
 msgstr ""
 
@@ -4729,19 +4753,24 @@ msgstr ""
 msgid "Or"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1486
+#: src/pages/forms/components/AiFormBuilder.tsx:216
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:198
+msgid "Or prefer to build from scratch?"
+msgstr ""
+
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1576
 msgid "Or type a storage provider…"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1488
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1578
 msgid "Or type a versioning strategy…"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1489
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1579
 msgid "Or type an integration…"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:962
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:966
 msgid "Oracle ERP"
 msgstr ""
 
@@ -4991,11 +5020,11 @@ msgstr ""
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:64
+#: src/pages/forms/components/AiFormBuilder.tsx:81
 msgid "Please describe what form you want to create"
 msgstr ""
 
-#: src/pages/workflows/components/AiWorkflowBuilder.tsx:56
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:72
 msgid "Please describe what workflow you want to create"
 msgstr ""
 
@@ -5304,7 +5333,7 @@ msgstr ""
 #~ msgid "Provide a name and details for this group."
 #~ msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:600
+#: src/pages/forms/FormsPage.tsx:604
 #: src/pages/workflows/components/Table.tsx:454
 msgid "Published"
 msgstr ""
@@ -5384,8 +5413,8 @@ msgstr ""
 msgid "Recognizing table structures"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:926
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1438
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:930
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1528
 msgid "Recommend fields"
 msgstr ""
 
@@ -5395,7 +5424,7 @@ msgstr ""
 
 #. placeholder {0}: fields.length
 #. placeholder {1}: answers.folderName
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1225
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1242
 msgid "Recommended {0} fields for “{1}”. Adjust them below, then continue."
 msgstr ""
 
@@ -5416,7 +5445,7 @@ msgstr ""
 #: src/pages/folders/components/FolderFilterBar.tsx:705
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 #: src/pages/forms/FormEntriesPage.tsx:2112
-#: src/pages/forms/FormsPage.tsx:583
+#: src/pages/forms/FormsPage.tsx:587
 #: src/pages/requests/components/buttons/RefreshButton.tsx:13
 #: src/pages/requests/components/buttons/RefreshButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1882
@@ -5439,7 +5468,7 @@ msgstr ""
 msgid "Refreshing..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1680
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1798
 msgid "Regenerate"
 msgstr ""
 
@@ -5465,7 +5494,7 @@ msgid "Remember your password?"
 msgstr "Ingat kata laluan anda?"
 
 #. placeholder {0}: field.fieldName
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:697
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:700
 msgid "Remove {0}"
 msgstr "Buang {0}"
 
@@ -5498,7 +5527,7 @@ msgstr "Namakan semula"
 msgid "Replace"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:953
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:957
 msgid "Replace Existing"
 msgstr "Ganti Sedia Ada"
 
@@ -5648,7 +5677,7 @@ msgstr "Cuba Semula Pengambilan"
 msgid "Retry Loading"
 msgstr "Retry Memuatkan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:907
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:911
 #: src/pages/settings/components/GroupManagement.tsx:87
 #: src/pages/settings/components/ManageUser.tsx:142
 #: src/pages/settings/components/RolesPermissions.tsx:151
@@ -5691,7 +5720,7 @@ msgstr "Semak ringkasan pemetaan lajur sebelum memuktamadkan konfigurasi PO."
 msgid "Review your connections and confirm your setup before activation."
 msgstr "Semak sambungan anda dan sahkan persediaan sebelum pengaktifan."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:905
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
 msgid "Review your full folder setup, then apply it to create the repository."
 msgstr "Semak persediaan folder penuh, kemudian gunakan untuk cipta repositori."
 
@@ -5797,6 +5826,10 @@ msgstr ""
 #~ msgid "Save & Next"
 #~ msgstr ""
 
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1775
+msgid "Save & Regenerate Fields"
+msgstr ""
+
 #: src/pages/settings/components/RolesPermissions.tsx:2146
 msgid "Save Assignments"
 msgstr ""
@@ -5819,7 +5852,7 @@ msgstr ""
 msgid "Save failed inside the document editor."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2022
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2176
 msgid "Save Folder"
 msgstr ""
 
@@ -5867,7 +5900,7 @@ msgstr ""
 msgid "Saving..."
 msgstr "Menyimpan..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2022
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2176
 msgid "Saving…"
 msgstr "Menyimpan…"
 
@@ -5972,7 +6005,7 @@ msgstr ""
 msgid "Search for people to share with"
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:563
+#: src/pages/forms/FormsPage.tsx:567
 msgid "Search forms..."
 msgstr ""
 
@@ -5993,7 +6026,7 @@ msgid "Search keywords..."
 msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:2137
-#: src/pages/forms/FormsPage.tsx:594
+#: src/pages/forms/FormsPage.tsx:598
 #: src/pages/workflows/components/Table.tsx:448
 msgid "Search name..."
 msgstr ""
@@ -6021,7 +6054,7 @@ msgstr ""
 msgid "Search suppliers..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:466
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:469
 msgid "Search type"
 msgstr ""
 
@@ -6197,7 +6230,7 @@ msgstr ""
 #~ msgid "Select storage provider"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1307
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1393
 msgid "Select the storage provider where documents for this folder should be stored."
 msgstr ""
 
@@ -6248,9 +6281,9 @@ msgstr ""
 #~ msgstr "pengguna dipilih"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1825
-#: src/pages/forms/components/AiFormBuilder.tsx:154
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1547
-#: src/pages/workflows/components/AiWorkflowBuilder.tsx:137
+#: src/pages/forms/components/AiFormBuilder.tsx:183
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1637
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:165
 msgid "Send"
 msgstr "Hantar"
 
@@ -6303,7 +6336,7 @@ msgstr ""
 msgid "Sequential: mark place(s) for {0} first, then switch to the next signer."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:880
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:884
 msgid "Set the folder name and let AI draft a clear business description for this repository."
 msgstr ""
 
@@ -6552,8 +6585,8 @@ msgstr "Padanan PO Pintar"
 msgid "SOC2 Compliant"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:85
-#: src/pages/workflows/components/AiWorkflowBuilder.tsx:76
+#: src/pages/forms/components/AiFormBuilder.tsx:104
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:94
 msgid "Something went wrong. Please try again."
 msgstr ""
 
@@ -6617,7 +6650,7 @@ msgstr ""
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:844
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1947
 #: src/pages/forms/FormsPage.tsx:189
-#: src/pages/forms/FormsPage.tsx:598
+#: src/pages/forms/FormsPage.tsx:602
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2821
@@ -6676,8 +6709,8 @@ msgid "Still opening... this is taking longer than expected. Check the browser c
 msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:132
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:892
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1938
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:896
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2092
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2783
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2788
 msgid "Storage"
@@ -6946,7 +6979,7 @@ msgid "Theme"
 msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:2059
-#: src/pages/forms/FormsPage.tsx:507
+#: src/pages/forms/FormsPage.tsx:511
 msgid "This action is permanent and cannot be undone."
 msgstr ""
 
@@ -7032,11 +7065,11 @@ msgstr ""
 msgid "Timeline"
 msgstr "Garis Masa"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:952
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:956
 msgid "Timestamp Version"
 msgstr "Versi Cap Masa"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1009
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1013
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "Untuk bermula: apakah nama folder ini? Gunakan nama perniagaan yang jelas, pilih contoh di bawah, atau terangkan idea folder penuh untuk jana persediaan lengkap."
 
@@ -7166,7 +7199,7 @@ msgstr "Jenis"
 #~ msgid "Type what you remember, pick the folders to look in, then press Search."
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1533
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1623
 msgid "Type your answer…"
 msgstr "Taip jawapan anda…"
 
@@ -7278,7 +7311,7 @@ msgstr "Jenis fail tidak disokong. Sila muat naik fail CSV atau XLSX."
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:120
 #: src/pages/folders/components/DocumentDetailsView.tsx:805
 #: src/pages/folders/components/ShareView.tsx:323
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:767
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:770
 msgid "Untitled"
 msgstr "Tanpa tajuk"
 
@@ -7286,12 +7319,12 @@ msgstr "Tanpa tajuk"
 msgid "Untitled Field"
 msgstr "Tanpa tajuk Medan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1734
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1888
 msgid "Untitled folder"
 msgstr "Folder tanpa tajuk"
 
 #: src/pages/forms/FormsPage.tsx:182
-#: src/pages/forms/FormsPage.tsx:504
+#: src/pages/forms/FormsPage.tsx:508
 msgid "Untitled Form"
 msgstr "Tanpa tajuk Borang"
 
@@ -7303,15 +7336,15 @@ msgstr ""
 msgid "Update Role"
 msgstr "Kemas kini Peranan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1357
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1443
 msgid "Update the integration preference for this folder."
 msgstr "Kemas kini pilihan integrasi untuk folder ini."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1343
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1429
 msgid "Update the storage provider for this folder."
 msgstr "Kemas kini pembekal storan untuk folder ini."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1350
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1436
 msgid "Update the versioning strategy for this folder."
 msgstr "Kemas kini strategi versi untuk folder ini."
 
@@ -7571,12 +7604,12 @@ msgstr "Sahkan"
 msgid "Verifying..."
 msgstr "Mengesahkan..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:897
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1957
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:901
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2111
 msgid "Versioning"
 msgstr "Versiing"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1467
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1557
 msgid "Versioning strategy saved. Do you require an ERP or system integration, or should integrations be configured later?"
 msgstr "Strategi versi disimpan. Adakah anda memerlukan integrasi ERP atau sistem, atau integrasi patut dikonfigurasi kemudian?"
 
@@ -7652,7 +7685,7 @@ msgstr ""
 msgid "Welcome to AP Automation Setup"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:118
+#: src/pages/forms/components/AiFormBuilder.tsx:147
 msgid "What form shall we create?"
 msgstr ""
 
@@ -7660,7 +7693,7 @@ msgstr ""
 msgid "What Happens Next?"
 msgstr ""
 
-#: src/pages/workflows/components/AiWorkflowBuilder.tsx:109
+#: src/pages/workflows/components/AiWorkflowBuilder.tsx:137
 msgid "What workflow shall we create?"
 msgstr ""
 
@@ -7672,7 +7705,7 @@ msgstr ""
 msgid "Which vendors carry the most risk exposure?"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1424
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1514
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr ""
 
@@ -7708,7 +7741,7 @@ msgstr ""
 msgid "Workflows"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1596
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1686
 msgid "Working…"
 msgstr ""
 
@@ -7720,7 +7753,7 @@ msgstr ""
 msgid "Yearly"
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:553
+#: src/pages/forms/FormsPage.tsx:557
 msgid "Yes, Delete"
 msgstr ""
 
