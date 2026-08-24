@@ -238,82 +238,6 @@ const mapRepositoryToRow = (
   }
 }
 
-const defaultFields: FieldRow[] = [
-  {
-    dataType: 'SHORT_TEXT',
-    fieldName: 'Supplier',
-    iconKey: 'building',
-    id: 'supplier',
-    includeInFolderStructure: true,
-    isMandatory: true,
-    level: 1,
-    orderId: 1,
-    system: true,
-  },
-  {
-    dataType: 'SINGLE_SELECT',
-    fieldName: 'Document Type',
-    iconKey: 'folder',
-    id: 'documentType',
-    includeInFolderStructure: true,
-    isMandatory: true,
-    level: 2,
-    orderId: 2,
-    system: true,
-  },
-  {
-    dataType: 'SHORT_TEXT',
-    fieldName: 'PO Number',
-    iconKey: 'document',
-    id: 'poNumber',
-    includeInFolderStructure: true,
-    isMandatory: true,
-    level: 3,
-    orderId: 3,
-    system: true,
-  },
-  {
-    dataType: 'SHORT_TEXT',
-    fieldName: 'Invoice Number',
-    id: 'invoiceNumber',
-    includeInFolderStructure: false,
-    isMandatory: true,
-    level: 0,
-    orderId: 4,
-    system: true,
-  },
-  {
-    dataType: 'SHORT_TEXT',
-    fieldName: 'Vendor Name',
-    id: 'vendorName',
-    includeInFolderStructure: false,
-    isMandatory: false,
-    level: 0,
-    orderId: 5,
-    system: true,
-  },
-  {
-    dataType: 'DATE',
-    fieldName: 'Invoice Date',
-    id: 'invoiceDate',
-    includeInFolderStructure: false,
-    isMandatory: false,
-    level: 0,
-    orderId: 6,
-    system: true,
-  },
-  {
-    dataType: 'CURRENCY_AMOUNT',
-    fieldName: 'Amount',
-    id: 'amount',
-    includeInFolderStructure: false,
-    isMandatory: true,
-    level: 0,
-    orderId: 7,
-    system: true,
-  },
-]
-
 const wizardSteps: WizardStepItem[] = [
   { description: 'Name & description', id: 1, title: 'Folder Details' },
   { description: 'Metadata fields', id: 2, title: 'Fields' },
@@ -710,7 +634,7 @@ const mapApiFieldsToFieldRows = (
   apiFields: Array<Record<string, unknown>> | undefined,
 ): FieldRow[] => {
   if (!Array.isArray(apiFields) || apiFields.length === 0) {
-    return defaultFields
+    return []
   }
 
   const mapped: FieldRow[] = []
@@ -734,9 +658,7 @@ const mapApiFieldsToFieldRows = (
 
   mapped.sort((left, right) => left.orderId - right.orderId)
 
-  return mapped.length > 0
-    ? recalculateFieldHierarchy(mapped)
-    : defaultFields
+  return recalculateFieldHierarchy(mapped)
 }
 
 const fieldColumnHelper = createColumnHelper<FieldDisplayRow>()
@@ -970,7 +892,7 @@ export default function DmsFolderConfiguration({
   const [showWizard, setShowWizard] = useState(storedState?.showWizard ?? false)
   const [showAiBuilder, setShowAiBuilder] = useState(storedState?.showAiBuilder ?? false)
   const [step, setStep] = useState<WizardStep>(storedState?.step ?? 1)
-  const [fields, setFields] = useState<FieldRow[]>(storedState?.fields ?? defaultFields)
+  const [fields, setFields] = useState<FieldRow[]>(storedState?.fields ?? [])
   const [storage, setStorage] = useState(storedState?.storage ?? 'EZOFIS Drive')
   const [storageConnectorId, setStorageConnectorId] = useState<string | null>(
     storedState?.storageConnectorId ?? null,
@@ -1348,7 +1270,7 @@ export default function DmsFolderConfiguration({
     setEditingRepositoryId(null)
     setFolderName('')
     setDescription('')
-    setFields(defaultFields)
+    setFields([])
     setStorage('EZOFIS Drive')
     setStorageConnectorId(null)
     setStorageConnectorLabel(null)
@@ -1402,10 +1324,7 @@ export default function DmsFolderConfiguration({
       }
     })
 
-    const finalFields =
-      mappedFields.length > 0
-        ? recalculateFieldHierarchy(mappedFields)
-        : defaultFields
+    const finalFields = recalculateFieldHierarchy(mappedFields)
 
     setFolderName(trimmedName)
     setDescription(payload.description)
