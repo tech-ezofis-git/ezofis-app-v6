@@ -349,8 +349,8 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:1170
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2923
+#: src/pages/settings/components/Folders/DmsSettings.tsx:1092
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2842
 #: src/pages/settings/components/GroupManagement.tsx:103
 #: src/pages/settings/components/GroupManagement.tsx:935
 #: src/pages/settings/components/ManageUser.tsx:2325
@@ -749,8 +749,8 @@ msgstr ""
 msgid "April"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:1171
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2923
+#: src/pages/settings/components/Folders/DmsSettings.tsx:1093
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2842
 msgid "Archived"
 msgstr ""
 
@@ -1574,8 +1574,8 @@ msgstr ""
 msgid "Create User"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2930
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2932
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2849
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2851
 #: src/pages/settings/components/GroupManagement.tsx:437
 #: src/pages/settings/components/ManageUser.tsx:987
 #: src/pages/settings/components/RolesPermissions.tsx:1675
@@ -1593,8 +1593,8 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:2143
 #: src/pages/forms/FormsPage.tsx:227
 #: src/pages/forms/FormsPage.tsx:608
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2943
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2945
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2862
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2864
 #: src/pages/workflows/components/Table.tsx:81
 #: src/pages/workflows/components/Table.tsx:462
 msgid "Created By"
@@ -1785,7 +1785,7 @@ msgstr ""
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2875
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2794
 msgid "Default"
 msgstr ""
 
@@ -1900,7 +1900,7 @@ msgstr ""
 msgid "Describe the form you want to create..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3418
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3337
 msgid "Describe the purpose of this folder..."
 msgstr ""
 
@@ -1925,9 +1925,9 @@ msgid "Describe your custom dashboard design or metric requirements..."
 msgstr ""
 
 #: src/pages/forms/FormsPage.tsx:202
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2851
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2853
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3416
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2770
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2772
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3335
 #: src/pages/settings/components/GroupManagement.tsx:396
 #: src/pages/settings/components/GroupManagement.tsx:398
 #: src/pages/settings/components/GroupManagement.tsx:896
@@ -2009,8 +2009,8 @@ msgstr "Document Type"
 msgid "Document updated successfully."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2885
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2890
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2804
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2809
 msgid "Documents"
 msgstr "Documents"
 
@@ -2193,7 +2193,7 @@ msgstr "Valeur des doublons"
 msgid "e.g. /reports"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3403
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3322
 msgid "e.g. AP Invoices 2026"
 msgstr "ex. Factures AP 2026"
 
@@ -2253,7 +2253,7 @@ msgstr ""
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1947
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1966
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1987
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2985
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2904
 #: src/pages/settings/components/GroupManagement.tsx:480
 #: src/pages/settings/components/ManageUser.tsx:1030
 #: src/pages/settings/components/Menus.tsx:442
@@ -2833,9 +2833,9 @@ msgstr "Prénom"
 msgid "Flat"
 msgstr "Flat"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2476
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2834
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2836
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2395
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2753
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2755
 msgid "Folder"
 msgstr "Dossier"
 
@@ -2878,7 +2878,7 @@ msgstr ""
 #~ msgid "Folder Name"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3402
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3321
 msgid "Folder Name *"
 msgstr ""
 
@@ -5972,7 +5972,7 @@ msgstr ""
 msgid "Search forms..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2220
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2139
 msgid "Search icons"
 msgstr ""
 
@@ -6054,7 +6054,7 @@ msgstr ""
 #: src/pages/my-account/components/security/Security.tsx:13
 #: src/pages/my-account/MyAccountPage.tsx:28
 #: src/pages/settings/components/AuditMonitoring.tsx:140
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2990
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2909
 msgid "Security"
 msgstr ""
 
@@ -6616,8 +6616,8 @@ msgstr ""
 #: src/pages/forms/FormsPage.tsx:598
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2902
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2907
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2821
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2826
 #: src/pages/settings/components/GroupManagement.tsx:424
 #: src/pages/settings/components/GroupManagement.tsx:429
 #: src/pages/settings/components/GroupManagement.tsx:612
@@ -6674,8 +6674,8 @@ msgstr ""
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:132
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:892
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1938
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2864
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2869
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2783
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2788
 msgid "Storage"
 msgstr ""
 
