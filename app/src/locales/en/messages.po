@@ -433,19 +433,19 @@ msgstr "Add Line Item"
 
 #: src/components/common/SharePopover.tsx:675
 #: src/pages/folders/components/FolderSharePopover.tsx:953
-#: src/pages/requests/components/request/components/Header.tsx:1317
+#: src/pages/requests/components/request/components/Header.tsx:1393
 msgid "Add message (optional)"
 msgstr "Add message (optional)"
 
 #: src/components/common/SharePopover.tsx:358
 #: src/pages/folders/components/FolderSharePopover.tsx:559
-#: src/pages/requests/components/request/components/Header.tsx:965
+#: src/pages/requests/components/request/components/Header.tsx:1041
 msgid "Add more people..."
 msgstr "Add more people..."
 
 #: src/components/common/SharePopover.tsx:359
 #: src/pages/folders/components/FolderSharePopover.tsx:560
-#: src/pages/requests/components/request/components/Header.tsx:966
+#: src/pages/requests/components/request/components/Header.tsx:1042
 msgid "Add names or emails"
 msgstr "Add names or emails"
 
@@ -513,7 +513,7 @@ msgstr "AI Folder Builder"
 msgid "AI generated"
 msgstr "AI generated"
 
-#: src/pages/requests/components/request/components/Header.tsx:838
+#: src/pages/requests/components/request/components/Header.tsx:914
 msgid "AI Insights"
 msgstr "AI Insights"
 
@@ -811,7 +811,7 @@ msgstr "At least 1 uppercase (A-Z)"
 #~ msgid "Attach to invoice"
 #~ msgstr "Attach to invoice"
 
-#: src/pages/requests/components/request/components/Header.tsx:432
+#: src/pages/requests/components/request/components/Header.tsx:473
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3494
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:56
@@ -1247,7 +1247,7 @@ msgstr "Click to place signature"
 msgid "Close"
 msgstr "Close"
 
-#: src/pages/requests/components/request/components/Header.tsx:872
+#: src/pages/requests/components/request/components/Header.tsx:948
 msgid "Close AI Insights"
 msgstr "Close AI Insights"
 
@@ -1297,7 +1297,7 @@ msgid "Columns Ingested:"
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1351
-#: src/pages/requests/components/request/components/Header.tsx:438
+#: src/pages/requests/components/request/components/Header.tsx:479
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3499
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
@@ -3234,7 +3234,7 @@ msgstr "Highest Credit Consumption"
 msgid "Historical Match Results"
 msgstr "Historical Match Results"
 
-#: src/pages/requests/components/request/components/Header.tsx:427
+#: src/pages/requests/components/request/components/Header.tsx:468
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3504
 msgid "History"
 msgstr "History"
@@ -3461,7 +3461,7 @@ msgid "Invite sent"
 msgstr "Invite sent"
 
 #: src/components/common/SharePopover.tsx:569
-#: src/pages/requests/components/request/components/Header.tsx:1214
+#: src/pages/requests/components/request/components/Header.tsx:1290
 msgid "Invited"
 msgstr "Invited"
 
@@ -3492,7 +3492,7 @@ msgstr "Invoice Amount"
 msgid "Invoice Date"
 msgstr "Invoice Date"
 
-#: src/pages/requests/components/request/components/Header.tsx:868
+#: src/pages/requests/components/request/components/Header.tsx:944
 msgid "Invoice Decision Details"
 msgstr "Invoice Decision Details"
 
@@ -3530,7 +3530,7 @@ msgstr "Invoice status distribution"
 msgid "Invoice Summary"
 msgstr "Invoice Summary"
 
-#: src/pages/requests/components/request/components/Header.tsx:784
+#: src/pages/requests/components/request/components/Header.tsx:860
 msgid "Invoice Value"
 msgstr "Invoice Value"
 
@@ -4266,7 +4266,7 @@ msgid "Net 30 Days"
 msgstr "Net 30 Days"
 
 #: src/components/common/SharePopover.tsx:705
-#: src/pages/requests/components/request/components/Header.tsx:1347
+#: src/pages/requests/components/request/components/Header.tsx:1423
 msgid "New"
 msgstr ""
 
@@ -4327,8 +4327,8 @@ msgstr "New Workflow"
 msgid "Next Action"
 msgstr "Next Action"
 
-#: src/pages/requests/components/request/components/Header.tsx:468
-#: src/pages/requests/components/request/components/Header.tsx:589
+#: src/pages/requests/components/request/components/Header.tsx:509
+#: src/pages/requests/components/request/components/Header.tsx:665
 msgid "Next Request"
 msgstr "Next Request"
 
@@ -4380,7 +4380,7 @@ msgstr "No compliance assessment available."
 #~ msgid "No consumption data for this period."
 #~ msgstr "No consumption data for this period."
 
-#: src/pages/requests/components/request/components/Header.tsx:882
+#: src/pages/requests/components/request/components/Header.tsx:958
 msgid "No decision details available for this request."
 msgstr "No decision details available for this request."
 
@@ -4643,7 +4643,7 @@ msgid "Notifications"
 msgstr "Notifications"
 
 #: src/components/common/SharePopover.tsx:702
-#: src/pages/requests/components/request/components/Header.tsx:1344
+#: src/pages/requests/components/request/components/Header.tsx:1420
 msgid "Notify me when accessed"
 msgstr "Notify me when accessed"
 
@@ -4781,7 +4781,7 @@ msgstr "Overdue Amount"
 msgid "Overdue and due-soonest first — process top-down"
 msgstr "Overdue and due-soonest first — process top-down"
 
-#: src/pages/requests/components/request/components/Header.tsx:425
+#: src/pages/requests/components/request/components/Header.tsx:466
 msgid "Overview"
 msgstr "Overview"
 
@@ -4793,7 +4793,7 @@ msgstr "owner"
 #: src/components/common/SharePopover.tsx:561
 #: src/pages/folders/components/FolderSharePopover.tsx:727
 #: src/pages/folders/components/FolderSharePopover.tsx:782
-#: src/pages/requests/components/request/components/Header.tsx:1206
+#: src/pages/requests/components/request/components/Header.tsx:1282
 msgid "Owner"
 msgstr "Owner"
 
@@ -5124,7 +5124,7 @@ msgstr "PO Reference"
 msgid "PO Setup"
 msgstr "PO Setup"
 
-#: src/pages/requests/components/request/components/Header.tsx:803
+#: src/pages/requests/components/request/components/Header.tsx:879
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 msgid "PO Value"
 msgstr "PO Value"
@@ -5199,8 +5199,8 @@ msgstr "Preview & Confirm"
 msgid "Preview:"
 msgstr "Preview:"
 
-#: src/pages/requests/components/request/components/Header.tsx:454
-#: src/pages/requests/components/request/components/Header.tsx:575
+#: src/pages/requests/components/request/components/Header.tsx:495
+#: src/pages/requests/components/request/components/Header.tsx:651
 msgid "Previous Request"
 msgstr "Previous Request"
 
@@ -5343,9 +5343,14 @@ msgstr "Quick Try"
 msgid "Raised At"
 msgstr "Raised At"
 
+#: src/pages/requests/components/request/components/Header.tsx:533
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Raised By"
+
+#: src/pages/requests/components/request/components/Header.tsx:542
+msgid "Raised Date"
+msgstr "Raised Date"
 
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:47
 msgid "Read"
@@ -5539,11 +5544,11 @@ msgstr "Request a Demo"
 msgid "Request No"
 msgstr "Request No"
 
-#: src/pages/requests/components/request/components/Header.tsx:1143
+#: src/pages/requests/components/request/components/Header.tsx:1219
 msgid "Request Owner"
 msgstr "Request Owner"
 
-#: src/pages/requests/components/request/components/Header.tsx:343
+#: src/pages/requests/components/request/components/Header.tsx:384
 msgid "Request shared successfully"
 msgstr "Request shared successfully"
 
@@ -5775,7 +5780,7 @@ msgstr "Sample template downloaded successfully"
 
 #: src/pages/folders/components/CollaboraEditor.tsx:253
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:1392
+#: src/pages/requests/components/request/components/Header.tsx:1468
 #: src/pages/settings/components/SettingsWizardLayout.tsx:78
 msgid "Save"
 msgstr "Save"
@@ -6252,7 +6257,7 @@ msgstr "Send comment"
 
 #: src/components/common/SharePopover.tsx:669
 #: src/pages/folders/components/FolderSharePopover.tsx:947
-#: src/pages/requests/components/request/components/Header.tsx:1311
+#: src/pages/requests/components/request/components/Header.tsx:1387
 msgid "Send notification"
 msgstr "Send notification"
 
@@ -6347,12 +6352,12 @@ msgstr "Severity"
 #: src/pages/folders/components/FolderTable.tsx:825
 #: src/pages/folders/components/FolderTable.tsx:1198
 #: src/pages/folders/components/ShareView.tsx:321
-#: src/pages/requests/components/request/components/Header.tsx:909
-#: src/pages/requests/components/request/components/Header.tsx:1334
+#: src/pages/requests/components/request/components/Header.tsx:985
+#: src/pages/requests/components/request/components/Header.tsx:1410
 msgid "Share"
 msgstr "Share"
 
-#: src/pages/requests/components/request/components/Header.tsx:934
+#: src/pages/requests/components/request/components/Header.tsx:1010
 msgid "Share Request"
 msgstr "Share Request"
 
@@ -6367,7 +6372,7 @@ msgstr "Shared successfully"
 
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/FolderSharePopover.tsx:971
-#: src/pages/requests/components/request/components/Header.tsx:1334
+#: src/pages/requests/components/request/components/Header.tsx:1410
 msgid "Sharing..."
 msgstr "Sharing..."
 
@@ -7009,6 +7014,10 @@ msgstr "Three-Way Matching"
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3865
 msgid "Time Remaining"
 msgstr "Time Remaining"
+
+#: src/pages/requests/components/request/components/Header.tsx:551
+msgid "Time running from last action"
+msgstr "Time running from last action"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:128
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:440
