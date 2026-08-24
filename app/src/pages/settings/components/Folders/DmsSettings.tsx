@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
   useImperativeHandle,
+  Fragment,
 } from 'react'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
@@ -1691,8 +1692,8 @@ export default function DmsFolderConfiguration({
 
         // 3. Construct the storageDrive value
         // Format: formId[repoName:formFieldId:sync, ...]
-        const mappingParts = Object.entries(syncMapping).map(([repoName, excelHeader]) => {
-          const isSync = wizardState.syncFields?.includes(repoName)
+        const mappingParts = Object.entries(syncMapping || {}).map(([repoName, excelHeader]) => {
+          const isSync = wizardState?.syncFields?.includes(repoName)
           // Use the actual field ID from the form if available, fallback to the label (repoName)
           const actualFieldId = actualFieldMapping[repoName] || repoName
           return `${repoName}:${actualFieldId}${isSync ? ':sync' : ''}`
@@ -1700,12 +1701,16 @@ export default function DmsFolderConfiguration({
         finalStorageDrive = `${formId}[${mappingParts.join(',')}]`
         payload.storageDrive = finalStorageDrive
       } else if (wizardState?.masterFormSetupMode === 'existing' && wizardState?.selectedIntegration === 'MasterForm') {
-        const { syncMapping, syncFields, selectedExistingFormId } = wizardState
-        const mappingParts = Object.entries(syncMapping).map(([repoName, formFieldId]) => {
-          const isSync = syncFields?.includes(repoName)
-          return `${repoName}:${formFieldId}${isSync ? ':sync' : ''}`
+        const { syncMapping, syncFields, selectedExistingFormIds } = wizardState
+        const mappingParts = Object.entries(syncMapping || {}).map(([formIdAndFieldId, repoName]) => {
+          const [fId, formFieldId] = formIdAndFieldId.split(':')
+          const formIndex = (selectedExistingFormIds || []).indexOf(fId)
+          const formRef = formIndex !== -1 ? String(formIndex) : fId
+          const isSync = syncFields?.includes(formIdAndFieldId)
+          return `${repoName}:${formRef}:${formFieldId}${isSync ? ':sync' : ''}`
         })
-        finalStorageDrive = `${selectedExistingFormId}[${mappingParts.join(',')}]`
+        const formIdsStr = (selectedExistingFormIds || []).join(',')
+        finalStorageDrive = `${formIdsStr}[${mappingParts.join(',')}]`
         payload.storageDrive = finalStorageDrive
       }
       console.log('create or upload api called')
@@ -1819,7 +1824,7 @@ export default function DmsFolderConfiguration({
         headerDescription={wizardSteps[step - 1]?.description}
       >
         <AnimatePresence mode='wait' initial={false}>
-          <AnimateFadeIn key={step} className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7'>
             <WizardContent
               description={description}
               displayMode={displayMode}
@@ -3109,20 +3114,35 @@ function WizardContent({
     if (storageDrive && storageDrive.includes('[')) return 'MasterForm'
     return null
   })
-  const [selectedFormId, setSelectedFormId] = useState<string | null>(() => {
+  const [selectedFormIds, setSelectedFormIds] = useState<string[]>(() => {
     if (storageDrive && storageDrive.includes('[')) {
-      return storageDrive.substring(0, storageDrive.indexOf('[')).trim() || null
+      const prefixStr = storageDrive.substring(0, storageDrive.indexOf('[')).trim()
+      return prefixStr ? prefixStr.split(',').map(id => id.trim()) : []
     }
-    return null
+    return []
   })
   const [syncMapping, setSyncMapping] = useState<Record<string, string>>(() => {
     if (storageDrive && storageDrive.includes('[')) {
+      const prefixStr = storageDrive.substring(0, storageDrive.indexOf('[')).trim()
+      const formIds = prefixStr ? prefixStr.split(',').map(id => id.trim()) : []
+      const firstFormId = formIds[0] || ''
       const mappingStr = storageDrive.substring(storageDrive.indexOf('[') + 1, storageDrive.length - 1)
       const pairs = mappingStr.split(',')
       const parsedMapping: Record<string, string> = {}
       pairs.forEach(pair => {
-        const parts = pair.split(':')
-        if (parts.length >= 2) parsedMapping[parts[0]] = parts[1]
+        const parts = pair.split(':').map(p => p.trim())
+        if (parts.length >= 3) {
+          const formIdOrIndex = parts[1]
+          const formFieldId = parts[2]
+          let formId = formIdOrIndex
+          const idx = parseInt(formIdOrIndex, 10)
+          if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
+            formId = formIds[idx]
+          }
+          parsedMapping[`${formId}:${formFieldId}`] = parts[0]
+        } else if (parts.length === 2) {
+          parsedMapping[`${firstFormId}:${parts[1]}`] = parts[0]
+        }
       })
       return parsedMapping
     }
@@ -3130,12 +3150,27 @@ function WizardContent({
   })
   const [syncFields, setSyncFields] = useState<string[]>(() => {
     if (storageDrive && storageDrive.includes('[')) {
+      const prefixStr = storageDrive.substring(0, storageDrive.indexOf('[')).trim()
+      const formIds = prefixStr ? prefixStr.split(',').map(id => id.trim()) : []
+      const firstFormId = formIds[0] || ''
       const mappingStr = storageDrive.substring(storageDrive.indexOf('[') + 1, storageDrive.length - 1)
       const pairs = mappingStr.split(',')
       let parsedSyncFields: string[] = []
       pairs.forEach(pair => {
-        const parts = pair.split(':')
-        if (parts.length >= 3 && parts[2] === 'sync') parsedSyncFields.push(parts[0])
+        const parts = pair.split(':').map(p => p.trim())
+        if (parts.length >= 4 && parts[3] === 'sync') {
+          const formIdOrIndex = parts[1]
+          const formFieldId = parts[2]
+          let formId = formIdOrIndex
+          const idx = parseInt(formIdOrIndex, 10)
+          if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
+            formId = formIds[idx]
+          }
+          parsedSyncFields.push(`${formId}:${formFieldId}`)
+        }
+        else if (parts.length === 3 && parts[2] === 'sync') {
+          parsedSyncFields.push(`${firstFormId}:${parts[1]}`)
+        }
       })
       return parsedSyncFields
     }
@@ -3158,11 +3193,12 @@ function WizardContent({
       masterFormDescription,
       masterFormAllRows,
       masterFormFile,
-      selectedExistingFormId: selectedFormId,
+      selectedExistingFormIds: selectedFormIds,
     })
-  }), [masterFormSetupMode, selectedIntegration, syncMapping, syncDataTypes, syncFields, masterFormTitle, masterFormDescription, masterFormAllRows, masterFormFile, selectedFormId])
+  }), [masterFormSetupMode, selectedIntegration, syncMapping, syncDataTypes, syncFields, masterFormTitle, masterFormDescription, masterFormAllRows, masterFormFile, selectedFormIds])
 
   const [formFields, setFormFields] = useState<Array<{ id: string; label: string }>>([])
+  const fieldTypesLoadedRef = useRef(false)
 
   const loadFieldTypes = useCallback(async () => {
     const allowedTypes = new Set<string>(REPOSITORY_FIELD_DATA_TYPES)
@@ -3185,12 +3221,14 @@ function WizardContent({
   }, [])
 
   useEffect(() => {
-    if (step !== 2) return
+    if (step !== 2 || fieldTypesLoadedRef.current) return
+    fieldTypesLoadedRef.current = true
     void loadFieldTypes()
   }, [loadFieldTypes, step])
 
   useEffect(() => {
     if (step === 5 && selectedIntegration === 'MasterForm') {
+      if (formsList.length > 0) return
       void formApi.listAllForms().then((res) => {
         if (res.data) {
           let forms: any[] = []
@@ -3215,71 +3253,118 @@ function WizardContent({
         }
       })
     }
-  }, [step, selectedIntegration])
+  }, [step, selectedIntegration, formsList.length])
 
   useEffect(() => {
-    if (selectedFormId) {
-      void formApi.getFormDataById(selectedFormId).then((res) => {
-        if (res.data?.formJson) {
-          const formJson = res.data.formJson
+    let isMounted = true
+    if (selectedFormIds.length > 0) {
+      const allFieldsArray: any[] = []
+
+      Promise.all(
+        selectedFormIds.map(id =>
+          formApi.getFormDataById(id)
+            .then(res => ({ id, data: res.data }))
+            .catch(() => ({ id, data: null }))
+        )
+      ).then(results => {
+        if (!isMounted) return
+
+        results.forEach(res => {
+          let formJson = res.data?.formJson
+          if (!formJson) return
+          if (typeof formJson === 'string') {
+            try {
+              formJson = JSON.parse(formJson)
+            } catch {
+              // ignore
+            }
+          }
+          const formName = res.data.name || res.data.title || res.id
           const fieldsArray = Array.isArray(formJson?.panels)
-            ? formJson.panels.flatMap((panel: any) =>
-              Array.isArray(panel?.fields) ? panel.fields : [],
-            )
+            ? formJson.panels.flatMap((panel: any) => Array.isArray(panel?.fields) ? panel.fields : [])
             : Array.isArray(formJson?.fields)
               ? formJson.fields
               : Array.isArray(formJson?.components)
                 ? formJson.components
                 : []
 
-          console.log('All form fields:', fieldsArray)
-
-          setFormFields(
-            fieldsArray.map((f: any) => ({
+          const ignoredTypes = [
+            'divider', 'paragraph', 'label', 'heading', 'button', 'static', 'static_text',
+            'html', 'image', 'content', 'panel', 'layout', 'title', 'subtitle', 'header',
+            'description', 'spacer', 'alert', 'horizontal_rule'
+          ]
+          fieldsArray.forEach((f: any) => {
+            const fieldType = String(f.type || f.control || f.controlType || f.dataType || '').trim().toLowerCase()
+            if (ignoredTypes.includes(fieldType)) {
+              return // skip decorative/layout fields
+            }
+            allFieldsArray.push({
               id: String(f.id || f.key || f.name || ''),
-              label: String(
-                f.displayLabel ||
-                f.label ||
-                f.name ||
-                f.title ||
-                f.id ||
-                f.key ||
-                '',
-              ),
-            })),
-          )
-        }
+              label: String(f.displayLabel || f.label || f.name || f.title || f.id || f.key || ''),
+              formId: res.id,
+              formName: formName,
+            })
+          })
+        })
+
+        // @ts-ignore
+        setFormFields(allFieldsArray)
       })
-      void formApi.getFormEntries(selectedFormId, 1, 1, false).then((res) => {
-        if (res.data?.entries && Array.isArray(res.data.entries)) {
-          setExistingFormPreviewRows(res.data.entries)
-        } else if (res.data?.data && Array.isArray(res.data.data)) {
-          setExistingFormPreviewRows(res.data.data)
-        } else if (res.data && Array.isArray(res.data)) {
-          setExistingFormPreviewRows(res.data)
-        } else if (res.data?.items && Array.isArray(res.data.items)) {
-          setExistingFormPreviewRows(res.data.items)
-        } else {
-          setExistingFormPreviewRows([])
-        }
+
+      Promise.all(
+        selectedFormIds.map(id =>
+          formApi.getFormEntries(id, 1, 1, false)
+            .then(res => {
+              let entries: any[] = []
+              if (res.data?.entries && Array.isArray(res.data.entries)) {
+                entries = res.data.entries
+              } else if (res.data?.data && Array.isArray(res.data.data)) {
+                entries = res.data.data
+              } else if (res.data && Array.isArray(res.data)) {
+                entries = res.data
+              } else if (res.data?.items && Array.isArray(res.data.items)) {
+                entries = res.data.items
+              }
+              return { formId: id, entry: entries[0] || null }
+            })
+            .catch(() => ({ formId: id, entry: null }))
+        )
+      ).then(results => {
+        if (!isMounted) return
+        const entryMap: Record<string, any> = {}
+        results.forEach(res => {
+          if (res.entry) {
+            entryMap[res.formId] = res.entry
+          }
+        })
+        setExistingFormPreviewRows([entryMap])
       })
+
+      return () => {
+        isMounted = false
+      }
     } else {
       setFormFields([])
       setExistingFormPreviewRows([])
     }
-  }, [selectedFormId])
+  }, [selectedFormIds])
 
   useEffect(() => {
-    if (connectedIntegrationId === 'MasterForm' && Object.keys(syncMapping).length > 0 && selectedFormId) {
-      const formatted = `${selectedFormId}[${Object.entries(syncMapping)
-        .map(([repoName, formId]) => `${repoName}:${formId}${syncFields.includes(repoName) ? ':sync' : ''}`)
+    if (connectedIntegrationId === 'MasterForm' && Object.keys(syncMapping).length > 0 && selectedFormIds.length > 0) {
+      const formatted = `${selectedFormIds.join(',')}[${Object.entries(syncMapping)
+        .map(([formIdAndFieldId, repoName]) => {
+          const [fId, formFieldId] = formIdAndFieldId.split(':')
+          const formIndex = selectedFormIds.indexOf(fId)
+          const formRef = formIndex !== -1 ? String(formIndex) : fId
+          return `${repoName}:${formRef}:${formFieldId}${syncFields.includes(formIdAndFieldId) ? ':sync' : ''}`
+        })
         .join(',')}]`
       setStorageDrive(formatted)
       console.log('Sync mapping string to save:', formatted)
     } else {
       setStorageDrive(null)
     }
-  }, [connectedIntegrationId, syncMapping, syncFields, selectedFormId, setStorageDrive])
+  }, [connectedIntegrationId, syncMapping, syncFields, selectedFormIds, setStorageDrive])
 
   const addField = () => {
     const trimmedName = newFieldName.trim()
@@ -3898,40 +3983,38 @@ function WizardContent({
                   {masterFormSetupMode === 'existing' && (
                     <AnimateFadeIn delay={0.1}>
                       <div className='mb-6 max-w-md'>
-                        <InputSelect
-                          label='Select Form'
+                        <InputSelectMultiple
+                          label='Select Forms'
                           options={formsList.map((f) => ({
                             id: f.id,
                             name: f.name,
                             value: f.id,
                           }))}
-                          placeholder='Select a form...'
+                          placeholder='Select forms...'
                           searchable
-                          value={
-                            formsList.find((f) => f.id === selectedFormId)
-                              ? {
-                                id: selectedFormId as string,
-                                name: formsList.find(
-                                  (f) => f.id === selectedFormId,
-                                )?.name as string,
-                                value: selectedFormId as string,
-                              }
-                              : null
-                          }
-                          onChange={(selected) => {
-                            setSelectedFormId(selected ? String(selected.value) : null)
+                          value={selectedFormIds.map(id => {
+                            const found = formsList.find(f => f.id === id)
+                            return {
+                              id,
+                              name: found?.name || id,
+                              value: id
+                            }
+                          })}
+                          onChange={(selectedList) => {
+                            const ids = (selectedList || []).map(item => String(item.value))
+                            setSelectedFormIds(ids)
                             setSyncMapping({})
                             setSyncFields([])
                           }}
                         />
                       </div>
 
-                      {selectedFormId && (
+                      {selectedFormIds.length > 0 && (
                         <div>
                           <h5 className='mb-3 text-13 font-medium text-gray-12'>
                             Field Mapping
                           </h5>
-                          <div className='overflow-y-auto max-h-[300px] rounded-lg border border-gray-3 shadow-inner'>
+                          <div className='rounded-lg border border-gray-3 shadow-inner overflow-visible'>
                             <table className='w-full text-left text-13'>
                               <thead className='sticky top-0 z-10 border-b border-gray-3 bg-gray-2/50 backdrop-blur-sm'>
                                 <tr>
@@ -3950,83 +4033,116 @@ function WizardContent({
                                 </tr>
                               </thead>
                               <tbody className='divide-y divide-gray-3 bg-surface'>
-                                {formFields.map((formField) => {
-                                  const mappedRepoFieldName = Object.keys(syncMapping).find(k => syncMapping[k] === formField.id) || ''
-                                  const firstEntry = existingFormPreviewRows[0]
+                                {(() => {
+                                  let lastFormId = ''
+                                  return (formFields as any[]).map((formField) => {
+                                    const showFormHeader = formField.formId !== lastFormId
+                                    lastFormId = formField.formId
 
-                                  let exampleValue = ''
-                                  if (firstEntry) {
-                                    exampleValue = String(firstEntry?.fields?.[formField.id] ?? firstEntry?.[formField.id] ?? '')
-                                  }
+                                    const targetMapValue = `${formField.formId}:${formField.id}`
+                                    const mappedRepoFieldName = syncMapping[targetMapValue] || ''
+                                    const entryMap = existingFormPreviewRows[0] || {}
+                                    const firstEntry = entryMap[formField.formId]
 
-                                  return (
-                                    <tr
-                                      key={formField.id}
-                                      className='transition-colors hover:bg-gray-1/30'
-                                    >
-                                      <td className='px-4 py-3'>
-                                        <span className='font-medium text-gray-12'>
+                                    let exampleValue = ''
+                                    if (firstEntry) {
+                                      let parsedValues: any = {}
+                                      if (firstEntry.values) {
+                                        if (typeof firstEntry.values === 'string') {
+                                          try {
+                                            parsedValues = JSON.parse(firstEntry.values)
+                                          } catch {}
+                                        } else {
+                                          parsedValues = firstEntry.values
+                                        }
+                                      } else {
+                                        parsedValues = firstEntry
+                                      }
+
+                                      const rawVal = parsedValues?.[formField.id] ?? firstEntry?.[formField.id]
+                                      exampleValue = rawVal !== undefined && rawVal !== null
+                                        ? (typeof rawVal === 'object' ? String(rawVal.value ?? JSON.stringify(rawVal)) : String(rawVal))
+                                        : ''
+                                    }
+
+                                    const fieldRow = (
+                                      <tr
+                                        key={targetMapValue}
+                                        className='transition-colors hover:bg-gray-1/30'
+                                      >
+                                        <td className='px-4 py-3 font-medium text-gray-12'>
                                           {formField.label}
-                                        </span>
-                                      </td>
-                                      <td className='px-4 py-3'>
-                                        {exampleValue ? (
-                                          <div
-                                            className='max-w-[150px] cursor-pointer truncate text-[13px] text-gray-10 transition-all hover:whitespace-normal hover:break-words'
-                                            title={exampleValue}
-                                          >
-                                            {exampleValue}
-                                          </div>
-                                        ) : (
-                                          <div className='text-[13px] text-gray-8'>-</div>
-                                        )}
-                                      </td>
-                                      <td className='px-4 py-3'>
-                                        <MasterFieldSelectDropdown
-                                          options={fields.map(f => ({ id: f.fieldName, label: f.fieldName }))}
-                                          value={mappedRepoFieldName || null}
-                                          onChange={(selectedRepoFieldName) => {
-                                            setSyncMapping((prev) => {
-                                              const newMap = { ...prev }
-                                              const existingRepoField = Object.keys(newMap).find(k => newMap[k] === formField.id)
-                                              if (existingRepoField) {
-                                                delete newMap[existingRepoField]
-                                              }
-                                              if (selectedRepoFieldName) {
-                                                newMap[selectedRepoFieldName] = formField.id
-                                              }
-                                              return newMap
-                                            })
-                                            if (!selectedRepoFieldName && mappedRepoFieldName) {
-                                              setSyncFields(prev => prev.filter(f => f !== mappedRepoFieldName))
-                                            }
-                                          }}
-                                        />
-                                      </td>
-                                      <td className='px-4 py-3'>
-                                        <div className='flex justify-center'>
-                                          <input
-                                            type='checkbox'
-                                            name='sync_field'
-                                            disabled={!mappedRepoFieldName}
-                                            checked={syncFields.includes(mappedRepoFieldName)}
-                                            onChange={(e) => {
-                                              if (mappedRepoFieldName) {
-                                                if (e.target.checked) {
-                                                  setSyncFields((prev) => [...prev, mappedRepoFieldName])
+                                        </td>
+                                        <td className='px-4 py-3'>
+                                          {exampleValue ? (
+                                            <div
+                                              className='max-w-[150px] cursor-pointer truncate text-[13px] text-gray-10 transition-all hover:whitespace-normal hover:break-words'
+                                              title={exampleValue}
+                                            >
+                                              {exampleValue}
+                                            </div>
+                                          ) : (
+                                            <div className='text-[13px] text-gray-8'>-</div>
+                                          )}
+                                        </td>
+                                        <td className='px-4 py-3'>
+                                          <MasterFieldSelectDropdown
+                                            options={fields.map(f => ({ id: f.fieldName, label: f.fieldName }))}
+                                            value={mappedRepoFieldName || null}
+                                            onChange={(selectedRepoFieldName) => {
+                                              setSyncMapping((prev) => {
+                                                const newMap = { ...prev }
+                                                if (selectedRepoFieldName) {
+                                                  newMap[targetMapValue] = selectedRepoFieldName
                                                 } else {
-                                                  setSyncFields((prev) => prev.filter((f) => f !== mappedRepoFieldName))
+                                                  delete newMap[targetMapValue]
                                                 }
+                                                return newMap
+                                              })
+                                              if (!selectedRepoFieldName) {
+                                                setSyncFields(prev => prev.filter(f => f !== targetMapValue))
                                               }
                                             }}
-                                            className='h-4 w-4 cursor-pointer rounded border-gray-3 text-primary-9 accent-primary-9 focus:ring-primary-5'
-                                            title={!mappedRepoFieldName ? 'Please map a folder field first' : 'Select for sync'}
                                           />
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  )
-                                })}
+                                        </td>
+                                        <td className='px-4 py-3'>
+                                          <div className='flex justify-center'>
+                                            <input
+                                              type='checkbox'
+                                              name='sync_field'
+                                              disabled={!mappedRepoFieldName}
+                                              checked={syncFields.includes(targetMapValue)}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  setSyncFields((prev) => [...prev, targetMapValue])
+                                                } else {
+                                                  setSyncFields((prev) => prev.filter((f) => f !== targetMapValue))
+                                                }
+                                              }}
+                                              className='h-4 w-4 cursor-pointer rounded border-gray-3 text-primary-9 accent-primary-9 focus:ring-primary-5'
+                                              title={!mappedRepoFieldName ? 'Please map a folder field first' : 'Select for sync'}
+                                            />
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )
+
+                                    if (showFormHeader) {
+                                      return (
+                                        <Fragment key={`header-${formField.formId}`}>
+                                          <tr className='bg-gray-2/20 font-semibold text-gray-12'>
+                                            <td colSpan={4} className='px-4 py-2 text-xs uppercase tracking-wider text-gray-10 bg-gray-2/30 border-y border-gray-3 font-semibold'>
+                                              {formField.formName}
+                                            </td>
+                                          </tr>
+                                          {fieldRow}
+                                        </Fragment>
+                                      )
+                                    }
+
+                                    return fieldRow
+                                  })
+                                })()}
                                 {formFields.length === 0 && (
                                   <tr>
                                     <td colSpan={4} className='px-4 py-8 text-center text-[13px] text-gray-10'>
