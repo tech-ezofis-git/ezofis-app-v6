@@ -41,7 +41,7 @@ const Header = () => {
   return (
     <header className='relative z-10 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-gradient-to-r from-gray-1 via-white to-gray-2 px-4 font-inter shadow-xs'>
       {/* Left: Navigation & Metadata */}
-      <div className='flex min-w-0 flex-1 items-center gap-4'>
+      <div className='flex min-w-0 items-center gap-3'>
         <IconButton
           color='gray'
           icon='lucide:arrow-left'
@@ -50,29 +50,28 @@ const Header = () => {
           onClick={() => globalThis.history.back()}
         />
 
-        <div className='flex min-w-0 flex-col'>
+        <div className='flex min-w-0 flex-col justify-center'>
           <div className='flex items-center gap-2'>
             {/* Name Input Styled as H1 */}
-            <div className='relative flex min-w-0 items-center'>
-              <div className='inline-grid min-w-0 items-center'>
-                <span className='pointer-events-none invisible col-start-1 row-start-1 px-1 py-0.5 text-15/5 font-semibold whitespace-pre'>
-                  {name || 'Untitled Form'}
-                </span>
-                <input
-                  className='col-start-1 row-start-1 w-full cursor-text rounded-md border border-transparent bg-transparent px-1 py-0.5 text-15/5 font-semibold text-gray-13 transition-all placeholder:text-gray-5 hover:bg-gray-1 focus:border-gray-2 focus:bg-white focus:shadow-sm focus:outline-none'
-                  placeholder='Untitled Form'
-                  type='text'
-                  value={name}
-                  onBlur={() => {
-                    if (!name.trim()) setName('Untitled Form')
-                  }}
-                  onChange={(e) => setName(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') e.currentTarget.blur()
-                  }}
-                />
-              </div>
+            <div className='inline-grid w-max max-w-full shrink-0 items-center'>
+              <span className='pointer-events-none invisible col-start-1 row-start-1 px-1 py-0.5 text-15/5 font-semibold whitespace-pre'>
+                {name || 'Untitled Form'}
+              </span>
+              <input
+                className='col-start-1 row-start-1 w-full min-w-0 cursor-text rounded-md border border-transparent bg-transparent px-1 py-0.5 text-15/5 font-semibold text-gray-13 transition-all placeholder:text-gray-5 hover:bg-gray-1 focus:border-gray-2 focus:bg-white focus:shadow-sm focus:outline-none'
+                placeholder='Untitled Form'
+                style={{ fieldSizing: 'content' } as any}
+                type='text'
+                value={name}
+                onBlur={() => {
+                  if (!name.trim()) setName('Untitled Form')
+                }}
+                onChange={(e) => setName(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') e.currentTarget.blur()
+                }}
+              />
             </div>
 
             <span

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { Check } from 'lucide-react'
+import { Check, Pencil } from 'lucide-react'
 import cn from '@/utils/cn'
 
 export type TimelineStepStatus = 'active' | 'completed' | 'upcoming'
@@ -97,6 +97,7 @@ export function BuilderTimelineStep({
   showTopConnector,
   topConnectorState,
   bottomConnectorState,
+  onSelectStep,
 }: {
   stepId: number
   status: TimelineStepStatus
@@ -107,17 +108,29 @@ export function BuilderTimelineStep({
   showTopConnector?: boolean
   topConnectorState: TimelineConnectorState
   bottomConnectorState: TimelineConnectorState
+  onSelectStep?: (stepId: number) => void
 }) {
   const isActive = status === 'active'
   const isCompleted = status === 'completed'
   const showBody = Boolean((isCompleted && summary) || (isActive && children))
   const hasBottomConnector = bottomConnectorState !== 'hidden'
+  const isClickable = Boolean(onSelectStep && (isCompleted || (!isActive && status !== 'upcoming')))
 
   return (
     <div className='relative overflow-visible'>
       <div className='flex gap-4 overflow-visible'>
         {/* Timeline — stage aligned to card header; line only between stages */}
-        <div className='relative z-20 flex w-8 shrink-0 flex-col items-center self-stretch overflow-visible'>
+        <div
+          className={cn(
+            'relative z-20 flex w-8 shrink-0 flex-col items-center self-stretch overflow-visible',
+            isClickable && 'cursor-pointer',
+          )}
+          onClick={() => {
+            if (isClickable && onSelectStep) {
+              onSelectStep(stepId)
+            }
+          }}
+        >
           {showTopConnector ? (
             <ConnectorTrack
               fixedHeight={HEADER_ALIGN_PX}
@@ -145,7 +158,7 @@ export function BuilderTimelineStep({
             isActive
               ? 'border-primary-9 shadow-[0_10px_28px_rgba(124,58,237,0.12)]'
               : isCompleted
-                ? 'border-primary-4'
+                ? 'border-primary-4 hover:border-primary-6'
                 : 'border-[var(--gray-3)] opacity-70',
           )}
           initial={{ opacity: 0, y: 14 }}
@@ -154,12 +167,18 @@ export function BuilderTimelineStep({
         >
           <div
             className={cn(
-              'flex shrink-0 items-center px-5 py-4',
+              'flex shrink-0 items-center justify-between px-5 py-4 transition-colors',
               isActive || isCompleted
                 ? 'bg-primary-2'
                 : 'bg-[var(--gray-1)]',
               showBody ? 'border-b border-primary-4' : '',
+              isClickable && 'cursor-pointer hover:bg-primary-3/70',
             )}
+            onClick={() => {
+              if (isClickable && onSelectStep) {
+                onSelectStep(stepId)
+              }
+            }}
           >
             <div className='min-w-0 flex-1'>
               <h2 className='text-[15px] font-semibold text-[var(--gray-13)]'>
@@ -171,6 +190,20 @@ export function BuilderTimelineStep({
                 </p>
               )}
             </div>
+
+            {isCompleted && onSelectStep ? (
+              <button
+                type='button'
+                className='inline-flex items-center gap-1.5 rounded-lg bg-surface px-3 py-1.5 text-[12px] font-semibold text-primary-9 border border-primary-4 shadow-2xs hover:bg-primary-3 hover:border-primary-6 transition-colors'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectStep(stepId)
+                }}
+              >
+                <Pencil className='size-3.5' />
+                <span>Edit</span>
+              </button>
+            ) : null}
           </div>
 
           {/* Render summary ONLY when step is completed */}
@@ -185,7 +218,7 @@ export function BuilderTimelineStep({
         </motion.section>
       </div>
 
-      {/* Spacer between steps — line extends into this via extendGap */}
+      {/* Spacer between steps */}
       {hasBottomConnector ? (
         <div className='flex gap-4'>
           <div className='w-8 shrink-0' style={{ height: STEP_GAP_PX }} />

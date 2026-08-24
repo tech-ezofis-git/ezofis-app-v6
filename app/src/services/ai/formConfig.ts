@@ -58,6 +58,98 @@ const SUPPORTED_FIELD_TYPES = [
   'YES_NO_TOGGLE',
 ] as const
 
+const ACRONYMS = new Set([
+  'AP',
+  'AR',
+  'HR',
+  'PO',
+  'IT',
+  'ERP',
+  'ID',
+  'VAT',
+  'GST',
+  'SLA',
+  'KPI',
+  'DMS',
+  'CRM',
+  'API',
+])
+
+export function shortenFormName(input: string): string {
+  if (!input) return 'Custom Form'
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/^(create|build|make|generate|design|setup|new)\s+(a|an|the)?\s*/i, '')
+    .replace(/^(a|an|the)\s+/i, '')
+    .replace(/\s+(form|workflow|process|layout|system)\s+for\s+/i, ' ')
+    .replace(/\s+for\s+/i, ' ')
+    .replace(/\s+(with|to|that|which|and)\s+.*$/i, '')
+    .replace(/[^a-zA-Z0-9\s&/-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleaned) cleaned = input.trim().split('.')[0]
+
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  if (words.length > 1 && words[words.length - 1].toLowerCase() === 'form') {
+    words.pop()
+  }
+
+  let shortWords = words.slice(0, 3)
+  if (shortWords.length > 0 && ['&', '-', '/'].includes(shortWords[shortWords.length - 1])) {
+    shortWords.pop()
+  }
+
+  let result = shortWords.join(' ')
+
+  if (result.length > 25) {
+    result = result.slice(0, 25).trim()
+  }
+
+  if (!result) return 'Custom Form'
+
+  return result
+    .split(' ')
+    .map((w) => {
+      const upper = w.toUpperCase()
+      if (ACRONYMS.has(upper)) return upper
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    })
+    .join(' ')
+}
+
+export function shortenDescription(input: string, maxChars = 75): string {
+  if (!input) return ''
+
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^(this\s+(is\s+a\s+)?(form|workflow|process)\s+(designed|built|created)\s+to\s+)/i, 'Form to ')
+    .replace(/^an?\s+(automated|end-to-end)\s+/i, '')
+    .replace(/^this\s+form\s+(allows|captures|collects|submits)\s+/i, 'Form to $1 ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (cleaned.includes('.')) {
+    const firstSentence = cleaned.split('.')[0].trim()
+    if (firstSentence.length >= 12) {
+      cleaned = firstSentence + '.'
+    }
+  }
+
+  if (!cleaned.endsWith('.') && !cleaned.endsWith('!') && !cleaned.endsWith('?')) {
+    cleaned += '.'
+  }
+
+  if (cleaned.length > maxChars) {
+    const trimmed = cleaned.slice(0, maxChars)
+    const lastSpace = trimmed.lastIndexOf(' ')
+    cleaned = (lastSpace > 15 ? trimmed.slice(0, lastSpace) : trimmed).trim() + '...'
+  }
+
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
 function buildFormConfigPrompt(options: GenerateFormConfigOptions): string {
   const extraPrompt = options.prompt?.trim()
     ? `\nAdditional requirements: "${options.prompt}"`
@@ -66,8 +158,8 @@ function buildFormConfigPrompt(options: GenerateFormConfigOptions): string {
   return `You are an expert Form Architect designing a business form layout.
 Form Details:
 - Form Type: ${options.formType} Form (${options.formType === 'MASTER' ? 'Master Data Schema' : 'Workflow Request Process'})
-- Form Name: "${options.name}"
-- Purpose / Description: "${options.description}"${extraPrompt}
+- Form Name: "${shortenFormName(options.name)}"
+- Purpose / Description: "${shortenDescription(options.description)}"${extraPrompt}
 
 Generate a comprehensive form structure with panels and fields tailored to this purpose.
 Supported Field Types: ${SUPPORTED_FIELD_TYPES.join(', ')}
@@ -75,14 +167,16 @@ Field Sizes: "col-3", "col-4", "col-6", "col-12"
 
 Guidelines:
 - Create 1-4 logical sections (e.g. "General Information", "Details & Specifications", "Approval & Audit")
+- "name": Keep it very short, crisp, proper spacing, and meaningful (1-3 words max, e.g. "AP Invoice", "Purchase Order", "Leave Request"). Avoid long sentence titles.
+- "description": Keep it short and concise (1 simple sentence, max 8-10 words, ~60 chars max). Do NOT write long text paragraphs.
 - Include relevant fields with clear labels, realistic placeholders, proper mandatory status, and sensible grid sizes
 - For SINGLE_SELECT or MULTI_SELECT fields, provide a 3-5 item options array
 - reply should be 1-2 friendly sentences explaining how the form was structured
 
 Respond with ONLY valid JSON using this exact shape:
 {
-  "name": "${options.name}",
-  "description": "${options.description}",
+  "name": "Short Name",
+  "description": "Short 1-sentence description",
   "reply": "Summary explanation of form sections",
   "panels": [
     {
@@ -322,47 +416,38 @@ export function generateSimpleFormMeta(promptText: string): { description: strin
   if (lower.includes('onboarding') || lower.includes('employee')) {
     return {
       description: 'Form to collect new employee details, position info, and identity documents.',
-      name: 'Employee Onboarding Form',
+      name: 'Employee Onboarding',
     }
   }
   if (lower.includes('leave') || lower.includes('vacation') || lower.includes('time off')) {
     return {
       description: 'Form for employees to submit leave requests, dates, and handover notes.',
-      name: 'Leave Request Form',
+      name: 'Leave Request',
     }
   }
   if (lower.includes('purchase') || lower.includes('requisition') || lower.includes('po')) {
     return {
       description: 'Form to request items, estimated costs, vendor details, and budget approval.',
-      name: 'Purchase Requisition Form',
+      name: 'Purchase Requisition',
     }
   }
   if (lower.includes('invoice') || lower.includes('accounts payable') || lower.includes('ap')) {
     return {
       description: 'Form to capture vendor invoice data, line items, currency, and attachments.',
-      name: 'Accounts Payable Invoice Form',
+      name: 'AP Invoice',
     }
   }
   if (lower.includes('feedback')) {
     return {
       description: 'Form to collect user ratings, feedback category, and detailed comments.',
-      name: 'General Feedback Form',
+      name: 'Feedback',
     }
   }
 
-  let clean = promptText
-    .replace(/^a\s+/i, '')
-    .replace(/^an\s+/i, '')
-    .replace(/^the\s+/i, '')
-    .trim()
-  if (!clean) clean = 'Custom Form'
-  clean = clean.split('.')[0]
-  if (clean.length > 35) clean = `${clean.slice(0, 35).trim()}...`
-
-  const name = clean.toLowerCase().includes('form') ? clean : `${clean} Form`
+  const name = shortenFormName(promptText)
   return {
-    description: `Custom form layout generated for ${clean.toLowerCase()}.`,
-    name: name.charAt(0).toUpperCase() + name.slice(1),
+    description: `Custom form layout generated for ${name.toLowerCase()}.`,
+    name,
   }
 }
 
@@ -401,15 +486,17 @@ export async function generateFormConfigViaQwen(
     }
 
     const meta = generateSimpleFormMeta(parsed?.name || options.prompt || options.description || options.name)
+    const finalName = shortenFormName(parsed?.name || meta.name)
+    const finalDesc = shortenDescription(parsed?.description || options.description || meta.description)
 
     return {
-      description: String(parsed?.description || meta.description),
+      description: finalDesc,
       formType: options.formType,
-      name: String(parsed?.name || meta.name),
+      name: finalName,
       panels,
       reply:
         String(parsed?.reply || '').trim() ||
-        `Generated a complete ${options.formType.toLowerCase()} form layout for "${meta.name}".`,
+        `Generated a complete ${options.formType.toLowerCase()} form layout for "${finalName}".`,
       source: 'qwen',
     }
   } catch (error) {

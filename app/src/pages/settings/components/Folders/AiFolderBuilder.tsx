@@ -18,6 +18,8 @@ import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
 import {
   generateFolderConfig,
+  shortenDescription,
+  shortenFolderName,
   type FolderConfigField,
   type FolderConfigSuggestion,
 } from '@/services/ai/folderConfig'
@@ -61,6 +63,7 @@ type DraftAnswers = {
   description: string
   folderName: string
   integrations: string
+  promptDescription: string
   storage: string
   structure: string
   versioning: string
@@ -837,6 +840,7 @@ const emptyDraft = (): DraftAnswers => ({
   description: '',
   folderName: '',
   integrations: '',
+  promptDescription: '',
   storage: '',
   structure: '',
   versioning: '',
@@ -1018,6 +1022,11 @@ export default function AiFolderBuilder({
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [typingId, setTypingId] = useState<string | null>(null)
   const greetingInitialized = useRef(false)
+  const lastGeneratedFolderDetails = useRef<{
+    description: string
+    folderName: string
+    promptDescription: string
+  }>({ description: '', folderName: '', promptDescription: '' })
   const [editingFromReview, setEditingFromReview] = useState(false)
   const [aiDescriptionGenerated, setAiDescriptionGenerated] = useState(false)
   const [aiFieldsGenerated, setAiFieldsGenerated] = useState(false)
@@ -1130,6 +1139,7 @@ export default function AiFolderBuilder({
       description,
       folderName,
       integrations: answers.integrations || 'None',
+      promptDescription: answers.promptDescription || suggestion.description,
       storage: answers.storage || 'EZOFIS Drive',
       structure:
         answers.structure ||
@@ -1139,28 +1149,32 @@ export default function AiFolderBuilder({
     setEditableFields(toEditableFields(suggestion.fields))
   }
 
-  const generateDescription = async (folderName: string) => {
+  const generateDescription = async (folderName: string, promptText?: string) => {
     setIsSending(true)
     try {
+      const prompt = promptText || `Create a repository folder named "${folderName}".`
       const suggestion = await generateFolderConfig(
-        `Create a repository folder named "${folderName}". Generate a concise enterprise business description for this folder based on its name and purpose. Also propose practical starter fields.`,
+        `${prompt} Generate a concise database description for this folder and propose starter fields.`,
         messages.slice(-6).map((message) => ({
           role: message.role,
           text: message.text,
         })),
       )
 
-      const description = suggestion.description.trim()
+      const dbDescription = shortenDescription(suggestion.description)
+      const fieldRequirements = promptText || suggestion.description
+
       setDraft((prev) => ({
         ...prev,
-        description,
+        description: dbDescription,
         folderName,
+        promptDescription: fieldRequirements,
       }))
-      setAiDescriptionGenerated(Boolean(description))
+      setAiDescriptionGenerated(Boolean(dbDescription))
 
       pushAssistant(
-        description
-          ? t`Description ready: “${description}” Review it below, then continue to Storage.`
+        dbDescription
+          ? t`Folder details ready: “${dbDescription}” Review requirements & description below, then continue.`
           : t`Folder “${folderName}” is ready. Continue to choose a storage provider.`,
         undefined,
         'details_ready',
@@ -1188,11 +1202,17 @@ export default function AiFolderBuilder({
   ) => {
     setIsSending(true)
     try {
+      const detailedRequirement =
+        answers.promptDescription.trim() ||
+        answers.description.trim() ||
+        answers.folderName
+
       const suggestion = await generateFolderConfig(
         [
           `Create a repository folder named "${answers.folderName}".`,
+          `Field & requirement details: ${detailedRequirement}.`,
           answers.description
-            ? `Business description: ${answers.description}.`
+            ? `Short DB description: ${answers.description}.`
             : '',
           `Storage provider: ${answers.storage}.`,
           `Field / structure preference: ${structurePreference}.`,
@@ -1213,12 +1233,9 @@ export default function AiFolderBuilder({
       setAiFieldsGenerated(fields.length > 0)
       setDraft((prev) => ({
         ...prev,
-        description: prev.description || suggestion.description,
+        description: prev.description || shortenDescription(suggestion.description),
         structure: structurePreference,
       }))
-      if (!answers.description.trim() && suggestion.description.trim()) {
-        setAiDescriptionGenerated(true)
-      }
 
       pushAssistant(
         suggestion.reply ||
@@ -1283,8 +1300,42 @@ export default function AiFolderBuilder({
     }
   }
 
-  const continueFromDetails = () => {
-    if (!draft.folderName.trim() || !draft.description.trim()) return
+  const continueFromDetails = async () => {
+    if (!draft.folderName.trim()) return
+
+    const nameTrimmed = draft.folderName.trim()
+    const promptTrimmed = draft.promptDescription.trim()
+    const descTrimmed = draft.description.trim()
+
+    const detailsChanged =
+      lastGeneratedFolderDetails.current.folderName !== nameTrimmed ||
+      lastGeneratedFolderDetails.current.promptDescription !== promptTrimmed
+
+    if (detailsChanged || editableFields.length === 0) {
+      lastGeneratedFolderDetails.current = {
+        description: descTrimmed,
+        folderName: nameTrimmed,
+        promptDescription: promptTrimmed,
+      }
+
+      pushAssistant(
+        t`Folder details updated. Regenerating recommended fields for “${nameTrimmed}”…`,
+        undefined,
+        'fields',
+        2,
+      )
+      await generateFields(
+        {
+          ...draft,
+          description: descTrimmed,
+          folderName: nameTrimmed,
+          promptDescription: promptTrimmed,
+        },
+        draft.structure || RECOMMEND_FIELDS_VALUE,
+      )
+      return
+    }
+
     if (editingFromReview) {
       goToReview()
       return
@@ -1295,6 +1346,41 @@ export default function AiFolderBuilder({
       'fields',
       2,
     )
+  }
+
+  const handleSelectStep = (stepId: BuilderStepId) => {
+    if (stepId > unlockedStep && phase !== 'ready') return
+
+    setActiveStep(stepId)
+    setTypingId(null)
+    setInput('')
+
+    if (stepId === 1) {
+      setPhase('details_ready')
+    } else if (stepId === 2) {
+      if (editableFields.length) {
+        setPhase('fields_ready')
+      } else {
+        setPhase('fields')
+      }
+    } else if (stepId === 3) {
+      setPhase('storage')
+    } else if (stepId === 4) {
+      setPhase('versioning')
+    } else if (stepId === 5) {
+      setPhase('integrations')
+    } else if (stepId === 6) {
+      goToReview()
+    }
+
+    window.requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        stepNodeRefs.current[stepId]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      }, 80)
+    })
   }
 
   const continueFromFields = () => {
@@ -1393,21 +1479,25 @@ export default function AiFolderBuilder({
       if (looksLikePrompt) {
         setInput('')
         appendUser(value)
+        setDraft((prev) => ({
+          ...prev,
+          promptDescription: value,
+        }))
         await generateFullSetup(draft, value)
         return
       }
 
-      const folderName = value
-      setDraft((prev) => ({ ...prev, folderName, description: '' }))
+      const folderName = shortenFolderName(value)
+      setDraft((prev) => ({ ...prev, folderName, description: '', promptDescription: value }))
       setInput('')
       appendUser(folderName)
       pushAssistant(
-        t`Folder name recorded as “${folderName}”. Generating a business description now…`,
+        t`Folder name recorded as “${folderName}”. Generating details now…`,
         undefined,
         'name',
         1,
       )
-      await generateDescription(folderName)
+      await generateDescription(folderName, value)
       return
     }
 
@@ -1602,37 +1692,50 @@ export default function AiFolderBuilder({
             <p className='text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-9'>
               {t`Folder details`}
             </p>
-            <div className='space-y-2'>
-              <input
-                className='w-full rounded-md border border-primary-4 bg-surface px-2.5 py-1.5 text-[14px] font-semibold text-[var(--gray-13)] outline-none focus:border-primary-9'
-                value={draft.folderName}
-                onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    folderName: event.target.value,
-                  }))
-                }
-              />
-              <div className='flex items-start gap-1.5'>
-                <textarea
-                  className='min-h-[72px] min-w-0 flex-1 resize-none rounded-md border border-primary-4 bg-surface px-2.5 py-1.5 text-[12px] leading-relaxed text-[var(--gray-11)] outline-none focus:border-primary-9'
-                  value={draft.description}
-                  onChange={(event) => {
-                    setAiDescriptionGenerated(false)
+            <div className='space-y-3'>
+              <div>
+                <label className='mb-1 block text-[11px] font-semibold text-[var(--gray-12)]'>
+                  {t`Folder Name`}
+                </label>
+                <input
+                  className='w-full rounded-md border border-primary-4 bg-surface px-2.5 py-1.5 text-[14px] font-semibold text-[var(--gray-13)] outline-none focus:border-primary-9'
+                  value={draft.folderName}
+                  onChange={(event) =>
                     setDraft((prev) => ({
                       ...prev,
-                      description: event.target.value,
+                      folderName: event.target.value,
                     }))
-                  }}
+                  }
                 />
-                {aiDescriptionGenerated ? (
-                  <span
-                    className='mt-1.5 inline-flex shrink-0 text-primary-9'
-                    title={t`Generated by AI`}
-                  >
-                    <Icon className='size-3.5' name='tabler:sparkles' />
-                  </span>
-                ) : null}
+              </div>
+
+              <div>
+                <label className='mb-1 block text-[11px] font-semibold text-[var(--gray-12)]'>
+                  {t`Description`}
+                </label>
+                <div className='flex items-start gap-1.5'>
+                  <textarea
+                    className='min-h-[72px] min-w-0 flex-1 resize-none rounded-md border border-primary-4 bg-surface px-2.5 py-1.5 text-[12px] leading-relaxed text-[var(--gray-11)] outline-none focus:border-primary-9'
+                    value={draft.description}
+                    onChange={(event) => {
+                      setAiDescriptionGenerated(false)
+                      const val = event.target.value
+                      setDraft((prev) => ({
+                        ...prev,
+                        description: val,
+                        promptDescription: val,
+                      }))
+                    }}
+                  />
+                  {aiDescriptionGenerated ? (
+                    <span
+                      className='mt-1.5 inline-flex shrink-0 text-primary-9'
+                      title={t`Generated by AI`}
+                    >
+                      <Icon className='size-3.5' name='tabler:sparkles' />
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -1660,23 +1763,38 @@ export default function AiFolderBuilder({
         ) : null}
 
         {phase === 'details_ready' && !typingId && !isSending ? (
-          <div className={cn('flex justify-end', iconGutter)}>
+          <div className={cn('flex justify-end gap-2', iconGutter)}>
             <Button
               color='primary'
               icon={
                 editingFromReview ? 'lucide:check' : 'lucide:arrow-right'
               }
-              label={editingFromReview ? t`Done` : t`Continue`}
-              onClick={continueFromDetails}
+              label={
+                lastGeneratedFolderDetails.current.folderName !== draft.folderName.trim() ||
+                lastGeneratedFolderDetails.current.promptDescription !== draft.promptDescription.trim()
+                  ? t`Save & Regenerate Fields`
+                  : editingFromReview
+                    ? t`Done`
+                    : t`Continue`
+              }
+              onClick={() => void continueFromDetails()}
             />
           </div>
         ) : null}
 
         {phase === 'fields_ready' && !typingId && !isSending ? (
-          <div className={cn('flex justify-end gap-2', iconGutter)}>
-            {editingFromReview ? (
+          <div className={cn('flex justify-between items-center gap-2', iconGutter)}>
+            <Button
+              color='gray'
+              icon='lucide:arrow-left'
+              label={t`Back`}
+              variant='subtle'
+              onClick={() => handleSelectStep(1)}
+            />
+            <div className='flex items-center gap-2'>
               <Button
                 color='gray'
+                icon='tabler:sparkles'
                 label={t`Regenerate`}
                 variant='subtle'
                 onClick={() => {
@@ -1689,15 +1807,51 @@ export default function AiFolderBuilder({
                   )
                 }}
               />
-            ) : null}
+              <Button
+                color='primary'
+                disabled={!editableFields.length}
+                icon={
+                  editingFromReview ? 'lucide:check' : 'lucide:arrow-right'
+                }
+                label={editingFromReview ? t`Done` : t`Continue`}
+                onClick={continueFromFields}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {phase === 'storage' && !typingId && !isSending ? (
+          <div className={cn('flex justify-between items-center gap-2', iconGutter)}>
             <Button
-              color='primary'
-              disabled={!editableFields.length}
-              icon={
-                editingFromReview ? 'lucide:check' : 'lucide:arrow-right'
-              }
-              label={editingFromReview ? t`Done` : t`Continue`}
-              onClick={continueFromFields}
+              color='gray'
+              icon='lucide:arrow-left'
+              label={t`Back`}
+              variant='subtle'
+              onClick={() => handleSelectStep(2)}
+            />
+          </div>
+        ) : null}
+
+        {phase === 'versioning' && !typingId && !isSending ? (
+          <div className={cn('flex justify-between items-center gap-2', iconGutter)}>
+            <Button
+              color='gray'
+              icon='lucide:arrow-left'
+              label={t`Back`}
+              variant='subtle'
+              onClick={() => handleSelectStep(3)}
+            />
+          </div>
+        ) : null}
+
+        {phase === 'integrations' && !typingId && !isSending ? (
+          <div className={cn('flex justify-between items-center gap-2', iconGutter)}>
+            <Button
+              color='gray'
+              icon='lucide:arrow-left'
+              label={t`Back`}
+              variant='subtle'
+              onClick={() => handleSelectStep(4)}
             />
           </div>
         ) : null}
@@ -2094,6 +2248,7 @@ export default function AiFolderBuilder({
                 <BuilderTimelineStep
                   bottomConnectorState={bottomConnectorState}
                   description={item.description}
+                  onSelectStep={(id) => handleSelectStep(id as BuilderStepId)}
                   showTopConnector={index > 0}
                   status={status}
                   stepId={item.id}
