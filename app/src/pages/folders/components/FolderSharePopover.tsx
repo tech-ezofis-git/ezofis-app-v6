@@ -164,10 +164,21 @@ export default function FolderSharePopover({
     Record<string, { permission: string; user: any }>
   >({})
   const [selectedOrder, setSelectedOrder] = useState<string[]>([])
+
+  const isEmailInput = useMemo(() => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shareSearch.trim())
+  }, [shareSearch])
+
+  const isAlreadySelected = useMemo(() => {
+    return !!selectedUsersToShare[shareSearch.trim()]
+  }, [selectedUsersToShare, shareSearch])
+
+  const showPressEnterPrompt = isEmailInput && !isAlreadySelected
+
   const signingModeOptions = useMemo(
     () => [
-      { id: 'non-sequential', name: t`Non-sequential` },
-      { id: 'sequential', name: t`Sequential` },
+      { id: 'non-sequential', name: t`Flexible Order` },
+      { id: 'sequential', name: t`Fixed Order` },
     ],
     [t],
   )
@@ -639,6 +650,45 @@ export default function FolderSharePopover({
 
             <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain'>
             <div className='px-2 py-2'>
+              {showPressEnterPrompt && (
+                <button
+                  type='button'
+                  className='flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-[var(--primary-2)]/30 border border-dashed border-[var(--primary-4)] bg-[var(--primary-1)]/10 mb-2'
+                  onClick={() => {
+                    const val = shareSearch.trim()
+                    setSelectedUsersToShare((prev) => ({
+                      ...prev,
+                      [val]: {
+                        permission: globalShareRole.id,
+                        user: {
+                          email: val,
+                          id: val,
+                          isExternal: true,
+                          name: val,
+                        },
+                      },
+                    }))
+                    setSelectedOrder((prev) =>
+                      prev.includes(val) ? prev : [...prev, val],
+                    )
+                    setShareSearch('')
+                  }}
+                >
+                  <Icon
+                    className='size-4 text-[var(--primary-9)] shrink-0'
+                    name='lucide:plus'
+                  />
+                  <div className='min-w-0 flex-1'>
+                    <p className='text-[12px] font-semibold text-[var(--primary-9)]'>
+                      Press Enter to add "{shareSearch.trim()}"
+                    </p>
+                    <p className='text-[10px] text-[var(--gray-9)]'>
+                      Share with this external email address
+                    </p>
+                  </div>
+                </button>
+              )}
+
               {usersLoading ? (
                 <div className='flex flex-col gap-2 px-2 py-2'>
                   {[1, 2, 3].map((i) => (
@@ -825,7 +875,7 @@ export default function FolderSharePopover({
                       </div>
                     )
                   })
-              ) : (
+              ) : showPressEnterPrompt ? null : (
                 <p className='px-3 py-6 text-center text-[12px] text-[var(--gray-9)]'>
                   {t`Search for people to share with`}
                 </p>

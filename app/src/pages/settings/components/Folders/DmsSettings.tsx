@@ -3131,7 +3131,12 @@ function WizardContent({
       const parsedMapping: Record<string, string> = {}
       pairs.forEach(pair => {
         const parts = pair.split(':').map(p => p.trim())
-        if (parts.length >= 3) {
+        if (parts.length === 0 || !parts[0]) return
+
+        const repoField = parts[0]
+        const isMultiFormFormat = parts.length === 4 || (parts.length === 3 && parts[2] !== 'sync')
+
+        if (isMultiFormFormat) {
           const formIdOrIndex = parts[1]
           const formFieldId = parts[2]
           let formId = formIdOrIndex
@@ -3139,9 +3144,10 @@ function WizardContent({
           if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
             formId = formIds[idx]
           }
-          parsedMapping[`${formId}:${formFieldId}`] = parts[0]
-        } else if (parts.length === 2) {
-          parsedMapping[`${firstFormId}:${parts[1]}`] = parts[0]
+          parsedMapping[`${formId}:${formFieldId}`] = repoField
+        } else {
+          const formFieldId = parts[1] || ''
+          parsedMapping[`${firstFormId}:${formFieldId}`] = repoField
         }
       })
       return parsedMapping
@@ -3158,18 +3164,26 @@ function WizardContent({
       let parsedSyncFields: string[] = []
       pairs.forEach(pair => {
         const parts = pair.split(':').map(p => p.trim())
-        if (parts.length >= 4 && parts[3] === 'sync') {
-          const formIdOrIndex = parts[1]
-          const formFieldId = parts[2]
-          let formId = formIdOrIndex
-          const idx = parseInt(formIdOrIndex, 10)
-          if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
-            formId = formIds[idx]
+        if (parts.length === 0 || !parts[0]) return
+
+        const isMultiFormFormat = parts.length === 4 || (parts.length === 3 && parts[2] !== 'sync')
+
+        if (isMultiFormFormat) {
+          if (parts.length === 4 && parts[3] === 'sync') {
+            const formIdOrIndex = parts[1]
+            const formFieldId = parts[2]
+            let formId = formIdOrIndex
+            const idx = parseInt(formIdOrIndex, 10)
+            if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
+              formId = formIds[idx]
+            }
+            parsedSyncFields.push(`${formId}:${formFieldId}`)
           }
-          parsedSyncFields.push(`${formId}:${formFieldId}`)
-        }
-        else if (parts.length === 3 && parts[2] === 'sync') {
-          parsedSyncFields.push(`${firstFormId}:${parts[1]}`)
+        } else {
+          if (parts.length === 3 && parts[2] === 'sync') {
+            const formFieldId = parts[1] || ''
+            parsedSyncFields.push(`${firstFormId}:${formFieldId}`)
+          }
         }
       })
       return parsedSyncFields
@@ -4003,8 +4017,20 @@ function WizardContent({
                           onChange={(selectedList) => {
                             const ids = (selectedList || []).map(item => String(item.value))
                             setSelectedFormIds(ids)
-                            setSyncMapping({})
-                            setSyncFields([])
+                            setSyncMapping((prev) => {
+                              const newMap: Record<string, string> = {}
+                              Object.entries(prev).forEach(([key, val]) => {
+                                const formId = key.split(':')[0]
+                                if (ids.includes(formId)) {
+                                  newMap[key] = val
+                                }
+                              })
+                              return newMap
+                            })
+                            setSyncFields((prev) => prev.filter(key => {
+                              const formId = key.split(':')[0]
+                              return ids.includes(formId)
+                            }))
                           }}
                         />
                       </div>

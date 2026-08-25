@@ -52,8 +52,8 @@ export function SignRequestAssignForm({
   const [selectedSigners, setSelectedSigners] = useState<Option[]>([])
   const [pendingUser, setPendingUser] = useState<Option | null>(null)
   const signingModeOptions = [
-    { id: 'non-sequential', name: t`Non-sequential` },
-    { id: 'sequential', name: t`Sequential` },
+    { id: 'non-sequential', name: t`Flexible Order` },
+    { id: 'sequential', name: t`Fixed Order` },
   ]
   const [signingMode, setSigningMode] = useState(signingModeOptions[0])
   const [message, setMessage] = useState(() => t`Please sign this document`)

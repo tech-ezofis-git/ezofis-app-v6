@@ -1018,6 +1018,7 @@ export function DocumentDetailsView({
       })
       setCommentText('')
       setCommentsLoaded(false)
+      setTimelineLoaded(false)
     } finally {
       setSavingComment(false)
     }
@@ -1456,6 +1457,7 @@ export function DocumentDetailsView({
               setAssignedFields([])
               setActiveSignRequestId('')
               setPreviewRefreshKey((value) => value + 1)
+              setTimelineLoaded(false)
               onSigningComplete?.()
             }
 
@@ -1633,20 +1635,85 @@ export function DocumentDetailsView({
       ) : null}
 
       <div className='no-print relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary px-5'>
-        {forceSigning || !onBack ? (
-          <div className='h-8 w-[72px]' aria-hidden />
-        ) : (
-          <Button
-            className='h-8 border-transparent px-3 text-[13px] shadow-none'
-            onClick={onBack}
-          >
-            <ArrowLeft size={12} /> {t`Back`}
-          </Button>
-        )}
+        <div className='flex items-center gap-3 min-w-0 flex-1 mr-4'>
+          {forceSigning || !onBack ? (
+            <div className='h-8 w-[72px] shrink-0' aria-hidden />
+          ) : (
+            <Button
+              className='h-8 border-transparent px-3 text-[13px] shadow-none shrink-0'
+              onClick={onBack}
+            >
+              <ArrowLeft size={12} /> {t`Back`}
+            </Button>
+          )}
 
-        <div className='flex items-center gap-1.5'>
+          {data?.fileName && (
+            <Tooltip
+              content={data.fileName}
+              position='bottom'
+              width={240}
+            >
+              <div className='flex items-center gap-2 min-w-0 select-none'>
+                <Icon
+                  className='size-5 shrink-0 text-gray-10'
+                  name={getFileIcon(data.fileName)}
+                />
+                <span className='truncate text-[14px] font-semibold text-gray-12 max-w-[200px] sm:max-w-[300px] md:max-w-[400px]'>
+                  {data.fileName}
+                </span>
+              </div>
+            </Tooltip>
+          )}
+        </div>
+
+        <div className='flex items-center gap-1.5 shrink-0'>
           {!compactActions ? (
             <>
+              {isEditableDocType ? (
+                <Tooltip content={t`Edit file`} position='bottom'>
+                  <button
+                    aria-label={t`Edit file`}
+                    className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                    disabled={
+                      !previewBlobRef.current ||
+                      isPreviewLoading ||
+                      isSigning
+                    }
+                    type='button'
+                    onClick={() => setIsEditingDoc(true)}
+                  >
+                    <DynamicIcon className='h-4 w-4' name='edit' />
+                  </button>
+                </Tooltip>
+              ) : null}
+
+              <Tooltip content={t`Print file`} position='bottom'>
+                <button
+                  aria-label={t`Print file`}
+                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={!previewUrl || isPreviewLoading}
+                  type='button'
+                  onClick={handlePrint}
+                >
+                  <DynamicIcon className='h-4 w-4' name='printer' />
+                </button>
+              </Tooltip>
+
+              <Tooltip
+                content={isDownloading ? t`Downloading...` : t`Download file`}
+                position='bottom'
+              >
+                <button
+                  aria-label={t`Download file`}
+                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={isDownloading || isPreviewLoading}
+                  type='button'
+                  onClick={handleDownload}
+                >
+                  <DynamicIcon className='h-4 w-4' name='download' />
+                </button>
+              </Tooltip>
+
               <button
                 aria-label={t`AI Summary`}
                 className='inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-gray-3 bg-surface px-3.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
@@ -1768,7 +1835,7 @@ export function DocumentDetailsView({
           {canSign ? (
             <button
               ref={signTriggerRef}
-              aria-label={t`Sign`}
+              aria-label={t`My Sign`}
               aria-expanded={isSigning}
               className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${isSigning
                 ? 'border-primary-6 bg-primary-1 text-primary-9'
@@ -1796,7 +1863,7 @@ export function DocumentDetailsView({
               <PenLine
                 className={`h-4 w-4 ${isSigning ? 'text-primary-9' : 'text-violet-9'}`}
               />
-              <span>{t`Sign`}</span>
+              <span>{t`My Sign`}</span>
             </button>
           ) : null}
           {isSigning && (signingState.hasPlacements || signingState.canSave) ? (
@@ -1862,66 +1929,7 @@ export function DocumentDetailsView({
               </div>
             ) : null}
 
-            <Card className='overflow-hidden'>
-              <div className='flex items-center justify-between gap-3 border-b border-gray-3 px-5 py-4'>
-                <div className='flex min-w-0 items-center gap-3'>
-                  <Icon
-                    className='size-6 shrink-0'
-                    name={getFileIcon(data.fileName)}
-                  />
-                  <b className='truncate text-[16px] font-semibold text-gray-13'>
-                    {data.fileName}
-                  </b>
-                </div>
-
-                <div className='flex shrink-0 items-center gap-1.5'>
-                  {isEditableDocType ? (
-                    <Tooltip content={t`Edit`} position='top'>
-                      <button
-                        aria-label={t`Edit`}
-                        className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                        disabled={
-                          !previewBlobRef.current ||
-                          isPreviewLoading ||
-                          isSigning
-                        }
-                        type='button'
-                        onClick={() => setIsEditingDoc(true)}
-                      >
-                        <DynamicIcon className='h-4 w-4' name='edit' />
-                      </button>
-                    </Tooltip>
-                  ) : null}
-
-                  <Tooltip content={t`Print`} position='top'>
-                    <button
-                      aria-label={t`Print`}
-                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                      disabled={!previewUrl || isPreviewLoading}
-                      type='button'
-                      onClick={handlePrint}
-                    >
-                      <DynamicIcon className='h-4 w-4' name='printer' />
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip
-                    content={isDownloading ? t`Downloading...` : t`Download`}
-                    position='top'
-                  >
-                    <button
-                      aria-label={t`Download`}
-                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                      disabled={isDownloading || isPreviewLoading}
-                      type='button'
-                      onClick={handleDownload}
-                    >
-                      <DynamicIcon className='h-4 w-4' name='download' />
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-
+            <Card className='overflow-hidden p-0'>
               {downloadError ? (
                 <div className='border-b border-red-4 bg-red-1 px-5 py-2 text-[12px] font-medium text-red-10'>
                   {downloadError}

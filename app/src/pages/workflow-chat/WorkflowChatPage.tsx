@@ -305,6 +305,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   const [contextVisible, setContextVisible] = useState<boolean>(true)
   const [inputText, setInputText] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(false)
+  const [typingText, setTypingText] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [ticketId, setTicketId] = useState<string | null>(
     initialState?.ticketId || null,
@@ -1489,6 +1490,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           },
         ])
 
+        setTypingText('Setting up...')
+
         const formData = new FormData()
         formData.append('file', fileObj)
         formData.append('context', '')
@@ -1505,6 +1508,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
           let foundData = false
           let attempts = 0
           while (!foundData && attempts < 12) {
+            setTypingText('Setting up...')
             await new Promise((resolve) => setTimeout(resolve, 10000))
             attempts++
 
@@ -1520,6 +1524,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               inboxRes.data.items.length > 0
             ) {
               const item = inboxRes.data.items[0]
+              const currentStage = item.stage || item.activityName || item.status || 'Finalizing Results...'
+              setTypingText(currentStage)
+
               if (item.formData) {
                 let formDataObj: any = {}
                 try {
@@ -1569,6 +1576,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     }
 
     setIsTyping(false)
+    setTypingText(null)
     const remainingF = fields.filter((f) => updatedAnswers[f.id] === undefined)
     const remainingD = documents.filter((d) => !updatedDocs[d.id])
 
@@ -2082,19 +2090,31 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                 <div className='mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center'>
                   <AiBrandIcon className='h-4 w-4' variant='default' />
                 </div>
-                <div className='flex items-center gap-1 rounded-2xl rounded-tl-sm border border-gray-4/50 bg-gray-2 px-4 py-4 shadow-sm'>
-                  <div
-                    className='h-1.5 w-1.5 animate-bounce rounded-full bg-gray-9'
-                    style={{ animationDelay: '0ms' }}
-                  />
-                  <div
-                    className='h-1.5 w-1.5 animate-bounce rounded-full bg-gray-9'
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <div
-                    className='h-1.5 w-1.5 animate-bounce rounded-full bg-gray-9'
-                    style={{ animationDelay: '300ms' }}
-                  />
+                <div className={cn(
+                  'rounded-2xl rounded-tl-sm border border-gray-4/50 bg-gray-2 shadow-sm',
+                  typingText ? 'px-5 py-3.5 text-[13.5px] leading-relaxed text-gray-12' : 'flex items-center gap-1 px-4 py-4'
+                )}>
+                  {typingText ? (
+                    <div className='flex items-center gap-2'>
+                      <div className='size-1.5 animate-ping rounded-full bg-primary-9' />
+                      <span className='font-medium'>{typingText}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div
+                        className='h-1.5 w-1.5 animate-bounce rounded-full bg-gray-9'
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <div
+                        className='h-1.5 w-1.5 animate-bounce rounded-full bg-gray-9'
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <div
+                        className='h-1.5 w-1.5 animate-bounce rounded-full bg-gray-9'
+                        style={{ animationDelay: '300ms' }}
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             )}

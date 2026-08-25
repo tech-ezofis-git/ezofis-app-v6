@@ -845,12 +845,12 @@ const AskAI = () => {
               <>
                 <HeaderIconButton
                   disabled={(!hasMessages && !busy) && !isWorkflowMode}
-                  title='Clear chat'
+                  title='New chat'
                   onClick={clearChat}
                 >
                   <UiIcon
                     className='text-[var(--text2)] group-hover:text-[var(--text1)]'
-                    name='trash'
+                    name='add'
                     size={16}
                   />
                 </HeaderIconButton>
