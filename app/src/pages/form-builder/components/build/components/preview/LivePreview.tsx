@@ -137,11 +137,14 @@ const LivePreview = () => {
                         key={field.id}
                         className={cn(
                           'col-span-12',
-                          field.settings.general.size === 'col-6' &&
+                          deviceType !== 'mobile' &&
+                            field.settings.general.size === 'col-6' &&
                             'md:col-span-6',
-                          field.settings.general.size === 'col-4' &&
+                          deviceType !== 'mobile' &&
+                            field.settings.general.size === 'col-4' &&
                             'md:col-span-4',
-                          field.settings.general.size === 'col-3' &&
+                          deviceType !== 'mobile' &&
+                            field.settings.general.size === 'col-3' &&
                             'md:col-span-3',
                         )}
                       >

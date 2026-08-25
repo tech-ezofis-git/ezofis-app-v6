@@ -133,44 +133,101 @@ const QuestionCard = ({
           <div className='flex items-center gap-1 pl-2'>
             {!isLocked ? (
               <>
+                {(() => {
+                  const sizeOptions = [
+                    { label: '1/3 width', short: '1/3', value: 'col-4' },
+                    { label: '1/2 width', short: '1/2', value: 'col-6' },
+                    { label: 'Full width', short: 'Full', value: 'col-12' },
+                  ]
+                  const activeIndex = Math.max(
+                    0,
+                    sizeOptions.findIndex(
+                      (w) => w.value === question.settings.general.size,
+                    ),
+                  )
+                  return (
+                    <div className='relative flex items-center rounded-full border border-gray-2 bg-gray-1 p-0.5'>
+                      <div
+                        className='absolute top-0.5 bottom-0.5 rounded-full bg-white shadow-sm transition-all duration-300 ease-out'
+                        style={{
+                          width: `calc(${100 / sizeOptions.length}% - 2px)`,
+                          left: `calc(${(activeIndex * 100) / sizeOptions.length}% + 1px)`,
+                        }}
+                      />
+                      {sizeOptions.map((w, i) => (
+                        <Tooltip key={w.value} label={w.label} position='top' withArrow>
+                          <button
+                            className={cn(
+                              'relative z-10 flex h-6 min-w-9 cursor-pointer items-center justify-center rounded-full px-1.5 text-[10px] font-bold tracking-tight transition-colors duration-300',
+                              i === activeIndex
+                                ? 'text-primary-9'
+                                : 'text-gray-6 hover:text-gray-9',
+                            )}
+                            type='button'
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onUpdate({
+                                settings: {
+                                  ...question.settings,
+                                  general: {
+                                    ...question.settings.general,
+                                    size: w.value as any,
+                                  },
+                                },
+                              })
+                            }}
+                          >
+                            {w.short}
+                          </button>
+                        </Tooltip>
+                      ))}
+                    </div>
+                  )
+                })()}
+
                 <div
                   className={cn(
-                    'flex items-center gap-0.5 opacity-0 transition-all duration-300 group-hover:opacity-100',
-                    isActive && 'opacity-100',
+                    'flex items-center overflow-hidden transition-all duration-300 ease-out',
+                    isActive
+                      ? 'max-w-[90px] opacity-100'
+                      : 'max-w-0 opacity-0 group-hover:max-w-[90px] group-hover:opacity-100',
                   )}
                 >
-                  <Tooltip label='Duplicate' position='top' withArrow>
-                    <IconButton
-                      className='size-6 cursor-pointer'
-                      color='primary'
-                      icon='lucide:copy'
-                      iconClass='size-[13px]'
-                      size='sm'
-                      variant='ghost'
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation()
-                        const { duplicateQuestion, setCopiedQuestion } =
-                          useFormStore.getState()
-                        setCopiedQuestion(question)
-                        duplicateQuestion(question.id)
-                      }}
-                    />
-                  </Tooltip>
+                  <div className='mx-1 h-4 w-px shrink-0 bg-gray-2' />
+                  <div className='flex shrink-0 items-center gap-0.5'>
+                    <Tooltip label='Duplicate' position='top' withArrow>
+                      <IconButton
+                        className='size-6 cursor-pointer'
+                        color='primary'
+                        icon='lucide:copy'
+                        iconClass='size-[13px]'
+                        size='sm'
+                        variant='ghost'
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation()
+                          const { duplicateQuestion, setCopiedQuestion } =
+                            useFormStore.getState()
+                          setCopiedQuestion(question)
+                          duplicateQuestion(question.id)
+                        }}
+                      />
+                    </Tooltip>
 
-                  <Tooltip label='Delete' position='top' withArrow>
-                    <IconButton
-                      className='hover:bg-red-50 size-6 cursor-pointer'
-                      color='red'
-                      icon='lucide:trash-2'
-                      iconClass='size-[13px]'
-                      size='sm'
-                      variant='ghost'
-                      onClick={(e: React.MouseEvent) => {
-                        e.stopPropagation()
-                        onDelete()
-                      }}
-                    />
-                  </Tooltip>
+                    <Tooltip label='Delete' position='top' withArrow>
+                      <IconButton
+                        className='hover:bg-red-50 size-6 cursor-pointer'
+                        color='red'
+                        icon='lucide:trash-2'
+                        iconClass='size-[13px]'
+                        size='sm'
+                        variant='ghost'
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation()
+                          onDelete()
+                        }}
+                      />
+                    </Tooltip>
+                  </div>
                 </div>
 
                 <div
@@ -885,41 +942,6 @@ const QuestionCard = ({
               </span>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Bottom Width Toolbar (Hover Only) */}
-      <div className='pointer-events-none absolute -bottom-[18px] left-1/2 z-50 -translate-x-1/2 opacity-0 transition-all duration-300 group-hover:pointer-events-auto group-hover:opacity-100'>
-        <div className='animate-in slide-in-from-top-4 flex items-center gap-1 rounded-full border border-gray-2 bg-white p-1 shadow-sm'>
-          {[
-            { label: '1/3', value: 'col-4' },
-            { label: '1/2', value: 'col-6' },
-            { label: 'Full', value: 'col-12' },
-          ].map((w) => (
-            <button
-              key={w.value}
-              className={cn(
-                'rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide transition-all',
-                question.settings.general.size === w.value
-                  ? 'bg-accent-soft/20 text-accent-primary'
-                  : 'text-gray-5 hover:bg-gray-1',
-              )}
-              onClick={(e) => {
-                e.stopPropagation()
-                onUpdate({
-                  settings: {
-                    ...question.settings,
-                    general: {
-                      ...question.settings.general,
-                      size: w.value as any,
-                    },
-                  },
-                })
-              }}
-            >
-              {w.label}
-            </button>
-          ))}
         </div>
       </div>
     </Card>

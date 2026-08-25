@@ -16,7 +16,6 @@ import cn from '@/utils/cn'
 import AddFieldButton from './AddFieldButton'
 import QuestionCard from './QuestionCard'
 import SectionHeader from './SectionHeader'
-import SlashCommand from './SlashCommand'
 
 interface Props {
   panel: PanelType
@@ -77,7 +76,7 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   return (
     <div
-      className='group/page relative rounded-xl border border-gray-3 bg-white font-inter shadow-2xs transition-all duration-200 focus-within:z-30'
+      className='group/page relative rounded-xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-200 hover:shadow-lg focus-within:z-30'
       id={panel.id}
       ref={pageRef}
       onDragOver={(e) => e.preventDefault()}
@@ -247,11 +246,9 @@ const Page = ({ panel, panelIndex }: Props) => {
             </div>
           </SortableContext>
 
-          {/* 3. Slash Command & Add Field Button */}
+          {/* 3. Add Field Button */}
           {!isLocked && (
             <div className='mt-3 flex flex-col gap-2'>
-              <SlashCommand index={panel.fields.length} panelId={panel.id} />
-
               <AddFieldButton
                 onClick={() => triggerAddFieldSidebar(panel.fields.length)}
               />
@@ -291,7 +288,6 @@ const SortableQuestionItem = ({
   } = useSortable({ id: question.id })
 
   const style = {
-    opacity: isDragging ? 0.5 : 1,
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 100 : 1,
@@ -299,27 +295,33 @@ const SortableQuestionItem = ({
 
   return (
     <div
-      className='relative w-full transition-all duration-300'
+      className={cn(
+        'relative w-full transition-all duration-300',
+        isDragging &&
+          'rounded-xl border-2 border-dashed border-primary-4 bg-primary-3/10',
+      )}
       ref={setNodeRef}
       style={style}
       {...attributes}
     >
-      <QuestionCard
-        dragListeners={isLocked ? undefined : listeners}
-        isActive={activeQuestionId === question.id}
-        isBuilderMode={isBuilderMode}
-        isLocked={isLocked}
-        question={question}
-        onDelete={() => deleteQuestion(question.id)}
-        onSelect={() => {
-          setActiveQuestionId(question.id)
-          useFormStore.getState().setSelectionType('question')
-          useFormStore.getState().setSidebarOpen(true)
-        }}
-        onUpdate={(updates: Partial<Question>) =>
-          updateQuestion(question.id, updates)
-        }
-      />
+      <div className={cn(isDragging && 'invisible')}>
+        <QuestionCard
+          dragListeners={isLocked ? undefined : listeners}
+          isActive={activeQuestionId === question.id}
+          isBuilderMode={isBuilderMode}
+          isLocked={isLocked}
+          question={question}
+          onDelete={() => deleteQuestion(question.id)}
+          onSelect={() => {
+            setActiveQuestionId(question.id)
+            useFormStore.getState().setSelectionType('question')
+            useFormStore.getState().setSidebarOpen(true)
+          }}
+          onUpdate={(updates: Partial<Question>) =>
+            updateQuestion(question.id, updates)
+          }
+        />
+      </div>
     </div>
   )
 }
