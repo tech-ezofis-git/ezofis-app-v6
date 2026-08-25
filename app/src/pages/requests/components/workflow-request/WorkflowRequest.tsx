@@ -1,10 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
+import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import Header from '../request/components/newrequest/Header'
+import RepoFieldsPanel from './components/RepoFieldsPanel'
+import UploadedFilePreview from './components/UploadedFilePreview'
 import { useWorkflowForm } from './hooks/useWorkflowForm'
 import WorkflowFormRenderer from './WorkflowFormRenderer'
 import WorkflowRequestSidebar from './WorkflowRequestSidebar'
@@ -24,14 +27,18 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const { t } = useLingui()
   const workflowRefresh = requestStore((state) => state.workflowRefresh)
   const [activePanel, setActivePanel] = useState<SidePanel | null>(null)
+  const [activeFileKey, setActiveFileKey] = useState<string | null>(null)
+  const [isConfirmingUpload, setIsConfirmingUpload] = useState(false)
 
   const {
     addAttachment,
     addComment,
     applyOcrFieldList,
     attachments,
+    cancelPendingUpload,
     commentDraft,
     comments,
+    confirmUpload,
     formModel,
     hasAttemptedSubmit,
     isLoadingForm,
@@ -39,11 +46,14 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     isUploadingAttachment,
     loadError,
     missingMandatoryFieldIds,
+    needsManualUpload,
     panels,
     removeAttachment,
+    repoFieldDescriptors,
     repoFieldHints,
     submit,
     submitError,
+    uploadedFiles,
     setCommentDraft,
     setFieldValue,
   } = useWorkflowForm(workflow)
@@ -60,6 +70,14 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           submitError || t`Failed to start the workflow. Please try again.`,
         variant: 'error',
       })
+      const firstMissingId = missingMandatoryFieldIds.values().next().value
+      if (firstMissingId) {
+        const target = document.querySelector(
+          `[data-field-id="${firstMissingId}"]`,
+        )
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        target?.querySelector<HTMLElement>('input, select, textarea')?.focus()
+      }
       return
     }
 
@@ -69,6 +87,19 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     })
     workflowRefresh()
     onClose()
+  }
+
+  const handleConfirmUpload = async () => {
+    setIsConfirmingUpload(true)
+    const result = await confirmUpload()
+    setIsConfirmingUpload(false)
+    if (!result.success) {
+      showToast({
+        message:
+          submitError || t`Failed to upload the file. Please try again.`,
+        variant: 'error',
+      })
+    }
   }
 
   return (
@@ -104,18 +135,64 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
         </AnimateFadeIn>
       ) : (
         <div className='flex min-h-0 flex-1 overflow-hidden'>
-          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-            <WorkflowFormRenderer
-              formModel={formModel}
-              hasAttemptedSubmit={hasAttemptedSubmit}
-              missingMandatoryFieldIds={missingMandatoryFieldIds}
-              panels={panels}
-              repoFieldHints={repoFieldHints}
-              repositoryId={workflow?.repositoryId}
-              onFieldChange={setFieldValue}
-              onOcrFieldList={applyOcrFieldList}
-            />
-          </div>
+          {!needsManualUpload ? (
+            // Plain form view — covers "no file yet", "still extracting"
+            // (the dropzone/field itself shows its own loading state), and
+            // "OCR filled everything, auto-staged" alike. The file-preview +
+            // repository-fields screen is reserved solely for the case
+            // below, where the user still has to supply missing data.
+            <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+              <WorkflowFormRenderer
+                formModel={formModel}
+                hasAttemptedSubmit={hasAttemptedSubmit}
+                missingMandatoryFieldIds={missingMandatoryFieldIds}
+                panels={panels}
+                repoFieldHints={repoFieldHints}
+                repositoryId={workflow?.repositoryId}
+                onFieldChange={setFieldValue}
+                onOcrFieldList={applyOcrFieldList}
+              />
+            </div>
+          ) : (
+            <div className='flex min-w-0 flex-1 gap-4 overflow-hidden p-4'>
+              <div className='w-[40%] min-w-0 shrink-0'>
+                <UploadedFilePreview
+                  activeKey={activeFileKey}
+                  files={uploadedFiles}
+                  onSelectKey={setActiveFileKey}
+                />
+              </div>
+              <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+                <h3 className='mb-3 text-14 font-bold text-gray-13'>{t`Repository Fields`}</h3>
+                <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
+                  <RepoFieldsPanel
+                    descriptors={repoFieldDescriptors}
+                    formModel={formModel}
+                    hasAttemptedSubmit={hasAttemptedSubmit}
+                    missingMandatoryFieldIds={missingMandatoryFieldIds}
+                    repoFieldHints={repoFieldHints}
+                    repositoryId={workflow?.repositoryId}
+                    onFieldChange={setFieldValue}
+                    onOcrFieldList={applyOcrFieldList}
+                  />
+                </div>
+                <div className='mt-3 flex items-center justify-end gap-2 border-t border-gray-3 pt-3'>
+                  <Button
+                    label={t`Cancel`}
+                    variant='outline'
+                    onClick={cancelPendingUpload}
+                  />
+                  <Button
+                    disabled={missingMandatoryFieldIds.size > 0}
+                    label={t`Upload`}
+                    loading={isConfirmingUpload}
+                    variant='solid'
+                    onClick={handleConfirmUpload}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           {activePanel && (
             <WorkflowRequestSidebar
               activePanel={activePanel}

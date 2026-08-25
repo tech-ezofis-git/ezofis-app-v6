@@ -135,43 +135,154 @@ export const findFormFieldIdByName = (
   return undefined
 }
 
+export const findFormFieldById = (panels: any[], id: string): any =>
+  (panels || [])
+    .flatMap((panel: any) => panel.fields || [])
+    .find((field: any) => field.id === id)
+
+// Repository fields with no matching form field still need a slot in
+// formModel (to render an input and to validate/submit them) — this prefix
+// marks that slot as synthetic rather than a real form-builder field id, so
+// buildStartWorkflowPayload knows to fold it back into `formData` by name
+// instead of by (nonexistent) jsonId.
+export const SYNTHETIC_FIELD_PREFIX = '__repo__'
+
+export const syntheticFieldId = (name: string): string =>
+  `${SYNTHETIC_FIELD_PREFIX}${name}`
+
+export interface RepoFieldDescriptor {
+  fieldId: string
+  repoField: { dataType?: string; isMandatory?: boolean; name?: string }
+  matchedFieldId?: string
+  matchedFieldType?: string
+}
+
+// One entry per repository field, ALWAYS keyed by its own repo-native id
+// (fieldId) — the repository, not the form, is what drives this list.
+// matchedFieldId (the real form field sharing this repo field's name, if
+// any) is kept only so callers can mirror values into it and hide it from
+// the plain form renderer — see getRepoFieldValue below for how an
+// already-filled form field's value carries over.
+export const buildRepoFieldDescriptors = (
+  repositoryFields: {
+    dataType?: string
+    isMandatory?: boolean
+    name?: string
+  }[],
+  panels: any[],
+): RepoFieldDescriptor[] =>
+  (repositoryFields || [])
+    .filter((f) => f?.name && f.dataType !== 'TABLE')
+    .map((repoField) => {
+      const matchedFieldId = findFormFieldIdByName(panels, repoField.name!)
+      return {
+        fieldId: syntheticFieldId(repoField.name!),
+        matchedFieldId,
+        matchedFieldType: matchedFieldId
+          ? findFormFieldById(panels, matchedFieldId)?.type
+          : undefined,
+        repoField,
+      }
+    })
+
+// A repo field's current value: its own slot if set, else whatever the
+// matching form field already holds (e.g. typed before any file was
+// uploaded, back when the plain form was the only thing on screen).
+export const getRepoFieldValue = (
+  descriptor: Pick<RepoFieldDescriptor, 'fieldId' | 'matchedFieldId'>,
+  formModel: Record<string, any>,
+): any => {
+  const own = formModel[descriptor.fieldId]
+  if (!isValueEmpty(own)) return own
+  return descriptor.matchedFieldId
+    ? formModel[descriptor.matchedFieldId]
+    : undefined
+}
+
+// Repo dataTypes whose FieldRenderer counterpart needs an options list
+// (settings.specific.options/customOptions) that a repository field simply
+// doesn't carry — e.g. DocumentType/ApprovalStatus are SINGLE_SELECT on the
+// repository side, but rendering that as-is produces an empty, unusable
+// dropdown. Render these as plain text input instead.
+const NO_OPTIONS_DATA_TYPES = new Set([
+  'SINGLE_SELECT',
+  'SINGLE_CHOICE',
+  'MULTI_SELECT',
+  'MULTIPLE_CHOICE',
+])
+
+// Builds a minimal field object for a repository field, used to render it
+// through FieldRenderer per the repository's OWN definition (type/mandatory)
+// rather than whatever the form's own field config happens to say — the
+// repository is the source of truth here, not the form.
+export const buildSyntheticField = (repoField: {
+  dataType?: string
+  isMandatory?: boolean
+  name?: string
+}): any => {
+  const dataType = repoField.dataType
+  const type =
+    SUPPORTED_TYPES.has(dataType || '') &&
+    !NO_OPTIONS_DATA_TYPES.has(dataType || '')
+      ? dataType
+      : dataType === 'BOOLEAN'
+        ? 'YES_NO_TOGGLE'
+        : 'SHORT_TEXT'
+  return {
+    id: syntheticFieldId(repoField.name || ''),
+    label: repoField.name,
+    type,
+    settings: {
+      general: {},
+      validation: {
+        fieldRule: repoField.isMandatory ? 'REQUIRED' : 'OPTIONAL',
+      },
+    },
+  }
+}
+
 const isValueEmpty = (value: any): boolean =>
   value === undefined ||
   value === null ||
   (typeof value === 'string' && value.trim() === '')
 
-// Repository-mandatory fields that either aren't on this form at all, or
-// are on the form but still empty — the submit-blocking check.
-export const getMissingMandatoryFields = (
-  panels: any[],
-  formModel: Record<string, any>,
-  mandatoryFieldNames: string[],
-): string[] => {
-  const missing: string[] = []
-  for (const name of mandatoryFieldNames) {
-    const fieldId = findFormFieldIdByName(panels, name)
-    if (!fieldId) continue // not represented on this form — can't validate
-    if (isValueEmpty(formModel[fieldId])) missing.push(name)
-  }
-  return missing
+const stringifyFieldValue = (value: any): string => {
+  if (isValueEmpty(value)) return ''
+  if (Array.isArray(value)) return value.join(', ')
+  if (typeof value === 'object') return String(value.fileName || '')
+  return String(value)
 }
 
-// Same check as getMissingMandatoryFields, keyed by form field id instead of
+// Repository-mandatory fields that are still empty — covers both fields
+// matched to a real form field and synthetic (form-less) ones alike, since
+// descriptors already carry the resolved fieldId. The submit-blocking check.
+export const getMissingMandatoryFields = (
+  descriptors: RepoFieldDescriptor[],
+  formModel: Record<string, any>,
+): string[] =>
+  descriptors
+    .filter(
+      (d) =>
+        d.repoField.isMandatory && isValueEmpty(getRepoFieldValue(d, formModel)),
+    )
+    .map((d) => d.repoField.name!)
+
+// Same check as getMissingMandatoryFields, keyed by fieldId instead of
 // repository field name — what the field-level `error` prop and the
 // auto-stage trigger both key off.
 export const getMissingMandatoryFieldIds = (
-  panels: any[],
+  descriptors: RepoFieldDescriptor[],
   formModel: Record<string, any>,
-  mandatoryFieldNames: string[],
-): Set<string> => {
-  const missing = new Set<string>()
-  for (const name of mandatoryFieldNames) {
-    const fieldId = findFormFieldIdByName(panels, name)
-    if (!fieldId) continue
-    if (isValueEmpty(formModel[fieldId])) missing.add(fieldId)
-  }
-  return missing
-}
+): Set<string> =>
+  new Set(
+    descriptors
+      .filter(
+        (d) =>
+          d.repoField.isMandatory &&
+          isValueEmpty(getRepoFieldValue(d, formModel)),
+      )
+      .map((d) => d.fieldId),
+  )
 
 // uploadForOcr's `ocrJson` is a stringified blob of shape
 // `{ ocrResult: [...], ocrText: string, tokens: {...} }` — uploadWithOcr's
@@ -188,10 +299,44 @@ export const extractOcrText = (
   }
 }
 
+// Builds uploadWithOcr's `metadata` param: one entry per REPOSITORY field
+// (not just the ones currently filled), keyed by the repository's own field
+// name, valued from whatever the matching form field currently holds — the
+// backend wants the full field set every time, empty string for anything
+// not yet filled. "DocumentType" has no form counterpart on most forms, so
+// it falls back to the uploaded file's extension (e.g. "Pdf") when empty.
+export const buildRepoMetadata = (
+  repositoryFields: {
+    dataType?: string
+    isMandatory?: boolean
+    name?: string
+  }[],
+  panels: any[],
+  formModel: Record<string, any>,
+  fileName?: string,
+): Record<string, string> => {
+  const metadata: Record<string, string> = {}
+  for (const descriptor of buildRepoFieldDescriptors(repositoryFields, panels)) {
+    const name = descriptor.repoField.name!
+    const value = stringifyFieldValue(getRepoFieldValue(descriptor, formModel))
+
+    if (!value && normalizeName(name) === 'documenttype' && fileName) {
+      const ext = getFileExtension(fileName)
+      metadata[name] = ext ? ext.charAt(0).toUpperCase() + ext.slice(1) : ''
+    } else {
+      metadata[name] = value
+    }
+  }
+  return metadata
+}
+
 // Maps an uploadForOcr/uploadWithOcr response's `ocrFieldList` (matched by
-// field NAME,
-// e.g. "PO Number") back onto this form's fields (matched by label) so the
-// extracted values can be written into the formModel by field id.
+// field NAME, e.g. "PO Number") into the formModel — always under the
+// field's own repo-native id, AND mirrored onto the matching form field's id
+// when one exists (same name), so both stay in sync regardless of which one
+// downstream code reads. Every ocrFieldList name originates from a
+// repo-field hint string (buildRepoFieldHints), so it's always a real
+// repository field name.
 export const mapOcrFieldsToModel = (
   panels: any[],
   ocrFieldList: { name?: string; value?: string }[] | undefined,
@@ -201,8 +346,9 @@ export const mapOcrFieldsToModel = (
 
   for (const item of ocrFieldList) {
     if (!item?.name || !item.value) continue
-    const fieldId = findFormFieldIdByName(panels, item.name)
-    if (fieldId) patch[fieldId] = item.value
+    patch[syntheticFieldId(item.name)] = item.value
+    const matchedFieldId = findFormFieldIdByName(panels, item.name)
+    if (matchedFieldId) patch[matchedFieldId] = item.value
   }
 
   return patch

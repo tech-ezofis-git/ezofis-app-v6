@@ -40,6 +40,8 @@ interface Props {
 interface StagedFileValue {
   fileName: string
   fileId?: string
+  // See AttachmentEntry.ocrChecked in AttachmentsPanel.tsx — same purpose.
+  ocrChecked?: boolean
   // Carried from the uploadForOcr response so stagePendingFiles can forward
   // the already-extracted data to uploadWithOcr instead of the backend
   // re-running OCR (and getting an empty/blank result) a second time.
@@ -215,7 +217,11 @@ const FieldRenderer = ({
         )
       }
 
-      const staged: StagedFileValue | null = value || null
+      // Keep showing the dropzone (in its loading state) until OCR phase 1
+      // actually finishes — otherwise the chip view below replaces it the
+      // instant a file is picked, and the "Extracting…" loading text never
+      // gets a chance to show.
+      const staged: StagedFileValue | null = value?.ocrChecked ? value : null
 
       // Two-phase, matching the repository's mandatory-field rules: this
       // is phase 1 only — an OCR-only peek (uploadForOcr, nothing
@@ -236,7 +242,12 @@ const FieldRenderer = ({
           return
         }
 
-        const fileEntry = { fileName: file.name, rawFile: file, repositoryId }
+        const fileEntry = {
+          fileName: file.name,
+          ocrChecked: false,
+          rawFile: file,
+          repositoryId,
+        }
         onChange(fileEntry)
 
         setIsUploading(true)
@@ -249,12 +260,14 @@ const FieldRenderer = ({
 
         if (error || !data) {
           console.warn('[uploadForOcr] OCR extraction warning:', error || 'OCR data unavailable')
+          onChange({ ...fileEntry, ocrChecked: true })
           return
         }
 
         onOcrFieldList?.(data.ocrFieldList)
         onChange({
           ...fileEntry,
+          ocrChecked: true,
           ocrFieldList: data.ocrFieldList,
           ocrJson: data.ocrJson,
         })
@@ -301,7 +314,7 @@ const FieldRenderer = ({
               accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
               disabled={readOnly}
               isLoading={isUploading}
-              loadingText={t`Uploading…`}
+              loadingText={t`Extracting data from the document…`}
               onFiles={handleFiles}
             />
           )}

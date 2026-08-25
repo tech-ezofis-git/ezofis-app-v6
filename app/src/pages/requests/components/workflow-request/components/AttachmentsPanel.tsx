@@ -16,6 +16,11 @@ export interface AttachmentEntry {
   // carries `rawFile` instead: OCR has already run against it (via
   // uploadForOcr), but nothing's been persisted to the stage table yet.
   fileId?: string
+  // False from the moment the file is added until uploadForOcr (phase 1)
+  // resolves (success or failure). stagePendingFiles' auto-trigger gates on
+  // this so it never fires uploadWithOcr — and builds its `metadata` — before
+  // phase 1 has had a chance to fill in the extracted fields.
+  ocrChecked?: boolean
   // The uploadForOcr response, carried along so stagePendingFiles can
   // forward the already-extracted data to uploadWithOcr instead of the
   // backend re-running OCR (and getting an empty/blank result) a second
@@ -67,7 +72,7 @@ const AttachmentsPanel = ({
       <CompactDropzone
         helperText={t`Any file type`}
         isLoading={isUploading}
-        loadingText={t`Uploading…`}
+        loadingText={t`Extracting data from the document…`}
         multiple
         onFiles={onAdd}
       />

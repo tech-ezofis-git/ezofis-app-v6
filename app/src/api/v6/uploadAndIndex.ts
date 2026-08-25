@@ -38,6 +38,9 @@ interface UploadWithOcrParams {
   ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
   ocrJson?: string
   ocrText?: string
+  // Full repository field set (name -> current value, '' if unfilled) —
+  // see buildRepoMetadata in fieldRendering.ts.
+  metadata?: Record<string, string>
 }
 
 // Pre-ticket upload for the normal (non-AP-Agent) workflow flow — see the
@@ -48,6 +51,7 @@ const uploadWithOcr = async ({
   fields,
   file,
   filename,
+  metadata,
   ocrFieldList,
   ocrJson,
   ocrText,
@@ -69,6 +73,7 @@ const uploadWithOcr = async ({
     }
     if (ocrJson) formData.append('ocrJson', ocrJson)
     if (ocrText) formData.append('ocrText', ocrText)
+    if (metadata) formData.append('metadata', JSON.stringify(metadata))
 
     const { data, status } = await axiosV6({
       data: formData,

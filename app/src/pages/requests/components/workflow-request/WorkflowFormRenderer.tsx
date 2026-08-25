@@ -14,6 +14,11 @@ import {
 interface Props {
   formModel: Record<string, any>
   panels: any[]
+  // Skips the internal ScrollArea (height: 100%) — used when this renderer
+  // is nested inside another scrollable container (the split-view's
+  // right pane), where a second height:100% ScrollArea would otherwise
+  // fight the outer container for scroll ownership.
+  disableOwnScroll?: boolean
   hasAttemptedSubmit?: boolean
   missingMandatoryFieldIds?: Set<string>
   repoFieldHints?: string[]
@@ -32,6 +37,7 @@ interface Props {
 // visibility are respected; per-field conditional logic rules are not
 // evaluated yet.
 const WorkflowFormRenderer = ({
+  disableOwnScroll,
   formModel,
   hasAttemptedSubmit,
   missingMandatoryFieldIds,
@@ -43,111 +49,114 @@ const WorkflowFormRenderer = ({
   onOcrFieldList,
 }: Props) => {
   const { t } = useLingui()
-  return (
-    <ScrollArea height='100%'>
-      <div className='w-full px-6 py-6'>
-        <AnimateFadeIn delay={0.1}>
-          <Accordion
-            defaultValue={panels.map((_, idx) => `panel-${idx}`)}
-            radius='md'
-            variant='separated'
-            multiple
-            classNames={{
-              chevron: 'text-gray-10',
-              content: 'p-0',
-              control:
-                'rounded-xl px-4 py-2.5 transition-colors hover:bg-gray-1',
-              item: 'mb-3 rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
-              label: 'text-14 font-bold tracking-tight text-gray-13',
-              panel: 'px-6 pt-2 pb-6',
-            }}
-          >
-            {panels.map((panel: any, panelIndex: number) => {
-              const visibleFields = (panel.fields || []).filter(
-                (field: any) => !isFieldHidden(field),
-              )
-              if (visibleFields.length === 0) return null
+  const content = (
+    <div className='w-full px-6 py-6'>
+      <AnimateFadeIn delay={0.1}>
+        <Accordion
+          defaultValue={panels.map((_, idx) => `panel-${idx}`)}
+          radius='md'
+          variant='separated'
+          multiple
+          classNames={{
+            chevron: 'text-gray-10',
+            content: 'p-0',
+            control: 'rounded-xl px-4 py-2.5 transition-colors hover:bg-gray-1',
+            item: 'mb-3 rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
+            label: 'text-14 font-bold tracking-tight text-gray-13',
+            panel: 'px-6 pt-2 pb-6',
+          }}
+        >
+          {panels.map((panel: any, panelIndex: number) => {
+            const visibleFields = (panel.fields || []).filter(
+              (field: any) => !isFieldHidden(field),
+            )
+            if (visibleFields.length === 0) return null
 
-              const requiredFields = visibleFields.filter(isFieldRequired)
-              const completedCount = requiredFields.filter((field: any) =>
-                isFieldFilled(field, formModel[field.id]),
-              ).length
+            const requiredFields = visibleFields.filter(isFieldRequired)
+            const completedCount = requiredFields.filter((field: any) =>
+              isFieldFilled(field, formModel[field.id]),
+            ).length
 
-              return (
-                <Accordion.Item
-                  key={panel.id || panelIndex}
-                  value={`panel-${panelIndex}`}
-                >
-                  <Accordion.Control>
-                    <div className='flex items-center justify-between gap-3'>
-                      <div className='flex items-center gap-3'>
-                        <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-1)]'>
-                          <Icon
-                            className='size-4 text-[var(--primary-9)]'
-                            name='tabler:forms'
-                          />
-                        </div>
-                        <div className='flex flex-col gap-0.5'>
-                          <span>
-                            {panel.settings?.title ||
-                              `Section ${panelIndex + 1}`}
-                          </span>
-                          {panel.settings?.description && (
-                            <span className='text-12 font-normal text-gray-9'>
-                              {panel.settings.description}
-                            </span>
-                          )}
-                        </div>
+            return (
+              <Accordion.Item
+                key={panel.id || panelIndex}
+                value={`panel-${panelIndex}`}
+              >
+                <Accordion.Control>
+                  <div className='flex items-center justify-between gap-3'>
+                    <div className='flex items-center gap-3'>
+                      <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--primary-1)]'>
+                        <Icon
+                          className='size-4 text-[var(--primary-9)]'
+                          name='tabler:forms'
+                        />
                       </div>
-                      {!viewOnly && requiredFields.length > 0 && (
-                        <span className='shrink-0 text-11 font-medium whitespace-nowrap text-gray-9'>
-                          <span
-                            className={
-                              completedCount === requiredFields.length
-                                ? 'font-bold text-green-9'
-                                : 'font-bold text-primary-9'
-                            }
-                          >
-                            {completedCount}
-                          </span>{' '}
-                          of {requiredFields.length} mandatory fields completed
+                      <div className='flex flex-col gap-0.5'>
+                        <span>
+                          {panel.settings?.title || `Section ${panelIndex + 1}`}
                         </span>
-                      )}
+                        {panel.settings?.description && (
+                          <span className='text-12 font-normal text-gray-9'>
+                            {panel.settings.description}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </Accordion.Control>
-                  <Accordion.Panel>
-                    <div className='-mx-2 flex flex-wrap'>
-                      {visibleFields.map((field: any) => (
-                        <div
-                          className={`${getColumnSizeClass(field.settings?.general?.size)} px-2 pb-4`}
-                          key={field.id}
+                    {!viewOnly && requiredFields.length > 0 && (
+                      <span className='shrink-0 text-11 font-medium whitespace-nowrap text-gray-9'>
+                        <span
+                          className={
+                            completedCount === requiredFields.length
+                              ? 'font-bold text-green-9'
+                              : 'font-bold text-primary-9'
+                          }
                         >
-                          <FieldRenderer
-                            field={field}
-                            repoFieldHints={repoFieldHints}
-                            repositoryId={repositoryId}
-                            value={formModel[field.id]}
-                            viewOnly={viewOnly}
-                            error={
-                              hasAttemptedSubmit &&
-                              missingMandatoryFieldIds?.has(field.id)
-                                ? t`This field is required.`
-                                : undefined
-                            }
-                            onChange={(value) => onFieldChange(field.id, value)}
-                            onOcrFieldList={onOcrFieldList}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              )
-            })}
-          </Accordion>
-        </AnimateFadeIn>
-      </div>
-    </ScrollArea>
+                          {completedCount}
+                        </span>{' '}
+                        of {requiredFields.length} mandatory fields completed
+                      </span>
+                    )}
+                  </div>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <div className='-mx-2 flex flex-wrap'>
+                    {visibleFields.map((field: any) => (
+                      <div
+                        className={`${getColumnSizeClass(field.settings?.general?.size)} px-2 pb-4`}
+                        data-field-id={field.id}
+                        key={field.id}
+                      >
+                        <FieldRenderer
+                          field={field}
+                          repoFieldHints={repoFieldHints}
+                          repositoryId={repositoryId}
+                          value={formModel[field.id]}
+                          viewOnly={viewOnly}
+                          error={
+                            hasAttemptedSubmit &&
+                            missingMandatoryFieldIds?.has(field.id)
+                              ? t`This field is required.`
+                              : undefined
+                          }
+                          onChange={(value) => onFieldChange(field.id, value)}
+                          onOcrFieldList={onOcrFieldList}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </Accordion.Panel>
+              </Accordion.Item>
+            )
+          })}
+        </Accordion>
+      </AnimateFadeIn>
+    </div>
+  )
+
+  return disableOwnScroll ? (
+    content
+  ) : (
+    <ScrollArea height='100%'>{content}</ScrollArea>
   )
 }
 
