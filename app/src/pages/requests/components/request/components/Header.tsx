@@ -573,7 +573,7 @@ const Header: React.FC<HeaderProps> = ({
                   <Indicator
                     disabled={tab.count === 0}
                     label={tab.count > 0 ? tab.count : undefined}
-                    offset={4}
+                    offset={0.1}
                   >
                     <Icon className='size-4' name={tab.icon} />
                   </Indicator>
@@ -982,573 +982,573 @@ const Header: React.FC<HeaderProps> = ({
                   setShareSearch('')
                 }}
               >
-        <Icon className='size-4' name='tabler:user-share' />
-        <span>{t`Share`}</span>
-        {sharedUsers.size > 0 && (
-          <span className='flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--primary-9)] px-1 text-[10px] font-bold text-white'>
-            {sharedUsers.size}
-          </span>
-        )}
-      </button>
-
-      <AnimatePresence>
-        {showShare && (
-          <motion.div
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className='absolute top-full right-0 z-[100] mt-3 w-[340px] overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-2xl backdrop-blur-md'
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ duration: 0.15 }}
-          >
-            {/* Header */}
-            <div className='flex items-center justify-between border-b border-[var(--gray-2)] px-4 py-3'>
-              <div className='flex items-center gap-2'>
-                <Icon
-                  className='size-4 text-[var(--primary-9)]'
-                  name='tabler:user-share'
-                />
-                <span className='text-[13px] font-semibold text-[var(--gray-13)]'>
-                  {t`Share Request`}
-                </span>
-              </div>
-              <button
-                className='flex cursor-pointer items-center justify-center rounded-md p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
-                onClick={() => {
-                  setShowShare(false)
-                  setSelectedUsersToShare({})
-                  setShareSearch('')
-                }}
-              >
-                <Icon className='size-3.5' name='lucide:x' />
+                <Icon className='size-4' name='tabler:user-share' />
+                <span>{t`Share`}</span>
+                {sharedUsers.size > 0 && (
+                  <span className='flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--primary-9)] px-1 text-[10px] font-bold text-white'>
+                    {sharedUsers.size}
+                  </span>
+                )}
               </button>
-            </div>
 
-            {/* Search */}
-            <div className='px-3 pt-3 pb-2'>
-              <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-1.5 transition-all focus-within:border-[var(--primary-7)] focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
-                <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
-                  <Icon
-                    className='size-4 shrink-0 text-[var(--gray-9)]'
-                    name='tabler:search'
-                  />
-
-                  <input
-                    className='min-w-[120px] flex-1 bg-transparent text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:outline-none'
-                    type='text'
-                    value={shareSearch}
-                    autoFocus
-                    placeholder={
-                      Object.keys(selectedUsersToShare).length > 0
-                        ? t`Add more people...`
-                        : t`Add names or emails`
-                    }
-                    onChange={(e) => setShareSearch(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ',') {
-                        e.preventDefault()
-                        const val = shareSearch.trim().replace(/,$/, '')
-                        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-                          setSelectedUsersToShare((prev) => ({
-                            ...prev,
-                            [val]: {
-                              permission: globalShareRole.id,
-                              user: {
-                                email: val,
-                                id: val,
-                                isExternal: true,
-                                name: val,
-                              },
-                            },
-                          }))
-                          setShareSearch('')
-                        }
-                      }
-                    }}
-                  />
-                </div>
-
-                <div className='h-4 w-px shrink-0 bg-[var(--gray-3)]' />
-                <div className='relative shrink-0'>
-                  <button
-                    className='flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-[13px] font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--gray-2)]'
-                    onClick={() =>
-                      setShowRoleDropdown(!showRoleDropdown)
-                    }
+              <AnimatePresence>
+                {showShare && (
+                  <motion.div
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className='absolute top-full right-0 z-[100] mt-3 w-[340px] overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-2xl backdrop-blur-md'
+                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    transition={{ duration: 0.15 }}
                   >
-                    {globalShareRole.name}
-                    <Icon
-                      className='size-3.5 text-[var(--gray-9)]'
-                      name='lucide:chevron-down'
-                    />
-                  </button>
-                  {showRoleDropdown && (
-                    <div className='absolute top-full right-0 z-[110] mt-1 min-w-[120px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
-                      {shareRoleOptions.map((opt) => (
-                        <button
-                          className='flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--gray-2)]'
-                          key={opt.id}
-                          onClick={() => {
-                            setGlobalShareRole(opt)
-                            setShowRoleDropdown(false)
-                          }}
-                        >
-                          <span>{opt.name}</span>
-                          {globalShareRole.id === opt.id && (
+                    {/* Header */}
+                    <div className='flex items-center justify-between border-b border-[var(--gray-2)] px-4 py-3'>
+                      <div className='flex items-center gap-2'>
+                        <Icon
+                          className='size-4 text-[var(--primary-9)]'
+                          name='tabler:user-share'
+                        />
+                        <span className='text-[13px] font-semibold text-[var(--gray-13)]'>
+                          {t`Share Request`}
+                        </span>
+                      </div>
+                      <button
+                        className='flex cursor-pointer items-center justify-center rounded-md p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                        onClick={() => {
+                          setShowShare(false)
+                          setSelectedUsersToShare({})
+                          setShareSearch('')
+                        }}
+                      >
+                        <Icon className='size-3.5' name='lucide:x' />
+                      </button>
+                    </div>
+
+                    {/* Search */}
+                    <div className='px-3 pt-3 pb-2'>
+                      <div className='flex items-center gap-2 rounded-lg border border-[var(--gray-3)] bg-surface px-3 py-1.5 transition-all focus-within:border-[var(--primary-7)] focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
+                        <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
+                          <Icon
+                            className='size-4 shrink-0 text-[var(--gray-9)]'
+                            name='tabler:search'
+                          />
+
+                          <input
+                            className='min-w-[120px] flex-1 bg-transparent text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] focus:outline-none'
+                            type='text'
+                            value={shareSearch}
+                            autoFocus
+                            placeholder={
+                              Object.keys(selectedUsersToShare).length > 0
+                                ? t`Add more people...`
+                                : t`Add names or emails`
+                            }
+                            onChange={(e) => setShareSearch(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ',') {
+                                e.preventDefault()
+                                const val = shareSearch.trim().replace(/,$/, '')
+                                if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                                  setSelectedUsersToShare((prev) => ({
+                                    ...prev,
+                                    [val]: {
+                                      permission: globalShareRole.id,
+                                      user: {
+                                        email: val,
+                                        id: val,
+                                        isExternal: true,
+                                        name: val,
+                                      },
+                                    },
+                                  }))
+                                  setShareSearch('')
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+
+                        <div className='h-4 w-px shrink-0 bg-[var(--gray-3)]' />
+                        <div className='relative shrink-0'>
+                          <button
+                            className='flex cursor-pointer items-center gap-1 rounded px-2 py-1 text-[13px] font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--gray-2)]'
+                            onClick={() =>
+                              setShowRoleDropdown(!showRoleDropdown)
+                            }
+                          >
+                            {globalShareRole.name}
                             <Icon
-                              className='size-3.5 text-[var(--primary-9)]'
-                              name='lucide:check'
+                              className='size-3.5 text-[var(--gray-9)]'
+                              name='lucide:chevron-down'
+                            />
+                          </button>
+                          {showRoleDropdown && (
+                            <div className='absolute top-full right-0 z-[110] mt-1 min-w-[120px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
+                              {shareRoleOptions.map((opt) => (
+                                <button
+                                  className='flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-[13px] font-medium transition-colors hover:bg-[var(--gray-2)]'
+                                  key={opt.id}
+                                  onClick={() => {
+                                    setGlobalShareRole(opt)
+                                    setShowRoleDropdown(false)
+                                  }}
+                                >
+                                  <span>{opt.name}</span>
+                                  {globalShareRole.id === opt.id && (
+                                    <Icon
+                                      className='size-3.5 text-[var(--primary-9)]'
+                                      name='lucide:check'
+                                    />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* User List */}
+                    <div className='max-h-[280px] overflow-y-auto px-2 py-2'>
+                      {usersLoading ? (
+                        <div className='flex flex-col gap-2 px-2 py-2'>
+                          {[1, 2, 3].map((i) => (
+                            <div
+                              className='flex items-center gap-3 rounded-lg px-2 py-2'
+                              key={i}
+                            >
+                              <div className='h-8 w-8 animate-pulse rounded-full bg-[var(--gray-3)]' />
+                              <div className='flex flex-1 flex-col gap-1.5'>
+                                <div className='h-3 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
+                                <div className='h-2.5 w-40 animate-pulse rounded bg-[var(--gray-3)]' />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : users.length > 0 ||
+                        Object.keys(selectedUsersToShare).length > 0 ? (
+                        [
+                          ...users,
+                          ...Object.values(selectedUsersToShare)
+                            .map((s: any) => s.user)
+                            .filter(
+                              (su) =>
+                                !users.some(
+                                  (u: any) =>
+                                    String(
+                                      u.userId ||
+                                      u.id ||
+                                      u.value ||
+                                      u.loginName ||
+                                      u.email,
+                                    ) ===
+                                    String(
+                                      su.userId ||
+                                      su.id ||
+                                      su.value ||
+                                      su.loginName ||
+                                      su.email,
+                                    ),
+                                ),
+                            ),
+                        ]
+                          .sort((a: any, b: any) => {
+                            const aId = String(
+                              a.userId ||
+                              a.id ||
+                              a.value ||
+                              a.loginName ||
+                              a.email,
+                            )
+                            const bId = String(
+                              b.userId ||
+                              b.id ||
+                              b.value ||
+                              b.loginName ||
+                              b.email,
+                            )
+                            const aSelected = !!selectedUsersToShare[aId]
+                            const bSelected = !!selectedUsersToShare[bId]
+                            if (aSelected && !bSelected) return -1
+                            if (!aSelected && bSelected) return 1
+                            return 0
+                          })
+                          .map((user: any) => {
+                            const id = String(
+                              user.userId ||
+                              user.id ||
+                              user.value ||
+                              user.loginName ||
+                              user.email,
+                            )
+                            const name = getDisplayName(user)
+                            const email = getEmail(user)
+                            const initials = getInitials(user)
+                            const avatarColor = getAvatarColor(email || name)
+                            const isShared = sharedUsers.has(id)
+                            const isSelectedToShare = !!selectedUsersToShare[id]
+                            const isOwner =
+                              ticketUserId &&
+                              (String(user.userId) === String(ticketUserId) ||
+                                String(user.id) ===
+                                String(ticketUserId.toLowerCase()) ||
+                                String(user.value) === String(ticketUserId) ||
+                                String(user.loginName) === String(ticketUserId))
+                            // console.log(user, ticketUserId?.toLowerCase(), "Selected user session")
+                            return (
+                              <div
+                                key={id}
+                                className={cn(
+                                  'group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition-all hover:bg-[var(--gray-2)]/50',
+                                  isShared && 'opacity-90',
+                                  isSelectedToShare &&
+                                  'bg-[var(--primary-2)]/30',
+                                  isOwner && 'bg-[var(--primary-1)]/40',
+                                )}
+                              >
+                                {/* Left Side: Checkbox + Avatar + User Info */}
+                                <div
+                                  className='flex min-w-0 flex-1 cursor-pointer items-center gap-3'
+                                  onClick={() =>
+                                    !isShared &&
+                                    !isOwner &&
+                                    handleToggleSelectUser(user)
+                                  }
+                                >
+                                  {isOwner ? (
+                                    <div
+                                      className='flex w-5 shrink-0 items-center justify-center'
+                                      title={t`Request Owner`}
+                                    >
+                                      <Icon
+                                        className='size-4 text-[var(--primary-9)]'
+                                        name='tabler:crown'
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className='flex shrink-0 items-center justify-center'
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <InputCheckbox
+                                        checked={isShared || isSelectedToShare}
+                                        className='cursor-pointer'
+                                        disabled={isShared}
+                                        onChange={() =>
+                                          handleToggleSelectUser(user)
+                                        }
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* Avatar */}
+                                  <div
+                                    className={cn(
+                                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm',
+                                      avatarColor,
+                                    )}
+                                  >
+                                    {initials}
+                                  </div>
+
+                                  {/* Name & Email */}
+                                  <div className='min-w-0 flex-1'>
+                                    <p
+                                      className='truncate text-[12px] font-semibold text-[var(--gray-13)]'
+                                      title={name}
+                                    >
+                                      {name}
+                                    </p>
+                                    {email && (
+                                      <p
+                                        className='truncate text-[11px] text-[var(--gray-9)]'
+                                        title={email}
+                                      >
+                                        {email}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Right Side: Invite / Shared / Dropdown selector */}
+                                <div
+                                  className='shrink-0'
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {isOwner ? (
+                                    <span className='flex items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--primary-9)]'>
+                                      <Icon
+                                        className='size-3'
+                                        name='tabler:crown'
+                                      />
+                                      {t`Owner`}
+                                    </span>
+                                  ) : isShared ? (
+                                    <span className='flex items-center gap-1 rounded-full bg-[var(--green-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--green-9)]'>
+                                      <Icon
+                                        className='size-3'
+                                        name='tabler:check'
+                                      />
+                                      {t`Invited`}
+                                    </span>
+                                  ) : isSelectedToShare ? (
+                                    <div
+                                      className='relative shrink-0'
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <button
+                                        className='flex cursor-pointer items-center gap-1 rounded-md border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--gray-2)]'
+                                        onClick={() =>
+                                          setOpenUserDropdown(
+                                            openUserDropdown === id ? null : id,
+                                          )
+                                        }
+                                      >
+                                        {shareRoleOptions.find(
+                                          (opt) =>
+                                            opt.id ===
+                                            (selectedUsersToShare[id]
+                                              ?.permission ||
+                                              globalShareRole.id),
+                                        )?.name ||
+                                          selectedUsersToShare[id]
+                                            ?.permission ||
+                                          globalShareRole.id}
+                                        <Icon
+                                          className='size-3 text-[var(--gray-9)]'
+                                          name='lucide:chevron-down'
+                                        />
+                                      </button>
+                                      {openUserDropdown === id && (
+                                        <div className='absolute top-full right-0 z-[110] mt-1 min-w-[100px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
+                                          {shareRoleOptions.map((opt) => (
+                                            <button
+                                              className='flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-[11px] font-medium transition-colors hover:bg-[var(--gray-2)]'
+                                              key={opt.id}
+                                              onClick={() => {
+                                                setSelectedUsersToShare(
+                                                  (prev) => ({
+                                                    ...prev,
+                                                    [id]: {
+                                                      ...prev[id],
+                                                      permission: opt.id,
+                                                    },
+                                                  }),
+                                                )
+                                                setOpenUserDropdown(null)
+                                              }}
+                                            >
+                                              <span>{opt.name}</span>
+                                              {(selectedUsersToShare[id]
+                                                ?.permission ||
+                                                globalShareRole.id) ===
+                                                opt.id && (
+                                                  <Icon
+                                                    className='size-3.5 text-[var(--primary-9)]'
+                                                    name='lucide:check'
+                                                  />
+                                                )}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            )
+                          })
+                      ) : null}
+                    </div>
+
+                    {/* Share Invite Button */}
+                    {(() => {
+                      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                        shareSearch,
+                      )
+                      const hasSelectedUsers =
+                        Object.keys(selectedUsersToShare).length > 0
+                      const showFooter =
+                        hasSelectedUsers || shareSearch.length > 0
+                      const canShare = hasSelectedUsers || isEmail
+
+                      return showFooter ? (
+                        <div className='flex flex-col gap-3 border-t border-[var(--gray-2)] bg-surface p-4'>
+                          <div
+                            className='flex w-fit cursor-pointer items-center gap-2'
+                            onClick={() =>
+                              setSendNotification(!sendNotification)
+                            }
+                          >
+                            <InputCheckbox
+                              checked={sendNotification}
+                              className='cursor-pointer'
+                              onChange={() => { }}
+                            />
+                            <span className='text-[13px] font-medium text-[var(--gray-13)] select-none'>
+                              {t`Send notification`}
+                            </span>
+                          </div>
+                          {sendNotification && (
+                            <textarea
+                              className='w-full rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 text-[13px] font-medium text-[var(--gray-13)] transition-all placeholder:text-[var(--gray-8)] focus:border-[var(--primary-5)] focus:ring-1 focus:ring-[var(--primary-4)] focus:outline-none'
+                              placeholder={t`Add message (optional)`}
+                              rows={3}
+                              value={shareMessage}
+                              onChange={(e) => setShareMessage(e.target.value)}
                             />
                           )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* User List */}
-            <div className='max-h-[280px] overflow-y-auto px-2 py-2'>
-              {usersLoading ? (
-                <div className='flex flex-col gap-2 px-2 py-2'>
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      className='flex items-center gap-3 rounded-lg px-2 py-2'
-                      key={i}
-                    >
-                      <div className='h-8 w-8 animate-pulse rounded-full bg-[var(--gray-3)]' />
-                      <div className='flex flex-1 flex-col gap-1.5'>
-                        <div className='h-3 w-28 animate-pulse rounded bg-[var(--gray-3)]' />
-                        <div className='h-2.5 w-40 animate-pulse rounded bg-[var(--gray-3)]' />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : users.length > 0 ||
-                Object.keys(selectedUsersToShare).length > 0 ? (
-                [
-                  ...users,
-                  ...Object.values(selectedUsersToShare)
-                    .map((s: any) => s.user)
-                    .filter(
-                      (su) =>
-                        !users.some(
-                          (u: any) =>
-                            String(
-                              u.userId ||
-                              u.id ||
-                              u.value ||
-                              u.loginName ||
-                              u.email,
-                            ) ===
-                            String(
-                              su.userId ||
-                              su.id ||
-                              su.value ||
-                              su.loginName ||
-                              su.email,
-                            ),
-                        ),
-                    ),
-                ]
-                  .sort((a: any, b: any) => {
-                    const aId = String(
-                      a.userId ||
-                      a.id ||
-                      a.value ||
-                      a.loginName ||
-                      a.email,
-                    )
-                    const bId = String(
-                      b.userId ||
-                      b.id ||
-                      b.value ||
-                      b.loginName ||
-                      b.email,
-                    )
-                    const aSelected = !!selectedUsersToShare[aId]
-                    const bSelected = !!selectedUsersToShare[bId]
-                    if (aSelected && !bSelected) return -1
-                    if (!aSelected && bSelected) return 1
-                    return 0
-                  })
-                  .map((user: any) => {
-                    const id = String(
-                      user.userId ||
-                      user.id ||
-                      user.value ||
-                      user.loginName ||
-                      user.email,
-                    )
-                    const name = getDisplayName(user)
-                    const email = getEmail(user)
-                    const initials = getInitials(user)
-                    const avatarColor = getAvatarColor(email || name)
-                    const isShared = sharedUsers.has(id)
-                    const isSelectedToShare = !!selectedUsersToShare[id]
-                    const isOwner =
-                      ticketUserId &&
-                      (String(user.userId) === String(ticketUserId) ||
-                        String(user.id) ===
-                        String(ticketUserId.toLowerCase()) ||
-                        String(user.value) === String(ticketUserId) ||
-                        String(user.loginName) === String(ticketUserId))
-                    // console.log(user, ticketUserId?.toLowerCase(), "Selected user session")
-                    return (
-                      <div
-                        key={id}
-                        className={cn(
-                          'group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition-all hover:bg-[var(--gray-2)]/50',
-                          isShared && 'opacity-90',
-                          isSelectedToShare &&
-                          'bg-[var(--primary-2)]/30',
-                          isOwner && 'bg-[var(--primary-1)]/40',
-                        )}
-                      >
-                        {/* Left Side: Checkbox + Avatar + User Info */}
-                        <div
-                          className='flex min-w-0 flex-1 cursor-pointer items-center gap-3'
-                          onClick={() =>
-                            !isShared &&
-                            !isOwner &&
-                            handleToggleSelectUser(user)
-                          }
-                        >
-                          {isOwner ? (
-                            <div
-                              className='flex w-5 shrink-0 items-center justify-center'
-                              title={t`Request Owner`}
-                            >
-                              <Icon
-                                className='size-4 text-[var(--primary-9)]'
-                                name='tabler:crown'
-                              />
-                            </div>
-                          ) : (
-                            <div
-                              className='flex shrink-0 items-center justify-center'
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <InputCheckbox
-                                checked={isShared || isSelectedToShare}
-                                className='cursor-pointer'
-                                disabled={isShared}
-                                onChange={() =>
-                                  handleToggleSelectUser(user)
-                                }
-                              />
-                            </div>
-                          )}
-
-                          {/* Avatar */}
-                          <div
+                          <button
+                            disabled={!canShare || isSharing}
+                            type='button'
                             className={cn(
-                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm',
-                              avatarColor,
+                              'mt-1 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[13px] font-bold shadow-sm transition-all',
+                              canShare && !isSharing
+                                ? 'cursor-pointer bg-[var(--primary-9)] text-white hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95'
+                                : 'cursor-not-allowed bg-[var(--gray-3)] text-[var(--gray-8)]',
                             )}
+                            onClick={handleBulkShare}
                           >
-                            {initials}
-                          </div>
+                            {isSharing ? t`Sharing...` : t`Share`}
+                          </button>
 
-                          {/* Name & Email */}
-                          <div className='min-w-0 flex-1'>
-                            <p
-                              className='truncate text-[12px] font-semibold text-[var(--gray-13)]'
-                              title={name}
-                            >
-                              {name}
-                            </p>
-                            {email && (
-                              <p
-                                className='truncate text-[11px] text-[var(--gray-9)]'
-                                title={email}
-                              >
-                                {email}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Right Side: Invite / Shared / Dropdown selector */}
-                        <div
-                          className='shrink-0'
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {isOwner ? (
-                            <span className='flex items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--primary-9)]'>
+                          <div className='mt-2 flex items-center justify-between border-t border-[var(--gray-2)] pt-3'>
+                            <div className='flex items-center gap-1.5'>
                               <Icon
-                                className='size-3'
-                                name='tabler:crown'
+                                className='size-3.5 text-[var(--gray-13)]'
+                                name='lucide:info'
                               />
-                              {t`Owner`}
-                            </span>
-                          ) : isShared ? (
-                            <span className='flex items-center gap-1 rounded-full bg-[var(--green-2)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--green-9)]'>
-                              <Icon
-                                className='size-3'
-                                name='tabler:check'
-                              />
-                              {t`Invited`}
-                            </span>
-                          ) : isSelectedToShare ? (
-                            <div
-                              className='relative shrink-0'
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                className='flex cursor-pointer items-center gap-1 rounded-md border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] transition-colors hover:bg-[var(--gray-2)]'
-                                onClick={() =>
-                                  setOpenUserDropdown(
-                                    openUserDropdown === id ? null : id,
-                                  )
-                                }
-                              >
-                                {shareRoleOptions.find(
-                                  (opt) =>
-                                    opt.id ===
-                                    (selectedUsersToShare[id]
-                                      ?.permission ||
-                                      globalShareRole.id),
-                                )?.name ||
-                                  selectedUsersToShare[id]
-                                    ?.permission ||
-                                  globalShareRole.id}
-                                <Icon
-                                  className='size-3 text-[var(--gray-9)]'
-                                  name='lucide:chevron-down'
-                                />
-                              </button>
-                              {openUserDropdown === id && (
-                                <div className='absolute top-full right-0 z-[110] mt-1 min-w-[100px] rounded-lg border border-[var(--gray-3)] bg-surface py-1 shadow-lg'>
-                                  {shareRoleOptions.map((opt) => (
-                                    <button
-                                      className='flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-[11px] font-medium transition-colors hover:bg-[var(--gray-2)]'
-                                      key={opt.id}
-                                      onClick={() => {
-                                        setSelectedUsersToShare(
-                                          (prev) => ({
-                                            ...prev,
-                                            [id]: {
-                                              ...prev[id],
-                                              permission: opt.id,
-                                            },
-                                          }),
-                                        )
-                                        setOpenUserDropdown(null)
-                                      }}
-                                    >
-                                      <span>{opt.name}</span>
-                                      {(selectedUsersToShare[id]
-                                        ?.permission ||
-                                        globalShareRole.id) ===
-                                        opt.id && (
-                                          <Icon
-                                            className='size-3.5 text-[var(--primary-9)]'
-                                            name='lucide:check'
-                                          />
-                                        )}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
+                              <span className='text-[13px] font-medium text-[var(--gray-13)]'>
+                                {t`Notify me when accessed`}
+                              </span>
+                              <span className='ml-0.5 rounded-full bg-[#8c52ff] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white'>
+                                {t`New`}
+                              </span>
                             </div>
-                          ) : null}
+
+                            <button
+                              aria-checked={notifyAccessed}
+                              role='switch'
+                              type='button'
+                              className={cn(
+                                'relative inline-flex h-[20px] w-[36px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
+                                notifyAccessed
+                                  ? 'bg-[#8c52ff]'
+                                  : 'bg-[var(--gray-5)]',
+                              )}
+                              onClick={() => setNotifyAccessed(!notifyAccessed)}
+                            >
+                              <span
+                                className={cn(
+                                  'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                                  notifyAccessed
+                                    ? 'translate-x-4'
+                                    : 'translate-x-0',
+                                )}
+                              />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  })
-              ) : null}
+                      ) : null
+                    })()}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-
-            {/* Share Invite Button */}
-            {(() => {
-              const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-                shareSearch,
-              )
-              const hasSelectedUsers =
-                Object.keys(selectedUsersToShare).length > 0
-              const showFooter =
-                hasSelectedUsers || shareSearch.length > 0
-              const canShare = hasSelectedUsers || isEmail
-
-              return showFooter ? (
-                <div className='flex flex-col gap-3 border-t border-[var(--gray-2)] bg-surface p-4'>
-                  <div
-                    className='flex w-fit cursor-pointer items-center gap-2'
-                    onClick={() =>
-                      setSendNotification(!sendNotification)
-                    }
-                  >
-                    <InputCheckbox
-                      checked={sendNotification}
-                      className='cursor-pointer'
-                      onChange={() => { }}
-                    />
-                    <span className='text-[13px] font-medium text-[var(--gray-13)] select-none'>
-                      {t`Send notification`}
-                    </span>
-                  </div>
-                  {sendNotification && (
-                    <textarea
-                      className='w-full rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 text-[13px] font-medium text-[var(--gray-13)] transition-all placeholder:text-[var(--gray-8)] focus:border-[var(--primary-5)] focus:ring-1 focus:ring-[var(--primary-4)] focus:outline-none'
-                      placeholder={t`Add message (optional)`}
-                      rows={3}
-                      value={shareMessage}
-                      onChange={(e) => setShareMessage(e.target.value)}
-                    />
-                  )}
-                  <button
-                    disabled={!canShare || isSharing}
-                    type='button'
-                    className={cn(
-                      'mt-1 flex w-full items-center justify-center gap-2 rounded-lg py-2 text-[13px] font-bold shadow-sm transition-all',
-                      canShare && !isSharing
-                        ? 'cursor-pointer bg-[var(--primary-9)] text-white hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95'
-                        : 'cursor-not-allowed bg-[var(--gray-3)] text-[var(--gray-8)]',
-                    )}
-                    onClick={handleBulkShare}
-                  >
-                    {isSharing ? t`Sharing...` : t`Share`}
-                  </button>
-
-                  <div className='mt-2 flex items-center justify-between border-t border-[var(--gray-2)] pt-3'>
-                    <div className='flex items-center gap-1.5'>
-                      <Icon
-                        className='size-3.5 text-[var(--gray-13)]'
-                        name='lucide:info'
-                      />
-                      <span className='text-[13px] font-medium text-[var(--gray-13)]'>
-                        {t`Notify me when accessed`}
-                      </span>
-                      <span className='ml-0.5 rounded-full bg-[#8c52ff] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white'>
-                        {t`New`}
-                      </span>
-                    </div>
-
-                    <button
-                      aria-checked={notifyAccessed}
-                      role='switch'
-                      type='button'
-                      className={cn(
-                        'relative inline-flex h-[20px] w-[36px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none',
-                        notifyAccessed
-                          ? 'bg-[#8c52ff]'
-                          : 'bg-[var(--gray-5)]',
-                      )}
-                      onClick={() => setNotifyAccessed(!notifyAccessed)}
-                    >
-                      <span
-                        className={cn(
-                          'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
-                          notifyAccessed
-                            ? 'translate-x-4'
-                            : 'translate-x-0',
-                        )}
-                      />
-                    </button>
-                  </div>
-                </div>
-              ) : null
-            })()}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-{
-  !isProcessing && (
-    <div className='flex items-center gap-2'>
-      {isEditing && (
-        <Button
-          className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
-          color='primary'
-          icon='lucide:save'
-          iconClass='size-4'
-          label={t`Save`}
-          loading={approveLoading}
-          size='md'
-          variant='solid'
-          onClick={() => onApprove?.('Save')}
-        />
-      )}
-
-      {actions?.map((action: any) => {
-        const label = String(action?.label || '').toLowerCase()
-        let btnColor:
-          | 'gray'
-          | 'primary'
-          | 'secondary'
-          | 'red'
-          | 'green' = 'primary'
-        const btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' =
-          'subtle'
-        let borderClass =
-          'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
-
-        let defaultIcon = action?.icon
-        if (!defaultIcon) {
-          if (
-            label === 'approved' ||
-            label === 'approve' ||
-            label.includes('approve')
-          ) {
-            defaultIcon = 'lucide:check'
-          } else if (
-            label === 'rejected' ||
-            label === 'reject' ||
-            label.includes('reject')
-          ) {
-            defaultIcon = 'lucide:x'
-          } else {
-            defaultIcon = 'lucide:arrow-right'
+          )
           }
-        }
 
-        if (
-          label === 'approved' ||
-          label === 'approve' ||
-          label.includes('approve')
-        ) {
-          btnColor = 'green'
-          borderClass =
-            'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
-        } else if (
-          label === 'rejected' ||
-          label === 'reject' ||
-          label.includes('reject')
-        ) {
-          btnColor = 'red'
-          borderClass =
-            'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
-        }
+          {
+            !isProcessing && (
+              <div className='flex items-center gap-2'>
+                {isEditing && (
+                  <Button
+                    className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
+                    color='primary'
+                    icon='lucide:save'
+                    iconClass='size-4'
+                    label={t`Save`}
+                    loading={approveLoading}
+                    size='md'
+                    variant='solid'
+                    onClick={() => onApprove?.('Save')}
+                  />
+                )}
 
-        return (
-          <div
-            className='flex items-center gap-1.5'
-            key={action?.value}
-          >
-            <Button
-              color={btnColor}
-              icon={defaultIcon}
-              iconClass='size-4'
-              label={action?.label}
-              loading={approveLoading}
-              size='md'
-              variant={btnVariant}
-              className={cn(
-                borderClass,
-                'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
-              )}
-              onClick={() => onApprove?.(action?.value)}
-            />
-          </div>
-        )
-      })}
-    </div>
-  )
-}
+                {actions?.map((action: any) => {
+                  const label = String(action?.label || '').toLowerCase()
+                  let btnColor:
+                    | 'gray'
+                    | 'primary'
+                    | 'secondary'
+                    | 'red'
+                    | 'green' = 'primary'
+                  const btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' =
+                    'subtle'
+                  let borderClass =
+                    'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+
+                  let defaultIcon = action?.icon
+                  if (!defaultIcon) {
+                    if (
+                      label === 'approved' ||
+                      label === 'approve' ||
+                      label.includes('approve')
+                    ) {
+                      defaultIcon = 'lucide:check'
+                    } else if (
+                      label === 'rejected' ||
+                      label === 'reject' ||
+                      label.includes('reject')
+                    ) {
+                      defaultIcon = 'lucide:x'
+                    } else {
+                      defaultIcon = 'lucide:arrow-right'
+                    }
+                  }
+
+                  if (
+                    label === 'approved' ||
+                    label === 'approve' ||
+                    label.includes('approve')
+                  ) {
+                    btnColor = 'green'
+                    borderClass =
+                      'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
+                  } else if (
+                    label === 'rejected' ||
+                    label === 'reject' ||
+                    label.includes('reject')
+                  ) {
+                    btnColor = 'red'
+                    borderClass =
+                      'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
+                  }
+
+                  return (
+                    <div
+                      className='flex items-center gap-1.5'
+                      key={action?.value}
+                    >
+                      <Button
+                        color={btnColor}
+                        icon={defaultIcon}
+                        iconClass='size-4'
+                        label={action?.label}
+                        loading={approveLoading}
+                        size='md'
+                        variant={btnVariant}
+                        className={cn(
+                          borderClass,
+                          'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                        )}
+                        onClick={() => onApprove?.(action?.value)}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
         </div >
       </div >
     </OverlayHeaderWrapper >
