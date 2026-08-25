@@ -29,6 +29,20 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const [activePanel, setActivePanel] = useState<SidePanel | null>(null)
   const [activeFileKey, setActiveFileKey] = useState<string | null>(null)
   const [isConfirmingUpload, setIsConfirmingUpload] = useState(false)
+  // Clicking a repository field highlights its value in the file preview —
+  // focusRequestId is bumped on every click (even re-clicking the same
+  // field) so the viewer re-scrolls to it each time.
+  const [activeHighlightTerm, setActiveHighlightTerm] = useState<
+    string | null
+  >(null)
+  const [focusRequestId, setFocusRequestId] = useState(0)
+
+  const handleFieldFocus = (value: any) => {
+    const str = value == null ? '' : String(value).trim()
+    if (!str) return
+    setActiveHighlightTerm(str)
+    setFocusRequestId((id) => id + 1)
+  }
 
   const {
     addAttachment,
@@ -157,8 +171,10 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
             <div className='flex min-w-0 flex-1 gap-4 overflow-hidden p-4'>
               <div className='min-w-0 flex-1'>
                 <UploadedFilePreview
+                  activeHighlightTerm={activeHighlightTerm}
                   activeKey={activeFileKey}
                   files={uploadedFiles}
+                  focusRequestId={focusRequestId}
                   onSelectKey={setActiveFileKey}
                 />
               </div>
@@ -173,6 +189,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                     repoFieldHints={repoFieldHints}
                     repositoryId={workflow?.repositoryId}
                     onFieldChange={setFieldValue}
+                    onFieldFocus={handleFieldFocus}
                     onOcrFieldList={applyOcrFieldList}
                   />
                 </div>

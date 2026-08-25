@@ -11,6 +11,9 @@ interface Props {
   repoFieldHints?: string[]
   repositoryId?: string
   onFieldChange: (fieldId: string, value: any) => void
+  // Clicking a field highlights its current value in the file preview next
+  // to it — see WorkflowRequest's handleFieldFocus.
+  onFieldFocus?: (value: any) => void
   onOcrFieldList?: (
     list: { name?: string; value?: string }[] | undefined,
   ) => void
@@ -33,6 +36,7 @@ const RepoFieldsPanel = ({
   repoFieldHints,
   repositoryId,
   onFieldChange,
+  onFieldFocus,
   onOcrFieldList,
 }: Props) => {
   const { t } = useLingui()
@@ -47,13 +51,18 @@ const RepoFieldsPanel = ({
     <div className='grid grid-cols-1 gap-y-4'>
       {rows.map((descriptor) => {
         const { fieldId, repoField } = descriptor
+        const value = getRepoFieldValue(descriptor, formModel)
         return (
-          <div data-field-id={fieldId} key={fieldId}>
+          <div
+            data-field-id={fieldId}
+            key={fieldId}
+            onClick={() => onFieldFocus?.(value)}
+          >
             <FieldRenderer
               field={buildSyntheticField(repoField)}
               repoFieldHints={repoFieldHints}
               repositoryId={repositoryId}
-              value={getRepoFieldValue(descriptor, formModel)}
+              value={value}
               error={
                 hasAttemptedSubmit && missingMandatoryFieldIds?.has(fieldId)
                   ? t`This field is required.`

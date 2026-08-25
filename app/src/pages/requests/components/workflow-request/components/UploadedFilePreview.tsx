@@ -17,6 +17,11 @@ interface Props {
   activeKey: string | null
   files: PreviewableFile[]
   onSelectKey: (key: string) => void
+  // Set when a repository field is clicked — highlights and scrolls to that
+  // value's text in the preview. focusRequestId is bumped on every click
+  // (even re-clicking the same field) so the viewer re-scrolls each time.
+  activeHighlightTerm?: string | null
+  focusRequestId?: number
 }
 
 const isPdfFile = (file?: File, fileName?: string): boolean =>
@@ -35,7 +40,13 @@ const isImageFile = (file?: File, fileName?: string): boolean => {
 // change/unmount. rawFile stays populated on attachments/field values even
 // after staging (stagePendingFiles spreads the existing entry rather than
 // clearing it), so this keeps working before and after upload completes.
-const UploadedFilePreview = ({ activeKey, files, onSelectKey }: Props) => {
+const UploadedFilePreview = ({
+  activeHighlightTerm,
+  activeKey,
+  files,
+  focusRequestId,
+  onSelectKey,
+}: Props) => {
   const activeFile = files.find((f) => f.key === activeKey) ?? files[0]
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -82,8 +93,12 @@ const UploadedFilePreview = ({ activeKey, files, onSelectKey }: Props) => {
       )}
       <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
         <DocumentPreviewViewer
+          activeHighlightTerm={activeHighlightTerm}
+          enableHighlight={Boolean(activeHighlightTerm)}
           fileName={activeFile?.fileName}
           fileUrl={previewUrl}
+          focusRequestId={focusRequestId}
+          highlightTerms={activeHighlightTerm ? [activeHighlightTerm] : []}
           isImage={isImageFile(activeFile?.rawFile, activeFile?.fileName)}
           isPdf={isPdfFile(activeFile?.rawFile, activeFile?.fileName)}
         />
