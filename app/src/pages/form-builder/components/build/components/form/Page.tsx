@@ -16,7 +16,6 @@ import cn from '@/utils/cn'
 import AddFieldButton from './AddFieldButton'
 import QuestionCard from './QuestionCard'
 import SectionHeader from './SectionHeader'
-import SlashCommand from './SlashCommand'
 
 interface Props {
   panel: PanelType
@@ -77,7 +76,7 @@ const Page = ({ panel, panelIndex }: Props) => {
 
   return (
     <div
-      className='group/page relative rounded-xl border border-gray-3 bg-white font-inter shadow-2xs transition-all duration-200 focus-within:z-30'
+      className='group/page relative rounded-xl border border-gray-3 bg-white font-inter shadow-md transition-all duration-200 hover:shadow-lg focus-within:z-30'
       id={panel.id}
       ref={pageRef}
       onDragOver={(e) => e.preventDefault()}
@@ -247,11 +246,9 @@ const Page = ({ panel, panelIndex }: Props) => {
             </div>
           </SortableContext>
 
-          {/* 3. Slash Command & Add Field Button */}
+          {/* 3. Add Field Button */}
           {!isLocked && (
             <div className='mt-3 flex flex-col gap-2'>
-              <SlashCommand index={panel.fields.length} panelId={panel.id} />
-
               <AddFieldButton
                 onClick={() => triggerAddFieldSidebar(panel.fields.length)}
               />

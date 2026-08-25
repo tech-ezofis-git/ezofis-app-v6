@@ -299,6 +299,7 @@ const FIELD_THEMES: Record<
 
 const FieldLibrary = () => {
   const {
+    activePanelId,
     addFieldPosition,
     addQuestion,
     panels,
@@ -325,16 +326,23 @@ const FieldLibrary = () => {
   }, [search])
 
   const handleSelect = (type: string) => {
-    if (!addFieldPosition) return
+    const fallbackPanelId = activePanelId ?? panels[0]?.id
+    const fallbackPanel = panels.find((p) => p.id === fallbackPanelId)
+    const position =
+      addFieldPosition ??
+      (fallbackPanel
+        ? { index: fallbackPanel.fields.length, panelId: fallbackPanel.id }
+        : null)
 
-    const { index, panelId } = addFieldPosition
+    if (!position) return
+
+    const { index, panelId } = position
     const questions = createFieldQuestions(type)
 
     questions.forEach((q, i) => {
       addQuestion(panelId, q, index + i)
     })
 
-    setSidebarView('explorer')
     setAddFieldPosition(null)
   }
 
@@ -412,12 +420,14 @@ const FieldLibrary = () => {
 
           return (
             <div className='space-y-3' key={cat.id}>
-              <div className='flex items-center gap-2 px-1 py-0.5'>
-                <div className='size-2 rounded-full bg-primary-9' />
-                <div className='text-xs font-bold text-gray-12'>
-                  {cat.label}
+              {cat.id !== 'popular' && (
+                <div className='flex items-center gap-2 px-1 py-0.5'>
+                  <div className='size-2 rounded-full bg-primary-9' />
+                  <div className='text-xs font-bold text-gray-12'>
+                    {cat.label}
+                  </div>
                 </div>
-              </div>
+              )}
               <div className='grid grid-cols-1 gap-2'>
                 {catFields.map((field, idx) => {
                   const flatIndex = filteredFields.indexOf(field)

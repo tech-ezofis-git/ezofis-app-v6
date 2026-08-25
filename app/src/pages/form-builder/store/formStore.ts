@@ -367,7 +367,7 @@ const initialState = {
   secondaryPanels: [],
   selectionType: 'general' as const,
   showHeaderFooter: false,
-  sidebarView: 'explorer' as const,
+  sidebarView: 'fields' as const,
   uid: '',
 }
 
