@@ -745,6 +745,25 @@ const mergeInvoiceHeader = (cleanFields: any, invoiceHeader: any) => {
   }
 }
 
+// Generic (non-Accounts-Payable) tickets keep their form data field-id-keyed
+// (the shape WorkflowFormRenderer/FieldRenderer read and write, same as the
+// New Request compose flow) rather than the AP flow's label-keyed formModel.
+const safeParseFormData = (formData: unknown): Record<string, any> => {
+  if (!formData) return {}
+  if (typeof formData === 'object') {
+    return (formData as any).fields || formData || {}
+  }
+  if (typeof formData === 'string') {
+    try {
+      const parsed = JSON.parse(formData)
+      return parsed?.fields || parsed || {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
 const parseCleanFields = (
   activeItem: any,
   selectedWorkflow: any,
@@ -1070,6 +1089,18 @@ const Request = ({
   ])
 
   const [formModel, setFormModel] = useState<any>({})
+  const [genericFormModel, setGenericFormModel] = useState<
+    Record<string, any>
+  >({})
+
+  useEffect(() => {
+    if (!isGenericWorkflow) return
+    const activeItem = request || selectedItem
+    setGenericFormModel(safeParseFormData(activeItem?.formData))
+  }, [isGenericWorkflow, request, selectedItem?.formData, selectedItem?.transactionId])
+
+  const handleGenericFieldChange = (fieldId: string, value: any) =>
+    setGenericFormModel((prev) => ({ ...prev, [fieldId]: value }))
 
   const allowedLabels = useMemo(() => {
     const activeItem = request || selectedItem
@@ -1171,7 +1202,9 @@ const Request = ({
       setSubmitting(true)
 
       let fields: any = {}
-      if (Object.keys(formModel).length > 0) {
+      if (isGenericWorkflow) {
+        fields = genericFormModel
+      } else if (Object.keys(formModel).length > 0) {
         fields = mapFormModelToPayloadFields(
           formModel,
           selectedWorkflow,
@@ -1299,8 +1332,9 @@ const Request = ({
       console.log(rawWorkflowData)
       const payload = {
         formData: {
-          fields:
-            Object.keys(formModel).length > 0
+          fields: isGenericWorkflow
+            ? genericFormModel
+            : Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
                   formModel,
                   selectedWorkflow,
@@ -1734,9 +1768,12 @@ const Request = ({
           >
             {isGenericWorkflow ? (
               <GenericRequestOverview
+                formModel={genericFormModel}
                 rawWorkflowData={rawWorkflowData}
                 rightView={rightView}
                 selectedItem={request || selectedItem}
+                onFieldChange={handleGenericFieldChange}
+                setRightView={setRightView}
               />
             ) : (
               <Overview
