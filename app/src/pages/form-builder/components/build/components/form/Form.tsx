@@ -216,7 +216,7 @@ const Form = () => {
 
           <DragOverlay>
             {activeQuestion ? (
-              <div className='z-[1000] scale-[1.02] rotate-[2deg] cursor-grabbing rounded-2xl shadow-2xl ring-2 ring-accent-primary/20'>
+              <div className='z-[1000] scale-[1.02] cursor-grabbing rounded-2xl shadow-2xl ring-2 ring-accent-primary/20'>
                 <QuestionCard
                   isActive={true}
                   question={activeQuestion}
