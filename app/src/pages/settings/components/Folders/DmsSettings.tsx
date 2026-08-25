@@ -893,7 +893,9 @@ export default function DmsFolderConfiguration({
   const [showWizard, setShowWizard] = useState(storedState?.showWizard ?? false)
   const [showAiBuilder, setShowAiBuilder] = useState(storedState?.showAiBuilder ?? false)
   const [step, setStep] = useState<WizardStep>(storedState?.step ?? 1)
-  const [fields, setFields] = useState<FieldRow[]>(storedState?.fields ?? [])
+  const [fields, setFields] = useState<FieldRow[]>(
+    Array.isArray(storedState?.fields) ? storedState.fields : [],
+  )
   const [storage, setStorage] = useState(storedState?.storage ?? 'EZOFIS Drive')
   const [storageConnectorId, setStorageConnectorId] = useState<string | null>(
     storedState?.storageConnectorId ?? null,
@@ -3242,32 +3244,43 @@ function WizardContent({
 
   useEffect(() => {
     if (step === 5 && selectedIntegration === 'MasterForm') {
-      if (formsList.length > 0) return
+      if ((formsList ?? []).length > 0) return
       void formApi.listAllForms().then((res) => {
-        if (res.data) {
-          let forms: any[] = []
-          if (Array.isArray(res.data)) {
-            if (res.data.length > 0 && res.data[0].value && Array.isArray(res.data[0].value)) {
-              forms = res.data.flatMap((group: any) => group.value || [])
-            } else {
-              forms = res.data
-            }
-          } else if (res.data?.data && Array.isArray(res.data.data)) {
-            forms = res.data.data
-          } else if (res.data?.content && Array.isArray(res.data.content)) {
-            forms = res.data.content
-          }
-
-          setFormsList(
-            forms[0]?.value?.map((f: any) => ({
-              id: String(f.id || f.formId),
-              name: f.name || f.title || f.id,
-            })),
-          )
+        if (!res.data) {
+          setFormsList([])
+          return
         }
+
+        let forms: any[] = []
+        if (Array.isArray(res.data)) {
+          if (
+            res.data.length > 0 &&
+            res.data[0]?.value &&
+            Array.isArray(res.data[0].value)
+          ) {
+            forms = res.data.flatMap((group: any) => group.value || [])
+          } else {
+            forms = res.data
+          }
+        } else if (Array.isArray(res.data?.data)) {
+          forms = res.data.data
+        } else if (Array.isArray(res.data?.content)) {
+          forms = res.data.content
+        } else if (Array.isArray(res.data?.value)) {
+          forms = res.data.value
+        }
+
+        setFormsList(
+          forms
+            .map((form: any) => ({
+              id: String(form?.id || form?.formId || ''),
+              name: String(form?.name || form?.title || form?.id || ''),
+            }))
+            .filter((form) => form.id),
+        )
       })
     }
-  }, [step, selectedIntegration, formsList.length])
+  }, [step, selectedIntegration, formsList])
 
   useEffect(() => {
     let isMounted = true
@@ -3999,7 +4012,7 @@ function WizardContent({
                       <div className='mb-6 max-w-md'>
                         <InputSelectMultiple
                           label='Select Forms'
-                          options={formsList.map((f) => ({
+                          options={(formsList ?? []).map((f) => ({
                             id: f.id,
                             name: f.name,
                             value: f.id,
@@ -4007,7 +4020,7 @@ function WizardContent({
                           placeholder='Select forms...'
                           searchable
                           value={selectedFormIds.map(id => {
-                            const found = formsList.find(f => f.id === id)
+                            const found = (formsList ?? []).find(f => f.id === id)
                             return {
                               id,
                               name: found?.name || id,

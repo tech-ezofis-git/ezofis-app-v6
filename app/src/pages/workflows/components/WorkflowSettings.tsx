@@ -41,8 +41,10 @@ const WorkflowSettings = () => {
     },
   ]
 
-  const { data: workflowForms = [] } = useQuery(getWorkflowFormsQueryOptions())
-  const { data: folderOptions = [] } = useQuery(getRepositoriesQueryOptions())
+  const { data: workflowFormsData } = useQuery(getWorkflowFormsQueryOptions())
+  const { data: folderOptionsData } = useQuery(getRepositoriesQueryOptions())
+  const workflowForms = Array.isArray(workflowFormsData) ? workflowFormsData : []
+  const folderOptions = Array.isArray(folderOptionsData) ? folderOptionsData : []
 
   if (!isSettingsOpen) return null
 

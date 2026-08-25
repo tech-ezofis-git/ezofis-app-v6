@@ -25,7 +25,7 @@ type SettingsSelectFieldProps = {
 const toSelectOptions = (
   options: SelectOptionLike[] | string[],
 ): SelectOptionLike[] => {
-  if (!options.length) return []
+  if (!options?.length) return []
 
   if (typeof options[0] === 'string') {
     return (options as string[]).map((option) => ({

@@ -20,10 +20,21 @@ interface QuestionSettingsProps {
   activeQuestion: Question
 }
 
-const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
+const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps) => {
+  const activeQuestion = {
+    ...rawQuestion,
+    settings: {
+      ...rawQuestion.settings,
+      general: rawQuestion.settings?.general ?? {},
+      logic: rawQuestion.settings?.logic ?? [],
+      lookupSettings: rawQuestion.settings?.lookupSettings ?? {},
+      specific: rawQuestion.settings?.specific ?? {},
+      validation: rawQuestion.settings?.validation ?? {},
+    },
+  }
   const updateQuestion = useFormStore((state) => state.updateQuestion)
   const panels = useFormStore((state) => state.panels)
-  const allQuestions = panels.flatMap((p) => p.fields)
+  const allQuestions = (panels ?? []).flatMap((p) => p.fields ?? [])
 
   const [openSetup, setOpenSetup] = useState(true)
   const [openValidation, setOpenValidation] = useState(false)
@@ -70,7 +81,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
 
   const logicRules = activeQuestion.settings.logic || []
   const logicFieldOptions = allQuestions
-    .filter((q) => q.id !== activeQuestion.id)
+    .filter((q) => q?.id && q.id !== activeQuestion.id)
     .map((q) => ({ id: q.id, name: q.label || 'Untitled Field' }))
 
   const setLogicRules = (rules: LogicRule[]) => {

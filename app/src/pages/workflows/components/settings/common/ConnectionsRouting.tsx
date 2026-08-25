@@ -22,6 +22,9 @@ const routingActionOptions = [
   { id: 4, name: 'Verify' },
 ]
 
+const getRoutingAction = (data: Record<string, unknown> | undefined) =>
+  String(data?.action || data?.proceedAction || '')
+
 export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
   const [isOpen, setIsOpen] = useState(false)
   const edges = useEdges()
@@ -31,7 +34,9 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
   const onUpdateAction = (edgeId: string, action: string) => {
     setEdges((eds) =>
       eds.map((e) =>
-        e.id === edgeId ? { ...e, data: { ...e.data, action } } : e,
+        e.id === edgeId
+          ? { ...e, data: { ...e.data, action, proceedAction: action } }
+          : e,
       ),
     )
   }
@@ -44,8 +49,8 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     new Set([
       ...routingActionOptions.map((o) => o.name),
       ...edges
-        .filter((e) => e.data?.action)
-        .map((e) => e.data?.action as string),
+        .map((e) => getRoutingAction(e.data as Record<string, unknown>))
+        .filter(Boolean),
     ]),
   ).map((name, index) => ({ id: index + 1, name }))
 
@@ -54,7 +59,7 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     .map((edge) => {
       const targetNode = nodes.find((n) => n.id === edge.target)
       return {
-        action: (edge.data?.action as string) || '',
+        action: getRoutingAction(edge.data as Record<string, unknown>),
         edgeId: edge.id,
         targetId: edge.target,
         targetLabel: (targetNode?.data?.label as string) || 'Next Step',

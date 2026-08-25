@@ -42,11 +42,12 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     },
     ref,
   ) => {
+    const list = value ?? []
     const [firstValue, counter] = useMemo(() => {
-      const first = value[0] || null
-      const count = value.length > 1 ? value.length - 1 : null
+      const first = list[0] || null
+      const count = list.length > 1 ? list.length - 1 : null
       return [first, count]
-    }, [value])
+    }, [list])
 
     const selectedIconKey = (firstValue as (Option & { iconKey?: string }) | null)
       ?.iconKey
@@ -75,7 +76,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
 
     const _rightSection = loading ? (
       <Icon className='animate-spin text-gray-10' name='fa:spinner' />
-    ) : clearable && value.length ? (
+    ) : clearable && list.length ? (
       <ClearButton onClick={() => onChange([])} />
     ) : (
       <Icon
@@ -85,7 +86,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
     )
 
     const children = useMemo(() => {
-      if (!value.length) {
+      if (!list.length) {
         return (
           <Input.Placeholder className='font-normal text-gray-8'>
             {placeholder || 'Select'}
@@ -129,7 +130,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
         </div>
       )
     }, [
-      value,
+      list,
       variant,
       firstValue,
       counter,

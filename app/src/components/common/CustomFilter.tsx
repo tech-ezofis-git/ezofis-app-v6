@@ -415,7 +415,7 @@ export default function CustomFilter({
       (filter) => filter.id === activeFilterDropdown,
     )
     if (!activeFilter?.searchable) return
-    if (activeFilter.options.length > 0) return
+    if ((activeFilter.options ?? []).length > 0) return
 
     if (skipMoreFilterDebounceRef.current) {
       skipMoreFilterDebounceRef.current = false
@@ -635,7 +635,9 @@ export default function CustomFilter({
         {filters.map((filter) => {
           const selectedValues = parseFilterValues(activeFilters[filter.id])
           const firstValue = selectedValues[0] || ''
-          const firstOption = filter.options.find((o) => o.value === firstValue)
+          const firstOption = (filter.options ?? []).find(
+            (o) => o.value === firstValue,
+          )
           let displayLabel = filter.label
           if (selectedValues.length === 1) {
             const optionLabel = firstOption?.label || ''
@@ -738,7 +740,7 @@ export default function CustomFilter({
                     {isDate ? (
                       <DateFilterMenu
                         options={
-                          filter.options.length > 0
+                          filter.options?.length > 0
                             ? filter.options
                             : DEFAULT_DATE_RANGE_OPTIONS
                         }

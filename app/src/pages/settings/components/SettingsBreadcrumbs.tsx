@@ -11,7 +11,7 @@ type Props = {
 
 export default function SettingsBreadcrumbs({ items, onNavigate }: Props) {
   const { t } = useLingui()
-  if (!items.length) return null
+  if (!items?.length) return null
 
   const localizeLabel = (label: string) => {
     switch (label) {

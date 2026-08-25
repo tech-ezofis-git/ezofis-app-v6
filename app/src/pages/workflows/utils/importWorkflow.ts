@@ -444,7 +444,7 @@ export const importWorkflow = (
           if (!validNodeIds.has(sourceId) || !validNodeIds.has(targetId))
             return null
 
-          const actionName = rule.proceedAction || rule.action || 'Submit'
+          const actionName = rule.action || rule.proceedAction || 'Submit'
           return {
             data: {
               action: actionName,

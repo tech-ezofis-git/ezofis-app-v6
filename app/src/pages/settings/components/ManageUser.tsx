@@ -396,7 +396,18 @@ export default function ManageUser({
     storedState?.editingUserId ?? null,
   )
   const [activeStep, setActiveStep] = useState(storedState?.activeStep ?? 0)
-  const [draftUser, setDraftUser] = useState<DraftUser>(storedState?.draftUser ?? emptyUser)
+  const [draftUser, setDraftUser] = useState<DraftUser>(() => {
+    const storedUser = storedState?.draftUser
+    if (!storedUser || typeof storedUser !== 'object') return emptyUser
+    return {
+      ...emptyUser,
+      ...storedUser,
+      groups: Array.isArray(storedUser.groups) ? storedUser.groups : [],
+      mfaMethods: Array.isArray(storedUser.mfaMethods)
+        ? storedUser.mfaMethods
+        : emptyUser.mfaMethods,
+    }
+  })
   const [originalUser, setOriginalUser] = useState<DraftUser | null>(storedState?.originalUser ?? null)
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
     storedState?.activeFilters ?? {},
@@ -503,7 +514,7 @@ export default function ManageUser({
 
       setUsers(
         applyGroupMembershipsToUsers(
-          response.data.length
+          Array.isArray(response.data) && response.data.length
             ? mapApiUsersToSettingsUsers(response.data)
             : [],
           settingsGroupsRef.current,
@@ -754,7 +765,7 @@ export default function ManageUser({
 
         const listResponse = await getUsers()
 
-        if (!listResponse.error && listResponse.data.length) {
+        if (!listResponse.error && listResponse.data?.length) {
           setUsers(
             applyGroupMembershipsToUsers(
               mapApiUsersToSettingsUsers(listResponse.data),
@@ -801,7 +812,7 @@ export default function ManageUser({
         : null
       const listResponse = await getUsers()
 
-      if (!listResponse.error && listResponse.data.length) {
+      if (!listResponse.error && listResponse.data?.length) {
         setUsers(
           applyGroupMembershipsToUsers(
             mapApiUsersToSettingsUsers(listResponse.data),
@@ -1400,9 +1411,9 @@ function Authentication({
 }: FormSectionProps & { showErrors?: boolean }) {
   const hasPhoneNumber = Boolean(String(user.phoneNumber || '').trim())
   const selectedMethod =
-    user.mfaMethods[0] === 'Mobile OTP' && !hasPhoneNumber
+    (user.mfaMethods ?? [])[0] === 'Mobile OTP' && !hasPhoneNumber
       ? ''
-      : user.mfaMethods[0] || ''
+      : (user.mfaMethods ?? [])[0] || ''
   const methodError =
     showErrors && user.mfaEnabled && !selectedMethod
       ? 'Please fill the required field: MFA Method'
@@ -1428,7 +1439,7 @@ function Authentication({
                 return
               }
 
-              const current = user.mfaMethods[0]
+              const current = (user.mfaMethods ?? [])[0]
               const nextMethod =
                 current === 'Mobile OTP' && !hasPhoneNumber
                   ? mfaMethodOptions[0].value
@@ -1749,7 +1760,7 @@ function getMissingRequiredUserLabels(
 
   if (step === 3) {
     const hasPhone = Boolean(String(user.phoneNumber || '').trim())
-    const method = user.mfaMethods[0]
+    const method = (user.mfaMethods ?? [])[0]
     const hasValidMethod = Boolean(
       method && !(method === 'Mobile OTP' && !hasPhone),
     )
@@ -1789,7 +1800,7 @@ function getMissingRequiredUserLabels(
 
   if (user.mfaEnabled) {
     const hasPhone = Boolean(String(user.phoneNumber || '').trim())
-    const method = user.mfaMethods[0]
+    const method = (user.mfaMethods ?? [])[0]
     const hasValidMethod = Boolean(
       method && !(method === 'Mobile OTP' && !hasPhone),
     )
@@ -1839,7 +1850,7 @@ function GroupAssignment({
 }) {
   const { t } = useLingui()
   const selectedGroups = useMemo(() => {
-    return user.groups
+    return (user.groups ?? [])
       .map((groupName) => String(groupName || '').trim())
       .filter((groupName) => groupName && groupName !== '—')
       .map((groupName) => {
@@ -1897,7 +1908,7 @@ function GroupAssignment({
 
               onChange({
                 ...user,
-                groups: user.groups.filter(
+                groups: (user.groups ?? []).filter(
                   (groupName) =>
                     groupName !== removed.name &&
                     groupName !== removed.value &&
@@ -2296,13 +2307,13 @@ function Review({ user }: { user: DraftUser }) {
           <AnimateFadeIn delay={0.42}>
             <SummaryItem
               label={t`Groups`}
-              value={user.groups.length ? user.groups.join(', ') : ''}
+              value={(user.groups ?? []).length ? user.groups.join(', ') : ''}
             />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.45}>
             <SummaryItem
               label={t`MFA`}
-              value={`${user.mfaEnabled ? 'Enabled' : 'Disabled'} (${user.mfaMethods.join(', ') || 'No methods'})`}
+              value={`${user.mfaEnabled ? 'Enabled' : 'Disabled'} (${(user.mfaMethods ?? []).join(', ') || 'No methods'})`}
             />
           </AnimateFadeIn>
         </div>

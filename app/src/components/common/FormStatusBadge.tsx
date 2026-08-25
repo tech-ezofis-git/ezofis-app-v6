@@ -3,7 +3,7 @@ import type { Form } from '@/types/form'
 import cn from '@/utils/cn'
 
 interface Props {
-  status: Form['status'] | string
+  status: Form['status'] | string | number
 }
 
 const FormStatusBadge = ({ status }: Props) => {

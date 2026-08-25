@@ -33,19 +33,21 @@ const ComboboxOptions = ({
   onChange,
 }: Props) => {
   const counter = useRef(-1)
-  const hasOptions = options.length > 0
+  const optionList = options ?? []
+  const valueList = value ?? []
+  const hasOptions = optionList.length > 0
   const trimmedSearch = search.trim()
   const canCreate =
     Boolean(creatable) &&
     Boolean(trimmedSearch) &&
     (!isCreatableSearch || isCreatableSearch(trimmedSearch)) &&
-    !options.some(
+    !optionList.some(
       (option) =>
         option.name.toLowerCase() === trimmedSearch.toLowerCase() ||
         String(option.value || '').toLowerCase() ===
           trimmedSearch.toLowerCase(),
     ) &&
-    !value.some(
+    !valueList.some(
       (option) =>
         option.name.toLowerCase() === trimmedSearch.toLowerCase() ||
         String(option.value || '').toLowerCase() ===
@@ -53,12 +55,12 @@ const ComboboxOptions = ({
     )
 
   const isSelected = (id: string | number) =>
-    value.some((item) => String(item.id) === String(id))
+    valueList.some((item) => String(item.id) === String(id))
 
   const handleClick = (option: Option) => {
     if (option.disabled) return
 
-    const exists = value.some((v) => String(v.id) === String(option.id))
+    const exists = valueList.some((v) => String(v.id) === String(option.id))
 
     if (variant === 'single') {
       onChange(exists ? [] : [option])
@@ -68,8 +70,8 @@ const ComboboxOptions = ({
     if (variant === 'multiple') {
       onChange(
         exists
-          ? value.filter((v) => String(v.id) !== String(option.id))
-          : [...value, option],
+          ? valueList.filter((v) => String(v.id) !== String(option.id))
+          : [...valueList, option],
       )
     }
   }
@@ -102,9 +104,9 @@ const ComboboxOptions = ({
 
         {hasOptions && (
           <div
-            className={cn('flex flex-col', options[0].description && 'gap-1')}
+            className={cn('flex flex-col', optionList[0].description && 'gap-1')}
           >
-            {options.map((option) => (
+            {optionList.map((option) => (
               <div key={option.id} onClick={() => handleClick(option)}>
                 <ComboboxOption
                   {...option}

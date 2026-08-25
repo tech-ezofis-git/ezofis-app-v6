@@ -25,7 +25,7 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
   })
 
   // Only show "Trigger" tag if it's a trigger node AND has NO incoming connections (i.e., it's a start node)
-  const showTriggerTag = isTrigger && connections.length === 0
+  const showTriggerTag = isTrigger && (connections?.length ?? 0) === 0
 
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation()

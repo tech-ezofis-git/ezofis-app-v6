@@ -722,7 +722,7 @@ export function ensureStartAndEndNodes(
     .map((r: any) => {
       const fromId = String(r.fromBlockId || r.from || '')
       const toId = String(r.toBlockId || r.to || '')
-      const actionName = r.proceedAction || r.action || 'Submit'
+      const actionName = r.action || r.proceedAction || 'Submit'
       return {
         action: actionName,
         confirm: r.confirm ?? false,

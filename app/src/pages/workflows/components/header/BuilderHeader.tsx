@@ -133,7 +133,7 @@ const BuilderHeader = () => {
           color='gray'
           icon='lucide:settings'
           variant='ghost'
-          onClick={useWorkflowStore((state) => state.openSettings)}
+          onClick={() => useWorkflowStore.getState().openSettings()}
         />
         <Button
           color='gray'
@@ -141,7 +141,7 @@ const BuilderHeader = () => {
           icon='lucide:play'
           label='Test Run'
           variant='outline'
-          onClick={useWorkflowStore((state) => state.startTestRun)}
+          onClick={() => useWorkflowStore.getState().startTestRun()}
         />
         <Button
           className='cursor-pointer font-medium'

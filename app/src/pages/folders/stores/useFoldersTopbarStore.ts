@@ -18,7 +18,12 @@ const useFoldersTopbarStore = create<FoldersTopbarState>((set) => ({
   onNavigate: undefined,
   reset: () => set({ breadcrumbs: DEFAULT_BREADCRUMBS, onNavigate: undefined }),
   setBreadcrumbs: (breadcrumbs, onNavigate) =>
-    set({ breadcrumbs, onNavigate }),
+    set({
+      breadcrumbs: Array.isArray(breadcrumbs)
+        ? breadcrumbs
+        : DEFAULT_BREADCRUMBS,
+      onNavigate,
+    }),
 }))
 
 export default useFoldersTopbarStore

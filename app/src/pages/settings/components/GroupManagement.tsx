@@ -136,8 +136,23 @@ export default function GroupManagement({
     storedState?.editingGroupId ?? null,
   )
   const [activeStep, setActiveStep] = useState(storedState?.activeStep ?? 0)
-  const [draftGroup, setDraftGroup] = useState<SettingsGroup>(storedState?.draftGroup ?? emptyGroup)
-  const [selectedMembers, setSelectedMembers] = useState<SettingsOption[]>(storedState?.selectedMembers ?? [])
+  const [draftGroup, setDraftGroup] = useState<SettingsGroup>(() => {
+    const storedGroup = storedState?.draftGroup
+    if (!storedGroup || typeof storedGroup !== 'object') return emptyGroup
+    return {
+      ...emptyGroup,
+      ...storedGroup,
+      memberIds: Array.isArray(storedGroup.memberIds)
+        ? storedGroup.memberIds
+        : [],
+      members: Array.isArray(storedGroup.members) ? storedGroup.members : [],
+    }
+  })
+  const [selectedMembers, setSelectedMembers] = useState<SettingsOption[]>(
+    Array.isArray(storedState?.selectedMembers)
+      ? storedState.selectedMembers
+      : [],
+  )
 
   useEffect(() => {
     try {
@@ -415,7 +430,7 @@ export default function GroupManagement({
         size: 100,
         cell: ({ row }) => (
           <span className='inline-flex items-center rounded-[10px] border border-[var(--border-default)] bg-surface px-3 py-1 font-medium text-[var(--gray-13)]'>
-            {row.original.members.length}
+            {(row.original.members ?? []).length}
           </span>
         ),
       }),
@@ -702,7 +717,7 @@ function GroupSetup({
     }
 
     if (step === 1) {
-      return selectedMembers.length ? [] : ['Group Members']
+      return (selectedMembers ?? []).length ? [] : ['Group Members']
     }
 
     // Review / save: all required fields
@@ -710,7 +725,7 @@ function GroupSetup({
       ...getMissingRequiredLabels([
         { label: 'Group Name', value: draftGroup.name },
       ]),
-      ...(selectedMembers.length ? [] : ['Group Members']),
+      ...(selectedMembers?.length ? [] : ['Group Members']),
     ]
   }
 

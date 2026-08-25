@@ -217,8 +217,9 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
 
   const rawRules = edges.map((edge) => {
     const edgeData = edge.data || {}
-    const actionName = edgeData.proceedAction || edgeData.action || 'Submit'
+    const actionName = edgeData.action || edgeData.proceedAction || 'Submit'
     return {
+      ...edgeData,
       action: actionName,
       confirm: edgeData.confirm ?? false,
       fromBlockId: edge.source,
@@ -230,7 +231,6 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       signature: edgeData.signature ?? false,
       toBlockId: edge.target,
       top: 0,
-      ...edgeData,
     }
   })
 

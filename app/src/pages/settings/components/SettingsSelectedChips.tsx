@@ -21,7 +21,7 @@ export default function SettingsSelectedChips({
   items,
   onRemove,
 }: SettingsSelectedChipsProps) {
-  if (!items.length) return null
+  if (!items?.length) return null
 
   return (
     <div

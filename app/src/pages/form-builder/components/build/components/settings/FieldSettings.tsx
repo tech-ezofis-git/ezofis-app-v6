@@ -44,9 +44,9 @@ const FieldSettings = () => {
   const selectionType = useFormStore((state) => state.selectionType)
   const setSidebarOpen = useFormStore((state) => state.setSidebarOpen)
 
-  const activeQuestion = panels
-    .flatMap((p) => p.fields)
-    .find((q) => q.id === activeQuestionId)
+  const activeQuestion = (panels ?? [])
+    .flatMap((p) => p.fields ?? [])
+    .find((q) => q?.id === activeQuestionId)
 
   const [headerLabel, setHeaderLabel] = useState('')
   const [isEditingLabel, setIsEditingLabel] = useState(false)

@@ -239,10 +239,10 @@ export const applyGroupMembershipsToUsers = (
   users: SettingsUser[],
   groups: SettingsGroup[],
 ): SettingsUser[] => {
-  if (!users.length || !groups.length) return users
+  if (!users?.length || !groups?.length) return users
 
   return users.map((user) => {
-    if (user.groups.length) return user
+    if ((user.groups ?? []).length) return user
 
     const userId = String(user.id)
     const email = user.email.trim().toLowerCase()

@@ -26,13 +26,29 @@ type SettingsItem = {
   title: string
 }
 
+const SETTINGS_PAGES = new Set([
+  'audit-monitoring',
+  'credit',
+  'folder-configuration',
+  'group-management',
+  'playground',
+  'roles-permissions',
+  'settings',
+  'user-management',
+])
+
 export default function SettingsMain() {
   const [activePage, setActivePage] = useState<string>(() => {
     try {
       const stored = sessionStorage.getItem('ezofis_settings_state')
       if (stored) {
         const parsed = JSON.parse(stored)
-        if (parsed.activePage) return parsed.activePage
+        if (
+          typeof parsed.activePage === 'string' &&
+          SETTINGS_PAGES.has(parsed.activePage)
+        ) {
+          return parsed.activePage
+        }
       }
     } catch {
       // ignore
@@ -49,6 +65,12 @@ export default function SettingsMain() {
     } catch {
       // ignore
     }
+  }, [activePage])
+
+  useEffect(() => {
+    if (activePage !== 'playground') return
+    window.open('https://demo.ezofis.com/V6Playground/apikey.html', '_blank')
+    setActivePage('settings')
   }, [activePage])
 
   if (activePage === 'user-management') {
@@ -87,10 +109,6 @@ export default function SettingsMain() {
         <AuditMonitoring onBack={() => setActivePage('settings')} />
       </SettingsDetailShell>
     )
-  }
-  if (activePage === 'playground') {
-    window.open('https://demo.ezofis.com/V6Playground/apikey.html', '_blank')
-    setActivePage('settings')
   }
   if (activePage === 'credit') {
     return (

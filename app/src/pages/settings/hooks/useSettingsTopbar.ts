@@ -10,7 +10,7 @@ export default function useSettingsTopbar({
   const reset = useSettingsTopbarStore((state) => state.reset)
 
   useEffect(() => {
-    setBreadcrumbs(items, onNavigate)
+    setBreadcrumbs(items ?? [], onNavigate)
     return () => reset()
   }, [items, onNavigate, reset, setBreadcrumbs])
 }

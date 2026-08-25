@@ -400,7 +400,7 @@ const LeftSidebar = () => {
         (p?.settings?.description || '')
           .toLowerCase()
           .includes(searchQuery.toLowerCase()) ||
-        p.fields.some(
+        (p.fields ?? []).some(
           (f: any) =>
             (f.label || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (f.type || '').toLowerCase().includes(searchQuery.toLowerCase()),

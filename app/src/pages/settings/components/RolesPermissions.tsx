@@ -1138,10 +1138,11 @@ function applyPermissionKeysToMenus(
   menus: V6MenuItem[],
   permissionKeys: Array<{ key?: string; name?: string; visible?: unknown }>,
 ): V6MenuItem[] {
-  const permissionKeysMap = buildPermissionKeysMap(permissionKeys)
-  const hasPermissionKeys = permissionKeys.length > 0
+  const safePermissionKeys = permissionKeys ?? []
+  const permissionKeysMap = buildPermissionKeysMap(safePermissionKeys)
+  const hasPermissionKeys = safePermissionKeys.length > 0
   const sourceMenus = (
-    menus.length
+    menus?.length
       ? menus
       : ROLE_PERMISSION_PAGES.map((page) => ({
           key: page.key,
@@ -1160,7 +1161,7 @@ function applyPermissionKeysToMenus(
           normalizeRolePermissionKey(String(menu.key || (menu as any).id || '')) ===
           page.key,
       ) || null
-    const permission = permissionKeys.find(
+    const permission = safePermissionKeys.find(
       (item) =>
         normalizeRolePermissionKey(String(item.key || '')) === page.key,
     )

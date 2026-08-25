@@ -77,7 +77,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
         if (isCreatableSearch && !isCreatableSearch(trimmed)) return
 
         // If there's an exact match in current options, let Mantine handle it naturally
-        const hasExactMatch = options.some(
+        const hasExactMatch = (options ?? []).some(
           (o) =>
             o.name.toLowerCase() === trimmed.toLowerCase() ||
             String(o.value || '').toLowerCase() === trimmed.toLowerCase(),
@@ -97,12 +97,13 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
         if (variant === 'single') {
           onChange([newOption])
         } else {
-          const alreadySelected = value.some(
+          const selected = value ?? []
+          const alreadySelected = selected.some(
             (item) =>
               String(item.value || item.name).toLowerCase() ===
               trimmed.toLowerCase(),
           )
-          if (!alreadySelected) onChange([...value, newOption])
+          if (!alreadySelected) onChange([...selected, newOption])
         }
         onSearch('')
         comboboxStore.closeDropdown()
