@@ -49,15 +49,17 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     ]),
   ).map((name, index) => ({ id: index + 1, name }))
 
-  const connections: ConnectionWithData[] = outgoingEdges.map((edge) => {
-    const targetNode = nodes.find((n) => n.id === edge.target)
-    return {
-      action: (edge.data?.action as string) || '',
-      edgeId: edge.id,
-      targetId: edge.target,
-      targetLabel: (targetNode?.data?.label as string) || 'Unknown Node',
-    }
-  })
+  const connections: ConnectionWithData[] = outgoingEdges
+    .filter((edge) => nodes.some((n) => n.id === edge.target))
+    .map((edge) => {
+      const targetNode = nodes.find((n) => n.id === edge.target)
+      return {
+        action: (edge.data?.action as string) || '',
+        edgeId: edge.id,
+        targetId: edge.target,
+        targetLabel: (targetNode?.data?.label as string) || 'Next Step',
+      }
+    })
 
   const getTargetDescription = (conn: ConnectionWithData) => {
     const label = conn.targetLabel.toLowerCase()

@@ -121,8 +121,6 @@ const FieldSettings = () => {
       />
 
       {renderContent()}
-
-      <SettingsFooter />
     </div>
   )
 }
@@ -146,16 +144,16 @@ const SettingsHeader = ({
       : icon
 
   return (
-    <div className='flex shrink-0 items-center justify-between gap-2 border-b border-gray-2 bg-white px-5 py-4'>
-      <div className='flex min-w-0 flex-1 items-center gap-3'>
-        <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft/10 text-accent-primary'>
-          <Icon height={20} name={headerIcon} width={20} />
+    <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3 bg-white'>
+      <div className='flex min-w-0 flex-1 items-center gap-2.5'>
+        <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
+          <Icon height={16} name={headerIcon} width={16} />
         </div>
 
         {selectionType === 'question' && activeQuestion ? (
           isEditingLabel ? (
             <input
-              className='min-w-0 flex-1 border-b-2 border-accent-primary bg-white px-1 py-1 text-sm font-bold text-gray-13 focus:outline-none'
+              className='min-w-0 flex-1 border-b-2 border-primary-9 bg-white px-1 py-0.5 text-15/5 font-semibold text-gray-13 focus:outline-none'
               ref={inputRef}
               type='text'
               value={headerLabel}
@@ -169,11 +167,11 @@ const SettingsHeader = ({
               onClick={() => setIsEditingLabel(true)}
             >
               <div className='flex min-w-0 flex-1 flex-col'>
-                <h2 className='truncate text-15/5 font-bold text-gray-13 transition-colors group-hover/title:text-accent-primary'>
+                <h2 className='truncate text-15/5 font-semibold text-gray-13 transition-colors group-hover/title:text-primary-9'>
                   {activeQuestion.label || 'Untitled Field'}
                 </h2>
                 <Badge
-                  className='h-auto self-start bg-gray-2 px-1.5 py-0.5 text-[9px] tracking-wider text-gray-7 uppercase'
+                  className='h-auto self-start bg-gray-2 px-1.5 py-0.5 text-[9px] font-semibold text-gray-10 tracking-wider uppercase'
                   radius='sm'
                   size='xs'
                   variant='filled'
@@ -182,10 +180,10 @@ const SettingsHeader = ({
                 </Badge>
               </div>
               <Icon
-                className='text-gray-4 opacity-0 transition-opacity group-hover/title:opacity-100'
-                height={14}
+                className='text-gray-8 opacity-0 transition-opacity group-hover/title:opacity-100'
+                height={13}
                 name='lucide:pencil'
-                width={14}
+                width={13}
               />
             </div>
           )
@@ -197,32 +195,13 @@ const SettingsHeader = ({
       </div>
 
       <IconButton
-        className='rounded-xl text-gray-6 transition-colors hover:bg-gray-2 hover:text-gray-9'
         color='gray'
         icon='lucide:x'
-        size='md'
         variant='ghost'
         onClick={() => setSidebarOpen(false)}
       />
     </div>
   )
 }
-
-const SettingsFooter = () => (
-  <div className='bg-gray-50/50 flex items-center gap-2 border-t border-gray-2 px-6 py-3'>
-    <Icon
-      className='shrink-0 text-gray-6'
-      height={13}
-      name='lucide:zap'
-      width={13}
-    />
-    <span className='text-[11px] text-gray-8'>
-      Changes apply instantly. Use{' '}
-      <span className='font-semibold text-gray-11'>Save</span> or{' '}
-      <span className='font-semibold text-gray-11'>Publish</span> in the header
-      to sync this form to the server.
-    </span>
-  </div>
-)
 
 export default FieldSettings

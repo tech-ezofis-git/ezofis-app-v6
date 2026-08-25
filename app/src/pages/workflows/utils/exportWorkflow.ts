@@ -1,11 +1,28 @@
 import type { Edge, Node } from '@xyflow/react'
+import { ensureStartAndEndNodes } from '@/services/ai/workflowConfig'
 import useWorkflowStore from '../stores/useWorkflowStore'
 
 const mapToolTypeToLegacyType = (
   toolType: string | undefined,
   nodeData: any,
+  nodeIndex: number,
+  totalNodes: number,
 ): string => {
-  if (!toolType) return 'NODE'
+  const explicitType = String(nodeData.type || '').toUpperCase()
+
+  if (explicitType === 'START') return 'START'
+  if (explicitType === 'END') return 'END'
+  if (explicitType === 'CONDITION') return 'CONDITION'
+  if (explicitType === 'OCR') return 'OCR'
+  if (explicitType === 'AP_AGENT') return 'AP_AGENT'
+
+  if (nodeIndex === 0) return 'START'
+  if (nodeIndex === totalNodes - 1 && (explicitType === 'ACTION' || explicitType === 'END')) return 'END'
+
+  if (!toolType) {
+    if (explicitType && explicitType !== 'ACTION') return explicitType
+    return 'INTERNAL_ACTOR'
+  }
   const t = toolType.toLowerCase()
   if (t === 'ocr agent' || t === 'ocr') return 'OCR'
   if (t === 'ap agent' || t === 'ap_agent') return 'AP_AGENT'
@@ -16,39 +33,61 @@ const mapToolTypeToLegacyType = (
     t === 'actor' ||
     t === 'internal_actor'
   )
-    return 'INTERNAL_ACTOR'
+    return nodeIndex === 0 ? 'START' : 'INTERNAL_ACTOR'
   if (t === 'trigger' || t === 'initiator' || t === 'start') return 'START'
   if (t === 'gmail' || t === 'outlook') return 'START'
   if (t === 'action' || t === 'end') return 'END'
-  return (nodeData.type || 'NODE').toUpperCase()
+  return (nodeData.type || 'INTERNAL_ACTOR').toUpperCase()
 }
 
 export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
   const storeState = useWorkflowStore.getState()
 
-  const blocks = nodes.map((node) => {
+  const rawBlocks = nodes.map((node, index) => {
     const data = (node.data || {}) as any
     const toolType = data.toolType
 
     // Base settings to be included in the legacy 'settings' object
     const settings: any = {
       label: data.label || '',
+      ...(data.settings || {}),
       ...data,
     }
+    delete settings.settings
 
     // Map users and groups back to legacy arrays of IDs
-    if (data.selectedUsers) {
-      settings.users = data.selectedUsers.map((u: any) => u.id)
+    if (Array.isArray(data.selectedUsers)) {
+      settings.users = data.selectedUsers.map((u: any) =>
+        typeof u === 'object' ? String(u.id ?? u.value ?? u) : String(u),
+      )
       delete settings.selectedUsers
-    } else if (!settings.users) {
-      settings.users = []
+    } else if (Array.isArray(data.users)) {
+      settings.users = data.users.map((u: any) =>
+        typeof u === 'object' ? String(u.id ?? u.value ?? u) : String(u),
+      )
+    } else {
+      settings.users = Array.isArray(settings.users)
+        ? settings.users.map((u: any) =>
+            typeof u === 'object' ? String(u.id ?? u.value ?? u) : String(u),
+          )
+        : []
     }
 
-    if (data.selectedGroups) {
-      settings.groups = data.selectedGroups.map((g: any) => g.id)
+    if (Array.isArray(data.selectedGroups)) {
+      settings.groups = data.selectedGroups.map((g: any) =>
+        typeof g === 'object' ? String(g.id ?? g.value ?? g) : String(g),
+      )
       delete settings.selectedGroups
-    } else if (!settings.groups) {
-      settings.groups = []
+    } else if (Array.isArray(data.groups)) {
+      settings.groups = data.groups.map((g: any) =>
+        typeof g === 'object' ? String(g.id ?? g.value ?? g) : String(g),
+      )
+    } else {
+      settings.groups = Array.isArray(settings.groups)
+        ? settings.groups.map((g: any) =>
+            typeof g === 'object' ? String(g.id ?? g.value ?? g) : String(g),
+          )
+        : []
     }
 
     // Reconstruct nested settings for specific types
@@ -170,21 +209,23 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       id: node.id,
       left: Math.round(node.position.x),
       top: Math.round(node.position.y),
-      type: mapToolTypeToLegacyType(toolType, data),
+      type: mapToolTypeToLegacyType(toolType, data, index, nodes.length),
       width: node.measured?.width ?? 175,
       settings,
     }
   })
 
-  const rules = edges.map((edge) => {
+  const rawRules = edges.map((edge) => {
     const edgeData = edge.data || {}
+    const actionName = edgeData.proceedAction || edgeData.action || 'Submit'
     return {
+      action: actionName,
       confirm: edgeData.confirm ?? false,
       fromBlockId: edge.source,
       id: edge.id,
       left: 0,
       passwordAccess: edgeData.passwordAccess ?? false,
-      proceedAction: edgeData.proceedAction || edgeData.action || 'Submit',
+      proceedAction: actionName,
       remarks: edgeData.remarks ?? false,
       signature: edgeData.signature ?? false,
       toBlockId: edge.target,
@@ -192,6 +233,8 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       ...edgeData,
     }
   })
+
+  const { blocks, rules } = ensureStartAndEndNodes(rawBlocks, rawRules)
 
   return {
     blocks,
@@ -242,7 +285,9 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       },
       publish: {
         publishOption:
-          storeState.workflowStatus === 'published' ? 'PUBLISHED' : 'DRAFT',
+          String(storeState.workflowStatus || '').toUpperCase() === 'PUBLISHED'
+            ? 'PUBLISHED'
+            : 'DRAFT',
         publishSchedule: '',
         unpublishSchedule: '',
       },

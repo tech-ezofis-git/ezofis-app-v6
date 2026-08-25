@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { V6SearchFilterClause } from '@/api/v6/workflows'
 import type { Option } from '@/types/option'
 import formApi from '@/api/form/form'
@@ -10,6 +10,7 @@ import workflowsApiV6, {
 } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import useAuthUserStore from '@/stores/authUserStore'
 import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
 import Header from './components/Header'
@@ -18,7 +19,10 @@ import { ProcessingBackgroundManager } from './components/ProcessingBackgroundMa
 import Request from './components/request/Request'
 import { transformProcess, useInboxData } from './hooks/useInboxData'
 import requestStore from './stores/useRequestStore'
-import { isAccountsPayableWorkflow } from './utils/workflow.utils'
+import {
+  extractBlocks,
+  isAccountsPayableWorkflow,
+} from './utils/workflow.utils'
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
 
@@ -217,9 +221,13 @@ const RequestsPage = () => {
 
         let formJson = wf.formJson
         if (wFormId) {
-          const formRes = await formApi.getFormDataById(String(wFormId))
-          if (formRes?.data) {
-            formJson = formRes.data.formJson ?? formRes.data
+          try {
+            const formRes = await formApi.getFormDataById(String(wFormId))
+            if (formRes?.data) {
+              formJson = formRes.data.formJson ?? formRes.data
+            }
+          } catch (e) {
+            console.warn('Failed to fetch form schema for workflow', e)
           }
         }
 
@@ -248,10 +256,11 @@ const RequestsPage = () => {
           workflowJson: wf.workflowJson,
         })
         setWorkflowLoadStatus('ready')
-        setIsLoading(false)
-      } catch {
+      } catch (err) {
+        console.error('Failed to load selected workflow', err)
         setSelectedWorkflow(null)
         setWorkflowLoadStatus('empty')
+      } finally {
         setIsLoading(false)
       }
     },
@@ -494,30 +503,27 @@ const RequestsPage = () => {
     }
   }, [workflow?.id])
 
+  const lastLoadedWorkflowIdRef = useRef<string | number | null>(null)
+
   // Workflow Change Listener
   useEffect(() => {
-    if (workflow?.id) {
-      const isNewWorkflow =
-        !selectedWorkflow || String(workflow.id) !== String(selectedWorkflow.id)
-      if (isNewWorkflow) {
+    const wfId = workflow?.id
+    if (!wfId) return
+
+    const isNew = String(wfId) !== String(lastLoadedWorkflowIdRef.current)
+
+    if (isNew || reloadMeta) {
+      lastLoadedWorkflowIdRef.current = wfId
+      if (isNew) {
         requestStore.getState().clearQuickFilters()
       }
-      if (isNewWorkflow && !reloadMeta) {
-        loadSelectedWorkflow(String(workflow.id), workflow.name)
-      } else if (reloadMeta) {
-        loadSelectedWorkflow(String(workflow.id), workflow.name)
+      loadSelectedWorkflow(String(wfId), workflow.name)
+      if (reloadMeta) {
         stopRefresh()
         refetch()
       }
     }
-  }, [
-    workflow,
-    reloadMeta,
-    selectedWorkflow,
-    loadSelectedWorkflow,
-    stopRefresh,
-    refetch,
-  ])
+  }, [workflow, reloadMeta, loadSelectedWorkflow, stopRefresh, refetch])
   useEffect(() => {
     // No longer need to manually clear local state
   }, [isClosed])
@@ -597,12 +603,51 @@ const RequestsPage = () => {
     }
   }
 
+  const user = useAuthUserStore((s) => s.user)
+  const session = useAuthUserStore((s) => s.session)
+
+  const canCreateNewRequest = useMemo(() => {
+    // AP workflows always allow "+ New Request"
+    if (isAccountsPayable) return true
+
+    if (!selectedWorkflow) return true
+
+    const blocks = extractBlocks(selectedWorkflow)
+    const startBlock = blocks.find(
+      (b: any) => String(b.type || '').toUpperCase() === 'START',
+    )
+
+    if (!startBlock || !startBlock.settings) return true
+
+    const settings = startBlock.settings
+    const allowedUsers: string[] = Array.isArray(settings.users)
+      ? settings.users
+      : []
+
+    // If users array exists and has entries, validate logged-in user ID
+    if (allowedUsers.length > 0) {
+      const currentUserId =
+        session?.id ||
+        (session as any)?.userId ||
+        (typeof user?.id === 'string' ? user.id : null)
+
+      if (!currentUserId) return false
+
+      return allowedUsers.some(
+        (u: any) =>
+          String(u).toLowerCase() === String(currentUserId).toLowerCase(),
+      )
+    }
+
+    return true
+  }, [isAccountsPayable, selectedWorkflow, session, user])
+
   const isWorkflowReady =
     workflowLoadStatus === 'ready' && !!selectedWorkflow?.id
   const showWorkflowEmpty = workflowLoadStatus === 'empty'
   const inboxIsLoading =
     workflowLoadStatus === 'loading' ||
-    (isWorkflowReady && (isPending || isFetching))
+    (isWorkflowReady && isPending && !inboxResult)
 
   return (
     <>
@@ -618,19 +663,23 @@ const RequestsPage = () => {
               isLoading={isLoading}
               metaData={metaData}
               workflow={workflow}
-              actionButtons={[
-                {
-                  color: 'primary',
-                  icon: 'tabler:plus',
-                  id: 'new-request',
-                  label: t`New Request`,
-                  variant: 'solid',
-                  onClick: () => {
-                    console.log('am running')
-                    openNewRequest('request')
-                  },
-                },
-              ]}
+              actionButtons={
+                canCreateNewRequest
+                  ? [
+                      {
+                        color: 'primary',
+                        icon: 'tabler:plus',
+                        id: 'new-request',
+                        label: t`New Request`,
+                        variant: 'solid',
+                        onClick: () => {
+                          console.log('am running')
+                          openNewRequest('request')
+                        },
+                      },
+                    ]
+                  : []
+              }
               setActiveTab={handleTabChange}
               setWorkflow={setWorkflow}
             />
@@ -652,6 +701,7 @@ const RequestsPage = () => {
             ) : (
               <InboxList
                 activeTab={activeTab}
+                canCreateNewRequest={canCreateNewRequest}
                 data={inboxResult?.data || []}
                 isLoading={inboxIsLoading}
                 isRefetching={isWorkflowReady && isFetching}

@@ -9,7 +9,9 @@ import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
 import {
+  buildRepoFieldDescriptors,
   buildRepoFieldHints,
+  buildRepoMetadata,
   extractOcrText,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
@@ -121,21 +123,84 @@ export const useWorkflowForm = (workflow: any) => {
     () => buildRepoFieldHints(repositoryFields),
     [repositoryFields],
   )
-  const mandatoryFieldNames = useMemo(
-    () =>
-      repositoryFields
-        .filter((f) => f.isMandatory)
-        .map((f) => f.name)
-        .filter(Boolean),
-    [repositoryFields],
+  const repoFieldDescriptors = useMemo(
+    () => buildRepoFieldDescriptors(repositoryFields, panels),
+    [repositoryFields, panels],
   )
   const missingMandatoryFieldIds = useMemo(
-    () => getMissingMandatoryFieldIds(panels, formModel, mandatoryFieldNames),
-    [panels, formModel, mandatoryFieldNames],
+    () => getMissingMandatoryFieldIds(repoFieldDescriptors, formModel),
+    [repoFieldDescriptors, formModel],
   )
 
+  // Every file the user has uploaded so far — sidebar attachments and
+  // field-level FILE_UPLOAD/IMAGE_UPLOAD values alike — used to drive the
+  // split-view file preview and to decide whether to show it at all.
+  const uploadedFiles = useMemo(() => {
+    const fromAttachments = attachments
+      .filter((a) => a.rawFile || a.fileId)
+      .map((a) => ({
+        fileName: a.fileName,
+        key: `attachment:${a.localId}`,
+        rawFile: a.rawFile,
+      }))
+    const fromFields = panels.flatMap((panel: any) =>
+      (panel.fields || [])
+        .filter(
+          (field: any) =>
+            (field.type === 'FILE_UPLOAD' || field.type === 'IMAGE_UPLOAD') &&
+            (formModel[field.id]?.rawFile || formModel[field.id]?.fileId),
+        )
+        .map((field: any) => ({
+          fileName: formModel[field.id].fileName,
+          key: `field:${field.id}`,
+          rawFile: formModel[field.id].rawFile,
+        })),
+    )
+    return [...fromAttachments, ...fromFields]
+  }, [attachments, panels, formModel])
+
+  const hasUploadedFile = uploadedFiles.length > 0
+
+  // True while any pending (unstaged) file's own OCR phase-1 pass is still
+  // in flight — drives the "Extracting…" loading state.
+  const isExtractingOcr = useMemo(() => {
+    const pendingAttachment = attachments.some(
+      (a) => a.rawFile && !a.fileId && !a.ocrChecked,
+    )
+    if (pendingAttachment) return true
+    return panels.some((panel: any) =>
+      (panel.fields || []).some((field: any) => {
+        if (field.type !== 'FILE_UPLOAD' && field.type !== 'IMAGE_UPLOAD')
+          return false
+        const value = formModel[field.id]
+        return Boolean(value?.rawFile && !value?.fileId && !value?.ocrChecked)
+      }),
+    )
+  }, [attachments, panels, formModel])
+
+  // True once OCR has finished but couldn't fill every repo-mandatory field
+  // on its own — staging is then blocked until the user fills the rest and
+  // explicitly confirms via confirmUpload(), rather than firing the moment
+  // the fields happen to become non-empty (see the decide-once effect below).
+  const [needsManualUpload, setNeedsManualUpload] = useState(false)
+
+  // Mirrors a value between a repo field's own slot and its matching form
+  // field's slot (same name), whichever one wasn't just written to — so it
+  // doesn't matter whether the edit came from RepoFieldsPanel or the plain
+  // WorkflowFormRenderer, the other view stays in sync when the user
+  // switches back to it.
   const setFieldValue = (fieldId: string, value: any) => {
-    setFormModel((prev) => ({ ...prev, [fieldId]: value }))
+    setFormModel((prev) => {
+      const next = { ...prev, [fieldId]: value }
+      const descriptor = repoFieldDescriptors.find(
+        (d) => d.fieldId === fieldId || d.matchedFieldId === fieldId,
+      )
+      if (descriptor) {
+        next[descriptor.fieldId] = value
+        if (descriptor.matchedFieldId) next[descriptor.matchedFieldId] = value
+      }
+      return next
+    })
   }
 
   // Auto-fills any form fields an OCR pass recognized (matched by label),
@@ -165,6 +230,7 @@ export const useWorkflowForm = (workflow: any) => {
         {
           fileName: file.name,
           localId,
+          ocrChecked: false,
           rawFile: file,
           repositoryId: String(repositoryId),
           size: file.size,
@@ -176,16 +242,20 @@ export const useWorkflowForm = (workflow: any) => {
         file,
         repoFieldHints,
       )
-      if (!error && data) {
-        applyOcrFieldList(data.ocrFieldList)
-        setAttachments((prev) =>
-          prev.map((a) =>
-            a.localId === localId
-              ? { ...a, ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
-              : a,
-          ),
-        )
-      }
+      if (!error && data) applyOcrFieldList(data.ocrFieldList)
+      setAttachments((prev) =>
+        prev.map((a) =>
+          a.localId === localId
+            ? {
+                ...a,
+                ...(!error && data
+                  ? { ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
+                  : {}),
+                ocrChecked: true,
+              }
+            : a,
+        ),
+      )
     }
     setIsUploadingAttachment(false)
   }
@@ -220,6 +290,12 @@ export const useWorkflowForm = (workflow: any) => {
       const { data, error } = await uploadAndIndexApi.uploadWithOcr({
         fields: repoFieldHints,
         file: attachment.rawFile,
+        metadata: buildRepoMetadata(
+          repositoryFields,
+          panels,
+          formModel,
+          attachment.fileName,
+        ),
         ocrFieldList: attachment.ocrFieldList,
         ocrJson: attachment.ocrJson,
         ocrText: extractOcrText(attachment.ocrJson),
@@ -246,6 +322,12 @@ export const useWorkflowForm = (workflow: any) => {
         const { data, error } = await uploadAndIndexApi.uploadWithOcr({
           fields: repoFieldHints,
           file: value.rawFile,
+          metadata: buildRepoMetadata(
+            repositoryFields,
+            panels,
+            formModel,
+            value.fileName,
+          ),
           ocrFieldList: value.ocrFieldList,
           ocrJson: value.ocrJson,
           ocrText: extractOcrText(value.ocrJson),
@@ -281,26 +363,45 @@ export const useWorkflowForm = (workflow: any) => {
     return stagingPromiseRef.current
   }
 
+  // Only counts a file as ready to auto-stage once its own phase-1 OCR
+  // (uploadForOcr) has resolved — otherwise the auto-stage effect below can
+  // fire uploadWithOcr, and build its `metadata`, off a formModel that
+  // hasn't been filled in yet (see ocrChecked on AttachmentEntry).
   const hasPendingFiles = () => {
-    const pendingAttachment = attachments.some((a) => a.rawFile && !a.fileId)
+    const pendingAttachment = attachments.some(
+      (a) => a.rawFile && !a.fileId && a.ocrChecked,
+    )
     if (pendingAttachment) return true
     return panels.some((panel) =>
       (panel.fields || []).some((field: any) => {
         if (field.type !== 'FILE_UPLOAD' && field.type !== 'IMAGE_UPLOAD')
           return false
         const value = formModel[field.id]
-        return Boolean(value?.rawFile && !value?.fileId)
+        return Boolean(value?.rawFile && !value?.fileId && value?.ocrChecked)
       }),
     )
   }
 
-  // Once every repository-mandatory field is filled, stage any pending
-  // file(s) right away (uploadWithOcr) instead of waiting for Submit — see
-  // the "Normal Workflow — Frontend Integration Guide" 2-phase upload note
-  // above.
+  // Decides — once, right as OCR finishes for the current batch of pending
+  // files — whether to auto-stage (uploadWithOcr) or hand off to the user:
+  // if OCR alone filled every repo-mandatory field, stage immediately; if
+  // not, flip needsManualUpload and STOP — filling in the rest by hand
+  // afterward must not silently trigger staging, only the Upload button
+  // (confirmUpload) does. A new pending file restarts the decision.
+  const decidedForCurrentBatchRef = useRef(false)
   useEffect(() => {
-    if (missingMandatoryFieldIds.size > 0) return
+    if (isExtractingOcr) {
+      decidedForCurrentBatchRef.current = false
+      return
+    }
     if (!hasPendingFiles()) return
+    if (decidedForCurrentBatchRef.current) return
+    decidedForCurrentBatchRef.current = true
+
+    if (missingMandatoryFieldIds.size > 0) {
+      setNeedsManualUpload(true)
+      return
+    }
 
     stageAllPendingFiles()
       .then((staged) => {
@@ -313,7 +414,46 @@ export const useWorkflowForm = (workflow: any) => {
         setSubmitError(message)
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [missingMandatoryFieldIds, attachments, formModel])
+  }, [isExtractingOcr, missingMandatoryFieldIds, attachments, formModel])
+
+  // Manual counterpart to the auto-stage path above — called from the
+  // Upload button once the user has filled in whatever OCR missed.
+  const confirmUpload = async (): Promise<{ success: boolean }> => {
+    if (missingMandatoryFieldIds.size > 0) return { success: false }
+    try {
+      const staged = await stageAllPendingFiles()
+      setAttachments(staged.attachments)
+      setFormModel(staged.formModel)
+      setNeedsManualUpload(false)
+      return { success: true }
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : 'Failed to upload attachment(s).'
+      setSubmitError(message)
+      return { success: false }
+    }
+  }
+
+  // Called from the Cancel button — drops every pending (unstaged) file,
+  // closing out the upload attempt without touching any already-staged
+  // files or values the user typed in elsewhere.
+  const cancelPendingUpload = () => {
+    setAttachments((prev) => prev.filter((a) => a.fileId || !a.rawFile))
+    setFormModel((prev) => {
+      const next = { ...prev }
+      for (const panel of panels) {
+        for (const field of panel.fields || []) {
+          if (field.type !== 'FILE_UPLOAD' && field.type !== 'IMAGE_UPLOAD')
+            continue
+          const value = next[field.id]
+          if (value?.rawFile && !value?.fileId) delete next[field.id]
+        }
+      }
+      return next
+    })
+    setNeedsManualUpload(false)
+    decidedForCurrentBatchRef.current = false
+  }
 
   const submit = async () => {
     setHasAttemptedSubmit(true)
@@ -323,11 +463,7 @@ export const useWorkflowForm = (workflow: any) => {
       return { success: false }
     }
 
-    const missing = getMissingMandatoryFields(
-      panels,
-      formModel,
-      mandatoryFieldNames,
-    )
+    const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
     if (missing.length > 0) {
       setSubmitError(`Please fill in required field(s): ${missing.join(', ')}`)
       return { success: false }
@@ -391,21 +527,28 @@ export const useWorkflowForm = (workflow: any) => {
     addComment,
     applyOcrFieldList,
     attachments,
+    cancelPendingUpload,
     commentDraft,
     comments,
+    confirmUpload,
     form,
     formModel,
     hasAttemptedSubmit,
+    hasUploadedFile,
+    isExtractingOcr,
     isLoadingForm,
     isSubmitting,
     isUploadingAttachment,
     loadError,
     missingMandatoryFieldIds,
+    needsManualUpload,
     panels,
     removeAttachment,
+    repoFieldDescriptors,
     repoFieldHints,
     submit,
     submitError,
+    uploadedFiles,
     setCommentDraft,
     setFieldValue,
   }

@@ -9,6 +9,7 @@ import {
 } from '@mantine/core'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
@@ -56,49 +57,41 @@ const PublishSidebar = () => {
     {
       description: 'One question at a time',
       icon: 'tabler:square-rotated',
-      id: 'typeform',
-      name: 'Focus Mode',
+      id: 'SINGLE',
+      name: 'Single Page',
     },
     {
       description: 'Multi-column layout',
       icon: 'tabler:layout-grid',
-      id: 'grid',
+      id: 'CLASSIC',
       name: 'Classic Grid',
     },
     {
-      description: 'Single column stack',
+      description: 'Expandable section stack',
       icon: 'tabler:layout-list',
-      id: 'full',
-      name: 'Vertical Flow',
+      id: 'ACCORDION',
+      name: 'Accordion',
     },
   ]
 
   return (
     <div className='animate-in slide-in-from-right flex h-full w-[400px] flex-col border-l border-gray-2 bg-surface-primary font-inter shadow-2xl duration-500'>
       {/* Header */}
-      <div className='bg-gray-50/80 shrink-0 border-b border-gray-2 p-4 backdrop-blur-sm'>
-        <Group justify='space-between' mb='xs'>
-          <div className='flex items-center gap-2'>
-            <div className='flex size-8 items-center justify-center rounded-lg bg-accent-soft/20 text-accent-primary'>
-              <Icon height={16} name='tabler:rocket' width={16} />
-            </div>
-            <div className='text-sm font-extrabold tracking-tight text-gray-13 uppercase'>
-              Deploy Settings
-            </div>
+      <div className='flex items-center justify-between border-b border-gray-2 px-4 py-3 bg-white'>
+        <div className='flex items-center gap-2.5'>
+          <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-1 text-primary-9'>
+            <Icon height={16} name='tabler:rocket' width={16} />
           </div>
-          <ActionIcon
-            className='rounded-lg transition-colors hover:bg-gray-2'
-            color='gray'
-            size='md'
-            variant='subtle'
-            onClick={() => setPublishOpen(false)}
-          >
-            <Icon height={16} name='tabler:x' width={16} />
-          </ActionIcon>
-        </Group>
-        <div className='mt-1 px-0.5 text-xs leading-tight font-medium text-gray-10'>
-          Configure deployment properties and go live.
+          <h2 className='text-15/5 font-semibold text-gray-13'>
+            Deploy Settings
+          </h2>
         </div>
+        <IconButton
+          color='gray'
+          icon='lucide:x'
+          variant='ghost'
+          onClick={() => setPublishOpen(false)}
+        />
       </div>
 
       <div className='custom-scrollbar flex-1 space-y-6 overflow-y-auto p-5'>

@@ -80,7 +80,7 @@ const PageEmptyState = ({
         icon={icon ?? content.icon}
         title={title ?? content.title}
         primaryActionLabel={
-          showCreateAction
+          showCreateAction && emptyStateProps.onPrimaryAction
             ? (emptyStateProps.primaryActionLabel ?? content.primaryActionLabel)
             : undefined
         }

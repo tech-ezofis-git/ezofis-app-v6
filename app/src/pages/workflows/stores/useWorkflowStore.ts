@@ -1,5 +1,6 @@
 import type { Edge, Node } from '@xyflow/react'
 import { create } from 'zustand'
+import { importWorkflow } from '../utils/importWorkflow'
 
 type AddMenuState = {
   edgeId: string | null
@@ -32,7 +33,7 @@ type Store = {
   closeBuilder: () => void
   closePanel: () => void
   closeSettings: () => void
-  loadLegacyWorkflow: (legacyJson: any) => void
+  loadLegacyWorkflow: (legacyJson: any, apiData?: any) => void
   openAddMenu: (position: { x: number; y: number }, edgeId: string) => void
   openChangeMenu: (position: { x: number; y: number }, nodeId: string) => void
   openSettings: () => void
@@ -104,39 +105,63 @@ const useWorkflowStore = create<Store>()((set) => ({
     set({ isPanelOpen: false, selectedEdge: null, selectedNode: null }),
   closeSettings: () => set({ isSettingsOpen: false }),
   // ... rest of the functions (will be updated below in TargetContent range)
-  loadLegacyWorkflow: (legacyJson: any) => {
-    import('../utils/importWorkflow').then(({ importWorkflow }) => {
-      const { edges, nodes } = importWorkflow(legacyJson)
+  loadLegacyWorkflow: (legacyJson: any, apiData?: any) => {
+    const { edges, nodes } = importWorkflow(legacyJson)
 
-      let prefixSegments = [
-        { id: '1', type: 'date', value: 'Year' },
-        { id: '2', type: 'separator', value: '-' },
-        { id: '3', type: 'text', value: 'REQ' },
-        { id: '4', type: 'auto-increment', value: '1' },
-      ]
+    let prefixSegments = [
+      { id: '1', type: 'date', value: 'Year' },
+      { id: '2', type: 'separator', value: '-' },
+      { id: '3', type: 'text', value: 'REQ' },
+      { id: '4', type: 'auto-increment', value: '1' },
+    ]
 
-      try {
-        if (legacyJson.settings?.general?.processNumberPrefix) {
-          prefixSegments = JSON.parse(
-            legacyJson.settings.general.processNumberPrefix,
-          )
-        }
-      } catch (e) {}
+    try {
+      if (legacyJson.settings?.general?.processNumberPrefix) {
+        prefixSegments = JSON.parse(
+          legacyJson.settings.general.processNumberPrefix,
+        )
+      }
+    } catch (e) {}
 
-      set({
-        folder:
-          legacyJson.settings?.general?.initiateUsing?.repositoryId || null,
-        form: legacyJson.settings?.general?.initiateUsing?.formId || null,
-        initiateUsing:
-          legacyJson.settings?.general?.initiateUsing?.type || 'document-form',
-        loadedEdges: edges,
-        loadedNodes: nodes,
-        prefixSegments,
-        workflowDescription: legacyJson.settings?.general?.description || '',
-        workflowId: legacyJson.id || null,
-        workflowName: legacyJson.settings?.general?.name || 'Imported Workflow',
-        workflowStatus: 'draft',
-      })
+    const rawStatus =
+      apiData?.publishOption ||
+      apiData?.status ||
+      legacyJson.settings?.publish?.publishOption
+
+    const isPublished =
+      String(rawStatus).toUpperCase() === 'PUBLISHED' ||
+      rawStatus === 1 ||
+      rawStatus === '1'
+
+    const workflowName =
+      legacyJson.settings?.general?.name ||
+      legacyJson.name ||
+      apiData?.name ||
+      'Imported Workflow'
+    const workflowDescription =
+      legacyJson.settings?.general?.description ||
+      legacyJson.description ||
+      apiData?.description ||
+      ''
+
+    set({
+      folder:
+        legacyJson.settings?.general?.initiateUsing?.repositoryId ||
+        apiData?.repositoryId ||
+        null,
+      form:
+        legacyJson.settings?.general?.initiateUsing?.formId ||
+        apiData?.formId ||
+        null,
+      initiateUsing:
+        legacyJson.settings?.general?.initiateUsing?.type || 'document-form',
+      loadedEdges: edges,
+      loadedNodes: nodes,
+      prefixSegments,
+      workflowDescription,
+      workflowId: legacyJson.id || apiData?.id || null,
+      workflowName,
+      workflowStatus: isPublished ? 'published' : 'draft',
     })
   },
   openAddMenu: (position, edgeId) =>

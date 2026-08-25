@@ -26,7 +26,7 @@ const Header = () => {
   const handleQuickSave = async () => {
     setIsSaving(true)
     try {
-      const { createdFormId } = await saveForm('DRAFT', formId)
+      const { createdFormId } = await saveForm(publishStatus, formId)
       if (createdFormId) {
         navigate({
           params: { formId: createdFormId },
@@ -147,16 +147,6 @@ const Header = () => {
           size='sm'
           variant='outline'
           onClick={handleQuickSave}
-        />
-
-        <Button
-          className='cursor-pointer font-medium'
-          color='primary'
-          icon='lucide:send'
-          label='Publish'
-          size='sm'
-          variant='solid'
-          onClick={() => setPublishOpen(true)}
         />
       </div>
     </header>

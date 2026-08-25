@@ -25,10 +25,19 @@ const WorkflowsPage = () => {
         }}
         onApply={(payload, promptName) => {
           if (payload) {
-            useWorkflowStore.getState().loadLegacyWorkflow(payload)
-            if (promptName) {
-              useWorkflowStore.getState().setWorkflowName(promptName)
-            }
+            const store = useWorkflowStore.getState()
+            store.loadLegacyWorkflow(payload)
+            store.setWorkflowStatus('draft')
+            const name =
+              promptName ||
+              payload.name ||
+              payload.settings?.general?.name
+            const description =
+              payload.description ||
+              payload.settings?.general?.description ||
+              ''
+            if (name) store.setWorkflowName(name)
+            store.setWorkflowDescription(description)
           } else {
             useWorkflowStore.getState().resetWorkflow()
           }

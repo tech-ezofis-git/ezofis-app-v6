@@ -65,7 +65,7 @@ const Table = ({ onCreate }: TableProps) => {
         renderCell: (row) => (
           <FormStatusBadge
             status={
-              String(row.flowstatus || row.flowStatus) as 'Draft' | 'Published'
+              (row.flowstatus ?? row.flowStatus ?? row.status ?? row.publishOption) as any
             }
           />
         ),

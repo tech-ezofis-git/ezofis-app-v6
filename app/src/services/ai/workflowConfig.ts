@@ -556,6 +556,191 @@ export function generateSimpleWorkflowMeta(promptText: string): { description: s
   }
 }
 
+export function ensureStartAndEndNodes(
+  rawBlocks: any[],
+  rawRules: any[],
+): { blocks: any[]; rules: any[] } {
+  let blocks = Array.isArray(rawBlocks) ? rawBlocks.map((b: any) => ({ ...b })) : []
+  let rules = Array.isArray(rawRules) ? [...rawRules] : []
+
+  if (blocks.length === 0) {
+    blocks = [
+      {
+        color: '#2BCCBA',
+        height: 90,
+        icon: 'mdi-flag',
+        id: 'start_1',
+        left: 50,
+        settings: { label: 'Start' },
+        top: 70,
+        type: 'START',
+        width: 175,
+      },
+      {
+        color: '#10B981',
+        height: 90,
+        icon: 'mdi-check-circle',
+        id: 'end_1',
+        left: 280,
+        settings: { label: 'End' },
+        top: 70,
+        type: 'END',
+        width: 175,
+      },
+    ]
+    rules = [{ from: 'start_1', id: 'rule_start_end', ruleName: '', to: 'end_1' }]
+    return { blocks, rules }
+  }
+
+  // 0. Sanitize block types
+  blocks = blocks.map((b: any, idx: number) => {
+    let blockType = String(b.type || '').toUpperCase().trim()
+    const label = String(b.settings?.label || '').toLowerCase()
+
+    if (blockType === 'ACTION' || !blockType) {
+      if (
+        idx === blocks.length - 1 ||
+        /\b(end|complete|completed|finish|approved|done|posted|released|archive|archived)\b/i.test(label)
+      ) {
+        blockType = 'END'
+      } else if (
+        idx === 0 ||
+        /\b(start|begin|submit|submitted|create|created|intake)\b/i.test(label)
+      ) {
+        blockType = 'START'
+      } else {
+        blockType = 'INTERNAL_ACTOR'
+      }
+    }
+
+    return {
+      ...b,
+      type: blockType,
+    }
+  })
+
+  // 1. Ensure START node exists as first block
+  const hasStartNode = blocks.some(
+    (b: any) => String(b.type || '').toUpperCase() === 'START',
+  )
+  if (!hasStartNode) {
+    if (
+      blocks.length > 0 &&
+      /\b(start|begin|submit|submitted|create|created|intake|onboarding)\b/i.test(
+        String(blocks[0].settings?.label || ''),
+      )
+    ) {
+      blocks[0].type = 'START'
+    } else {
+      const firstLeft = Number(blocks[0]?.left) || 280
+      const startNode = {
+        color: '#2BCCBA',
+        height: 90,
+        icon: 'mdi-flag',
+        id: 'start_auto_1',
+        left: Math.max(50, firstLeft - 230),
+        settings: { label: 'Start' },
+        top: Number(blocks[0]?.top) || 70,
+        type: 'START',
+        width: 175,
+      }
+      blocks.unshift(startNode)
+
+      const firstOtherBlock = blocks[1]
+      if (firstOtherBlock) {
+        rules.unshift({
+          action: 'Submit',
+          confirm: false,
+          fromBlockId: 'start_auto_1',
+          id: `rule_auto_start_${firstOtherBlock.id}`,
+          left: 0,
+          passwordAccess: false,
+          proceedAction: 'Submit',
+          remarks: false,
+          signature: false,
+          toBlockId: firstOtherBlock.id,
+          top: 0,
+        })
+      }
+    }
+  }
+
+  // 2. Ensure END node exists as last block
+  const hasEndNode = blocks.some(
+    (b: any) => String(b.type || '').toUpperCase() === 'END',
+  )
+  if (!hasEndNode) {
+    const lastBlock = blocks[blocks.length - 1]
+    if (
+      lastBlock &&
+      /\b(end|complete|completed|finish|approved|done|posted|released|archive|archived)\b/i.test(
+        String(lastBlock.settings?.label || ''),
+      )
+    ) {
+      lastBlock.type = 'END'
+    } else {
+      const lastLeft = Number(lastBlock?.left) || 50
+      const endNode = {
+        color: '#10B981',
+        height: 90,
+        icon: 'mdi-check-circle',
+        id: 'end_auto_1',
+        left: lastLeft + 230,
+        settings: { label: 'End' },
+        top: Number(lastBlock?.top) || 70,
+        type: 'END',
+        width: 175,
+      }
+      blocks.push(endNode)
+
+      if (lastBlock) {
+        rules.push({
+          action: 'Submit',
+          confirm: false,
+          fromBlockId: lastBlock.id,
+          id: `rule_auto_${lastBlock.id}_end`,
+          left: 0,
+          passwordAccess: false,
+          proceedAction: 'Submit',
+          remarks: false,
+          signature: false,
+          toBlockId: 'end_auto_1',
+          top: 0,
+        })
+      }
+    }
+  }
+
+  // 3. Clean orphan rules & normalize rule format
+  const validBlockIds = new Set(blocks.map((b: any) => String(b.id)))
+  const cleanRules = rules
+    .filter((r: any) => {
+      const fromId = String(r.fromBlockId || r.from || '')
+      const toId = String(r.toBlockId || r.to || '')
+      return validBlockIds.has(fromId) && validBlockIds.has(toId)
+    })
+    .map((r: any) => {
+      const fromId = String(r.fromBlockId || r.from || '')
+      const toId = String(r.toBlockId || r.to || '')
+      const actionName = r.proceedAction || r.action || 'Submit'
+      return {
+        action: actionName,
+        confirm: r.confirm ?? false,
+        fromBlockId: fromId,
+        id: r.id || `r_${fromId}_${toId}`,
+        left: r.left ?? 0,
+        passwordAccess: r.passwordAccess ?? false,
+        proceedAction: actionName,
+        remarks: r.remarks ?? false,
+        signature: r.signature ?? false,
+        toBlockId: toId,
+        top: r.top ?? 0,
+      }
+    })
+
+  return { blocks, rules: cleanRules }
+}
+
 export async function generateWorkflowConfigViaQwen(
   options: GenerateWorkflowConfigOptions,
 ): Promise<any> {
@@ -563,7 +748,9 @@ export async function generateWorkflowConfigViaQwen(
   const meta = generateSimpleWorkflowMeta(promptText)
 
   if (!isQwenConfigured()) {
-    return buildLocalWorkflowConfig(promptText)
+    const raw = buildLocalWorkflowConfig(promptText)
+    const { blocks, rules } = ensureStartAndEndNodes(raw.blocks, raw.rules)
+    return { ...raw, blocks, rules }
   }
 
   const messages = [
@@ -580,8 +767,14 @@ Return a JSON object with:
 - "blocks": array of nodes
 - "rules": array of transitions
 
-Block types: "START", "INTERNAL_ACTOR", "CONDITION", "END".
-Each block should have: { "id": "b1", "type": "START", "settings": { "label": "Step Name" }, "left": 50, "top": 50, "width": 175, "height": 90, "color": "#2BCCBA", "icon": "mdi-flag" }
+STRICT NODE TYPE RULES:
+1. The first block MUST be type "START" (e.g. label: "Start Workflow" or "Submit Request").
+2. The last block MUST be type "END" (e.g. label: "Completed" or "Approved").
+3. Intermediate steps MUST be type "INTERNAL_ACTOR" or "CONDITION".
+4. DO NOT use type "ACTION". Only use "START", "INTERNAL_ACTOR", "CONDITION", or "END".
+5. Connect all nodes sequentially from START -> intermediate steps -> END using rules.
+
+Each block should have: { "id": "b1", "type": "START", "settings": { "label": "Step Name" }, "left": 50, "top": 70, "width": 175, "height": 90, "color": "#2BCCBA", "icon": "mdi-flag" }
 Rules: { "id": "r1", "from": "b1", "to": "b2", "ruleName": "" }
 Increment "left" position by 230 for each step so nodes are horizontally aligned cleanly.
 Respond ONLY with JSON shape: { "name": string, "description": string, "blocks": [...], "rules": [...] }`,
@@ -603,21 +796,33 @@ Respond ONLY with JSON shape: { "name": string, "description": string, "blocks":
       const wfName = shortenWorkflowName(rawWfName)
       const rawWfDesc = parsed.description || options.description || meta.description
       const wfDesc = shortenDescription(rawWfDesc)
-      if (basePayload.settings?.general) {
-        basePayload.settings.general.name = wfName
-        basePayload.settings.general.description = wfDesc
+      if (!basePayload.settings) basePayload.settings = {}
+      if (!basePayload.settings.general) basePayload.settings.general = {}
+      basePayload.settings.general.name = wfName
+      basePayload.settings.general.description = wfDesc
+      basePayload.settings.publish = {
+        ...(basePayload.settings.publish || {}),
+        publishOption: 'DRAFT',
       }
+
+      const { blocks, rules } = ensureStartAndEndNodes(
+        parsed.blocks,
+        Array.isArray(parsed.rules) ? parsed.rules : [],
+      )
+
       return {
         ...basePayload,
-        blocks: parsed.blocks,
+        blocks,
         description: wfDesc,
         name: wfName,
-        rules: Array.isArray(parsed.rules) ? parsed.rules : [],
+        rules,
       }
     }
   } catch (e) {
     console.warn('Qwen workflow generation error, using local fallback:', e)
   }
 
-  return buildLocalWorkflowConfig(promptText)
+  const fallback = buildLocalWorkflowConfig(promptText)
+  const { blocks, rules } = ensureStartAndEndNodes(fallback.blocks, fallback.rules)
+  return { ...fallback, blocks, rules }
 }

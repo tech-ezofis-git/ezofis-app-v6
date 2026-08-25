@@ -229,10 +229,6 @@ const SignInForm = ({ onChangeView }: Props) => {
       }
 
       if (status === 300 && Array.isArray(data)) {
-        showToast({
-          message: t`User found with multiple tenants`,
-          variant: 'warning',
-        })
         const mapped: TenantOption[] = data.map((tenant: any) => ({
           email: tenant.email,
           id: tenant.id,

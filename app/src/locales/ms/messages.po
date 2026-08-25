@@ -44,7 +44,7 @@ msgid "{0} fields"
 msgstr "{0} medan"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1908
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1952
 msgid "{0} fields configured"
 msgstr "{0} medan dikonfigurasi"
 
@@ -113,7 +113,7 @@ msgstr ""
 #~ msgid "{enabledCount} of {0} permissions enabled"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1129
+#: src/pages/folders/components/Upload/Upload.tsx:1213
 msgid "{fieldName} is mandatory."
 msgstr ""
 
@@ -122,7 +122,7 @@ msgid "{fileType} Viewer"
 msgstr "Pemapar {fileType}"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:1819
+#: src/pages/folders/components/Upload/Upload.tsx:1911
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr ""
 
@@ -231,7 +231,7 @@ msgstr ""
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1608
+#: src/pages/folders/components/Upload/Upload.tsx:1700
 msgid "100% Accuracy"
 msgstr ""
 
@@ -349,8 +349,8 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:1092
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2842
+#: src/pages/settings/components/Folders/DmsSettings.tsx:1093
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2847
 #: src/pages/settings/components/GroupManagement.tsx:103
 #: src/pages/settings/components/GroupManagement.tsx:935
 #: src/pages/settings/components/ManageUser.tsx:2325
@@ -501,11 +501,11 @@ msgstr ""
 msgid "AI EXTRACTION"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1966
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2010
 msgid "AI fields"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2165
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2209
 msgid "AI Folder Builder"
 msgstr ""
 
@@ -579,7 +579,7 @@ msgstr "Menjajarkan pengepala CSV/XLSX dengan skema pemetaan pangkalan data."
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
-#: src/pages/requests/components/InboxList.tsx:1858
+#: src/pages/requests/components/InboxList.tsx:1872
 msgid "All"
 msgstr "Semua"
 
@@ -644,7 +644,7 @@ msgstr "Menganalisis konteks & kata kunci"
 msgid "Analyzing data structures for {repositoryName}..."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1716
+#: src/pages/folders/components/Upload/Upload.tsx:1808
 msgid "Analyzing document..."
 msgstr "Menganalisis dokumen..."
 
@@ -676,7 +676,7 @@ msgstr ""
 msgid "Any file type"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1614
+#: src/pages/folders/components/Upload/Upload.tsx:1706
 msgid "Any Format"
 msgstr ""
 
@@ -749,8 +749,8 @@ msgstr ""
 msgid "April"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:1093
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2842
+#: src/pages/settings/components/Folders/DmsSettings.tsx:1094
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2847
 msgid "Archived"
 msgstr ""
 
@@ -894,18 +894,18 @@ msgstr ""
 #: src/pages/folders/components/EditMetadataView.tsx:355
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
-#: src/pages/folders/components/Upload/Upload.tsx:1503
+#: src/pages/folders/components/Upload/Upload.tsx:1595
 #: src/pages/forms/components/AiFormBuilder.tsx:122
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:906
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3972
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1790
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1828
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1840
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1852
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2156
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1834
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1872
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1884
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1896
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2200
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
 #: src/pages/settings/components/SettingsWizardLayout.tsx:195
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:112
@@ -932,11 +932,11 @@ msgstr ""
 msgid "Back to PO Setup"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1874
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1918
 msgid "Back to review"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:449
+#: src/pages/sign-in/components/SignInForm.tsx:445
 msgid "Back to Sign In"
 msgstr ""
 
@@ -961,7 +961,7 @@ msgid "Breadcrumb"
 msgstr ""
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
-#: src/pages/folders/components/Upload/Upload.tsx:1573
+#: src/pages/folders/components/Upload/Upload.tsx:1665
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:868
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
@@ -1054,7 +1054,7 @@ msgstr ""
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:174
 #: src/pages/folders/components/StartWorkflowView.tsx:210
-#: src/pages/folders/components/Upload/Upload.tsx:1951
+#: src/pages/folders/components/Upload/Upload.tsx:2043
 #: src/pages/forms/components/GenericFormImportModal.tsx:856
 #: src/pages/forms/FormEntriesPage.tsx:370
 #: src/pages/forms/FormEntriesPage.tsx:1977
@@ -1323,7 +1323,7 @@ msgstr "Lengkap"
 msgid "Complete document match."
 msgstr "Padanan dokumen lengkap."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2168
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2212
 msgid "Complete each stage, then continue"
 msgstr "Lengkapkan setiap peringkat, kemudian teruskan"
 
@@ -1468,10 +1468,10 @@ msgstr ""
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:101
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:97
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1154
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1778
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1816
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1822
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1860
 #: src/pages/settings/components/SettingsWizardLayout.tsx:77
-#: src/pages/sign-in/components/SignInForm.tsx:645
+#: src/pages/sign-in/components/SignInForm.tsx:641
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:331
 msgid "Continue"
 msgstr ""
@@ -1500,8 +1500,8 @@ msgstr ""
 #~ msgid "Copy"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1914
-#: src/pages/folders/components/Upload/Upload.tsx:1916
+#: src/pages/folders/components/Upload/Upload.tsx:2006
+#: src/pages/folders/components/Upload/Upload.tsx:2008
 msgid "Copy JSON"
 msgstr ""
 
@@ -1585,8 +1585,8 @@ msgstr ""
 msgid "Create User"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2849
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2851
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2854
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2856
 #: src/pages/settings/components/GroupManagement.tsx:437
 #: src/pages/settings/components/ManageUser.tsx:987
 #: src/pages/settings/components/RolesPermissions.tsx:1675
@@ -1604,8 +1604,8 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:2143
 #: src/pages/forms/FormsPage.tsx:227
 #: src/pages/forms/FormsPage.tsx:612
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2862
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2864
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2867
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2869
 #: src/pages/workflows/components/Table.tsx:81
 #: src/pages/workflows/components/Table.tsx:462
 msgid "Created By"
@@ -1699,8 +1699,8 @@ msgid "Custom Email Configuration (IMAP)"
 msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:448
-#: src/pages/requests/components/InboxList.tsx:1217
-#: src/pages/requests/components/InboxList.tsx:1287
+#: src/pages/requests/components/InboxList.tsx:1219
+#: src/pages/requests/components/InboxList.tsx:1289
 msgid "Custom Range"
 msgstr ""
 
@@ -1796,7 +1796,7 @@ msgstr ""
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2794
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2799
 msgid "Default"
 msgstr ""
 
@@ -1911,7 +1911,7 @@ msgstr ""
 msgid "Describe the form you want to create..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3337
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3422
 msgid "Describe the purpose of this folder..."
 msgstr ""
 
@@ -1936,10 +1936,10 @@ msgid "Describe your custom dashboard design or metric requirements..."
 msgstr ""
 
 #: src/pages/forms/FormsPage.tsx:202
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1714
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2770
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2772
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3335
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1759
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2775
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2777
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3420
 #: src/pages/settings/components/GroupManagement.tsx:396
 #: src/pages/settings/components/GroupManagement.tsx:398
 #: src/pages/settings/components/GroupManagement.tsx:896
@@ -1954,7 +1954,7 @@ msgstr ""
 #~ msgid "Description *"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1892
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1936
 msgid "Description pending"
 msgstr ""
 
@@ -1980,11 +1980,15 @@ msgstr ""
 msgid "Direct Upload"
 msgstr ""
 
-#: src/pages/requests/components/InboxList.tsx:1855
+#: src/pages/requests/components/InboxList.tsx:1869
 #: src/pages/requests/components/QuickFilters.tsx:156
 #: src/pages/requests/components/request/components/sections/overview/components/discrepancies/Discrepancies.tsx:56
 #: src/pages/requests/utils/localizeRequestUi.ts:26
 msgid "Discrepancies"
+msgstr ""
+
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1682
+msgid "Do you require an ERP or system integration, or should integrations be configured later?"
 msgstr ""
 
 #: src/pages/requests/components/Table.tsx:63
@@ -1999,7 +2003,7 @@ msgstr ""
 msgid "Document Number"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1756
+#: src/pages/folders/components/Upload/Upload.tsx:1848
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
 msgid "Document Preview"
@@ -2021,8 +2025,8 @@ msgstr "Dokumen Jenis"
 msgid "Document updated successfully."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2804
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2809
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2814
 msgid "Documents"
 msgstr "Dokumen"
 
@@ -2036,8 +2040,8 @@ msgstr "Belum ada akaun?"
 
 #: src/pages/folders/components/Upload/Upload.tsx:588
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1692
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1777
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1816
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1821
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1860
 msgid "Done"
 msgstr "Selesai"
 
@@ -2132,7 +2136,7 @@ msgstr ""
 #~ msgstr "Lepaskan imej di sini atau klik untuk memilih fail"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
-#: src/pages/folders/components/Upload/Upload.tsx:1571
+#: src/pages/folders/components/Upload/Upload.tsx:1663
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:867
 msgid "Drop your file here, or"
@@ -2157,27 +2161,27 @@ msgstr "tarikh akhir"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:843
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1946
 #: src/pages/folders/components/StartWorkflowView.tsx:175
-#: src/pages/requests/components/InboxList.tsx:1843
+#: src/pages/requests/components/InboxList.tsx:1857
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Due Date"
 msgstr "Tarikh Akhir"
 
-#: src/pages/requests/components/InboxList.tsx:1213
+#: src/pages/requests/components/InboxList.tsx:1215
 msgid "Due in Next 1 Month"
 msgstr "Due in Next 1 Month"
 
-#: src/pages/requests/components/InboxList.tsx:1211
+#: src/pages/requests/components/InboxList.tsx:1213
 msgid "Due in Next 15 Days"
 msgstr "Due in Next 15 Days"
 
-#: src/pages/requests/components/InboxList.tsx:1209
+#: src/pages/requests/components/InboxList.tsx:1211
 msgid "Due in Next 7 Days"
 msgstr "Due in Next 7 Days"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:134
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1881
-#: src/pages/requests/components/InboxList.tsx:1207
+#: src/pages/requests/components/InboxList.tsx:1209
 msgid "Due Today"
 msgstr "Perlu Bayar Hari Ini"
 
@@ -2205,7 +2209,7 @@ msgstr "Nilai Pendua"
 msgid "e.g. /reports"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3322
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3407
 msgid "e.g. AP Invoices 2026"
 msgstr "cth. Invois AP 2026"
 
@@ -2260,12 +2264,12 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:1286
 #: src/pages/forms/FormsPage.tsx:279
 #: src/pages/requests/components/Table.tsx:113
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1952
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2082
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2101
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2120
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2141
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2904
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1996
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2126
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2145
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2164
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2185
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2909
 #: src/pages/settings/components/GroupManagement.tsx:480
 #: src/pages/settings/components/ManageUser.tsx:1030
 #: src/pages/settings/components/Menus.tsx:442
@@ -2340,13 +2344,13 @@ msgstr ""
 #: src/pages/settings/components/ManageUser.tsx:2266
 #: src/pages/settings/components/RolesPermissions.tsx:2051
 #: src/pages/settings/components/RolesPermissions.tsx:2053
-#: src/pages/sign-in/components/SignInForm.tsx:580
-#: src/pages/sign-in/components/SignInForm.tsx:628
+#: src/pages/sign-in/components/SignInForm.tsx:576
+#: src/pages/sign-in/components/SignInForm.tsx:624
 msgid "Email"
 msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:262
-#: src/pages/sign-in/components/SignInForm.tsx:701
+#: src/pages/sign-in/components/SignInForm.tsx:697
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:295
 msgid "Email / Username"
 msgstr ""
@@ -2359,8 +2363,8 @@ msgstr ""
 msgid "Email and password"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:264
-#: src/pages/sign-in/components/SignInForm.tsx:282
+#: src/pages/sign-in/components/SignInForm.tsx:260
+#: src/pages/sign-in/components/SignInForm.tsx:278
 msgid "Email is required"
 msgstr ""
 
@@ -2392,8 +2396,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/pages/folders/components/EditMetadataView.tsx:327
-#: src/pages/folders/components/Upload/Upload.tsx:1418
-#: src/pages/folders/components/Upload/Upload.tsx:1437
+#: src/pages/folders/components/Upload/Upload.tsx:1510
+#: src/pages/folders/components/Upload/Upload.tsx:1529
 msgid "Enter {label}"
 msgstr ""
 
@@ -2477,11 +2481,11 @@ msgstr ""
 msgid "Error uploading file"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1192
+#: src/pages/folders/components/Upload/Upload.tsx:1276
 msgid "Error uploading file: {error}"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:304
+#: src/pages/sign-in/components/SignInForm.tsx:300
 msgid "Error validating email"
 msgstr ""
 
@@ -2502,12 +2506,12 @@ msgstr ""
 msgid "Excel Spreadsheet"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1207
+#: src/pages/folders/components/Upload/Upload.tsx:1291
 msgid "Exception uploading file: {detail}"
 msgstr ""
 
 #: src/pages/requests/components/Header.tsx:72
-#: src/pages/requests/components/InboxList.tsx:1991
+#: src/pages/requests/components/InboxList.tsx:2011
 #: src/pages/requests/utils/localizeRequestUi.ts:36
 msgid "Exceptions"
 msgstr ""
@@ -2544,10 +2548,10 @@ msgstr ""
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1969
+#: src/pages/folders/components/Upload/Upload.tsx:2061
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1889
+#: src/pages/requests/components/InboxList.tsx:1903
 msgid "Export"
 msgstr ""
 
@@ -2560,8 +2564,8 @@ msgid "Export PDF"
 msgstr ""
 
 #: src/pages/folders/components/AiSummaryView.tsx:248
-#: src/pages/folders/components/Upload/Upload.tsx:1728
-#: src/pages/folders/components/Upload/Upload.tsx:1969
+#: src/pages/folders/components/Upload/Upload.tsx:1820
+#: src/pages/folders/components/Upload/Upload.tsx:2061
 msgid "Exporting..."
 msgstr "Mengeksport..."
 
@@ -2577,7 +2581,7 @@ msgstr "Diekstrak"
 msgid "EXTRACTED"
 msgstr "DIEKSTRAK"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1814
+#: src/pages/folders/components/Upload/Upload.tsx:1906
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3484
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
@@ -2587,11 +2591,11 @@ msgstr "Data Diekstrak"
 msgid "Extracting data"
 msgstr "Mengekstrak data"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1860
+#: src/pages/folders/components/Upload/Upload.tsx:1952
 msgid "Extracting fields from document..."
 msgstr "Mengekstrak medan daripada dokumen..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1818
+#: src/pages/folders/components/Upload/Upload.tsx:1910
 msgid "Extracting fields..."
 msgstr "Mengekstrak medan..."
 
@@ -2608,8 +2612,8 @@ msgstr "Mengekstrak metadata, menyemak pendua, mengesahkan pematuhan"
 msgid "Extracting textual metadata"
 msgstr "Mengekstrak metadata teks"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1418
-#: src/pages/folders/components/Upload/Upload.tsx:1437
+#: src/pages/folders/components/Upload/Upload.tsx:1510
+#: src/pages/folders/components/Upload/Upload.tsx:1529
 msgid "Extracting..."
 msgstr ""
 
@@ -2725,13 +2729,13 @@ msgid "fields"
 msgstr "medan"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
-#: src/pages/folders/components/Upload/Upload.tsx:1835
+#: src/pages/folders/components/Upload/Upload.tsx:1927
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:891
 msgid "Fields"
 msgstr "Medan"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1963
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2007
 msgid "Fields ({0})"
 msgstr "Medan ({0})"
 
@@ -2745,7 +2749,7 @@ msgstr "Medan Sepadan"
 msgid "Fields Needing Review"
 msgstr "Medan Perlu Semakan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1909
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1953
 msgid "Fields pending"
 msgstr "Medan menunggu"
 
@@ -2761,7 +2765,7 @@ msgstr "Lajur Fail"
 msgid "File content could not be retrieved."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1199
+#: src/pages/folders/components/Upload/Upload.tsx:1283
 msgid "File exported successfully."
 msgstr "Fail berjaya dieksport."
 
@@ -2774,7 +2778,7 @@ msgstr "Pengambilan & Penghuraian Fail"
 msgid "File is too large. Max size is 4MB."
 msgstr "Fail terlalu besar. Saiz maksimum ialah 4MB."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1017
+#: src/pages/folders/components/Upload/Upload.tsx:1101
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:470
 msgid "File is too large. Max size is 50MB."
 msgstr ""
@@ -2803,7 +2807,7 @@ msgstr "Fail berjaya dimuat naik"
 #: src/pages/folders/components/DocumentsListView.tsx:944
 #: src/pages/folders/components/FolderTable.tsx:929
 #: src/pages/folders/components/FolderTable.tsx:1114
-#: src/pages/folders/components/Upload/Upload.tsx:1527
+#: src/pages/folders/components/Upload/Upload.tsx:1619
 msgid "Files"
 msgstr "Fail"
 
@@ -2845,9 +2849,9 @@ msgstr "Nama Pertama"
 msgid "Flat"
 msgstr "Flat"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2395
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2753
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2755
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2400
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2758
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2760
 msgid "Folder"
 msgstr "Folder"
 
@@ -2868,8 +2872,8 @@ msgstr ""
 #~ msgid "Folder created successfully."
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1693
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1930
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1738
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1974
 msgid "Folder details"
 msgstr ""
 
@@ -2894,11 +2898,11 @@ msgstr ""
 msgid "Folder fields are mandatory"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1698
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1743
 msgid "Folder Name"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3321
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3406
 msgid "Folder Name *"
 msgstr ""
 
@@ -2954,7 +2958,7 @@ msgstr ""
 msgid "Forgot Password"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:751
+#: src/pages/sign-in/components/SignInForm.tsx:747
 msgid "Forgot password?"
 msgstr ""
 
@@ -3031,15 +3035,15 @@ msgid "Generate Dashboard Design"
 msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:712
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1733
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1897
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1942
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2008
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2060
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1778
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1941
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1986
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2052
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2104
 msgid "Generated by AI"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1683
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1728
 msgid "Generating description…"
 msgstr ""
 
@@ -3047,7 +3051,7 @@ msgstr ""
 msgid "Generating recommended fields for this folder…"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1685
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1730
 msgid "Generating recommended fields…"
 msgstr ""
 
@@ -3094,12 +3098,12 @@ msgid "Google Drive"
 msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:178
-#: src/pages/sign-in/components/SignInForm.tsx:344
+#: src/pages/sign-in/components/SignInForm.tsx:340
 msgid "Google sign-in failed"
 msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:142
-#: src/pages/sign-in/components/SignInForm.tsx:313
+#: src/pages/sign-in/components/SignInForm.tsx:309
 msgid "Google sign-in was cancelled or failed"
 msgstr ""
 
@@ -3204,7 +3208,7 @@ msgstr ""
 msgid "Here's what you can expect:"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:419
+#: src/pages/sign-in/components/SignInForm.tsx:415
 msgid "Hi, Welcome back to {appName}"
 msgstr ""
 
@@ -3213,7 +3217,7 @@ msgstr ""
 msgid "Hi, Welcome back to EZOFIS"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:416
+#: src/pages/sign-in/components/SignInForm.tsx:412
 msgid "Hi, Welcome!"
 msgstr ""
 
@@ -3241,7 +3245,7 @@ msgstr ""
 #~ msgid "High Risk"
 #~ msgstr ""
 
-#: src/pages/requests/components/InboxList.tsx:1872
+#: src/pages/requests/components/InboxList.tsx:1886
 #: src/pages/requests/utils/localizeRequestUi.ts:27
 msgid "High Value"
 msgstr ""
@@ -3269,7 +3273,8 @@ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1344
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1421
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1803
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1691
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1847
 msgid "How should documents be organized? Choose Recommend fields or another option."
 msgstr ""
 
@@ -3310,7 +3315,7 @@ msgid "Immediate Invoice Processing"
 msgstr ""
 
 #: src/pages/requests/components/buttons/UploadPoButton.tsx:14
-#: src/pages/requests/components/InboxList.tsx:1896
+#: src/pages/requests/components/InboxList.tsx:1910
 msgid "Import PO Data"
 msgstr "Import Data PO"
 
@@ -3364,7 +3369,7 @@ msgstr ""
 msgid "Incremental Version"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1607
+#: src/pages/folders/components/Upload/Upload.tsx:1699
 msgid "Industry-leading extraction accuracy"
 msgstr ""
 
@@ -3437,7 +3442,7 @@ msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Integrations.tsx:62
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:906
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2130
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2174
 msgid "Integrations"
 msgstr ""
 
@@ -3466,7 +3471,7 @@ msgstr ""
 msgid "Invalid file type. Please upload a PDF or Image."
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1019
+#: src/pages/folders/components/Upload/Upload.tsx:1103
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:473
 msgid "Invalid file type. Please upload a supported document."
 msgstr ""
@@ -3586,11 +3591,11 @@ msgstr "Perincian Invois"
 #~ msgid "Is payables growth eating margin · future liquidity needs"
 #~ msgstr "Adakah pertumbuhan hutang menghakis margin · keperluan kecairan akan datang"
 
-#: src/pages/sign-in/components/SignInForm.tsx:459
+#: src/pages/sign-in/components/SignInForm.tsx:455
 msgid "is used with more than one account. Which account do you want to use?"
 msgstr "digunakan dengan lebih daripada satu akaun. Akaun mana yang ingin digunakan?"
 
-#: src/pages/sign-in/components/SignInForm.tsx:455
+#: src/pages/sign-in/components/SignInForm.tsx:451
 msgid "It looks like"
 msgstr "Nampaknya"
 
@@ -3618,11 +3623,11 @@ msgstr "January"
 msgid "Job Title"
 msgstr "Jawatan"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1847
+#: src/pages/folders/components/Upload/Upload.tsx:1939
 msgid "JSON"
 msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1494
+#: src/pages/folders/components/Upload/Upload.tsx:1586
 msgid "JSON copied to clipboard."
 msgstr ""
 
@@ -3638,7 +3643,7 @@ msgstr "June"
 #~ msgid "Just 3 suppliers account for 19% of unpaid liabilities, led by Harbor Point Consulting at $686.5K."
 #~ msgstr "Hanya 3 pembekal menyumbang 19% liabiliti belum dibayar, diketuai Harbor Point Consulting pada $686.5K."
 
-#: src/pages/sign-in/components/SignInForm.tsx:741
+#: src/pages/sign-in/components/SignInForm.tsx:737
 msgid "Keep me logged in"
 msgstr ""
 
@@ -3765,7 +3770,7 @@ msgstr "Mari sediakan aliran kerja AP anda"
 msgid "Light"
 msgstr "Cerah"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1602
+#: src/pages/folders/components/Upload/Upload.tsx:1694
 msgid "Lightning Fast"
 msgstr "Pantas Seperti Kilat"
 
@@ -3902,7 +3907,7 @@ msgstr "Memuatkan..."
 msgid "Location"
 msgstr "Lokasi"
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:53
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:58
 msgid "Log out"
 msgstr "Log keluar"
 
@@ -4064,11 +4069,11 @@ msgstr ""
 #~ msgid "Master Form"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1268
+#: src/pages/folders/components/Upload/Upload.tsx:1352
 msgid "Master Sync Data"
 msgstr ""
 
-#: src/pages/requests/components/InboxList.tsx:1850
+#: src/pages/requests/components/InboxList.tsx:1864
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3264
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3549
@@ -4154,12 +4159,12 @@ msgid "Microsoft Dynamics"
 msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:222
-#: src/pages/sign-in/components/SignInForm.tsx:387
+#: src/pages/sign-in/components/SignInForm.tsx:383
 msgid "Microsoft sign-in failed"
 msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:220
-#: src/pages/sign-in/components/SignInForm.tsx:385
+#: src/pages/sign-in/components/SignInForm.tsx:381
 msgid "Microsoft sign-in was cancelled."
 msgstr ""
 
@@ -4326,7 +4331,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:82
-#: src/pages/requests/RequestsPage.tsx:626
+#: src/pages/requests/RequestsPage.tsx:673
 msgid "New Request"
 msgstr ""
 
@@ -4421,7 +4426,7 @@ msgstr ""
 msgid "No documents found"
 msgstr "Tiada dokumen dijumpai"
 
-#: src/pages/requests/components/InboxList.tsx:1215
+#: src/pages/requests/components/InboxList.tsx:1217
 msgid "No Due Date"
 msgstr "No Due Tarikh"
 
@@ -4434,11 +4439,11 @@ msgstr "Tiada Pendua"
 msgid "No duplicates detected"
 msgstr "Tiada pendua dikesan"
 
-#: src/pages/sign-in/components/SignInForm.tsx:333
+#: src/pages/sign-in/components/SignInForm.tsx:329
 msgid "No email returned from Google"
 msgstr "Tiada e-mel dikembalikan dari Google"
 
-#: src/pages/sign-in/components/SignInForm.tsx:370
+#: src/pages/sign-in/components/SignInForm.tsx:366
 msgid "No email returned from Microsoft"
 msgstr ""
 
@@ -4459,8 +4464,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:964
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1921
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2134
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1965
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2178
 msgid "No integrations"
 msgstr ""
 
@@ -4529,7 +4534,7 @@ msgstr ""
 #~ msgid "No related documents found. Try a different keyword or folder."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1904
+#: src/pages/folders/components/Upload/Upload.tsx:1996
 msgid "No repository fields configured."
 msgstr "Tiada medan repositori dikonfigurasi."
 
@@ -4608,7 +4613,7 @@ msgstr ""
 #~ msgid "No users yet"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1020
+#: src/pages/folders/components/Upload/Upload.tsx:1104
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:474
 msgid "No valid files selected."
 msgstr ""
@@ -4635,7 +4640,7 @@ msgstr ""
 msgid "Not mapped"
 msgstr ""
 
-#: src/pages/requests/components/InboxList.tsx:1861
+#: src/pages/requests/components/InboxList.tsx:1875
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3265
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3550
 #: src/pages/requests/utils/localizeRequestUi.ts:21
@@ -4675,11 +4680,11 @@ msgstr ""
 msgid "November"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1276
+#: src/pages/folders/components/Upload/Upload.tsx:1360
 msgid "OCR Extracted Data"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:965
+#: src/pages/folders/components/Upload/Upload.tsx:1049
 msgid "OCR extraction failed: {detail}"
 msgstr ""
 
@@ -4748,7 +4753,7 @@ msgid "Optionally connect ERP or other systems so data can sync with this folder
 msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:331
-#: src/pages/sign-in/components/SignInForm.tsx:769
+#: src/pages/sign-in/components/SignInForm.tsx:765
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:367
 msgid "Or"
 msgstr ""
@@ -4796,7 +4801,7 @@ msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:140
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:705
-#: src/pages/requests/components/InboxList.tsx:1205
+#: src/pages/requests/components/InboxList.tsx:1207
 #: src/pages/requests/components/QuickFilters.tsx:132
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Overdue"
@@ -4831,7 +4836,7 @@ msgstr ""
 msgid "Partially Approved"
 msgstr ""
 
-#: src/pages/requests/components/InboxList.tsx:1863
+#: src/pages/requests/components/InboxList.tsx:1877
 #: src/pages/requests/utils/localizeRequestUi.ts:22
 msgid "Partially Matched"
 msgstr ""
@@ -4843,9 +4848,9 @@ msgstr ""
 #: src/pages/settings/components/ManageUser.tsx:2182
 #: src/pages/sign-in/components/ShareSignInForm.tsx:272
 #: src/pages/sign-in/components/ShareSignInForm.tsx:306
-#: src/pages/sign-in/components/SignInForm.tsx:596
-#: src/pages/sign-in/components/SignInForm.tsx:681
-#: src/pages/sign-in/components/SignInForm.tsx:717
+#: src/pages/sign-in/components/SignInForm.tsx:592
+#: src/pages/sign-in/components/SignInForm.tsx:677
+#: src/pages/sign-in/components/SignInForm.tsx:713
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:305
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:342
 msgid "Password"
@@ -4857,7 +4862,7 @@ msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:83
 #: src/pages/sign-in/components/ShareSignInForm.tsx:112
-#: src/pages/sign-in/components/SignInForm.tsx:268
+#: src/pages/sign-in/components/SignInForm.tsx:264
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:135
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:170
 msgid "Password is required"
@@ -5047,7 +5052,7 @@ msgstr ""
 msgid "Please review this file: {fileName}"
 msgstr "Sila semak fail ini: {fileName}"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1147
+#: src/pages/folders/components/Upload/Upload.tsx:1231
 msgid "Please select a file first."
 msgstr "Sila pilih fail dahulu."
 
@@ -5194,7 +5199,7 @@ msgstr "Portal"
 msgid "Predefined Master Data"
 msgstr "Data Induk Pratetap"
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:43
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:48
 #: src/pages/my-account/components/preferences/Preferences.tsx:12
 #: src/pages/my-account/MyAccountPage.tsx:29
 msgid "Preferences"
@@ -5255,12 +5260,12 @@ msgstr "Item invois berprioriti yang memerlukan perhatian hari ini"
 msgid "Priority"
 msgstr "Keutamaan"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1601
+#: src/pages/folders/components/Upload/Upload.tsx:1693
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Proses dokumen lebih pantas dengan saluran ejen kami"
 
 #: src/pages/requests/components/Header.tsx:79
-#: src/pages/requests/components/InboxList.tsx:1993
+#: src/pages/requests/components/InboxList.tsx:2013
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 msgid "Processed"
 msgstr "Diproses"
@@ -5291,7 +5296,7 @@ msgstr "Garis Masa Pemprosesan"
 msgid "Processing..."
 msgstr "Memproses..."
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:33
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:38
 #: src/pages/my-account/components/profile/Profile.tsx:13
 #: src/pages/my-account/MyAccountPage.tsx:27
 msgid "Profile"
@@ -5448,7 +5453,7 @@ msgstr ""
 #: src/pages/forms/FormsPage.tsx:587
 #: src/pages/requests/components/buttons/RefreshButton.tsx:13
 #: src/pages/requests/components/buttons/RefreshButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1882
+#: src/pages/requests/components/InboxList.tsx:1896
 #: src/pages/settings/components/AuditMonitoring.tsx:193
 #: src/pages/settings/components/credits/Credits.tsx:899
 #: src/pages/workflows/components/Table.tsx:428
@@ -5468,7 +5473,7 @@ msgstr ""
 msgid "Refreshing..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1798
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1842
 msgid "Regenerate"
 msgstr ""
 
@@ -5560,11 +5565,11 @@ msgstr ""
 msgid "Repository Fields"
 msgstr "Medan Repositori"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1061
+#: src/pages/folders/components/Upload/Upload.tsx:1145
 msgid "Repository ID is missing. Cannot run OCR."
 msgstr "ID Repositori hilang. Tidak boleh jalankan OCR."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1155
+#: src/pages/folders/components/Upload/Upload.tsx:1239
 msgid "Repository ID is missing. Cannot upload."
 msgstr "ID Repositori hilang. Tidak boleh muat naik."
 
@@ -5597,7 +5602,7 @@ msgstr ""
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:53
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:78
-#: src/pages/requests/components/InboxList.tsx:1994
+#: src/pages/requests/components/InboxList.tsx:2014
 #: src/pages/requests/components/Table.tsx:178
 msgid "Requests"
 msgstr "Permintaan"
@@ -5708,7 +5713,7 @@ msgstr ""
 msgid "Review Column Mapping"
 msgstr "Semak Pemetaan Lajur"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1722
+#: src/pages/folders/components/Upload/Upload.tsx:1814
 msgid "Review fields before export..."
 msgstr "Semak medan sebelum eksport..."
 
@@ -5826,7 +5831,7 @@ msgstr ""
 #~ msgid "Save & Next"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1775
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1819
 msgid "Save & Regenerate Fields"
 msgstr ""
 
@@ -5852,7 +5857,7 @@ msgstr ""
 msgid "Save failed inside the document editor."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2176
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2220
 msgid "Save Folder"
 msgstr ""
 
@@ -5900,7 +5905,7 @@ msgstr ""
 msgid "Saving..."
 msgstr "Menyimpan..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2176
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2220
 msgid "Saving…"
 msgstr "Menyimpan…"
 
@@ -6009,7 +6014,7 @@ msgstr ""
 msgid "Search forms..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2139
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2144
 msgid "Search icons"
 msgstr ""
 
@@ -6017,7 +6022,7 @@ msgstr ""
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:947
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:639
-#: src/pages/requests/components/InboxList.tsx:1815
+#: src/pages/requests/components/InboxList.tsx:1829
 msgid "Search invoice, supplier, PO..."
 msgstr ""
 
@@ -6087,11 +6092,11 @@ msgstr ""
 #~ msgid "Section {0} .0"
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:38
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:43
 #: src/pages/my-account/components/security/Security.tsx:13
 #: src/pages/my-account/MyAccountPage.tsx:28
 #: src/pages/settings/components/AuditMonitoring.tsx:140
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2909
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2914
 msgid "Security"
 msgstr ""
 
@@ -6231,6 +6236,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1393
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1664
 msgid "Select the storage provider where documents for this folder should be stored."
 msgstr ""
 
@@ -6482,7 +6488,7 @@ msgstr "Tandatangan"
 msgid "Sign here"
 msgstr "Tandatangan di sini"
 
-#: src/pages/sign-in/components/SignInForm.tsx:613
+#: src/pages/sign-in/components/SignInForm.tsx:609
 msgid "Sign in"
 msgstr "Log masuk"
 
@@ -6491,18 +6497,18 @@ msgstr "Log masuk"
 #: src/layouts/auth/components/AuthHeader.tsx:33
 #: src/pages/sign-in/components/ShareSignInForm.tsx:295
 #: src/pages/sign-in/components/ShareSignInForm.tsx:320
-#: src/pages/sign-in/components/SignInForm.tsx:758
+#: src/pages/sign-in/components/SignInForm.tsx:754
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:356
 msgid "Sign In"
 msgstr "Log Masuk"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:256
-#: src/pages/sign-in/components/SignInForm.tsx:565
+#: src/pages/sign-in/components/SignInForm.tsx:561
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:289
 msgid "Sign in to your account"
 msgstr "Log masuk ke akaun anda"
 
-#: src/pages/sign-in/components/SignInForm.tsx:551
+#: src/pages/sign-in/components/SignInForm.tsx:547
 msgid "Sign in with a different email address"
 msgstr "Log masuk dengan e-mel lain"
 
@@ -6653,8 +6659,8 @@ msgstr ""
 #: src/pages/forms/FormsPage.tsx:602
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2821
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2826
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2831
 #: src/pages/settings/components/GroupManagement.tsx:424
 #: src/pages/settings/components/GroupManagement.tsx:429
 #: src/pages/settings/components/GroupManagement.tsx:612
@@ -6710,9 +6716,9 @@ msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:132
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:896
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2092
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2783
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2136
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2788
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2793
 msgid "Storage"
 msgstr ""
 
@@ -6764,7 +6770,7 @@ msgstr ""
 msgid "Successfully imported {successCount} entries!"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:245
+#: src/pages/sign-in/components/SignInForm.tsx:241
 msgid "Successfully logged in"
 msgstr ""
 
@@ -6778,7 +6784,7 @@ msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:840
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1943
-#: src/pages/requests/components/InboxList.tsx:1833
+#: src/pages/requests/components/InboxList.tsx:1847
 #: src/pages/requests/components/QuickFilters.tsx:351
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:203
 #: src/pages/requests/utils/localizeRequestUi.ts:16
@@ -6858,7 +6864,7 @@ msgstr "Suppliers"
 msgid "Suppliers to Chase"
 msgstr "Pembekal untuk Diikuti"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1613
+#: src/pages/folders/components/Upload/Upload.tsx:1705
 msgid "Support for PDF, images, and scanned documents"
 msgstr "Sokongan untuk PDF, imej, dan dokumen imbasan"
 
@@ -6876,7 +6882,7 @@ msgstr "Menyokong format Excel (.xlsx, .xls) dan CSV"
 msgid "Supports PDF and Images · Max 4 MB"
 msgstr "Menyokong PDF dan Imej · Maks 4 MB"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1577
+#: src/pages/folders/components/Upload/Upload.tsx:1669
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:871
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr ""
@@ -6891,15 +6897,15 @@ msgstr ""
 msgid "Switch to Original Data"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1291
+#: src/pages/folders/components/Upload/Upload.tsx:1375
 msgid "Sync"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1309
+#: src/pages/folders/components/Upload/Upload.tsx:1401
 msgid "SYNC"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1288
+#: src/pages/folders/components/Upload/Upload.tsx:1372
 msgid "Sync Master Data"
 msgstr ""
 
@@ -7282,7 +7288,7 @@ msgstr "Tidak dapat hantar permintaan tandatangan. Sila cuba lagi."
 msgid "Unable to set password"
 msgstr "Tidak dapat tetapkan kata laluan"
 
-#: src/pages/sign-in/components/SignInForm.tsx:252
+#: src/pages/sign-in/components/SignInForm.tsx:248
 msgid "Unable to sign in"
 msgstr "Tidak dapat log masuk"
 
@@ -7319,7 +7325,7 @@ msgstr "Tanpa tajuk"
 msgid "Untitled Field"
 msgstr "Tanpa tajuk Medan"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1888
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1932
 msgid "Untitled folder"
 msgstr "Folder tanpa tajuk"
 
@@ -7365,7 +7371,7 @@ msgstr ""
 #: src/pages/folders/components/DocumentSigningPage.tsx:1991
 #: src/pages/folders/components/FolderExplorer.tsx:294
 #: src/pages/folders/components/FolderFilterBar.tsx:695
-#: src/pages/folders/components/Upload/Upload.tsx:1526
+#: src/pages/folders/components/Upload/Upload.tsx:1618
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
 msgid "Upload"
 msgstr "Muat naik"
@@ -7387,8 +7393,8 @@ msgstr "Muat naik imej tandatangan dahulu."
 msgid "Upload Documents"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1516
-#: src/pages/folders/components/Upload/Upload.tsx:1530
+#: src/pages/folders/components/Upload/Upload.tsx:1608
+#: src/pages/folders/components/Upload/Upload.tsx:1622
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Muat naik dokumen dengan selamat, tetapkan metadata, dan susun fail dalam repositori anda untuk carian dan pengurusan yang cekap."
 
@@ -7396,7 +7402,7 @@ msgstr "Muat naik dokumen dengan selamat, tetapkan metadata, dan susun fail dala
 msgid "Upload failed"
 msgstr "Muat naik gagal"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1512
+#: src/pages/folders/components/Upload/Upload.tsx:1604
 msgid "Upload Files"
 msgstr "Muat Naik Fail"
 
@@ -7490,8 +7496,8 @@ msgid "User Email"
 msgstr "Pengguna Email"
 
 #: src/pages/sign-in/components/SignInForm.tsx:233
-msgid "User found with multiple tenants"
-msgstr "Pengguna ditemui dengan berbilang penyewa"
+#~ msgid "User found with multiple tenants"
+#~ msgstr "Pengguna ditemui dengan berbilang penyewa"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:139
 #: src/pages/settings/components/ManageUser.tsx:1262
@@ -7501,7 +7507,7 @@ msgstr "Pengguna ditemui dengan berbilang penyewa"
 msgid "User Management"
 msgstr "Pengurusan Pengguna"
 
-#: src/pages/sign-in/components/SignInForm.tsx:665
+#: src/pages/sign-in/components/SignInForm.tsx:661
 msgid "User name"
 msgstr "Nama pengguna"
 
@@ -7509,7 +7515,7 @@ msgstr "Nama pengguna"
 msgid "User Profile"
 msgstr "Profil Pengguna"
 
-#: src/pages/sign-in/components/SignInForm.tsx:666
+#: src/pages/sign-in/components/SignInForm.tsx:662
 msgid "username"
 msgstr "nama pengguna"
 
@@ -7605,7 +7611,7 @@ msgid "Verifying..."
 msgstr "Mengesahkan..."
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:901
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2111
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2155
 msgid "Versioning"
 msgstr "Versiing"
 
@@ -7706,6 +7712,7 @@ msgid "Which vendors carry the most risk exposure?"
 msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1514
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1673
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr ""
 
@@ -7741,7 +7748,7 @@ msgstr ""
 msgid "Workflows"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1686
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1731
 msgid "Working…"
 msgstr ""
 

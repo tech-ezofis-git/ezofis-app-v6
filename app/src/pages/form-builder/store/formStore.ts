@@ -14,7 +14,7 @@ export const generateId = () => {
   }
 }
 
-export type FormLayout = 'typeform' | 'grid' | 'full'
+export type FormLayout = 'SINGLE' | 'CLASSIC' | 'ACCORDION' | 'typeform' | 'grid' | 'full'
 
 export interface FormStore {
   activePanelId: string | null
@@ -554,10 +554,25 @@ export const useFormStore = create<FormStore>()(
           isPreviewOpen: false,
           isPublishOpen: false,
           isSidebarOpen: false,
-          layout: genSettings.layout || 'typeform',
+          layout: (() => {
+            const l = String(genSettings.layout || 'CLASSIC').toUpperCase()
+            if (l === 'TYPEFORM' || l === 'STEPPER' || l === 'SINGLE') return 'SINGLE'
+            if (l === 'GRID' || l === 'CLASSIC') return 'CLASSIC'
+            if (l === 'FULL' || l === 'ACCORDION') return 'ACCORDION'
+            return 'CLASSIC'
+          })(),
           name: genSettings.name || 'Untitled Form',
           panels: json.panels || [],
-          publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
+          publishStatus: (() => {
+            const raw =
+              data?.publishOption ||
+              data?.status ||
+              json.settings?.publish?.publishOption
+            const str = String(raw).toUpperCase()
+            return str === 'PUBLISHED' || raw === 1 || raw === '1'
+              ? 'PUBLISHED'
+              : 'DRAFT'
+          })(),
           secondaryPanels: json.secondaryPanels || [],
           uid: data.uid || json.uid || generateId(),
         })
@@ -619,20 +634,27 @@ export const useFormStore = create<FormStore>()(
       saveForm: async (targetStatus, formId) => {
         const state = get()
         const currentStatus = targetStatus || state.publishStatus
+        const isPublished = String(currentStatus).toUpperCase() === 'PUBLISHED'
 
-        if (targetStatus) {
-          set({ publishStatus: targetStatus })
-        }
+        set({ publishStatus: isPublished ? 'PUBLISHED' : 'DRAFT' })
 
         const formSchema = cleanFormPayload({
           ...state,
-          publishStatus: currentStatus,
+          publishStatus: isPublished ? 'PUBLISHED' : 'DRAFT',
         })
 
         const payload = {
+          description: state.description || '',
           formJson: formSchema,
           name: state.name || 'Untitled Form',
+          status: isPublished ? 'PUBLISHED' : 'DRAFT',
         }
+
+        console.log(
+          '📌 [Form Builder] Saving Form JSON Payload:',
+          JSON.stringify(payload, null, 2),
+        )
+        console.log('📌 [Form Builder] Raw Form JSON object:', formSchema)
 
         const hasFields = state.panels.some((p) => p.fields.length > 0)
         if (!hasFields) {

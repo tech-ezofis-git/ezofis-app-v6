@@ -1,5 +1,9 @@
 import type { StartWorkflowJsonPayload } from '@/api/v6/workflows'
-import { PRESENTATIONAL_TYPES } from './fieldRendering'
+import {
+  findFormFieldIdByName,
+  PRESENTATIONAL_TYPES,
+  SYNTHETIC_FIELD_PREFIX,
+} from './fieldRendering'
 
 export interface StagedFile {
   fileId: string
@@ -54,6 +58,20 @@ export const buildStartWorkflowPayload = (
 
       formData[field.id] = value
     }
+  }
+
+  // Every repository field is held in formModel under its own repo-native
+  // id (see fieldRendering.ts) — fold it into formData by repository field
+  // name, UNLESS it also matches a real form field, in which case the panel
+  // loop above already submitted it under that field's real jsonId (the two
+  // slots are kept mirrored, so either one has the current value — only one
+  // should end up in the payload).
+  for (const [key, value] of Object.entries(formModel)) {
+    if (!key.startsWith(SYNTHETIC_FIELD_PREFIX)) continue
+    if (value === undefined || value === null || value === '') continue
+    const name = key.slice(SYNTHETIC_FIELD_PREFIX.length)
+    if (findFormFieldIdByName(panels, name)) continue
+    formData[name] = value
   }
 
   return {
