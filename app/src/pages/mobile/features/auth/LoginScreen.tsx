@@ -153,10 +153,6 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
       }
 
       if (status === 300 && Array.isArray(data)) {
-        showToast({
-          message: 'User found with multiple tenant',
-          variant: 'warning',
-        })
         setTenantList(
           data.map((tenant: any) => ({
             email: tenant.email,

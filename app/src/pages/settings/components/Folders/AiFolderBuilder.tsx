@@ -1646,14 +1646,59 @@ export default function AiFolderBuilder({
     </form>
   )
 
+  const getStepQuestionMessage = (stepId: BuilderStepId) => {
+    const recordedMessage = [...messages]
+      .reverse()
+      .find(
+        (m) => m.role === 'assistant' && m.stepId === stepId,
+      )
+
+    if (recordedMessage) return recordedMessage
+
+    if (stepId === 3) {
+      return {
+        chips: storageChips,
+        id: 'step-3-storage-fallback',
+        role: 'assistant' as const,
+        stepId: 3,
+        text: t`Select the storage provider where documents for this folder should be stored.`,
+      }
+    }
+    if (stepId === 4) {
+      return {
+        chips: versioningChips,
+        id: 'step-4-versioning-fallback',
+        role: 'assistant' as const,
+        stepId: 4,
+        text: t`Which versioning strategy should apply when the same file is uploaded again?`,
+      }
+    }
+    if (stepId === 5) {
+      return {
+        chips: integrationChips,
+        id: 'step-5-integrations-fallback',
+        role: 'assistant' as const,
+        stepId: 5,
+        text: t`Do you require an ERP or system integration, or should integrations be configured later?`,
+      }
+    }
+    if (stepId === 2) {
+      return {
+        chips: fieldChips,
+        id: 'step-2-fields-fallback',
+        role: 'assistant' as const,
+        stepId: 2,
+        text: t`How should documents be organized? Choose Recommend fields or another option.`,
+      }
+    }
+
+    return null
+  }
+
   const renderActiveStepBody = (stepId: BuilderStepId) => {
     if (phaseToStep(phase) !== stepId) return null
 
-    const questionMessage =
-      activeAssistant &&
-      (activeAssistant.stepId ?? phaseToStep(phase)) === stepId
-        ? activeAssistant
-        : null
+    const questionMessage = getStepQuestionMessage(stepId)
 
     const iconGutter = 'pl-[28px]'
 
@@ -1750,8 +1795,7 @@ export default function AiFolderBuilder({
           </div>
         ) : null}
 
-        {showActiveQuestion &&
-        questionMessage?.chips?.length &&
+        {questionMessage?.chips?.length &&
         typingId !== questionMessage.id ? (
           <div className={iconGutter}>
             <SuggestionChipRow

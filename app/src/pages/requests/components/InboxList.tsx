@@ -41,6 +41,7 @@ interface InboxListProps {
   viewMode: 'table' | 'grid'
   workflow: WorkflowOption | null
   activeTab?: string
+  canCreateNewRequest?: boolean
   setPage: (p: number) => void
   setPageSize: (s: number) => void
   setViewMode: (mode: 'table' | 'grid') => void
@@ -1170,6 +1171,7 @@ const getRowColumnValue = (row: any, colId: string): string => {
 
 const InboxList: React.FC<InboxListProps> = ({
   activeTab,
+  canCreateNewRequest,
   data,
   isLoading,
   isRefetching,
@@ -1802,9 +1804,21 @@ const InboxList: React.FC<InboxListProps> = ({
     // alert("hi")
     openNewRequest('po')
   }
+
+  const hasActiveFiltersOrSearch =
+    Boolean(searchState?.value) ||
+    activeQuickFilters.length > 0 ||
+    Object.values(activeFiltersMap).some(
+      (arr) => Array.isArray(arr) && arr.length > 0,
+    )
+
+  const showFilterSection =
+    !selectedItem &&
+    (totalItems > 0 || flatRows.length > 0 || hasActiveFiltersOrSearch)
+
   return (
     <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
-      {!selectedItem && activeTab === 'Inbox' && (
+      {showFilterSection && (
         <DynamicFilter
           activeQuickFilters={activeQuickFilters}
           customSearchComponent={<TableSearch table={table as any} />}
@@ -1951,7 +1965,8 @@ const InboxList: React.FC<InboxListProps> = ({
                 stickyHeader={true}
                 table={table}
                 onEmptyPrimaryAction={
-                  activeTab === 'Inbox' || !activeTab
+                  canCreateNewRequest !== false &&
+                  (activeTab === 'Inbox' || !activeTab)
                     ? () => openNewRequest('request')
                     : undefined
                 }
@@ -1973,7 +1988,12 @@ const InboxList: React.FC<InboxListProps> = ({
                 isReloading={isRefetching}
                 table={table} // Pass the instance
                 workflow={workflow}
-                onNewRequest={() => openNewRequest('request')}
+                onNewRequest={
+                  canCreateNewRequest !== false &&
+                  (activeTab === 'Inbox' || !activeTab)
+                    ? () => openNewRequest('request')
+                    : undefined
+                }
                 onReload={onRefresh}
                 onRowClick={onRowClick}
               />

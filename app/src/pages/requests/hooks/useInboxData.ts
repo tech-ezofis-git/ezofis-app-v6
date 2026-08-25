@@ -375,6 +375,7 @@ export const useInboxData = (
 ) => {
   return useQuery({
     enabled: !!selectedWorkflow?.id,
+    gcTime: 5 * 60 * 1000,
     queryKey: [
       'inbox',
       selectedWorkflow?.id,
@@ -384,6 +385,8 @@ export const useInboxData = (
       activeTab,
       filterClauses,
     ],
+    retry: 1,
+    staleTime: 10000,
 
     queryFn: async () => {
       const workflowId = selectedWorkflow?.id

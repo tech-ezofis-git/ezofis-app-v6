@@ -109,7 +109,7 @@ const Header = ({
             disabled={isSubmitDisabled || isSubmitting}
             type='button'
             className={cn(
-              'group animate-in fade-in flex h-8 shrink-0 cursor-pointer items-center overflow-hidden rounded-md bg-[var(--primary-9)] px-2 text-white shadow-sm transition-all duration-200 hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60',
+              'inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md bg-[var(--primary-9)] px-3 text-white shadow-sm transition-all duration-200 hover:bg-[var(--primary-10)] hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60',
             )}
             onClick={onSubmit}
           >
@@ -117,7 +117,7 @@ const Header = ({
               className={cn('size-4 shrink-0', isSubmitting && 'animate-spin')}
               name={isSubmitting ? 'tabler:loader-2' : 'tabler:send-2'}
             />
-            <span className='max-w-0 overflow-hidden text-13 font-semibold whitespace-nowrap transition-all duration-200 group-hover:max-w-[80px] group-hover:pl-1.5'>
+            <span className='text-13 font-semibold whitespace-nowrap'>
               {t`Submit`}
             </span>
           </button>

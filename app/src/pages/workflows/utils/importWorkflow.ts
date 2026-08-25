@@ -433,24 +433,30 @@ export const importWorkflow = (
     }
   })
 
+  const validNodeIds = new Set(nodes.map((n) => n.id))
+
   let edges: Edge[] = Array.isArray(legacyJson.rules)
     ? (legacyJson.rules
         .map((rule: any) => {
-          const sourceId = rule.fromBlockId || rule.from
-          const targetId = rule.toBlockId || rule.to
+          const sourceId = String(rule.fromBlockId || rule.from || '')
+          const targetId = String(rule.toBlockId || rule.to || '')
           if (!sourceId || !targetId) return null
+          if (!validNodeIds.has(sourceId) || !validNodeIds.has(targetId))
+            return null
+
+          const actionName = rule.proceedAction || rule.action || 'Submit'
           return {
             data: {
-              action: rule.proceedAction,
-              confirm: rule.confirm,
-              passwordAccess: rule.passwordAccess,
-              proceedAction: rule.proceedAction,
-              remarks: rule.remarks,
-              signature: rule.signature,
+              action: actionName,
+              confirm: rule.confirm ?? false,
+              passwordAccess: rule.passwordAccess ?? false,
+              proceedAction: actionName,
+              remarks: rule.remarks ?? false,
+              signature: rule.signature ?? false,
             },
             id: String(rule.id || `e_${sourceId}_${targetId}`),
-            source: String(sourceId),
-            target: String(targetId),
+            source: sourceId,
+            target: targetId,
             type: 'custom',
           }
         })

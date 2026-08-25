@@ -101,7 +101,7 @@ export const safeParse = (data: any) => {
 // as in this module: the raw V6 workflow record (`workflowJson.blocks`), the
 // lightweight WorkflowOption used by the requests list (`flowJson` as a JSON
 // string), or an already-parsed flow object (`{ blocks, rules, settings }`).
-const extractBlocks = (workflow: any): any[] => {
+export function extractBlocks(workflow: any): any[] {
   if (!workflow) return []
 
   if (Array.isArray(workflow.workflowJson?.blocks)) {

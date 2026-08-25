@@ -151,19 +151,23 @@ const WorkflowSettings = () => {
             {[
               { id: 'draft', label: 'Draft' },
               { id: 'published', label: 'Published' },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
-                  workflowStatus === opt.id
-                    ? 'bg-primary-9 text-white shadow-sm'
-                    : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
-                }`}
-                onClick={() => setWorkflowStatus(opt.id as any)}
-              >
-                {opt.label}
-              </button>
-            ))}
+            ].map((opt) => {
+              const active = String(workflowStatus).toLowerCase() === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
+                    active
+                      ? 'bg-primary-9 text-white shadow-sm'
+                      : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
+                  }`}
+                  type='button'
+                  onClick={() => setWorkflowStatus(opt.id as any)}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
