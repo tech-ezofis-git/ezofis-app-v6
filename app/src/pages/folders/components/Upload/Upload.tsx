@@ -636,31 +636,58 @@ export default function Upload({
   const masterFormSyncData = useMemo(() => {
     if (!repositoryData?.storageDrive || !repositoryData.storageDrive.includes('[')) return null
     const sd = repositoryData.storageDrive
-    const formId = sd.substring(0, sd.indexOf('[')).trim()
+    const prefix = sd.substring(0, sd.indexOf('[')).trim()
     const mappingStr = sd.substring(sd.indexOf('[') + 1, sd.length - 1)
 
-    let syncFieldNames: string[] = []
+    const formIds = prefix.split(',').map(id => id.trim())
     const mapping: Record<string, string> = {}
+    const syncFields: Array<{ formId: string; formFieldId: string; repoField: string }> = []
 
     mappingStr.split(',').forEach((pair: string) => {
-      const parts = pair.split(':')
-      if (parts.length >= 2) {
-        mapping[parts[0].trim()] = parts[1].trim() // repoField: formFieldId
-        if (parts.length >= 3 && parts[2].trim() === 'sync') {
-          syncFieldNames.push(parts[0].trim())
+      const parts = pair.split(':').map(p => p.trim())
+      if (parts.length === 0 || !parts[0]) return
+
+      const repoField = parts[0]
+      const isMultiFormFormat = parts.length === 4 || (parts.length === 3 && parts[2] !== 'sync')
+
+      if (isMultiFormFormat) {
+        // Multi form format: repoField:formIdOrIndex:formFieldId[:sync]
+        const formIdOrIndex = parts[1]
+        const formFieldId = parts[2]
+        
+        let formId = formIdOrIndex
+        const idx = parseInt(formIdOrIndex, 10)
+        if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
+          formId = formIds[idx]
+        }
+
+        const combinedKey = `${formId}:${formFieldId}`
+        mapping[combinedKey] = repoField
+        if (parts.length === 4 && parts[3] === 'sync') {
+          syncFields.push({ formId, formFieldId, repoField })
+        }
+      } else {
+        // Legacy single form format: repoField:formFieldId[:sync]
+        const formId = formIds[0] || ''
+        const formFieldId = parts[1] || ''
+        const combinedKey = `${formId}:${formFieldId}`
+        mapping[combinedKey] = repoField
+        if (parts.length === 3 && parts[2] === 'sync') {
+          syncFields.push({ formId, formFieldId, repoField })
         }
       }
     })
 
-    return { formId, syncFieldNames, mapping }
+    return { formIds, syncFields, mapping }
   }, [repositoryData?.storageDrive])
 
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncingField, setSyncingField] = useState<string | null>(null)
+  const activeSyncCountRef = useRef(0)
   const [masterFormSyncLabels, setMasterFormSyncLabels] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    if (!masterFormSyncData || !masterFormSyncData.syncFieldNames.length) {
+    if (!masterFormSyncData || !masterFormSyncData.syncFields.length) {
       setMasterFormSyncLabels({})
       return
     }
@@ -668,42 +695,63 @@ export default function Upload({
     let isMounted = true
     const fetchForm = async () => {
       try {
-        const formRes = await formApi.getFormDataById(masterFormSyncData.formId)
-        if (formRes.data?.formJson) {
-          const formJson = formRes.data.formJson
+        const uniqueFormIds = Array.from(
+          new Set(Object.values(masterFormSyncData.mapping).map((_v, idx) => {
+            // Find formId from the mapping keys (since keys are formId:formFieldId)
+            const keys = Object.keys(masterFormSyncData.mapping)
+            return keys[idx]?.split(':')?.[0]
+          }).filter(Boolean))
+        )
+
+        const formResponses = await Promise.all(
+          uniqueFormIds.map(fId =>
+            formApi.getFormDataById(fId)
+              .then(res => ({ formId: fId, data: res.data }))
+              .catch(() => ({ formId: fId, data: null }))
+          )
+        )
+
+        const fieldsByForm: Record<string, any[]> = {}
+        formResponses.forEach(res => {
+          if (!res.data) return
+          const formJson = res.data.formJson
           const fieldsArray = Array.isArray(formJson?.panels)
-            ? formJson.panels.flatMap((panel: any) =>
-              Array.isArray(panel?.fields) ? panel.fields : [],
-            )
+            ? formJson.panels.flatMap((panel: any) => Array.isArray(panel?.fields) ? panel.fields : [])
             : Array.isArray(formJson?.fields)
               ? formJson.fields
               : Array.isArray(formJson?.components)
                 ? formJson.components
                 : []
+          fieldsByForm[res.formId] = fieldsArray
+        })
 
-          const newLabels: Record<string, string> = {}
-          masterFormSyncData.syncFieldNames.forEach(repoFieldName => {
-            const syncFormId = masterFormSyncData.mapping[repoFieldName]
-            if (syncFormId) {
-              const fieldDef = fieldsArray.find((f: any) => String(f.id || f.key || f.name) === syncFormId)
-              newLabels[repoFieldName] = fieldDef ? String(
+        const newLabels: Record<string, string> = {}
+        masterFormSyncData.syncFields.forEach(syncField => {
+          const { formId, formFieldId, repoField } = syncField
+          const fieldsArray = fieldsByForm[formId] || []
+          const fieldDef = fieldsArray.find((f: any) => String(f.id || f.key || f.name) === formFieldId)
+
+          const formRes = formResponses.find(r => r.formId === formId)
+          const formName = formRes?.data?.name || formRes?.data?.title || formId
+
+          newLabels[repoField] = fieldDef
+            ? `${formName} - ${String(
                 fieldDef.displayLabel ||
                 fieldDef.label ||
                 fieldDef.name ||
                 fieldDef.title ||
                 fieldDef.id ||
                 fieldDef.key ||
-                syncFormId
-              ) : syncFormId
-            }
-          })
+                formFieldId
+              )}`
+            : `${formName} - ${formFieldId}`
+        })
 
-          if (isMounted) {
-            setMasterFormSyncLabels(newLabels)
-          }
+        if (isMounted) {
+          setMasterFormSyncLabels(newLabels)
         }
       } catch (err) {
-        console.error('Failed to fetch master form definition', err)
+        console.error('Failed to fetch master form definitions', err)
       }
     }
 
@@ -712,12 +760,25 @@ export default function Upload({
     return () => { isMounted = false }
   }, [masterFormSyncData])
 
-  const handleSync = async (fieldValue: string, repoFieldName: string) => {
-    if (!masterFormSyncData?.formId || !fieldValue) return
+  const handleSync = async (
+    fieldValue: string,
+    repoFieldName: string,
+    formId: string,
+    currentOcrValues?: Record<string, string>
+  ) => {
+    if (!masterFormSyncData || !fieldValue || !formId) return
+    activeSyncCountRef.current++
     setIsSyncing(true)
     setSyncingField(repoFieldName)
     try {
-      const criteriaFieldId = masterFormSyncData.mapping[repoFieldName]
+      const criteriaFieldEntry = Object.entries(masterFormSyncData.mapping).find(
+        ([combinedKey, repoName]) => repoName === repoFieldName && combinedKey.startsWith(`${formId}:`)
+      )
+      if (!criteriaFieldEntry) {
+        throw new Error(`No mapping entry for field: ${repoFieldName} on form: ${formId}`)
+      }
+      const criteriaFieldId = criteriaFieldEntry[0].split(':')[1]
+
       const payload = {
         sortBy: { criteria: 'createdAt', order: 'DESC' },
         filterBy: [
@@ -738,7 +799,7 @@ export default function Upload({
         includeFormJson: true,
       }
 
-      const { data, error } = await formApi.searchFormEntries(masterFormSyncData.formId, payload)
+      const { data, error } = await formApi.searchFormEntries(formId, payload)
       if (error) {
         showToast({ message: `Sync failed: ${error}`, variant: 'error' })
         return
@@ -755,15 +816,15 @@ export default function Upload({
       }
 
       const entry = entries[0]
-
-      // Your API response already has field IDs directly inside entry
       const values = entry?.values || entry?.data || entry?.formValues || entry
 
       setFieldValues((prev) => {
         const next = { ...prev }
 
         Object.entries(masterFormSyncData.mapping || {}).forEach(
-          ([repoName, formFieldId]) => {
+          ([combinedKey, repoName]) => {
+            const [fId, formFieldId] = combinedKey.split(':')
+            if (fId !== formId) return
             if (repoName === repoFieldName) return
 
             const normalizedRepoName = String(repoName)
@@ -790,11 +851,8 @@ export default function Upload({
               return
             }
 
-            const sourceFieldId = String(formFieldId)
+            let mappedValue = values?.[formFieldId]
 
-            let mappedValue = values?.[sourceFieldId]
-
-            // Handle { value: "something" }
             if (
               typeof mappedValue === 'object' &&
               mappedValue !== null &&
@@ -803,20 +861,19 @@ export default function Upload({
               mappedValue = mappedValue.value
             }
 
+            const targetKey = getFieldKey(repoField)
+            const ocrValue = (currentOcrValues || ocrExtractedValues)[targetKey]
+
             if (
               mappedValue !== undefined &&
-              mappedValue !== null
+              mappedValue !== null &&
+              String(mappedValue).trim() !== ''
             ) {
-              const targetKey = getFieldKey(repoField)
-
               next[targetKey] = mappedValue
-
-              console.log('Synced field:', {
-                repoName,
-                sourceFieldId,
-                targetKey,
-                mappedValue,
-              })
+            } else if (ocrValue !== undefined && ocrValue !== null && String(ocrValue).trim() !== '') {
+              next[targetKey] = ocrValue
+            } else if (mappedValue !== undefined && mappedValue !== null) {
+              next[targetKey] = mappedValue
             }
           },
         )
@@ -824,11 +881,12 @@ export default function Upload({
         return next
       })
 
-      // Also store raw synced values for suggestion toggles
       setMasterSyncedValues((prev) => {
         const next = { ...prev }
         Object.entries(masterFormSyncData.mapping || {}).forEach(
-          ([repoName, formFieldId]) => {
+          ([combinedKey, repoName]) => {
+            const [fId, formFieldId] = combinedKey.split(':')
+            if (fId !== formId) return
             if (repoName === repoFieldName) return
 
             const normalizedRepoName = String(repoName).trim().toLowerCase()
@@ -847,8 +905,18 @@ export default function Upload({
               mappedValue = mappedValue.value
             }
 
-            if (mappedValue !== undefined && mappedValue !== null) {
-              const targetKey = getFieldKey(repoField)
+            const targetKey = getFieldKey(repoField)
+            const ocrValue = (currentOcrValues || ocrExtractedValues)[targetKey]
+
+            if (
+              mappedValue !== undefined &&
+              mappedValue !== null &&
+              String(mappedValue).trim() !== ''
+            ) {
+              next[targetKey] = String(mappedValue)
+            } else if (ocrValue !== undefined && ocrValue !== null && String(ocrValue).trim() !== '') {
+              next[targetKey] = String(ocrValue)
+            } else if (mappedValue !== undefined && mappedValue !== null) {
               next[targetKey] = String(mappedValue)
             }
           }
@@ -856,16 +924,19 @@ export default function Upload({
         return next
       })
 
-      showToast({
+      console.log({
         message: 'Fields synced successfully.',
         variant: 'success',
       })
 
     } catch (e: any) {
-      showToast({ message: `Sync error: ${e.message}`, variant: 'error' })
+      console.log({ message: `Sync error: ${e.message}`, variant: 'error' })
     } finally {
-      setIsSyncing(false)
-      setSyncingField(null)
+      activeSyncCountRef.current = Math.max(0, activeSyncCountRef.current - 1)
+      if (activeSyncCountRef.current === 0) {
+        setIsSyncing(false)
+        setSyncingField(null)
+      }
     }
   }
 
@@ -928,11 +999,11 @@ export default function Upload({
         setOcrStatus('complete')
 
         // Auto-sync trigger
-        if (masterFormSyncData && masterFormSyncData.syncFieldNames.length > 0) {
-          let syncFieldFound = ''
-          let syncValueFound = ''
+        if (masterFormSyncData && masterFormSyncData.syncFields.length > 0) {
+          const activeSyncs: Array<{ fieldName: string; fieldValue: string; formId: string }> = []
 
-          for (const name of masterFormSyncData.syncFieldNames) {
+          masterFormSyncData.syncFields.forEach((syncField) => {
+            const { formId, repoField: name } = syncField
             const normalizedName = name.trim().toLowerCase()
             const repoField = repositoryFields.find((f) => {
               const fieldName = String(f.name || '').trim().toLowerCase()
@@ -942,20 +1013,33 @@ export default function Upload({
 
             if (repoField) {
               const targetKey = getFieldKey(repoField)
-              if (mappedValues[targetKey]?.trim()) {
-                syncFieldFound = name
-                syncValueFound = mappedValues[targetKey]
-                break
+              const val = mappedValues[targetKey]
+              if (val?.trim()) {
+                activeSyncs.push({
+                  fieldName: name,
+                  fieldValue: val,
+                  formId: formId
+                })
               }
             }
-          }
+          })
 
-          if (syncFieldFound && syncValueFound) {
+          const uniqueSyncsToTrigger: typeof activeSyncs = []
+          const triggeredFormIds = new Set<string>()
+
+          activeSyncs.forEach(sync => {
+            if (!triggeredFormIds.has(sync.formId)) {
+              triggeredFormIds.add(sync.formId)
+              uniqueSyncsToTrigger.push(sync)
+            }
+          })
+
+          uniqueSyncsToTrigger.forEach(sync => {
             // We use setTimeout to allow state to settle before firing the sync
             setTimeout(() => {
-              void handleSync(syncValueFound, syncFieldFound)
+              void handleSync(sync.fieldValue, sync.fieldName, sync.formId, mappedValues)
             }, 0)
-          }
+          })
         }
       } catch (error: any) {
         if (requestId !== ocrRequestIdRef.current) return
@@ -1247,9 +1331,9 @@ export default function Upload({
 
     const normalizedFieldName = String(field.name).trim().toLowerCase()
     const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
-    const matchingSyncName = masterFormSyncData?.syncFieldNames?.find(
-      name => {
-        const norm = name.trim().toLowerCase()
+    const matchingSyncFields = masterFormSyncData?.syncFields?.filter(
+      sf => {
+        const norm = sf.repoField.trim().toLowerCase()
         return norm === normalizedFieldName || norm === normalizedColName
       }
     )
@@ -1282,14 +1366,22 @@ export default function Upload({
         }
       }
 
-      if (matchingSyncName) {
-        const isThisFieldSyncing = syncingField === matchingSyncName
+      if (matchingSyncFields && matchingSyncFields.length > 0) {
+        const isThisFieldSyncing = syncingField === matchingSyncFields[0].repoField
         elements.push(
           <Tooltip key="sync-btn-tooltip" content={t`Sync Master Data`} position="top" disabled={!value}>
             <Button
               key="sync-btn"
               aria-label={t`Sync`}
-              onClick={() => handleSync(toTextValue(value), matchingSyncName)}
+              onClick={() => {
+                const uniqueFormIds = new Set<string>()
+                matchingSyncFields.forEach(sf => {
+                  if (!uniqueFormIds.has(sf.formId)) {
+                    uniqueFormIds.add(sf.formId)
+                    void handleSync(toTextValue(value), sf.repoField, sf.formId)
+                  }
+                })
+              }}
               disabled={!value || syncingField !== null}
               className={cn(
                 'flex h-[20px] w-[40px] items-center justify-center gap-1',
@@ -1866,8 +1958,8 @@ export default function Upload({
                 const syncRepoFields = repositoryFields.filter((field) => {
                   const normalizedFieldName = String(field.name).trim().toLowerCase()
                   const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
-                  return masterFormSyncData?.syncFieldNames?.some((name) => {
-                    const norm = name.trim().toLowerCase()
+                  return masterFormSyncData?.syncFields?.some((sf) => {
+                    const norm = sf.repoField.trim().toLowerCase()
                     return norm === normalizedFieldName || norm === normalizedColName
                   })
                 })

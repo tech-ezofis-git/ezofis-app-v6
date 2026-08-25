@@ -49,7 +49,9 @@ export default function MasterFieldSelectDropdown({
 }: MasterFieldSelectDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [openUpward, setOpenUpward] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLDivElement>(null)
 
   const selectedOption = options.find((opt) => opt.id === value)
   const mappedEzField = selectedOption ? selectedOption.label : null
@@ -72,9 +74,15 @@ export default function MasterFieldSelectDropdown({
   return (
     <div className='relative min-w-0'>
       <div
+        ref={triggerRef}
         className='flex h-8 w-full cursor-pointer items-center justify-between rounded-lg border border-gray-3 bg-surface px-3 font-normal transition-all duration-200 select-none hover:border-gray-4'
         onClick={(e) => {
           e.stopPropagation()
+          if (!isOpen && triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect()
+            const spaceBelow = window.innerHeight - rect.bottom
+            setOpenUpward(spaceBelow < 320)
+          }
           setIsOpen(!isOpen)
           setSearchQuery('')
         }}
@@ -110,7 +118,10 @@ export default function MasterFieldSelectDropdown({
 
       {isOpen && (
         <div
-          className='absolute top-10 right-0 left-0 z-40 min-w-[240px] rounded-lg border border-gray-3 bg-surface-raised p-1 pt-2 shadow-md'
+          className={cn(
+            'absolute z-40 min-w-[240px] rounded-lg border border-gray-3 bg-surface-raised p-1 pt-2 shadow-md right-0 left-0',
+            openUpward ? 'bottom-10' : 'top-10'
+          )}
           ref={dropdownRef}
           onClick={(e) => e.stopPropagation()}
         >
