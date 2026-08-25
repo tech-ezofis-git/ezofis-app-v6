@@ -1,5 +1,6 @@
 import { useLingui } from '@lingui/react/macro'
 import { Accordion } from '@mantine/core'
+import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
@@ -14,6 +15,14 @@ import {
 interface Props {
   formModel: Record<string, any>
   panels: any[]
+  // Already-submitted instance attachments (Overview only — New Request has
+  // nothing to fall back to yet). File fields are never part of formData
+  // once submitted (see buildStartWorkflowPayload), so a submitted request
+  // has no way to know which attachment came from which field; as a
+  // best-effort fallback, an empty file field is shown these ONLY when the
+  // form has exactly one file field, so there's no ambiguity about which
+  // attachment(s) belong to it.
+  attachments?: any[]
   // Skips the internal ScrollArea (height: 100%) — used when this renderer
   // is nested inside another scrollable container (the split-view's
   // right pane), where a second height:100% ScrollArea would otherwise
@@ -30,6 +39,8 @@ interface Props {
   ) => void
 }
 
+const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
+
 // Renders a workflow's formJson.panels using the app's existing form-control
 // components. MVP scope: a single accordion/panel layout regardless of the
 // form's configured "layout" (typeform/grid/full) — panel titles,
@@ -37,6 +48,7 @@ interface Props {
 // visibility are respected; per-field conditional logic rules are not
 // evaluated yet.
 const WorkflowFormRenderer = ({
+  attachments,
   disableOwnScroll,
   formModel,
   hasAttemptedSubmit,
@@ -49,6 +61,16 @@ const WorkflowFormRenderer = ({
   onOcrFieldList,
 }: Props) => {
   const { t } = useLingui()
+
+  const soleFileFieldId = useMemo(() => {
+    const fileFieldIds = panels.flatMap((panel: any) =>
+      (panel.fields || [])
+        .filter((field: any) => FILE_FIELD_TYPES.has(field.type))
+        .map((field: any) => field.id),
+    )
+    return fileFieldIds.length === 1 ? fileFieldIds[0] : null
+  }, [panels])
+
   const content = (
     <div className='w-full px-6 py-6'>
       <AnimateFadeIn delay={0.1}>
@@ -127,6 +149,9 @@ const WorkflowFormRenderer = ({
                         key={field.id}
                       >
                         <FieldRenderer
+                          fallbackAttachments={
+                            field.id === soleFileFieldId ? attachments : undefined
+                          }
                           field={field}
                           repoFieldHints={repoFieldHints}
                           repositoryId={repositoryId}

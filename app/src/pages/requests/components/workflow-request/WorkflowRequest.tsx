@@ -155,7 +155,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
             </div>
           ) : (
             <div className='flex min-w-0 flex-1 gap-4 overflow-hidden p-4'>
-              <div className='w-[40%] min-w-0 shrink-0'>
+              <div className='min-w-0 flex-1'>
                 <UploadedFilePreview
                   activeKey={activeFileKey}
                   files={uploadedFiles}

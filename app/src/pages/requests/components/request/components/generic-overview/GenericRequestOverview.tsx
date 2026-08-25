@@ -13,6 +13,10 @@ interface Props {
   rawWorkflowData: any
   rightView: 'overview' | 'history' | 'attachments' | 'comments'
   selectedItem: any
+  // Fetched once at the Request level (so the header's attachment count and
+  // this view's file-field display and Attachments panel all agree on the
+  // same list instead of each fetching it separately).
+  attachments: AttachmentItem[]
   onFieldChange: (fieldId: string, value: any) => void
   setRightView: (view: 'overview' | 'history' | 'attachments' | 'comments') => void
 }
@@ -23,6 +27,7 @@ interface Props {
 // as a right-side panel driven by the header's icon buttons (rightView),
 // using the existing workflow-agnostic components for those.
 const GenericRequestOverview = ({
+  attachments,
   formModel,
   rawWorkflowData,
   rightView,
@@ -54,6 +59,7 @@ const GenericRequestOverview = ({
     <div className='flex min-h-0 flex-1 overflow-hidden'>
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
         <WorkflowFormRenderer
+          attachments={attachments}
           formModel={formModel}
           panels={panels}
           onFieldChange={onFieldChange}
@@ -111,6 +117,7 @@ const GenericRequestOverview = ({
                 </div>
                 <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
                   <Attachments
+                    initialData={attachments}
                     instanceId={instanceId}
                     processId={processId}
                     repositoryId={repositoryId}

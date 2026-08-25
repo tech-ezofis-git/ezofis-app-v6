@@ -28,6 +28,11 @@ interface Props {
   field: any
   repositoryId: string | undefined
   value: any
+  // Already-submitted instance attachments to show below this field when it
+  // has no value of its own — see WorkflowFormRenderer's soleFileFieldId for
+  // why this is only ever populated for an unambiguous single-file-field
+  // form.
+  fallbackAttachments?: any[]
   error?: string
   repoFieldHints?: string[]
   viewOnly?: boolean
@@ -57,6 +62,7 @@ interface StagedFileValue {
 // placeholder instead of silently disappearing.
 const FieldRenderer = ({
   error,
+  fallbackAttachments,
   field,
   repoFieldHints,
   repositoryId,
@@ -217,11 +223,12 @@ const FieldRenderer = ({
         )
       }
 
-      // Keep showing the dropzone (in its loading state) until OCR phase 1
-      // actually finishes — otherwise the chip view below replaces it the
-      // instant a file is picked, and the "Extracting…" loading text never
-      // gets a chance to show.
-      const staged: StagedFileValue | null = value?.ocrChecked ? value : null
+      // Shown below the dropzone once a file is attached — true once phase-1
+      // OCR has resolved (compose flow) or, for an already-submitted request
+      // viewed on the overview, as soon as a fileId is present (that value
+      // never carries ocrChecked, since staging happens once at submit).
+      const staged: StagedFileValue | null =
+        value?.fileName && (value.ocrChecked || value.fileId) ? value : null
 
       // Two-phase, matching the repository's mandatory-field rules: this
       // is phase 1 only — an OCR-only peek (uploadForOcr, nothing
@@ -285,8 +292,15 @@ const FieldRenderer = ({
               {required && <span className='text-red-9'> *</span>}
             </label>
           )}
-          {staged && styles ? (
-            <div className='flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2'>
+          <CompactDropzone
+            accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
+            disabled={readOnly}
+            isLoading={isUploading}
+            loadingText={t`Extracting data from the document…`}
+            onFiles={handleFiles}
+          />
+          {staged && styles && (
+            <div className='mt-2 flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2'>
               <div
                 className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${styles.wrap}`}
               >
@@ -309,15 +323,31 @@ const FieldRenderer = ({
                 </button>
               )}
             </div>
-          ) : (
-            <CompactDropzone
-              accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
-              disabled={readOnly}
-              isLoading={isUploading}
-              loadingText={t`Extracting data from the document…`}
-              onFiles={handleFiles}
-            />
           )}
+          {!staged &&
+            fallbackAttachments?.map((attachment) => {
+              const attName = attachment.name || attachment.fileName || ''
+              const attExt = getFileExtension(attName)
+              const attStyles = getFileIconClasses(attExt)
+              return (
+                <div
+                  className='mt-2 flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2'
+                  key={attachment.id ?? attName}
+                >
+                  <div
+                    className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${attStyles.wrap}`}
+                  >
+                    <Icon className='size-4' name={getFileIcon(attExt)} />
+                  </div>
+                  <div
+                    className='min-w-0 flex-1 truncate text-12 font-semibold text-gray-12'
+                    title={attName}
+                  >
+                    {attName}
+                  </div>
+                </div>
+              )
+            })}
           {error && (
             <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
           )}

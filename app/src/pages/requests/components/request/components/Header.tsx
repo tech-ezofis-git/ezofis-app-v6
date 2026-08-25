@@ -6,6 +6,7 @@ import { getUserListQueryOptions } from '@/api/userQueries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import Indicator from '@/components/base/Indicator'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 import showToast from '@/components/base/toast/showToast'
@@ -14,6 +15,7 @@ import AiBrandIcon from '@/components/common/AiBrandIcon'
 // import InputSelect from '@/components/base/inputs/InputSelect'
 import { localizeRequestStatus } from '@/pages/requests/utils/localizeRequestUi'
 import cn from '@/utils/cn'
+import { parseUtcDate } from '@/utils/utcDate'
 
 interface HeaderProps {
   isLoading: boolean
@@ -101,8 +103,12 @@ const getEmail = (user: any): string =>
 
 const formatElapsedTime = (startDateStr?: string | number | Date) => {
   if (!startDateStr) return ''
-  const start = new Date(startDateStr).getTime()
-  if (Number.isNaN(start)) return ''
+  // Bare ISO datetimes from the API are UTC without a Z/offset — parse as
+  // UTC first, otherwise the browser reads them as local time and the
+  // elapsed value is off by the local UTC offset.
+  const parsed = parseUtcDate(startDateStr)
+  if (!parsed) return ''
+  const start = parsed.getTime()
   const now = new Date().getTime()
   const diffMs = Math.max(0, now - start)
 
@@ -126,8 +132,8 @@ const formatElapsedTime = (startDateStr?: string | number | Date) => {
 
 const formatRaisedDate = (dateStr?: string | number | Date) => {
   if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return String(dateStr)
+  const d = parseUtcDate(dateStr)
+  if (!d) return String(dateStr)
   return d.toLocaleDateString(undefined, {
     day: 'numeric',
     hour: '2-digit',
@@ -557,19 +563,20 @@ const Header: React.FC<HeaderProps> = ({
                   aria-label={tab.label}
                   type='button'
                   className={cn(
-                    'relative flex size-8 cursor-pointer items-center justify-center rounded-lg transition-all hover:bg-[var(--gray-2)] active:scale-95',
+                    'flex size-8 cursor-pointer items-center justify-center rounded-lg transition-all hover:bg-[var(--gray-2)] active:scale-95',
                     rightView === tab.id
                       ? 'bg-[var(--primary-2)] text-[var(--primary-11)]'
                       : 'text-[var(--gray-10)]',
                   )}
                   onClick={() => setRightView(tab.id)}
                 >
-                  <Icon className='size-4' name={tab.icon} />
-                  {tab.count > 0 && (
-                    <span className='absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--primary-9)] px-1 text-[10px] font-bold text-white'>
-                      {tab.count}
-                    </span>
-                  )}
+                  <Indicator
+                    disabled={tab.count === 0}
+                    label={tab.count > 0 ? tab.count : undefined}
+                    offset={4}
+                  >
+                    <Icon className='size-4' name={tab.icon} />
+                  </Indicator>
                 </button>
               </Tooltip>
             ))}

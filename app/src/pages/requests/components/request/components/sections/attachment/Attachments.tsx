@@ -539,6 +539,14 @@ export default function Attachments({
         onAttached={refetch}
       />
 
+      {!isLoading && (
+        <div className='mb-2.5 flex shrink-0 items-center justify-between'>
+          <span className='text-11 font-bold tracking-wider text-gray-9 uppercase'>
+            {files.length} {files.length === 1 ? t`Attachment` : t`Attachments`}
+          </span>
+        </div>
+      )}
+
       {/* Upload Zone (Large dashed container when no files exist) */}
       {canUpload && !isLoading && files.length === 0 && (
         <div className='mb-4 shrink-0'>
@@ -660,10 +668,6 @@ export default function Attachments({
                     )}
                   </div>
                   <div className='mt-0.5 flex items-center gap-2 flex-wrap'>
-                    <span className='inline-flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
-                      <Icon name='tabler:folder' className='size-3 text-[var(--primary-9)]' />
-                      {(file as any).folderName || (file as any).repositoryName || (file.isAiMatch ? 'Procurement Ledger' : 'Accounts Payable')}
-                    </span>
                     {file.isAiMatch ? (
                       <span className='text-[11px] text-[var(--gray-9)]'>
                         Added just now · from AI cross-reference

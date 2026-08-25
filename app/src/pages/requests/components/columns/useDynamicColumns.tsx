@@ -28,6 +28,7 @@ import {
 } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
+import { parseUtcDate } from '@/utils/utcDate'
 import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
 import GenericStagePill from '../GenericStagePill'
@@ -1394,7 +1395,13 @@ const getBaseColumns = (
             row?.createdAtUtc ||
             row?.raisedAt ||
             row?.createdAt
-          const ms = Math.abs(Date.now() - dayjs(lastActionAt).valueOf())
+          // Bare ISO datetimes from the API are UTC without a Z/offset —
+          // parse as UTC first, otherwise the browser reads them as local
+          // time and the "ago" value is off by the local UTC offset.
+          const parsedLastActionAt = parseUtcDate(lastActionAt)
+          const ms = parsedLastActionAt
+            ? Math.abs(Date.now() - parsedLastActionAt.getTime())
+            : Number.NaN
           let runningStr = '-'
           if (!Number.isNaN(ms)) {
             const mins = Math.floor(ms / 60000)

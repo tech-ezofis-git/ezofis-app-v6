@@ -9,6 +9,7 @@ import { queryClient } from '@/lib/tanstack-query/queryClient'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
+import { useAttachments } from '../../hooks/useAttachments'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
 import {
@@ -848,6 +849,18 @@ const Request = ({
     selectedWorkflow?.id || workflowId || selectedWorkflowId
   const isGenericWorkflow = !isAccountsPayableWorkflow(rawWorkflowData)
 
+  // Fetched once here (rather than separately inside the header badge and
+  // the overview's own Attachments panel) so the header's attachment count,
+  // the overview's file-field display, and the Attachments panel list all
+  // agree on the same data.
+  const genericInstanceId =
+    selectedItem?.workflowInstanceId || selectedItem?.processId
+  const { data: genericAttachments } = useAttachments(
+    resolvedWorkflowId,
+    genericInstanceId,
+    isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
+  )
+
   const [activeTab, setActiveTab] = useState<string>(
     activeTabValue || 'Overview',
   )
@@ -1643,7 +1656,11 @@ const Request = ({
           actions={headerActions}
           agentData={currentAgentData}
           approveLoading={submitting}
-          attachmentCount={selectedItem?.attachmentCount || 0}
+          attachmentCount={
+            isGenericWorkflow
+              ? genericAttachments.length
+              : selectedItem?.attachmentCount || 0
+          }
           commentsCount={selectedItem?.commentsCount || 0}
           currency={currency}
           enableAIInsights={true}
@@ -1768,6 +1785,7 @@ const Request = ({
           >
             {isGenericWorkflow ? (
               <GenericRequestOverview
+                attachments={genericAttachments}
                 formModel={genericFormModel}
                 rawWorkflowData={rawWorkflowData}
                 rightView={rightView}

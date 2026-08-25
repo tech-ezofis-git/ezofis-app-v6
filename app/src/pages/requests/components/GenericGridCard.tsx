@@ -5,6 +5,7 @@ import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
+import { parseUtcDate } from '@/utils/utcDate'
 import { buildTableMeta } from '../utils/dynamicTable.utils'
 import {
   buildDynamicColumns,
@@ -18,7 +19,12 @@ import GenericStagePill from './GenericStagePill'
 // History panel, instead of dayjs's coarser "8 hours ago".
 const formatRunningTime = (date: any): string => {
   if (!date) return ''
-  const ms = Math.abs(Date.now() - dayjs(date).valueOf())
+  // Bare ISO datetimes from the API are UTC without a Z/offset — parse them
+  // as UTC (parseUtcDate) before diffing, otherwise the browser reads them
+  // as local time and the "ago" value is off by the local UTC offset.
+  const parsed = parseUtcDate(date)
+  if (!parsed) return ''
+  const ms = Math.abs(Date.now() - parsed.getTime())
   if (Number.isNaN(ms)) return ''
   const secs = Math.floor(ms / 1000)
   if (secs < 60) return `${secs}s ago`
@@ -147,12 +153,14 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           )}
           {startedAt && (
             <Tooltip
-              content={`Raised Date: ${dayjs(startedAt).format('DD-MMM-YYYY hh:mm A')}`}
+              content={`Raised Date: ${dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}`}
               position='bottom'
             >
               <div className='flex items-center gap-1 text-11 text-gray-9'>
                 <Icon className='size-3 text-gray-7' name='tabler:calendar' />
-                <span>{dayjs(startedAt).format('DD-MMM-YYYY hh:mm A')}</span>
+                <span>
+                  {dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}
+                </span>
               </div>
             </Tooltip>
           )}
