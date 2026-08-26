@@ -205,10 +205,7 @@ const QuestionCard = ({
                         variant='ghost'
                         onClick={(e: React.MouseEvent) => {
                           e.stopPropagation()
-                          const { duplicateQuestion, setCopiedQuestion } =
-                            useFormStore.getState()
-                          setCopiedQuestion(question)
-                          duplicateQuestion(question.id)
+                          useFormStore.getState().duplicateQuestion(question.id)
                         }}
                       />
                     </Tooltip>

@@ -126,45 +126,6 @@ const Form = () => {
     addPanel(index)
   }
 
-  // Handle Ctrl+V Paste
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-        const { activeQuestionId, copiedQuestion, panels, pasteQuestion } =
-          useFormStore.getState()
-        if (!copiedQuestion) return
-
-        // Find where to paste: after active question on its panel
-        let targetPanelId = ''
-        let targetIndex = -1
-
-        for (const panel of panels) {
-          const qIndex = panel.fields.findIndex(
-            (f) => f.id === activeQuestionId,
-          )
-          if (qIndex !== -1) {
-            targetPanelId = panel.id
-            targetIndex = qIndex + 1 // Paste below
-            break
-          }
-        }
-
-        // If no active question, paste at end of first panel
-        if (!targetPanelId && panels.length > 0) {
-          targetPanelId = panels[0].id
-          targetIndex = panels[0].fields.length
-        }
-
-        if (targetPanelId) {
-          pasteQuestion(targetPanelId, targetIndex)
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
   // Scrollspy: Highlighting sidebar based on canvas scroll
   useEffect(() => {
     const observer = new IntersectionObserver(

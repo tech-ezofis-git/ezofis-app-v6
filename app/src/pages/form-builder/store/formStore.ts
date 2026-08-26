@@ -22,7 +22,6 @@ export interface FormStore {
   addFieldPosition: { index: number; panelId: string } | null
   conversationalMode: boolean
   coordinator: string
-  copiedQuestion: Question | null
   description: string
   footerText: string
   formType: FormType
@@ -62,7 +61,6 @@ export interface FormStore {
   loadForm: (data: any) => void
   movePanel: (id: string, direction: 'up' | 'down') => void
   moveQuestion: (id: string, toPanelId: string, index: number) => void
-  pasteQuestion: (panelId: string, index: number) => void
   resetForm: () => void
   saveForm: (
     targetStatus?: PublishStatus,
@@ -76,8 +74,6 @@ export interface FormStore {
   setClosedMessage: (message: string) => void
   setConversationalMode: (enabled: boolean) => void
   setCoordinator: (coordinator: string) => void
-  // Actions
-  setCopiedQuestion: (question: Question | null) => void
   setDescription: (description: string) => void
   setFormType: (type: FormType) => void
   setHeaderFooter: (updates: {
@@ -344,7 +340,6 @@ const initialState = {
   closedMessage: 'This form is currently closed.',
   conversationalMode: false,
   coordinator: '',
-  copiedQuestion: null,
   description: '',
   footerText: '',
   formType: 'WORKFLOW' as const,
@@ -611,25 +606,6 @@ export const useFormStore = create<FormStore>()(
           }
         }),
 
-      pasteQuestion: (panelId, index) =>
-        set((state) => {
-          if (!state.copiedQuestion) return state
-
-          const newQuestion = {
-            ...state.copiedQuestion,
-            id: generateId(),
-            label: `${state.copiedQuestion.label} (Copy)`,
-          }
-
-          const newPanels = state.panels.map((p) => {
-            if (p.id !== panelId) return p
-            const newFields = [...p.fields]
-            newFields.splice(index, 0, newQuestion)
-            return { ...p, fields: newFields }
-          })
-
-          return { activeQuestionId: newQuestion.id, panels: newPanels }
-        }),
       resetForm: () => set({ ...initialState, uid: generateId() }),
       saveForm: async (targetStatus, formId) => {
         const state = get()
@@ -730,8 +706,6 @@ export const useFormStore = create<FormStore>()(
       setConversationalMode: (conversationalMode) =>
         set({ conversationalMode }),
       setCoordinator: (coordinator) => set({ coordinator }),
-      // Clipboard Actions
-      setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
       setDescription: (description) => set({ description }),
       setFormType: (formType) => set({ formType }),
       setHeaderFooter: (updates) =>
