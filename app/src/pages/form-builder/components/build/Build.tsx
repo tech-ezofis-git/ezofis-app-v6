@@ -24,7 +24,7 @@ const Build = () => {
   return (
     <div className='flex h-full w-full overflow-hidden bg-white'>
       <LeftSidebar />
-      <div className='flex-1 overflow-auto bg-gray-1/70 px-4 pt-14 pb-12 shadow-inner'>
+      <div className='flex-1 overflow-auto bg-surface-secondary px-4 pt-14 pb-12 shadow-inner'>
         <div className='animate-in fade-in slide-in-from-left-4 mx-auto w-full max-w-[1200px] duration-500'>
           <Form />
         </div>
