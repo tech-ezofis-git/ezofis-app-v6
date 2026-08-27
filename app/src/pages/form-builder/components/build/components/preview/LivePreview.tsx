@@ -3,6 +3,7 @@ import {
   Divider,
   Rating,
   SegmentedControl,
+  Select,
   TextInput,
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
@@ -196,6 +197,19 @@ const LivePreview = () => {
   )
 }
 
+const getFieldOptions = (field: Question): string[] => {
+  const { customOptions, separateOptionsUsing } = field.settings.specific
+  if (!customOptions) return ['Option A', 'Option B', 'Option C']
+
+  const separator = separateOptionsUsing === 'COMMA' ? ',' : '\n'
+  const options = customOptions
+    .split(separator)
+    .map((opt) => opt.trim())
+    .filter(Boolean)
+
+  return options.length > 0 ? options : ['Option A', 'Option B', 'Option C']
+}
+
 const renderPreviewInput = (field: Question) => {
   switch (field.type) {
     case 'LABEL':
@@ -321,20 +335,39 @@ const renderPreviewInput = (field: Question) => {
           size='md'
         />
       )
+    case 'SINGLE_SELECT': {
+      const options = getFieldOptions(field)
+      return (
+        <Select
+          data={options}
+          placeholder={field.settings.general.placeholder || 'Select an option'}
+          size='sm'
+          classNames={{
+            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+          }}
+        />
+      )
+    }
     case 'SINGLE_CHOICE':
     case 'MULTIPLE_CHOICE':
-    case 'SINGLE_SELECT':
-    case 'MULTI_SELECT':
+    case 'MULTI_SELECT': {
+      const options = getFieldOptions(field)
+      const optionsPerLine = field.settings.specific.optionsPerLine || 1
       return (
-        <div className='space-y-1.5'>
-          {['Option A', 'Option B', 'Option C'].map((opt, i) => (
+        <div
+          className='grid gap-1.5'
+          style={{
+            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+          }}
+        >
+          {options.map((opt, i) => (
             <div
               key={i}
               className='flex cursor-pointer items-center gap-2.5 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-12 transition-all hover:bg-gray-2'
             >
               <div
                 className={cn(
-                  'flex size-4 items-center justify-center border border-gray-4',
+                  'flex size-4 shrink-0 items-center justify-center border border-gray-4',
                   field.type === 'SINGLE_CHOICE'
                     ? 'rounded-full'
                     : 'rounded-md',
@@ -345,6 +378,7 @@ const renderPreviewInput = (field: Question) => {
           ))}
         </div>
       )
+    }
     default:
       return (
         <TextInput
