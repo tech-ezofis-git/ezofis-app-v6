@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import { getWorkflowFormsQueryOptions } from '@/api/form/queries'
 import Button from '@/components/base/button/Button'
@@ -7,8 +8,12 @@ import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Input from '@/components/base/inputs/InputText'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import SettingsSection from './settings/common/SettingsSection'
 
 const WorkflowSettings = () => {
+  const [openGeneral, setOpenGeneral] = useState(true)
+  const [openPreview, setOpenPreview] = useState(false)
+
   const {
     closeSettings,
     folder,
@@ -43,8 +48,12 @@ const WorkflowSettings = () => {
 
   const { data: workflowFormsData } = useQuery(getWorkflowFormsQueryOptions())
   const { data: folderOptionsData } = useQuery(getRepositoriesQueryOptions())
-  const workflowForms = Array.isArray(workflowFormsData) ? workflowFormsData : []
-  const folderOptions = Array.isArray(folderOptionsData) ? folderOptionsData : []
+  const workflowForms = Array.isArray(workflowFormsData)
+    ? workflowFormsData
+    : []
+  const folderOptions = Array.isArray(folderOptionsData)
+    ? folderOptionsData
+    : []
 
   if (!isSettingsOpen) return null
 
@@ -62,116 +71,139 @@ const WorkflowSettings = () => {
       </div>
 
       {/* Content */}
-      <div className='flex-1 space-y-3 overflow-y-auto p-4'>
-        {/* Name */}
-        <Input
-          label='Name'
-          value={workflowName}
-          clearable
-          required
-          onChange={setWorkflowName}
-        />
+      <div className='flex-1 space-y-1 overflow-y-auto px-4 pt-2 pb-4'>
+        <SettingsSection
+          icon='lucide:settings-2'
+          isOpen={openGeneral}
+          title='General'
+          variant='premium'
+          onToggle={() => setOpenGeneral(!openGeneral)}
+        >
+          {/* Name */}
+          <Input
+            label='Name'
+            value={workflowName}
+            clearable
+            required
+            onChange={setWorkflowName}
+          />
 
-        {/* Description */}
-        <div>
-          <label className='mb-2 block text-13 font-medium text-gray-11'>
-            Description
-          </label>
-          <div className='relative'>
-            <textarea
-              className='min-h-[80px] w-full resize-none rounded-md border border-gray-6 bg-transparent px-3 py-2 text-13 font-medium text-gray-12 outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
-              value={workflowDescription}
-              onChange={(e) => setWorkflowDescription(e.target.value)}
-            />
-            <div
-              className='absolute right-2 bottom-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-green-9 text-white'
-              title='Save description'
-            >
-              <Icon className='h-3 w-3' name='lucide:save' />
+          {/* Description */}
+          <div>
+            <label className='mb-2 block text-13 font-medium text-gray-11'>
+              Description
+            </label>
+            <div className='relative'>
+              <textarea
+                className='min-h-[80px] w-full resize-none rounded-md border border-gray-6 bg-transparent px-3 py-2 text-13 font-medium text-gray-12 outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
+                value={workflowDescription}
+                onChange={(e) => setWorkflowDescription(e.target.value)}
+              />
+              <div
+                className='absolute right-2 bottom-2 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-green-9 text-white'
+                title='Save description'
+              >
+                <Icon className='h-3 w-3' name='lucide:save' />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Initiate Using */}
-        <InputSelect
-          label='Initiate Using'
-          options={initiateOptions as any}
-          placeholder='Select'
-          value={
-            initiateUsing
-              ? {
-                  id: initiateUsing as any,
-                  name:
-                    initiateOptions.find((o: any) => o.id === initiateUsing)
-                      ?.name || '',
-                }
-              : null
-          }
-          onChange={(val: any) => setInitiateUsing(val?.id || 'document-form')}
-        />
+          {/* Initiate Using */}
+          <InputSelect
+            label='Initiate Using'
+            options={initiateOptions as any}
+            placeholder='Select'
+            value={
+              initiateUsing
+                ? {
+                    id: initiateUsing as any,
+                    name:
+                      initiateOptions.find((o: any) => o.id === initiateUsing)
+                        ?.name || '',
+                  }
+                : null
+            }
+            onChange={(val: any) =>
+              setInitiateUsing(val?.id || 'document-form')
+            }
+          />
 
-        {/* Folder */}
-        <InputSelect
-          label='Folder'
-          options={folderOptions}
-          placeholder='Select'
-          required
-          value={
-            folder
-              ? {
-                  id: folder,
-                  name:
-                    folderOptions.find((f: any) => f.id == folder)?.name || '',
-                }
-              : null
-          }
-          onChange={(val: any) => setFolder(val?.id || null)}
-        />
+          {/* Folder */}
+          <InputSelect
+            label='Folder'
+            options={folderOptions}
+            placeholder='Select'
+            required
+            value={
+              folder
+                ? {
+                    id: folder,
+                    name:
+                      folderOptions.find((f: any) => f.id == folder)?.name ||
+                      '',
+                  }
+                : null
+            }
+            onChange={(val: any) => setFolder(val?.id || null)}
+          />
 
-        {/* Form */}
-        <InputSelect
-          label='Form'
-          options={workflowForms}
-          placeholder='Select'
-          required
-          value={
-            form
-              ? {
-                  id: form,
-                  name:
-                    workflowForms.find((f: any) => f.id == form)?.name || '',
-                }
-              : null
-          }
-          onChange={(val: any) => setForm(val?.id || null)}
-        />
+          {/* Form */}
+          <InputSelect
+            label='Form'
+            options={workflowForms}
+            placeholder='Select'
+            required
+            value={
+              form
+                ? {
+                    id: form,
+                    name:
+                      workflowForms.find((f: any) => f.id == form)?.name || '',
+                  }
+                : null
+            }
+            onChange={(val: any) => setForm(val?.id || null)}
+          />
 
-        {/* Status */}
-        <div className='flex flex-col gap-1.5 pt-2'>
-          <label className='text-13 font-medium text-gray-11'>Status</label>
-          <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
-            {[
-              { id: 'draft', label: 'Draft' },
-              { id: 'published', label: 'Published' },
-            ].map((opt) => {
-              const active = String(workflowStatus).toLowerCase() === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
-                    active
-                      ? 'bg-primary-9 text-white shadow-sm'
-                      : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
-                  }`}
-                  type='button'
-                  onClick={() => setWorkflowStatus(opt.id as any)}
-                >
-                  {opt.label}
-                </button>
-              )
-            })}
+          {/* Status */}
+          <div className='flex flex-col gap-1.5 pt-2'>
+            <label className='text-13 font-medium text-gray-11'>Status</label>
+            <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
+              {[
+                { id: 'draft', label: 'Draft' },
+                { id: 'published', label: 'Published' },
+              ].map((opt) => {
+                const active = String(workflowStatus).toLowerCase() === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type='button'
+                    className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
+                      active
+                        ? 'bg-primary-9 text-white shadow-sm'
+                        : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
+                    }`}
+                    onClick={() => setWorkflowStatus(opt.id as any)}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        </SettingsSection>
+
+        <SettingsSection
+          icon='lucide:eye'
+          isOpen={openPreview}
+          title='Preview'
+          variant='premium'
+          onToggle={() => setOpenPreview(!openPreview)}
+        >
+          <p className='text-13 text-gray-9'>
+            Preview settings are coming soon.
+          </p>
+        </SettingsSection>
       </div>
 
       {/* Footer */}
