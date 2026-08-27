@@ -2,15 +2,19 @@ import { useNavigate } from '@tanstack/react-router'
 import Logo from '@/components/common/Logo'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
+import { useIsWhiteLabel } from '@/utils/whiteLabel'
 
 const InvalidUrlPage = () => {
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
 
   return (
     <div className='p-6'>
-      <div className='flex h-9 items-center'>
-        <Logo />
-      </div>
+      {!isWhiteLabel && (
+        <div className='flex h-9 items-center'>
+          <Logo />
+        </div>
+      )}
 
       <PageEmptyState
         containerClassName='min-h-[calc(100dvh-120px)] py-10 xl:py-24'

@@ -5,6 +5,7 @@ import IconSpinner from '@/components/base/icon/IconSpinner'
 import AnimateEntrancePop from '@/components/common/animations/AnimateEntrancePop'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import AuthFooter from '@/layouts/auth/components/AuthFooter'
+import { useWhiteLabelDocumentTitle } from '@/utils/whiteLabel'
 import PageHeader from './components/PageHeader'
 import StepFive from './components/StepFive'
 import StepFour from './components/StepFour'
@@ -20,6 +21,8 @@ const OnBoardingPage = () => {
   const navigate = useNavigate()
   const { token } = useParams({ strict: false })
   console.log(token)
+
+  useWhiteLabelDocumentTitle('Complete Your Account')
 
   const [isLoading, setIsLoading] = useState(true)
   const [isTokenValid, setIsTokenValid] = useState(false)

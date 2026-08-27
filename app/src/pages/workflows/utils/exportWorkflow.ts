@@ -17,7 +17,11 @@ const mapToolTypeToLegacyType = (
   if (explicitType === 'AP_AGENT') return 'AP_AGENT'
 
   if (nodeIndex === 0) return 'START'
-  if (nodeIndex === totalNodes - 1 && (explicitType === 'ACTION' || explicitType === 'END')) return 'END'
+  if (
+    nodeIndex === totalNodes - 1 &&
+    (explicitType === 'ACTION' || explicitType === 'END')
+  )
+    return 'END'
 
   if (!toolType) {
     if (explicitType && explicitType !== 'ACTION') return explicitType
@@ -157,17 +161,22 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       settings.apAgent = {
         ...existingApAgent,
         connectorId: data.connectorId ?? existingApAgent.connectorId ?? '',
-        decisionApprove: data.thresholds?.approved ?? existingApAgent.decisionApprove,
-        decisionPartial: data.thresholds?.partial ?? existingApAgent.decisionPartial,
+        decisionApprove:
+          data.thresholds?.approved ?? existingApAgent.decisionApprove,
+        decisionPartial:
+          data.thresholds?.partial ?? existingApAgent.decisionPartial,
         decisionReject:
           data.thresholds?.reject ?? existingApAgent.decisionReject ?? 0,
         features,
         fieldScore,
         formId: formId ?? existingApAgent.formId ?? '',
         resource:
-          existingApAgent.resource || (formId ? 'FORM' : existingApAgent.resource),
+          existingApAgent.resource ||
+          (formId ? 'FORM' : existingApAgent.resource),
         vendorMasterId:
-          data.vendorSource?.id ?? data.vendorSource ?? existingApAgent.vendorMasterId,
+          data.vendorSource?.id ??
+          data.vendorSource ??
+          existingApAgent.vendorMasterId,
         vendorValidationRequired: !!(
           data.vendorMustExist ??
           data.vendorSource?.id ??
@@ -263,6 +272,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
           credit: 0,
           required: false,
         },
+        previewValues: storeState.previewValues,
         processNumberPrefix: JSON.stringify(storeState.prefixSegments),
         scheduleReport: {},
         slaRules: [],

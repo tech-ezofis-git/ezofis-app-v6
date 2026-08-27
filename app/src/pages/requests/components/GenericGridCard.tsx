@@ -3,7 +3,11 @@ import { useMemo } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
-import { getGenericStageInfo } from '@/pages/requests/utils/workflow.utils'
+import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
+import {
+  extractPreviewValues,
+  getGenericStageInfo,
+} from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { parseUtcDate } from '@/utils/utcDate'
 import { buildTableMeta } from '../utils/dynamicTable.utils'
@@ -48,14 +52,40 @@ interface Props {
 // fields are shown and how they're formatted — nothing here is
 // hardcoded to a specific workflow's field names.
 const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
+  // Only show fields the workflow's Settings -> Configuration -> Field
+  // Selection preview list opted into (matched by label, case/spacing
+  // insensitive). No preview fields configured -> render nothing here,
+  // rather than falling back to an arbitrary "first 3 fields" guess.
+  const previewValues = useMemo(
+    () => extractPreviewValues(workflow),
+    [workflow],
+  )
+
   const dynamicFields = useMemo(() => {
+    if (!previewValues.length) return []
+
     const form = resolveFormJson(workflow)
     if (!form) return []
     const allPanels = getFormPanels(form)
     if (!allPanels.length) return []
     const tableMetaByParentId = buildTableMeta(allPanels)
-    return buildDynamicColumns(allPanels, null, tableMetaByParentId)
-  }, [workflow])
+    const allFields = buildDynamicColumns(allPanels, null, tableMetaByParentId)
+
+    const wantedLabels = new Set(
+      previewValues.map((label) => normalizeFieldKey(label)),
+    )
+    return allFields.filter((col) =>
+      wantedLabels.has(normalizeFieldKey(col.label)),
+    )
+  }, [workflow, previewValues])
+
+  const dynamicFieldRows = useMemo(() => {
+    const rows: (typeof dynamicFields)[] = []
+    for (let i = 0; i < dynamicFields.length; i += 3) {
+      rows.push(dynamicFields.slice(i, i + 3))
+    }
+    return rows
+  }, [dynamicFields])
 
   const requestNo = extractGenericRequestNumber(row)
   const raisedBy =
@@ -115,7 +145,7 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
 
       <div className='min-w-0 flex-1'>
         {/* Left Side: Request Number + Current Stage Pill next to Request Number */}
-        <div className='flex items-center gap-2 flex-wrap'>
+        <div className='flex flex-wrap items-center gap-2'>
           <span className='shrink-0 text-13 font-bold text-gray-13'>
             {requestNo}
           </span>
@@ -126,15 +156,22 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
           />
         </div>
 
-        {dynamicFields.length > 0 && (
-          <div className='mt-1.5 flex flex-wrap items-center gap-1.5'>
-            {dynamicFields.slice(0, 3).map((col, idx) => (
-              <span className='flex items-center gap-1.5' key={col.id}>
-                {idx > 0 && <span className='text-gray-6'>·</span>}
-                <span className='truncate text-11 font-medium text-gray-10'>
-                  {col.renderCell?.(row) ?? '-'}
-                </span>
-              </span>
+        {dynamicFieldRows.length > 0 && (
+          <div className='mt-1.5 flex flex-col gap-1'>
+            {dynamicFieldRows.map((fieldRow, rowIdx) => (
+              <div
+                className='flex flex-wrap items-center gap-1.5'
+                key={fieldRow.map((col) => col.id).join('-') || rowIdx}
+              >
+                {fieldRow.map((col, idx) => (
+                  <span className='flex items-center gap-1.5' key={col.id}>
+                    {idx > 0 && <span className='text-gray-6'>·</span>}
+                    <span className='truncate text-11 font-medium text-gray-10'>
+                      {col.renderCell?.(row) ?? '-'}
+                    </span>
+                  </span>
+                ))}
+              </div>
             ))}
           </div>
         )}
@@ -169,12 +206,12 @@ const GenericGridCard = ({ row, workflow, onRowClick }: Props) => {
         <div className='flex flex-col items-end gap-0.5 text-right'>
           {lastActionAt && (
             <Tooltip
+              position='bottom'
               content={
                 lastActionBy && lastActionBy !== '-'
                   ? `Last action by ${lastActionBy}`
                   : 'Time running from last action'
               }
-              position='bottom'
             >
               <span className='inline-flex items-center gap-1 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-11 font-semibold text-orange-11'>
                 <Icon className='size-3 text-orange-9' name='tabler:clock' />

@@ -176,6 +176,52 @@ export interface GenericStageInfo {
   previousLabel: string | null
 }
 
+// The workflow-settings "Preview" field labels (Workflow Builder ->
+// Settings -> Configuration -> Field Selection), used to decide which
+// form/repository fields show up on a request's list/grid row. Same
+// shape-normalization as extractBlocks/extractWorkflowGraph, since
+// `workflow` shows up as the raw V6 record, the lightweight
+// WorkflowOption, or an already-parsed { blocks, rules, settings } object.
+export function extractPreviewValues(workflow: any): string[] {
+  if (!workflow) return []
+
+  const readFromSettings = (settings: any): string[] => {
+    const raw = settings?.general?.previewValues
+    if (Array.isArray(raw)) return raw.filter((v) => typeof v === 'string')
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw)
+        return Array.isArray(parsed)
+          ? parsed.filter((v) => typeof v === 'string')
+          : []
+      } catch {
+        return []
+      }
+    }
+    return []
+  }
+
+  if (workflow.workflowJson?.settings) {
+    return readFromSettings(workflow.workflowJson.settings)
+  }
+  if (workflow.settings) {
+    return readFromSettings(workflow.settings)
+  }
+
+  const flowJsonInput = workflow.flowJson ?? workflow.workflowJson
+  if (!flowJsonInput) return []
+
+  try {
+    const flow =
+      typeof flowJsonInput === 'string'
+        ? JSON.parse(flowJsonInput)
+        : flowJsonInput
+    return readFromSettings(flow?.settings)
+  } catch {
+    return []
+  }
+}
+
 // Previous → Current stage for a list/grid row, without a per-row history
 // call: Current comes straight off the row (`stage`/`activityId`); Previous
 // comes from the workflow's own rule graph (the rule whose toBlockId is

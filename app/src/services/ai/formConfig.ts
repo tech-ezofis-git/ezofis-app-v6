@@ -10,6 +10,7 @@ export type FormTypeOption = 'MASTER' | 'WORKFLOW' | 'FEEDBACK'
 export interface AiGeneratedField {
   label: string
   type: string
+  id?: string
   isMandatory?: boolean
   size?: 'col-3' | 'col-4' | 'col-6' | 'col-12'
   placeholder?: string
@@ -18,16 +19,20 @@ export interface AiGeneratedField {
 
 export interface AiGeneratedPanel {
   title: string
+  id?: string
   description?: string
   fields: AiGeneratedField[]
 }
 
 export interface AiFormConfigSuggestion {
+  action?: 'INFO' | 'UPDATE' | 'REMOVE_FORM'
   name: string
   description: string
   formType: FormTypeOption
   reply: string
   panels: AiGeneratedPanel[]
+  removedFieldIds?: string[]
+  removedPanelIds?: string[]
   source: 'qwen' | 'gemini' | 'local'
 }
 
@@ -206,6 +211,7 @@ Respond with ONLY valid JSON using this exact shape:
 function extractFieldsArray(rawFields: any): AiGeneratedField[] {
   if (!Array.isArray(rawFields)) return []
   return rawFields.map((f: any) => ({
+    id: f.id ? String(f.id) : undefined,
     isMandatory: Boolean(
       f.isMandatory ||
         f.required ||
@@ -249,6 +255,7 @@ function extractPanelsFromRawJson(parsed: any): AiGeneratedPanel[] {
     return raw.panels.map((p: any, idx: number) => ({
       description: String(p.description || p.settings?.description || ''),
       fields: extractFieldsArray(p.fields || p.questions),
+      id: p.id ? String(p.id) : undefined,
       title: String(p.title || p.name || p.settings?.title || `Section ${idx + 1}`),
     }))
   }
@@ -516,6 +523,7 @@ export function buildFormPayloadFromAiSuggestion(
     const fields = panel.fields.map((f) => {
       const fieldType = (f.type || 'SHORT_TEXT').toUpperCase()
       const question = getField(fieldType)
+      question.id = f.id || question.id
       question.label = f.label
       if (question.settings?.general) {
         ;(question.settings.general as any).label = f.label
@@ -547,7 +555,7 @@ export function buildFormPayloadFromAiSuggestion(
 
     return {
       fields,
-      id: crypto.randomUUID(),
+      id: panel.id || crypto.randomUUID(),
       settings: {
         description: panel.description || '',
         isCollapsed: false,
@@ -557,6 +565,8 @@ export function buildFormPayloadFromAiSuggestion(
   })
 
   return {
+    action: suggestion.action || 'UPDATE',
+    description: suggestion.description,
     formJson: JSON.stringify({
       panels,
       secondaryPanels: [],
@@ -573,7 +583,12 @@ export function buildFormPayloadFromAiSuggestion(
         },
       },
     }),
+    formType: suggestion.formType,
+    name: suggestion.name,
     panels,
+    removedFieldIds: suggestion.removedFieldIds,
+    removedPanelIds: suggestion.removedPanelIds,
+    reply: suggestion.reply,
     settings: {
       general: {
         coordinator: '',
@@ -586,5 +601,168 @@ export function buildFormPayloadFromAiSuggestion(
         publishOption: 'DRAFT',
       },
     },
+  }
+}
+
+export function formatFormStateForAi(formState: any) {
+  const name = formState.name || 'Untitled Form'
+  const description = formState.description || ''
+  const formType = formState.formType || 'WORKFLOW'
+
+  const panelsSummary = (formState.panels || []).map((p: any) => ({
+    description: p.settings?.description || p.description || '',
+    fields: (p.fields || []).map((f: any) => {
+      const isMandatory = f.settings?.validation?.fieldRule === 'MANDATORY'
+      const options = f.settings?.specific?.customOptions
+        ? String(f.settings.specific.customOptions).split('\n').filter(Boolean)
+        : undefined
+
+      return {
+        id: f.id,
+        isMandatory,
+        label: f.label || f.displayLabel || 'Untitled Field',
+        options: options && options.length > 0 ? options : undefined,
+        placeholder: f.settings?.general?.placeholder || '',
+        size: f.settings?.general?.size || 'col-6',
+        type: f.type || 'SHORT_TEXT',
+      }
+    }),
+    id: p.id,
+    title: p.settings?.title || p.title || 'Untitled Section',
+  }))
+
+  return {
+    description,
+    formType,
+    name,
+    panels: panelsSummary,
+  }
+}
+
+export interface FormAssistantOptions {
+  formState: any
+  userPrompt: string
+}
+
+export async function processFormAssistantPrompt(
+  options: FormAssistantOptions,
+): Promise<AiFormConfigSuggestion> {
+  const currentForm = formatFormStateForAi(options.formState)
+
+  if (!isQwenConfigured()) {
+    const fallback = buildLocalFormConfig({
+      description: currentForm.description,
+      formType: currentForm.formType as FormTypeOption,
+      name: currentForm.name,
+      prompt: options.userPrompt,
+    })
+    return {
+      ...fallback,
+      action: 'UPDATE',
+    }
+  }
+
+  const systemMessage = `You are an AI Form Architect Assistant editing an existing business form or answering questions about it.
+
+CURRENT FORM SCHEMA:
+Form Name: "${currentForm.name}"
+Description: "${currentForm.description}"
+Form Type: "${currentForm.formType}"
+Current Sections & Fields:
+${JSON.stringify(currentForm.panels, null, 2)}
+
+Supported Field Types: ${SUPPORTED_FIELD_TYPES.join(', ')}
+Field Sizes: "col-3", "col-4", "col-6", "col-12"
+
+INSTRUCTIONS & RULES:
+1. Determine user intent, one of three actions:
+   - "INFO": The user is asking a question or requesting information about the form (e.g. "What fields are mandatory?", "How many sections?", "Explain what this form does"). Answer clearly in "reply", set "action": "INFO", "panels": [].
+   - "REMOVE_FORM": The user explicitly asks to remove/delete/clear the ENTIRE form or start over from scratch (e.g. "remove this form", "clear everything", "delete all fields and sections", "start over"). Set "action": "REMOVE_FORM", "panels": [], and briefly confirm in "reply". Only use this when the user unmistakably wants the WHOLE form wiped - never use it for a request to remove just one field or one section.
+   - "UPDATE": The user asks to add, modify, or remove specific fields/sections, or change form-level settings (name/description/type). Set "action": "UPDATE", and explain the change in "reply". This is the default for anything that isn't a pure question and isn't a whole-form wipe.
+
+2. FOR "UPDATE" RESPONSES, SEND ONLY THE DELTA - never resend the whole form:
+   - In "panels", include ONLY the sections you are adding or changing. Do NOT re-list sections/fields that are not changing - the system automatically keeps everything you don't mention exactly as it is.
+   - To modify an existing field or section, you MUST reuse its exact "id" from CURRENT FORM SCHEMA above so the system matches and updates it in place instead of creating a duplicate. Omit "id" only when creating a genuinely new field or section.
+   - To remove specific fields, list their existing ids in "removedFieldIds". To remove specific sections, list their existing ids in "removedPanelIds". Only put an id in one of these lists when the user explicitly asked to remove that exact field or section - never remove or omit something the user did not ask to change.
+   - Never use "removedFieldIds"/"removedPanelIds" to clear the whole form - use "REMOVE_FORM" for that instead.
+
+Respond ONLY with valid JSON using this exact structure:
+{
+  "action": "INFO" | "UPDATE" | "REMOVE_FORM",
+  "name": "Form Name",
+  "description": "Form Description",
+  "reply": "Friendly explanation of changes made or answer to question",
+  "removedFieldIds": ["existing-field-id"],
+  "removedPanelIds": ["existing-section-id"],
+  "panels": [
+    {
+      "id": "existing-section-id-or-omit-if-new",
+      "title": "Section Title",
+      "description": "Section description",
+      "fields": [
+        {
+          "id": "existing-field-id-or-omit-if-new",
+          "label": "Field Label",
+          "type": "SHORT_TEXT",
+          "isMandatory": true,
+          "size": "col-6",
+          "placeholder": "Enter value",
+          "options": ["Option 1", "Option 2"]
+        }
+      ]
+    }
+  ]
+}`
+
+  const messages = [
+    { content: systemMessage, role: 'system' as const },
+    { content: options.userPrompt, role: 'user' as const },
+  ]
+
+  try {
+    const content = await qwenChatCompletions({
+      jsonObject: true,
+      maxTokens: 3000,
+      messages,
+    })
+
+    const parsed = parseJsonFromModelContent<any>(content)
+    const rawAction = String(parsed?.action || '').toUpperCase()
+    const action =
+      rawAction === 'INFO'
+        ? 'INFO'
+        : rawAction === 'REMOVE_FORM'
+          ? 'REMOVE_FORM'
+          : 'UPDATE'
+    const panels = action === 'REMOVE_FORM' ? [] : extractPanelsFromRawJson(parsed)
+
+    return {
+      action,
+      description: shortenDescription(parsed?.description || currentForm.description),
+      formType: (parsed?.formType || currentForm.formType) as FormTypeOption,
+      name: shortenFormName(parsed?.name || currentForm.name),
+      panels,
+      removedFieldIds: Array.isArray(parsed?.removedFieldIds)
+        ? parsed.removedFieldIds.map(String)
+        : undefined,
+      removedPanelIds: Array.isArray(parsed?.removedPanelIds)
+        ? parsed.removedPanelIds.map(String)
+        : undefined,
+      reply: String(parsed?.reply || '').trim() || 'I have processed your request.',
+      source: 'qwen',
+    }
+  } catch (error) {
+    console.error('Form assistant error:', error)
+    // Leave the current form untouched on failure rather than silently
+    // injecting a canned structure - the user only asked for one change.
+    return {
+      action: 'INFO',
+      description: currentForm.description,
+      formType: currentForm.formType as FormTypeOption,
+      name: currentForm.name,
+      panels: [],
+      reply: 'Sorry, I ran into an error processing that request. Please try again.',
+      source: 'local',
+    }
   }
 }
