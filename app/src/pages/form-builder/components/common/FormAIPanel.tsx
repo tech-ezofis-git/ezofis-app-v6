@@ -39,8 +39,15 @@ const useFormAiStatusWord = (active: boolean) => {
  * slot (see Build.tsx) so it never competes with the app-wide assistant.
  */
 const FormAIPanel = () => {
-  const { close, credits, isLoading, messages, sendMessage, suggestions } =
-    useAskAIStore()
+  const {
+    close,
+    credits,
+    isLoading,
+    messages,
+    sendMessage,
+    sendSuggestion,
+    suggestions,
+  } = useAskAIStore()
   const [prompt, setPrompt] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
   const statusWord = useFormAiStatusWord(isLoading)
@@ -102,7 +109,7 @@ const FormAIPanel = () => {
                 <button
                   className='w-full rounded-lg border border-gray-1 bg-white px-3 py-2 text-left text-13 text-gray-11 transition-colors hover:border-accent-soft hover:bg-accent-soft/5 hover:text-accent-primary'
                   key={s}
-                  onClick={() => handleSend(s)}
+                  onClick={() => sendSuggestion(s)}
                 >
                   {s}
                 </button>

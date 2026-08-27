@@ -21,11 +21,11 @@ export interface FieldType {
   icon: string
   label: string
   type:
-  | QuestionType
-  | 'ADDRESS_INFO'
-  | 'CONTACT_INFO'
-  | 'INVOICE_REPORT'
-  | 'FINANCIAL_AUDIT'
+    | QuestionType
+    | 'ADDRESS_INFO'
+    | 'CONTACT_INFO'
+    | 'INVOICE_REPORT'
+    | 'FINANCIAL_AUDIT'
 }
 
 export const ALL_FIELDS: FieldType[] = [
@@ -300,6 +300,7 @@ const FIELD_THEMES: Record<
 const FieldLibrary = () => {
   const {
     activePanelId,
+    activeQuestionId,
     addFieldPosition,
     addQuestion,
     panels,
@@ -309,8 +310,6 @@ const FieldLibrary = () => {
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const searchRef = useRef<HTMLInputElement>(null)
-
-  const targetPanel = panels.find((p) => p.id === addFieldPosition?.panelId)
 
   const filteredFields = useMemo(() => {
     if (!search.trim()) return ALL_FIELDS
@@ -326,24 +325,42 @@ const FieldLibrary = () => {
   }, [search])
 
   const handleSelect = (type: string) => {
-    const fallbackPanelId = activePanelId ?? panels[0]?.id
-    const fallbackPanel = panels.find((p) => p.id === fallbackPanelId)
-    const position =
-      addFieldPosition ??
-      (fallbackPanel
-        ? { index: fallbackPanel.fields.length, panelId: fallbackPanel.id }
-        : null)
-
-    if (!position) return
-
-    const { index, panelId } = position
     const questions = createFieldQuestions(type)
 
-    questions.forEach((q, i) => {
-      addQuestion(panelId, q, index + i)
-    })
+    if (addFieldPosition) {
+      const { index, panelId } = addFieldPosition
+      questions.forEach((q, i) => {
+        addQuestion(panelId, q, index + i)
+      })
+      setAddFieldPosition(null)
+      return
+    }
 
-    setAddFieldPosition(null)
+    // No explicit insertion point was set (e.g. the library is already open
+    // and the user just picked a field type). Prefer the section that owns
+    // the currently selected field over the scroll-tracked activePanelId, so
+    // the new field lands next to what the user is actually working on.
+    const panelWithActiveQuestion = panels.find((p) =>
+      p.fields.some((f) => f.id === activeQuestionId),
+    )
+    const targetPanel =
+      panelWithActiveQuestion ??
+      panels.find((p) => p.id === activePanelId) ??
+      panels[0]
+
+    if (!targetPanel) return
+
+    const activeQuestionIndex = targetPanel.fields.findIndex(
+      (f) => f.id === activeQuestionId,
+    )
+    const index =
+      activeQuestionIndex !== -1
+        ? activeQuestionIndex + 1
+        : targetPanel.fields.length
+
+    questions.forEach((q, i) => {
+      addQuestion(targetPanel.id, q, index + i)
+    })
   }
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -376,14 +393,12 @@ const FieldLibrary = () => {
       <div className='sticky top-0 z-20 flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
         <div className='flex items-center gap-2'>
           <button
-            className='rounded-md  p-1 text-gray-11 transition-colors  hover:bg-gray-2 hover:text-gray-13'
+            className='rounded-md p-1 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13'
             onClick={() => setSidebarView('explorer')}
           >
             <Icon height={16} name='lucide:arrow-left' width={16} />
           </button>
-          <div className='text-xs font-bold text-gray-13'>
-            Fields Library
-          </div>
+          <div className='text-xs font-bold text-gray-13'>Fields Library</div>
         </div>
       </div>
 
@@ -400,7 +415,7 @@ const FieldLibrary = () => {
             )}
           />
           <input
-            className='w-full rounded-lg border border-gray-3 bg-white py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3 shadow-2xs'
+            className='w-full rounded-lg border border-gray-3 bg-white py-1.5 pr-8 pl-8 text-xs font-semibold text-gray-12 opacity-100 shadow-2xs transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-3'
             placeholder='Search fields...'
             ref={searchRef}
             type='text'

@@ -5,6 +5,33 @@ import {
   processFormAssistantPrompt,
 } from '@/services/ai/formConfig'
 
+// Generic, category-level prompts only - no concrete field names or actions
+// (e.g. never "Add a Phone Number field"). Clicking one doesn't call the AI;
+// it shows a canned clarifying question from the frontend so the AI only
+// runs once the user has said what they actually want (see sendSuggestion).
+const GENERIC_SUGGESTIONS: { clarification: string; label: string }[] = [
+  {
+    clarification:
+      'Sure — what type of field would you like to add (e.g. text, email, phone, date, dropdown), what should it be labeled, and which section should it go in?',
+    label: 'Add a new field',
+  },
+  {
+    clarification:
+      'Which field would you like to update, and what should change (e.g. make it required, add validation, rename it)?',
+    label: 'Update an existing field',
+  },
+  {
+    clarification:
+      'What should the new section be called, and should I add any fields to it right away?',
+    label: 'Add a new section',
+  },
+  {
+    clarification:
+      'What would you like to know — its fields, sections, validation rules, or something else?',
+    label: 'Ask about my form',
+  },
+]
+
 type Store = {
   credits: number
   isLoading: boolean
@@ -16,6 +43,7 @@ type Store = {
   close: () => void
   open: () => void
   sendMessage: (prompt: string) => Promise<void>
+  sendSuggestion: (label: string) => void
   setSuggestion: (suggestion: string) => void
   toggleMaximize: () => void
 }
@@ -27,13 +55,7 @@ const useAskAIStore = create<Store>((set, get) => ({
   isOpen: false,
   messages: [],
   suggestion: '',
-  suggestions: [
-    'Add a Phone Number and Address field.',
-    'Make the Email field mandatory.',
-    'What fields are in this form?',
-    'Change the form name to Customer Feedback.',
-    'Add a new section for Attachments.',
-  ],
+  suggestions: GENERIC_SUGGESTIONS.map((s) => s.label),
   close: () => set({ isOpen: false }),
   open: () => set({ isOpen: true }),
   sendMessage: async (prompt: string) => {
@@ -96,6 +118,21 @@ const useAskAIStore = create<Store>((set, get) => ({
     } finally {
       set({ isLoading: false })
     }
+  },
+  sendSuggestion: (label: string) => {
+    const option = GENERIC_SUGGESTIONS.find((s) => s.label === label)
+    set((state) => ({
+      messages: [
+        ...state.messages,
+        { content: label, role: 'user' as const },
+        {
+          content:
+            option?.clarification ??
+            'Could you tell me a bit more about what you need?',
+          role: 'assistant' as const,
+        },
+      ],
+    }))
   },
   toggleMaximize: () =>
     set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
