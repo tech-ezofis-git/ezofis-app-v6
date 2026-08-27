@@ -21,11 +21,11 @@ export interface FieldType {
   icon: string
   label: string
   type:
-    | QuestionType
-    | 'ADDRESS_INFO'
-    | 'CONTACT_INFO'
-    | 'INVOICE_REPORT'
-    | 'FINANCIAL_AUDIT'
+  | QuestionType
+  | 'ADDRESS_INFO'
+  | 'CONTACT_INFO'
+  | 'INVOICE_REPORT'
+  | 'FINANCIAL_AUDIT'
 }
 
 export const ALL_FIELDS: FieldType[] = [
@@ -376,7 +376,7 @@ const FieldLibrary = () => {
       <div className='sticky top-0 z-20 flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
         <div className='flex items-center gap-2'>
           <button
-            className='rounded-md border border-gray-3 p-1 text-gray-11 transition-colors hover:border-gray-4 hover:bg-gray-2 hover:text-gray-13'
+            className='rounded-md  p-1 text-gray-11 transition-colors  hover:bg-gray-2 hover:text-gray-13'
             onClick={() => setSidebarView('explorer')}
           >
             <Icon height={16} name='lucide:arrow-left' width={16} />
