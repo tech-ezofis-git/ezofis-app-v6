@@ -23,6 +23,7 @@ type Store = {
   loadedEdges: Edge[] | null
   loadedNodes: Node[] | null
   prefixSegments: Array<{ id: string; type: string; value: string }>
+  previewValues: string[]
   selectedEdge: Edge | null
   selectedNode: Node | null
   workflowDescription: string
@@ -48,6 +49,7 @@ type Store = {
   setPrefixSegments: (
     segments: Array<{ id: string; type: string; value: string }>,
   ) => void
+  setPreviewValues: (values: string[]) => void
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
   setWorkflowName: (name: string) => void
@@ -80,6 +82,7 @@ const useWorkflowStore = create<Store>()((set) => ({
     { id: '3', type: 'text', value: 'REQ' },
     { id: '4', type: 'auto-increment', value: '1' },
   ],
+  previewValues: [],
   selectedEdge: null,
   selectedNode: null,
   workflowDescription: '',
@@ -123,6 +126,18 @@ const useWorkflowStore = create<Store>()((set) => ({
       }
     } catch (e) {}
 
+    let previewValues: string[] = []
+    try {
+      const rawPreviewValues = legacyJson.settings?.general?.previewValues
+      previewValues = Array.isArray(rawPreviewValues)
+        ? rawPreviewValues
+        : typeof rawPreviewValues === 'string'
+          ? JSON.parse(rawPreviewValues)
+          : []
+    } catch {
+      previewValues = []
+    }
+
     const rawStatus =
       apiData?.publishOption ||
       apiData?.status ||
@@ -158,6 +173,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       loadedEdges: edges,
       loadedNodes: nodes,
       prefixSegments,
+      previewValues,
       workflowDescription,
       workflowId: legacyJson.id || apiData?.id || null,
       workflowName,
@@ -188,6 +204,7 @@ const useWorkflowStore = create<Store>()((set) => ({
         { id: '3', type: 'text', value: 'REQ' },
         { id: '4', type: 'auto-increment', value: '1' },
       ],
+      previewValues: [],
       selectedEdge: null,
       selectedNode: null,
       workflowDescription: '',
@@ -228,6 +245,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   setForm: (value) => set({ form: value }),
   setInitiateUsing: (value) => set({ initiateUsing: value }),
   setPrefixSegments: (segments) => set({ prefixSegments: segments }),
+  setPreviewValues: (values) => set({ previewValues: values }),
   setWorkflowDescription: (description) =>
     set({ workflowDescription: description }),
   setWorkflowId: (workflowId) => set({ workflowId }),

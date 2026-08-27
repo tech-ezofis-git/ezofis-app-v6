@@ -1,14 +1,24 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import { getWorkflowFormsQueryOptions } from '@/api/form/queries'
+import { requestApi } from '@/api/requests/requests'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import Input from '@/components/base/inputs/InputText'
+import { folderApi } from '@/pages/folders/api/folderApi'
+import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import SettingsSection from './settings/common/SettingsSection'
+
+type PreviewField = {
+  key: string
+  label: string
+  source: 'form' | 'repository'
+}
 
 const WorkflowSettings = () => {
   const [openGeneral, setOpenGeneral] = useState(true)
@@ -20,12 +30,14 @@ const WorkflowSettings = () => {
     form,
     initiateUsing,
     isSettingsOpen,
+    previewValues,
     workflowDescription,
     workflowName,
     workflowStatus,
     setFolder,
     setForm,
     setInitiateUsing,
+    setPreviewValues,
     setWorkflowDescription,
     setWorkflowName,
     setWorkflowStatus,
@@ -54,6 +66,73 @@ const WorkflowSettings = () => {
   const folderOptions = Array.isArray(folderOptionsData)
     ? folderOptionsData
     : []
+
+  // Form fields (for the selected initiation form)
+  const { data: formFields = [] } = useQuery<PreviewField[]>({
+    enabled: !!form,
+    queryKey: ['workflow-preview-form-fields', form],
+    queryFn: async () => {
+      const response = await requestApi.getForm(form as number)
+      const parsedForm =
+        typeof response?.formJson === 'string'
+          ? JSON.parse(response.formJson)
+          : response?.formJson
+      const panels = [
+        ...(parsedForm?.panels || []),
+        ...(parsedForm?.secondaryPanels || []),
+      ]
+
+      const fields: PreviewField[] = []
+      panels.forEach((panel: any) => {
+        ;(panel?.fields || []).forEach((field: any) => {
+          if (field.type === 'DIVIDER') return
+          fields.push({
+            key: String(field.name || field.id),
+            label: field.label || field.type,
+            source: 'form',
+          })
+        })
+      })
+      return fields
+    },
+  })
+
+  // Repository fields (for the selected folder)
+  const { data: repositoryFields = [] } = useQuery<PreviewField[]>({
+    enabled: !!folder,
+    queryKey: ['workflow-preview-repository-fields', folder],
+    queryFn: async () => {
+      const fields = await folderApi.getItemFilterFields(String(folder))
+      return fields.map((field) => ({
+        key: String(field.sqlColumnName || field.name),
+        label: String(field.name || field.sqlColumnName),
+        source: 'repository' as const,
+      }))
+    },
+  })
+
+  // Merge form + repository fields, skipping duplicates by normalized label
+  const previewFields = useMemo(() => {
+    const seen = new Set<string>()
+    const combined: PreviewField[] = []
+
+    ;[...formFields, ...repositoryFields].forEach((field) => {
+      const dedupeKey = normalizeFieldKey(field.label || field.key)
+      if (!dedupeKey || seen.has(dedupeKey)) return
+      seen.add(dedupeKey)
+      combined.push(field)
+    })
+
+    return combined
+  }, [formFields, repositoryFields])
+
+  const togglePreviewValue = (key: string, checked: boolean) => {
+    setPreviewValues(
+      checked
+        ? [...previewValues, key]
+        : previewValues.filter((value) => value !== key),
+    )
+  }
 
   if (!isSettingsOpen) return null
 
@@ -200,9 +279,39 @@ const WorkflowSettings = () => {
           variant='premium'
           onToggle={() => setOpenPreview(!openPreview)}
         >
-          <p className='text-13 text-gray-9'>
-            Preview settings are coming soon.
-          </p>
+          {!form && !folder && (
+            <p className='text-13 text-gray-9'>
+              Select a Folder and Form in General to configure preview fields.
+            </p>
+          )}
+
+          {(form || folder) && previewFields.length === 0 && (
+            <p className='text-13 text-gray-9'>No fields found.</p>
+          )}
+
+          <div className='space-y-2.5'>
+            {previewFields.map((field) => (
+              <div
+                className='flex items-center justify-between rounded-xl bg-white p-3 shadow-sm'
+                key={field.key}
+              >
+                <div className='flex flex-col'>
+                  <span className='text-13 font-medium text-gray-12'>
+                    {field.label}
+                  </span>
+                  <span className='text-11 leading-tight text-gray-9'>
+                    {field.source === 'form'
+                      ? 'Form field'
+                      : 'Repository field'}
+                  </span>
+                </div>
+                <InputSwitch
+                  checked={previewValues.includes(field.key)}
+                  onChange={(checked) => togglePreviewValue(field.key, checked)}
+                />
+              </div>
+            ))}
+          </div>
         </SettingsSection>
       </div>
 
