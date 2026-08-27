@@ -1,9 +1,34 @@
 import { Button, Textarea } from '@mantine/core'
+import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+
+const FORM_AI_STATUS_WORDS = [
+  'Thinking',
+  'Reading your form',
+  'Structuring the change',
+  'Almost done',
+]
+
+const useFormAiStatusWord = (active: boolean) => {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    if (!active) {
+      setIndex(0)
+      return
+    }
+    const timer = window.setInterval(() => {
+      setIndex((prev) => (prev + 1) % FORM_AI_STATUS_WORDS.length)
+    }, 1600)
+    return () => window.clearInterval(timer)
+  }, [active])
+
+  return active ? FORM_AI_STATUS_WORDS[index] : null
+}
 
 /**
  * Form-builder-scoped AI panel. Unlike the app-wide `AskAI` chat (document
@@ -18,6 +43,7 @@ const FormAIPanel = () => {
     useAskAIStore()
   const [prompt, setPrompt] = useState('')
   const listRef = useRef<HTMLDivElement>(null)
+  const statusWord = useFormAiStatusWord(isLoading)
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight })
@@ -92,14 +118,40 @@ const FormAIPanel = () => {
         )}
 
         {isLoading && (
-          <div className='flex items-center gap-2 self-start rounded-xl border border-gray-1 bg-white px-3 py-2 text-13 text-gray-8'>
+          <div className='flex items-center gap-2.5 self-start rounded-2xl rounded-tl-sm border border-gray-1 bg-white px-3.5 py-2.5'>
             <Icon
-              className='animate-spin text-accent-primary'
-              height={14}
-              name='lucide:loader-2'
-              width={14}
+              className='shrink-0 text-accent-primary'
+              height={16}
+              name='lucide:bot'
+              width={16}
             />
-            Building your form...
+            <AnimatePresence mode='wait'>
+              <motion.span
+                animate={{ opacity: 1, y: 0 }}
+                className='text-13 text-gray-8'
+                exit={{ opacity: 0, y: -3 }}
+                initial={{ opacity: 0, y: 3 }}
+                key={statusWord}
+                transition={{ duration: 0.2 }}
+              >
+                {statusWord}
+              </motion.span>
+            </AnimatePresence>
+            <div className='flex items-center gap-1'>
+              {[0, 1, 2].map((dot) => (
+                <motion.span
+                  animate={{ opacity: [0.35, 1, 0.35], y: [0, -3, 0] }}
+                  className='size-1.5 rounded-full bg-gray-5'
+                  key={dot}
+                  transition={{
+                    delay: dot * 0.16,
+                    duration: 0.7,
+                    ease: 'easeInOut',
+                    repeat: Infinity,
+                  }}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>

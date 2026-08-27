@@ -414,134 +414,199 @@ export const useFormStore = create<FormStore>()(
         set((state) => {
           if (!data || data.action === 'INFO') return state
 
-          const existingFieldMap = new Map<string, Question>()
-          const existingFieldByLabel = new Map<string, Question>()
-          state.panels.forEach((p) => {
-            p.fields.forEach((f) => {
-              if (f.id) existingFieldMap.set(f.id, f)
-              if (f.label) existingFieldByLabel.set(f.label.toLowerCase().trim(), f)
-            })
-          })
+          // Explicit whole-form wipe - only the AI action the user asked for
+          // by name ("remove/clear the form") reaches this branch.
+          if (data.action === 'REMOVE_FORM') {
+            return {
+              ...state,
+              activeQuestionId: null,
+              panels: [],
+              selectionType: 'general',
+            }
+          }
 
-          const existingPanelMap = new Map<string, Panel>()
-          const existingPanelByTitle = new Map<string, Panel>()
-          state.panels.forEach((p) => {
-            if (p.id) existingPanelMap.set(p.id, p)
-            const title = p.settings?.title || (p as any).title
-            if (title) existingPanelByTitle.set(title.toLowerCase().trim(), p)
-          })
+          const removedFieldIds = new Set<string>(
+            Array.isArray(data.removedFieldIds) ? data.removedFieldIds : [],
+          )
+          const removedPanelIds = new Set<string>(
+            Array.isArray(data.removedPanelIds) ? data.removedPanelIds : [],
+          )
+          const aiPanels: any[] = data.panels || []
 
-          const newPanels = (data.panels || []).map((p: any) => {
-            const panelTitle = p.settings?.title || p.title || 'Untitled Section'
-            const existingPanel =
-              (p.id && existingPanelMap.get(p.id)) ||
-              existingPanelByTitle.get(panelTitle.toLowerCase().trim())
+          const mergeField = (existingField: Question, f: any): Question => {
+            const fieldLabel = f.label || f.title || existingField.label
+            const fieldType = (
+              f.type || existingField.type || 'SHORT_TEXT'
+            ).toUpperCase() as QuestionType
+            const isMandatory =
+              f.isMandatory !== undefined
+                ? f.isMandatory
+                : f.settings?.validation?.fieldRule
+                  ? f.settings.validation.fieldRule === 'MANDATORY'
+                  : (existingField.settings?.validation?.fieldRule as string) ===
+                    'MANDATORY'
 
-            const panelId = existingPanel?.id || p.id || generateId()
+            return {
+              ...existingField,
+              label: fieldLabel,
+              type: fieldType,
+              settings: {
+                ...existingField.settings,
+                general: {
+                  ...existingField.settings?.general,
+                  placeholder:
+                    f.placeholder ??
+                    f.settings?.general?.placeholder ??
+                    existingField.settings?.general?.placeholder ??
+                    '',
+                  size:
+                    f.size ??
+                    f.settings?.general?.size ??
+                    existingField.settings?.general?.size ??
+                    'col-6',
+                },
+                specific: {
+                  ...existingField.settings?.specific,
+                  customOptions: Array.isArray(f.options)
+                    ? f.options.join('\n')
+                    : Array.isArray(f.settings?.specific?.options)
+                      ? f.settings.specific.options.join('\n')
+                      : (f.settings?.specific?.customOptions ??
+                        existingField.settings?.specific?.customOptions ??
+                        ''),
+                },
+                validation: {
+                  ...existingField.settings?.validation,
+                  fieldRule: (isMandatory ? 'MANDATORY' : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
+                },
+              },
+            }
+          }
 
-            const fields = (p.fields || []).map((f: any) => {
-              const fieldLabel = f.label || f.title || 'Untitled Field'
-              const existingField =
-                (f.id && existingFieldMap.get(f.id)) ||
-                existingFieldByLabel.get(fieldLabel.toLowerCase().trim())
+          const buildNewField = (f: any): Question => {
+            const fieldLabel = f.label || f.title || 'Untitled Field'
+            const fieldType = (f.type || 'SHORT_TEXT').toUpperCase() as QuestionType
+            const baseField = getField(fieldType)
+            const isMandatory = Boolean(
+              f.isMandatory || f.settings?.validation?.fieldRule === 'MANDATORY',
+            )
 
-              const fieldType = (f.type || existingField?.type || 'SHORT_TEXT').toUpperCase() as QuestionType
+            return {
+              ...baseField,
+              id: f.id || baseField.id,
+              label: fieldLabel,
+              type: fieldType,
+              settings: {
+                ...baseField.settings,
+                general: {
+                  ...baseField.settings?.general,
+                  hideLabel: f.settings?.general?.hideLabel ?? false,
+                  placeholder:
+                    f.placeholder || f.settings?.general?.placeholder || '',
+                  size: f.size || f.settings?.general?.size || 'col-6',
+                  tooltip: f.settings?.general?.tooltip || '',
+                  visibility: f.settings?.general?.visibility || 'NORMAL',
+                },
+                specific: {
+                  ...baseField.settings?.specific,
+                  ...f.settings?.specific,
+                  customOptions: Array.isArray(f.options)
+                    ? f.options.join('\n')
+                    : Array.isArray(f.settings?.specific?.options)
+                      ? f.settings.specific.options.join('\n')
+                      : f.settings?.specific?.customOptions || '',
+                },
+                validation: {
+                  fieldRule: (isMandatory ? 'MANDATORY' : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
+                  ...f.settings?.validation,
+                },
+              },
+            }
+          }
 
-              if (existingField) {
-                const isMandatory =
-                  f.isMandatory !== undefined
-                    ? f.isMandatory
-                    : f.settings?.validation?.fieldRule === 'MANDATORY'
+          // Fields the AI didn't mention are kept exactly as-is; only ids in
+          // removedFieldIds are dropped, and unmatched AI fields are appended.
+          const mergePanelFields = (
+            existingFields: Question[],
+            aiFields: any[],
+          ): Question[] => {
+            const matched = new Set<any>()
 
-                return {
-                  ...existingField,
-                  label: fieldLabel,
-                  type: fieldType,
-                  settings: {
-                    ...existingField.settings,
-                    general: {
-                      ...existingField.settings?.general,
-                      placeholder:
-                        f.placeholder ??
-                        f.settings?.general?.placeholder ??
-                        existingField.settings?.general?.placeholder ??
-                        '',
-                      size:
-                        f.size ??
-                        f.settings?.general?.size ??
-                        existingField.settings?.general?.size ??
-                        'col-6',
-                    },
-                    specific: {
-                      ...existingField.settings?.specific,
-                      customOptions: Array.isArray(f.options)
-                        ? f.options.join('\n')
-                        : Array.isArray(f.settings?.specific?.options)
-                          ? f.settings.specific.options.join('\n')
-                          : f.settings?.specific?.customOptions ??
-                            existingField.settings?.specific?.customOptions ??
-                            '',
-                    },
-                    validation: {
-                      ...existingField.settings?.validation,
-                      fieldRule: isMandatory ? 'MANDATORY' : 'OPTIONAL',
-                    },
-                  },
-                }
-              }
+            const kept = existingFields
+              .filter((ef) => !removedFieldIds.has(ef.id))
+              .map((ef) => {
+                const label = (ef.label || '').toLowerCase().trim()
+                const match = aiFields.find(
+                  (f) =>
+                    !matched.has(f) &&
+                    ((f.id && f.id === ef.id) ||
+                      (!f.id &&
+                        label &&
+                        (f.label || f.title || '').toLowerCase().trim() === label)),
+                )
+                if (!match) return ef
+                matched.add(match)
+                return mergeField(ef, match)
+              })
 
-              const baseField = getField(fieldType)
-              const isMandatory = Boolean(
-                f.isMandatory || f.settings?.validation?.fieldRule === 'MANDATORY',
-              )
+            const added = aiFields
+              .filter((f) => !matched.has(f) && !(f.id && removedFieldIds.has(f.id)))
+              .map(buildNewField)
+
+            return [...kept, ...added]
+          }
+
+          const findAiPanel = (existingPanel: Panel) => {
+            const title = (
+              existingPanel.settings?.title || (existingPanel as any).title || ''
+            )
+              .toLowerCase()
+              .trim()
+            return aiPanels.find(
+              (p) =>
+                (existingPanel.id && p.id && p.id === existingPanel.id) ||
+                (!p.id &&
+                  title &&
+                  (p.settings?.title || p.title || '').toLowerCase().trim() === title),
+            )
+          }
+
+          const matchedAiPanels = new Set<any>()
+
+          // Sections the AI didn't mention are kept exactly as-is; only ids in
+          // removedPanelIds are dropped.
+          const mergedExistingPanels = state.panels
+            .filter((p) => !removedPanelIds.has(p.id))
+            .map((p) => {
+              const match = findAiPanel(p)
+              if (!match) return p
+              matchedAiPanels.add(match)
 
               return {
-                ...baseField,
-                id: f.id || generateId(),
-                label: fieldLabel,
-                type: fieldType,
+                ...p,
+                fields: mergePanelFields(p.fields, match.fields || []),
                 settings: {
-                  ...baseField.settings,
-                  general: {
-                    ...baseField.settings?.general,
-                    hideLabel: f.settings?.general?.hideLabel ?? false,
-                    placeholder:
-                      f.placeholder || f.settings?.general?.placeholder || '',
-                    size: f.size || f.settings?.general?.size || 'col-6',
-                    tooltip: f.settings?.general?.tooltip || '',
-                    visibility: f.settings?.general?.visibility || 'NORMAL',
-                  },
-                  specific: {
-                    ...baseField.settings?.specific,
-                    ...f.settings?.specific,
-                    customOptions: Array.isArray(f.options)
-                      ? f.options.join('\n')
-                      : Array.isArray(f.settings?.specific?.options)
-                        ? f.settings.specific.options.join('\n')
-                        : f.settings?.specific?.customOptions || '',
-                  },
-                  validation: {
-                    fieldRule: isMandatory ? 'MANDATORY' : 'OPTIONAL',
-                    ...f.settings?.validation,
-                  },
+                  ...p.settings,
+                  description:
+                    match.settings?.description ??
+                    match.description ??
+                    p.settings?.description ??
+                    '',
+                  title: match.settings?.title || match.title || p.settings?.title,
                 },
               }
             })
 
-            return {
-              fields,
-              id: panelId,
+          const newPanels = aiPanels
+            .filter((p) => !matchedAiPanels.has(p) && !(p.id && removedPanelIds.has(p.id)))
+            .map((p) => ({
+              fields: (p.fields || []).map(buildNewField),
+              id: p.id || generateId(),
               settings: {
-                ...existingPanel?.settings,
-                description:
-                  p.settings?.description ||
-                  p.description ||
-                  existingPanel?.settings?.description ||
-                  '',
-                title: panelTitle,
+                description: p.settings?.description || p.description || '',
+                title: p.settings?.title || p.title || 'Untitled Section',
               },
-            }
-          })
+            }))
 
           return {
             ...state,
@@ -550,7 +615,7 @@ export const useFormStore = create<FormStore>()(
             formType: data.formType || state.formType,
             layout: data.layout || state.layout,
             name: data.name || state.name,
-            panels: newPanels.length > 0 ? newPanels : state.panels,
+            panels: [...mergedExistingPanels, ...newPanels],
             selectionType: 'general',
           }
         }),

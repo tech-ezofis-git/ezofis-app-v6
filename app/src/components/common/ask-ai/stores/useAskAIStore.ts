@@ -59,12 +59,9 @@ const useAskAIStore = create<Store>((set, get) => ({
       })
 
       let payload: any = null
-      if (result.action === 'UPDATE') {
+      if (result.action === 'UPDATE' || result.action === 'REMOVE_FORM') {
         payload = buildFormPayloadFromAiSuggestion(result)
-        useFormStore.getState().appendAIResponse({
-          ...payload,
-          action: 'UPDATE',
-        })
+        useFormStore.getState().appendAIResponse(payload)
       }
 
       set((state) => ({
@@ -73,9 +70,11 @@ const useAskAIStore = create<Store>((set, get) => ({
           {
             content:
               result.reply ||
-              (result.action === 'UPDATE'
-                ? 'I have updated your form structure.'
-                : 'Here is the information about your form.'),
+              (result.action === 'REMOVE_FORM'
+                ? 'I have removed the form.'
+                : result.action === 'UPDATE'
+                  ? 'I have updated your form structure.'
+                  : 'Here is the information about your form.'),
             data: payload,
             role: 'assistant' as const,
           },
