@@ -8,7 +8,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/favicon.svg" />
+    <script>
+      // Emits the <link rel="icon"> tag itself (instead of a static one below)
+      // so the browser only ever fetches the right favicon — swapping an
+      // already-parsed <link>'s href later is too late, the wrong icon has
+      // often already started (or finished) loading by then.
+      // Keep the white-label path list in sync with WHITE_LABEL_ROUTE_MAP
+      // in src/utils/whiteLabel.ts.
+      ;(function () {
+        var iconHref = '/favicon.svg'
+        try {
+          var whiteLabelPaths = ['/login', '/newuser', '/recover', '/setup']
+          var pathname = window.location.pathname.replace(/\/$/, '')
+          var isOnboarding = /^\/on-boarding\//.test(pathname)
+          var sessionFlag =
+            sessionStorage.getItem('ezofis:white-label-session') === '1'
+          var isWhiteLabel =
+            whiteLabelPaths.indexOf(pathname) !== -1 ||
+            (isOnboarding && sessionFlag)
+
+          if (isWhiteLabel) {
+            iconHref =
+              'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3C%2Fsvg%3E'
+          }
+        } catch (e) {}
+        document.write('<link rel="icon" href="' + iconHref + '">')
+      })()
+    </script>
     <meta name="theme-color" content="#7C5CFF" />
     <script>
       ;(function () {
@@ -50,6 +76,33 @@
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>EZOFIS | AI Workflow Automation</title>
+    <script>
+      // Keep in sync with WHITE_LABEL_TITLES in src/utils/whiteLabel.ts.
+      // The favicon is already handled by the earlier script (it controls
+      // the <link rel="icon"> tag from the start); this only needs to set
+      // the tab title, which is safe to (re)assign any time after <title> parses.
+      ;(function () {
+        try {
+          var titles = {
+            '/login': 'Sign In',
+            '/newuser': 'Create Account',
+            '/recover': 'Forgot Password',
+            '/setup': 'Complete Setup',
+          }
+          var pathname = window.location.pathname.replace(/\/$/, '')
+          var isOnboarding = /^\/on-boarding\//.test(pathname)
+          var sessionFlag =
+            sessionStorage.getItem('ezofis:white-label-session') === '1'
+          var isWhiteLabel =
+            Object.prototype.hasOwnProperty.call(titles, pathname) ||
+            (isOnboarding && sessionFlag)
+
+          if (isWhiteLabel) {
+            document.title = titles[pathname] || 'Complete Your Account'
+          }
+        } catch (e) {}
+      })()
+    </script>
   </head>
 
   <body
