@@ -1,17 +1,21 @@
 import {
+  Badge,
   Button,
   Divider,
   Rating,
   SegmentedControl,
   Select,
   TextInput,
+  Tooltip,
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
+import { uploadForOcr, getRepositorys } from '@/api/v6/folder/folder'
 import {
   type Question,
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
+import { mapOcrFieldsToModel } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
 
 const LivePreview = () => {
@@ -19,6 +23,24 @@ const LivePreview = () => {
   const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
     'desktop',
   )
+  const [previewModel, setPreviewModel] = useState<Record<string, any>>({})
+  const [extractingFieldId, setExtractingFieldId] = useState<string | null>(null)
+  const [repositories, setRepositories] = useState<any[]>([])
+  const [selectedRepoId, setSelectedRepoId] = useState<string>('')
+
+  // Fetch repositories for OCR target context
+  useEffect(() => {
+    let cancelled = false
+    getRepositorys().then((res) => {
+      if (!cancelled && res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setRepositories(res.data)
+        setSelectedRepoId(res.data[0].id)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Close on Escape key
   useEffect(() => {
@@ -30,6 +52,59 @@ const LivePreview = () => {
   }, [setIsPreviewOpen])
 
   if (!isPreviewOpen) return null
+
+  const handleFieldValueChange = (fieldId: string, value: any) => {
+    setPreviewModel((prev) => ({ ...prev, [fieldId]: value }))
+  }
+
+  const handleOcrFileSelect = async (file: File, fieldId: string) => {
+    if (!file) return
+
+    setExtractingFieldId(fieldId)
+
+    try {
+      // Build field hints from current form builder panels
+      const fieldHints = panels.flatMap((p) =>
+        (p.fields || [])
+          .filter((f) => f.label)
+          .map((f) => `${f.label},${f.type || 'SHORT_TEXT'}`),
+      )
+
+      const repoIdToUse = selectedRepoId || (repositories[0]?.id ?? 'default-repo')
+
+      const { data, error } = await uploadForOcr(repoIdToUse, file, fieldHints)
+
+      if (!error && data?.ocrFieldList) {
+        const ocrPatch = mapOcrFieldsToModel(panels, data.ocrFieldList)
+
+        // Perform direct label/type matching fallback for form builder questions
+        const extraPatch: Record<string, string> = {}
+        if (Array.isArray(data.ocrFieldList)) {
+          for (const item of data.ocrFieldList) {
+            if (!item?.name || !item.value) continue
+            const targetName = item.name.trim().toLowerCase()
+            for (const panel of panels) {
+              for (const field of panel.fields || []) {
+                if (field.label && field.label.trim().toLowerCase() === targetName) {
+                  extraPatch[field.id] = item.value
+                }
+              }
+            }
+          }
+        }
+
+        const mergedPatch = { ...extraPatch, ...ocrPatch, [fieldId]: file.name }
+        setPreviewModel((prev) => ({ ...prev, ...mergedPatch }))
+      } else {
+        setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+      }
+    } catch (err: any) {
+      console.error('OCR Extraction error:', err)
+      setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+    } finally {
+      setExtractingFieldId(null)
+    }
+  }
 
   return (
     <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 backdrop-blur-sm font-inter duration-300'>
@@ -45,7 +120,20 @@ const LivePreview = () => {
           </div>
         </div>
 
-        <div className='flex items-center gap-4'>
+        <div className='flex items-center gap-3'>
+          {Object.keys(previewModel).length > 0 && (
+            <Button
+              className='h-9 rounded-xl font-medium cursor-pointer'
+              color='gray'
+              leftSection={<Icon height={14} name='lucide:rotate-ccw' width={14} />}
+              size='sm'
+              variant='outline'
+              onClick={() => setPreviewModel({})}
+            >
+              Clear Values
+            </Button>
+          )}
+
           <SegmentedControl
             radius='xl'
             size='xs'
@@ -139,14 +227,14 @@ const LivePreview = () => {
                         className={cn(
                           'col-span-12',
                           deviceType !== 'mobile' &&
-                            field.settings.general.size === 'col-6' &&
-                            'md:col-span-6',
+                          field.settings.general.size === 'col-6' &&
+                          'md:col-span-6',
                           deviceType !== 'mobile' &&
-                            field.settings.general.size === 'col-4' &&
-                            'md:col-span-4',
+                          field.settings.general.size === 'col-4' &&
+                          'md:col-span-4',
                           deviceType !== 'mobile' &&
-                            field.settings.general.size === 'col-3' &&
-                            'md:col-span-3',
+                          field.settings.general.size === 'col-3' &&
+                          'md:col-span-3',
                         )}
                       >
                         {!field.settings.general.hideLabel && (
@@ -155,10 +243,10 @@ const LivePreview = () => {
                               {field.label || 'Untitled Question'}
                               {field.settings.validation.fieldRule ===
                                 'REQUIRED' && (
-                                <span className='ml-1 font-bold text-red-11'>
-                                  *
-                                </span>
-                              )}
+                                  <span className='ml-1 font-bold text-red-11'>
+                                    *
+                                  </span>
+                                )}
                             </label>
                           </div>
                         )}
@@ -167,28 +255,18 @@ const LivePreview = () => {
                             {field.settings.general.description}
                           </p>
                         )}
-                        {renderPreviewInput(field)}
+                        {renderPreviewInput(
+                          field,
+                          previewModel,
+                          handleFieldValueChange,
+                          (file) => handleOcrFileSelect(file, field.id),
+                          extractingFieldId === field.id,
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               ))
-            )}
-
-            {/* Bottom Form Submit Action */}
-            {panels.length > 0 && (
-              <div className='flex items-center justify-end gap-3 border-t border-gray-3 pt-4'>
-                <Button
-                  className='rounded-xl font-bold cursor-pointer px-6'
-                  color='primary'
-                  leftSection={<Icon height={16} name='lucide:send' width={16} />}
-                  size='md'
-                  variant='solid'
-                  onClick={() => setIsPreviewOpen(false)}
-                >
-                  Submit Form
-                </Button>
-              </div>
             )}
           </div>
         </div>
@@ -210,7 +288,15 @@ const getFieldOptions = (field: Question): string[] => {
   return options.length > 0 ? options : ['Option A', 'Option B', 'Option C']
 }
 
-const renderPreviewInput = (field: Question) => {
+const renderPreviewInput = (
+  field: Question,
+  model: Record<string, any>,
+  onChange: (fieldId: string, value: any) => void,
+  onOcrProcessFile?: (file: File) => void,
+  isExtracting?: boolean,
+) => {
+  const fieldValue = model[field.id] ?? ''
+
   switch (field.type) {
     case 'LABEL':
       return (
@@ -229,27 +315,84 @@ const renderPreviewInput = (field: Question) => {
             <Icon className='text-gray-10' height={14} name='tabler:list' width={14} />
           </div>
           <div className='p-3 text-xs italic text-gray-9'>
-            Rich text content editor...
+            {fieldValue ? String(fieldValue) : 'Rich text content editor...'}
           </div>
         </div>
       )
-    case 'FILE_UPLOAD':
+    case 'IMAGE_UPLOAD':
+    case 'FILE_UPLOAD': {
+      const fileInputId = `preview-field-file-${field.id}`
       return (
-        <div className='flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-3 bg-gray-1/40 p-4 transition-colors hover:bg-gray-2'>
-          <Icon className='mb-1.5 text-gray-10' height={20} name='tabler:upload' width={20} />
-          <div className='text-xs font-medium text-gray-12'>
-            Click to upload or drag and drop
-          </div>
-          <div className='mt-0.5 text-[10px] text-gray-9'>
-            Any file up to 10MB
-          </div>
+        <div className='w-full'>
+          <input
+            accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
+            className='hidden'
+            disabled={isExtracting}
+            id={fileInputId}
+            type='file'
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file && onOcrProcessFile) {
+                onOcrProcessFile(file)
+              }
+            }}
+          />
+          <label
+            htmlFor={isExtracting ? undefined : fileInputId}
+            className={cn(
+              'flex w-full flex-col items-center justify-center rounded-xl border border-dashed p-4 transition-all',
+              isExtracting
+                ? 'cursor-wait border-purple-4 bg-purple-1/40'
+                : 'cursor-pointer border-gray-3 bg-gray-1/40 hover:border-primary-9 hover:bg-primary-1/30 active:scale-[0.99]',
+            )}
+          >
+            {isExtracting ? (
+              <>
+                <Icon
+                  className='mb-1.5 animate-spin text-purple-9'
+                  height={24}
+                  name='lucide:loader-2'
+                  width={24}
+                />
+                <div className='text-xs font-bold text-purple-11'>
+                  Extracting document data...
+                </div>
+                <div className='mt-0.5 text-[10px] text-purple-9'>
+                  Populating form fields, please wait...
+                </div>
+              </>
+            ) : (
+              <>
+                <Icon
+                  className='mb-1.5 text-primary-9'
+                  height={22}
+                  name='tabler:upload'
+                  width={22}
+                />
+                <div className='text-xs font-semibold text-gray-12'>
+                  {fieldValue ? (
+                    <span className='flex items-center gap-1.5 font-bold text-primary-9'>
+                      <Icon height={16} name='lucide:file-check' width={16} />
+                      {String(fieldValue)}
+                    </span>
+                  ) : (
+                    'Click to select file for this field or drag & drop'
+                  )}
+                </div>
+                <div className='mt-0.5 text-[10px] text-gray-9'>
+                  Supports PDF & Images (Auto-extracts /uploadForOCR data)
+                </div>
+              </>
+            )}
+          </label>
         </div>
       )
+    }
     case 'TIME':
       return (
         <div className='flex items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11'>
           <Icon height={15} name='tabler:clock' width={15} />
-          <span>HH : MM AM/PM</span>
+          <span>{fieldValue ? String(fieldValue) : 'HH : MM AM/PM'}</span>
         </div>
       )
     case 'TABLE':
@@ -301,6 +444,7 @@ const renderPreviewInput = (field: Question) => {
       return (
         <TextInput
           size='sm'
+          value={String(fieldValue)}
           variant='default'
           classNames={{
             input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
@@ -308,6 +452,7 @@ const renderPreviewInput = (field: Question) => {
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
+          onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
     case 'LONG_TEXT':
@@ -317,22 +462,32 @@ const renderPreviewInput = (field: Question) => {
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
+          value={String(fieldValue)}
+          onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
     case 'DATE':
       return (
-        <div className='inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11 transition-colors hover:border-primary-9'>
-          <Icon height={15} name='tabler:calendar' width={15} />
-          <span>MM / DD / YYYY</span>
-        </div>
+        <TextInput
+          size='sm'
+          value={String(fieldValue)}
+          variant='default'
+          classNames={{
+            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+          }}
+          placeholder='YYYY-MM-DD or MM/DD/YYYY'
+          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
+          onChange={(e) => onChange(field.id, e.target.value)}
+        />
       )
     case 'RATING':
       return (
         <Rating
           color='yellow'
           count={field.settings.specific.iconCount || 5}
-          defaultValue={0}
           size='md'
+          value={Number(fieldValue) || 0}
+          onChange={(val) => onChange(field.id, val)}
         />
       )
     case 'SINGLE_SELECT': {
@@ -342,9 +497,11 @@ const renderPreviewInput = (field: Question) => {
           data={options}
           placeholder={field.settings.general.placeholder || 'Select an option'}
           size='sm'
+          value={String(fieldValue) || null}
           classNames={{
             input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
+          onChange={(val) => onChange(field.id, val)}
         />
       )
     }
@@ -353,6 +510,12 @@ const renderPreviewInput = (field: Question) => {
     case 'MULTI_SELECT': {
       const options = getFieldOptions(field)
       const optionsPerLine = field.settings.specific.optionsPerLine || 1
+      const selectedList = Array.isArray(fieldValue)
+        ? fieldValue
+        : fieldValue
+          ? [String(fieldValue)]
+          : []
+
       return (
         <div
           className='grid gap-1.5'
@@ -360,22 +523,51 @@ const renderPreviewInput = (field: Question) => {
             gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
           }}
         >
-          {options.map((opt, i) => (
-            <div
-              key={i}
-              className='flex cursor-pointer items-center gap-2.5 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-12 transition-all hover:bg-gray-2'
-            >
+          {options.map((opt, i) => {
+            const isSelected = selectedList.includes(opt)
+            return (
               <div
+                key={i}
                 className={cn(
-                  'flex size-4 shrink-0 items-center justify-center border border-gray-4',
-                  field.type === 'SINGLE_CHOICE'
-                    ? 'rounded-full'
-                    : 'rounded-md',
+                  'flex cursor-pointer items-center gap-2.5 rounded-lg border p-2 text-xs text-gray-12 transition-all',
+                  isSelected
+                    ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9'
+                    : 'border-gray-3 bg-white hover:bg-gray-2',
                 )}
-              />
-              <span>{opt}</span>
-            </div>
-          ))}
+                onClick={() => {
+                  if (field.type === 'SINGLE_CHOICE') {
+                    onChange(field.id, opt)
+                  } else {
+                    const next = isSelected
+                      ? selectedList.filter((item) => item !== opt)
+                      : [...selectedList, opt]
+                    onChange(field.id, next)
+                  }
+                }}
+              >
+                <div
+                  className={cn(
+                    'flex size-4 shrink-0 items-center justify-center border',
+                    field.type === 'SINGLE_CHOICE'
+                      ? 'rounded-full'
+                      : 'rounded-md',
+                    isSelected
+                      ? 'border-primary-9 bg-primary-9 text-white'
+                      : 'border-gray-4 bg-white',
+                  )}
+                >
+                  {isSelected && (
+                    <Icon
+                      height={10}
+                      name={field.type === 'SINGLE_CHOICE' ? 'lucide:circle' : 'lucide:check'}
+                      width={10}
+                    />
+                  )}
+                </div>
+                <span>{opt}</span>
+              </div>
+            )
+          })}
         </div>
       )
     }
@@ -383,6 +575,7 @@ const renderPreviewInput = (field: Question) => {
       return (
         <TextInput
           size='sm'
+          value={String(fieldValue)}
           variant='default'
           classNames={{
             input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
@@ -390,6 +583,7 @@ const renderPreviewInput = (field: Question) => {
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
+          onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
   }
