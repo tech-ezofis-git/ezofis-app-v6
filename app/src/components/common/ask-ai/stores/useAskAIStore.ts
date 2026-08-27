@@ -1,5 +1,9 @@
 import { create } from 'zustand'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
+import {
+  buildFormPayloadFromAiSuggestion,
+  processFormAssistantPrompt,
+} from '@/services/ai/formConfig'
 
 type Store = {
   credits: number
@@ -24,11 +28,11 @@ const useAskAIStore = create<Store>((set, get) => ({
   messages: [],
   suggestion: '',
   suggestions: [
-    'Create a customer feedback form.',
-    'Build a registration form for an event.',
-    'Design a job application form.',
-    'Make a contact us form with email validation.',
-    'Generate a product survey with rating fields.',
+    'Add a Phone Number and Address field.',
+    'Make the Email field mandatory.',
+    'What fields are in this form?',
+    'Change the form name to Customer Feedback.',
+    'Add a new section for Attachments.',
   ],
   close: () => set({ isOpen: false }),
   open: () => set({ isOpen: true }),
@@ -48,27 +52,31 @@ const useAskAIStore = create<Store>((set, get) => ({
     })
 
     try {
-      const response = await fetch(
-        'https://form-builder-ai-seven.vercel.app/api/generate-form',
-        {
-          body: JSON.stringify({ prompt }),
-          headers: { 'Content-Type': 'application/json' },
-          method: 'POST',
-        },
-      )
+      const formState = useFormStore.getState()
+      const result = await processFormAssistantPrompt({
+        formState,
+        userPrompt: prompt,
+      })
 
-      if (!response.ok) throw new Error('Failed to generate form')
-
-      const data = await response.json()
-      useFormStore.getState().appendAIResponse(data)
+      let payload: any = null
+      if (result.action === 'UPDATE') {
+        payload = buildFormPayloadFromAiSuggestion(result)
+        useFormStore.getState().appendAIResponse({
+          ...payload,
+          action: 'UPDATE',
+        })
+      }
 
       set((state) => ({
         messages: [
           ...state.messages,
           {
             content:
-              'I have generated the form structure for you. You can see the details below:',
-            data,
+              result.reply ||
+              (result.action === 'UPDATE'
+                ? 'I have updated your form structure.'
+                : 'Here is the information about your form.'),
+            data: payload,
             role: 'assistant' as const,
           },
         ],
@@ -81,7 +89,7 @@ const useAskAIStore = create<Store>((set, get) => ({
           ...state.messages,
           {
             content:
-              'Sorry, I encountered an error while generating your form. Please try again.',
+              'Sorry, I encountered an error while processing your request. Please try again.',
             role: 'assistant' as const,
           },
         ],

@@ -57,18 +57,28 @@ const LivePreview = () => {
     setPreviewModel((prev) => ({ ...prev, [fieldId]: value }))
   }
 
-  const handleOcrFileSelect = async (file: File, fieldId: string) => {
+  const handleOcrFileSelect = async (file: File, field: Question) => {
     if (!file) return
+
+    const fieldId = field.id
+    const assignedFieldIds = field.settings.validation.assignOtherControls || []
+
+    // OCR only runs when this upload field has target fields assigned to it.
+    if (assignedFieldIds.length === 0) {
+      setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+      return
+    }
 
     setExtractingFieldId(fieldId)
 
     try {
-      // Build field hints from current form builder panels
-      const fieldHints = panels.flatMap((p) =>
-        (p.fields || [])
-          .filter((f) => f.label)
-          .map((f) => `${f.label},${f.type || 'SHORT_TEXT'}`),
-      )
+      const assignedFields = panels
+        .flatMap((p) => p.fields || [])
+        .filter((f) => assignedFieldIds.includes(f.id))
+
+      const fieldHints = assignedFields
+        .filter((f) => f.label)
+        .map((f) => `${f.label},${f.type || 'SHORT_TEXT'}`)
 
       const repoIdToUse = selectedRepoId || (repositories[0]?.id ?? 'default-repo')
 
@@ -77,23 +87,28 @@ const LivePreview = () => {
       if (!error && data?.ocrFieldList) {
         const ocrPatch = mapOcrFieldsToModel(panels, data.ocrFieldList)
 
-        // Perform direct label/type matching fallback for form builder questions
+        // Direct label/type matching fallback, restricted to assigned fields
         const extraPatch: Record<string, string> = {}
         if (Array.isArray(data.ocrFieldList)) {
           for (const item of data.ocrFieldList) {
             if (!item?.name || !item.value) continue
             const targetName = item.name.trim().toLowerCase()
-            for (const panel of panels) {
-              for (const field of panel.fields || []) {
-                if (field.label && field.label.trim().toLowerCase() === targetName) {
-                  extraPatch[field.id] = item.value
-                }
+            for (const targetField of assignedFields) {
+              if (targetField.label && targetField.label.trim().toLowerCase() === targetName) {
+                extraPatch[targetField.id] = item.value
               }
             }
           }
         }
 
-        const mergedPatch = { ...extraPatch, ...ocrPatch, [fieldId]: file.name }
+        // Only ever populate fields this upload field was explicitly assigned to
+        const restrictedPatch: Record<string, string> = {}
+        for (const id of assignedFieldIds) {
+          if (extraPatch[id] !== undefined) restrictedPatch[id] = extraPatch[id]
+          else if (ocrPatch[id] !== undefined) restrictedPatch[id] = ocrPatch[id]
+        }
+
+        const mergedPatch = { ...restrictedPatch, [fieldId]: file.name }
         setPreviewModel((prev) => ({ ...prev, ...mergedPatch }))
       } else {
         setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
@@ -259,7 +274,7 @@ const LivePreview = () => {
                           field,
                           previewModel,
                           handleFieldValueChange,
-                          (file) => handleOcrFileSelect(file, field.id),
+                          (file) => handleOcrFileSelect(file, field),
                           extractingFieldId === field.id,
                         )}
                       </div>

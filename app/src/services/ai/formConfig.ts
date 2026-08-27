@@ -23,6 +23,7 @@ export interface AiGeneratedPanel {
 }
 
 export interface AiFormConfigSuggestion {
+  action?: 'INFO' | 'UPDATE'
   name: string
   description: string
   formType: FormTypeOption
@@ -557,6 +558,8 @@ export function buildFormPayloadFromAiSuggestion(
   })
 
   return {
+    action: suggestion.action || 'UPDATE',
+    description: suggestion.description,
     formJson: JSON.stringify({
       panels,
       secondaryPanels: [],
@@ -573,7 +576,10 @@ export function buildFormPayloadFromAiSuggestion(
         },
       },
     }),
+    formType: suggestion.formType,
+    name: suggestion.name,
     panels,
+    reply: suggestion.reply,
     settings: {
       general: {
         coordinator: '',
@@ -588,3 +594,150 @@ export function buildFormPayloadFromAiSuggestion(
     },
   }
 }
+
+export function formatFormStateForAi(formState: any) {
+  const name = formState.name || 'Untitled Form'
+  const description = formState.description || ''
+  const formType = formState.formType || 'WORKFLOW'
+
+  const panelsSummary = (formState.panels || []).map((p: any) => ({
+    description: p.settings?.description || p.description || '',
+    fields: (p.fields || []).map((f: any) => {
+      const isMandatory = f.settings?.validation?.fieldRule === 'MANDATORY'
+      const options = f.settings?.specific?.customOptions
+        ? String(f.settings.specific.customOptions).split('\n').filter(Boolean)
+        : undefined
+
+      return {
+        id: f.id,
+        isMandatory,
+        label: f.label || f.displayLabel || 'Untitled Field',
+        options: options && options.length > 0 ? options : undefined,
+        placeholder: f.settings?.general?.placeholder || '',
+        size: f.settings?.general?.size || 'col-6',
+        type: f.type || 'SHORT_TEXT',
+      }
+    }),
+    id: p.id,
+    title: p.settings?.title || p.title || 'Untitled Section',
+  }))
+
+  return {
+    description,
+    formType,
+    name,
+    panels: panelsSummary,
+  }
+}
+
+export interface FormAssistantOptions {
+  formState: any
+  userPrompt: string
+}
+
+export async function processFormAssistantPrompt(
+  options: FormAssistantOptions,
+): Promise<AiFormConfigSuggestion> {
+  const currentForm = formatFormStateForAi(options.formState)
+
+  if (!isQwenConfigured()) {
+    const fallback = buildLocalFormConfig({
+      description: currentForm.description,
+      formType: currentForm.formType as FormTypeOption,
+      name: currentForm.name,
+      prompt: options.userPrompt,
+    })
+    return {
+      ...fallback,
+      action: 'UPDATE',
+    }
+  }
+
+  const systemMessage = `You are an AI Form Architect Assistant editing an existing business form or answering questions about it.
+
+CURRENT FORM SCHEMA:
+Form Name: "${currentForm.name}"
+Description: "${currentForm.description}"
+Form Type: "${currentForm.formType}"
+Current Sections & Fields:
+${JSON.stringify(currentForm.panels, null, 2)}
+
+Supported Field Types: ${SUPPORTED_FIELD_TYPES.join(', ')}
+Field Sizes: "col-3", "col-4", "col-6", "col-12"
+
+INSTRUCTIONS & RULES:
+1. Determine user intent:
+   - "INFO": The user is asking a question or requesting information about the form (e.g. "What fields are mandatory?", "How many sections?", "Explain what this form does"). Answer clearly in "reply", set "action": "INFO", and return current panels.
+   - "UPDATE": The user is asking to add, modify, delete, or restructure fields/sections or update form settings (e.g. "Add phone number", "Change form name to X", "Make email mandatory", "Remove budget code"). Set "action": "UPDATE", update schema accordingly, and explain changes in "reply".
+
+2. PRESERVATION RULES FOR "UPDATE":
+   - Always preserve existing field "id" and section "id" values when modifying existing items.
+   - Do NOT delete existing fields or sections unless the user explicitly asks to remove them or recreate the form.
+   - For new fields, assign clear labels, appropriate types, sizes, mandatory flags, and options if select type.
+
+Respond ONLY with valid JSON using this exact structure:
+{
+  "action": "INFO" | "UPDATE",
+  "name": "Form Name",
+  "description": "Form Description",
+  "reply": "Friendly explanation of changes made or answer to question",
+  "panels": [
+    {
+      "id": "existing-section-id-or-leave-blank-if-new",
+      "title": "Section Title",
+      "description": "Section description",
+      "fields": [
+        {
+          "id": "existing-field-id-or-leave-blank-if-new",
+          "label": "Field Label",
+          "type": "SHORT_TEXT",
+          "isMandatory": true,
+          "size": "col-6",
+          "placeholder": "Enter value",
+          "options": ["Option 1", "Option 2"]
+        }
+      ]
+    }
+  ]
+}`
+
+  const messages = [
+    { content: systemMessage, role: 'system' as const },
+    { content: options.userPrompt, role: 'user' as const },
+  ]
+
+  try {
+    const content = await qwenChatCompletions({
+      jsonObject: true,
+      maxTokens: 3000,
+      messages,
+    })
+
+    const parsed = parseJsonFromModelContent<any>(content)
+    const panels = extractPanelsFromRawJson(parsed)
+    const action = parsed?.action === 'INFO' ? 'INFO' : 'UPDATE'
+
+    return {
+      action,
+      description: shortenDescription(parsed?.description || currentForm.description),
+      formType: (parsed?.formType || currentForm.formType) as FormTypeOption,
+      name: shortenFormName(parsed?.name || currentForm.name),
+      panels: panels.length > 0 ? panels : currentForm.panels,
+      reply: String(parsed?.reply || '').trim() || 'I have processed your request.',
+      source: 'qwen',
+    }
+  } catch (error) {
+    console.error('Form assistant error:', error)
+    const fallback = buildLocalFormConfig({
+      description: currentForm.description,
+      formType: currentForm.formType as FormTypeOption,
+      name: currentForm.name,
+      prompt: options.userPrompt,
+    })
+    return {
+      ...fallback,
+      action: 'UPDATE',
+    }
+  }
+}
+

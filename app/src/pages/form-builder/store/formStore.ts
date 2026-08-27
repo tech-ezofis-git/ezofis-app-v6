@@ -2,6 +2,7 @@ import { notifications } from '@mantine/notifications'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import formApi from '@/api/form/form'
+import { getField } from '@/helpers/new-field'
 
 export const generateId = () => {
   try {
@@ -258,6 +259,8 @@ export interface Question {
     }
     validation: {
       allowedFileTypes?: string[]
+      // Field IDs to auto-fill from this FILE_UPLOAD field's OCR extraction
+      assignOtherControls?: string[]
       contentRule?: string
       correctAnswer?: string
       // Date Limits
@@ -409,43 +412,136 @@ export const useFormStore = create<FormStore>()(
 
       appendAIResponse: (data) =>
         set((state) => {
-          if (!data) return state
+          if (!data || data.action === 'INFO') return state
 
-          const panels = (data.panels || []).map((p: any) => ({
-            fields: (p.fields || []).map((f: any) => ({
-              ...f,
-              id: generateId(),
-              label: f.label || f.title || 'Untitled Field',
-              type: (f.type || 'SHORT_TEXT').toUpperCase(),
+          const existingFieldMap = new Map<string, Question>()
+          const existingFieldByLabel = new Map<string, Question>()
+          state.panels.forEach((p) => {
+            p.fields.forEach((f) => {
+              if (f.id) existingFieldMap.set(f.id, f)
+              if (f.label) existingFieldByLabel.set(f.label.toLowerCase().trim(), f)
+            })
+          })
+
+          const existingPanelMap = new Map<string, Panel>()
+          const existingPanelByTitle = new Map<string, Panel>()
+          state.panels.forEach((p) => {
+            if (p.id) existingPanelMap.set(p.id, p)
+            const title = p.settings?.title || (p as any).title
+            if (title) existingPanelByTitle.set(title.toLowerCase().trim(), p)
+          })
+
+          const newPanels = (data.panels || []).map((p: any) => {
+            const panelTitle = p.settings?.title || p.title || 'Untitled Section'
+            const existingPanel =
+              (p.id && existingPanelMap.get(p.id)) ||
+              existingPanelByTitle.get(panelTitle.toLowerCase().trim())
+
+            const panelId = existingPanel?.id || p.id || generateId()
+
+            const fields = (p.fields || []).map((f: any) => {
+              const fieldLabel = f.label || f.title || 'Untitled Field'
+              const existingField =
+                (f.id && existingFieldMap.get(f.id)) ||
+                existingFieldByLabel.get(fieldLabel.toLowerCase().trim())
+
+              const fieldType = (f.type || existingField?.type || 'SHORT_TEXT').toUpperCase() as QuestionType
+
+              if (existingField) {
+                const isMandatory =
+                  f.isMandatory !== undefined
+                    ? f.isMandatory
+                    : f.settings?.validation?.fieldRule === 'MANDATORY'
+
+                return {
+                  ...existingField,
+                  label: fieldLabel,
+                  type: fieldType,
+                  settings: {
+                    ...existingField.settings,
+                    general: {
+                      ...existingField.settings?.general,
+                      placeholder:
+                        f.placeholder ??
+                        f.settings?.general?.placeholder ??
+                        existingField.settings?.general?.placeholder ??
+                        '',
+                      size:
+                        f.size ??
+                        f.settings?.general?.size ??
+                        existingField.settings?.general?.size ??
+                        'col-6',
+                    },
+                    specific: {
+                      ...existingField.settings?.specific,
+                      customOptions: Array.isArray(f.options)
+                        ? f.options.join('\n')
+                        : Array.isArray(f.settings?.specific?.options)
+                          ? f.settings.specific.options.join('\n')
+                          : f.settings?.specific?.customOptions ??
+                            existingField.settings?.specific?.customOptions ??
+                            '',
+                    },
+                    validation: {
+                      ...existingField.settings?.validation,
+                      fieldRule: isMandatory ? 'MANDATORY' : 'OPTIONAL',
+                    },
+                  },
+                }
+              }
+
+              const baseField = getField(fieldType)
+              const isMandatory = Boolean(
+                f.isMandatory || f.settings?.validation?.fieldRule === 'MANDATORY',
+              )
+
+              return {
+                ...baseField,
+                id: f.id || generateId(),
+                label: fieldLabel,
+                type: fieldType,
+                settings: {
+                  ...baseField.settings,
+                  general: {
+                    ...baseField.settings?.general,
+                    hideLabel: f.settings?.general?.hideLabel ?? false,
+                    placeholder:
+                      f.placeholder || f.settings?.general?.placeholder || '',
+                    size: f.size || f.settings?.general?.size || 'col-6',
+                    tooltip: f.settings?.general?.tooltip || '',
+                    visibility: f.settings?.general?.visibility || 'NORMAL',
+                  },
+                  specific: {
+                    ...baseField.settings?.specific,
+                    ...f.settings?.specific,
+                    customOptions: Array.isArray(f.options)
+                      ? f.options.join('\n')
+                      : Array.isArray(f.settings?.specific?.options)
+                        ? f.settings.specific.options.join('\n')
+                        : f.settings?.specific?.customOptions || '',
+                  },
+                  validation: {
+                    fieldRule: isMandatory ? 'MANDATORY' : 'OPTIONAL',
+                    ...f.settings?.validation,
+                  },
+                },
+              }
+            })
+
+            return {
+              fields,
+              id: panelId,
               settings: {
-                aiSettings: f.settings?.aiSettings || {},
-                general: {
-                  hideLabel: f.settings?.general?.hideLabel ?? false,
-                  placeholder: f.settings?.general?.placeholder || '',
-                  size: f.settings?.general?.size || 'col-12',
-                  tooltip: f.settings?.general?.tooltip || '',
-                  visibility: f.settings?.general?.visibility || 'NORMAL',
-                },
-                lookupSettings: f.settings?.lookupSettings || {},
-                specific: {
-                  ...f.settings?.specific,
-                  customOptions: Array.isArray(f.settings?.specific?.options)
-                    ? f.settings.specific.options.join('\n')
-                    : f.settings?.specific?.customOptions || '',
-                  tableColumns: f.settings?.specific?.tableColumns || [],
-                },
-                validation: {
-                  fieldRule: f.settings?.validation?.fieldRule || 'OPTIONAL',
-                  ...f.settings?.validation,
-                },
+                ...existingPanel?.settings,
+                description:
+                  p.settings?.description ||
+                  p.description ||
+                  existingPanel?.settings?.description ||
+                  '',
+                title: panelTitle,
               },
-            })),
-            id: generateId(),
-            settings: {
-              description: p.settings?.description || p.description || '',
-              title: p.settings?.title || p.title || 'Untitled Section',
-            },
-          }))
+            }
+          })
 
           return {
             ...state,
@@ -454,7 +550,7 @@ export const useFormStore = create<FormStore>()(
             formType: data.formType || state.formType,
             layout: data.layout || state.layout,
             name: data.name || state.name,
-            panels: panels.length > 0 ? panels : state.panels,
+            panels: newPanels.length > 0 ? newPanels : state.panels,
             selectionType: 'general',
           }
         }),
