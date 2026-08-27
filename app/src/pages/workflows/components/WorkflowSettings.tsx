@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import { getWorkflowFormsQueryOptions } from '@/api/form/queries'
 import { requestApi } from '@/api/requests/requests'
@@ -7,7 +8,7 @@ import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
-import InputSwitch from '@/components/base/inputs/InputSwitch'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import Input from '@/components/base/inputs/InputText'
 import { folderApi } from '@/pages/folders/api/folderApi'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
@@ -22,7 +23,7 @@ type PreviewField = {
 
 const WorkflowSettings = () => {
   const [openGeneral, setOpenGeneral] = useState(true)
-  const [openPreview, setOpenPreview] = useState(false)
+  const [openConfiguration, setOpenConfiguration] = useState(false)
 
   const {
     closeSettings,
@@ -67,9 +68,14 @@ const WorkflowSettings = () => {
     ? folderOptionsData
     : []
 
+  // Document-only initiation previews from the repository/folder fields;
+  // Form and Document & Form previews come from the selected form's fields.
+  const showFormFields = initiateUsing !== 'DOCUMENT'
+  const showRepositoryFields = initiateUsing === 'DOCUMENT'
+
   // Form fields (for the selected initiation form)
   const { data: formFields = [] } = useQuery<PreviewField[]>({
-    enabled: !!form,
+    enabled: !!form && showFormFields,
     queryKey: ['workflow-preview-form-fields', form],
     queryFn: async () => {
       const response = await requestApi.getForm(form as number)
@@ -99,7 +105,7 @@ const WorkflowSettings = () => {
 
   // Repository fields (for the selected folder)
   const { data: repositoryFields = [] } = useQuery<PreviewField[]>({
-    enabled: !!folder,
+    enabled: !!folder && showRepositoryFields,
     queryKey: ['workflow-preview-repository-fields', folder],
     queryFn: async () => {
       const fields = await folderApi.getItemFilterFields(String(folder))
@@ -111,12 +117,14 @@ const WorkflowSettings = () => {
     },
   })
 
-  // Merge form + repository fields, skipping duplicates by normalized label
+  // Document -> repository fields only; Form / Document & Form -> form fields only.
+  // Skip duplicates by normalized label within the selected source.
   const previewFields = useMemo(() => {
+    const source = showRepositoryFields ? repositoryFields : formFields
     const seen = new Set<string>()
     const combined: PreviewField[] = []
 
-    ;[...formFields, ...repositoryFields].forEach((field) => {
+    source.forEach((field) => {
       const dedupeKey = normalizeFieldKey(field.label || field.key)
       if (!dedupeKey || seen.has(dedupeKey)) return
       seen.add(dedupeKey)
@@ -124,14 +132,24 @@ const WorkflowSettings = () => {
     })
 
     return combined
-  }, [formFields, repositoryFields])
+  }, [formFields, repositoryFields, showRepositoryFields])
 
-  const togglePreviewValue = (key: string, checked: boolean) => {
-    setPreviewValues(
-      checked
-        ? [...previewValues, key]
-        : previewValues.filter((value) => value !== key),
-    )
+  const previewFieldOptions: Option[] = useMemo(
+    () =>
+      previewFields.map((field) => ({ id: field.label, name: field.label })),
+    [previewFields],
+  )
+
+  const selectedPreviewOptions = useMemo(
+    () =>
+      previewFieldOptions.filter((option) =>
+        previewValues.includes(String(option.id)),
+      ),
+    [previewFieldOptions, previewValues],
+  )
+
+  const handlePreviewValuesChange = (options: Option[]) => {
+    setPreviewValues(options.map((option) => String(option.id)))
   }
 
   if (!isSettingsOpen) return null
@@ -147,6 +165,33 @@ const WorkflowSettings = () => {
           variant='ghost'
           onClick={closeSettings}
         />
+      </div>
+
+      {/* Status (common, applies regardless of which section is open) */}
+      <div className='flex flex-col gap-1.5 border-b border-gray-2 px-4 py-3'>
+        <label className='text-13 font-medium text-gray-11'>Status</label>
+        <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
+          {[
+            { id: 'draft', label: 'Draft' },
+            { id: 'published', label: 'Published' },
+          ].map((opt) => {
+            const active = String(workflowStatus).toLowerCase() === opt.id
+            return (
+              <button
+                key={opt.id}
+                type='button'
+                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
+                  active
+                    ? 'bg-primary-9 text-white shadow-sm'
+                    : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
+                }`}
+                onClick={() => setWorkflowStatus(opt.id as any)}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Content */}
@@ -186,7 +231,15 @@ const WorkflowSettings = () => {
               </div>
             </div>
           </div>
+        </SettingsSection>
 
+        <SettingsSection
+          icon='lucide:sliders-horizontal'
+          isOpen={openConfiguration}
+          title='Configuration'
+          variant='premium'
+          onToggle={() => setOpenConfiguration(!openConfiguration)}
+        >
           {/* Initiate Using */}
           <InputSelect
             label='Initiate Using'
@@ -244,74 +297,25 @@ const WorkflowSettings = () => {
             onChange={(val: any) => setForm(val?.id || null)}
           />
 
-          {/* Status */}
-          <div className='flex flex-col gap-1.5 pt-2'>
-            <label className='text-13 font-medium text-gray-11'>Status</label>
-            <div className='bg-gray-50 flex rounded-lg border border-gray-3 p-1'>
-              {[
-                { id: 'draft', label: 'Draft' },
-                { id: 'published', label: 'Published' },
-              ].map((opt) => {
-                const active = String(workflowStatus).toLowerCase() === opt.id
-                return (
-                  <button
-                    key={opt.id}
-                    type='button'
-                    className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
-                      active
-                        ? 'bg-primary-9 text-white shadow-sm'
-                        : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
-                    }`}
-                    onClick={() => setWorkflowStatus(opt.id as any)}
-                  >
-                    {opt.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </SettingsSection>
-
-        <SettingsSection
-          icon='lucide:eye'
-          isOpen={openPreview}
-          title='Preview'
-          variant='premium'
-          onToggle={() => setOpenPreview(!openPreview)}
-        >
-          {!form && !folder && (
-            <p className='text-13 text-gray-9'>
-              Select a Folder and Form in General to configure preview fields.
-            </p>
-          )}
-
-          {(form || folder) && previewFields.length === 0 && (
-            <p className='text-13 text-gray-9'>No fields found.</p>
-          )}
-
-          <div className='space-y-2.5'>
-            {previewFields.map((field) => (
-              <div
-                className='flex items-center justify-between rounded-xl bg-white p-3 shadow-sm'
-                key={field.key}
-              >
-                <div className='flex flex-col'>
-                  <span className='text-13 font-medium text-gray-12'>
-                    {field.label}
-                  </span>
-                  <span className='text-11 leading-tight text-gray-9'>
-                    {field.source === 'form'
-                      ? 'Form field'
-                      : 'Repository field'}
-                  </span>
-                </div>
-                <InputSwitch
-                  checked={previewValues.includes(field.key)}
-                  onChange={(checked) => togglePreviewValue(field.key, checked)}
-                />
-              </div>
-            ))}
-          </div>
+          {/* Field Selection */}
+          <InputSelectMultiple
+            label='Field Selection'
+            options={previewFieldOptions}
+            placeholder='Search and select fields...'
+            value={selectedPreviewOptions}
+            clearable
+            searchable
+            description={
+              showRepositoryFields
+                ? !folder
+                  ? 'Select a Folder to load available fields'
+                  : undefined
+                : !form
+                  ? 'Select a Form to load available fields'
+                  : undefined
+            }
+            onChange={handlePreviewValuesChange}
+          />
         </SettingsSection>
       </div>
 
