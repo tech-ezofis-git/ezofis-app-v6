@@ -117,7 +117,7 @@ export const resolveBrandingFromResponse = (
   const json =
     parseBrandingJson(record.brandingJson) ||
     nestedJson.json ||
-    (looksLikeBrandingJson(record) && !record.brandingJson
+    (!record.brandingJson && looksLikeBrandingJson(record)
       ? parseBrandingJson(record)
       : null)
 
