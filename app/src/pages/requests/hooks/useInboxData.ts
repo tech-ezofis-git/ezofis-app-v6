@@ -89,7 +89,11 @@ export const transformProcess = (
 
   const dynamicFields = fieldsSource
   let actions: any[] = []
-  if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
+  if (
+    activeTab === 'Inbox' ||
+    activeTab === 'Exceptions' ||
+    activeTab === 'Sent'
+  ) {
     actions = getActionsForActivity(
       process.activityId,
       selectedWorkflow?.flowJson,

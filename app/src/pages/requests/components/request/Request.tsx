@@ -1050,17 +1050,13 @@ const Request = ({
     ? request.stageType === 'AP_AGENT'
     : selectedItem?.stageType === 'AP_AGENT'
 
+  const currentActivityId = request?.activityId || selectedItem?.activityId
+
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
-    const currentActivityId = request?.activityId || selectedItem?.activityId
-
-    console.log('--- USER DEBUG ---')
-    console.log('activityId:', currentActivityId)
-    console.log('workflowJson:', rawWorkflowData?.workflowJson)
-
     if (!currentActivityId) return []
     return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
-  }, [rawWorkflowData, request?.activityId, selectedItem?.activityId])
+  }, [rawWorkflowData, currentActivityId])
 
   const ruleActions = useMemo(() => {
     return dynamicRules.map((rule: any) => {
@@ -1072,34 +1068,35 @@ const Request = ({
     })
   }, [dynamicRules])
 
+  // Steps carry per-activity assignment (assignedToUserId); block
+  // settings.users is the same data as authored in the workflow builder.
+  // Only the user the current stage is actually assigned to should see the
+  // action buttons for it.
+  const assignedUserIds = useMemo(() => {
+    if (!currentActivityId) return []
+
+    const step = (rawWorkflowData?.steps || []).find(
+      (s: any) => s.activityId === currentActivityId,
+    )
+    if (step?.assignedToUserId) return [String(step.assignedToUserId)]
+
+    const block = (rawWorkflowData?.workflowJson?.blocks || []).find(
+      (b: any) => b.id === currentActivityId,
+    )
+    return (block?.settings?.users || []).map(String)
+  }, [rawWorkflowData, currentActivityId])
+
+  const isAssignedToCurrentUser = useMemo(() => {
+    if (assignedUserIds.length === 0) return true
+    const currentUserId = authUserStore.getState().session?.id
+    return !!currentUserId && assignedUserIds.includes(String(currentUserId))
+  }, [assignedUserIds])
+
   const headerActions = useMemo(() => {
-    console.log('[RULE_ACTIONS_DEBUG] --- headerActions recalculating ---')
-    console.log('[RULE_ACTIONS_DEBUG] isApAgentStage:', isApAgentStage)
-    console.log('[RULE_ACTIONS_DEBUG] request activityId:', request?.activityId)
-    console.log(
-      '[RULE_ACTIONS_DEBUG] selectedItem activityId:',
-      selectedItem?.activityId,
-    )
-    console.log(
-      '[RULE_ACTIONS_DEBUG] rawWorkflowData rules:',
-      rawWorkflowData?.workflowJson?.rules,
-    )
-    console.log(
-      '[RULE_ACTIONS_DEBUG] dynamicRules (matching fromBlockId):',
-      dynamicRules,
-    )
-    console.log('[RULE_ACTIONS_DEBUG] ruleActions:', ruleActions)
-    console.log('[RULE_ACTIONS_DEBUG] fallback actions:', actions)
     if (isApAgentStage) return []
+    if (!isAssignedToCurrentUser) return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [
-    isApAgentStage,
-    ruleActions,
-    actions,
-    request?.activityId,
-    selectedItem?.activityId,
-    rawWorkflowData,
-  ])
+  }, [isApAgentStage, isAssignedToCurrentUser, ruleActions, actions])
 
   const [formModel, setFormModel] = useState<any>({})
   const [genericFormModel, setGenericFormModel] = useState<
