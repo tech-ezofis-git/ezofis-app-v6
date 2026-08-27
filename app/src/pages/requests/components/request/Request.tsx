@@ -1094,9 +1094,13 @@ const Request = ({
 
   const headerActions = useMemo(() => {
     if (isApAgentStage) return []
+    // Sent/Closed are read-only views of a request that has already moved
+    // on to (or past) another assignee — only the Inbox view, where the
+    // request is actually pending with the current user, can act on it.
+    if (requestListTab !== 'Inbox') return []
     if (!isAssignedToCurrentUser) return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [isApAgentStage, isAssignedToCurrentUser, ruleActions, actions])
+  }, [isApAgentStage, requestListTab, isAssignedToCurrentUser, ruleActions, actions])
 
   const [formModel, setFormModel] = useState<any>({})
   const [genericFormModel, setGenericFormModel] = useState<
@@ -1669,15 +1673,19 @@ const Request = ({
           poNumber={poVal}
           poValue={poValue}
           stage={
-            selectedItem?.lastActionStageName ||
+            // `lastActionStageName` is the stage the request came FROM (the
+            // last completed action), not where it currently sits — so it
+            // must rank behind the actual current-stage fields, only used
+            // as a last-resort fallback if none of those are populated.
             selectedItem?.currentStage ||
             selectedItem?.stageName ||
             selectedItem?.stage ||
             selectedItem?.stepName ||
-            request?.lastActionStageName ||
             request?.currentStage ||
             request?.stageName ||
-            request?.stage
+            request?.stage ||
+            selectedItem?.lastActionStageName ||
+            request?.lastActionStageName
           }
           raisedBy={
             selectedItem?.transactionCreatedByEmail ||
