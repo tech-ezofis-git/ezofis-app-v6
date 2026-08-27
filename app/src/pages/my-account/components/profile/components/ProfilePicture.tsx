@@ -2,13 +2,11 @@ import Avatar from '@/components/base/Avatar'
 import Button from '@/components/base/button/Button'
 import Title from '@/components/base/Title'
 import authUserStore from '@/stores/authUserStore'
+import useProfileImage from '@/hooks/useProfileImage'
 
 const ProfilePicture = () => {
   const session = authUserStore((state) => state.session)
-  const API_URI = import.meta.env?.VITE_BASE_URL
-  const imageUrl = session
-    ? `${API_URI}/user/avatar/${session.tenantId}/${session.id}`
-    : ''
+  const imageUrl = useProfileImage()
 
   const getInitials = () => {
     if (!session) return 'U'

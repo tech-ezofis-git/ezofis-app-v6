@@ -1,5 +1,5 @@
-import { Fragment } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { Fragment } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { SettingsBreadcrumbItem } from '../helpers/settingsBreadcrumbs'
@@ -27,6 +27,8 @@ export default function SettingsBreadcrumbs({ items, onNavigate }: Props) {
         return t`Group Management`
       case 'Folder Configuration':
         return t`Folder Configuration`
+      case 'Branding':
+        return t`Branding`
       case 'Audit & Monitoring':
         return t`Audit & Monitoring`
       case 'Credit Usage':

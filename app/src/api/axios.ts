@@ -3,6 +3,7 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios'
+import { isAuthEntryPath, resolveSignInPath } from '../lib/branding/session'
 import authUserStore from '../stores/authUserStore'
 
 // Dynamic Base URL Resolution based on environment and hostname
@@ -28,8 +29,7 @@ export const getV6ApiBaseUrl = (): string => {
     return 'https://cloud.ezofis.com/api'
   }
   return (
-    import.meta.env?.VITE_V6_BASE_URL ||
-    'https://demo.ezofis.com/v6api/api'
+    import.meta.env?.VITE_V6_BASE_URL || 'https://demo.ezofis.com/v6api/api'
   )
 }
 
@@ -65,7 +65,9 @@ interface CustomConfig extends InternalAxiosRequestConfig {
 const pendingRequests = new Map<string, AbortController>()
 
 const generateRequestKey = (config: InternalAxiosRequestConfig) => {
-  return [config.method, config.url, JSON.stringify(config.params || {})].join('&')
+  return [config.method, config.url, JSON.stringify(config.params || {})].join(
+    '&',
+  )
 }
 
 const addPendingRequest = (config: CustomConfig) => {
@@ -111,7 +113,7 @@ axiosV6.interceptors.request.use(
     if (accessToken) {
       config.headers.set('Authorization', `Bearer ${accessToken}`)
     }
-    
+
     addPendingRequest(config)
     return config
   },
@@ -135,13 +137,14 @@ const handleResponseError = (error: AxiosError) => {
 
   if (error.response?.status === 401) {
     const store = authUserStore.getState()
+    const signInPath = resolveSignInPath()
     store.resetAuthState()
     if (
       globalThis.window !== undefined &&
-      window.location.pathname !== '/sign-in' &&
+      !isAuthEntryPath(window.location.pathname) &&
       !window.location.pathname.startsWith('/sign-request')
     ) {
-      window.location.href = '/sign-in'
+      window.location.href = signInPath
     }
   }
   return Promise.reject(error)

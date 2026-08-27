@@ -22,6 +22,22 @@ export const themeInitScript = `
     document.documentElement.setAttribute('data-theme-preference', preference);
     document.documentElement.setAttribute('data-resolved-theme', resolved);
     document.documentElement.style.colorScheme = resolved;
+
+    try {
+      var key = resolved === 'dark' ? 'custom-color-preferences-dark' : 'custom-color-preferences-light';
+      var customColors = sessionStorage.getItem(key) || localStorage.getItem(key);
+      if (!customColors) {
+        customColors = sessionStorage.getItem('custom-color-preferences') || localStorage.getItem('custom-color-preferences');
+      }
+      if (customColors) {
+        var overrides = JSON.parse(customColors);
+        for (var name in overrides) {
+          if (overrides.hasOwnProperty(name)) {
+            document.documentElement.style.setProperty(name, overrides[name]);
+          }
+        }
+      }
+    } catch (err) {}
   } catch (e) {}
 })();
 `.trim()

@@ -22,9 +22,17 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
 import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 import { redirectAfterLogin } from '../utils/redirectAfterLogin'
+
+export type SignInBranding = {
+  favicon?: string
+  name: string
+}
+
 interface Props {
+  branding?: SignInBranding
   onChangeView: () => void
 }
 
@@ -35,7 +43,7 @@ type TenantOption = {
   value: number | string
 }
 
-const SignInForm = ({ onChangeView }: Props) => {
+const SignInForm = ({ branding, onChangeView }: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
   const isWhiteLabel = useIsWhiteLabel()
@@ -420,11 +428,13 @@ const SignInForm = ({ onChangeView }: Props) => {
   // === derived welcome texts (matches Vue copy) ===
   let welcomeDescription = t`Hi, Welcome!`
   if (!checkTenant) {
-    const appName = isWhiteLabel
-      ? 'your workspace'
-      : isOnpremiseTenant
-        ? 'APP'
-        : 'EZOFIS'
+    const appName = branding?.name
+      ? branding.name
+      : isWhiteLabel
+        ? 'your workspace'
+        : isOnpremiseTenant
+          ? 'APP'
+          : 'EZOFIS'
     welcomeDescription = t`Hi, Welcome back to ${appName}`
   }
 
@@ -566,7 +576,21 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   return (
     <>
-      <IconIllustrated icon='tabler:user' />
+      {branding?.favicon ? (
+        <div className='mb-2 flex w-full justify-center'>
+          <div className='flex size-20 items-center justify-center rounded-full bg-gray-3'>
+            <div className='relative size-16 overflow-hidden rounded-full bg-surface shadow-xs'>
+              <img
+                alt=''
+                className='absolute inset-0 m-auto size-[calc(100%-1.5rem)] object-contain'
+                src={branding.favicon}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <IconIllustrated icon='tabler:user' />
+      )}
       <Title
         className='text-center'
         description={welcomeDescription}
@@ -670,7 +694,7 @@ const SignInForm = ({ onChangeView }: Props) => {
       ) : (
         // === Generic / AD login flow ===
         <>
-          <div className='-mt-2 space-y-4'>
+          <div className={cn(branding ? 'mt-2 space-y-5' : '-mt-2 space-y-4')}>
             {checkAdLogin ? (
               <>
                 {/* AD Login: username + password */}
@@ -750,7 +774,12 @@ const SignInForm = ({ onChangeView }: Props) => {
 
           {/* Remember / Forgot (mirrors Vue's conditional forgot; here always on except AD) */}
           {!checkAdLogin && checkForgot && (
-            <div className='mt-3 flex items-center justify-between gap-4'>
+            <div
+              className={cn(
+                'flex items-center justify-between gap-4',
+                branding ? 'mt-5' : 'mt-3',
+              )}
+            >
               <InputCheckbox
                 checked={rememberMe}
                 label={t`Keep me logged in`}
@@ -769,7 +798,7 @@ const SignInForm = ({ onChangeView }: Props) => {
           )}
 
           <Button
-            className='mt-4 w-full justify-center'
+            className={cn('w-full justify-center', branding ? 'mt-6' : 'mt-4')}
             label={t`Sign In`}
             loading={loading}
             size='lg'
@@ -781,8 +810,11 @@ const SignInForm = ({ onChangeView }: Props) => {
           {/* Social section – Vue used <SocialAuths>, here we expose Google + Microsoft directly */}
           {!checkAdLogin && (
             <>
-              <Divider label={t`Or`} />
-              <div className='space-y-3'>
+              <Divider
+                className={branding ? 'mt-6' : undefined}
+                label={t`Or`}
+              />
+              <div className={cn(branding ? 'mt-5 space-y-4' : 'space-y-3')}>
                 <GoogleButton onClick={handleGoogleLogin} />
                 <MicrosoftButton onClick={handleMicrosoftLogin} />
               </div>

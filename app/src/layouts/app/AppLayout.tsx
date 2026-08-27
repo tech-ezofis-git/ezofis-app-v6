@@ -5,6 +5,7 @@ import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import ApiPlaygroundPanel from '@/components/playground/ApiPlaygroundPanel'
+import BrandingSync from '@/lib/branding/BrandingSync'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { useIsMobile } from '@/pages/mobile'
 import authUserStore from '@/stores/authUserStore'
@@ -98,6 +99,7 @@ const AppLayout = ({ children }: Props) => {
   if (isMobile) {
     return (
       <div className='flex min-h-dvh flex-col bg-surface-secondary'>
+        <BrandingSync />
         <div className='flex h-dvh min-h-0 flex-1 flex-col overflow-hidden'>
           {children}
         </div>
@@ -107,6 +109,7 @@ const AppLayout = ({ children }: Props) => {
 
   return (
     <>
+      <BrandingSync />
       <Sidebar />
 
       <div
