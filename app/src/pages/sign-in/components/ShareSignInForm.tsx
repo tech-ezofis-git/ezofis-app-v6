@@ -1,7 +1,7 @@
 import { useMsal } from '@azure/msal-react'
+import { useLingui } from '@lingui/react/macro'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
-import { useLingui } from '@lingui/react/macro'
 import { useEffect, useState } from 'react'
 import authApiV6 from '@/api/v6/auth'
 import Alert from '@/components/base/Alert'
@@ -15,6 +15,7 @@ import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import authUserStore from '@/stores/authUserStore'
+import { useIsWhiteLabel } from '@/utils/whiteLabel'
 import { redirectAfterLogin } from '../utils/redirectAfterLogin'
 
 interface Props {
@@ -25,6 +26,7 @@ interface Props {
 const ShareSignInForm = ({ email, shareToken }: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
   const { instance: msalInstance } = useMsal()
 
   const [loading, setLoading] = useState(true)
@@ -232,7 +234,7 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
           className='text-primary size-8 animate-spin'
           name='tabler:loader-2'
         />
-        <p className="text-gray-11">{t`Loading share details...`}</p>
+        <p className='text-gray-11'>{t`Loading share details...`}</p>
       </div>
     )
   }
@@ -250,10 +252,14 @@ const ShareSignInForm = ({ email, shareToken }: Props) => {
       <IconIllustrated icon='tabler:user' />
       <Title
         className='text-center'
-        description={t`Hi, Welcome back to EZOFIS`}
         level={1}
+        description={
+          isWhiteLabel ? t`Hi, Welcome back` : t`Hi, Welcome back to EZOFIS`
+        }
         title={
-          showPasswordSetup ? t`Create access to continue` : t`Sign in to your account`
+          showPasswordSetup
+            ? t`Create access to continue`
+            : t`Sign in to your account`
         }
       />
 

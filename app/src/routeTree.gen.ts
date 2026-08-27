@@ -86,7 +86,11 @@ import { Route as AppFormsRouteImport } from './routes/_app/forms'
 import { Route as AppFoldersRouteImport } from './routes/_app/folders'
 import { Route as AuthSignUpIndexRouteImport } from './routes/_auth/sign-up/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
+import { Route as AuthSetupIndexRouteImport } from './routes/_auth/setup/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset-password/index'
+import { Route as AuthRecoverIndexRouteImport } from './routes/_auth/recover/index'
+import { Route as AuthNewuserIndexRouteImport } from './routes/_auth/newuser/index'
+import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.$formId.entries'
@@ -478,9 +482,29 @@ const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
   path: '/sign-in/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const AuthSetupIndexRoute = AuthSetupIndexRouteImport.update({
+  id: '/setup/',
+  path: '/setup/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
 const AuthResetPasswordIndexRoute = AuthResetPasswordIndexRouteImport.update({
   id: '/reset-password/',
   path: '/reset-password/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthRecoverIndexRoute = AuthRecoverIndexRouteImport.update({
+  id: '/recover/',
+  path: '/recover/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthNewuserIndexRoute = AuthNewuserIndexRouteImport.update({
+  id: '/newuser/',
+  path: '/newuser/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
@@ -576,7 +600,11 @@ export interface FileRoutesByFullPath {
   '/stories/': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/newuser': typeof AuthNewuserIndexRoute
+  '/recover': typeof AuthRecoverIndexRoute
   '/reset-password': typeof AuthResetPasswordIndexRoute
+  '/setup': typeof AuthSetupIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
   '/forms/$formId/entries': typeof AppFormsFormIdEntriesRoute
@@ -656,7 +684,11 @@ export interface FileRoutesByTo {
   '/stories': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/newuser': typeof AuthNewuserIndexRoute
+  '/recover': typeof AuthRecoverIndexRoute
   '/reset-password': typeof AuthResetPasswordIndexRoute
+  '/setup': typeof AuthSetupIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
   '/forms/$formId/entries': typeof AppFormsFormIdEntriesRoute
@@ -740,7 +772,11 @@ export interface FileRoutesById {
   '/stories/': typeof StoriesIndexRoute
   '/_app/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/_auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
+  '/_auth/login/': typeof AuthLoginIndexRoute
+  '/_auth/newuser/': typeof AuthNewuserIndexRoute
+  '/_auth/recover/': typeof AuthRecoverIndexRoute
   '/_auth/reset-password/': typeof AuthResetPasswordIndexRoute
+  '/_auth/setup/': typeof AuthSetupIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_auth/sign-up/': typeof AuthSignUpIndexRoute
   '/_app/forms_/$formId/entries': typeof AppFormsFormIdEntriesRoute
@@ -823,7 +859,11 @@ export interface FileRouteTypes {
     | '/stories/'
     | '/my-account/{-$slug}'
     | '/forgot-password'
+    | '/login'
+    | '/newuser'
+    | '/recover'
     | '/reset-password'
+    | '/setup'
     | '/sign-in'
     | '/sign-up'
     | '/forms/$formId/entries'
@@ -903,7 +943,11 @@ export interface FileRouteTypes {
     | '/stories'
     | '/my-account/{-$slug}'
     | '/forgot-password'
+    | '/login'
+    | '/newuser'
+    | '/recover'
     | '/reset-password'
+    | '/setup'
     | '/sign-in'
     | '/sign-up'
     | '/forms/$formId/entries'
@@ -986,7 +1030,11 @@ export interface FileRouteTypes {
     | '/stories/'
     | '/_app/my-account/{-$slug}'
     | '/_auth/forgot-password/'
+    | '/_auth/login/'
+    | '/_auth/newuser/'
+    | '/_auth/recover/'
     | '/_auth/reset-password/'
+    | '/_auth/setup/'
     | '/_auth/sign-in/'
     | '/_auth/sign-up/'
     | '/_app/forms_/$formId/entries'
@@ -1548,11 +1596,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_auth/setup/': {
+      id: '/_auth/setup/'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof AuthSetupIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
     '/_auth/reset-password/': {
       id: '/_auth/reset-password/'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof AuthResetPasswordIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/recover/': {
+      id: '/_auth/recover/'
+      path: '/recover'
+      fullPath: '/recover'
+      preLoaderRoute: typeof AuthRecoverIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/newuser/': {
+      id: '/_auth/newuser/'
+      path: '/newuser'
+      fullPath: '/newuser'
+      preLoaderRoute: typeof AuthNewuserIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/login/': {
+      id: '/_auth/login/'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/_auth/forgot-password/': {
@@ -1621,14 +1697,22 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 
 interface AuthRouteRouteChildren {
   AuthForgotPasswordIndexRoute: typeof AuthForgotPasswordIndexRoute
+  AuthLoginIndexRoute: typeof AuthLoginIndexRoute
+  AuthNewuserIndexRoute: typeof AuthNewuserIndexRoute
+  AuthRecoverIndexRoute: typeof AuthRecoverIndexRoute
   AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
+  AuthSetupIndexRoute: typeof AuthSetupIndexRoute
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
   AuthSignUpIndexRoute: typeof AuthSignUpIndexRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthForgotPasswordIndexRoute: AuthForgotPasswordIndexRoute,
+  AuthLoginIndexRoute: AuthLoginIndexRoute,
+  AuthNewuserIndexRoute: AuthNewuserIndexRoute,
+  AuthRecoverIndexRoute: AuthRecoverIndexRoute,
   AuthResetPasswordIndexRoute: AuthResetPasswordIndexRoute,
+  AuthSetupIndexRoute: AuthSetupIndexRoute,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
   AuthSignUpIndexRoute: AuthSignUpIndexRoute,
 }

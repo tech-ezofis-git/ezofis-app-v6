@@ -1,8 +1,9 @@
+import type { NavigateOptions } from '@tanstack/react-router'
 import { useMsal } from '@azure/msal-react'
+import { useLingui } from '@lingui/react/macro'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useSearch } from '@tanstack/react-router'
-import { useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
@@ -21,6 +22,7 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
+import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 import { redirectAfterLogin } from '../utils/redirectAfterLogin'
 interface Props {
   onChangeView: () => void
@@ -36,6 +38,7 @@ type TenantOption = {
 const SignInForm = ({ onChangeView }: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
   const { instance: msalInstance } = useMsal()
   console.log(onChangeView)
   const search: any = useSearch({ strict: false })
@@ -406,12 +409,22 @@ const SignInForm = ({ onChangeView }: Props) => {
     setError(null)
   }
 
-  const forgotPassword = () => navigate({ to: '/forgot-password' })
+  const forgotPassword = () =>
+    navigate({
+      to: resolveAuthPath(
+        '/forgot-password',
+        isWhiteLabel,
+      ) as NavigateOptions['to'],
+    })
 
   // === derived welcome texts (matches Vue copy) ===
   let welcomeDescription = t`Hi, Welcome!`
   if (!checkTenant) {
-    const appName = isOnpremiseTenant ? 'APP' : 'EZOFIS'
+    const appName = isWhiteLabel
+      ? 'your workspace'
+      : isOnpremiseTenant
+        ? 'APP'
+        : 'EZOFIS'
     welcomeDescription = t`Hi, Welcome back to ${appName}`
   }
 
@@ -574,11 +587,13 @@ const SignInForm = ({ onChangeView }: Props) => {
               <div className='space-y-4'>
                 <InputText
                   label={t`Email`}
-                  placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
+                  }
+                  placeholder={
+                    isWhiteLabel ? 'hello@example.com' : 'hello@ezofis.com'
                   }
                   onChange={(v) => {
                     setEmail(v)
@@ -622,11 +637,13 @@ const SignInForm = ({ onChangeView }: Props) => {
               <div className='space-y-4'>
                 <InputText
                   label={t`Email`}
-                  placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
+                  }
+                  placeholder={
+                    isWhiteLabel ? 'hello@example.com' : 'hello@ezofis.com'
                   }
                   onChange={(v) => {
                     setEmail(v)
@@ -695,11 +712,13 @@ const SignInForm = ({ onChangeView }: Props) => {
                 {/* Regular login: Email / Username + password */}
                 <InputText
                   label={t`Email / Username`}
-                  placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
+                  }
+                  placeholder={
+                    isWhiteLabel ? 'hello@example.com' : 'hello@ezofis.com'
                   }
                   onChange={(v) => {
                     setEmail(v)

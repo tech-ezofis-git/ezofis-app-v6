@@ -14,9 +14,11 @@ import PasswordRequirements, {
 } from '@/layouts/auth/components/PasswordRequirements'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
+import { useIsWhiteLabel } from '@/utils/whiteLabel'
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
   const { signUpUserData, setSignUpUserData } = authUserStore()
 
   const loginType = String(signUpUserData.loginType || 'EZOFIS').toUpperCase()
@@ -153,7 +155,9 @@ const ResetPasswordPage = () => {
         navigate({ params: { token }, to: '/on-boarding/$token' })
       } else {
         setError(
-          'Failed to complete account setup. Please contact the EZOFIS team.',
+          isWhiteLabel
+            ? 'Failed to complete account setup. Please contact support.'
+            : 'Failed to complete account setup. Please contact the EZOFIS team.',
         )
         setLoading(false)
       }

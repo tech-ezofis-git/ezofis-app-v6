@@ -15,7 +15,8 @@ const AuthLayout = ({ children }: Props) => {
   const search: Record<string, unknown> = useSearch({ strict: false }) as any
   const isMobile = useIsMobile()
   const pathname = location.pathname.replace(/\/$/, '')
-  const isResetPassword = pathname === '/reset-password'
+  const isResetPassword =
+    pathname === '/reset-password' || pathname === '/setup'
 
   const shareToken =
     typeof search?.shareToken === 'string' ? search.shareToken : ''
@@ -38,9 +39,7 @@ const AuthLayout = ({ children }: Props) => {
 
   if (isMobile) {
     return (
-      <div className='h-dvh overflow-hidden bg-surface-primary'>
-        {children}
-      </div>
+      <div className='h-dvh overflow-hidden bg-surface-primary'>{children}</div>
     )
   }
 

@@ -1,3 +1,4 @@
+import type { NavigateOptions } from '@tanstack/react-router'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { apiRouter } from '@/api/apiRouter'
@@ -8,6 +9,7 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import authUserStore from '@/stores/authUserStore'
+import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 
 interface Props {
   onBack?: () => void
@@ -15,6 +17,7 @@ interface Props {
 
 const VerifyEmailForm = ({ onBack }: Props) => {
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
   const { signUpUserData, setSignUpUserData } = authUserStore()
 
   const email = signUpUserData.email
@@ -78,7 +81,12 @@ const VerifyEmailForm = ({ onBack }: Props) => {
       showToast({ message: 'OTP verified successfully', variant: 'success' })
       setSignUpUserData({ loginType: loginType || 'EZOFIS' })
 
-      navigate({ to: '/reset-password' })
+      navigate({
+        to: resolveAuthPath(
+          '/reset-password',
+          isWhiteLabel,
+        ) as NavigateOptions['to'],
+      })
     } catch (e: any) {
       setError('OTP verification failed. Please try again.')
     } finally {
