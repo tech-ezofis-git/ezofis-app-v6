@@ -25,8 +25,8 @@ const SidebarLarge = ({ menus }: Props) => {
     >
       <div className='flex h-svh flex-col justify-between pb-4'>
         <div className='flex min-h-0 flex-1 flex-col'>
-          <div className='mb-3 flex h-15 shrink-0 items-center justify-between px-3'>
-            <Logo />
+          <div className='mb-3 flex h-16 shrink-0 items-center justify-between gap-2 px-3'>
+            <Logo hideMark />
             <IconButton
               color='gray'
               icon='material-symbols:side-navigation'

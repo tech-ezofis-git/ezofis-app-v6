@@ -1,6 +1,7 @@
 // routes/_app/route.ts
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import AppLayout from '@/layouts/app/AppLayout'
+import { resolveSignInPath } from '@/lib/branding/session'
 import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
 
@@ -22,7 +23,14 @@ export const Route = createFileRoute('/_app')({
     const { isAuthenticated, session } = authUserStore.getState()
 
     if (!isAuthenticated) {
-      // adjust path to your actual sign-in route under _auth
+      const signInPath = resolveSignInPath()
+      if (signInPath !== '/sign-in' && signInPath.startsWith('/')) {
+        throw redirect({
+          params: { encryptedName: signInPath.replace(/^\//, '') },
+          replace: true,
+          to: '/$encryptedName',
+        })
+      }
       throw redirect({
         replace: true,
         to: '/sign-in',

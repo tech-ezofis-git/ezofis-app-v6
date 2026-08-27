@@ -692,12 +692,12 @@ export function FolderFilterBar({
         {
           id: 'upload',
           icon: 'lucide:upload',
-          tooltip: t`Upload`,
+          label: t`Upload`,
+          
           onClick: () => onUpload?.(),
           disabled: isBusy,
-          isIconButton: true,
-          color: 'gray',
-          variant: 'outline'
+          isIconButton: false,
+          color: 'primary',
         },
         {
           id: 'refresh',

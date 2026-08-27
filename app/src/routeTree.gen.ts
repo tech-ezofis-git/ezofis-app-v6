@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as EncryptedNameRouteImport } from './routes/$encryptedName'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
 import { Route as PlaygroundRouteRouteImport } from './routes/playground/route'
 import { Route as EmbedRouteRouteImport } from './routes/embed/route'
@@ -98,6 +99,11 @@ import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EncryptedNameRoute = EncryptedNameRouteImport.update({
+  id: '/$encryptedName',
+  path: '/$encryptedName',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoriesRouteRoute = StoriesRouteRouteImport.update({
@@ -528,6 +534,7 @@ export interface FileRoutesByFullPath {
   '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
@@ -612,6 +619,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
+  '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
@@ -700,6 +708,7 @@ export interface FileRoutesById {
   '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
   '/_app/folders': typeof AppFoldersRoute
   '/_app/forms': typeof AppFormsRoute
@@ -787,6 +796,7 @@ export interface FileRouteTypes {
     | '/embed'
     | '/playground'
     | '/stories'
+    | '/$encryptedName'
     | '/auth'
     | '/folders'
     | '/forms'
@@ -871,6 +881,7 @@ export interface FileRouteTypes {
   to:
     | '/embed'
     | '/playground'
+    | '/$encryptedName'
     | '/auth'
     | '/folders'
     | '/forms'
@@ -958,6 +969,7 @@ export interface FileRouteTypes {
     | '/embed'
     | '/playground'
     | '/stories'
+    | '/$encryptedName'
     | '/auth'
     | '/_app/folders'
     | '/_app/forms'
@@ -1046,6 +1058,7 @@ export interface RootRouteChildren {
   EmbedRouteRoute: typeof EmbedRouteRouteWithChildren
   PlaygroundRouteRoute: typeof PlaygroundRouteRoute
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
+  EncryptedNameRoute: typeof EncryptedNameRoute
   AuthRoute: typeof AuthRoute
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
@@ -1062,6 +1075,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$encryptedName': {
+      id: '/$encryptedName'
+      path: '/$encryptedName'
+      fullPath: '/$encryptedName'
+      preLoaderRoute: typeof EncryptedNameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stories': {
@@ -1847,6 +1867,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmbedRouteRoute: EmbedRouteRouteWithChildren,
   PlaygroundRouteRoute: PlaygroundRouteRoute,
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
+  EncryptedNameRoute: EncryptedNameRoute,
   AuthRoute: AuthRoute,
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,

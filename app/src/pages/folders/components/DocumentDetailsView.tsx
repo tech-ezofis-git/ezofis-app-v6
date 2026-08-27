@@ -32,7 +32,7 @@ import {
 } from '@/api/v6/folder/folder'
 import CollaboraEditor from './CollaboraEditor'
 import authUserStore from '@/stores/authUserStore'
-import { formatUtcToLocalDate, formatUtcToLocalDateTime } from '@/utils/utcDate'
+import { formatUtcToLocalDate, formatUtcToLocalDateTime, parseUtcDate } from '@/utils/utcDate'
 import { folderApi } from '../api/folderApi'
 import {
   getFileExtension,
@@ -148,6 +148,19 @@ const formatDateTime = (value?: string) => {
   if (!value) return ''
   return formatUtcToLocalDateTime(value, value)
 }
+
+const formatDateOnly = (value?: string) => {
+  if (!value) return ''
+  return formatUtcToLocalDate(value, '')
+}
+
+const formatTimeOnly = (value?: string) => {
+  if (!value) return ''
+  const d = parseUtcDate(value)
+  if (!d) return ''
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+}
+
 
 const formatRelatedFileSize = (bytes?: number | null) => {
   if (bytes == null || Number.isNaN(Number(bytes)) || Number(bytes) <= 0) {
@@ -2044,38 +2057,56 @@ export function DocumentDetailsView({
                           {t`Loading timeline...`}
                         </div>
                       ) : timeline.length ? (
-                        <div className='space-y-4'>
-                          {timeline.map((item, index) => (
-                            <div
-                              className='flex gap-3'
-                              key={`${item.id || item.title}-${index}`}
-                            >
-                              <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
-                                <DynamicIcon
-                                  className='h-4 w-4'
-                                  name={eventIconMap[item.eventType || ''] || 'clock'}
-                                />
-                              </span>
-                              <div>
-                                <b className='text-[13px] font-semibold text-gray-13'>
-                                  {item.title}
-                                </b>
-                                <p className='mt-0.5 text-[12px] text-gray-10'>
-                                  {[
-                                    item.actorName || item.actorType,
-                                    formatDateTime(item.createdAtUtc),
-                                  ]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                                </p>
-                                {item.description ? (
-                                  <p className='mt-1 text-[13px] text-gray-10'>
-                                    {item.description}
+                        <div className='space-y-0'>
+                          {timeline.map((item, index) => {
+                            const isLast = index === timeline.length - 1
+                            const prevItem = index > 0 ? timeline[index - 1] : null
+                            const isSameDate =
+                              prevItem &&
+                              formatDateOnly(item.createdAtUtc) ===
+                                formatDateOnly(prevItem.createdAtUtc)
+                            const displayTime = isSameDate
+                              ? formatTimeOnly(item.createdAtUtc)
+                              : formatDateTime(item.createdAtUtc)
+
+                            return (
+                              <div
+                                className='relative flex gap-3'
+                                key={`${item.id || item.title}-${index}`}
+                              >
+                                {/* Icon + vertical line column */}
+                                <div className='flex flex-col items-center'>
+                                  <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
+                                    <DynamicIcon
+                                      className='h-4 w-4'
+                                      name={eventIconMap[item.eventType || ''] || 'clock'}
+                                    />
+                                  </span>
+                                  {!isLast && (
+                                    <div className='w-px flex-1 bg-gray-5' />
+                                  )}
+                                </div>
+
+                                {/* Content */}
+                                <div className='min-w-0 pb-5'>
+                                  <p className='text-[13px] text-gray-11'>
+                                    <b className='font-semibold text-gray-12'>
+                                      {item.title}
+                                    </b>
+                                    {item.description ? (<span className='text-gray-10'>{': '}<b className='font-semibold'>{'"'}</b><i className='not-italic italic'>{item.description}</i><b className='font-semibold'>{'"'}</b></span>) : null}
                                   </p>
-                                ) : null}
+                                  <p className='mt-0.5 text-[12px] text-gray-9'>
+                                    {[
+                                      item.actorName || item.actorType,
+                                      displayTime,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' · ')}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       ) : (
                         <NoDataState

@@ -29,7 +29,7 @@ const SidebarCTA = () => {
           name='lucide:workflow'
         />
         <span className='text-[12px] font-bold tracking-wider text-white uppercase'>
-          EZOFIS AP Automation
+          AP Automation
         </span>
       </div>
 
