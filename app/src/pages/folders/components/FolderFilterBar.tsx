@@ -689,16 +689,19 @@ export function FolderFilterBar({
       searchQuery={searchQuery}
       showReset={hasActiveFilters}
       actionButtons={[
-        {
-          id: 'upload',
-          icon: 'lucide:upload',
-          label: t`Upload`,
-          
-          onClick: () => onUpload?.(),
-          disabled: isBusy,
-          isIconButton: false,
-          color: 'primary',
-        },
+        ...(onUpload && String(repositoryId || '').trim()
+          ? [
+              {
+                id: 'upload',
+                icon: 'lucide:upload',
+                label: t`Upload`,
+                onClick: () => onUpload(),
+                disabled: isBusy,
+                isIconButton: false,
+                color: 'primary' as const,
+              },
+            ]
+          : []),
         {
           id: 'refresh',
           icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',

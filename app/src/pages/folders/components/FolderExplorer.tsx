@@ -159,6 +159,7 @@ export function FolderExplorer() {
   const resolvedRepositoryId = String(
     selectedRepository?.id || getRepositoryIdFromFolder(activeFolder) || '',
   )
+  const canUpload = Boolean(activeFolder && resolvedRepositoryId)
 
   const currentRepositoryId = resolvedRepositoryId
 
@@ -475,7 +476,7 @@ export function FolderExplorer() {
           repositories={repositoryNodes}
           repositoryId={resolvedRepositoryId}
           searchQuery={fileSearch}
-          uploadDisabled={!resolvedRepositoryId}
+          uploadDisabled={!canUpload}
           view={viewMode}
           setView={changeViewMode}
           onAiSummary={(id) => openFileAction(id, 'aiSummary')}
@@ -499,8 +500,8 @@ export function FolderExplorer() {
             setFolderSearch(value)
           }}
           onShare={openShareForFile}
-          onUpload={handleUpload}
-          onUploadFile={handleUploadFile}
+          onUpload={canUpload ? handleUpload : undefined}
+          onUploadFile={canUpload ? handleUploadFile : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
         />
       </div>
@@ -539,7 +540,7 @@ export function FolderExplorer() {
         onFolderFiltersChange={setFolderFilters}
         onFolderSearchChange={setFolderSearch}
         onRefresh={handleRefresh}
-        onUpload={handleUpload}
+        onUpload={canUpload ? handleUpload : undefined}
       />
 
       <div className='flex min-h-0 flex-1 overflow-hidden'>
@@ -570,7 +571,7 @@ export function FolderExplorer() {
               loadingFolders={loadingFolders}
               loadingPage={loadingPage}
               refreshing={refreshing}
-              uploadDisabled={!resolvedRepositoryId}
+              uploadDisabled={!canUpload}
               onAiSummary={(id) => openFileAction(id, 'aiSummary')}
               onEditMetadata={(id) => openFileAction(id, 'editMetadata')}
               onLoadMoreFolders={loadMoreFolders}
@@ -579,8 +580,8 @@ export function FolderExplorer() {
               onPageChange={changeServerPage}
               onPageSizeChange={changePageSize}
               onShare={openShareForFile}
-              onUpload={handleUpload}
-              onUploadFile={handleUploadFile}
+              onUpload={canUpload ? handleUpload : undefined}
+              onUploadFile={canUpload ? handleUploadFile : undefined}
               onWorkflow={(id) => openFileAction(id, 'workflow')}
             />
           </div>

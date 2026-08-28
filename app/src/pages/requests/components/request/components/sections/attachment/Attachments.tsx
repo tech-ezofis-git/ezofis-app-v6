@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import type { RepositoryFieldSchema } from '@/pages/requests/utils/repoFolderMetadata'
 import fileApi from '@/api/file/file'
+import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
@@ -585,68 +586,17 @@ export default function Attachments({
         />
       ) : null}
 
-      {!isLoading && (
-        <div className='mb-2.5 flex shrink-0 items-center justify-between'>
-          <span className='text-11 font-bold tracking-wider text-gray-9 uppercase'>
-            {files.length} {files.length === 1 ? t`Attachment` : t`Attachments`}
-          </span>
-        </div>
-      )}
-
-      {/* Upload Zone (Large dashed container when no files exist) */}
-      {canUpload && !isLoading && files.length === 0 && (
-        <div className='mb-4 shrink-0'>
-          <button
+      {canUpload && !isLoading && (
+        <div className='mb-3 flex shrink-0 justify-end'>
+          <Button
             disabled={isUploading}
-            className={cn(
-              'flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-4 bg-surface px-4 py-5 text-center transition-all hover:border-primary-4 hover:bg-primary-2/10 active:scale-98',
-              isUploading && 'pointer-events-none opacity-60',
-            )}
+            icon='tabler:upload'
+            label={isUploading ? t`Uploading...` : t`Upload`}
+            loading={isUploading}
+            size='sm'
+            type='button'
             onClick={() => fileInputRef.current?.click()}
-          >
-            {isUploading ? (
-              <Icon
-                className='size-6 animate-spin text-primary-9'
-                name='tabler:loader'
-              />
-            ) : (
-              <Icon className='size-6 text-gray-9' name='tabler:upload' />
-            )}
-            <div className='flex flex-col gap-0.5'>
-              <span className='text-13 font-bold text-gray-12'>
-                {isUploading ? 'Uploading...' : 'Upload attachment'}
-              </span>
-              <span className='text-11 text-gray-8'>Select file here</span>
-            </div>
-          </button>
-        </div>
-      )}
-
-      {/* Header Row (Small top-right button when attachments exist) */}
-      {canUpload && !isLoading && files.length > 0 && (
-        <div className='mt-2.5 mb-3 flex shrink-0 items-center justify-between'>
-          <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)]'></h4>
-          <button
-            disabled={isUploading}
-            className={cn(
-              'flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] transition-all hover:bg-[var(--gray-2)] active:scale-95',
-              isUploading && 'pointer-events-none opacity-60',
-            )}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {isUploading ? (
-              <Icon
-                className='size-3.5 animate-spin text-[var(--primary-9)]'
-                name='tabler:loader'
-              />
-            ) : (
-              <Icon
-                className='size-3.5 text-[var(--gray-9)]'
-                name='tabler:upload'
-              />
-            )}
-            <span>{isUploading ? 'Uploading...' : 'Upload attachment'}</span>
-          </button>
+          />
         </div>
       )}
 
@@ -676,14 +626,16 @@ export default function Attachments({
             <span className='text-12'>Loading attachments...</span>
           </div>
         ) : files.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
-            <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-gray-2'>
-              <Icon className='size-6 text-gray-7' name='tabler:file-off' />
+          !canUpload && (
+            <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
+              <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-gray-2'>
+                <Icon className='size-6 text-gray-7' name='tabler:file-off' />
+              </div>
+              <span className='text-13 font-medium text-gray-10'>
+                No attachments found
+              </span>
             </div>
-            <span className='text-13 font-medium text-gray-10'>
-              No attachments found
-            </span>
-          </div>
+          )
         ) : (
           files.map((file) => {
             const ext = getExt(file)
