@@ -82,7 +82,7 @@ const initialNodes: Node[] = [
       icon: 'logos:google-gmail',
       label: 'Gmail',
       subLabel: 'Send or receive emails',
-      toolType: 'Gmail',
+      toolType: 'gmail',
       type: 'trigger',
       warning: true,
     },
@@ -96,6 +96,7 @@ const initialNodes: Node[] = [
       iconColor: 'var(--color-secondary-9)',
       label: 'Workflow Success',
       subLabel: 'Automated Process End',
+      toolType: 'end',
       type: 'end',
       warning: true,
     },
@@ -179,7 +180,9 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     if (flowJsonStr && !isNew) {
       try {
         const json =
-          typeof flowJsonStr === 'string' ? JSON.parse(flowJsonStr) : flowJsonStr
+          typeof flowJsonStr === 'string'
+            ? JSON.parse(flowJsonStr)
+            : flowJsonStr
         loadLegacyWorkflow(json, data)
       } catch (e) {
         console.error('Failed to parse workflow json', e)
@@ -351,15 +354,15 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
             deleteKeyCode={['Backspace', 'Delete']}
             edges={edges}
             edgeTypes={edgeTypes}
+            fitViewOptions={{ padding: 0.2 }}
             maxZoom={0.75}
             minZoom={0.25}
             nodes={nodes}
             nodeTypes={nodeTypes}
             panOnScroll={true}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
             proOptions={{ hideAttribution: true }}
             zoomOnScroll={false}
+            fitView
             defaultEdgeOptions={{
               type: 'custom',
             }}

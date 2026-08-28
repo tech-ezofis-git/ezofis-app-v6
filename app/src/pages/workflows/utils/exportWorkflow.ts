@@ -1,6 +1,7 @@
 import type { Edge, Node } from '@xyflow/react'
 import { ensureStartAndEndNodes } from '@/services/ai/workflowConfig'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 
 const mapToolTypeToLegacyType = (
   toolType: string | undefined,
@@ -27,20 +28,20 @@ const mapToolTypeToLegacyType = (
     if (explicitType && explicitType !== 'ACTION') return explicitType
     return 'INTERNAL_ACTOR'
   }
-  const t = toolType.toLowerCase()
-  if (t === 'ocr agent' || t === 'ocr') return 'OCR'
-  if (t === 'ap agent' || t === 'ap_agent') return 'AP_AGENT'
-  if (t === 'condition') return 'CONDITION'
+  const t = normalizeNodeToolType(toolType)
+  if (t === NODE_TOOL_TYPE.OCR_AGENT || t === 'ocr') return 'OCR'
+  if (t === NODE_TOOL_TYPE.AP_AGENT) return 'AP_AGENT'
+  if (t === NODE_TOOL_TYPE.CONDITION) return 'CONDITION'
   if (
-    t === 'manual user' ||
+    t === NODE_TOOL_TYPE.MANUAL_USER ||
     t === 'verifier' ||
     t === 'actor' ||
     t === 'internal_actor'
   )
     return nodeIndex === 0 ? 'START' : 'INTERNAL_ACTOR'
   if (t === 'trigger' || t === 'initiator' || t === 'start') return 'START'
-  if (t === 'gmail' || t === 'outlook') return 'START'
-  if (t === 'action' || t === 'end') return 'END'
+  if (t === NODE_TOOL_TYPE.GMAIL || t === NODE_TOOL_TYPE.OUTLOOK) return 'START'
+  if (t === NODE_TOOL_TYPE.END || t === 'action') return 'END'
   return (nodeData.type || 'INTERNAL_ACTOR').toUpperCase()
 }
 
@@ -49,7 +50,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
 
   const rawBlocks = nodes.map((node, index) => {
     const data = (node.data || {}) as any
-    const toolType = data.toolType
+    const toolType = normalizeNodeToolType(data.toolType)
 
     // Base settings to be included in the legacy 'settings' object
     const settings: any = {
@@ -95,7 +96,10 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     }
 
     // Reconstruct nested settings for specific types
-    if (toolType === 'gmail' || toolType === 'outlook') {
+    if (
+      toolType === NODE_TOOL_TYPE.GMAIL ||
+      toolType === NODE_TOOL_TYPE.OUTLOOK
+    ) {
       settings.mailInitiate = {
         conditions: {
           fromAddress: data.fromMailAddresses?.map((a: any) => a.id) || [],
@@ -124,11 +128,11 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     }
 
     // Ensure tool-specific nested objects exist
-    if (toolType?.includes('ocr')) {
+    if (toolType === NODE_TOOL_TYPE.OCR_AGENT || toolType.includes('ocr')) {
       settings.ocrAgent = settings.ocrAgent || {}
       if (data.connectorId) settings.ocrAgent.connectorId = data.connectorId
     }
-    if (toolType?.includes('ap agent')) {
+    if (toolType === NODE_TOOL_TYPE.AP_AGENT) {
       const existingApAgent = settings.apAgent || {}
       const features: string[] = Array.isArray(existingApAgent.features)
         ? [...existingApAgent.features]

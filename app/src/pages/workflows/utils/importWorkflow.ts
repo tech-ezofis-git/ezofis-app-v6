@@ -1,69 +1,70 @@
 import type { Edge, Node } from '@xyflow/react'
+import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 
 function getNodeDefaults(toolType: string) {
-  const typeStr = (toolType || '').toLowerCase()
-  if (typeStr.includes('ocr'))
+  const typeStr = normalizeNodeToolType(toolType)
+  if (typeStr === NODE_TOOL_TYPE.OCR_AGENT || typeStr.includes('ocr'))
     return {
       icon: 'lucide:scan-text',
       iconColor: '#2563eb',
       subLabel: 'Extract text from images/PDFs',
     }
-  if (typeStr.includes('ap agent'))
+  if (typeStr === NODE_TOOL_TYPE.AP_AGENT)
     return {
       icon: 'lucide:receipt-text',
       iconColor: '#059669',
       subLabel: 'Accounts Payable automation',
     }
-  if (typeStr.includes('ftp'))
+  if (typeStr === NODE_TOOL_TYPE.FTP_AGENT || typeStr.includes('ftp'))
     return {
       icon: 'lucide:server',
       iconColor: '#7c3aed',
       subLabel: 'File Transfer Protocol',
     }
-  if (typeStr.includes('google drive'))
+  if (typeStr === NODE_TOOL_TYPE.GOOGLE_DRIVE)
     return {
       icon: 'logos:google-drive',
       iconColor: '',
       subLabel: 'Store or collect files from Google Drive',
     }
-  if (typeStr.includes('onedrive'))
+  if (typeStr === NODE_TOOL_TYPE.ONEDRIVE)
     return {
       icon: 'logos:microsoft-onedrive',
       iconColor: '',
       subLabel: 'Microsoft OneDrive integration',
     }
-  if (typeStr.includes('gmail'))
+  if (typeStr === NODE_TOOL_TYPE.GMAIL)
     return {
       icon: 'logos:google-gmail',
       iconColor: '',
       subLabel: 'Send or receive emails',
     }
-  if (typeStr.includes('outlook'))
+  if (typeStr === NODE_TOOL_TYPE.OUTLOOK)
     return {
       icon: 'vscode-icons:file-type-outlook',
       iconColor: '',
       subLabel: 'Microsoft Outlook integration',
     }
-  if (typeStr.includes('slack'))
+  if (typeStr === NODE_TOOL_TYPE.SLACK)
     return {
       icon: 'logos:slack-icon',
       iconColor: '',
       subLabel: 'Send channel messages',
     }
-  if (typeStr.includes('teams'))
+  if (typeStr === NODE_TOOL_TYPE.TEAMS)
     return {
       icon: 'logos:microsoft-teams',
       iconColor: '',
       subLabel: 'Microsoft Teams integration',
     }
-  if (typeStr.includes('condition'))
+  if (typeStr === NODE_TOOL_TYPE.CONDITION)
     return {
       icon: 'lucide:split',
       iconColor: '#f97316',
       subLabel: 'Check logic conditions',
     }
   if (
-    typeStr.includes('manual user') ||
+    typeStr === NODE_TOOL_TYPE.MANUAL_USER ||
     typeStr.includes('verifier') ||
     typeStr.includes('actor')
   )
@@ -73,16 +74,17 @@ function getNodeDefaults(toolType: string) {
       subLabel: 'Trigger manually by user',
     }
   if (
+    typeStr === NODE_TOOL_TYPE.FORM_SUBMISSION ||
     typeStr.includes('form') ||
-    typeStr.includes('trigger') ||
-    typeStr.includes('initiator')
+    typeStr === 'trigger' ||
+    typeStr === 'initiator'
   )
     return {
       icon: 'lucide:file-input',
       iconColor: '#ea580c',
       subLabel: 'Trigger on new form entry',
     }
-  if (typeStr.includes('end') || typeStr.includes('action'))
+  if (typeStr === NODE_TOOL_TYPE.END || typeStr === 'action')
     return {
       icon: 'lucide:party-popper',
       iconColor: 'var(--color-secondary-9)',
@@ -94,19 +96,29 @@ function getNodeDefaults(toolType: string) {
 function mapLegacyTypeToToolType(legacyType: string, label: string): string {
   switch (legacyType) {
     case 'OCR':
-      return 'ocr agent'
+      return NODE_TOOL_TYPE.OCR_AGENT
     case 'AP_AGENT':
-      return 'ap agent'
+      return NODE_TOOL_TYPE.AP_AGENT
     case 'CONDITION':
-      return 'condition'
+      return NODE_TOOL_TYPE.CONDITION
     case 'INTERNAL_ACTOR':
-      return 'manual user'
-    case 'START':
-      return label || 'trigger'
+      return NODE_TOOL_TYPE.MANUAL_USER
+    case 'START': {
+      const fromLabel = normalizeNodeToolType(label)
+      if (
+        fromLabel === NODE_TOOL_TYPE.GMAIL ||
+        fromLabel === NODE_TOOL_TYPE.OUTLOOK ||
+        fromLabel === NODE_TOOL_TYPE.MANUAL_USER ||
+        fromLabel === NODE_TOOL_TYPE.FORM_SUBMISSION
+      ) {
+        return fromLabel
+      }
+      return NODE_TOOL_TYPE.FORM_SUBMISSION
+    }
     case 'END':
-      return label || 'action'
+      return NODE_TOOL_TYPE.END
     default:
-      return label || legacyType
+      return normalizeNodeToolType(label || legacyType)
   }
 }
 
@@ -198,7 +210,9 @@ export const importWorkflow = (
       const connectorType = String(
         mailSettings.connectorType || 'gmail',
       ).toLowerCase()
-      toolType = connectorType.includes('outlook') ? 'outlook' : 'gmail'
+      toolType = connectorType.includes('outlook')
+        ? NODE_TOOL_TYPE.OUTLOOK
+        : NODE_TOOL_TYPE.GMAIL
       if (
         mailSettings.connectorId !== undefined &&
         mailSettings.connectorId !== null &&
@@ -241,7 +255,7 @@ export const importWorkflow = (
         }
       }
     } else if (isManualStart) {
-      toolType = 'manual user'
+      toolType = NODE_TOOL_TYPE.MANUAL_USER
     }
 
     if (connectorId === undefined) {
@@ -265,7 +279,10 @@ export const importWorkflow = (
     // Map AP Agent nested settings into flat UI fields used by APAgentSettingsPanel
     const apAgent = block.settings?.apAgent
     let apAgentUi: Record<string, unknown> = {}
-    if (apAgent && (toolType === 'ap agent' || block.type === 'AP_AGENT')) {
+    if (
+      apAgent &&
+      (toolType === NODE_TOOL_TYPE.AP_AGENT || block.type === 'AP_AGENT')
+    ) {
       const invoiceTypeMap: Record<string, string> = {
         NON_PO: 'Non-PO',
         NON_PO_INVOICE: 'Non-PO',
@@ -280,7 +297,8 @@ export const importWorkflow = (
         : []
 
       const toMasterOption = (id: unknown) => {
-        if (id === null || id === undefined || id === '' || id === 0) return null
+        if (id === null || id === undefined || id === '' || id === 0)
+          return null
         return { id, name: String(id) }
       }
 
@@ -357,18 +375,18 @@ export const importWorkflow = (
         iconColor: defaults.iconColor,
         initiateBy: block.settings?.initiateBy,
         initiateMode: block.settings?.initiateMode,
-        label: nodeLabel,
-        mailContentEnabled,
-        mailContentToMonitor,
-        mailSubjectEnabled,
-        mailSubjectToMonitor,
-        masterConditions: block.settings?.masterConditions,
         isGroupEnabled: Array.isArray(block.settings?.groups)
           ? block.settings.groups.length > 0
           : undefined,
         isUserEnabled: Array.isArray(block.settings?.users)
           ? block.settings.users.length > 0
           : undefined,
+        label: nodeLabel,
+        mailContentEnabled,
+        mailContentToMonitor,
+        mailSubjectEnabled,
+        mailSubjectToMonitor,
+        masterConditions: block.settings?.masterConditions,
         selectedGroups: Array.isArray(block.settings?.groups)
           ? block.settings.groups
               .map((g: any) => {
@@ -417,7 +435,7 @@ export const importWorkflow = (
           : undefined,
         standardCondition: block.settings?.standardCondition ?? true,
         subLabel: defaults.subLabel,
-        toolType: toolType,
+        toolType: normalizeNodeToolType(toolType),
         type: nodeType,
         warning: false,
         ...apAgentUi,
@@ -435,7 +453,7 @@ export const importWorkflow = (
 
   const validNodeIds = new Set(nodes.map((n) => n.id))
 
-  let edges: Edge[] = Array.isArray(legacyJson.rules)
+  const edges: Edge[] = Array.isArray(legacyJson.rules)
     ? (legacyJson.rules
         .map((rule: any) => {
           const sourceId = String(rule.fromBlockId || rule.from || '')
