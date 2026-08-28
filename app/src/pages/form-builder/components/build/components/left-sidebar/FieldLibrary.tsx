@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Icon from '@/components/base/icon/Icon'
 import { createFieldQuestions } from '@/pages/form-builder/helpers/field-utils'
 import {
@@ -8,15 +9,16 @@ import {
 } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 
-export type CategoryType =
-  | 'popular'
-  | 'templates'
-  | 'advanced'
-  | 'display'
-  | 'date_time'
+export type SectionTier =
+  | 'tier1'
+  | 'tier2'
+  | 'tier3'
+  | 'tier4'
+  | 'tier5'
+  | 'tier6'
 
 export interface FieldType {
-  category: CategoryType
+  section: SectionTier
   description: string
   icon: string
   label: string
@@ -28,274 +30,274 @@ export interface FieldType {
     | 'FINANCIAL_AUDIT'
 }
 
+export interface SectionConfig {
+  id: SectionTier
+  label?: string
+  collapsible?: boolean
+  description?: string
+  hideHeader?: boolean
+}
+
+export const SECTION_CONFIGS: SectionConfig[] = [
+  { id: 'tier1', hideHeader: true },
+  { id: 'tier2', hideHeader: true },
+  { id: 'tier3', label: 'Structural & Layout' },
+  { id: 'tier4', label: 'Smart Templates' },
+  { id: 'tier5', label: 'Specialized' },
+  { id: 'tier6', label: 'Advanced Fields', collapsible: true },
+]
+
 export const ALL_FIELDS: FieldType[] = [
-  // Basic
+  // Tier 1 – Core / Most Used (top of list)
   {
-    category: 'popular',
-    description: 'Combined first & last name',
-    icon: 'lucide:user',
-    label: 'Full Name',
-    type: 'FULL_NAME',
-  },
-  {
-    category: 'popular',
+    section: 'tier1',
     description: 'Single line text input',
     icon: 'mdi:form-textbox',
     label: 'Short Text',
     type: 'SHORT_TEXT',
   },
   {
-    category: 'popular',
+    section: 'tier1',
     description: 'Multi-line text area',
     icon: 'mdi:form-textarea',
     label: 'Long Text',
     type: 'LONG_TEXT',
   },
   {
-    category: 'popular',
-    description: 'Numeric only entry',
-    icon: 'tabler:number-123',
-    label: 'Number',
-    type: 'NUMBER',
-  },
-  {
-    category: 'popular',
-    description: 'Increment/Decrement field',
-    icon: 'lucide:binary',
-    label: 'Counter',
-    type: 'COUNTER',
-  },
-  {
-    category: 'popular',
-    description: 'Financial amount with unit',
-    icon: 'lucide:banknote',
-    label: 'Currency',
-    type: 'CURRENCY_AMOUNT',
-  },
-  {
-    category: 'popular',
-    description: 'Visual section separator',
-    icon: 'lucide:separator-horizontal',
-    label: 'Divider',
-    type: 'DIVIDER',
-  },
-  {
-    category: 'popular',
-    description: 'Intl. dialing prefix',
-    icon: 'lucide:globe',
-    label: 'Country',
-    type: 'COUNTRY_CODE',
-  },
-  {
-    category: 'popular',
+    section: 'tier1',
     description: 'Validated email input',
     icon: 'lucide:mail',
     label: 'Email',
     type: 'EMAIL',
   },
   {
-    category: 'popular',
-    description: 'Document & media capture',
-    icon: 'lucide:upload-cloud',
-    label: 'File Upload',
-    type: 'FILE_UPLOAD',
+    section: 'tier1',
+    description: 'Numeric only entry',
+    icon: 'tabler:number-123',
+    label: 'Number',
+    type: 'NUMBER',
   },
   {
-    category: 'popular',
-    description: 'Secure text entry',
-    icon: 'lucide:lock',
-    label: 'Password',
-    type: 'PASSWORD',
-  },
-  {
-    category: 'popular',
-    description: 'Rich-text & dynamic content',
-    icon: 'lucide:type',
-    label: 'Text Builder',
-    type: 'TEXT_BUILDER',
-  },
-  {
-    category: 'popular',
-    description: 'Spreadsheet-style data entry',
-    icon: 'lucide:layout-grid',
-    label: 'Table',
-    type: 'TABLE',
-  },
-  {
-    category: 'popular',
+    section: 'tier1',
     description: 'Phone number field',
     icon: 'lucide:phone',
     label: 'Phone',
     type: 'PHONE_NUMBER',
   },
   {
-    category: 'popular',
-    description: 'Star or heart-based feedback',
-    icon: 'lucide:star',
-    label: 'Rating',
-    type: 'RATING',
-  },
-  {
-    category: 'popular',
-    description: 'Numbered 0-10 satisfaction scale',
-    icon: 'lucide:bar-chart-3',
-    label: 'Opinion Scale',
-    type: 'OPINION_SCALE',
-  },
-  {
-    category: 'popular',
-    description: 'Hand-drawn signature capture',
-    icon: 'lucide:pen-tool',
-    label: 'Signature',
-    type: 'SIGNATURE',
-  },
-  {
-    category: 'popular',
-    description: 'Website link input',
-    icon: 'lucide:link',
-    label: 'URL',
-    type: 'URL',
-  },
-
-  // Selections
-  {
-    category: 'popular',
-    description: 'Radio selection',
-    icon: 'mdi:radiobox-marked',
-    label: 'Choice',
-    type: 'SINGLE_CHOICE',
-  },
-  {
-    category: 'popular',
+    section: 'tier1',
     description: 'Select from list',
     icon: 'lucide:list-todo',
     label: 'Dropdown',
     type: 'SINGLE_SELECT',
   },
   {
-    category: 'popular',
-    description: 'Multi-select options',
-    icon: 'lucide:square-check',
-    label: 'Checkbox',
-    type: 'MULTI_SELECT',
+    section: 'tier1',
+    description: 'Radio selection',
+    icon: 'mdi:radiobox-marked',
+    label: 'Single Choice',
+    type: 'SINGLE_CHOICE',
   },
   {
-    category: 'popular',
+    section: 'tier1',
+    description: 'Multiple checkboxes selection',
+    icon: 'lucide:check-square',
+    label: 'Multiple Choice',
+    type: 'MULTIPLE_CHOICE',
+  },
+  {
+    section: 'tier1',
     description: 'Binary toggle switch',
     icon: 'lucide:toggle-left',
     label: 'Yes/No',
     type: 'YES_NO_TOGGLE',
   },
-
-  // Date/Time
   {
-    category: 'date_time',
+    section: 'tier1',
     description: 'Date picker',
     icon: 'lucide:calendar',
     label: 'Date',
     type: 'DATE',
   },
   {
-    category: 'date_time',
+    section: 'tier1',
+    description: 'Document & media capture',
+    icon: 'lucide:upload-cloud',
+    label: 'File Upload',
+    type: 'FILE_UPLOAD',
+  },
+
+  // Tier 2 – Common but secondary
+  {
+    section: 'tier2',
+    description: 'Searchable dropdown, multiple picks',
+    icon: 'lucide:list-checks',
+    label: 'Multi Select',
+    type: 'MULTI_SELECT',
+  },
+  {
+    section: 'tier2',
+    description: 'Combined first & last name',
+    icon: 'lucide:user',
+    label: 'Full Name',
+    type: 'FULL_NAME',
+  },
+  {
+    section: 'tier2',
+    description: 'Financial amount with unit',
+    icon: 'lucide:banknote',
+    label: 'Currency',
+    type: 'CURRENCY_AMOUNT',
+  },
+  {
+    section: 'tier2',
+    description: 'Star or heart-based feedback',
+    icon: 'lucide:star',
+    label: 'Rating',
+    type: 'RATING',
+  },
+  {
+    section: 'tier2',
+    description: 'Numbered 0-10 satisfaction scale',
+    icon: 'lucide:bar-chart-3',
+    label: 'Opinion Scale',
+    type: 'OPINION_SCALE',
+  },
+  {
+    section: 'tier2',
+    description: 'Website link input',
+    icon: 'lucide:link',
+    label: 'URL',
+    type: 'URL',
+  },
+  {
+    section: 'tier2',
     description: 'Time picker',
     icon: 'lucide:clock',
     label: 'Time',
     type: 'TIME',
   },
-
-  // Templates
   {
-    category: 'templates',
+    section: 'tier2',
+    description: 'Combined date & time picker',
+    icon: 'lucide:calendar-clock',
+    label: 'Date & Time',
+    type: 'DATE_TIME',
+  },
+
+  // Tier 3 – Structural / layout helpers
+  {
+    section: 'tier3',
+    description: 'Visual section separator',
+    icon: 'lucide:separator-horizontal',
+    label: 'Divider',
+    type: 'DIVIDER',
+  },
+  {
+    section: 'tier3',
+    description: 'Spreadsheet-style data entry',
+    icon: 'lucide:layout-grid',
+    label: 'Table',
+    type: 'TABLE',
+  },
+  {
+    section: 'tier3',
+    description: 'Rich-text & dynamic content',
+    icon: 'lucide:type',
+    label: 'Text Builder',
+    type: 'TEXT_BUILDER',
+  },
+
+  // Tier 4 – Smart Templates
+  {
+    section: 'tier4',
     description: 'Name, Email, Phone block',
     icon: 'lucide:contact',
     label: 'Contact Template',
     type: 'CONTACT_INFO',
   },
   {
-    category: 'templates',
+    section: 'tier4',
     description: 'Complete address group',
     icon: 'lucide:home',
     label: 'Address Template',
     type: 'ADDRESS_INFO',
   },
   {
-    category: 'templates',
+    section: 'tier4',
     description: 'Street, City, State, Zip',
     icon: 'lucide:map-pin',
     label: 'Address',
     type: 'ADDRESS',
   },
   {
-    category: 'templates',
+    section: 'tier4',
     description: 'Agreement checkbox block',
     icon: 'lucide:shield-check',
     label: 'Consent',
     type: 'CONSENT',
   },
+
+  // Tier 5 – Specialized / low-frequency
   {
-    category: 'templates',
-    description: 'Invoice & PO matching summary',
-    icon: 'lucide:file-text',
-    label: 'Invoice Report',
-    type: 'INVOICE_REPORT',
+    section: 'tier5',
+    description: 'Intl. dialing prefix',
+    icon: 'lucide:globe',
+    label: 'Country',
+    type: 'COUNTRY_CODE',
   },
   {
-    category: 'templates',
-    description: 'GL matching & financial audit report',
-    icon: 'lucide:file-chart-column',
-    label: 'Financial Audit',
-    type: 'FINANCIAL_AUDIT',
+    section: 'tier5',
+    description: 'Secure text entry',
+    icon: 'lucide:lock',
+    label: 'Password',
+    type: 'PASSWORD',
+  },
+  {
+    section: 'tier5',
+    description: 'Hand-drawn signature capture',
+    icon: 'lucide:pen-tool',
+    label: 'Signature',
+    type: 'SIGNATURE',
+  },
+  {
+    section: 'tier5',
+    description: 'Increment/Decrement field',
+    icon: 'lucide:binary',
+    label: 'Counter',
+    type: 'COUNTER',
   },
 
-  // Advanced
+  // Tier 6 – Advanced / niche (bottom, collapsible)
   {
-    category: 'advanced',
+    section: 'tier6',
     description: 'Total score calculation',
     icon: 'lucide:trophy',
     label: 'Score',
     type: 'SCORE',
   },
   {
-    category: 'advanced',
+    section: 'tier6',
     description: 'Dynamic formula-based result',
     icon: 'lucide:calculator',
     label: 'Calculated',
     type: 'CALCULATED',
   },
+  {
+    section: 'tier6',
+    description: 'Invoice & PO matching summary',
+    icon: 'lucide:file-text',
+    label: 'Invoice Report',
+    type: 'INVOICE_REPORT',
+  },
+  {
+    section: 'tier6',
+    description: 'GL matching & financial audit report',
+    icon: 'lucide:file-chart-column',
+    label: 'Financial Audit',
+    type: 'FINANCIAL_AUDIT',
+  },
 ]
-
-import { motion } from 'framer-motion'
-
-const FIELD_THEMES: Record<
-  CategoryType,
-  { accent: string; bg: string; icon: string }
-> = {
-  advanced: {
-    accent: 'group-hover:bg-amber-600',
-    bg: 'bg-amber-50',
-    icon: 'text-amber-600',
-  },
-  date_time: {
-    accent: 'group-hover:bg-cyan-600',
-    bg: 'bg-cyan-50',
-    icon: 'text-cyan-600',
-  },
-  display: {
-    accent: 'group-hover:bg-emerald-600',
-    bg: 'bg-emerald-50',
-    icon: 'text-emerald-600',
-  },
-  popular: {
-    accent: 'group-hover:bg-blue-600',
-    bg: 'bg-blue-50',
-    icon: 'text-blue-600',
-  },
-  templates: {
-    accent: 'group-hover:bg-purple-600',
-    bg: 'bg-purple-50',
-    icon: 'text-purple-600',
-  },
-}
 
 const FieldLibrary = () => {
   const {
@@ -309,14 +311,16 @@ const FieldLibrary = () => {
   } = useFormStore()
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const filteredFields = useMemo(() => {
     if (!search.trim()) return ALL_FIELDS
+    const query = search.toLowerCase()
     return ALL_FIELDS.filter(
       (f) =>
-        f.label.toLowerCase().includes(search.toLowerCase()) ||
-        f.description.toLowerCase().includes(search.toLowerCase()),
+        f.label.toLowerCase().includes(query) ||
+        f.description.toLowerCase().includes(query),
     )
   }, [search])
 
@@ -379,13 +383,7 @@ const FieldLibrary = () => {
     }
   }
 
-  const categories = [
-    { id: 'popular', label: 'Basic Elements' },
-    { id: 'templates', label: 'Smart Templates' },
-    { id: 'advanced', label: 'Advanced Fields' },
-    { id: 'display', label: 'Presentation' },
-    { id: 'date_time', label: 'Date & Time' },
-  ]
+  const isSearching = !!search.trim()
 
   return (
     <div className='animate-in fade-in slide-in-from-bottom-4 flex h-full flex-col duration-500'>
@@ -393,7 +391,7 @@ const FieldLibrary = () => {
       <div className='sticky top-0 z-20 flex items-center justify-between border-b border-gray-2 bg-white px-4 py-3'>
         <div className='flex items-center gap-2'>
           <button
-            className='rounded-md p-1 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13'
+            className='rounded-md p-1 text-gray-11 transition-colors hover:bg-gray-2 hover:text-gray-13 cursor-pointer'
             onClick={() => setSidebarView('explorer')}
           >
             <Icon height={16} name='lucide:arrow-left' width={16} />
@@ -423,70 +421,130 @@ const FieldLibrary = () => {
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleSearchKeyDown}
           />
+          {search && (
+            <button
+              className='absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-0.5 text-gray-9 transition-colors hover:bg-gray-2 hover:text-gray-12 cursor-pointer'
+              onClick={() => setSearch('')}
+            >
+              <Icon height={12} name='lucide:x' width={12} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* List */}
-      <div className='custom-scrollbar flex-1 space-y-8 overflow-y-auto p-3 pb-10'>
-        {categories.map((cat, catIdx) => {
-          const catFields = filteredFields.filter((f) => f.category === cat.id)
-          if (catFields.length === 0) return null
-          const theme = FIELD_THEMES[cat.id as CategoryType]
+      <div className='custom-scrollbar flex-1 space-y-6 overflow-y-auto p-3 pb-10'>
+        {SECTION_CONFIGS.map((section, sectionIdx) => {
+          const sectionFields = filteredFields.filter(
+            (f) => f.section === section.id,
+          )
+          if (sectionFields.length === 0) return null
+
+          const isCollapsible = section.collapsible && !isSearching
+          const isExpanded = !isCollapsible || isAdvancedOpen
 
           return (
-            <div className='space-y-3' key={cat.id}>
-              {cat.id !== 'popular' && (
-                <div className='flex items-center gap-2 px-1 py-0.5'>
-                  <div className='size-2 rounded-full bg-primary-9' />
-                  <div className='text-xs font-bold text-gray-12'>
-                    {cat.label}
+            <div className='space-y-2.5' key={section.id}>
+              {/* Section Header */}
+              {!section.hideHeader && (
+                isCollapsible ? (
+                  <button
+                    type='button'
+                    className='group/hdr flex w-full items-center justify-between rounded-lg px-1 py-0.5 text-left transition-colors hover:bg-gray-2 cursor-pointer'
+                    onClick={() => setIsAdvancedOpen((prev) => !prev)}
+                  >
+                    <div className='flex items-center gap-2'>
+                      <div className='size-2 rounded-full bg-primary-9' />
+                      <div className='text-xs font-bold text-gray-12 group-hover/hdr:text-primary-9 transition-colors'>
+                        {section.label}
+                      </div>
+                      <span className='rounded-full bg-gray-2 px-1.5 py-0.2 text-[10px] font-semibold text-gray-10'>
+                        {sectionFields.length}
+                      </span>
+                    </div>
+                    <div className='flex items-center gap-1 text-gray-9 transition-colors group-hover/hdr:text-gray-12'>
+                      <span className='text-[10px] font-medium'>
+                        {isExpanded ? 'Hide' : 'Show'}
+                      </span>
+                      <Icon
+                        height={14}
+                        name={
+                          isExpanded
+                            ? 'lucide:chevron-down'
+                            : 'lucide:chevron-right'
+                        }
+                        width={14}
+                      />
+                    </div>
+                  </button>
+                ) : (
+                  <div className='flex items-center gap-2 px-1 py-0.5'>
+                    <div className='size-2 rounded-full bg-primary-9' />
+                    <div className='text-xs font-bold text-gray-12'>
+                      {section.label}
+                    </div>
                   </div>
-                </div>
+                )
               )}
-              <div className='grid grid-cols-1 gap-2'>
-                {catFields.map((field, idx) => {
-                  const flatIndex = filteredFields.indexOf(field)
-                  const isSelected = flatIndex === selectedIndex
-                  return (
-                    <motion.button
-                      animate={{ opacity: 1, x: 0 }}
-                      initial={{ opacity: 0, x: -10 }}
-                      key={field.type + field.label}
-                      transition={{ delay: catIdx * 0.06 + idx * 0.03 }}
-                      className={cn(
-                        'group relative flex items-center gap-2.5 rounded-xl border p-2 text-left transition-all duration-200 active:scale-[0.98]',
-                        isSelected
-                          ? 'border-primary-4 bg-primary-3/60 shadow-2xs'
-                          : 'border-transparent bg-white hover:border-gray-3 hover:bg-gray-2',
-                      )}
-                      onClick={() => handleSelect(field.type)}
-                      onMouseEnter={() => setSelectedIndex(flatIndex)}
-                    >
-                      <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-3 text-primary-9 transition-transform duration-200 group-hover:scale-105'>
-                        <Icon height={16} name={field.icon} width={16} />
-                      </div>
-                      <div className='flex min-w-0 flex-1 flex-col justify-center'>
-                        <div className='truncate text-xs font-semibold text-gray-12 transition-colors group-hover:text-primary-9'>
-                          {field.label}
-                        </div>
-                        <div className='truncate text-[10px] font-normal text-gray-10'>
-                          {field.description}
-                        </div>
-                      </div>
-                      <div
-                        className={cn(
-                          'ml-auto flex size-6 shrink-0 items-center justify-center rounded-md text-primary-9 transition-all duration-200',
-                          isSelected
-                            ? 'translate-x-0 bg-primary-4/50 opacity-100'
-                            : 'translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:bg-primary-3 group-hover:opacity-100',
-                        )}
-                      >
-                        <Icon height={14} name='lucide:plus' width={14} />
-                      </div>
-                    </motion.button>
-                  )
-                })}
-              </div>
+
+              {/* Field Cards */}
+              <AnimatePresence initial={false}>
+                {isExpanded && (
+                  <motion.div
+                    animate={{ height: 'auto', opacity: 1 }}
+                    className='grid grid-cols-1 gap-2 overflow-hidden'
+                    exit={{ height: 0, opacity: 0 }}
+                    initial={{
+                      height: isCollapsible ? 0 : 'auto',
+                      opacity: isCollapsible ? 0 : 1,
+                    }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {sectionFields.map((field, idx) => {
+                      const flatIndex = filteredFields.indexOf(field)
+                      const isSelected = flatIndex === selectedIndex
+                      return (
+                        <motion.button
+                          animate={{ opacity: 1, x: 0 }}
+                          initial={{ opacity: 0, x: -10 }}
+                          key={field.type + field.label}
+                          transition={{ delay: sectionIdx * 0.04 + idx * 0.02 }}
+                          className={cn(
+                            'group relative flex items-center gap-2.5 rounded-xl border p-2 text-left transition-all duration-200 active:scale-[0.98] cursor-pointer',
+                            isSelected
+                              ? 'border-primary-4 bg-primary-3/60 shadow-2xs'
+                              : 'border-transparent bg-white hover:border-gray-3 hover:bg-gray-2',
+                          )}
+                          onClick={() => handleSelect(field.type)}
+                          onMouseEnter={() => setSelectedIndex(flatIndex)}
+                        >
+                          <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-3 text-primary-9 transition-transform duration-200 group-hover:scale-105'>
+                            <Icon height={16} name={field.icon} width={16} />
+                          </div>
+                          <div className='flex min-w-0 flex-1 flex-col justify-center'>
+                            <div className='truncate text-xs font-semibold text-gray-12 transition-colors group-hover:text-primary-9'>
+                              {field.label}
+                            </div>
+                            <div className='truncate text-[10px] font-normal text-gray-10'>
+                              {field.description}
+                            </div>
+                          </div>
+                          <div
+                            className={cn(
+                              'ml-auto flex size-6 shrink-0 items-center justify-center rounded-md text-primary-9 transition-all duration-200',
+                              isSelected
+                                ? 'translate-x-0 bg-primary-4/50 opacity-100'
+                                : 'translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:bg-primary-3 group-hover:opacity-100',
+                            )}
+                          >
+                            <Icon height={14} name='lucide:plus' width={14} />
+                          </div>
+                        </motion.button>
+                      )
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )
         })}

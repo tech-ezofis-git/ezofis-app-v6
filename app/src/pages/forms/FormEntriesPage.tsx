@@ -33,14 +33,16 @@ import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
+import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
-import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
-import GenericFormImportModal from './components/GenericFormImportModal'
 import {
   matchesCategoryFilterValue,
   matchesDateRangeValue,
 } from '@/utils/filterUtils'
+import GenericFormImportModal from './components/GenericFormImportModal'
 
 // Helper to generate dynamic mock values based on field schema
 const generateDummyEntries = (fields: Question[], count: number = 6) => {
@@ -57,9 +59,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
     fields.length > 0
       ? fields
       : [
-        { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
-        { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
-      ]
+          { id: 'f1', label: 'Initial Value', type: 'SHORT_TEXT' } as Question,
+          { id: 'f2', label: 'Status', type: 'SHORT_TEXT' } as Question,
+        ]
 
   return Array.from({ length: count }).map((_, idx) => {
     const entryId = `Entry #${idx + 1}`
@@ -69,7 +71,9 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
       const type = (field.type || 'SHORT_TEXT').toUpperCase()
       const label = (field.label || '').toLowerCase()
 
-      if (type === 'EMAIL' || label.includes('email')) {
+      if (type === 'CALCULATED') {
+        return
+      } else if (type === 'EMAIL' || label.includes('email')) {
         values[field.id] = `respondent${idx + 1}@ezofis.com`
       } else if (
         type === 'PHONE_NUMBER' ||
@@ -151,11 +155,13 @@ const generateDummyEntries = (fields: Question[], count: number = 6) => {
       createdBy: sampleUsers[idx % sampleUsers.length],
       id: entryId,
       isDeleted: false,
-      values,
+      values: applyCalculatedFields(
+        [{ fields: activeFields, id: 'dummy', settings: { description: '' } }],
+        values,
+      ),
     }
   })
 }
-
 
 // Sub-component for Inline Expansion Line Item Form (Flat-Focus UI compliant: no drawers, no popups, no modals)
 const FormLineItemInlineEditor = ({
@@ -332,8 +338,8 @@ const FormLineItemInlineEditor = ({
                 {(idx === 0 ||
                   normId.includes('item') ||
                   normId.includes('part')) && (
-                    <span className='ml-1 font-bold text-red-9'>*</span>
-                  )}
+                  <span className='ml-1 font-bold text-red-9'>*</span>
+                )}
               </label>
 
               {isLongText ? (
@@ -405,17 +411,17 @@ const FormLineItemInlineEditor = ({
 // Sub-component for rendering line items / table fields inside entry creation/editing
 const FormLineItemsEditor = ({
   field,
+  isFieldRequired,
   // isFieldRequired,
   value,
   getFieldLabel,
-  isFieldRequired,
   onChange,
 }: {
   field: Question
+  isFieldRequired?: boolean
   // isFieldRequired?: boolean
   value: any
   getFieldLabel: (key: string) => string
-  isFieldRequired?: boolean
   onChange: (val: string) => void
 }) => {
   const { t } = useLingui()
@@ -443,7 +449,7 @@ const FormLineItemsEditor = ({
   const columns = useMemo(() => {
     const tableCols =
       field.settings?.specific?.tableColumns ||
-      field.settings?.specific?.columns
+      (field.settings?.specific as any)?.columns
     if (Array.isArray(tableCols) && tableCols.length > 0) {
       return tableCols.map((c: any) => ({
         id: c.id || c.name || c.key,
@@ -510,16 +516,18 @@ const FormLineItemsEditor = ({
     onChange(JSON.stringify(updated))
   }
 
-
   return (
     <div className='space-y-3 font-inter'>
       {/* Table Field Title & Action Row */}
-      <div className='flex items-center justify-between mb-1.5'>
+      <div className='mb-1.5 flex items-center justify-between'>
         <div>
           <label className='block text-xs font-bold text-gray-12'>
             {field.label || 'Untitled Question'}
             {isFieldRequired && (
-              <span className='ml-1 font-bold text-red-9' title='Required field'>
+              <span
+                className='ml-1 font-bold text-red-9'
+                title='Required field'
+              >
                 *
               </span>
             )}
@@ -601,8 +609,8 @@ const FormLineItemsEditor = ({
                           key={col.id}
                         >
                           {row[col.id] !== undefined &&
-                            row[col.id] !== null &&
-                            String(row[col.id]).trim() !== '' ? (
+                          row[col.id] !== null &&
+                          String(row[col.id]).trim() !== '' ? (
                             String(row[col.id])
                           ) : (
                             <span className='text-gray-5'>—</span>
@@ -637,7 +645,7 @@ const FormLineItemsEditor = ({
           </div>
 
           {/* Table Footer */}
-          <div className='flex items-center justify-between border-t border-gray-2 bg-gray-50/60 px-4 py-3 text-xs'>
+          <div className='bg-gray-50/60 flex items-center justify-between border-t border-gray-2 px-4 py-3 text-xs'>
             <span className='text-[11px] font-medium text-gray-7'>
               Showing {rows.length} line {rows.length === 1 ? 'item' : 'items'}
             </span>
@@ -901,10 +909,10 @@ const FormEntriesPage = () => {
         return {
           createdAt: e.createdAt || new Date().toISOString(),
           createdBy: e.createdBy || 'unknown@ezofis.com',
+          entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
           id: e.itemId
             ? `Entry #${e.itemId}`
             : e.id || e.uid || `Entry #${Math.random()}`,
-          entryId: e.itemId ?? e.entryId ?? e.id ?? 0,
           isDeleted: !!e.isDeleted,
           values,
         }
@@ -918,18 +926,20 @@ const FormEntriesPage = () => {
   }, [fetchedEntries])
 
   const handleFieldChange = (fieldId: string, val: any) => {
-    setEditValues((prev) => ({ ...prev, [fieldId]: val }))
+    setEditValues((prev) =>
+      applyCalculatedFields(panels, { ...prev, [fieldId]: val }),
+    )
   }
 
   // Slide-in pane toggle functions
   const openNewEntry = () => {
-    setEditValues({})
+    setEditValues(applyCalculatedFields(panels, {}))
     setSelectedEntry(null)
     setIsAddOpen(true)
   }
 
   const openEditEntry = (entry: any) => {
-    setEditValues({ ...entry.values })
+    setEditValues(applyCalculatedFields(panels, { ...entry.values }))
     setSelectedEntry(entry)
     setIsAddOpen(false)
   }
@@ -1433,8 +1443,6 @@ const FormEntriesPage = () => {
     }
   }
 
-
-
   // Skeleton Loader for initial fetching
   if (isPageLoading) {
     return (
@@ -1529,7 +1537,6 @@ const FormEntriesPage = () => {
               </p>
             </div>
           </div>
-
         </div>
 
         {/* Scrollable Form Body with ~80% Width Container */}
@@ -1612,7 +1619,7 @@ const FormEntriesPage = () => {
                                   </span>
                                 )}
                               </label>
-                              {isReadOnly && (
+                              {(type === 'CALCULATED' || isReadOnly) && (
                                 <span className='rounded bg-gray-2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-8'>
                                   Auto-calculated
                                 </span>
@@ -1620,11 +1627,12 @@ const FormEntriesPage = () => {
                             </div>
                           )}
 
-                          {!isTableType && field.settings?.general?.description && (
-                            <p className='mb-1.5 text-[11px] text-gray-7'>
-                              {field.settings.general.description}
-                            </p>
-                          )}
+                          {!isTableType &&
+                            field.settings?.general?.description && (
+                              <p className='mb-1.5 text-[11px] text-gray-7'>
+                                {field.settings.general.description}
+                              </p>
+                            )}
 
                           {/* Form Input Control */}
                           {type === 'YES_NO_TOGGLE' || type === 'CONSENT' ? (
@@ -1840,9 +1848,9 @@ const FormEntriesPage = () => {
                               if (type === 'MULTI_SELECT') {
                                 const selectedValues = val
                                   ? String(val)
-                                    .split(',')
-                                    .map((v) => v.trim())
-                                    .filter(Boolean)
+                                      .split(',')
+                                      .map((v) => v.trim())
+                                      .filter(Boolean)
                                   : []
                                 const selectedOpts = selectedValues.map(
                                   (v) => ({ id: v, name: v }),
@@ -1850,13 +1858,13 @@ const FormEntriesPage = () => {
 
                                 return (
                                   <InputSelectMultiple
+                                    options={opts}
+                                    value={selectedOpts}
                                     creatable
                                     searchable
-                                    options={opts}
                                     placeholder={
                                       field.settings?.general?.placeholder
                                     }
-                                    value={selectedOpts}
                                     onChange={(vals) =>
                                       handleFieldChange(
                                         field.id,
@@ -1875,10 +1883,10 @@ const FormEntriesPage = () => {
 
                               return (
                                 <InputSelect
-                                  creatable
-                                  searchable
                                   options={opts}
                                   value={selectedOpt}
+                                  creatable
+                                  searchable
                                   placeholder={
                                     field.settings?.general?.placeholder
                                   }
@@ -1924,6 +1932,8 @@ const FormEntriesPage = () => {
                                 }
                               />
                             </div>
+                          ) : type === 'CALCULATED' ? (
+                            <CalculatedFieldInput hideLabel value={val} />
                           ) : type === 'LONG_TEXT' ? (
                             <InputTextarea
                               placeholder={field.settings?.general?.placeholder}
@@ -1935,9 +1945,9 @@ const FormEntriesPage = () => {
                           ) : isTableType ? (
                             <FormLineItemsEditor
                               field={field}
-                              getFieldLabel={getFieldLabel}
                               isFieldRequired={isFieldRequired}
                               value={val}
+                              getFieldLabel={getFieldLabel}
                               onChange={(newVal) =>
                                 handleFieldChange(field.id, newVal)
                               }
@@ -1968,8 +1978,7 @@ const FormEntriesPage = () => {
         </div>
 
         {/* Sticky Action Footer Bar */}
-        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-white/95 px-8 py-3.5 backdrop-blur-md shadow-lg'>
-
+        <div className='sticky bottom-0 z-20 flex shrink-0 items-center justify-end border-t border-gray-2 bg-white/95 px-8 py-3.5 shadow-lg backdrop-blur-md'>
           {/* Action Buttons */}
           <div className='flex items-center gap-3'>
             <Button
@@ -2129,14 +2138,14 @@ const FormEntriesPage = () => {
             filters={[
               ...(nameFieldFilter
                 ? [
-                  {
-                    id: nameFieldFilter.id,
-                    label: nameFieldFilter.label || t`Name`,
-                    options: nameFieldFilter.options || [],
-                    searchable: true,
-                    searchPlaceholder: t`Search name...`,
-                  },
-                ]
+                    {
+                      id: nameFieldFilter.id,
+                      label: nameFieldFilter.label || t`Name`,
+                      options: nameFieldFilter.options || [],
+                      searchable: true,
+                      searchPlaceholder: t`Search name...`,
+                    },
+                  ]
                 : []),
               {
                 id: 'createdBy',
@@ -2165,7 +2174,7 @@ const FormEntriesPage = () => {
               setSearchState({ id: '', value: '' })
               setPage(1)
             }}
-            onSearchChange={() => { }}
+            onSearchChange={() => {}}
           />
           <div className='mt-2 min-h-0 flex-1 overflow-hidden'>
             <DataTable

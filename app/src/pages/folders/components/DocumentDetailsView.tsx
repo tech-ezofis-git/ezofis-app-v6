@@ -24,7 +24,7 @@ import showToast from '@/components/base/toast/showToast'
 import Icon from '@/components/base/icon/Icon'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
-import { getSearchHitDate, getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
+import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import {
   getRepositoryById,
   persistEditedDocumentToRepository,
@@ -97,9 +97,55 @@ type RelatedDoc = {
   matchCount?: number
   matchedFields?: string[]
   matchScore?: number
+  relatedItemId?: string
+  relatedRepositoryId?: string
   repositoryId: string
   repositoryName?: string | null
   supplier?: string | null
+}
+
+const toRelatedDoc = (
+  row: {
+    createdAtUtc?: string | null
+    documentType?: string | null
+    fileName?: string | null
+    fileSize?: number | null
+    fileType?: string | null
+    id?: string
+    matchCount?: number
+    matchedFields?: string[]
+    matchScore?: number
+    relatedItemId?: string
+    relatedRepositoryId?: string
+    repositoryId?: string
+    repositoryName?: string | null
+    supplier?: string | null
+  },
+  untitled: string,
+): RelatedDoc | null => {
+  const relatedItemId = String(
+    row?.relatedItemId || row?.id || '',
+  ).trim()
+  const relatedRepositoryId = String(
+    row?.relatedRepositoryId || row?.repositoryId || '',
+  ).trim()
+  if (!relatedItemId || !relatedRepositoryId) return null
+  return {
+    createdAtUtc: row.createdAtUtc,
+    documentType: row.documentType,
+    fileName: String(row.fileName || untitled),
+    fileSize: row.fileSize,
+    fileType: row.fileType,
+    id: relatedItemId,
+    matchCount: row.matchCount,
+    matchedFields: Array.isArray(row.matchedFields) ? row.matchedFields : [],
+    matchScore: row.matchScore,
+    relatedItemId,
+    relatedRepositoryId,
+    repositoryId: relatedRepositoryId,
+    repositoryName: row.repositoryName,
+    supplier: row.supplier,
+  }
 }
 
 type TimelineEvent = {
@@ -325,7 +371,7 @@ export function DocumentDetailsView({
 
   const [comments, setComments] = useState<CommentItem[]>([])
   const [commentsLoading, setCommentsLoading] = useState(false)
-  const [commentsLoaded, setCommentsLoaded] = useState(false)
+  const [commentsTotal, setCommentsTotal] = useState(0)
   const [commentsPage, setCommentsPage] = useState(1)
   const [commentsHasMore, setCommentsHasMore] = useState(true)
   const [commentsLoadingMore, setCommentsLoadingMore] = useState(false)
@@ -333,6 +379,8 @@ export function DocumentDetailsView({
   const [savingComment, setSavingComment] = useState(false)
   const commentsEndRef = useRef<HTMLDivElement | null>(null)
   const commentsContainerRef = useRef<HTMLDivElement | null>(null)
+  const commentsRequestIdRef = useRef(0)
+  const relatedDocsRequestIdRef = useRef(0)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewMimeType, setPreviewMimeType] = useState<string | null>(null)
   const [previewKind, setPreviewKind] = useState<DocumentPreviewKind | null>(
@@ -376,8 +424,131 @@ export function DocumentDetailsView({
   const signingResolvedForRef = useRef('')
   const [relatedDocs, setRelatedDocs] = useState<RelatedDoc[]>([])
   const [relatedDocsLoading, setRelatedDocsLoading] = useState(false)
-  const [relatedDocsLoaded, setRelatedDocsLoaded] = useState(false)
   const [relatedDocsTotal, setRelatedDocsTotal] = useState(0)
+  const [removingRelatedKey, setRemovingRelatedKey] = useState<string | null>(
+    null,
+  )
+
+  const applyRelatedDocs = useCallback(
+    (response: { data?: Array<Parameters<typeof toRelatedDoc>[0]>; totalCount?: number }) => {
+      const rows = Array.isArray(response?.data) ? response.data : []
+      const mapped = rows
+        .map((row) => toRelatedDoc(row, t`Untitled`))
+        .filter((row): row is RelatedDoc => Boolean(row))
+      setRelatedDocs(mapped)
+      setRelatedDocsTotal(Number(response?.totalCount || mapped.length || 0))
+    },
+    [t],
+  )
+
+  const loadRelatedDocs = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (inviteToken || !repositoryId || !id) return
+      const requestId = ++relatedDocsRequestIdRef.current
+      if (!options?.silent) setRelatedDocsLoading(true)
+      try {
+        const response = await folderApi.getRelatedDocuments(repositoryId, id, {
+          page: 1,
+          pageSize: 50,
+        })
+        if (requestId !== relatedDocsRequestIdRef.current) return
+        applyRelatedDocs(response)
+      } catch {
+        // Keep existing related docs if the refresh fails.
+      } finally {
+        if (requestId === relatedDocsRequestIdRef.current && !options?.silent) {
+          setRelatedDocsLoading(false)
+        }
+      }
+    },
+    [applyRelatedDocs, id, inviteToken, repositoryId],
+  )
+
+  const loadComments = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (inviteToken || !repositoryId || !id) return
+      const requestId = ++commentsRequestIdRef.current
+      if (!options?.silent) setCommentsLoading(true)
+      try {
+        const response = await folderApi.getDocumentComments(repositoryId, id, {
+          page: 1,
+          pageSize: 50,
+        })
+        if (requestId !== commentsRequestIdRef.current) return
+        const fetchedComments = Array.isArray(response?.comments)
+          ? [...response.comments].reverse()
+          : []
+        setComments(fetchedComments)
+        setCommentsTotal(
+          Number(response?.totalCount || fetchedComments.length || 0),
+        )
+        setCommentsPage(1)
+        setCommentsHasMore(fetchedComments.length === 50)
+        if (!options?.silent) {
+          window.setTimeout(() => {
+            commentsEndRef.current?.scrollIntoView({ behavior: 'auto' })
+          }, 100)
+        }
+      } catch {
+        // Keep existing comments if the refresh fails.
+      } finally {
+        if (requestId === commentsRequestIdRef.current && !options?.silent) {
+          setCommentsLoading(false)
+        }
+      }
+    },
+    [id, inviteToken, repositoryId],
+  )
+
+  const removeRelatedDoc = useCallback(
+    async (item: RelatedDoc) => {
+      const openRepoId = String(repositoryId || '').trim()
+      const openItemId = String(id || '').trim()
+      const relatedRepositoryId = String(
+        item.relatedRepositoryId || item.repositoryId || '',
+      ).trim()
+      const relatedItemId = String(item.relatedItemId || item.id || '').trim()
+      if (!openRepoId || !openItemId || !relatedRepositoryId || !relatedItemId) {
+        showToast({
+          message: t`This related document cannot be removed.`,
+          variant: 'error',
+        })
+        return
+      }
+
+      const key = `${relatedRepositoryId}:${relatedItemId}`
+      setRemovingRelatedKey(key)
+      try {
+        await folderApi.removeRelatedDocument(openRepoId, openItemId, {
+          relatedItemId,
+          relatedRepositoryId,
+        })
+        setRelatedDocs((prev) =>
+          prev.filter(
+            (doc) =>
+              `${doc.relatedRepositoryId || doc.repositoryId}:${doc.relatedItemId || doc.id}` !==
+              key,
+          ),
+        )
+        setRelatedDocsTotal((prev) => Math.max(0, prev - 1))
+        showToast({
+          message: t`Removed from related`,
+          variant: 'success',
+        })
+      } catch (exception) {
+        showToast({
+          message: toUiErrorMessage(
+            exception instanceof Error ? exception.message : exception,
+            t`Unable to remove related document`,
+          ),
+          variant: 'error',
+        })
+      } finally {
+        setRemovingRelatedKey(null)
+      }
+    },
+    [id, repositoryId, t],
+  )
   const { session } = authUserStore.getState()
   const currentUserEmail = String(session?.email || '')
     .trim()
@@ -551,9 +722,11 @@ export function DocumentDetailsView({
       setComments([])
       setRelatedDocs([])
       setTimelineLoaded(false)
-      setCommentsLoaded(false)
-      setRelatedDocsLoaded(false)
+      setCommentsLoading(false)
+      setCommentsTotal(0)
+      setRelatedDocsLoading(false)
       setRelatedDocsTotal(0)
+      setRemovingRelatedKey(null)
       setTab('timeline')
 
       // Invite links: assignee may not have repository access — use preview meta.
@@ -719,46 +892,10 @@ export function DocumentDetailsView({
   }, [tab, repositoryId, id, timelineLoaded])
 
   useEffect(() => {
-    let mounted = true
-
-    const loadComments = async () => {
-      if (inviteToken) return
-      if (tab !== 'comments' || !repositoryId || !id || commentsLoaded) return
-      setCommentsLoading(true)
-
-      try {
-        const response = await folderApi.getDocumentComments(repositoryId, id, {
-          page: 1,
-          pageSize: 50,
-        })
-        if (mounted) {
-          const fetchedComments = Array.isArray(response?.comments) ? response.comments : []
-          setComments(fetchedComments.reverse())
-          setCommentsPage(1)
-          setCommentsHasMore(fetchedComments.length === 50)
-          setCommentsLoaded(true)
-
-          setTimeout(() => {
-            if (commentsEndRef.current) {
-              commentsEndRef.current.scrollIntoView({ behavior: 'auto' })
-            }
-          }, 100)
-        }
-      } catch {
-        if (mounted) {
-          setComments([])
-          setCommentsLoaded(true)
-        }
-      } finally {
-        if (mounted) setCommentsLoading(false)
-      }
-    }
-
-    loadComments()
-    return () => {
-      mounted = false
-    }
-  }, [tab, repositoryId, id, commentsLoaded, inviteToken])
+    if (inviteToken || !repositoryId || !id) return
+    void loadComments({ silent: true })
+    void loadRelatedDocs({ silent: true })
+  }, [id, inviteToken, loadComments, loadRelatedDocs, repositoryId])
 
   const handleCommentsScroll = async (e: any) => {
     const target = e.target as HTMLDivElement
@@ -792,61 +929,6 @@ export function DocumentDetailsView({
       }
     }
   }
-
-  useEffect(() => {
-    let mounted = true
-
-    const loadRelatedDocs = async () => {
-      if (inviteToken) return
-      if (tab !== 'relatedDocs' || !repositoryId || !id || relatedDocsLoaded)
-        return
-      setRelatedDocsLoading(true)
-
-      try {
-        const response = await folderApi.getRelatedDocuments(repositoryId, id, {
-          page: 1,
-          pageSize: 50,
-        })
-        if (!mounted) return
-        const rows = Array.isArray(response?.data) ? response.data : []
-        setRelatedDocs(
-          rows
-            .filter((row) => row?.id && row?.repositoryId)
-            .map((row) => ({
-              createdAtUtc: row.createdAtUtc,
-              documentType: row.documentType,
-              fileName: String(row.fileName || t`Untitled`),
-              fileSize: row.fileSize,
-              fileType: row.fileType,
-              id: String(row.id),
-              matchCount: row.matchCount,
-              matchedFields: Array.isArray(row.matchedFields)
-                ? row.matchedFields
-                : [],
-              matchScore: row.matchScore,
-              repositoryId: String(row.repositoryId),
-              repositoryName: row.repositoryName,
-              supplier: row.supplier,
-            })),
-        )
-        setRelatedDocsTotal(Number(response?.totalCount || rows.length || 0))
-        setRelatedDocsLoaded(true)
-      } catch {
-        if (mounted) {
-          setRelatedDocs([])
-          setRelatedDocsTotal(0)
-          setRelatedDocsLoaded(true)
-        }
-      } finally {
-        if (mounted) setRelatedDocsLoading(false)
-      }
-    }
-
-    void loadRelatedDocs()
-    return () => {
-      mounted = false
-    }
-  }, [tab, repositoryId, id, relatedDocsLoaded, inviteToken, t])
 
   useEffect(() => {
     const requestId = ++previewRequestIdRef.current
@@ -1030,8 +1112,8 @@ export function DocumentDetailsView({
         body: commentText.trim(),
       })
       setCommentText('')
-      setCommentsLoaded(false)
       setTimelineLoaded(false)
+      await loadComments({ silent: true })
     } finally {
       setSavingComment(false)
     }
@@ -1359,7 +1441,7 @@ export function DocumentDetailsView({
           label: t`Timeline`,
         },
         {
-          count: comments.length,
+          count: commentsTotal || comments.length,
           icon: 'messageSquare',
           key: 'comments',
           label: t`Comments`,
@@ -1371,7 +1453,14 @@ export function DocumentDetailsView({
           label: t`Related Docs`,
         },
       ] as const,
-    [comments.length, relatedDocs.length, relatedDocsTotal, t, timeline.length],
+    [
+      comments.length,
+      commentsTotal,
+      relatedDocs.length,
+      relatedDocsTotal,
+      t,
+      timeline.length,
+    ],
   )
 
   if (loading)
@@ -2039,9 +2128,18 @@ export function DocumentDetailsView({
                 <div className='flex w-fit gap-1 rounded-xl bg-gray-2 p-1'>
                   {tabs.map((item) => (
                     <button
+                      type='button'
                       className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-all active:scale-95 ${tab === item.key ? 'bg-surface-primary text-gray-13 shadow-sm ring-1 ring-gray-3' : 'text-gray-10 hover:bg-gray-4 hover:text-gray-12'}`}
                       key={item.key}
-                      onClick={() => setTab(item.key)}
+                      onClick={() => {
+                        setTab(item.key)
+                        if (item.key === 'comments') {
+                          void loadComments({ silent: false })
+                        }
+                        if (item.key === 'relatedDocs') {
+                          void loadRelatedDocs({ silent: false })
+                        }
+                      }}
                     >
                       <DynamicIcon className='h-4 w-4' name={item.icon} />
                       {item.label} {item.count ? `(${item.count})` : ''}
@@ -2134,7 +2232,14 @@ export function DocumentDetailsView({
                           <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
                             {t`Loading comments...`}
                           </div>
-                        ) : comments.length ? (
+                        ) : (
+                          <>
+                            {commentsLoading && comments.length > 0 ? (
+                              <div className='py-2 text-center text-[12px] font-semibold text-gray-10'>
+                                {t`Loading comments...`}
+                              </div>
+                            ) : null}
+                            {comments.length ? (
                           <div className='flex flex-col gap-2'>
                             {(() => {
                               let lastDateHeader = ''
@@ -2245,6 +2350,8 @@ export function DocumentDetailsView({
                             title={t`No comments found`}
                           />
                         )}
+                          </>
+                        )}
                       </div>
 
                       <div className='shrink-0 border-t border-[var(--gray-3)] bg-surface p-4'>
@@ -2286,30 +2393,68 @@ export function DocumentDetailsView({
                         metadata={data}
                         repositoryId={repositoryId}
                         supplierName={data?.fileName}
-                        onLinkDocument={(hit) => {
-                          const newDoc: RelatedDoc = {
-                            id: String(hit.id?.itemId || hit.id?.repositoryId || Date.now()),
-                            repositoryId: String(hit.id?.repositoryId || repositoryId || ''),
-                            fileName: getSearchHitTitle(hit),
-                            fileSize: 1024 * 150,
-                            fileType: hit.type || 'pdf',
-                            createdAtUtc: getSearchHitDate(hit) || new Date().toISOString(),
-                            repositoryName:
-                              hit.name && hit.name !== 'Main Repository'
-                                ? hit.name
-                                : 'Accounts Payable',
+                        onLinkDocument={async (hit) => {
+                          const sourceRepositoryId = String(
+                            repositoryId || '',
+                          ).trim()
+                          const sourceItemId = String(id || '').trim()
+                          const linkedRepositoryId = String(
+                            hit.id?.repositoryId || repositoryId || '',
+                          ).trim()
+                          const linkedItemId = String(
+                            hit.id?.itemId || '',
+                          ).trim()
+                          if (
+                            !sourceRepositoryId ||
+                            !sourceItemId ||
+                            !linkedRepositoryId ||
+                            !linkedItemId
+                          ) {
+                            throw new Error(
+                              t`This result cannot be added to related documents.`,
+                            )
                           }
-                          setRelatedDocs((prev) => [
-                            newDoc,
-                            ...prev.filter((d) => d.id !== newDoc.id),
-                          ])
+
+                          const saved = await folderApi.saveRelatedDocuments(
+                            sourceRepositoryId,
+                            sourceItemId,
+                            [
+                              {
+                                fileName: getSearchHitTitle(hit),
+                                itemId: linkedItemId,
+                                matchScore: (() => {
+                                  const pct = (hit as { pct?: number }).pct
+                                  return typeof pct === 'number' ? pct : 0
+                                })(),
+                                repositoryId: linkedRepositoryId,
+                                repositoryName:
+                                  hit.name && hit.name !== 'Main Repository'
+                                    ? hit.name
+                                    : '',
+                              },
+                            ],
+                          )
+
+                          if (Array.isArray(saved.data) && saved.data.length > 0) {
+                            applyRelatedDocs(saved)
+                            return
+                          }
+
+                          await loadRelatedDocs({ silent: true })
                         }}
                       />
-                      {relatedDocsLoading ? (
+                      {relatedDocsLoading && relatedDocs.length === 0 ? (
                         <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
                           {t`Loading related documents...`}
                         </div>
-                      ) : relatedDocs.length ? (
+                      ) : (
+                        <>
+                          {relatedDocsLoading && relatedDocs.length > 0 ? (
+                            <div className='py-2 text-center text-[12px] font-semibold text-gray-10'>
+                              {t`Loading related documents...`}
+                            </div>
+                          ) : null}
+                          {relatedDocs.length ? (
                         <div className='space-y-2'>
                           {relatedDocs.map((item) => {
                             const sizeLabel = formatRelatedFileSize(item.fileSize)
@@ -2426,6 +2571,34 @@ export function DocumentDetailsView({
                                     />
                                   </button>
                                 </Tooltip>
+                                <Tooltip content={t`Remove from related`} position='top'>
+                                  <button
+                                    type='button'
+                                    aria-label={t`Remove from related`}
+                                    disabled={
+                                      removingRelatedKey ===
+                                      `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}`
+                                    }
+                                    className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95 disabled:opacity-50'
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      void removeRelatedDoc(item)
+                                    }}
+                                  >
+                                    {removingRelatedKey ===
+                                    `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}` ? (
+                                      <DynamicIcon
+                                        className='h-4 w-4 animate-spin'
+                                        name='spinner'
+                                      />
+                                    ) : (
+                                      <DynamicIcon
+                                        className='h-4 w-4'
+                                        name='trash'
+                                      />
+                                    )}
+                                  </button>
+                                </Tooltip>
                               </div>
                             )
                           })}
@@ -2436,6 +2609,8 @@ export function DocumentDetailsView({
                           icon='paperclip'
                           title={t`Related documents not found`}
                         />
+                      )}
+                        </>
                       )}
                     </div>
                   ) : null}
@@ -2491,20 +2666,14 @@ export function DocumentDetailsView({
 
                           {/* 2. Label */}
                           <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
-                            <span
-                              className='block truncate text-left group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words'
-                              title={row.label}
-                            >
+                            <span className='block truncate text-left hover:overflow-hidden hover:whitespace-normal hover:break-words'>
                               {row.label}
                             </span>
                           </div>
 
-                          {/* 3. Value (1 line truncated default, expands inline to next lines on hover) */}
-                          <div className='ml-auto max-w-[50%] min-w-0 shrink-0 text-right overflow-hidden group-hover:max-w-[65%] group-hover:overflow-visible transition-all pt-0.5'>
-                            <b
-                              className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words group-hover:text-left'
-                              title={displayVal}
-                            >
+                          {/* 3. Value — truncated on one line; hover wraps in this column only */}
+                          <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right'>
+                            <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:whitespace-normal hover:break-words'>
                               {displayVal}
                             </b>
                           </div>

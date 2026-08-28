@@ -9,8 +9,15 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import type { Option } from '@/types/option'
+import { getRepositorys, uploadForOcr } from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
-import { uploadForOcr, getRepositorys } from '@/api/v6/folder/folder'
+import InputDateTime from '@/components/base/inputs/InputDateTime'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
+import InputTime from '@/components/base/inputs/InputTime'
+import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import { applyCalculatedFields, getRepositoryItemFacets } from '@/pages/form-builder/helpers/formula'
 import {
   type Question,
   useFormStore,
@@ -24,7 +31,9 @@ const LivePreview = () => {
     'desktop',
   )
   const [previewModel, setPreviewModel] = useState<Record<string, any>>({})
-  const [extractingFieldId, setExtractingFieldId] = useState<string | null>(null)
+  const [extractingFieldId, setExtractingFieldId] = useState<string | null>(
+    null,
+  )
   const [repositories, setRepositories] = useState<any[]>([])
   const [selectedRepoId, setSelectedRepoId] = useState<string>('')
 
@@ -32,7 +41,12 @@ const LivePreview = () => {
   useEffect(() => {
     let cancelled = false
     getRepositorys().then((res) => {
-      if (!cancelled && res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (
+        !cancelled &&
+        res.data &&
+        Array.isArray(res.data) &&
+        res.data.length > 0
+      ) {
         setRepositories(res.data)
         setSelectedRepoId(res.data[0].id)
       }
@@ -51,10 +65,18 @@ const LivePreview = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [setIsPreviewOpen])
 
+  useEffect(() => {
+    if (isPreviewOpen) {
+      setPreviewModel((prev) => applyCalculatedFields(panels, prev))
+    }
+  }, [isPreviewOpen, panels])
+
   if (!isPreviewOpen) return null
 
   const handleFieldValueChange = (fieldId: string, value: any) => {
-    setPreviewModel((prev) => ({ ...prev, [fieldId]: value }))
+    setPreviewModel((prev) =>
+      applyCalculatedFields(panels, { ...prev, [fieldId]: value }),
+    )
   }
 
   const handleOcrFileSelect = async (file: File, field: Question) => {
@@ -80,7 +102,8 @@ const LivePreview = () => {
         .filter((f) => f.label)
         .map((f) => `${f.label},${f.type || 'SHORT_TEXT'}`)
 
-      const repoIdToUse = selectedRepoId || (repositories[0]?.id ?? 'default-repo')
+      const repoIdToUse =
+        selectedRepoId || (repositories[0]?.id ?? 'default-repo')
 
       const { data, error } = await uploadForOcr(repoIdToUse, file, fieldHints)
 
@@ -94,7 +117,10 @@ const LivePreview = () => {
             if (!item?.name || !item.value) continue
             const targetName = item.name.trim().toLowerCase()
             for (const targetField of assignedFields) {
-              if (targetField.label && targetField.label.trim().toLowerCase() === targetName) {
+              if (
+                targetField.label &&
+                targetField.label.trim().toLowerCase() === targetName
+              ) {
                 extraPatch[targetField.id] = item.value
               }
             }
@@ -105,24 +131,31 @@ const LivePreview = () => {
         const restrictedPatch: Record<string, string> = {}
         for (const id of assignedFieldIds) {
           if (extraPatch[id] !== undefined) restrictedPatch[id] = extraPatch[id]
-          else if (ocrPatch[id] !== undefined) restrictedPatch[id] = ocrPatch[id]
+          else if (ocrPatch[id] !== undefined)
+            restrictedPatch[id] = ocrPatch[id]
         }
 
         const mergedPatch = { ...restrictedPatch, [fieldId]: file.name }
-        setPreviewModel((prev) => ({ ...prev, ...mergedPatch }))
+        setPreviewModel((prev) =>
+          applyCalculatedFields(panels, { ...prev, ...mergedPatch }),
+        )
       } else {
-        setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+        setPreviewModel((prev) =>
+          applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+        )
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err)
-      setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+      setPreviewModel((prev) =>
+        applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+      )
     } finally {
       setExtractingFieldId(null)
     }
   }
 
   return (
-    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 backdrop-blur-sm font-inter duration-300'>
+    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 font-inter backdrop-blur-sm duration-300'>
       {/* Header Control Bar */}
       <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6 shadow-2xs'>
         <div className='flex items-center gap-3'>
@@ -130,20 +163,26 @@ const LivePreview = () => {
             <Icon height={18} name='tabler:eye' width={18} />
           </div>
           <div className='flex flex-col'>
-            <span className='text-sm font-bold text-gray-12'>Form Live Preview</span>
-            <span className='text-xs text-gray-10'>{name || 'Untitled Form'}</span>
+            <span className='text-sm font-bold text-gray-12'>
+              Form Live Preview
+            </span>
+            <span className='text-xs text-gray-10'>
+              {name || 'Untitled Form'}
+            </span>
           </div>
         </div>
 
         <div className='flex items-center gap-3'>
           {Object.keys(previewModel).length > 0 && (
             <Button
-              className='h-9 rounded-xl font-medium cursor-pointer'
+              className='h-9 cursor-pointer rounded-xl font-medium'
               color='gray'
-              leftSection={<Icon height={14} name='lucide:rotate-ccw' width={14} />}
               size='sm'
               variant='outline'
-              onClick={() => setPreviewModel({})}
+              leftSection={
+                <Icon height={14} name='lucide:rotate-ccw' width={14} />
+              }
+              onClick={() => setPreviewModel(applyCalculatedFields(panels, {}))}
             >
               Clear Values
             </Button>
@@ -159,15 +198,21 @@ const LivePreview = () => {
             }}
             data={[
               {
-                label: <Icon height={14} name='tabler:device-desktop' width={14} />,
+                label: (
+                  <Icon height={14} name='tabler:device-desktop' width={14} />
+                ),
                 value: 'desktop',
               },
               {
-                label: <Icon height={14} name='tabler:device-tablet' width={14} />,
+                label: (
+                  <Icon height={14} name='tabler:device-tablet' width={14} />
+                ),
                 value: 'tablet',
               },
               {
-                label: <Icon height={14} name='tabler:device-mobile' width={14} />,
+                label: (
+                  <Icon height={14} name='tabler:device-mobile' width={14} />
+                ),
                 value: 'mobile',
               },
             ]}
@@ -177,7 +222,7 @@ const LivePreview = () => {
           <div className='h-6 w-px bg-gray-3' />
 
           <Button
-            className='h-9 rounded-xl px-4 hover:bg-gray-2 text-gray-12 cursor-pointer'
+            className='h-9 cursor-pointer rounded-xl px-4 text-gray-12 hover:bg-gray-2'
             color='gray'
             leftSection={<Icon height={16} name='tabler:x' width={16} />}
             size='sm'
@@ -190,7 +235,7 @@ const LivePreview = () => {
       </div>
 
       {/* Single Scrollable Full-Form Preview Container */}
-      <div className='relative flex flex-1 items-center justify-center overflow-hidden p-4 sm:p-6 bg-gray-2/40'>
+      <div className='relative flex flex-1 items-center justify-center overflow-hidden bg-gray-2/40 p-4 sm:p-6'>
         <div
           className={cn(
             'relative flex h-full max-h-[880px] w-full flex-col overflow-hidden rounded-2xl border border-gray-3 bg-white shadow-xl transition-all duration-300',
@@ -200,8 +245,9 @@ const LivePreview = () => {
           )}
         >
           {/* Scrollable Form Content */}
-          <div className='custom-scrollbar flex-1 overflow-y-auto p-6 sm:p-8 space-y-6'>
-            {panels.length === 0 || panels.every((p) => p.fields.length === 0) ? (
+          <div className='custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6 sm:p-8'>
+            {panels.length === 0 ||
+              panels.every((p) => p.fields.length === 0) ? (
               <div className='py-24 text-center text-gray-10'>
                 <Icon
                   className='mx-auto mb-3 text-gray-8 opacity-60'
@@ -213,14 +259,15 @@ const LivePreview = () => {
                   No fields added to this form yet.
                 </div>
                 <div className='mt-1 text-xs text-gray-9'>
-                  Add sections and fields in the Form Builder to preview them here.
+                  Add sections and fields in the Form Builder to preview them
+                  here.
                 </div>
               </div>
             ) : (
               panels.map((panel, idx) => (
                 <div
+                  className='space-y-4 rounded-xl border border-gray-3 bg-white p-5 shadow-2xs'
                   key={panel.id}
-                  className='rounded-xl border border-gray-3 bg-white p-5 shadow-2xs space-y-4'
                 >
                   {/* Section Title & Description Header */}
                   <div className='border-b border-gray-3 pb-3'>
@@ -303,6 +350,282 @@ const getFieldOptions = (field: Question): string[] => {
   return options.length > 0 ? options : ['Option A', 'Option B', 'Option C']
 }
 
+const LivePreviewMultiSelect = ({
+  field,
+  value,
+  onChange,
+}: {
+  field: Question
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const specific = field.settings?.specific ?? {}
+  const optionsType = specific.optionsType
+  const repositoryId = specific.repositoryId || ''
+  const repositoryField = specific.repositoryField || ''
+
+  const { data: repoOptions = [] } = useQuery({
+    queryKey: ['livePreviewFacets', repositoryId, repositoryField],
+    queryFn: async () => {
+      if (!repositoryId || !repositoryField) return []
+      const res = await getRepositoryItemFacets({
+        repositoryId,
+        fieldName: repositoryField,
+        limit: 1000,
+      })
+      return (res.data || []).map((f) => ({ id: f.value, name: f.value }))
+    },
+    enabled: optionsType === 'REPOSITORY' && !!repositoryId && !!repositoryField,
+  })
+
+  const rawOptions: Option[] =
+    optionsType === 'REPOSITORY'
+      ? repoOptions
+      : getFieldOptions(field).map((opt) => ({ id: opt, name: opt }))
+
+  const selectedIds: string[] = Array.isArray(value)
+    ? value
+    : value
+      ? [String(value)]
+      : []
+
+  const selectedOptions = rawOptions.filter((opt) =>
+    selectedIds.includes(String(opt.id)),
+  )
+
+  return (
+    <InputSelectMultiple
+      options={rawOptions}
+      placeholder={field.settings?.general?.placeholder || 'Select options...'}
+      value={selectedOptions}
+      onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
+    />
+  )
+}
+
+const LivePreviewChoiceGroup = ({
+  field,
+  value,
+  onChange,
+}: {
+  field: Question
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const specific = field.settings?.specific ?? {}
+  const validation = field.settings?.validation ?? {}
+  const [customList, setCustomList] = useState<string[]>([])
+  const [newOptionText, setNewOptionText] = useState('')
+  const [isAddingOption, setIsAddingOption] = useState(false)
+
+  const baseOptions = getFieldOptions(field)
+  const allOptions = [...baseOptions, ...customList]
+
+  const optionsPerLine = specific.optionsPerLine ?? 3
+  const isAutoFlex = optionsPerLine === 0
+  const isSingle = field.type === 'SINGLE_CHOICE'
+  const isMulti = field.type === 'MULTIPLE_CHOICE'
+
+  const selectedList = Array.isArray(value)
+    ? value
+    : value
+      ? [String(value)]
+      : []
+
+  const handleToggle = (opt: string) => {
+    if (isSingle) {
+      onChange(opt)
+    } else {
+      const next = selectedList.includes(opt)
+        ? selectedList.filter((item) => item !== opt)
+        : [...selectedList, opt]
+      onChange(next)
+    }
+  }
+
+  const handleSelectAll = () => {
+    onChange(allOptions)
+  }
+
+  const handleClearAll = () => {
+    onChange([])
+  }
+
+  const handleAddCustomOption = () => {
+    const trimmed = newOptionText.trim()
+    if (!trimmed || allOptions.includes(trimmed)) return
+    setCustomList((prev) => [...prev, trimmed])
+    if (isSingle) {
+      onChange(trimmed)
+    } else {
+      onChange([...selectedList, trimmed])
+    }
+    setNewOptionText('')
+    setIsAddingOption(false)
+  }
+
+  return (
+    <div
+      className={cn(
+        'w-full space-y-2.5',
+        specific.showOptionsWrapper &&
+        'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+      )}
+    >
+      {/* Header controls for QR code and Bulk actions */}
+      <div className='flex items-center justify-between'>
+        {isMulti && specific.bulkActionsEnabled && (
+          <div className='flex items-center gap-2'>
+            <button
+              type='button'
+              className='cursor-pointer text-[11px] font-semibold text-primary-9 hover:underline'
+              onClick={handleSelectAll}
+            >
+              Select All
+            </button>
+            <span className='text-gray-4 text-xs'>•</span>
+            <button
+              type='button'
+              className='cursor-pointer text-[11px] font-semibold text-gray-7 hover:underline'
+              onClick={handleClearAll}
+            >
+              Clear All
+            </button>
+          </div>
+        )}
+
+        {isSingle && specific.qrCodeEnabled && (
+          <button
+            type='button'
+            className='ml-auto flex items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9 cursor-pointer'
+            onClick={() => {
+              if (allOptions.length > 0) {
+                const randomOpt =
+                  allOptions[Math.floor(Math.random() * allOptions.length)]
+                onChange(randomOpt)
+              }
+            }}
+            title='Simulate QR Code Scan'
+          >
+            <Icon height={13} name='lucide:qr-code' width={13} />
+            <span>Scan QR</span>
+          </button>
+        )}
+      </div>
+
+      {/* Options Layout */}
+      <div
+        className={cn(
+          'gap-2',
+          isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
+        )}
+        style={
+          !isAutoFlex
+            ? {
+              gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+            }
+            : undefined
+        }
+      >
+        {allOptions.map((opt, i) => {
+          const isSelected = selectedList.includes(opt)
+          return (
+            <div
+              key={i}
+              className={cn(
+                'flex min-h-[38px] cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-xs transition-all active:scale-[0.99]',
+                isAutoFlex ? 'flex-shrink-0' : '',
+                isSelected
+                  ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
+                  : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+              )}
+              onClick={() => handleToggle(opt)}
+            >
+              <div
+                className={cn(
+                  'flex size-4 shrink-0 items-center justify-center border transition-colors',
+                  isSingle ? 'rounded-full' : 'rounded-md',
+                  isSelected
+                    ? 'border-primary-9 bg-primary-9 text-white'
+                    : 'border-gray-4 bg-white',
+                )}
+              >
+                {isSelected && (
+                  <Icon
+                    height={10}
+                    name={isSingle ? 'lucide:circle' : 'lucide:check'}
+                    width={10}
+                  />
+                )}
+              </div>
+              <span className='truncate'>{opt}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Custom option adder */}
+      {(specific.allowCustomEntries || specific.allowToAddNewOptions) && (
+        <div className='pt-1'>
+          {isAddingOption ? (
+            <div className='flex items-center gap-2'>
+              <input
+                type='text'
+                className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                placeholder='Type custom option...'
+                value={newOptionText}
+                autoFocus
+                onChange={(e) => setNewOptionText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddCustomOption()
+                  if (e.key === 'Escape') setIsAddingOption(false)
+                }}
+              />
+              <Button
+                size='xs'
+                className='h-8 rounded-lg cursor-pointer'
+                onClick={handleAddCustomOption}
+              >
+                Add
+              </Button>
+              <Button
+                size='xs'
+                variant='subtle'
+                color='gray'
+                className='h-8 rounded-lg cursor-pointer'
+                onClick={() => setIsAddingOption(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <button
+              type='button'
+              className='flex items-center gap-1.5 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
+              onClick={() => setIsAddingOption(true)}
+            >
+              <Icon height={13} name='lucide:plus' width={13} />
+              <span>Add custom option</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Requirement mode info note */}
+      {isMulti &&
+        validation.fieldRule === 'REQUIRED' &&
+        validation.requiredValidation === 'ALL' && (
+          <div className='flex items-center gap-1 pt-0.5 text-[10px] font-medium text-amber-7'>
+            <Icon height={11} name='lucide:alert-circle' width={11} />
+            <span>
+              All {allOptions.length} options must be checked to fulfill requirements.
+            </span>
+          </div>
+        )}
+    </div>
+  )
+}
+
 const renderPreviewInput = (
   field: Question,
   model: Record<string, any>,
@@ -325,11 +648,26 @@ const renderPreviewInput = (
       return (
         <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-white'>
           <div className='flex gap-2 border-b border-gray-3 bg-gray-2/60 p-2'>
-            <Icon className='text-gray-10' height={14} name='tabler:bold' width={14} />
-            <Icon className='text-gray-10' height={14} name='tabler:italic' width={14} />
-            <Icon className='text-gray-10' height={14} name='tabler:list' width={14} />
+            <Icon
+              className='text-gray-10'
+              height={14}
+              name='tabler:bold'
+              width={14}
+            />
+            <Icon
+              className='text-gray-10'
+              height={14}
+              name='tabler:italic'
+              width={14}
+            />
+            <Icon
+              className='text-gray-10'
+              height={14}
+              name='tabler:list'
+              width={14}
+            />
           </div>
-          <div className='p-3 text-xs italic text-gray-9'>
+          <div className='p-3 text-xs text-gray-9 italic'>
             {fieldValue ? String(fieldValue) : 'Rich text content editor...'}
           </div>
         </div>
@@ -405,16 +743,29 @@ const renderPreviewInput = (
     }
     case 'TIME':
       return (
-        <div className='flex items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11'>
-          <Icon height={15} name='tabler:clock' width={15} />
-          <span>{fieldValue ? String(fieldValue) : 'HH : MM AM/PM'}</span>
-        </div>
+        <InputTime
+          format={
+            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+          }
+          value={fieldValue || ''}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
+    case 'DATE_TIME':
+      return (
+        <InputDateTime
+          format={
+            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+          }
+          value={fieldValue || null}
+          onChange={(val) => onChange(field.id, val)}
+        />
       )
     case 'TABLE':
-      const columns = field.settings.specific.columns || [
-        { id: '1', label: 'Column 1', size: 'col-4', type: 'SHORT_TEXT' },
-        { id: '2', label: 'Column 2', size: 'col-4', type: 'SHORT_TEXT' },
-        { id: '3', label: 'Column 3', size: 'col-4', type: 'SHORT_TEXT' },
+      const columns = field.settings.specific.tableColumns || [
+        { id: '1', name: 'Column 1', size: 'MEDIUM', type: 'SHORT_TEXT' },
+        { id: '2', name: 'Column 2', size: 'MEDIUM', type: 'SHORT_TEXT' },
+        { id: '3', name: 'Column 3', size: 'MEDIUM', type: 'SHORT_TEXT' },
       ]
       return (
         <div className='overflow-x-auto rounded-lg border border-gray-3 bg-white'>
@@ -423,10 +774,10 @@ const renderPreviewInput = (
               <tr>
                 {columns.map((col: any) => (
                   <th
-                    key={col.id}
                     className='p-2.5 font-bold whitespace-nowrap text-gray-12'
+                    key={col.id}
                   >
-                    {col.label}
+                    {col.name || col.label || 'Column'}
                   </th>
                 ))}
               </tr>
@@ -453,6 +804,7 @@ const renderPreviewInput = (
     case 'EMAIL':
     case 'PHONE_NUMBER':
     case 'NUMBER':
+    case 'COUNTER':
     case 'CURRENCY_AMOUNT':
     case 'ADDRESS':
     case 'FULL_NAME':
@@ -462,7 +814,8 @@ const renderPreviewInput = (
           value={String(fieldValue)}
           variant='default'
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
@@ -470,28 +823,33 @@ const renderPreviewInput = (
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
+    case 'CALCULATED':
+      return (
+        <CalculatedFieldInput hideLabel value={fieldValue} />
+      )
     case 'LONG_TEXT':
       return (
         <textarea
-          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-white p-2.5 text-xs text-gray-12 transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3 shadow-2xs'
+          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-white p-2.5 text-xs text-gray-12 shadow-2xs transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+          value={String(fieldValue)}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
-          value={String(fieldValue)}
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
     case 'DATE':
       return (
         <TextInput
+          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
+          placeholder='YYYY-MM-DD or MM/DD/YYYY'
           size='sm'
           value={String(fieldValue)}
           variant='default'
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
-          placeholder='YYYY-MM-DD or MM/DD/YYYY'
-          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
@@ -514,78 +872,30 @@ const renderPreviewInput = (
           size='sm'
           value={String(fieldValue) || null}
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           onChange={(val) => onChange(field.id, val)}
         />
       )
     }
+    case 'MULTI_SELECT':
+      return (
+        <LivePreviewMultiSelect
+          field={field}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
     case 'SINGLE_CHOICE':
     case 'MULTIPLE_CHOICE':
-    case 'MULTI_SELECT': {
-      const options = getFieldOptions(field)
-      const optionsPerLine = field.settings.specific.optionsPerLine || 1
-      const selectedList = Array.isArray(fieldValue)
-        ? fieldValue
-        : fieldValue
-          ? [String(fieldValue)]
-          : []
-
       return (
-        <div
-          className='grid gap-1.5'
-          style={{
-            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
-          }}
-        >
-          {options.map((opt, i) => {
-            const isSelected = selectedList.includes(opt)
-            return (
-              <div
-                key={i}
-                className={cn(
-                  'flex cursor-pointer items-center gap-2.5 rounded-lg border p-2 text-xs text-gray-12 transition-all',
-                  isSelected
-                    ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9'
-                    : 'border-gray-3 bg-white hover:bg-gray-2',
-                )}
-                onClick={() => {
-                  if (field.type === 'SINGLE_CHOICE') {
-                    onChange(field.id, opt)
-                  } else {
-                    const next = isSelected
-                      ? selectedList.filter((item) => item !== opt)
-                      : [...selectedList, opt]
-                    onChange(field.id, next)
-                  }
-                }}
-              >
-                <div
-                  className={cn(
-                    'flex size-4 shrink-0 items-center justify-center border',
-                    field.type === 'SINGLE_CHOICE'
-                      ? 'rounded-full'
-                      : 'rounded-md',
-                    isSelected
-                      ? 'border-primary-9 bg-primary-9 text-white'
-                      : 'border-gray-4 bg-white',
-                  )}
-                >
-                  {isSelected && (
-                    <Icon
-                      height={10}
-                      name={field.type === 'SINGLE_CHOICE' ? 'lucide:circle' : 'lucide:check'}
-                      width={10}
-                    />
-                  )}
-                </div>
-                <span>{opt}</span>
-              </div>
-            )
-          })}
-        </div>
+        <LivePreviewChoiceGroup
+          field={field}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
       )
-    }
     default:
       return (
         <TextInput
@@ -593,7 +903,8 @@ const renderPreviewInput = (
           value={String(fieldValue)}
           variant='default'
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'

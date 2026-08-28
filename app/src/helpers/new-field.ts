@@ -58,8 +58,6 @@ export const getField = (fieldType: string) => {
         optionsSource: 'CUSTOM',
         optionsType: 'CUSTOM',
         separateOptionsUsing: 'COMMA',
-        tableColumns: [] as any[],
-        tableRowsType: 'ON_DEMAND',
       },
       validation: {
         allowedFileTypes: [] as string[],
@@ -74,14 +72,15 @@ export const getField = (fieldType: string) => {
 
   // Specific tweaks based on type
   const s = baseField.settings.specific as any
+  const v = baseField.settings.validation as any
   switch (fieldType.toUpperCase()) {
     case 'TABLE':
     case 'DYNAMIC_TABLE':
       s.tableColumns = [
         {
           id: generateId(),
-          label: 'Column 1',
-          size: 'col-6',
+          name: 'Column 1',
+          size: 'MEDIUM',
           type: 'SHORT_TEXT',
         },
       ]
@@ -107,9 +106,23 @@ export const getField = (fieldType: string) => {
     case 'PHONE_NUMBER':
       baseField.settings.validation.contentRule = 'PHONE'
       break
+    case 'SINGLE_CHOICE':
+      s.customOptions = 'Option 1,Option 2,Option 3'
+      s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 3
+      s.qrCodeEnabled = false
+      break
+    case 'MULTIPLE_CHOICE':
+      s.customOptions = 'Option 1,Option 2,Option 3'
+      s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 3
+      s.bulkActionsEnabled = false
+      v.requiredValidation = 'ANY'
+      break
     case 'YES_NO_TOGGLE':
       s.customOptions = 'Yes,No'
       s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 2
       break
     case 'SCORE':
       s.iconType = 'NUMBER'
@@ -123,9 +136,31 @@ export const getField = (fieldType: string) => {
       }
       break
     case 'CONSENT':
-      baseField.label = 'Consent'
-      s.customOptions = 'I agree to the terms and conditions'
+    case 'LEGAL':
+      baseField.label = fieldType.toUpperCase() === 'LEGAL' ? 'Legal Declaration' : 'Consent'
+      s.customOptions = fieldType.toUpperCase() === 'LEGAL' ? "I Accept,I don't Accept" : 'I agree to the terms and conditions'
       s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 1
+      break
+    case 'DATE':
+      s.dateDefaultValueType = 'CUSTOM'
+      v.dateLimitType = 'NONE'
+      break
+    case 'TIME':
+      s.timeDefaultValueType = 'CUSTOM'
+      v.timeLimitType = 'NONE'
+      v.timeFormat = '12'
+      break
+    case 'DATE_TIME':
+      s.dateDefaultValueType = 'CUSTOM'
+      v.dateLimitType = 'NONE'
+      v.timeFormat = '12'
+      break
+    case 'CALCULATED':
+      s.formulaTokens = []
+      baseField.settings.general.readOnly = true
+      baseField.settings.general.visibility = 'READ_ONLY'
+      baseField.settings.validation.isCalculationEnabled = true
       break
   }
 

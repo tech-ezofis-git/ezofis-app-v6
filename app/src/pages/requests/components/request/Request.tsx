@@ -855,11 +855,12 @@ const Request = ({
   // agree on the same data.
   const genericInstanceId =
     selectedItem?.workflowInstanceId || selectedItem?.processId
-  const { data: genericAttachments } = useAttachments(
-    resolvedWorkflowId,
-    genericInstanceId,
-    isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
-  )
+  const { data: genericAttachments, refetch: refetchGenericAttachments } =
+    useAttachments(
+      resolvedWorkflowId,
+      genericInstanceId,
+      isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
+    )
 
   const [activeTab, setActiveTab] = useState<string>(
     activeTabValue || 'Overview',
@@ -1094,20 +1095,35 @@ const Request = ({
 
   const headerActions = useMemo(() => {
     if (isApAgentStage) return []
+    // Sent/Closed are read-only views of a request that has already moved
+    // on to (or past) another assignee — only the Inbox view, where the
+    // request is actually pending with the current user, can act on it.
+    if (requestListTab !== 'Inbox') return []
     if (!isAssignedToCurrentUser) return []
     return ruleActions.length > 0 ? ruleActions : actions
-  }, [isApAgentStage, isAssignedToCurrentUser, ruleActions, actions])
+  }, [
+    isApAgentStage,
+    requestListTab,
+    isAssignedToCurrentUser,
+    ruleActions,
+    actions,
+  ])
 
   const [formModel, setFormModel] = useState<any>({})
-  const [genericFormModel, setGenericFormModel] = useState<
-    Record<string, any>
-  >({})
+  const [genericFormModel, setGenericFormModel] = useState<Record<string, any>>(
+    {},
+  )
 
   useEffect(() => {
     if (!isGenericWorkflow) return
     const activeItem = request || selectedItem
     setGenericFormModel(safeParseFormData(activeItem?.formData))
-  }, [isGenericWorkflow, request, selectedItem?.formData, selectedItem?.transactionId])
+  }, [
+    isGenericWorkflow,
+    request,
+    selectedItem?.formData,
+    selectedItem?.transactionId,
+  ])
 
   const handleGenericFieldChange = (fieldId: string, value: any) =>
     setGenericFormModel((prev) => ({ ...prev, [fieldId]: value }))
@@ -1653,11 +1669,6 @@ const Request = ({
           actions={headerActions}
           agentData={currentAgentData}
           approveLoading={submitting}
-          attachmentCount={
-            isGenericWorkflow
-              ? genericAttachments.length
-              : selectedItem?.attachmentCount || 0
-          }
           commentsCount={selectedItem?.commentsCount || 0}
           currency={currency}
           enableAIInsights={true}
@@ -1668,41 +1679,15 @@ const Request = ({
           percent={jobStatus?.percent}
           poNumber={poVal}
           poValue={poValue}
-          stage={
-            selectedItem?.lastActionStageName ||
-            selectedItem?.currentStage ||
-            selectedItem?.stageName ||
-            selectedItem?.stage ||
-            selectedItem?.stepName ||
-            request?.lastActionStageName ||
-            request?.currentStage ||
-            request?.stageName ||
-            request?.stage
-          }
-          raisedBy={
-            selectedItem?.transactionCreatedByEmail ||
-            selectedItem?.createdByName ||
-            selectedItem?.createdByEmail ||
-            selectedItem?.createdBy ||
-            selectedItem?.raisedBy ||
-            selectedItem?.userName ||
-            selectedItem?.creatorName ||
-            request?.transactionCreatedByEmail ||
-            request?.createdByName ||
-            request?.createdBy ||
-            request?.userName ||
-            authUserStore.getState().session?.name
-          }
-          raisedAt={
-            selectedItem?.transactionCreatedAt ||
-            selectedItem?.createdAtUtc ||
-            selectedItem?.createdAt ||
-            selectedItem?.createdOn ||
-            selectedItem?.raisedAt ||
-            selectedItem?.date ||
-            request?.transactionCreatedAt ||
-            request?.createdAtUtc ||
-            request?.createdAt
+          rightView={rightView}
+          showApprove={requestListTab === 'Inbox'}
+          simple={isGenericWorkflow}
+          status={statusBadge}
+          totalAmount={totalAmount}
+          attachmentCount={
+            isGenericWorkflow
+              ? genericAttachments.length
+              : selectedItem?.attachmentCount || 0
           }
           lastActionAt={
             selectedItem?.lastActionDate ||
@@ -1719,11 +1704,31 @@ const Request = ({
             request?.createdAtUtc ||
             request?.createdAt
           }
-          rightView={rightView}
-          showApprove={requestListTab === 'Inbox'}
-          simple={isGenericWorkflow}
-          status={statusBadge}
-          totalAmount={totalAmount}
+          raisedAt={
+            selectedItem?.transactionCreatedAt ||
+            selectedItem?.createdAtUtc ||
+            selectedItem?.createdAt ||
+            selectedItem?.createdOn ||
+            selectedItem?.raisedAt ||
+            selectedItem?.date ||
+            request?.transactionCreatedAt ||
+            request?.createdAtUtc ||
+            request?.createdAt
+          }
+          raisedBy={
+            selectedItem?.transactionCreatedByEmail ||
+            selectedItem?.createdByName ||
+            selectedItem?.createdByEmail ||
+            selectedItem?.createdBy ||
+            selectedItem?.raisedBy ||
+            selectedItem?.userName ||
+            selectedItem?.creatorName ||
+            request?.transactionCreatedByEmail ||
+            request?.createdByName ||
+            request?.createdBy ||
+            request?.userName ||
+            authUserStore.getState().session?.name
+          }
           requestNo={
             isGenericWorkflow
               ? selectedItem?.formEntryId
@@ -1757,6 +1762,21 @@ const Request = ({
                 selectedItem?.requestNo ||
                 'REQ - ...'
           }
+          stage={
+            // `lastActionStageName` is the stage the request came FROM (the
+            // last completed action), not where it currently sits — so it
+            // must rank behind the actual current-stage fields, only used
+            // as a last-resort fallback if none of those are populated.
+            selectedItem?.currentStage ||
+            selectedItem?.stageName ||
+            selectedItem?.stage ||
+            selectedItem?.stepName ||
+            request?.currentStage ||
+            request?.stageName ||
+            request?.stage ||
+            selectedItem?.lastActionStageName ||
+            request?.lastActionStageName
+          }
           ticketUserId={
             selectedItem?.userId ||
             request?.userId ||
@@ -1787,8 +1807,9 @@ const Request = ({
                 rawWorkflowData={rawWorkflowData}
                 rightView={rightView}
                 selectedItem={request || selectedItem}
-                onFieldChange={handleGenericFieldChange}
                 setRightView={setRightView}
+                onAttachmentsChanged={refetchGenericAttachments}
+                onFieldChange={handleGenericFieldChange}
               />
             ) : (
               <Overview

@@ -117,7 +117,7 @@ msgstr ""
 msgid "{fieldName} is mandatory."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2527
+#: src/pages/folders/components/DocumentDetailsView.tsx:2558
 msgid "{fileType} Viewer"
 msgstr "Pemapar {fileType}"
 
@@ -175,6 +175,10 @@ msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:651
 msgid "* Map all required fields to save."
+msgstr ""
+
+#: src/pages/sign-in/BrandedSignInPage.tsx:198
+msgid "© 2026 {displayName}. All rights reserved."
 msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:960
@@ -345,6 +349,7 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:1263
 #: src/pages/forms/FormsPage.tsx:261
 #: src/pages/requests/components/Table.tsx:96
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:271
 #: src/pages/workflows/components/Table.tsx:115
 msgid "Actions"
 msgstr ""
@@ -375,7 +380,7 @@ msgstr ""
 msgid "Actual vs projected"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2223
+#: src/pages/folders/components/DocumentDetailsView.tsx:2254
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:321
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:104
 msgid "Add a comment..."
@@ -457,7 +462,11 @@ msgstr ""
 #~ msgid "Add New Page"
 #~ msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:140
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:241
+msgid "Add Row"
+msgstr ""
+
+#: src/pages/settings/SettingsMain.tsx:171
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
 msgstr ""
 
@@ -534,8 +543,8 @@ msgid "AI Recommendations"
 msgstr "Cadangan AI"
 
 #: src/pages/folders/components/AiSummaryView.tsx:276
-#: src/pages/folders/components/DocumentDetailsView.tsx:1718
-#: src/pages/folders/components/DocumentDetailsView.tsx:1725
+#: src/pages/folders/components/DocumentDetailsView.tsx:1731
+#: src/pages/folders/components/DocumentDetailsView.tsx:1738
 #: src/pages/folders/components/DocumentsListView.tsx:998
 #: src/pages/folders/components/FolderTable.tsx:820
 msgid "AI Summary"
@@ -599,7 +608,7 @@ msgstr "Semua hasil carian untuk “{searchLabel}”"
 #~ msgid "Already attached"
 #~ msgstr ""
 
-#: src/layouts/auth/components/AuthHeader.tsx:20
+#: src/layouts/auth/components/AuthHeader.tsx:23
 msgid "Already have an account?"
 msgstr "Sudah ada akaun?"
 
@@ -727,6 +736,10 @@ msgstr ""
 msgid "Append new records"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:688
+msgid "Apply primary color to the background"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2328
 msgid "Approval delay heat map"
 msgstr ""
@@ -811,22 +824,23 @@ msgstr ""
 #~ msgid "Attach to invoice"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:545
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:271
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:584
 msgid "Attachment"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:108
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:331
 #: src/pages/requests/components/request/components/Header.tsx:473
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:545
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:584
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3494
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr ""
 
 #: src/pages/settings/components/AuditMonitoring.tsx:179
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:31
-#: src/pages/settings/SettingsMain.tsx:167
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:33
+#: src/pages/settings/SettingsMain.tsx:204
 msgid "Audit & Monitoring"
 msgstr ""
 
@@ -893,16 +907,17 @@ msgstr ""
 #: src/pages/folders/components/AiSummaryView.tsx:233
 #: src/pages/folders/components/AiSummaryView.tsx:468
 #: src/pages/folders/components/CollaboraEditor.tsx:240
-#: src/pages/folders/components/DocumentDetailsView.tsx:1380
-#: src/pages/folders/components/DocumentDetailsView.tsx:1646
+#: src/pages/folders/components/DocumentDetailsView.tsx:1393
+#: src/pages/folders/components/DocumentDetailsView.tsx:1659
 #: src/pages/folders/components/DocumentSigningPage.tsx:2901
 #: src/pages/folders/components/DocumentSigningPage.tsx:2904
 #: src/pages/folders/components/EditMetadataView.tsx:355
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
 #: src/pages/folders/components/Upload/Upload.tsx:1595
-#: src/pages/forms/components/AiFormBuilder.tsx:122
+#: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:155
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:906
@@ -942,7 +957,7 @@ msgstr ""
 msgid "Back to review"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:445
+#: src/pages/sign-in/components/SignInForm.tsx:468
 msgid "Back to Sign In"
 msgstr ""
 
@@ -962,7 +977,38 @@ msgstr ""
 msgid "Billing Terms"
 msgstr ""
 
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:46
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:666
+msgid "Brand Colors"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:62
+msgid "Brand Identity"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:592
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:653
+msgid "Brand Name"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:567
+msgid "Brand preferences saved successfully!"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:601
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:31
+#: src/pages/settings/SettingsMain.tsx:198
+msgid "Branding"
+msgstr ""
+
+#: src/pages/sign-in/BrandedSignInPage.tsx:172
+msgid "Branding not found"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:732
+msgid "Branding URL"
+msgstr ""
+
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:48
 msgid "Breadcrumb"
 msgstr ""
 
@@ -984,8 +1030,7 @@ msgstr ""
 msgid "browse files"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:134
-#: src/pages/forms/components/AiFormBuilder.tsx:223
+#: src/pages/forms/components/AiFormBuilder.tsx:266
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:124
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:205
 msgid "Build Manually"
@@ -1052,7 +1097,7 @@ msgstr ""
 msgid "Can View"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:246
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:722
 msgid "Can't upload: this workflow has no repository configured."
 msgstr ""
 
@@ -1067,10 +1112,12 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:2072
 #: src/pages/forms/FormsPage.tsx:523
 #: src/pages/my-account/components/profile/Profile.tsx:20
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:226
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:660
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
+#: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:59
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:967
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:198
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:201
 msgid "Cancel"
 msgstr ""
 
@@ -1131,6 +1178,10 @@ msgstr ""
 msgid "Centralized repository for all incoming documentation and related analytics."
 msgstr ""
 
+#: src/pages/forms/components/AiFormBuilder.tsx:199
+msgid "Change"
+msgstr ""
+
 #: src/pages/my-account/components/preferences/components/ChangeLanguage.tsx:17
 msgid "Change Language"
 msgstr ""
@@ -1158,8 +1209,8 @@ msgstr ""
 msgid "Change to normal field"
 msgstr ""
 
-#: src/layouts/auth/components/AuthHeader.tsx:38
-#: src/layouts/auth/components/AuthHeader.tsx:44
+#: src/layouts/auth/components/AuthHeader.tsx:41
+#: src/layouts/auth/components/AuthHeader.tsx:47
 msgid "Changed your mind?"
 msgstr ""
 
@@ -1246,6 +1297,10 @@ msgstr "Klik mana-mana pratonton untuk proses"
 msgid "Click on the document to mark signature places."
 msgstr "Klik pada dokumen untuk tandakan tempat tandatangan."
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:622
+msgid "Click or drag to upload logo"
+msgstr ""
+
 #. placeholder {0}: first.name
 #: src/pages/folders/components/DocumentSigningPage.tsx:2041
 msgid "Click the document to mark one or more places for {0}, then Send."
@@ -1261,9 +1316,9 @@ msgstr "Klik untuk tandakan tempat tandatangan"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:78
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:111
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:138
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:301
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:334
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:361
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:653
 msgid "Close"
 msgstr "Tutup"
@@ -1317,8 +1372,8 @@ msgstr "Lajur Ditemui"
 msgid "Columns Ingested:"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1352
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:135
+#: src/pages/folders/components/DocumentDetailsView.tsx:1365
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:358
 #: src/pages/requests/components/request/components/Header.tsx:479
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3499
@@ -1404,6 +1459,10 @@ msgstr "Ringkasan Konfigurasi"
 msgid "Configure Approvers"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:604
+msgid "Configure Branding"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:290
 #~ msgid "Configure metadata fields"
 #~ msgstr "Konfigurasikan medan metadata"
@@ -1433,8 +1492,8 @@ msgstr ""
 msgid "Confirm & Ingest Entries"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:282
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:315
+#: src/pages/sign-in/components/ShareSignInForm.tsx:288
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:319
 msgid "Confirm Password"
 msgstr ""
 
@@ -1482,8 +1541,8 @@ msgstr ""
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1822
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1860
 #: src/pages/settings/components/SettingsWizardLayout.tsx:77
-#: src/pages/sign-in/components/SignInForm.tsx:641
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:331
+#: src/pages/sign-in/components/SignInForm.tsx:682
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
 msgid "Continue"
 msgstr ""
 
@@ -1521,6 +1580,10 @@ msgstr ""
 msgid "Copy link"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:738
+msgid "Copy URL"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2067
 msgid "Cost Center"
 msgstr ""
@@ -1554,11 +1617,11 @@ msgstr ""
 msgid "Couldn't retrieve the edited document."
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:256
+#: src/pages/sign-in/components/ShareSignInForm.tsx:261
 msgid "Create access to continue"
 msgstr ""
 
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:289
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:293
 msgid "Create access to sign"
 msgstr ""
 
@@ -1579,7 +1642,7 @@ msgid "Create Group"
 msgstr ""
 
 #: src/pages/settings/components/GroupManagement.tsx:589
-#: src/pages/settings/SettingsMain.tsx:152
+#: src/pages/settings/SettingsMain.tsx:183
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr ""
 
@@ -1634,8 +1697,8 @@ msgid "Credit forecast"
 msgstr ""
 
 #: src/pages/settings/components/credits/Credits.tsx:563
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:33
-#: src/pages/settings/SettingsMain.tsx:179
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
+#: src/pages/settings/SettingsMain.tsx:216
 msgid "Credit Usage"
 msgstr ""
 
@@ -1717,6 +1780,10 @@ msgstr ""
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:904
 msgid "Customize Design"
+msgstr ""
+
+#: src/pages/settings/SettingsMain.tsx:195
+msgid "Customize logos, brand colors, and visual identity across the platform."
 msgstr ""
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:730
@@ -1824,7 +1891,7 @@ msgstr ""
 #~ msgid "Define role details, access scopes, and permission privilege matrices"
 #~ msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:146
+#: src/pages/settings/SettingsMain.tsx:177
 msgid "Define roles and configure granular permissions across all modules."
 msgstr ""
 
@@ -1866,6 +1933,10 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:1309
 #: src/pages/forms/FormEntriesPage.tsx:2090
 msgid "Delete Permanently"
+msgstr ""
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:302
+msgid "Delete row"
 msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:626
@@ -1918,7 +1989,7 @@ msgstr ""
 msgid "Describe structure or fields…"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:157
+#: src/pages/forms/components/AiFormBuilder.tsx:207
 msgid "Describe the form you want to create..."
 msgstr ""
 
@@ -1998,12 +2069,20 @@ msgstr ""
 msgid "Discrepancies"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:652
+msgid "Displayed in the header and login page"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1682
 msgid "Do you require an ERP or system integration, or should integrations be configured later?"
 msgstr ""
 
 #: src/pages/requests/components/Table.tsx:63
 msgid "Document Date"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:139
+msgid "Document Info"
 msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3562
@@ -2032,7 +2111,7 @@ msgstr "Ringkasan Dokumen"
 msgid "Document Type"
 msgstr "Dokumen Jenis"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1229
+#: src/pages/folders/components/DocumentDetailsView.tsx:1242
 msgid "Document updated successfully."
 msgstr ""
 
@@ -2045,7 +2124,7 @@ msgstr "Dokumen"
 msgid "Don't have a PO file ready? Use our template to ensure your data matches our system."
 msgstr "Tiada fail PO sedia? Gunakan templat kami untuk memastikan data anda sepadan dengan sistem kami."
 
-#: src/layouts/auth/components/AuthHeader.tsx:26
+#: src/layouts/auth/components/AuthHeader.tsx:29
 msgid "Don't have an account?"
 msgstr "Belum ada akaun?"
 
@@ -2064,15 +2143,15 @@ msgstr ""
 msgid "Double payments flagged by ledger algorithms"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2350
-#: src/pages/folders/components/DocumentDetailsView.tsx:2353
+#: src/pages/folders/components/DocumentDetailsView.tsx:2381
+#: src/pages/folders/components/DocumentDetailsView.tsx:2384
 #: src/pages/folders/components/DocumentSigningPage.tsx:2860
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:700
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:760
 msgid "Download"
 msgstr "Muat Turun"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1703
-#: src/pages/folders/components/DocumentDetailsView.tsx:1707
+#: src/pages/folders/components/DocumentDetailsView.tsx:1716
+#: src/pages/folders/components/DocumentDetailsView.tsx:1720
 msgid "Download file"
 msgstr ""
 
@@ -2098,7 +2177,7 @@ msgstr "Muat Turun Templat"
 msgid "Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1703
+#: src/pages/folders/components/DocumentDetailsView.tsx:1716
 #: src/pages/forms/components/GenericFormImportModal.tsx:424
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:900
 msgid "Downloading..."
@@ -2257,6 +2336,10 @@ msgstr ""
 #~ msgid "e.g. New York, NY"
 #~ msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:654
+msgid "e.g. Pure Agentic"
+msgstr ""
+
 #: src/pages/settings/components/Menus.tsx:756
 msgid "e.g. reports"
 msgstr ""
@@ -2303,8 +2386,8 @@ msgstr ""
 msgid "Edit Field Mappings"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1673
-#: src/pages/folders/components/DocumentDetailsView.tsx:1675
+#: src/pages/folders/components/DocumentDetailsView.tsx:1686
+#: src/pages/folders/components/DocumentDetailsView.tsx:1688
 msgid "Edit file"
 msgstr ""
 
@@ -2367,14 +2450,14 @@ msgstr ""
 #: src/pages/settings/components/ManageUser.tsx:2277
 #: src/pages/settings/components/RolesPermissions.tsx:2052
 #: src/pages/settings/components/RolesPermissions.tsx:2054
-#: src/pages/sign-in/components/SignInForm.tsx:576
-#: src/pages/sign-in/components/SignInForm.tsx:624
+#: src/pages/sign-in/components/SignInForm.tsx:613
+#: src/pages/sign-in/components/SignInForm.tsx:663
 msgid "Email"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:262
-#: src/pages/sign-in/components/SignInForm.tsx:697
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:295
+#: src/pages/sign-in/components/ShareSignInForm.tsx:268
+#: src/pages/sign-in/components/SignInForm.tsx:738
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:299
 msgid "Email / Username"
 msgstr ""
 
@@ -2386,8 +2469,8 @@ msgstr ""
 msgid "Email and password"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:260
-#: src/pages/sign-in/components/SignInForm.tsx:278
+#: src/pages/sign-in/components/SignInForm.tsx:271
+#: src/pages/sign-in/components/SignInForm.tsx:289
 msgid "Email is required"
 msgstr ""
 
@@ -2497,7 +2580,7 @@ msgstr ""
 msgid "Error starting workflow"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1224
+#: src/pages/folders/components/DocumentDetailsView.tsx:1237
 msgid "Error updating document: {detail}"
 msgstr ""
 
@@ -2509,7 +2592,7 @@ msgstr ""
 msgid "Error uploading file: {error}"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:300
+#: src/pages/sign-in/components/SignInForm.tsx:311
 msgid "Error validating email"
 msgstr ""
 
@@ -2568,7 +2651,7 @@ msgstr ""
 msgid "Expires in days must be at least 1."
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:170
+#: src/pages/settings/SettingsMain.tsx:207
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr ""
 
@@ -2616,7 +2699,7 @@ msgid "Extracting data"
 msgstr "Mengekstrak data"
 
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:299
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:788
 msgid "Extracting data from the document…"
 msgstr ""
 
@@ -2681,7 +2764,7 @@ msgstr ""
 msgid "Failed to import entries"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1825
+#: src/pages/folders/components/DocumentDetailsView.tsx:1838
 #: src/pages/folders/components/ShareView.tsx:254
 msgid "Failed to invite"
 msgstr "Gagal menjemput"
@@ -2719,16 +2802,30 @@ msgstr "Gagal memproses fail"
 msgid "Failed to revoke"
 msgstr "Gagal membatalkan"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1222
+#: src/pages/folders/components/DocumentDetailsView.tsx:1235
 msgid "Failed to save document edits"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:84
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:573
+msgid "Failed to save preferences: {message}"
+msgstr ""
+
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:87
 msgid "Failed to start the workflow. Please try again."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:113
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:152
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:189
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:233
+msgid "Failed to upload the file."
+msgstr ""
+
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:116
 msgid "Failed to upload the file. Please try again."
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:635
+msgid "Favicon"
 msgstr ""
 
 #: src/pages/settings/components/credits/Credits.tsx:836
@@ -2738,6 +2835,10 @@ msgstr ""
 #: src/pages/settings/components/credits/Credits.tsx:68
 msgid "February"
 msgstr "February"
+
+#: src/pages/sign-in/BrandedSignInPage.tsx:158
+msgid "Fetching Details.."
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:255
 msgid "Field Matching"
@@ -2848,6 +2949,10 @@ msgstr "Fail"
 msgid "FILES IN THIS FOLDER"
 msgstr "FAIL DALAM FOLDER INI"
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:798
+msgid "Files must be under 5MB"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:236
 msgid "Filters"
 msgstr "Penapis"
@@ -2903,7 +3008,7 @@ msgid "Folder “{folderName}” is ready. Continue to choose a storage provider
 msgstr "Folder “{folderName}” sedia. Teruskan untuk pilih pembekal storan."
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
-#: src/pages/settings/SettingsMain.tsx:161
+#: src/pages/settings/SettingsMain.tsx:192
 msgid "Folder Configuration"
 msgstr ""
 
@@ -3001,7 +3106,7 @@ msgstr ""
 msgid "Forgot Password"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:747
+#: src/pages/sign-in/components/SignInForm.tsx:795
 msgid "Forgot password?"
 msgstr ""
 
@@ -3120,8 +3225,8 @@ msgstr ""
 msgid "Gmail selected. Click Connect Gmail to link your account."
 msgstr ""
 
-#: src/layouts/auth/components/AuthHeader.tsx:39
-#: src/layouts/auth/components/AuthHeader.tsx:45
+#: src/layouts/auth/components/AuthHeader.tsx:42
+#: src/layouts/auth/components/AuthHeader.tsx:48
 msgid "Go Back"
 msgstr ""
 
@@ -3140,13 +3245,13 @@ msgstr ""
 msgid "Google Drive"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:178
-#: src/pages/sign-in/components/SignInForm.tsx:340
+#: src/pages/sign-in/components/ShareSignInForm.tsx:180
+#: src/pages/sign-in/components/SignInForm.tsx:351
 msgid "Google sign-in failed"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:142
-#: src/pages/sign-in/components/SignInForm.tsx:309
+#: src/pages/sign-in/components/ShareSignInForm.tsx:144
+#: src/pages/sign-in/components/SignInForm.tsx:320
 msgid "Google sign-in was cancelled or failed"
 msgstr ""
 
@@ -3171,7 +3276,7 @@ msgstr ""
 #: src/pages/settings/components/GroupManagement.tsx:590
 #: src/pages/settings/components/GroupManagement.tsx:819
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:27
-#: src/pages/settings/SettingsMain.tsx:155
+#: src/pages/settings/SettingsMain.tsx:186
 msgid "Group Management"
 msgstr ""
 
@@ -3251,16 +3356,21 @@ msgstr ""
 msgid "Here's what you can expect:"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:415
+#: src/pages/sign-in/components/ShareSignInForm.tsx:257
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:290
+msgid "Hi, Welcome back"
+msgstr ""
+
+#: src/pages/sign-in/components/SignInForm.tsx:438
 msgid "Hi, Welcome back to {appName}"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:253
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:286
+#: src/pages/sign-in/components/ShareSignInForm.tsx:257
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:290
 msgid "Hi, Welcome back to EZOFIS"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:412
+#: src/pages/sign-in/components/SignInForm.tsx:429
 msgid "Hi, Welcome!"
 msgstr ""
 
@@ -3305,7 +3415,7 @@ msgstr ""
 msgid "Historical Match Results"
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:75
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:298
 #: src/pages/requests/components/request/components/Header.tsx:468
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3504
 msgid "History"
@@ -3528,7 +3638,7 @@ msgstr ""
 msgid "Invite People"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1733
+#: src/pages/folders/components/DocumentDetailsView.tsx:1746
 #: src/pages/folders/components/ShareView.tsx:241
 msgid "Invite sent"
 msgstr "Jemputan dihantar"
@@ -3577,7 +3687,7 @@ msgstr "E-mel invois akan dibaca dari peti masuk ini dan dihantar untuk diproses
 msgid "Invoice exceeds PO value."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1982
+#: src/pages/folders/components/DocumentDetailsView.tsx:1995
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4519
 msgid "Invoice Line Items"
 msgstr "Item Baris Invois"
@@ -3635,11 +3745,11 @@ msgstr "Perincian Invois"
 #~ msgid "Is payables growth eating margin · future liquidity needs"
 #~ msgstr "Adakah pertumbuhan hutang menghakis margin · keperluan kecairan akan datang"
 
-#: src/pages/sign-in/components/SignInForm.tsx:455
+#: src/pages/sign-in/components/SignInForm.tsx:478
 msgid "is used with more than one account. Which account do you want to use?"
 msgstr "digunakan dengan lebih daripada satu akaun. Akaun mana yang ingin digunakan?"
 
-#: src/pages/sign-in/components/SignInForm.tsx:451
+#: src/pages/sign-in/components/SignInForm.tsx:474
 msgid "It looks like"
 msgstr "Nampaknya"
 
@@ -3687,7 +3797,7 @@ msgstr "June"
 #~ msgid "Just 3 suppliers account for 19% of unpaid liabilities, led by Harbor Point Consulting at $686.5K."
 #~ msgstr "Hanya 3 pembekal menyumbang 19% liabiliti belum dibayar, diketuai Harbor Point Consulting pada $686.5K."
 
-#: src/pages/sign-in/components/SignInForm.tsx:737
+#: src/pages/sign-in/components/SignInForm.tsx:785
 msgid "Keep me logged in"
 msgstr ""
 
@@ -3881,7 +3991,7 @@ msgstr ""
 msgid "Loading Attachments..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2104
+#: src/pages/folders/components/DocumentDetailsView.tsx:2135
 msgid "Loading comments..."
 msgstr "Memuatkan komen..."
 
@@ -3894,7 +4004,11 @@ msgstr "Memuatkan ulasan..."
 msgid "Loading document..."
 msgstr "Memuatkan dokumen..."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:141
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:185
+msgid "Loading field data…"
+msgstr ""
+
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:144
 msgid "Loading form…"
 msgstr ""
 
@@ -3910,15 +4024,15 @@ msgstr ""
 msgid "Loading notifications..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2099
+#: src/pages/folders/components/DocumentDetailsView.tsx:2130
 msgid "Loading older comments..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2279
+#: src/pages/folders/components/DocumentDetailsView.tsx:2310
 msgid "Loading related documents..."
 msgstr "Memuatkan dokumen berkaitan…"
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:235
+#: src/pages/sign-in/components/ShareSignInForm.tsx:237
 msgid "Loading share details..."
 msgstr "Memuatkan butiran kongsi…"
 
@@ -3926,11 +4040,11 @@ msgstr "Memuatkan butiran kongsi…"
 msgid "Loading share options..."
 msgstr "Memuatkan pilihan perkongsian..."
 
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:272
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:274
 msgid "Loading sign request..."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2044
+#: src/pages/folders/components/DocumentDetailsView.tsx:2057
 msgid "Loading timeline..."
 msgstr "Memuatkan garis masa..."
 
@@ -3942,6 +4056,10 @@ msgstr "Memuatkan pengguna..."
 msgid "Loading workflow..."
 msgstr "Memuatkan aliran kerja..."
 
+#: src/pages/sign-in/BrandedSignInPage.tsx:161
+msgid "Loading your branded sign-in"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:686
 msgid "Loading..."
 msgstr "Memuatkan..."
@@ -3951,7 +4069,7 @@ msgstr "Memuatkan..."
 msgid "Location"
 msgstr "Lokasi"
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:58
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:60
 msgid "Log out"
 msgstr "Log keluar"
 
@@ -3969,6 +4087,14 @@ msgstr "Butiran Log Masuk"
 #: src/pages/settings/components/ManageUser.tsx:2088
 msgid "Login Type"
 msgstr "Jenis Log Masuk"
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:624
+msgid "Logo"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:56
+msgid "Logo & Favicon"
+msgstr ""
 
 #: src/pages/settings/components/AuditMonitoring.tsx:243
 msgid "Logs"
@@ -4202,13 +4328,13 @@ msgstr ""
 msgid "Microsoft Dynamics"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:222
-#: src/pages/sign-in/components/SignInForm.tsx:383
+#: src/pages/sign-in/components/ShareSignInForm.tsx:224
+#: src/pages/sign-in/components/SignInForm.tsx:394
 msgid "Microsoft sign-in failed"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:220
-#: src/pages/sign-in/components/SignInForm.tsx:381
+#: src/pages/sign-in/components/ShareSignInForm.tsx:222
+#: src/pages/sign-in/components/SignInForm.tsx:392
 msgid "Microsoft sign-in was cancelled."
 msgstr ""
 
@@ -4216,12 +4342,12 @@ msgstr ""
 msgid "Minimum 8 characters"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1741
+#: src/pages/folders/components/DocumentDetailsView.tsx:1754
 #: src/pages/folders/components/ShareView.tsx:195
 msgid "Missing file context for share"
 msgstr "Konteks fail hilang untuk perkongsian"
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:121
+#: src/pages/sign-in/components/ShareSignInForm.tsx:123
 msgid "Missing share context"
 msgstr "Konteks kongsi tiada"
 
@@ -4262,7 +4388,7 @@ msgstr ""
 msgid "Modules"
 msgstr "Modul"
 
-#: src/pages/settings/SettingsMain.tsx:176
+#: src/pages/settings/SettingsMain.tsx:213
 msgid "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 msgstr "Pantau penggunaan kredit, trend penggunaan dan aktiviti mengikut modul merentas platform."
 
@@ -4311,8 +4437,8 @@ msgstr "Mesti mengandungi:"
 msgid "My Account"
 msgstr "Akaun Saya"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1838
-#: src/pages/folders/components/DocumentDetailsView.tsx:1866
+#: src/pages/folders/components/DocumentDetailsView.tsx:1851
+#: src/pages/folders/components/DocumentDetailsView.tsx:1879
 msgid "My Sign"
 msgstr ""
 
@@ -4357,7 +4483,7 @@ msgstr ""
 #~ msgid "New Folder Setup"
 #~ msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:129
+#: src/pages/forms/components/AiFormBuilder.tsx:136
 #: src/pages/forms/FormsPage.tsx:575
 msgid "New Form"
 msgstr ""
@@ -4379,7 +4505,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:669
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:127
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:130
 #: src/pages/requests/RequestsPage.tsx:673
 msgid "New Request"
 msgstr ""
@@ -4414,7 +4540,7 @@ msgstr ""
 #~ msgid "No activity recorded"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2082
+#: src/pages/folders/components/DocumentDetailsView.tsx:2113
 msgid "No activity timeline is available for this document."
 msgstr "Tiada garis masa aktiviti tersedia untuk dokumen ini."
 
@@ -4438,11 +4564,11 @@ msgstr "Tiada lajur ditemui"
 msgid "No columns match search"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2212
+#: src/pages/folders/components/DocumentDetailsView.tsx:2243
 msgid "No comments are available for this document. Add the first comment to start collaboration."
 msgstr "Tiada komen tersedia untuk dokumen ini. Tambah komen pertama untuk mulakan kolaborasi."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2214
+#: src/pages/folders/components/DocumentDetailsView.tsx:2245
 msgid "No comments found"
 msgstr "Tiada komen ditemui"
 
@@ -4488,12 +4614,16 @@ msgstr "Tiada Pendua"
 msgid "No duplicates detected"
 msgstr "Tiada pendua dikesan"
 
-#: src/pages/sign-in/components/SignInForm.tsx:329
+#: src/pages/sign-in/components/SignInForm.tsx:340
 msgid "No email returned from Google"
 msgstr "Tiada e-mel dikembalikan dari Google"
 
-#: src/pages/sign-in/components/SignInForm.tsx:366
+#: src/pages/sign-in/components/SignInForm.tsx:377
 msgid "No email returned from Microsoft"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/DocumentFieldCards.tsx:40
+msgid "No field data available for this document."
 msgstr ""
 
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:84
@@ -4571,7 +4701,7 @@ msgstr ""
 msgid "No recommendations available."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2404
+#: src/pages/folders/components/DocumentDetailsView.tsx:2435
 msgid "No related documents are linked with this file yet."
 msgstr "Tiada dokumen berkaitan dipautkan dengan fail ini lagi."
 
@@ -4637,11 +4767,15 @@ msgstr ""
 msgid "No suppliers found"
 msgstr "No suppliers found"
 
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:217
+msgid "No table columns configured."
+msgstr ""
+
 #: src/pages/settings/components/credits/Credits.tsx:1338
 msgid "No timeline data for this period."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2084
+#: src/pages/folders/components/DocumentDetailsView.tsx:2115
 msgid "No timeline found"
 msgstr "Tiada garis masa ditemui"
 
@@ -4749,6 +4883,14 @@ msgstr ""
 msgid "On Boarding"
 msgstr ""
 
+#: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:37
+msgid "One more detail before uploading"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:194
+msgid "One more detail is needed before this file can be uploaded."
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:301
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:920
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:977
@@ -4801,13 +4943,13 @@ msgstr ""
 msgid "Optionally connect ERP or other systems so data can sync with this folder."
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:331
-#: src/pages/sign-in/components/SignInForm.tsx:765
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:367
+#: src/pages/sign-in/components/ShareSignInForm.tsx:337
+#: src/pages/sign-in/components/SignInForm.tsx:815
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:373
 msgid "Or"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:216
+#: src/pages/forms/components/AiFormBuilder.tsx:259
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:198
 msgid "Or prefer to build from scratch?"
 msgstr ""
@@ -4895,13 +5037,13 @@ msgstr ""
 #: src/pages/settings/components/ManageUser.tsx:311
 #: src/pages/settings/components/ManageUser.tsx:2188
 #: src/pages/settings/components/ManageUser.tsx:2193
-#: src/pages/sign-in/components/ShareSignInForm.tsx:272
-#: src/pages/sign-in/components/ShareSignInForm.tsx:306
-#: src/pages/sign-in/components/SignInForm.tsx:592
-#: src/pages/sign-in/components/SignInForm.tsx:677
-#: src/pages/sign-in/components/SignInForm.tsx:713
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:305
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:342
+#: src/pages/sign-in/components/ShareSignInForm.tsx:278
+#: src/pages/sign-in/components/ShareSignInForm.tsx:312
+#: src/pages/sign-in/components/SignInForm.tsx:631
+#: src/pages/sign-in/components/SignInForm.tsx:718
+#: src/pages/sign-in/components/SignInForm.tsx:756
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:309
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:346
 msgid "Password"
 msgstr ""
 
@@ -4909,20 +5051,20 @@ msgstr ""
 msgid "Password Expiry (Days)"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:83
-#: src/pages/sign-in/components/ShareSignInForm.tsx:112
-#: src/pages/sign-in/components/SignInForm.tsx:264
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:135
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:170
+#: src/pages/sign-in/components/ShareSignInForm.tsx:85
+#: src/pages/sign-in/components/ShareSignInForm.tsx:114
+#: src/pages/sign-in/components/SignInForm.tsx:275
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:137
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:172
 msgid "Password is required"
 msgstr ""
 
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:139
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:141
 msgid "Password must be at least 6 characters"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:87
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:143
+#: src/pages/sign-in/components/ShareSignInForm.tsx:89
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:145
 msgid "Passwords do not match"
 msgstr ""
 
@@ -5076,8 +5218,8 @@ msgstr ""
 msgid "Playground"
 msgstr ""
 
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
-#: src/pages/settings/SettingsMain.tsx:173
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
+#: src/pages/settings/SettingsMain.tsx:210
 msgid "Playground API"
 msgstr ""
 
@@ -5085,7 +5227,7 @@ msgstr ""
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:81
+#: src/pages/forms/components/AiFormBuilder.tsx:89
 msgid "Please describe what form you want to create"
 msgstr ""
 
@@ -5093,18 +5235,18 @@ msgstr ""
 msgid "Please describe what workflow you want to create"
 msgstr ""
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:158
-#: src/pages/sign-in/components/ShareSignInForm.tsx:198
+#: src/pages/sign-in/components/ShareSignInForm.tsx:160
+#: src/pages/sign-in/components/ShareSignInForm.tsx:200
 msgid "Please login with the email address that the link was shared to."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1765
+#: src/pages/folders/components/DocumentDetailsView.tsx:1778
 #: src/pages/folders/components/ShareView.tsx:209
 msgid "Please review this file"
 msgstr "Sila semak fail ini"
 
 #. placeholder {0}: data.fileName
-#: src/pages/folders/components/DocumentDetailsView.tsx:1764
+#: src/pages/folders/components/DocumentDetailsView.tsx:1777
 msgid "Please review this file: {0}"
 msgstr ""
 
@@ -5121,12 +5263,16 @@ msgstr "Sila pilih fail dahulu."
 msgid "Please sign this document"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1777
+#: src/pages/folders/components/DocumentDetailsView.tsx:1790
 msgid "Please sign this document. You can place your signature anywhere."
 msgstr ""
 
 #: src/pages/folders/components/CollaboraEditor.tsx:282
 msgid "Please try again."
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:794
+msgid "Please upload an image file"
 msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:312
@@ -5149,6 +5295,14 @@ msgstr "Sila tunggu sementara kami memproses dokumen anda"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:887
 msgid "Please wait while your spreadsheet rows are parsed and added to the database."
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:632
+msgid "PNG or SVG"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:621
+msgid "PNG, SVG or JPG, up to 5MB"
 msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:104
@@ -5259,9 +5413,9 @@ msgstr "Portal"
 msgid "Predefined Master Data"
 msgstr "Data Induk Pratetap"
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:48
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:50
 #: src/pages/my-account/components/preferences/Preferences.tsx:12
-#: src/pages/my-account/MyAccountPage.tsx:29
+#: src/pages/my-account/MyAccountPage.tsx:38
 msgid "Preferences"
 msgstr "Keutamaan"
 
@@ -5285,9 +5439,9 @@ msgstr "Tekan"
 msgid "Press Enter to add this email"
 msgstr "Tekan Enter untuk tambah e-mel ini"
 
-#: src/features/builder/components/BuilderHeader.tsx:90
-#~ msgid "Preview"
-#~ msgstr "Pratonton"
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:699
+msgid "Preview"
+msgstr "Pratonton"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/FlowProgress.tsx:20
 msgid "Preview & Confirm"
@@ -5306,13 +5460,17 @@ msgstr "Permintaan Sebelumnya"
 msgid "Price Variance"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:671
+msgid "Primary"
+msgstr ""
+
 #: src/pages/folders/components/DocumentDetailsView.tsx:1896
 #: src/pages/folders/components/DocumentDetailsView.tsx:1898
 #~ msgid "Print"
 #~ msgstr "Cetak"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1690
-#: src/pages/folders/components/DocumentDetailsView.tsx:1692
+#: src/pages/folders/components/DocumentDetailsView.tsx:1703
+#: src/pages/folders/components/DocumentDetailsView.tsx:1705
 msgid "Print file"
 msgstr ""
 
@@ -5361,9 +5519,9 @@ msgstr "Garis Masa Pemprosesan"
 msgid "Processing..."
 msgstr "Memproses..."
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:38
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:40
 #: src/pages/my-account/components/profile/Profile.tsx:13
-#: src/pages/my-account/MyAccountPage.tsx:27
+#: src/pages/my-account/MyAccountPage.tsx:36
 msgid "Profile"
 msgstr "Profil"
 
@@ -5551,17 +5709,21 @@ msgstr ""
 msgid "Rejected"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1358
+#: src/pages/folders/components/DocumentDetailsView.tsx:1371
 msgid "Related Docs"
 msgstr "Dok Berkaitan"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2406
+#: src/pages/folders/components/DocumentDetailsView.tsx:2437
 msgid "Related documents not found"
 msgstr "Dokumen berkaitan tidak ditemui"
 
-#: src/layouts/auth/components/AuthHeader.tsx:32
+#: src/layouts/auth/components/AuthHeader.tsx:35
 msgid "Remember your password?"
 msgstr "Ingat kata laluan anda?"
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:861
+msgid "Remove"
+msgstr ""
 
 #. placeholder {0}: field.fieldName
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:700
@@ -5577,7 +5739,7 @@ msgid "Remove attachment"
 msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:688
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:317
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:824
 msgid "Remove file"
 msgstr "Buang fail"
 
@@ -5627,7 +5789,7 @@ msgid "Repository context and business scope."
 msgstr ""
 
 #: src/pages/folders/components/EditMetadataView.tsx:404
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:182
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:185
 msgid "Repository Fields"
 msgstr "Medan Repositori"
 
@@ -5662,7 +5824,7 @@ msgstr "Permintaan berjaya dikongsi"
 msgid "Request Status"
 msgstr "Permintaan Status"
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:99
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:102
 msgid "Request submitted."
 msgstr ""
 
@@ -5844,7 +6006,7 @@ msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:982
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
-#: src/pages/settings/SettingsMain.tsx:149
+#: src/pages/settings/SettingsMain.tsx:180
 msgid "Roles & Permissions"
 msgstr ""
 
@@ -5905,6 +6067,10 @@ msgstr ""
 msgid "Save Assignments"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:602
+msgid "Save Branding"
+msgstr ""
+
 #: src/pages/folders/components/EditMetadataView.tsx:387
 #: src/pages/forms/FormEntriesPage.tsx:394
 #: src/pages/forms/FormEntriesPage.tsx:1985
@@ -5962,7 +6128,7 @@ msgstr ""
 msgid "Saved ({0})"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1440
+#: src/pages/folders/components/DocumentDetailsView.tsx:1453
 msgid "Saved signature removed."
 msgstr ""
 
@@ -6149,6 +6315,10 @@ msgstr ""
 msgid "Searching…"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:676
+msgid "Secondary"
+msgstr ""
+
 #. placeholder {0}: pIdx + 1
 #: src/pages/forms/FormEntriesPage.tsx:1539
 msgid "Section {0}"
@@ -6158,9 +6328,9 @@ msgstr ""
 #~ msgid "Section {0} .0"
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:43
+#: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:45
 #: src/pages/my-account/components/security/Security.tsx:13
-#: src/pages/my-account/MyAccountPage.tsx:28
+#: src/pages/my-account/MyAccountPage.tsx:37
 #: src/pages/settings/components/AuditMonitoring.tsx:140
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2916
 msgid "Security"
@@ -6191,7 +6361,7 @@ msgstr ""
 #~ msgid "Security Summary"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:220
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:696
 msgid "See the Attachments section for uploaded files."
 msgstr ""
 
@@ -6356,8 +6526,8 @@ msgstr ""
 #~ msgid "selected users"
 #~ msgstr "pengguna dipilih"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1892
-#: src/pages/forms/components/AiFormBuilder.tsx:183
+#: src/pages/folders/components/DocumentDetailsView.tsx:1905
+#: src/pages/forms/components/AiFormBuilder.tsx:226
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1637
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:165
 msgid "Send"
@@ -6416,12 +6586,16 @@ msgstr ""
 msgid "Set the folder name and let AI draft a clear business description for this repository."
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:158
+#: src/pages/settings/SettingsMain.tsx:189
 msgid "Set up folders with custom fields, storage, security, and versioning."
 msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/WelcomeMessage.tsx:21
 msgid "Set Up Your AP Automation"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:59
+msgid "Set your brand name and colors"
 msgstr ""
 
 #: src/pages/requests/utils/localizeRequestUi.ts:39
@@ -6434,7 +6608,7 @@ msgstr ""
 #: src/pages/settings/components/SettingsPageHeader.tsx:51
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
 #: src/pages/settings/components/SettingsWizardLayout.tsx:90
-#: src/pages/settings/SettingsMain.tsx:186
+#: src/pages/settings/SettingsMain.tsx:237
 msgid "Settings"
 msgstr ""
 
@@ -6442,8 +6616,12 @@ msgstr ""
 #~ msgid "Settings & Logic"
 #~ msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:195
+#: src/pages/settings/SettingsMain.tsx:247
 msgid "Settings administration modules"
+msgstr ""
+
+#: src/pages/settings/SettingsMain.tsx:262
+msgid "Settings tools and monitoring"
 msgstr ""
 
 #: src/pages/settings/components/AuditMonitoring.tsx:203
@@ -6456,7 +6634,7 @@ msgstr ""
 #: src/components/common/SharePopover.tsx:304
 #: src/components/common/SharePopover.tsx:332
 #: src/components/common/SharePopover.tsx:692
-#: src/pages/folders/components/DocumentDetailsView.tsx:1734
+#: src/pages/folders/components/DocumentDetailsView.tsx:1747
 #: src/pages/folders/components/DocumentsListView.tsx:1003
 #: src/pages/folders/components/FolderSharePopover.tsx:496
 #: src/pages/folders/components/FolderSharePopover.tsx:511
@@ -6556,27 +6734,27 @@ msgstr "Tandatangan"
 msgid "Sign here"
 msgstr "Tandatangan di sini"
 
-#: src/pages/sign-in/components/SignInForm.tsx:609
+#: src/pages/sign-in/components/SignInForm.tsx:648
 msgid "Sign in"
 msgstr "Log masuk"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:105
-#: src/layouts/auth/components/AuthHeader.tsx:21
-#: src/layouts/auth/components/AuthHeader.tsx:33
-#: src/pages/sign-in/components/ShareSignInForm.tsx:295
-#: src/pages/sign-in/components/ShareSignInForm.tsx:320
-#: src/pages/sign-in/components/SignInForm.tsx:754
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:356
+#: src/layouts/auth/components/AuthHeader.tsx:24
+#: src/layouts/auth/components/AuthHeader.tsx:36
+#: src/pages/sign-in/components/ShareSignInForm.tsx:301
+#: src/pages/sign-in/components/ShareSignInForm.tsx:326
+#: src/pages/sign-in/components/SignInForm.tsx:802
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:360
 msgid "Sign In"
 msgstr "Log Masuk"
 
-#: src/pages/sign-in/components/ShareSignInForm.tsx:256
-#: src/pages/sign-in/components/SignInForm.tsx:561
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:289
+#: src/pages/sign-in/components/ShareSignInForm.tsx:262
+#: src/pages/sign-in/components/SignInForm.tsx:598
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:293
 msgid "Sign in to your account"
 msgstr "Log masuk ke akaun anda"
 
-#: src/pages/sign-in/components/SignInForm.tsx:547
+#: src/pages/sign-in/components/SignInForm.tsx:570
 msgid "Sign in with a different email address"
 msgstr "Log masuk dengan e-mel lain"
 
@@ -6592,12 +6770,12 @@ msgstr "Log masuk dengan Google"
 msgid "Sign in with Microsoft"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1628
+#: src/pages/folders/components/DocumentDetailsView.tsx:1641
 msgid "Sign request sent. Assigned places stay visible on the document."
 msgstr ""
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:107
-#: src/layouts/auth/components/AuthHeader.tsx:27
+#: src/layouts/auth/components/AuthHeader.tsx:30
 msgid "Sign Up"
 msgstr "Daftar"
 
@@ -6610,12 +6788,12 @@ msgstr ""
 msgid "Signature placed on document."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1431
+#: src/pages/folders/components/DocumentDetailsView.tsx:1444
 msgid "Signature saved for reuse."
 msgstr "Tandatangan disimpan untuk guna semula."
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1517
-#: src/pages/folders/components/DocumentDetailsView.tsx:1610
+#: src/pages/folders/components/DocumentDetailsView.tsx:1530
+#: src/pages/folders/components/DocumentDetailsView.tsx:1623
 msgid "Signature submitted successfully."
 msgstr "Tandatangan berjaya dihantar."
 
@@ -6663,7 +6841,7 @@ msgstr "Padanan PO Pintar"
 msgid "SOC2 Compliant"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:104
+#: src/pages/forms/components/AiFormBuilder.tsx:112
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:94
 msgid "Something went wrong. Please try again."
 msgstr ""
@@ -6688,7 +6866,7 @@ msgstr "Fail Sumber"
 msgid "Source File:"
 msgstr "Fail Sumber:"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2451
+#: src/pages/folders/components/DocumentDetailsView.tsx:2482
 msgid "Source: OCR Document"
 msgstr ""
 
@@ -6823,8 +7001,8 @@ msgstr ""
 msgid "Streamline your Purchase Orders. Automatically match columns, extract records, and configure ingestion logic."
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1872
-#: src/pages/folders/components/DocumentDetailsView.tsx:1893
+#: src/pages/folders/components/DocumentDetailsView.tsx:1885
+#: src/pages/folders/components/DocumentDetailsView.tsx:1906
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:108
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:121
 msgid "Submit"
@@ -6834,7 +7012,7 @@ msgstr ""
 #~ msgid "Submit answers to form"
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1890
+#: src/pages/folders/components/DocumentDetailsView.tsx:1903
 msgid "Submitting..."
 msgstr ""
 
@@ -6842,7 +7020,7 @@ msgstr ""
 msgid "Successfully imported {successCount} entries!"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:241
+#: src/pages/sign-in/components/SignInForm.tsx:252
 msgid "Successfully logged in"
 msgstr ""
 
@@ -7065,12 +7243,16 @@ msgstr ""
 msgid "This area is already signed."
 msgstr ""
 
+#: src/pages/sign-in/BrandedSignInPage.tsx:175
+msgid "This branded sign-in link is invalid or no longer available."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:68
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:163
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:189
 msgid "This field is required."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:366
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:899
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr ""
 
@@ -7140,7 +7322,7 @@ msgstr ""
 msgid "Timeframe"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1346
+#: src/pages/folders/components/DocumentDetailsView.tsx:1359
 msgid "Timeline"
 msgstr "Garis Masa"
 
@@ -7160,7 +7342,7 @@ msgstr "to Trash?"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:442
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2152
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2166
-#: src/pages/folders/components/DocumentDetailsView.tsx:2142
+#: src/pages/folders/components/DocumentDetailsView.tsx:2173
 #: src/pages/settings/components/credits/Credits.tsx:58
 msgid "Today"
 msgstr "Hari ini"
@@ -7286,6 +7468,10 @@ msgstr "Taip jawapan anda…"
 msgid "Type your name"
 msgstr "Taip nama anda"
 
+#: src/pages/forms/components/AiFormBuilder.tsx:196
+msgid "Type:"
+msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:1236
 msgid "Typed signature"
 msgstr "Tandatangan ditaip"
@@ -7294,7 +7480,7 @@ msgstr "Tandatangan ditaip"
 msgid "Unable to complete signing. Please try again."
 msgstr "Tidak dapat selesaikan penandatanganan. Sila cuba lagi."
 
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:208
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:210
 msgid "Unable to complete social login"
 msgstr "Tidak dapat selesaikan log masuk sosial"
 
@@ -7307,12 +7493,12 @@ msgstr ""
 msgid "Unable to create sign request"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:1046
-#: src/pages/folders/components/DocumentDetailsView.tsx:1061
-#: src/pages/folders/components/DocumentDetailsView.tsx:1069
-#: src/pages/folders/components/DocumentDetailsView.tsx:1083
-#: src/pages/folders/components/DocumentDetailsView.tsx:2367
-#: src/pages/folders/components/DocumentDetailsView.tsx:2385
+#: src/pages/folders/components/DocumentDetailsView.tsx:1059
+#: src/pages/folders/components/DocumentDetailsView.tsx:1074
+#: src/pages/folders/components/DocumentDetailsView.tsx:1082
+#: src/pages/folders/components/DocumentDetailsView.tsx:1096
+#: src/pages/folders/components/DocumentDetailsView.tsx:2398
+#: src/pages/folders/components/DocumentDetailsView.tsx:2416
 msgid "Unable to download file"
 msgstr "Tidak dapat muat turun fail"
 
@@ -7328,11 +7514,11 @@ msgstr ""
 msgid "Unable to load AI summary"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:604
+#: src/pages/folders/components/DocumentDetailsView.tsx:617
 msgid "Unable to load document details"
 msgstr "Tidak dapat memuatkan butiran dokumen"
 
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:94
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:96
 msgid "Unable to load sign request"
 msgstr "Tidak dapat memuatkan permintaan tandatangan"
 
@@ -7357,11 +7543,11 @@ msgstr "Tidak dapat simpan tugasan. Sila cuba lagi."
 msgid "Unable to send sign request. Please try again."
 msgstr "Tidak dapat hantar permintaan tandatangan. Sila cuba lagi."
 
-#: src/pages/sign-in/components/SignRequestSignInForm.tsx:156
+#: src/pages/sign-in/components/SignRequestSignInForm.tsx:158
 msgid "Unable to set password"
 msgstr "Tidak dapat tetapkan kata laluan"
 
-#: src/pages/sign-in/components/SignInForm.tsx:248
+#: src/pages/sign-in/components/SignInForm.tsx:259
 msgid "Unable to sign in"
 msgstr "Tidak dapat log masuk"
 
@@ -7388,7 +7574,7 @@ msgid "Unsupported file type. Please upload a CSV or XLSX file."
 msgstr "Jenis fail tidak disokong. Sila muat naik fail CSV atau XLSX."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:121
-#: src/pages/folders/components/DocumentDetailsView.tsx:805
+#: src/pages/folders/components/DocumentDetailsView.tsx:818
 #: src/pages/folders/components/ShareView.tsx:323
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:770
 msgid "Untitled"
@@ -7445,8 +7631,10 @@ msgstr ""
 #: src/pages/folders/components/FolderExplorer.tsx:294
 #: src/pages/folders/components/FolderFilterBar.tsx:695
 #: src/pages/folders/components/Upload/Upload.tsx:1618
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:232
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:204
+#: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:66
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:207
 msgid "Upload"
 msgstr "Muat naik"
 
@@ -7477,6 +7665,10 @@ msgstr "Muat naik dokumen dengan selamat, tetapkan metadata, dan susun fail dala
 msgid "Upload failed"
 msgstr "Muat naik gagal"
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:633
+msgid "Upload favicon"
+msgstr ""
+
 #: src/pages/folders/components/Upload/Upload.tsx:1604
 msgid "Upload Files"
 msgstr "Muat Naik Fail"
@@ -7503,6 +7695,10 @@ msgstr "Muat naik fail induk PO dipilih. Fail induk PO diperlukan untuk teruskan
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:113
 msgid "Upload Purchase Order"
 msgstr "Muat Naik Pesanan Pembelian"
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:53
+msgid "Upload your organization's logo and favicon"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:891
 #: src/pages/folders/components/DocumentSigningPage.tsx:895
@@ -7531,6 +7727,10 @@ msgstr "Memuat naik fail..."
 msgid "Uploading…"
 msgstr ""
 
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:748
+msgid "URL copied"
+msgstr ""
+
 #: src/pages/settings/components/credits/Credits.tsx:1082
 #~ msgid "Usage"
 #~ msgstr ""
@@ -7554,7 +7754,7 @@ msgstr ""
 #~ msgid "Use this setup"
 #~ msgstr "Guna persediaan ini"
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2115
+#: src/pages/folders/components/DocumentDetailsView.tsx:2146
 #: src/pages/settings/components/AuditMonitoring.tsx:329
 #: src/pages/settings/components/AuditMonitoring.tsx:330
 #: src/pages/settings/components/RolesPermissions.tsx:2039
@@ -7578,19 +7778,19 @@ msgstr "Pengguna Email"
 #: src/pages/settings/components/ManageUser.tsx:1273
 #: src/pages/settings/components/ManageUser.tsx:2556
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:23
-#: src/pages/settings/SettingsMain.tsx:143
+#: src/pages/settings/SettingsMain.tsx:174
 msgid "User Management"
 msgstr "Pengurusan Pengguna"
 
-#: src/pages/sign-in/components/SignInForm.tsx:661
+#: src/pages/sign-in/components/SignInForm.tsx:702
 msgid "User name"
 msgstr "Nama pengguna"
 
-#: src/layouts/app/components/topbar/components/user-menu/components/UserMenuTrigger.tsx:32
+#: src/layouts/app/components/topbar/components/user-menu/components/UserMenuTrigger.tsx:29
 msgid "User Profile"
 msgstr "Profil Pengguna"
 
-#: src/pages/sign-in/components/SignInForm.tsx:662
+#: src/pages/sign-in/components/SignInForm.tsx:703
 msgid "username"
 msgstr "nama pengguna"
 
@@ -7700,7 +7900,7 @@ msgstr "Strategi versi disimpan. Adakah anda memerlukan integrasi ERP atau siste
 msgid "View"
 msgstr "Lihat"
 
-#: src/pages/settings/SettingsMain.tsx:164
+#: src/pages/settings/SettingsMain.tsx:201
 msgid "View activity logs, security events, and configuration change history."
 msgstr "Lihat log aktiviti, acara keselamatan dan sejarah perubahan konfigurasi."
 
@@ -7766,7 +7966,7 @@ msgstr ""
 msgid "Welcome to AP Automation Setup"
 msgstr ""
 
-#: src/pages/forms/components/AiFormBuilder.tsx:147
+#: src/pages/forms/components/AiFormBuilder.tsx:146
 msgid "What form shall we create?"
 msgstr ""
 
@@ -7774,8 +7974,16 @@ msgstr ""
 msgid "What Happens Next?"
 msgstr ""
 
+#: src/pages/forms/components/AiFormBuilder.tsx:147
+msgid "What type of form do you want to create?"
+msgstr ""
+
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:137
 msgid "What workflow shall we create?"
+msgstr ""
+
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:687
+msgid "When enabled, page and card backgrounds use a light or dark wash of the primary color."
 msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1132
@@ -7839,7 +8047,7 @@ msgstr ""
 msgid "Yes, Delete"
 msgstr ""
 
-#: src/pages/folders/components/DocumentDetailsView.tsx:2143
+#: src/pages/folders/components/DocumentDetailsView.tsx:2174
 #: src/pages/settings/components/credits/Credits.tsx:59
 msgid "Yesterday"
 msgstr ""
@@ -7876,6 +8084,10 @@ msgstr "Akaun QuickBooks anda disambungkan. Data PO dan pembekal akan digunakan 
 #: src/pages/sign-request/SignRequestInvitePage.tsx:272
 msgid "Your signature was submitted successfully. You can close this page."
 msgstr "Tandatangan anda berjaya dihantar. Anda boleh tutup halaman ini."
+
+#: src/pages/sign-in/BrandedSignInPage.tsx:116
+msgid "your workspace"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2930
 msgid "Zoom in"

@@ -5,10 +5,12 @@ import { uploadForOcr } from '@/api/v6/folder/folder'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6 from '@/api/v6/workflows'
 import folderApi from '@/pages/folders/api/folderApi'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
 import {
+  buildInitialFormModel,
   buildRepoFieldDescriptors,
   buildRepoFieldHints,
   buildRepoMetadata,
@@ -89,7 +91,7 @@ export const useWorkflowForm = (workflow: any) => {
       }
 
       setForm(data)
-      setFormModel({})
+      setFormModel(applyCalculatedFields(data?.formJson?.panels || [], buildInitialFormModel(data?.formJson?.panels || [])))
       setIsLoadingForm(false)
     }
 
@@ -199,7 +201,7 @@ export const useWorkflowForm = (workflow: any) => {
         next[descriptor.fieldId] = value
         if (descriptor.matchedFieldId) next[descriptor.matchedFieldId] = value
       }
-      return next
+      return applyCalculatedFields(panels, next)
     })
   }
 
@@ -212,7 +214,9 @@ export const useWorkflowForm = (workflow: any) => {
   ) => {
     const ocrPatch = mapOcrFieldsToModel(panels, ocrFieldList)
     if (Object.keys(ocrPatch).length > 0) {
-      setFormModel((prev) => ({ ...ocrPatch, ...prev }))
+      setFormModel((prev) =>
+        applyCalculatedFields(panels, { ...ocrPatch, ...prev }),
+      )
     }
   }
 
@@ -247,12 +251,12 @@ export const useWorkflowForm = (workflow: any) => {
         prev.map((a) =>
           a.localId === localId
             ? {
-                ...a,
-                ...(!error && data
-                  ? { ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
-                  : {}),
-                ocrChecked: true,
-              }
+              ...a,
+              ...(!error && data
+                ? { ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
+                : {}),
+              ocrChecked: true,
+            }
             : a,
         ),
       )
@@ -463,10 +467,16 @@ export const useWorkflowForm = (workflow: any) => {
       return { success: false }
     }
 
-    const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
-    if (missing.length > 0) {
-      setSubmitError(`Please fill in required field(s): ${missing.join(', ')}`)
-      return { success: false }
+    // Repository fields are metadata for an ATTACHED document — only worth
+    // enforcing once the user is actually filing one. A request with no
+    // file at all has nothing for Project/Document Type/... to describe,
+    // so it shouldn't be blocked on them.
+    if (hasUploadedFile) {
+      const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
+      if (missing.length > 0) {
+        setSubmitError(`Please fill in required field(s): ${missing.join(', ')}`)
+        return { success: false }
+      }
     }
 
     setIsSubmitting(true)

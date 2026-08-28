@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import AnimateFadeIn from '@/components/common/animations/AnimateFadeIn'
+import { getFieldAttachmentMap } from '@/pages/requests/utils/fieldAttachmentMap'
 import FieldRenderer from './components/FieldRenderer'
 import {
   getColumnSizeClass,
@@ -17,11 +18,11 @@ interface Props {
   panels: any[]
   // Already-submitted instance attachments (Overview only — New Request has
   // nothing to fall back to yet). File fields are never part of formData
-  // once submitted (see buildStartWorkflowPayload), so a submitted request
-  // has no way to know which attachment came from which field; as a
-  // best-effort fallback, an empty file field is shown these ONLY when the
-  // form has exactly one file field, so there's no ambiguity about which
-  // attachment(s) belong to it.
+  // once submitted (see buildStartWorkflowPayload), so the backend has no
+  // record of which attachment came from which field: uploads made through
+  // this screen are remembered locally (getFieldAttachmentMap), and
+  // anything with no such record falls back to the single file field when
+  // the form has exactly one, since there's no ambiguity there.
   attachments?: any[]
   // Skips the internal ScrollArea (height: 100%) — used when this renderer
   // is nested inside another scrollable container (the split-view's
@@ -29,6 +30,8 @@ interface Props {
   // fight the outer container for scroll ownership.
   disableOwnScroll?: boolean
   hasAttemptedSubmit?: boolean
+  // Overview only — scopes the local field↔attachment map to this request.
+  instanceId?: string | number
   missingMandatoryFieldIds?: Set<string>
   repoFieldHints?: string[]
   repositoryId?: string
@@ -37,6 +40,9 @@ interface Props {
   onOcrFieldList?: (
     list: { name?: string; value?: string }[] | undefined,
   ) => void
+  onOpenAttachment?: (attachment: any) => void
+  // Overview only — see FieldRenderer's onRequestUpload.
+  onRequestUpload?: (fieldId: string, file: File) => void
 }
 
 const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
@@ -52,6 +58,7 @@ const WorkflowFormRenderer = ({
   disableOwnScroll,
   formModel,
   hasAttemptedSubmit,
+  instanceId,
   missingMandatoryFieldIds,
   panels,
   repoFieldHints,
@@ -59,6 +66,8 @@ const WorkflowFormRenderer = ({
   viewOnly,
   onFieldChange,
   onOcrFieldList,
+  onOpenAttachment,
+  onRequestUpload,
 }: Props) => {
   const { t } = useLingui()
 
@@ -70,6 +79,25 @@ const WorkflowFormRenderer = ({
     )
     return fileFieldIds.length === 1 ? fileFieldIds[0] : null
   }, [panels])
+
+  // fieldId -> the attachments uploaded through it. Anything with no
+  // recorded field falls back to the sole file field when the form has
+  // exactly one (see the `attachments` prop comment).
+  const attachmentsByField = useMemo(() => {
+    const grouped: Record<string, any[]> = {}
+    if (!attachments?.length) return grouped
+    const recorded = getFieldAttachmentMap(instanceId)
+
+    attachments.forEach((attachment: any) => {
+      const key = String(
+        attachment.itemId ?? attachment.id ?? attachment.fileId ?? '',
+      )
+      const fieldId = recorded[key] || soleFileFieldId
+      if (!fieldId) return
+      grouped[fieldId] = [...(grouped[fieldId] || []), attachment]
+    })
+    return grouped
+  }, [attachments, instanceId, soleFileFieldId])
 
   const content = (
     <div className='w-full px-6 py-6'>
@@ -83,7 +111,7 @@ const WorkflowFormRenderer = ({
             chevron: 'text-gray-10',
             content: 'p-0',
             control: 'rounded-xl px-4 py-2.5 transition-colors hover:bg-gray-1',
-            item: 'mb-3 scroll-mt-3 rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
+            item: 'mb-3 rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
             label: 'text-14 font-bold tracking-tight text-gray-13',
             panel: 'px-6 pt-2 pb-6',
           }}
@@ -101,7 +129,6 @@ const WorkflowFormRenderer = ({
 
             return (
               <Accordion.Item
-                id={`form-panel-${panel.id || panelIndex}`}
                 key={panel.id || panelIndex}
                 value={`panel-${panelIndex}`}
               >
@@ -150,6 +177,7 @@ const WorkflowFormRenderer = ({
                         key={field.id}
                       >
                         <FieldRenderer
+                          fallbackAttachments={attachmentsByField[field.id]}
                           field={field}
                           repoFieldHints={repoFieldHints}
                           repositoryId={repositoryId}
@@ -161,13 +189,14 @@ const WorkflowFormRenderer = ({
                               ? t`This field is required.`
                               : undefined
                           }
-                          fallbackAttachments={
-                            field.id === soleFileFieldId
-                              ? attachments
-                              : undefined
-                          }
                           onChange={(value) => onFieldChange(field.id, value)}
                           onOcrFieldList={onOcrFieldList}
+                          onOpenAttachment={onOpenAttachment}
+                          onRequestUpload={
+                            onRequestUpload
+                              ? (file) => onRequestUpload(field.id, file)
+                              : undefined
+                          }
                         />
                       </div>
                     ))}

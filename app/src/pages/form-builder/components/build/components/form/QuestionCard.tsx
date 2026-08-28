@@ -2,6 +2,7 @@ import type React from 'react'
 import { Card, Rating, Tooltip } from '@mantine/core'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import { formatFormulaExpression } from '@/pages/form-builder/helpers/formula'
 import {
   type Question,
   useFormStore,
@@ -68,8 +69,8 @@ const QuestionCard = ({
       className={cn(
         'group relative overflow-visible rounded-xl border font-inter transition-all duration-200',
         isLocked
-          ? 'bg-gray-2/40 cursor-not-allowed border-gray-3 opacity-90'
-          : 'hover:bg-gray-1/60 cursor-pointer',
+          ? 'cursor-not-allowed border-gray-3 bg-gray-2/40 opacity-90'
+          : 'cursor-pointer hover:bg-gray-1/60',
         isActive
           ? 'border-primary-9 bg-primary-3/30 shadow-xs ring-1 ring-primary-9'
           : 'border-gray-3 bg-white hover:border-gray-4 hover:shadow-2xs',
@@ -87,6 +88,7 @@ const QuestionCard = ({
             <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-3 text-primary-9 shadow-2xs'>
               <Icon
                 height={15}
+                width={15}
                 name={
                   question.type === 'FULL_NAME'
                     ? 'lucide:user'
@@ -103,28 +105,40 @@ const QuestionCard = ({
                               : question.type === 'SINGLE_SELECT' ||
                                   question.type === 'MULTI_SELECT'
                                 ? 'lucide:list-todo'
-                                : question.type === 'SINGLE_CHOICE' ||
-                                    question.type === 'MULTIPLE_CHOICE'
-                                  ? 'lucide:radio'
+                                : question.type === 'MULTIPLE_CHOICE'
+                                  ? 'lucide:check-square'
+                                  : question.type === 'SINGLE_CHOICE'
+                                    ? 'lucide:radio'
                                   : question.type === 'DATE' ||
                                       question.type === 'TIME' ||
                                       question.type === 'DATE_TIME'
                                     ? 'lucide:calendar'
                                     : 'mdi:form-textbox'
                 }
-                width={15}
               />
             </div>
 
             <div className='truncate text-sm font-semibold text-gray-12'>
               {question.label || 'Untitled Field'}
-              {isRequired && <span className='ml-1 font-bold text-red-11'>*</span>}
+              {isRequired && (
+                <span className='ml-1 font-bold text-red-11'>*</span>
+              )}
             </div>
 
             {hasLogic && (
               <span className='flex items-center gap-1 rounded-md bg-purple-3 px-1.5 py-0.5 text-[10px] font-bold text-purple-11'>
                 <Icon height={10} name='lucide:split' width={10} />
                 Logic Active
+              </span>
+            )}
+
+            {question.settings?.specific?.qrCodeEnabled && (
+              <span
+                className='flex items-center gap-1 rounded-md bg-blue-3 px-1.5 py-0.5 text-[10px] font-bold text-blue-11'
+                title='QR Code Scan Enabled'
+              >
+                <Icon height={10} name='lucide:qr-code' width={10} />
+                QR Scan
               </span>
             )}
           </div>
@@ -150,20 +164,25 @@ const QuestionCard = ({
                       <div
                         className='absolute top-0.5 bottom-0.5 rounded-full bg-white shadow-sm transition-all duration-300 ease-out'
                         style={{
-                          width: `calc(${100 / sizeOptions.length}% - 2px)`,
                           left: `calc(${(activeIndex * 100) / sizeOptions.length}% + 1px)`,
+                          width: `calc(${100 / sizeOptions.length}% - 2px)`,
                         }}
                       />
                       {sizeOptions.map((w, i) => (
-                        <Tooltip key={w.value} label={w.label} position='top' withArrow>
+                        <Tooltip
+                          key={w.value}
+                          label={w.label}
+                          position='top'
+                          withArrow
+                        >
                           <button
+                            type='button'
                             className={cn(
                               'relative z-10 flex h-6 min-w-9 cursor-pointer items-center justify-center rounded-full px-1.5 text-[10px] font-bold tracking-tight transition-colors duration-300',
                               i === activeIndex
                                 ? 'text-primary-9'
                                 : 'text-gray-6 hover:text-gray-9',
                             )}
-                            type='button'
                             onClick={(e) => {
                               e.stopPropagation()
                               onUpdate({
@@ -400,132 +419,126 @@ const QuestionCard = ({
                 </div>
               </div>
             </div>
-          ) : question.type === 'TABLE' ? (
-            <div
-              className={cn(
-                'w-full overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300',
-                isActive
-                  ? 'border-accent-primary/60'
-                  : 'border-gray-2 group-hover:border-gray-3',
-              )}
-            >
-              {/* Table Toolbar */}
-              <div className='bg-gray-50/50 flex items-center justify-between border-b border-gray-1 px-3 py-2'>
-                <div className='flex items-center gap-2'>
-                  <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-2 py-1 shadow-xs transition-colors'>
-                    <Icon
-                      className='text-gray-6'
-                      height={14}
-                      name='lucide:qr-code'
-                      width={14}
-                    />
-                    <span className='text-[11px] font-bold text-gray-8'>
-                      Scan Row
+          ) : question.type === 'TABLE' ||
+            question.type === 'DYNAMIC_TABLE' ? (
+            (() => {
+              const tableColumns =
+                question.settings?.specific?.tableColumns || []
+              const gridTemplate =
+                tableColumns.length > 0
+                  ? `32px ${tableColumns
+                      .map((col) => {
+                        if (col.size === 'SMALL') return 'minmax(90px, 1fr)'
+                        if (col.size === 'LARGE') return 'minmax(180px, 3fr)'
+                        return 'minmax(130px, 2fr)'
+                      })
+                      .join(' ')}`
+                  : '1fr'
+
+              return (
+                <div
+                  className={cn(
+                    'w-full overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300',
+                    isActive
+                      ? 'border-accent-primary/60'
+                      : 'border-gray-2 group-hover:border-gray-3',
+                  )}
+                >
+                  {/* Table Toolbar */}
+                  <div className='bg-gray-50/50 flex items-center justify-between border-b border-gray-1 px-3 py-2'>
+                    <div className='flex items-center gap-2'>
+                      <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-2 py-1 shadow-xs transition-colors'>
+                        <Icon
+                          className='text-gray-6'
+                          height={14}
+                          name='lucide:qr-code'
+                          width={14}
+                        />
+                        <span className='text-[11px] font-bold text-gray-8'>
+                          Scan Row
+                        </span>
+                      </div>
+                    </div>
+                    <div className='flex items-center gap-1.5'>
+                      <IconButton
+                        color='gray'
+                        icon='lucide:download'
+                        size='xs'
+                        variant='ghost'
+                      />
+                      <IconButton
+                        color='gray'
+                        icon='lucide:upload'
+                        size='xs'
+                        variant='ghost'
+                      />
+                    </div>
+                  </div>
+
+                  {/* Grid Content */}
+                  {tableColumns.length === 0 ? (
+                    <div className='p-6 text-center text-xs text-gray-8 italic'>
+                      No table columns configured. Add columns in the settings panel.
+                    </div>
+                  ) : (
+                    <div className='overflow-x-auto'>
+                      {/* Grid Header */}
+                      <div
+                        className='bg-gray-50/80 grid border-b border-gray-1 px-3 py-2 text-[10px] font-bold tracking-wider text-gray-5 uppercase'
+                        style={{ gridTemplateColumns: gridTemplate }}
+                      >
+                        <div className='flex items-center justify-center'>
+                          <div className='h-3 w-3 rounded border border-gray-3' />
+                        </div>
+                        {tableColumns.map((col) => (
+                          <div
+                            key={col.id}
+                            className='flex items-center gap-1.5 overflow-hidden px-2'
+                          >
+                            <span className='truncate font-bold text-gray-8'>
+                              {col.name || 'Column'}
+                            </span>
+                            <span className='text-[8px] font-medium text-gray-4 lowercase'>
+                              ({col.type?.replace('_', ' ') || 'text'})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Placeholder Row */}
+                      <div
+                        className='hover:bg-gray-50/30 grid items-center px-3 py-2.5 transition-colors'
+                        style={{ gridTemplateColumns: gridTemplate }}
+                      >
+                        <div className='flex items-center justify-center'>
+                          <div className='h-3 w-3 rounded border border-gray-2' />
+                        </div>
+                        {tableColumns.map((col) => (
+                          <div key={col.id} className='px-2'>
+                            <div className='flex h-7 w-full items-center rounded border border-dashed border-gray-2 bg-gray-50/40 px-2 text-[11px] text-gray-4 italic'>
+                              {col.name}...
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grid Footer */}
+                  <div className='bg-gray-50/50 flex items-center justify-between border-t border-gray-1 px-3 py-2'>
+                    <div className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-accent-primary/50 bg-white px-3 py-1.5 text-accent-primary shadow-xs transition-all hover:bg-accent-soft/10'>
+                      <Icon height={14} name='lucide:plus' width={14} />
+                      <span className='text-[11px] font-bold tracking-tight uppercase'>
+                        Add New Row
+                      </span>
+                    </div>
+                    <span className='text-[10px] text-gray-4 italic'>
+                      Auto-save enabled for table rows
                     </span>
                   </div>
                 </div>
-                <div className='flex items-center gap-1.5'>
-                  <IconButton
-                    color='gray'
-                    icon='lucide:download'
-                    size='xs'
-                    variant='ghost'
-                  />
-                  <IconButton
-                    color='gray'
-                    icon='lucide:upload'
-                    size='xs'
-                    variant='ghost'
-                  />
-                </div>
-              </div>
-
-              {/* Grid Header */}
-              <div className='bg-gray-50/80 grid grid-cols-[30px_1fr_80px_100px_100px] border-b border-gray-1 px-3 py-2'>
-                <div className='flex items-center justify-center'>
-                  <div className='h-3 w-3 rounded border border-gray-3' />
-                </div>
-                <div className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Item Description
-                </div>
-                <div className='text-center text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Qty
-                </div>
-                <div className='text-right text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Unit Price
-                </div>
-                <div className='pr-2 text-right text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Total
-                </div>
-              </div>
-
-              {/* Grid Rows */}
-              <div className='divide-y divide-gray-1'>
-                {[
-                  {
-                    item: 'Professional Services',
-                    price: '150.00',
-                    qty: '12',
-                    total: '1,800.00',
-                  },
-                  {
-                    item: 'Software Licensing',
-                    price: '450.00',
-                    qty: '1',
-                    total: '450.00',
-                  },
-                ].map((row, i) => (
-                  <div
-                    className='hover:bg-gray-50/30 grid grid-cols-[30px_1fr_80px_100px_100px] items-center px-3 py-2.5 transition-colors'
-                    key={i}
-                  >
-                    <div className='flex items-center justify-center'>
-                      <div className='h-3 w-3 rounded border border-gray-2' />
-                    </div>
-                    <div className='text-[12px] font-medium text-gray-12'>
-                      {row.item}
-                    </div>
-                    <div className='text-center text-[12px] font-bold text-gray-8'>
-                      {row.qty}
-                    </div>
-                    <div className='text-right text-[12px] font-medium text-gray-12'>
-                      {row.price}
-                    </div>
-                    <div className='pr-2 text-right text-[12px] font-bold text-accent-primary'>
-                      {row.total}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Grid Summary */}
-              <div className='grid grid-cols-[30px_1fr_80px_100px_100px] border-t border-gray-1 bg-accent-soft/5 px-3 py-2.5'>
-                <div />
-                <div className='text-[11px] font-bold text-gray-8 uppercase'>
-                  Grand Total
-                </div>
-                <div className='text-center text-[11px] font-bold text-gray-10'>
-                  13
-                </div>
-                <div />
-                <div className='pr-2 text-right text-[12px] font-bold text-accent-primary underline decoration-accent-soft underline-offset-4'>
-                  2,250.00
-                </div>
-              </div>
-
-              {/* Grid Footer */}
-              <div className='bg-gray-50/50 flex items-center justify-between border-t border-gray-1 px-3 py-2'>
-                <div className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-accent-primary/50 bg-white px-3 py-1.5 text-accent-primary shadow-xs transition-all hover:bg-accent-soft/10'>
-                  <Icon height={14} name='lucide:plus' width={14} />
-                  <span className='text-[11px] font-bold tracking-tight uppercase'>
-                    Add New Row
-                  </span>
-                </div>
-                <span className='text-[10px] text-gray-4 italic'>
-                  Auto-save enabled for table rows
-                </span>
-              </div>
-            </div>
+              )
+            })()
           ) : question.type === 'FILE_UPLOAD' ||
             question.type === 'IMAGE_UPLOAD' ? (
             <div className='space-y-3'>
@@ -677,23 +690,26 @@ const QuestionCard = ({
           ) : question.type === 'CALCULATED' ? (
             <div
               className={cn(
-                'bg-gray-50/50 flex h-11 w-full items-center justify-between rounded-lg border px-4 font-inter transition-colors',
+                'flex h-11 w-full items-center justify-between rounded-lg border bg-surface-secondary px-4 font-inter transition-colors',
                 isActive
                   ? 'border-accent-primary/50'
                   : 'border-gray-2 group-hover:border-gray-3',
               )}
             >
-              <span className='text-[13px] font-medium text-gray-8 italic'>
-                Auto-calculated result
+              <span className='truncate text-[13px] font-medium text-gray-8 italic'>
+                {formatFormulaExpression(
+                  question.settings.specific.formulaTokens,
+                  allQuestions,
+                ) || 'Auto-calculated result'}
               </span>
-              <div className='bg-amber-50 border-amber-200/50 flex items-center gap-1.5 rounded border px-2 py-0.5'>
+              <div className='flex shrink-0 items-center gap-1.5 rounded border border-accent-soft/30 bg-accent-soft/20 px-2 py-0.5'>
                 <Icon
-                  className='text-amber-600'
+                  className='text-accent-primary'
                   height={12}
                   name='lucide:calculator'
                   width={12}
                 />
-                <span className='text-amber-700 text-[10px] font-bold tracking-tight uppercase'>
+                <span className='text-[10px] font-bold tracking-tight text-accent-primary uppercase'>
                   fx
                 </span>
               </div>
@@ -732,29 +748,77 @@ const QuestionCard = ({
             </div>
           ) : question.type === 'SINGLE_CHOICE' ||
             question.type === 'MULTIPLE_CHOICE' ? (
-            <div className='space-y-2'>
-              {[1, 2].map((i) => (
+            (() => {
+              const specific = question.settings?.specific || {}
+              const raw = specific.customOptions || 'Option 1, Option 2, Option 3'
+              const sep = specific.separateOptionsUsing === 'NEWLINE' ? '\n' : ','
+              const options = raw
+                .split(sep)
+                .map((s: string) => s.trim())
+                .filter(Boolean)
+              const displayOptions =
+                options.length > 0 ? options : ['Option 1', 'Option 2', 'Option 3']
+              const optionsPerLine = specific.optionsPerLine ?? 3
+              const showWrapper = Boolean(specific.showOptionsWrapper)
+
+              const isAutoFlex = optionsPerLine === 0
+
+              return (
                 <div
-                  key={i}
                   className={cn(
-                    'flex h-9 w-full items-center gap-3 rounded-lg border px-3 transition-colors',
-                    isActive
-                      ? 'border-accent-primary/50 bg-white'
-                      : 'border-gray-2 bg-white group-hover:border-gray-3',
+                    'w-full transition-all',
+                    showWrapper &&
+                      'rounded-xl border border-gray-2 bg-gray-50/50 p-2.5 shadow-2xs',
                   )}
                 >
                   <div
                     className={cn(
-                      'size-4 border border-gray-3',
-                      question.type === 'SINGLE_CHOICE'
-                        ? 'rounded-full'
-                        : 'rounded-md',
+                      'gap-2',
+                      isAutoFlex
+                        ? 'flex flex-wrap items-center'
+                        : 'grid',
                     )}
-                  />
-                  <span className='text-[12px] text-gray-8'>Option {i}</span>
+                    style={
+                      !isAutoFlex
+                        ? {
+                            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {displayOptions.map((opt: string, i: number) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'flex min-h-[34px] items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-colors',
+                          isAutoFlex ? 'flex-shrink-0' : '',
+                          isActive
+                            ? 'border-primary-4 bg-white shadow-2xs'
+                            : 'border-gray-2 bg-white group-hover:border-gray-3',
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'size-3.5 shrink-0 border border-gray-4',
+                            question.type === 'SINGLE_CHOICE'
+                              ? 'rounded-full'
+                              : 'rounded-sm',
+                          )}
+                        />
+                        <span className='truncate text-[11px] font-medium text-gray-8'>
+                          {opt}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {specific.allowCustomEntries && (
+                    <div className='mt-2 text-[10px] text-gray-5 italic'>
+                      + Custom user entries allowed
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )
+            })()
           ) : (question.type as string) === 'MATRIX' ? (
             <div className='w-full overflow-x-auto rounded-xl border border-gray-1 bg-white/50 shadow-sm backdrop-blur-sm'>
               <table className='w-full min-w-[400px] border-collapse text-left'>
@@ -922,6 +986,49 @@ const QuestionCard = ({
                   This is an informational label or instruction block that
                   provides guidance without requiring input.
                 </p>
+              </div>
+            </div>
+          ) : (question.type as string) === 'SINGLE_SELECT' ? (
+            <div
+              className={cn(
+                'flex h-11 w-full items-center justify-between rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <span className='truncate text-[13px] font-medium text-gray-8'>
+                {question.settings.general.placeholder || 'Select an option...'}
+              </span>
+              <Icon
+                className='text-gray-5'
+                height={16}
+                name='lucide:chevron-down'
+                width={16}
+              />
+            </div>
+          ) : (question.type as string) === 'MULTI_SELECT' ? (
+            <div
+              className={cn(
+                'flex h-11 w-full items-center justify-between rounded-lg border px-3 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <div className='flex items-center gap-1.5 overflow-hidden'>
+                <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
+                  Option 1
+                  <Icon height={12} name='lucide:x' width={12} className='text-gray-7' />
+                </span>
+                <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
+                  Option 2
+                  <Icon height={12} name='lucide:x' width={12} className='text-gray-7' />
+                </span>
+              </div>
+              <div className='flex items-center gap-1.5 text-gray-5'>
+                <Icon height={14} name='lucide:search' width={14} />
+                <Icon height={16} name='lucide:chevron-down' width={16} />
               </div>
             </div>
           ) : (
