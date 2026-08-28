@@ -103,9 +103,10 @@ const QuestionCard = ({
                               : question.type === 'SINGLE_SELECT' ||
                                   question.type === 'MULTI_SELECT'
                                 ? 'lucide:list-todo'
-                                : question.type === 'SINGLE_CHOICE' ||
-                                    question.type === 'MULTIPLE_CHOICE'
-                                  ? 'lucide:radio'
+                                : question.type === 'MULTIPLE_CHOICE'
+                                  ? 'lucide:check-square'
+                                  : question.type === 'SINGLE_CHOICE'
+                                    ? 'lucide:radio'
                                   : question.type === 'DATE' ||
                                       question.type === 'TIME' ||
                                       question.type === 'DATE_TIME'
@@ -125,6 +126,16 @@ const QuestionCard = ({
               <span className='flex items-center gap-1 rounded-md bg-purple-3 px-1.5 py-0.5 text-[10px] font-bold text-purple-11'>
                 <Icon height={10} name='lucide:split' width={10} />
                 Logic Active
+              </span>
+            )}
+
+            {question.settings?.specific?.qrCodeEnabled && (
+              <span
+                className='flex items-center gap-1 rounded-md bg-blue-3 px-1.5 py-0.5 text-[10px] font-bold text-blue-11'
+                title='QR Code Scan Enabled'
+              >
+                <Icon height={10} name='lucide:qr-code' width={10} />
+                QR Scan
               </span>
             )}
           </div>
@@ -726,29 +737,77 @@ const QuestionCard = ({
             </div>
           ) : question.type === 'SINGLE_CHOICE' ||
             question.type === 'MULTIPLE_CHOICE' ? (
-            <div className='space-y-2'>
-              {[1, 2].map((i) => (
+            (() => {
+              const specific = question.settings?.specific || {}
+              const raw = specific.customOptions || 'Option 1, Option 2, Option 3'
+              const sep = specific.separateOptionsUsing === 'NEWLINE' ? '\n' : ','
+              const options = raw
+                .split(sep)
+                .map((s: string) => s.trim())
+                .filter(Boolean)
+              const displayOptions =
+                options.length > 0 ? options : ['Option 1', 'Option 2', 'Option 3']
+              const optionsPerLine = specific.optionsPerLine ?? 3
+              const showWrapper = Boolean(specific.showOptionsWrapper)
+
+              const isAutoFlex = optionsPerLine === 0
+
+              return (
                 <div
-                  key={i}
                   className={cn(
-                    'flex h-9 w-full items-center gap-3 rounded-lg border px-3 transition-colors',
-                    isActive
-                      ? 'border-accent-primary/50 bg-white'
-                      : 'border-gray-2 bg-white group-hover:border-gray-3',
+                    'w-full transition-all',
+                    showWrapper &&
+                      'rounded-xl border border-gray-2 bg-gray-50/50 p-2.5 shadow-2xs',
                   )}
                 >
                   <div
                     className={cn(
-                      'size-4 border border-gray-3',
-                      question.type === 'SINGLE_CHOICE'
-                        ? 'rounded-full'
-                        : 'rounded-md',
+                      'gap-2',
+                      isAutoFlex
+                        ? 'flex flex-wrap items-center'
+                        : 'grid',
                     )}
-                  />
-                  <span className='text-[12px] text-gray-8'>Option {i}</span>
+                    style={
+                      !isAutoFlex
+                        ? {
+                            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {displayOptions.map((opt: string, i: number) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'flex min-h-[34px] items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-colors',
+                          isAutoFlex ? 'flex-shrink-0' : '',
+                          isActive
+                            ? 'border-primary-4 bg-white shadow-2xs'
+                            : 'border-gray-2 bg-white group-hover:border-gray-3',
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'size-3.5 shrink-0 border border-gray-4',
+                            question.type === 'SINGLE_CHOICE'
+                              ? 'rounded-full'
+                              : 'rounded-sm',
+                          )}
+                        />
+                        <span className='truncate text-[11px] font-medium text-gray-8'>
+                          {opt}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {specific.allowCustomEntries && (
+                    <div className='mt-2 text-[10px] text-gray-5 italic'>
+                      + Custom user entries allowed
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              )
+            })()
           ) : (question.type as string) === 'MATRIX' ? (
             <div className='w-full overflow-x-auto rounded-xl border border-gray-1 bg-white/50 shadow-sm backdrop-blur-sm'>
               <table className='w-full min-w-[400px] border-collapse text-left'>

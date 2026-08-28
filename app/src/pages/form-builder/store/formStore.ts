@@ -286,6 +286,7 @@ export interface Question {
       pattern?: string
       rangeType?: 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED' | 'CUSTOM'
       requireCurrencyUnit?: boolean
+      requiredValidation?: 'ANY' | 'ALL'
       // Time specific
       timeFormat?: '12' | '24'
       timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'

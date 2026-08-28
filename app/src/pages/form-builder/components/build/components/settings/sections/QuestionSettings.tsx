@@ -242,7 +242,8 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
   const isChoice = isChoiceField
 
   const optionsPerLineOptions = [
-    { id: '1', name: 'Vertical (1)' },
+    { id: '0', name: 'Auto (Flex Wrap)' },
+    { id: '1', name: 'Vertical (1 Column)' },
     { id: '2', name: '2 Columns' },
     { id: '3', name: '3 Columns' },
     { id: '4', name: '4 Columns' },
@@ -1068,7 +1069,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                             />
                           </div>
 
-                          {activeQuestion.type === 'MULTI_SELECT' &&
+                          {['MULTI_SELECT', 'MULTIPLE_CHOICE'].includes(activeQuestion.type) &&
                             (activeQuestion.settings.specific.optionsType === 'CUSTOM' ||
                               !activeQuestion.settings.specific.optionsType) && (
                             <>
@@ -1153,6 +1154,33 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                             />
                           </div>
 
+                          {activeQuestion.type === 'SINGLE_CHOICE' && (
+                            <>
+                              <Divider className='border-dashed border-gray-1' />
+                              <div className='flex items-center justify-between'>
+                                <div>
+                                  <div className='text-xs font-bold text-gray-13'>
+                                    QR Code Value Scan
+                                  </div>
+                                  <div className='text-[10px] text-gray-6'>
+                                    Display barcode/QR scan button beside label
+                                  </div>
+                                </div>
+                                <InputSwitch
+                                  checked={
+                                    activeQuestion.settings.specific
+                                      .qrCodeEnabled || false
+                                  }
+                                  onChange={(checked) =>
+                                    updateNested('specific', {
+                                      qrCodeEnabled: checked,
+                                    })
+                                  }
+                                />
+                              </div>
+                            </>
+                          )}
+
                           <Divider className='border-dashed border-gray-1' />
 
                           <div className='space-y-2'>
@@ -1166,9 +1194,8 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                                 optionsPerLineOptions.find(
                                   (o) =>
                                     Number(o.id) ===
-                                    activeQuestion.settings.specific
-                                      .optionsPerLine,
-                                ) || optionsPerLineOptions[0]
+                                    (activeQuestion.settings.specific.optionsPerLine ?? 3),
+                                ) || optionsPerLineOptions[3]
                               }
                               onChange={(val) =>
                                 val &&
@@ -1178,7 +1205,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                               }
                             />
                             <div className='text-[10px] text-gray-6 italic'>
-                              Control grid columns (1 = Vertical List).
+                              Control layout grid (0 = Auto Flex, 1 = Vertical List).
                             </div>
                           </div>
                         </div>
@@ -2381,6 +2408,40 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     }
                   />
                 </div>
+
+                {activeQuestion.type === 'MULTIPLE_CHOICE' &&
+                  activeQuestion.settings.validation.fieldRule === 'REQUIRED' && (
+                    <>
+                      <Divider className='border-dashed border-gray-1' />
+                      <div className='space-y-2'>
+                        <label className='block text-[11px] font-bold text-gray-8 uppercase'>
+                          Requirement Mode
+                        </label>
+                        <SegmentedControl
+                          fullWidth
+                          size='xs'
+                          value={
+                            activeQuestion.settings.validation
+                              .requiredValidation || 'ANY'
+                          }
+                          data={[
+                            { label: 'At least one (ANY)', value: 'ANY' },
+                            { label: 'All required (ALL)', value: 'ALL' },
+                          ]}
+                          onChange={(v) =>
+                            updateNested('validation', {
+                              requiredValidation: v as 'ANY' | 'ALL',
+                            })
+                          }
+                        />
+                        <div className='text-[10px] text-gray-6 italic'>
+                          {activeQuestion.settings.validation.requiredValidation === 'ALL'
+                            ? 'User must check all options to proceed (e.g. compliance checklists).'
+                            : 'User must check at least one option to proceed.'}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                 {isCurrency && (
                   <>

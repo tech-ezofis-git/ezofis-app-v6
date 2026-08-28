@@ -361,6 +361,229 @@ const LivePreviewMultiSelect = ({
   )
 }
 
+const LivePreviewChoiceGroup = ({
+  field,
+  value,
+  onChange,
+}: {
+  field: Question
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const specific = field.settings?.specific ?? {}
+  const validation = field.settings?.validation ?? {}
+  const [customList, setCustomList] = useState<string[]>([])
+  const [newOptionText, setNewOptionText] = useState('')
+  const [isAddingOption, setIsAddingOption] = useState(false)
+
+  const baseOptions = getFieldOptions(field)
+  const allOptions = [...baseOptions, ...customList]
+
+  const optionsPerLine = specific.optionsPerLine ?? 3
+  const isAutoFlex = optionsPerLine === 0
+  const isSingle = field.type === 'SINGLE_CHOICE'
+  const isMulti = field.type === 'MULTIPLE_CHOICE'
+
+  const selectedList = Array.isArray(value)
+    ? value
+    : value
+      ? [String(value)]
+      : []
+
+  const handleToggle = (opt: string) => {
+    if (isSingle) {
+      onChange(opt)
+    } else {
+      const next = selectedList.includes(opt)
+        ? selectedList.filter((item) => item !== opt)
+        : [...selectedList, opt]
+      onChange(next)
+    }
+  }
+
+  const handleSelectAll = () => {
+    onChange(allOptions)
+  }
+
+  const handleClearAll = () => {
+    onChange([])
+  }
+
+  const handleAddCustomOption = () => {
+    const trimmed = newOptionText.trim()
+    if (!trimmed || allOptions.includes(trimmed)) return
+    setCustomList((prev) => [...prev, trimmed])
+    if (isSingle) {
+      onChange(trimmed)
+    } else {
+      onChange([...selectedList, trimmed])
+    }
+    setNewOptionText('')
+    setIsAddingOption(false)
+  }
+
+  return (
+    <div
+      className={cn(
+        'w-full space-y-2.5',
+        specific.showOptionsWrapper &&
+          'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+      )}
+    >
+      {/* Header controls for QR code and Bulk actions */}
+      <div className='flex items-center justify-between'>
+        {isMulti && specific.bulkActionsEnabled && (
+          <div className='flex items-center gap-2'>
+            <button
+              type='button'
+              className='cursor-pointer text-[11px] font-semibold text-primary-9 hover:underline'
+              onClick={handleSelectAll}
+            >
+              Select All
+            </button>
+            <span className='text-gray-4 text-xs'>•</span>
+            <button
+              type='button'
+              className='cursor-pointer text-[11px] font-semibold text-gray-7 hover:underline'
+              onClick={handleClearAll}
+            >
+              Clear All
+            </button>
+          </div>
+        )}
+
+        {isSingle && specific.qrCodeEnabled && (
+          <button
+            type='button'
+            className='ml-auto flex items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9 cursor-pointer'
+            onClick={() => {
+              if (allOptions.length > 0) {
+                const randomOpt =
+                  allOptions[Math.floor(Math.random() * allOptions.length)]
+                onChange(randomOpt)
+              }
+            }}
+            title='Simulate QR Code Scan'
+          >
+            <Icon height={13} name='lucide:qr-code' width={13} />
+            <span>Scan QR</span>
+          </button>
+        )}
+      </div>
+
+      {/* Options Layout */}
+      <div
+        className={cn(
+          'gap-2',
+          isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
+        )}
+        style={
+          !isAutoFlex
+            ? {
+                gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+              }
+            : undefined
+        }
+      >
+        {allOptions.map((opt, i) => {
+          const isSelected = selectedList.includes(opt)
+          return (
+            <div
+              key={i}
+              className={cn(
+                'flex min-h-[38px] cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-xs transition-all active:scale-[0.99]',
+                isAutoFlex ? 'flex-shrink-0' : '',
+                isSelected
+                  ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
+                  : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+              )}
+              onClick={() => handleToggle(opt)}
+            >
+              <div
+                className={cn(
+                  'flex size-4 shrink-0 items-center justify-center border transition-colors',
+                  isSingle ? 'rounded-full' : 'rounded-md',
+                  isSelected
+                    ? 'border-primary-9 bg-primary-9 text-white'
+                    : 'border-gray-4 bg-white',
+                )}
+              >
+                {isSelected && (
+                  <Icon
+                    height={10}
+                    name={isSingle ? 'lucide:circle' : 'lucide:check'}
+                    width={10}
+                  />
+                )}
+              </div>
+              <span className='truncate'>{opt}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Custom option adder */}
+      {(specific.allowCustomEntries || specific.allowToAddNewOptions) && (
+        <div className='pt-1'>
+          {isAddingOption ? (
+            <div className='flex items-center gap-2'>
+              <input
+                type='text'
+                className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                placeholder='Type custom option...'
+                value={newOptionText}
+                autoFocus
+                onChange={(e) => setNewOptionText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddCustomOption()
+                  if (e.key === 'Escape') setIsAddingOption(false)
+                }}
+              />
+              <Button
+                size='xs'
+                className='h-8 rounded-lg cursor-pointer'
+                onClick={handleAddCustomOption}
+              >
+                Add
+              </Button>
+              <Button
+                size='xs'
+                variant='subtle'
+                color='gray'
+                className='h-8 rounded-lg cursor-pointer'
+                onClick={() => setIsAddingOption(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <button
+              type='button'
+              className='flex items-center gap-1.5 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
+              onClick={() => setIsAddingOption(true)}
+            >
+              <Icon height={13} name='lucide:plus' width={13} />
+              <span>Add custom option</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Requirement mode info note */}
+      {isMulti &&
+        validation.fieldRule === 'REQUIRED' &&
+        validation.requiredValidation === 'ALL' && (
+          <div className='flex items-center gap-1 pt-0.5 text-[10px] font-medium text-amber-7'>
+            <Icon height={11} name='lucide:alert-circle' width={11} />
+            <span>
+              All {allOptions.length} options must be checked to fulfill requirements.
+            </span>
+          </div>
+        )}
+    </div>
+  )
+}
+
 const renderPreviewInput = (
   field: Question,
   model: Record<string, any>,
@@ -600,70 +823,14 @@ const renderPreviewInput = (
         />
       )
     case 'SINGLE_CHOICE':
-    case 'MULTIPLE_CHOICE': {
-      const options = getFieldOptions(field)
-      const optionsPerLine = field.settings.specific.optionsPerLine || 1
-      const selectedList = Array.isArray(fieldValue)
-        ? fieldValue
-        : fieldValue
-          ? [String(fieldValue)]
-          : []
-
+    case 'MULTIPLE_CHOICE':
       return (
-        <div
-          className='grid gap-1.5'
-          style={{
-            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
-          }}
-        >
-          {options.map((opt, i) => {
-            const isSelected = selectedList.includes(opt)
-            return (
-              <div
-                key={i}
-                className={cn(
-                  'flex cursor-pointer items-center gap-2.5 rounded-lg border p-2 text-xs text-gray-12 transition-all',
-                  isSelected
-                    ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9'
-                    : 'border-gray-3 bg-white hover:bg-gray-2',
-                )}
-                onClick={() => {
-                  if (field.type === 'SINGLE_CHOICE') {
-                    onChange(field.id, opt)
-                  } else {
-                    const next = isSelected
-                      ? selectedList.filter((item) => item !== opt)
-                      : [...selectedList, opt]
-                    onChange(field.id, next)
-                  }
-                }}
-              >
-                <div
-                  className={cn(
-                    'flex size-4 shrink-0 items-center justify-center border',
-                    field.type === 'SINGLE_CHOICE'
-                      ? 'rounded-full'
-                      : 'rounded-md',
-                    isSelected
-                      ? 'border-primary-9 bg-primary-9 text-white'
-                      : 'border-gray-4 bg-white',
-                  )}
-                >
-                  {isSelected && (
-                    <Icon
-                      height={10}
-                      name={field.type === 'SINGLE_CHOICE' ? 'lucide:circle' : 'lucide:check'}
-                      width={10}
-                    />
-                  )}
-                </div>
-                <span>{opt}</span>
-              </div>
-            )
-          })}
-        </div>
+        <LivePreviewChoiceGroup
+          field={field}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
       )
-    }
     default:
       return (
         <TextInput

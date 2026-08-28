@@ -143,17 +143,6 @@ export const getFieldOptions = (field: any): FieldOption[] => {
   const specific = field?.settings?.specific
   const optionsType = specific?.optionsType
 
-  if (optionsType === 'CUSTOM') {
-    const splitType = specific?.separateOptionsUsing
-    const raw: string = specific?.customOptions || ''
-    if (!raw.trim()) return []
-    const parts = splitType === 'NEWLINE' ? raw.split('\n') : raw.split(',')
-    return parts
-      .map((opt: string) => opt.trim())
-      .filter(Boolean)
-      .map((opt: string) => ({ id: opt, name: opt }))
-  }
-
   if (optionsType === 'DYNAMIC') {
     const options = specific?.options || []
     return options.map((opt: any) =>
@@ -166,7 +155,28 @@ export const getFieldOptions = (field: any): FieldOption[] => {
     )
   }
 
-  return []
+  // CUSTOM or default options parsing
+  const splitType = specific?.separateOptionsUsing
+  const raw: string = specific?.customOptions || ''
+  if (!raw.trim()) {
+    if (field?.type === 'YES_NO_TOGGLE') {
+      return [
+        { id: 'Yes', name: 'Yes' },
+        { id: 'No', name: 'No' },
+      ]
+    }
+    return [
+      { id: 'Option 1', name: 'Option 1' },
+      { id: 'Option 2', name: 'Option 2' },
+      { id: 'Option 3', name: 'Option 3' },
+    ]
+  }
+
+  const parts = splitType === 'NEWLINE' ? raw.split('\n') : raw.split(',')
+  return parts
+    .map((opt: string) => opt.trim())
+    .filter(Boolean)
+    .map((opt: string) => ({ id: opt, name: opt }))
 }
 
 // Every field the panels/fields loop should skip rendering an input for
@@ -477,8 +487,16 @@ export const isFieldFilled = (field: any, value: any): boolean => {
   if (field.type === 'FILE_UPLOAD' || field.type === 'IMAGE_UPLOAD') {
     return Boolean(value?.fileId)
   }
-  if (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') {
+  if (field.type === 'MULTI_SELECT') {
     return Array.isArray(value) && value.length > 0
+  }
+  if (field.type === 'MULTIPLE_CHOICE') {
+    if (!Array.isArray(value) || value.length === 0) return false
+    if (field.settings?.validation?.requiredValidation === 'ALL') {
+      const opts = getFieldOptions(field)
+      return opts.length > 0 && value.length >= opts.length
+    }
+    return true
   }
   if (field.type === 'YES_NO_TOGGLE' || field.type === 'CONSENT') {
     return value === true

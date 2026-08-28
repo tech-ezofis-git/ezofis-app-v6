@@ -106,9 +106,23 @@ export const getField = (fieldType: string) => {
     case 'PHONE_NUMBER':
       baseField.settings.validation.contentRule = 'PHONE'
       break
+    case 'SINGLE_CHOICE':
+      s.customOptions = 'Option 1,Option 2,Option 3'
+      s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 3
+      s.qrCodeEnabled = false
+      break
+    case 'MULTIPLE_CHOICE':
+      s.customOptions = 'Option 1,Option 2,Option 3'
+      s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 3
+      s.bulkActionsEnabled = false
+      v.requiredValidation = 'ANY'
+      break
     case 'YES_NO_TOGGLE':
       s.customOptions = 'Yes,No'
       s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 2
       break
     case 'SCORE':
       s.iconType = 'NUMBER'
@@ -122,9 +136,11 @@ export const getField = (fieldType: string) => {
       }
       break
     case 'CONSENT':
-      baseField.label = 'Consent'
-      s.customOptions = 'I agree to the terms and conditions'
+    case 'LEGAL':
+      baseField.label = fieldType.toUpperCase() === 'LEGAL' ? 'Legal Declaration' : 'Consent'
+      s.customOptions = fieldType.toUpperCase() === 'LEGAL' ? "I Accept,I don't Accept" : 'I agree to the terms and conditions'
       s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 1
       break
     case 'DATE':
       s.dateDefaultValueType = 'CUSTOM'

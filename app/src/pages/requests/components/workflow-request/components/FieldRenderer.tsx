@@ -67,6 +67,388 @@ interface StagedFileValue {
   repositoryId?: string
 }
 
+import { Button } from '@mantine/core'
+import cn from '@/utils/cn'
+
+interface ChoiceFieldProps {
+  error?: string
+  field: any
+  readOnly?: boolean
+  required?: boolean
+  value: any
+  onChange: (val: any) => void
+}
+
+const ChoiceRadioGroupField = ({
+  error,
+  field,
+  readOnly,
+  required,
+  value,
+  onChange,
+}: ChoiceFieldProps) => {
+  const general = field?.settings?.general || {}
+  const specific = field?.settings?.specific || {}
+  const [customList, setCustomList] = useState<string[]>([])
+  const [newOptionText, setNewOptionText] = useState('')
+  const [isAddingOption, setIsAddingOption] = useState(false)
+
+  const baseOptions = getFieldOptions(field).map((o) => o.name)
+  const allOptions = [...baseOptions, ...customList]
+
+  const optionsPerLine = specific.optionsPerLine ?? 3
+  const isAutoFlex = optionsPerLine === 0
+  const selectedValue =
+    value !== undefined && value !== null ? String(value) : ''
+
+  const handleAddCustom = () => {
+    const trimmed = newOptionText.trim()
+    if (!trimmed || allOptions.includes(trimmed)) return
+    setCustomList((prev) => [...prev, trimmed])
+    onChange(trimmed)
+    setNewOptionText('')
+    setIsAddingOption(false)
+  }
+
+  return (
+    <div className='w-full space-y-1.5'>
+      {!general.hideLabel && (
+        <div className='flex items-center justify-between'>
+          <label className='block text-13 font-medium text-gray-12'>
+            {field.label}
+            {required && <span className='text-red-9'> *</span>}
+          </label>
+
+          {specific.qrCodeEnabled && !readOnly && (
+            <button
+              type='button'
+              className='flex items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-8 shadow-2xs transition-colors hover:border-primary-5 hover:text-primary-9 cursor-pointer'
+              onClick={() => {
+                if (allOptions.length > 0) {
+                  const randomOpt =
+                    allOptions[Math.floor(Math.random() * allOptions.length)]
+                  onChange(randomOpt)
+                }
+              }}
+              title='Scan QR code to select'
+            >
+              <Icon height={12} name='lucide:qr-code' width={12} />
+              <span>Scan QR</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {general.description && (
+        <p className='text-12 font-normal text-gray-9'>{general.description}</p>
+      )}
+
+      <div
+        className={cn(
+          'w-full space-y-2',
+          specific.showOptionsWrapper &&
+            'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+        )}
+      >
+        <div
+          className={cn(
+            'gap-2',
+            isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
+          )}
+          style={
+            !isAutoFlex
+              ? {
+                  gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                }
+              : undefined
+          }
+        >
+          {allOptions.map((opt, i) => {
+            const isSelected = selectedValue === opt
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'flex min-h-[38px] items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
+                  isAutoFlex ? 'flex-shrink-0' : '',
+                  readOnly
+                    ? 'cursor-default opacity-85'
+                    : 'cursor-pointer active:scale-[0.99]',
+                  isSelected
+                    ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
+                    : readOnly
+                      ? 'border-gray-2 bg-gray-1 text-gray-10'
+                      : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+                )}
+                onClick={() => !readOnly && onChange(opt)}
+              >
+                <div
+                  className={cn(
+                    'flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors',
+                    isSelected
+                      ? 'border-primary-9 bg-primary-9 text-white'
+                      : 'border-gray-4 bg-white',
+                  )}
+                >
+                  {isSelected && (
+                    <Icon height={10} name='lucide:circle' width={10} />
+                  )}
+                </div>
+                <span className='truncate'>{opt}</span>
+              </div>
+            )
+          })}
+        </div>
+
+        {!readOnly &&
+          (specific.allowCustomEntries || specific.allowToAddNewOptions) && (
+            <div className='pt-1'>
+              {isAddingOption ? (
+                <div className='flex items-center gap-2'>
+                  <input
+                    type='text'
+                    className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                    placeholder='Type custom option...'
+                    value={newOptionText}
+                    autoFocus
+                    onChange={(e) => setNewOptionText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddCustom()
+                      if (e.key === 'Escape') setIsAddingOption(false)
+                    }}
+                  />
+                  <Button
+                    size='xs'
+                    className='h-8 rounded-lg cursor-pointer'
+                    onClick={handleAddCustom}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    size='xs'
+                    variant='subtle'
+                    color='gray'
+                    className='h-8 rounded-lg cursor-pointer'
+                    onClick={() => setIsAddingOption(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type='button'
+                  className='flex items-center gap-1 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
+                  onClick={() => setIsAddingOption(true)}
+                >
+                  <Icon height={12} name='lucide:plus' width={12} />
+                  <span>Add custom option</span>
+                </button>
+              )}
+            </div>
+          )}
+      </div>
+
+      {error && <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>}
+    </div>
+  )
+}
+
+const ChoiceCheckboxGroupField = ({
+  error,
+  field,
+  readOnly,
+  required,
+  value,
+  onChange,
+}: ChoiceFieldProps) => {
+  const general = field?.settings?.general || {}
+  const specific = field?.settings?.specific || {}
+  const validation = field?.settings?.validation || {}
+  const [customList, setCustomList] = useState<string[]>([])
+  const [newOptionText, setNewOptionText] = useState('')
+  const [isAddingOption, setIsAddingOption] = useState(false)
+
+  const baseOptions = getFieldOptions(field).map((o) => o.name)
+  const allOptions = [...baseOptions, ...customList]
+
+  const optionsPerLine = specific.optionsPerLine ?? 3
+  const isAutoFlex = optionsPerLine === 0
+  const selectedList = Array.isArray(value)
+    ? value
+    : value
+      ? [String(value)]
+      : []
+
+  const handleToggle = (opt: string) => {
+    if (readOnly) return
+    const next = selectedList.includes(opt)
+      ? selectedList.filter((item) => item !== opt)
+      : [...selectedList, opt]
+    onChange(next)
+  }
+
+  const handleAddCustom = () => {
+    const trimmed = newOptionText.trim()
+    if (!trimmed || allOptions.includes(trimmed)) return
+    setCustomList((prev) => [...prev, trimmed])
+    onChange([...selectedList, trimmed])
+    setNewOptionText('')
+    setIsAddingOption(false)
+  }
+
+  return (
+    <div className='w-full space-y-1.5'>
+      {!general.hideLabel && (
+        <div className='flex items-center justify-between'>
+          <label className='block text-13 font-medium text-gray-12'>
+            {field.label}
+            {required && <span className='text-red-9'> *</span>}
+          </label>
+
+          {specific.bulkActionsEnabled && !readOnly && (
+            <div className='flex items-center gap-2'>
+              <button
+                type='button'
+                className='cursor-pointer text-[11px] font-semibold text-primary-9 hover:underline'
+                onClick={() => onChange(allOptions)}
+              >
+                Select All
+              </button>
+              <span className='text-gray-4 text-xs'>•</span>
+              <button
+                type='button'
+                className='cursor-pointer text-[11px] font-semibold text-gray-7 hover:underline'
+                onClick={() => onChange([])}
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {general.description && (
+        <p className='text-12 font-normal text-gray-9'>{general.description}</p>
+      )}
+
+      <div
+        className={cn(
+          'w-full space-y-2',
+          specific.showOptionsWrapper &&
+            'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+        )}
+      >
+        <div
+          className={cn(
+            'gap-2',
+            isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
+          )}
+          style={
+            !isAutoFlex
+              ? {
+                  gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                }
+              : undefined
+          }
+        >
+          {allOptions.map((opt, i) => {
+            const isSelected = selectedList.includes(opt)
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'flex min-h-[38px] items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
+                  isAutoFlex ? 'flex-shrink-0' : '',
+                  readOnly
+                    ? 'cursor-default opacity-85'
+                    : 'cursor-pointer active:scale-[0.99]',
+                  isSelected
+                    ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
+                    : readOnly
+                      ? 'border-gray-2 bg-gray-1 text-gray-10'
+                      : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
+                )}
+                onClick={() => handleToggle(opt)}
+              >
+                <div
+                  className={cn(
+                    'flex size-4 shrink-0 items-center justify-center rounded-md border transition-colors',
+                    isSelected
+                      ? 'border-primary-9 bg-primary-9 text-white'
+                      : 'border-gray-4 bg-white',
+                  )}
+                >
+                  {isSelected && (
+                    <Icon height={10} name='lucide:check' width={10} />
+                  )}
+                </div>
+                <span className='truncate'>{opt}</span>
+              </div>
+            )
+          })}
+        </div>
+
+        {!readOnly &&
+          (specific.allowCustomEntries || specific.allowToAddNewOptions) && (
+            <div className='pt-1'>
+              {isAddingOption ? (
+                <div className='flex items-center gap-2'>
+                  <input
+                    type='text'
+                    className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                    placeholder='Type custom option...'
+                    value={newOptionText}
+                    autoFocus
+                    onChange={(e) => setNewOptionText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleAddCustom()
+                      if (e.key === 'Escape') setIsAddingOption(false)
+                    }}
+                  />
+                  <Button
+                    size='xs'
+                    className='h-8 rounded-lg cursor-pointer'
+                    onClick={handleAddCustom}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    size='xs'
+                    variant='subtle'
+                    color='gray'
+                    className='h-8 rounded-lg cursor-pointer'
+                    onClick={() => setIsAddingOption(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type='button'
+                  className='flex items-center gap-1 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
+                  onClick={() => setIsAddingOption(true)}
+                >
+                  <Icon height={12} name='lucide:plus' width={12} />
+                  <span>Add custom option</span>
+                </button>
+              )}
+            </div>
+          )}
+      </div>
+
+      {validation.fieldRule === 'REQUIRED' &&
+        validation.requiredValidation === 'ALL' && (
+          <div className='flex items-center gap-1 pt-0.5 text-[11px] font-medium text-amber-7'>
+            <Icon height={12} name='lucide:alert-circle' width={12} />
+            <span>All options must be checked to fulfill requirements.</span>
+          </div>
+        )}
+
+      {error && <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>}
+    </div>
+  )
+}
+
 // Renders a single form-builder field using the app's existing
 // @/components/base input components. Field types outside the MVP set
 // (TABLE, MATRIX, SIGNATURE, ADDRESS, RATING, ...) render a labeled
@@ -229,6 +611,17 @@ const FieldRenderer = ({
     }
 
     case 'SINGLE_CHOICE':
+      return (
+        <ChoiceRadioGroupField
+          error={error}
+          field={field}
+          readOnly={readOnly}
+          required={required}
+          value={value}
+          onChange={onChange}
+        />
+      )
+
     case 'SINGLE_SELECT': {
       const options = getFieldOptions(field)
       return (
@@ -241,18 +634,17 @@ const FieldRenderer = ({
       )
     }
 
-    case 'MULTIPLE_CHOICE': {
-      const options = getFieldOptions(field)
-      const selectedIds: string[] = Array.isArray(value) ? value : []
+    case 'MULTIPLE_CHOICE':
       return (
-        <InputSelectMultiple
-          {...common}
-          options={options}
-          value={options.filter((opt) => selectedIds.includes(opt.id))}
-          onChange={(opts: Option[]) => onChange(opts.map((opt) => opt.id))}
+        <ChoiceCheckboxGroupField
+          error={error}
+          field={field}
+          readOnly={readOnly}
+          required={required}
+          value={value}
+          onChange={onChange}
         />
       )
-    }
 
     case 'MULTI_SELECT': {
       const isRepo = field.settings?.specific?.optionsType === 'REPOSITORY'
