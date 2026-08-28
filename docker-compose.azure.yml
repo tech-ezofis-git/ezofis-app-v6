@@ -1,5 +1,6 @@
 version: '3.8'
 
+# Multi-container Azure stack. Secrets live in .env.azure (see .env.azure.example).
 services:
   app:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/app:latest
@@ -10,14 +11,25 @@ services:
   api:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/api:latest
     restart: always
+    env_file:
+      - .env.azure
 
   agents:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
     restart: always
+    env_file:
+      - .env.azure
     environment:
       REDIS_URL: redis://redis:6379/0
       DATABASE_POOL_MIN_SIZE: "1"
       DATABASE_POOL_MAX_SIZE: "3"
+      EZOFIS_API_BASE: ${EZOFIS_API_BASE:-https://cloud.ezofis.com/api}
+      EZOFIS_ENV: ${EZOFIS_ENV:-live}
+      EZOFIS_LOGIN_EMAIL: ${EZOFIS_LOGIN_EMAIL}
+      EZOFIS_LOGIN_PASSWORD: ${EZOFIS_LOGIN_PASSWORD}
+      DATABASE_URL: ${DATABASE_URL}
+      CATALOG_DATABASE_URL: ${CATALOG_DATABASE_URL}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
     depends_on:
       - redis
 

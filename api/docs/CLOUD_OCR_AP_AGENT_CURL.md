@@ -212,6 +212,24 @@ If `skills` is omitted, the tenant default plan runs (Phase 1):
 
 Each skill charges 1 credit (mocked if `EZOFIS_LOGIN_EMAIL` / `PASSWORD` are empty).
 
+### Agents App Settings (required for ezfb row updates)
+
+Metadata PATCH (`dbo.ezfb_*_items`) **does not run** until these are set on the **agents** service:
+
+```text
+EZOFIS_API_BASE=https://cloud.ezofis.com/api
+EZOFIS_LOGIN_EMAIL=<service account>
+EZOFIS_LOGIN_PASSWORD=<secret>
+EZOFIS_ENV=live
+DATABASE_URL=<azure postgres>
+CATALOG_DATABASE_URL=<catalog postgres>
+AZURE_STORAGE_CONNECTION_STRING=<blob>
+```
+
+See `agents/deploy/AZURE_AGENTS_APP_SETTINGS.md` and monorepo `.env.azure.example`.
+
+After restart, `ap_skill_artifacts.metadata_push` should show `ezfbFieldsUpdated > 0`, not `login_not_configured`.
+
 ### JSON — pre-extracted invoice (skips OCR)
 
 ```bash
