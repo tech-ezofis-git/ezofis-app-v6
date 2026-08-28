@@ -4,17 +4,51 @@ export const FORMULA_SOURCE_TYPES = [
   'NUMBER',
   'COUNTER',
   'CURRENCY_AMOUNT',
+  'CALCULATED',
 ] as const
 
+export const TABLE_SUM_SEPARATOR = '::'
+
 export type FormulaToken = {
-  type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR'
+  type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR' | 'TABLE_SUM'
   value: string
+}
+
+type FormulaFieldRef = {
+  id: string
+  label?: string
+  settings?: {
+    specific?: {
+      tableColumns?: Array<{ id: string; name?: string; type?: string }>
+    }
+  }
+  type?: string
 }
 
 export const isFormulaSourceType = (
   type?: string,
 ): type is (typeof FORMULA_SOURCE_TYPES)[number] =>
   Boolean(type && (FORMULA_SOURCE_TYPES as readonly string[]).includes(type))
+
+export const isTableFieldType = (type?: string) =>
+  type === 'TABLE' || type === 'DYNAMIC_TABLE'
+
+export const encodeTableSumValue = (tableFieldId: string, columnId: string) =>
+  `${tableFieldId}${TABLE_SUM_SEPARATOR}${columnId}`
+
+export const decodeTableSumValue = (value: string) => {
+  const separatorIndex = value.indexOf(TABLE_SUM_SEPARATOR)
+  if (separatorIndex < 0) return { columnId: '', tableFieldId: value }
+  return {
+    columnId: value.slice(separatorIndex + TABLE_SUM_SEPARATOR.length),
+    tableFieldId: value.slice(0, separatorIndex),
+  }
+}
+
+export const getNumericTableColumns = (field?: FormulaFieldRef) =>
+  (field?.settings?.specific?.tableColumns || []).filter((column) =>
+    isFormulaSourceType(column.type),
+  )
 
 export const extractNumericValue = (value: unknown): number | null => {
   if (value === null || value === undefined || value === '') return null
@@ -34,6 +68,31 @@ export const extractNumericValue = (value: unknown): number | null => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+export const sumTableColumn = (rows: unknown, columnId: string): number => {
+  if (!Array.isArray(rows) || !columnId) return 0
+  return rows.reduce((total, row) => {
+    if (!row || typeof row !== 'object') return total
+    const parsed = extractNumericValue(
+      (row as Record<string, unknown>)[columnId],
+    )
+    return total + (parsed ?? 0)
+  }, 0)
+}
+
+const formatTableSumLabel = (
+  tokenValue: string,
+  fields: FormulaFieldRef[],
+): string => {
+  const { columnId, tableFieldId } = decodeTableSumValue(tokenValue)
+  const table = fields.find((field) => field.id === tableFieldId)
+  const column = table?.settings?.specific?.tableColumns?.find(
+    (item) => item.id === columnId,
+  )
+  const tableLabel = table?.label || 'Table'
+  const columnLabel = column?.name || 'Column'
+  return `Sum(${tableLabel}.${columnLabel})`
+}
+
 const OPERATOR_LABELS: Record<string, string> = {
   '(': '(',
   ')': ')',
@@ -46,7 +105,7 @@ const OPERATOR_LABELS: Record<string, string> = {
 
 export const formatFormulaExpression = (
   tokens: FormulaToken[] | undefined,
-  fields: Array<{ id: string; label?: string }>,
+  fields: FormulaFieldRef[],
 ): string => {
   if (!tokens?.length) return ''
 
@@ -58,6 +117,8 @@ export const formatFormulaExpression = (
         text =
           fields.find((field) => field.id === token.value)?.label ||
           'Unknown field'
+      } else if (token.type === 'TABLE_SUM') {
+        text = formatTableSumLabel(token.value, fields)
       } else if (token.type === 'FUNCTION') {
         text = token.value.toUpperCase()
       } else if (token.type === 'OPERATOR') {
@@ -206,6 +267,12 @@ export const evaluateFormula = (
       return parsed
     }
 
+    if (token.type === 'TABLE_SUM') {
+      consume()
+      const { columnId, tableFieldId } = decodeTableSumValue(token.value)
+      return sumTableColumn(values[tableFieldId], columnId)
+    }
+
     throw new Error('Unexpected token')
   }
 
@@ -224,17 +291,27 @@ export const applyCalculatedFields = (
 ): Record<string, unknown> => {
   const next = { ...values }
   const fields = (panels ?? []).flatMap((panel) => panel.fields ?? [])
+  const calculatedFields = fields.filter(
+    (field) => field.type === 'CALCULATED' && isCalculationEnabled(field),
+  )
 
-  for (const field of fields) {
-    if (field.type !== 'CALCULATED' || !isCalculationEnabled(field)) continue
-    const result = evaluateFormula(
-      field.settings?.specific?.formulaTokens,
-      next,
-    )
-    next[field.id] =
-      result === null
-        ? ''
-        : formatCalculatedResult(result, getDecimalPrecision(field))
+  for (let pass = 0; pass < calculatedFields.length; pass += 1) {
+    let changed = false
+    for (const field of calculatedFields) {
+      const result = evaluateFormula(
+        field.settings?.specific?.formulaTokens,
+        next,
+      )
+      const formatted =
+        result === null
+          ? ''
+          : formatCalculatedResult(result, getDecimalPrecision(field))
+      if (next[field.id] !== formatted) {
+        next[field.id] = formatted
+        changed = true
+      }
+    }
+    if (!changed) break
   }
 
   return next

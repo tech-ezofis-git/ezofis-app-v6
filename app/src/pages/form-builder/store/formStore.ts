@@ -198,7 +198,7 @@ export interface Question {
       fileInStageOnly?: boolean
       fixedRowCount?: number
       formulaTokens?: {
-        type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION'
+        type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION' | 'TABLE_SUM'
         value: string
       }[]
       iconCount?: number

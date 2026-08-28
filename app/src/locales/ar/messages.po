@@ -316,8 +316,8 @@ msgstr "الحسابات المدينة"
 msgid "Action"
 msgstr "Action"
 
-#: src/pages/portal/components/PortalHome.tsx:82
-#: src/pages/portal/components/PortalHome.tsx:135
+#: src/pages/portal/components/PortalHome.tsx:83
+#: src/pages/portal/components/PortalHome.tsx:136
 msgid "Action Required"
 msgstr ""
 
@@ -581,12 +581,12 @@ msgstr ""
 msgid "All search results for “{searchLabel}”"
 msgstr "جميع نتائج البحث عن «{searchLabel}»"
 
-#: src/pages/portal/components/PortalHome.tsx:79
-#: src/pages/portal/components/PortalHome.tsx:374
+#: src/pages/portal/components/PortalHome.tsx:80
+#: src/pages/portal/components/PortalHome.tsx:376
 msgid "All Status"
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:351
+#: src/pages/portal/components/PortalHome.tsx:353
 msgid "All Submissions"
 msgstr ""
 
@@ -617,7 +617,7 @@ msgstr "المبلغ"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:842
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1945
-#: src/pages/portal/components/PortalHome.tsx:401
+#: src/pages/portal/components/PortalHome.tsx:403
 #: src/pages/requests/components/Table.tsx:50
 #: src/pages/requests/utils/localizeRequestUi.ts:15
 msgid "Amount"
@@ -741,8 +741,8 @@ msgstr "خريطة حرارية لتأخير الاعتماد"
 #~ msgstr "معدل الاعتماد"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2430
-#: src/pages/portal/components/PortalHome.tsx:80
-#: src/pages/portal/components/PortalHome.tsx:123
+#: src/pages/portal/components/PortalHome.tsx:81
+#: src/pages/portal/components/PortalHome.tsx:124
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "Approved"
@@ -963,7 +963,7 @@ msgstr "العودة إلى المراجعة"
 msgid "Back to Sign In"
 msgstr "العودة لتسجيل الدخول"
 
-#: src/pages/portal/components/PortalHome.tsx:346
+#: src/pages/portal/components/PortalHome.tsx:348
 msgid "Back to workflows"
 msgstr ""
 
@@ -1226,7 +1226,7 @@ msgstr "هل غيرت رأيك؟"
 msgid "Choose a signature first, then tap your sign area."
 msgstr "اختر توقيعاً أولاً ثم اضغط على منطقة التوقيع."
 
-#: src/pages/portal/components/PortalHome.tsx:239
+#: src/pages/portal/components/PortalHome.tsx:240
 msgid "Choose a workflow to view its submissions."
 msgstr ""
 
@@ -1250,7 +1250,7 @@ msgstr ""
 msgid "Choose signature"
 msgstr "اختر توقيعاً"
 
-#: src/pages/portal/components/PortalPicker.tsx:49
+#: src/pages/portal/components/PortalPicker.tsx:56
 msgid "Choose what you'd like to submit. We'll guide you through the rest."
 msgstr ""
 
@@ -3164,8 +3164,8 @@ msgstr "نسيت كلمة المرور"
 msgid "Forgot password?"
 msgstr "نسيت كلمة المرور؟"
 
-#: src/pages/portal/components/PortalHome.tsx:303
-#: src/pages/portal/components/PortalPicker.tsx:112
+#: src/pages/portal/components/PortalHome.tsx:305
+#: src/pages/portal/components/PortalPicker.tsx:120
 msgid "Form"
 msgstr ""
 
@@ -4526,7 +4526,7 @@ msgstr "حسابي"
 msgid "My Sign"
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:178
+#: src/pages/portal/components/PortalHome.tsx:179
 msgid "My Submissions"
 msgstr ""
 
@@ -4596,10 +4596,10 @@ msgstr "طلب جديد"
 #~ msgid "New Role Setup"
 #~ msgstr "إعداد دور جديد"
 
-#: src/pages/portal/components/PortalHome.tsx:188
-#: src/pages/portal/components/PortalPicker.tsx:46
+#: src/pages/portal/components/PortalHome.tsx:189
+#: src/pages/portal/components/PortalPicker.tsx:53
 #: src/pages/portal/components/PortalWizard.tsx:685
-#: src/pages/portal/PortalPage.tsx:304
+#: src/pages/portal/PortalPage.tsx:314
 msgid "New Submission"
 msgstr ""
 
@@ -4839,11 +4839,11 @@ msgstr "لم يُعيَّن موضع توقيع لحسابك على هذا ال�
 msgid "No signers"
 msgstr "لا يوجد موقّعون"
 
-#: src/pages/portal/components/PortalHome.tsx:390
+#: src/pages/portal/components/PortalHome.tsx:392
 msgid "No submissions match your search."
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:391
+#: src/pages/portal/components/PortalHome.tsx:393
 msgid "No submissions yet. Start a new submission to see it here."
 msgstr ""
 
@@ -4888,11 +4888,11 @@ msgstr "No user assignments yet"
 msgid "No valid files selected."
 msgstr "لم يتم تحديد ملفات صالحة."
 
-#: src/pages/portal/components/PortalPicker.tsx:67
+#: src/pages/portal/components/PortalPicker.tsx:76
 msgid "No workflows are connected to this portal yet."
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:258
+#: src/pages/portal/components/PortalHome.tsx:259
 msgid "No workflows match your search."
 msgstr ""
 
@@ -4979,7 +4979,7 @@ msgstr "فشل استخراج OCR: {detail}"
 msgid "October"
 msgstr "October"
 
-#: src/pages/portal/components/PortalHome.tsx:354
+#: src/pages/portal/components/PortalHome.tsx:356
 msgid "of"
 msgstr ""
 
@@ -5006,7 +5006,7 @@ msgid "OneDrive"
 msgstr "OneDrive"
 
 #: src/pages/folders/components/FolderTable.tsx:1194
-#: src/pages/portal/components/PortalHome.tsx:315
+#: src/pages/portal/components/PortalHome.tsx:317
 msgid "Open"
 msgstr "فتح"
 
@@ -5250,8 +5250,8 @@ msgid "Pen width"
 msgstr "سمك القلم"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2434
-#: src/pages/portal/components/PortalHome.tsx:81
-#: src/pages/portal/components/PortalHome.tsx:129
+#: src/pages/portal/components/PortalHome.tsx:82
+#: src/pages/portal/components/PortalHome.tsx:130
 #: src/pages/settings/components/ManageUser.tsx:2461
 msgid "Pending"
 msgstr "قيد الانتظار"
@@ -5574,7 +5574,7 @@ msgstr ""
 msgid "Portal name and description"
 msgstr ""
 
-#: src/pages/portal/PortalPage.tsx:209
+#: src/pages/portal/PortalPage.tsx:210
 msgid "Portal not found"
 msgstr ""
 
@@ -5911,7 +5911,7 @@ msgstr "إعادة إنشاء"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "تحليل الحجم والإنفاق الإقليمي"
 
-#: src/pages/portal/components/PortalHome.tsx:83
+#: src/pages/portal/components/PortalHome.tsx:84
 #: src/pages/requests/components/QuickFilters.tsx:90
 #: src/pages/requests/utils/localizeRequestUi.ts:25
 msgid "Rejected"
@@ -6506,7 +6506,7 @@ msgstr ""
 msgid "Search PO range..."
 msgstr "بحث PO range..."
 
-#: src/pages/portal/components/PortalPicker.tsx:54
+#: src/pages/portal/components/PortalPicker.tsx:61
 msgid "Search request types…"
 msgstr ""
 
@@ -6516,7 +6516,7 @@ msgstr ""
 msgid "Search status..."
 msgstr "بحث status..."
 
-#: src/pages/portal/components/PortalHome.tsx:363
+#: src/pages/portal/components/PortalHome.tsx:365
 msgid "Search submissions…"
 msgstr ""
 
@@ -6541,7 +6541,7 @@ msgstr "ابحث عن مستخدمين أو اكتب بريداً…"
 msgid "Search workflows..."
 msgstr "بحث workflows..."
 
-#: src/pages/portal/components/PortalHome.tsx:244
+#: src/pages/portal/components/PortalHome.tsx:245
 msgid "Search workflows…"
 msgstr ""
 
@@ -7113,7 +7113,7 @@ msgstr ""
 msgid "Standard SLA timeline. No pricing exceptions found."
 msgstr "الجدول الزمني القياسي لاتفاقية مستوى الخدمة. لم يُعثر على استثناءات تسعير."
 
-#: src/pages/portal/components/PortalPicker.tsx:119
+#: src/pages/portal/components/PortalPicker.tsx:127
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:567
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:575
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:670
@@ -7125,8 +7125,8 @@ msgid "Start search"
 msgstr ""
 
 #: src/pages/portal/components/PortalPicker.tsx:116
-msgid "Start this request and we'll collect the details you need."
-msgstr ""
+#~ msgid "Start this request and we'll collect the details you need."
+#~ msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:279
 msgid "Start typing to search"
@@ -7140,7 +7140,7 @@ msgstr "الحالة"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1947
 #: src/pages/forms/FormsPage.tsx:189
 #: src/pages/forms/FormsPage.tsx:602
-#: src/pages/portal/components/PortalHome.tsx:399
+#: src/pages/portal/components/PortalHome.tsx:401
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3151
@@ -7239,7 +7239,7 @@ msgstr "بسّط الحسابات الدائنة. عالج الفواتير تل
 msgid "Streamline your Purchase Orders. Automatically match columns, extract records, and configure ingestion logic."
 msgstr "بسّط أوامر الشراء. طابق الأعمدة تلقائياً واستخرج السجلات وكوّن منطق الاستيراد."
 
-#: src/pages/portal/components/PortalHome.tsx:398
+#: src/pages/portal/components/PortalHome.tsx:400
 msgid "Submission"
 msgstr ""
 
@@ -7247,8 +7247,8 @@ msgstr ""
 msgid "Submission Details"
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:312
-#: src/pages/portal/components/PortalHome.tsx:355
+#: src/pages/portal/components/PortalHome.tsx:314
+#: src/pages/portal/components/PortalHome.tsx:357
 msgid "submissions"
 msgstr ""
 
@@ -7265,7 +7265,7 @@ msgstr "إرسال"
 #~ msgid "Submit answers to form"
 #~ msgstr "إرسال answers to form"
 
-#: src/pages/portal/components/PortalHome.tsx:400
+#: src/pages/portal/components/PortalHome.tsx:402
 msgid "Submitted"
 msgstr ""
 
@@ -7541,7 +7541,7 @@ msgstr "This month"
 msgid "This portal is missing a master form or username field."
 msgstr ""
 
-#: src/pages/portal/PortalPage.tsx:211
+#: src/pages/portal/PortalPage.tsx:212
 msgid "This portal link is invalid or has not been published yet."
 msgstr ""
 
@@ -7679,7 +7679,7 @@ msgstr "إجمالي المدفوع"
 msgid "Total Records:"
 msgstr "إجمالي السجلات:"
 
-#: src/pages/portal/components/PortalHome.tsx:117
+#: src/pages/portal/components/PortalHome.tsx:118
 msgid "Total submitted"
 msgstr ""
 
@@ -7813,7 +7813,7 @@ msgstr "تعذر تحميل طلب التوقيع"
 msgid "Unable to load sign requests"
 msgstr "تعذر تحميل طلبات التوقيع"
 
-#: src/pages/portal/PortalPage.tsx:148
+#: src/pages/portal/PortalPage.tsx:149
 msgid "Unable to load submissions for the selected workflows."
 msgstr ""
 
@@ -7966,8 +7966,8 @@ msgstr "يحدّث السجلات في قاعدة البيانات الرئيس�
 #: src/pages/folders/components/FolderExplorer.tsx:294
 #: src/pages/folders/components/FolderFilterBar.tsx:695
 #: src/pages/folders/components/Upload/Upload.tsx:1618
-#: src/pages/portal/components/PortalHome.tsx:303
-#: src/pages/portal/components/PortalPicker.tsx:112
+#: src/pages/portal/components/PortalHome.tsx:305
+#: src/pages/portal/components/PortalPicker.tsx:120
 #: src/pages/portal/components/PortalWizard.tsx:1126
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:232
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
@@ -8314,7 +8314,7 @@ msgstr "أرسلنا رمزاً مكوناً من 6 أرقام إلى {0}."
 msgid "Weekly credit consumption"
 msgstr "استهلاك الأرصدة الأسبوعي"
 
-#: src/pages/portal/components/PortalHome.tsx:175
+#: src/pages/portal/components/PortalHome.tsx:176
 msgid "Welcome back, {displayName}."
 msgstr ""
 
@@ -8388,7 +8388,7 @@ msgstr "بدأ سير العمل لكنه لم يُرجع أي بيانات."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:70
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:83
-#: src/pages/portal/components/PortalHome.tsx:236
+#: src/pages/portal/components/PortalHome.tsx:237
 #: src/pages/settings/components/PortalConfiguration.tsx:86
 #: src/pages/settings/components/PortalConfiguration.tsx:451
 #: src/pages/settings/components/PortalConfiguration.tsx:1480

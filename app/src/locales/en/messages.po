@@ -345,8 +345,8 @@ msgstr "Accounts Receivable"
 msgid "Action"
 msgstr "Action"
 
-#: src/pages/portal/components/PortalHome.tsx:82
-#: src/pages/portal/components/PortalHome.tsx:135
+#: src/pages/portal/components/PortalHome.tsx:83
+#: src/pages/portal/components/PortalHome.tsx:136
 msgid "Action Required"
 msgstr "Action Required"
 
@@ -614,12 +614,12 @@ msgstr "All folders"
 msgid "All search results for “{searchLabel}”"
 msgstr "All search results for “{searchLabel}”"
 
-#: src/pages/portal/components/PortalHome.tsx:79
-#: src/pages/portal/components/PortalHome.tsx:374
+#: src/pages/portal/components/PortalHome.tsx:80
+#: src/pages/portal/components/PortalHome.tsx:376
 msgid "All Status"
 msgstr "All Status"
 
-#: src/pages/portal/components/PortalHome.tsx:351
+#: src/pages/portal/components/PortalHome.tsx:353
 msgid "All Submissions"
 msgstr "All Submissions"
 
@@ -650,7 +650,7 @@ msgstr "amount"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:842
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1945
-#: src/pages/portal/components/PortalHome.tsx:401
+#: src/pages/portal/components/PortalHome.tsx:403
 #: src/pages/requests/components/Table.tsx:50
 #: src/pages/requests/utils/localizeRequestUi.ts:15
 msgid "Amount"
@@ -778,8 +778,8 @@ msgstr "Approval delay heat map"
 #~ msgstr "Approval Rate"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2430
-#: src/pages/portal/components/PortalHome.tsx:80
-#: src/pages/portal/components/PortalHome.tsx:123
+#: src/pages/portal/components/PortalHome.tsx:81
+#: src/pages/portal/components/PortalHome.tsx:124
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "Approved"
@@ -1000,7 +1000,7 @@ msgstr "Back to review"
 msgid "Back to Sign In"
 msgstr "Back to Sign In"
 
-#: src/pages/portal/components/PortalHome.tsx:346
+#: src/pages/portal/components/PortalHome.tsx:348
 msgid "Back to workflows"
 msgstr "Back to workflows"
 
@@ -1267,7 +1267,7 @@ msgstr "Changed your mind?"
 msgid "Choose a signature first, then tap your sign area."
 msgstr "Choose a signature first, then tap your sign area."
 
-#: src/pages/portal/components/PortalHome.tsx:239
+#: src/pages/portal/components/PortalHome.tsx:240
 msgid "Choose a workflow to view its submissions."
 msgstr "Choose a workflow to view its submissions."
 
@@ -1295,7 +1295,7 @@ msgstr "Choose how users sign in to this portal"
 msgid "Choose signature"
 msgstr "Choose signature"
 
-#: src/pages/portal/components/PortalPicker.tsx:49
+#: src/pages/portal/components/PortalPicker.tsx:56
 msgid "Choose what you'd like to submit. We'll guide you through the rest."
 msgstr "Choose what you'd like to submit. We'll guide you through the rest."
 
@@ -3289,8 +3289,8 @@ msgstr "Forgot Password"
 msgid "Forgot password?"
 msgstr "Forgot password?"
 
-#: src/pages/portal/components/PortalHome.tsx:303
-#: src/pages/portal/components/PortalPicker.tsx:112
+#: src/pages/portal/components/PortalHome.tsx:305
+#: src/pages/portal/components/PortalPicker.tsx:120
 msgid "Form"
 msgstr "Form"
 
@@ -4679,7 +4679,7 @@ msgstr "My Account"
 msgid "My Sign"
 msgstr "My Sign"
 
-#: src/pages/portal/components/PortalHome.tsx:178
+#: src/pages/portal/components/PortalHome.tsx:179
 msgid "My Submissions"
 msgstr "My Submissions"
 
@@ -4758,10 +4758,10 @@ msgstr "New Request"
 #~ msgid "New Role Setup"
 #~ msgstr "New Role Setup"
 
-#: src/pages/portal/components/PortalHome.tsx:188
-#: src/pages/portal/components/PortalPicker.tsx:46
+#: src/pages/portal/components/PortalHome.tsx:189
+#: src/pages/portal/components/PortalPicker.tsx:53
 #: src/pages/portal/components/PortalWizard.tsx:685
-#: src/pages/portal/PortalPage.tsx:304
+#: src/pages/portal/PortalPage.tsx:314
 msgid "New Submission"
 msgstr "New Submission"
 
@@ -5013,11 +5013,11 @@ msgstr "No signature place was assigned to your account on this document."
 msgid "No signers"
 msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:390
+#: src/pages/portal/components/PortalHome.tsx:392
 msgid "No submissions match your search."
 msgstr "No submissions match your search."
 
-#: src/pages/portal/components/PortalHome.tsx:391
+#: src/pages/portal/components/PortalHome.tsx:393
 msgid "No submissions yet. Start a new submission to see it here."
 msgstr "No submissions yet. Start a new submission to see it here."
 
@@ -5072,11 +5072,11 @@ msgstr ""
 msgid "No valid files selected."
 msgstr "No valid files selected."
 
-#: src/pages/portal/components/PortalPicker.tsx:67
+#: src/pages/portal/components/PortalPicker.tsx:76
 msgid "No workflows are connected to this portal yet."
 msgstr "No workflows are connected to this portal yet."
 
-#: src/pages/portal/components/PortalHome.tsx:258
+#: src/pages/portal/components/PortalHome.tsx:259
 msgid "No workflows match your search."
 msgstr "No workflows match your search."
 
@@ -5163,7 +5163,7 @@ msgstr "OCR extraction failed: {detail}"
 msgid "October"
 msgstr "October"
 
-#: src/pages/portal/components/PortalHome.tsx:354
+#: src/pages/portal/components/PortalHome.tsx:356
 msgid "of"
 msgstr "of"
 
@@ -5190,7 +5190,7 @@ msgid "OneDrive"
 msgstr "OneDrive"
 
 #: src/pages/folders/components/FolderTable.tsx:1194
-#: src/pages/portal/components/PortalHome.tsx:315
+#: src/pages/portal/components/PortalHome.tsx:317
 msgid "Open"
 msgstr "Open"
 
@@ -5434,8 +5434,8 @@ msgid "Pen width"
 msgstr "Pen width"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2434
-#: src/pages/portal/components/PortalHome.tsx:81
-#: src/pages/portal/components/PortalHome.tsx:129
+#: src/pages/portal/components/PortalHome.tsx:82
+#: src/pages/portal/components/PortalHome.tsx:130
 #: src/pages/settings/components/ManageUser.tsx:2461
 msgid "Pending"
 msgstr "Pending"
@@ -5758,7 +5758,7 @@ msgstr "Portal Name *"
 msgid "Portal name and description"
 msgstr "Portal name and description"
 
-#: src/pages/portal/PortalPage.tsx:209
+#: src/pages/portal/PortalPage.tsx:210
 msgid "Portal not found"
 msgstr "Portal not found"
 
@@ -6099,7 +6099,7 @@ msgstr "Regenerate"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "Regional volume and spend exposure analysis"
 
-#: src/pages/portal/components/PortalHome.tsx:83
+#: src/pages/portal/components/PortalHome.tsx:84
 #: src/pages/requests/components/QuickFilters.tsx:90
 #: src/pages/requests/utils/localizeRequestUi.ts:25
 msgid "Rejected"
@@ -6714,7 +6714,7 @@ msgstr "Search notifications"
 msgid "Search PO range..."
 msgstr "Search PO range..."
 
-#: src/pages/portal/components/PortalPicker.tsx:54
+#: src/pages/portal/components/PortalPicker.tsx:61
 msgid "Search request types…"
 msgstr "Search request types…"
 
@@ -6724,7 +6724,7 @@ msgstr "Search request types…"
 msgid "Search status..."
 msgstr "Search status..."
 
-#: src/pages/portal/components/PortalHome.tsx:363
+#: src/pages/portal/components/PortalHome.tsx:365
 msgid "Search submissions…"
 msgstr "Search submissions…"
 
@@ -6749,7 +6749,7 @@ msgstr "Search users or type email…"
 msgid "Search workflows..."
 msgstr "Search workflows..."
 
-#: src/pages/portal/components/PortalHome.tsx:244
+#: src/pages/portal/components/PortalHome.tsx:245
 msgid "Search workflows…"
 msgstr "Search workflows…"
 
@@ -7372,7 +7372,7 @@ msgstr "Source: OCR Document"
 msgid "Standard SLA timeline. No pricing exceptions found."
 msgstr "Standard SLA timeline. No pricing exceptions found."
 
-#: src/pages/portal/components/PortalPicker.tsx:119
+#: src/pages/portal/components/PortalPicker.tsx:127
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:567
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:575
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:670
@@ -7384,8 +7384,8 @@ msgid "Start search"
 msgstr "Start search"
 
 #: src/pages/portal/components/PortalPicker.tsx:116
-msgid "Start this request and we'll collect the details you need."
-msgstr "Start this request and we'll collect the details you need."
+#~ msgid "Start this request and we'll collect the details you need."
+#~ msgstr "Start this request and we'll collect the details you need."
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:279
 msgid "Start typing to search"
@@ -7410,7 +7410,7 @@ msgstr "status"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1947
 #: src/pages/forms/FormsPage.tsx:189
 #: src/pages/forms/FormsPage.tsx:602
-#: src/pages/portal/components/PortalHome.tsx:399
+#: src/pages/portal/components/PortalHome.tsx:401
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3151
@@ -7509,7 +7509,7 @@ msgstr "Streamline your Accounts Payable. Automatically process invoices, match 
 msgid "Streamline your Purchase Orders. Automatically match columns, extract records, and configure ingestion logic."
 msgstr "Streamline your Purchase Orders. Automatically match columns, extract records, and configure ingestion logic."
 
-#: src/pages/portal/components/PortalHome.tsx:398
+#: src/pages/portal/components/PortalHome.tsx:400
 msgid "Submission"
 msgstr "Submission"
 
@@ -7517,8 +7517,8 @@ msgstr "Submission"
 msgid "Submission Details"
 msgstr "Submission Details"
 
-#: src/pages/portal/components/PortalHome.tsx:312
-#: src/pages/portal/components/PortalHome.tsx:355
+#: src/pages/portal/components/PortalHome.tsx:314
+#: src/pages/portal/components/PortalHome.tsx:357
 msgid "submissions"
 msgstr "submissions"
 
@@ -7535,7 +7535,7 @@ msgstr "Submit"
 #~ msgid "Submit answers to form"
 #~ msgstr "Submit answers to form"
 
-#: src/pages/portal/components/PortalHome.tsx:400
+#: src/pages/portal/components/PortalHome.tsx:402
 msgid "Submitted"
 msgstr "Submitted"
 
@@ -7815,7 +7815,7 @@ msgstr "This month"
 msgid "This portal is missing a master form or username field."
 msgstr "This portal is missing a master form or username field."
 
-#: src/pages/portal/PortalPage.tsx:211
+#: src/pages/portal/PortalPage.tsx:212
 msgid "This portal link is invalid or has not been published yet."
 msgstr "This portal link is invalid or has not been published yet."
 
@@ -7957,7 +7957,7 @@ msgstr "Total Paid"
 msgid "Total Records:"
 msgstr "Total Records:"
 
-#: src/pages/portal/components/PortalHome.tsx:117
+#: src/pages/portal/components/PortalHome.tsx:118
 msgid "Total submitted"
 msgstr "Total submitted"
 
@@ -8091,7 +8091,7 @@ msgstr "Unable to load sign request"
 msgid "Unable to load sign requests"
 msgstr "Unable to load sign requests"
 
-#: src/pages/portal/PortalPage.tsx:148
+#: src/pages/portal/PortalPage.tsx:149
 msgid "Unable to load submissions for the selected workflows."
 msgstr "Unable to load submissions for the selected workflows."
 
@@ -8244,8 +8244,8 @@ msgstr ""
 #: src/pages/folders/components/FolderExplorer.tsx:294
 #: src/pages/folders/components/FolderFilterBar.tsx:695
 #: src/pages/folders/components/Upload/Upload.tsx:1618
-#: src/pages/portal/components/PortalHome.tsx:303
-#: src/pages/portal/components/PortalPicker.tsx:112
+#: src/pages/portal/components/PortalHome.tsx:305
+#: src/pages/portal/components/PortalPicker.tsx:120
 #: src/pages/portal/components/PortalWizard.tsx:1126
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:232
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
@@ -8600,7 +8600,7 @@ msgstr "We've sent a 6-digit code to {0}."
 msgid "Weekly credit consumption"
 msgstr "Weekly credit consumption"
 
-#: src/pages/portal/components/PortalHome.tsx:175
+#: src/pages/portal/components/PortalHome.tsx:176
 msgid "Welcome back, {displayName}."
 msgstr "Welcome back, {displayName}."
 
@@ -8674,7 +8674,7 @@ msgstr "Workflow started but did not return any data."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:70
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:83
-#: src/pages/portal/components/PortalHome.tsx:236
+#: src/pages/portal/components/PortalHome.tsx:237
 #: src/pages/settings/components/PortalConfiguration.tsx:86
 #: src/pages/settings/components/PortalConfiguration.tsx:451
 #: src/pages/settings/components/PortalConfiguration.tsx:1480

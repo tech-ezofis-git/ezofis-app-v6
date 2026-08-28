@@ -371,6 +371,18 @@ export const importWorkflow = (
         fromDomainNameEnabled,
         fromMailAddressEnabled,
         fromMailAddresses,
+        generatePDF: Boolean(
+          block.settings?.generatePDF ||
+            (Array.isArray(block.settings?.generatePDFFields) &&
+              block.settings.generatePDFFields.length > 0),
+        ),
+        pdfTemplate: block.settings?.pdfTemplate,
+        pdfTemplateJson:
+          typeof block.settings?.pdfTemplateJson === 'string'
+            ? block.settings.pdfTemplateJson
+            : block.settings?.pdfTemplate
+              ? JSON.stringify(block.settings.pdfTemplate, null, 2)
+              : '',
         hasAttachmentEnabled,
         icon: defaults.icon,
         iconColor: defaults.iconColor,
@@ -465,7 +477,6 @@ export const importWorkflow = (
         fullApprovalAction: block.settings?.fullApprovalAction ?? '',
         documentRequired: block.settings?.documentRequired ?? false,
         userSignature: block.settings?.userSignature ?? false,
-        generatePDF: block.settings?.generatePDF ?? false,
         generatePDFFields: Array.isArray(block.settings?.generatePDFFields)
           ? block.settings.generatePDFFields.map(String)
           : [],
