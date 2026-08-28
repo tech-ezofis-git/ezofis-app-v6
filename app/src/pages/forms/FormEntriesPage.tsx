@@ -449,7 +449,7 @@ const FormLineItemsEditor = ({
   const columns = useMemo(() => {
     const tableCols =
       field.settings?.specific?.tableColumns ||
-      field.settings?.specific?.columns
+      (field.settings?.specific as any)?.columns
     if (Array.isArray(tableCols) && tableCols.length > 0) {
       return tableCols.map((c: any) => ({
         id: c.id || c.name || c.key,

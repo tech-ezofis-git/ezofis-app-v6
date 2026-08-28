@@ -10,6 +10,7 @@ import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
 import {
+  buildInitialFormModel,
   buildRepoFieldDescriptors,
   buildRepoFieldHints,
   buildRepoMetadata,
@@ -90,7 +91,7 @@ export const useWorkflowForm = (workflow: any) => {
       }
 
       setForm(data)
-      setFormModel(applyCalculatedFields(data?.formJson?.panels || [], {}))
+      setFormModel(applyCalculatedFields(data?.formJson?.panels || [], buildInitialFormModel(data?.formJson?.panels || [])))
       setIsLoadingForm(false)
     }
 
@@ -250,12 +251,12 @@ export const useWorkflowForm = (workflow: any) => {
         prev.map((a) =>
           a.localId === localId
             ? {
-                ...a,
-                ...(!error && data
-                  ? { ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
-                  : {}),
-                ocrChecked: true,
-              }
+              ...a,
+              ...(!error && data
+                ? { ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
+                : {}),
+              ocrChecked: true,
+            }
             : a,
         ),
       )
@@ -466,10 +467,16 @@ export const useWorkflowForm = (workflow: any) => {
       return { success: false }
     }
 
-    const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
-    if (missing.length > 0) {
-      setSubmitError(`Please fill in required field(s): ${missing.join(', ')}`)
-      return { success: false }
+    // Repository fields are metadata for an ATTACHED document — only worth
+    // enforcing once the user is actually filing one. A request with no
+    // file at all has nothing for Project/Document Type/... to describe,
+    // so it shouldn't be blocked on them.
+    if (hasUploadedFile) {
+      const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
+      if (missing.length > 0) {
+        setSubmitError(`Please fill in required field(s): ${missing.join(', ')}`)
+        return { success: false }
+      }
     }
 
     setIsSubmitting(true)

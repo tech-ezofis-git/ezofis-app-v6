@@ -349,6 +349,7 @@ msgstr "Action"
 #: src/pages/forms/FormEntriesPage.tsx:1263
 #: src/pages/forms/FormsPage.tsx:261
 #: src/pages/requests/components/Table.tsx:96
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:271
 #: src/pages/workflows/components/Table.tsx:115
 msgid "Actions"
 msgstr "Actions"
@@ -460,6 +461,10 @@ msgstr "Add New Item"
 #: src/features/builder/components/Canvas.tsx:93
 #~ msgid "Add New Page"
 #~ msgstr "Add New Page"
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:241
+msgid "Add Row"
+msgstr "Add Row"
 
 #: src/pages/settings/SettingsMain.tsx:171
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
@@ -819,14 +824,15 @@ msgstr "At least 1 uppercase (A-Z)"
 #~ msgid "Attach to invoice"
 #~ msgstr "Attach to invoice"
 
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:545
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:271
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:584
 msgid "Attachment"
 msgstr "Attachment"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:108
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:331
 #: src/pages/requests/components/request/components/Header.tsx:473
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:545
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:584
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3494
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
@@ -911,6 +917,7 @@ msgstr "Avg. Processing Time"
 #: src/pages/folders/components/Upload/Upload.tsx:1595
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:155
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:906
@@ -1090,7 +1097,7 @@ msgstr "Can Edit"
 msgid "Can View"
 msgstr "Can View"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:246
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:722
 msgid "Can't upload: this workflow has no repository configured."
 msgstr "Can't upload: this workflow has no repository configured."
 
@@ -1105,10 +1112,12 @@ msgstr "Can't upload: this workflow has no repository configured."
 #: src/pages/forms/FormEntriesPage.tsx:2072
 #: src/pages/forms/FormsPage.tsx:523
 #: src/pages/my-account/components/profile/Profile.tsx:20
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:226
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:660
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
+#: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:59
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:967
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:198
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:201
 msgid "Cancel"
 msgstr "Cancel"
 
@@ -1307,9 +1316,9 @@ msgstr "Click to mark assignee signature place"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:78
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:111
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:138
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:301
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:334
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:361
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:653
 msgid "Close"
 msgstr "Close"
@@ -1364,7 +1373,7 @@ msgid "Columns Ingested:"
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1365
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:135
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:358
 #: src/pages/requests/components/request/components/Header.tsx:479
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3499
@@ -1926,6 +1935,10 @@ msgstr "Delete Menu"
 msgid "Delete Permanently"
 msgstr "Delete Permanently"
 
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:302
+msgid "Delete row"
+msgstr "Delete row"
+
 #: src/pages/forms/FormEntriesPage.tsx:626
 msgid "Delete Row"
 msgstr "Delete Row"
@@ -2068,6 +2081,10 @@ msgstr "Do you require an ERP or system integration, or should integrations be c
 msgid "Document Date"
 msgstr "Document Date"
 
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:139
+msgid "Document Info"
+msgstr "Document Info"
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3562
 msgid "Document Mapping"
 msgstr "Document Mapping"
@@ -2129,7 +2146,7 @@ msgstr ""
 #: src/pages/folders/components/DocumentDetailsView.tsx:2381
 #: src/pages/folders/components/DocumentDetailsView.tsx:2384
 #: src/pages/folders/components/DocumentSigningPage.tsx:2860
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:700
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:760
 msgid "Download"
 msgstr "Download"
 
@@ -2682,7 +2699,7 @@ msgid "Extracting data"
 msgstr "Extracting data"
 
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:299
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:788
 msgid "Extracting data from the document…"
 msgstr "Extracting data from the document…"
 
@@ -2793,11 +2810,17 @@ msgstr "Failed to save document edits"
 msgid "Failed to save preferences: {message}"
 msgstr "Failed to save preferences: {message}"
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:84
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:87
 msgid "Failed to start the workflow. Please try again."
 msgstr "Failed to start the workflow. Please try again."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:113
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:152
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:189
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:233
+msgid "Failed to upload the file."
+msgstr "Failed to upload the file."
+
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:116
 msgid "Failed to upload the file. Please try again."
 msgstr "Failed to upload the file. Please try again."
 
@@ -3392,7 +3415,7 @@ msgstr "Highest Credit Consumption"
 msgid "Historical Match Results"
 msgstr "Historical Match Results"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:75
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:298
 #: src/pages/requests/components/request/components/Header.tsx:468
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3504
 msgid "History"
@@ -3981,7 +4004,11 @@ msgstr "Loading Comments..."
 msgid "Loading document..."
 msgstr "Loading document..."
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:141
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:185
+msgid "Loading field data…"
+msgstr "Loading field data…"
+
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:144
 msgid "Loading form…"
 msgstr "Loading form…"
 
@@ -4478,7 +4505,7 @@ msgstr "New Password"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:669
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:127
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:130
 #: src/pages/requests/RequestsPage.tsx:673
 msgid "New Request"
 msgstr "New Request"
@@ -4594,6 +4621,10 @@ msgstr "No email returned from Google"
 #: src/pages/sign-in/components/SignInForm.tsx:377
 msgid "No email returned from Microsoft"
 msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/DocumentFieldCards.tsx:40
+msgid "No field data available for this document."
+msgstr "No field data available for this document."
 
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:84
 msgid "No files added yet"
@@ -4736,6 +4767,10 @@ msgstr "No supplier trend insight available."
 msgid "No suppliers found"
 msgstr "No suppliers found"
 
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:217
+msgid "No table columns configured."
+msgstr "No table columns configured."
+
 #: src/pages/settings/components/credits/Credits.tsx:1338
 msgid "No timeline data for this period."
 msgstr ""
@@ -4847,6 +4882,14 @@ msgstr "October"
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:113
 msgid "On Boarding"
 msgstr "On Boarding"
+
+#: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:37
+msgid "One more detail before uploading"
+msgstr "One more detail before uploading"
+
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:194
+msgid "One more detail is needed before this file can be uploaded."
+msgstr "One more detail is needed before this file can be uploaded."
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:301
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:920
@@ -5692,7 +5735,7 @@ msgid "Remove attachment"
 msgstr "Remove attachment"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:688
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:317
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:824
 msgid "Remove file"
 msgstr "Remove file"
 
@@ -5742,7 +5785,7 @@ msgid "Repository context and business scope."
 msgstr "Repository context and business scope."
 
 #: src/pages/folders/components/EditMetadataView.tsx:404
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:182
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:185
 msgid "Repository Fields"
 msgstr "Repository Fields"
 
@@ -5777,7 +5820,7 @@ msgstr "Request shared successfully"
 msgid "Request Status"
 msgstr "Request Status"
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:99
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:102
 msgid "Request submitted."
 msgstr "Request submitted."
 
@@ -6314,7 +6357,7 @@ msgstr ""
 #~ msgid "Security Summary"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:220
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:696
 msgid "See the Attachments section for uploaded files."
 msgstr "See the Attachments section for uploaded files."
 
@@ -7201,11 +7244,11 @@ msgid "This branded sign-in link is invalid or no longer available."
 msgstr "This branded sign-in link is invalid or no longer available."
 
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:68
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:163
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:189
 msgid "This field is required."
 msgstr "This field is required."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:366
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:899
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr "This field type ({fieldType}) isn't supported in this view yet."
 
@@ -7588,8 +7631,10 @@ msgstr ""
 #: src/pages/folders/components/FolderExplorer.tsx:294
 #: src/pages/folders/components/FolderFilterBar.tsx:695
 #: src/pages/folders/components/Upload/Upload.tsx:1618
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:232
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:204
+#: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:66
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:207
 msgid "Upload"
 msgstr "Upload"
 

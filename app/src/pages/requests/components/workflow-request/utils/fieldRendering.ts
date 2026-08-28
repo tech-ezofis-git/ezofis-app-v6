@@ -2,6 +2,110 @@
 // src/pages/form-builder/store/formStore.ts) into props for the app's
 // existing @/components/base input components.
 
+import dayjs from 'dayjs'
+
+export interface DateTimeLimits {
+  maxDate?: string
+  maxTime?: string
+  minDate?: string
+  minTime?: string
+}
+
+// Translates a DATE/TIME/DATE_TIME field's settings.validation
+// (dateLimitType/timeLimitType + offsets or fixed bounds, configured in
+// QuestionSettings.tsx's "Date Limits"/"Time Limits" sections) into the
+// minDate/maxDate/minTime/maxTime props InputDate/InputTime/InputDateTime
+// already know how to enforce. MIN_*/MAX_* offsets are years (date) or
+// hours (time) from now; RANGE uses the fixed start/end values as-is.
+export const getDateTimeLimits = (field: any): DateTimeLimits => {
+  const validation = field?.settings?.validation || {}
+  const limits: DateTimeLimits = {}
+
+  switch (validation.dateLimitType) {
+    case 'MIN_DATE':
+      limits.minDate = dayjs()
+        .add(validation.minDateOffset || 0, 'year')
+        .format('YYYY-MM-DD')
+      break
+    case 'MAX_DATE':
+      limits.maxDate = dayjs()
+        .add(validation.maxDateOffset || 0, 'year')
+        .format('YYYY-MM-DD')
+      break
+    case 'RANGE':
+      if (validation.fixedStartDate) limits.minDate = validation.fixedStartDate
+      if (validation.fixedEndDate) limits.maxDate = validation.fixedEndDate
+      break
+  }
+
+  switch (validation.timeLimitType) {
+    case 'MIN_TIME':
+      limits.minTime = dayjs()
+        .add(validation.minTimeOffset || 0, 'hour')
+        .format('HH:mm')
+      break
+    case 'MAX_TIME':
+      limits.maxTime = dayjs()
+        .add(validation.maxTimeOffset || 0, 'hour')
+        .format('HH:mm')
+      break
+    case 'RANGE':
+      if (validation.fixedStartTime) limits.minTime = validation.fixedStartTime
+      if (validation.fixedEndTime) limits.maxTime = validation.fixedEndTime
+      break
+  }
+
+  return limits
+}
+
+// Seeds formModel with each DATE/TIME/DATE_TIME field's configured default
+// value (specific.dateDefaultValueType/timeDefaultValueType, set in
+// QuestionSettings.tsx's "Default Value Mode") when a new request form is
+// first opened. Every other field type/mode is left unseeded, matching prior
+// behavior (formModel started as {}).
+export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
+  const model: Record<string, any> = {}
+
+  for (const panel of panels || []) {
+    for (const field of panel.fields || []) {
+      const specific = field?.settings?.specific || {}
+
+      if (field.type === 'DATE' || field.type === 'DATE_TIME') {
+        if (specific.dateDefaultValueType === 'TODAY') {
+          model[field.id] =
+            field.type === 'DATE_TIME'
+              ? dayjs().format('YYYY-MM-DD HH:mm')
+              : dayjs().format('YYYY-MM-DD')
+        } else if (
+          specific.dateDefaultValueType === 'CUSTOM' &&
+          specific.defaultValue
+        ) {
+          model[field.id] = String(specific.defaultValue).replace('T', ' ')
+        }
+      } else if (field.type === 'TIME') {
+        if (specific.timeDefaultValueType === 'NOW') {
+          model[field.id] = dayjs().format('HH:mm')
+        } else if (
+          specific.timeDefaultValueType === 'CUSTOM' &&
+          specific.defaultValue
+        ) {
+          model[field.id] = specific.defaultValue
+        }
+      } else if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
+        const rowsType = specific.rowsType || 'ON_DEMAND'
+        const fixedRowCount = specific.fixedRowCount || 5
+        if (rowsType === 'FIXED') {
+          model[field.id] = Array.from({ length: fixedRowCount }, () => ({}))
+        } else {
+          model[field.id] = [{}]
+        }
+      }
+    }
+  }
+
+  return model
+}
+
 export const getColumnSizeClass = (size?: string): string => {
   switch (size) {
     case 'col-3':
@@ -40,17 +144,6 @@ export const getFieldOptions = (field: any): FieldOption[] => {
   const specific = field?.settings?.specific
   const optionsType = specific?.optionsType
 
-  if (optionsType === 'CUSTOM') {
-    const splitType = specific?.separateOptionsUsing
-    const raw: string = specific?.customOptions || ''
-    if (!raw.trim()) return []
-    const parts = splitType === 'NEWLINE' ? raw.split('\n') : raw.split(',')
-    return parts
-      .map((opt: string) => opt.trim())
-      .filter(Boolean)
-      .map((opt: string) => ({ id: opt, name: opt }))
-  }
-
   if (optionsType === 'DYNAMIC') {
     const options = specific?.options || []
     return options.map((opt: any) =>
@@ -63,7 +156,28 @@ export const getFieldOptions = (field: any): FieldOption[] => {
     )
   }
 
-  return []
+  // CUSTOM or default options parsing
+  const splitType = specific?.separateOptionsUsing
+  const raw: string = specific?.customOptions || ''
+  if (!raw.trim()) {
+    if (field?.type === 'YES_NO_TOGGLE') {
+      return [
+        { id: 'Yes', name: 'Yes' },
+        { id: 'No', name: 'No' },
+      ]
+    }
+    return [
+      { id: 'Option 1', name: 'Option 1' },
+      { id: 'Option 2', name: 'Option 2' },
+      { id: 'Option 3', name: 'Option 3' },
+    ]
+  }
+
+  const parts = splitType === 'NEWLINE' ? raw.split('\n') : raw.split(',')
+  return parts
+    .map((opt: string) => opt.trim())
+    .filter(Boolean)
+    .map((opt: string) => ({ id: opt, name: opt }))
 }
 
 // Every field the panels/fields loop should skip rendering an input for
@@ -97,6 +211,8 @@ export const SUPPORTED_TYPES = new Set([
   'IMAGE_UPLOAD',
   'YES_NO_TOGGLE',
   'CONSENT',
+  'TABLE',
+  'DYNAMIC_TABLE',
   'HEADING',
   'LABEL',
   'DIVIDER',
@@ -377,11 +493,33 @@ export const isFieldFilled = (field: any, value: any): boolean => {
   if (field.type === 'FILE_UPLOAD' || field.type === 'IMAGE_UPLOAD') {
     return Boolean(value?.fileId)
   }
-  if (field.type === 'MULTI_SELECT' || field.type === 'MULTIPLE_CHOICE') {
+  if (field.type === 'MULTI_SELECT') {
     return Array.isArray(value) && value.length > 0
+  }
+  if (field.type === 'MULTIPLE_CHOICE') {
+    if (!Array.isArray(value) || value.length === 0) return false
+    if (field.settings?.validation?.requiredValidation === 'ALL') {
+      const opts = getFieldOptions(field)
+      return opts.length > 0 && value.length >= opts.length
+    }
+    return true
   }
   if (field.type === 'YES_NO_TOGGLE' || field.type === 'CONSENT') {
     return value === true
+  }
+  if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
+    return (
+      Array.isArray(value) &&
+      value.some((row) =>
+        Object.entries(row).some(
+          ([k, v]) =>
+            !k.startsWith('_') &&
+            v !== undefined &&
+            v !== null &&
+            String(v).trim() !== '',
+        ),
+      )
+    )
   }
   return value !== undefined && value !== null && String(value).trim() !== ''
 }

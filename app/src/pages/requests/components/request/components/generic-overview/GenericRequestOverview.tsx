@@ -1,39 +1,70 @@
 import { useLingui } from '@lingui/react/macro'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
+import type { RepositoryFieldSchema } from '@/pages/requests/utils/repoFolderMetadata'
+import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
+import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
+import showToast from '@/components/base/toast/showToast'
+import {
+  buildRepoFieldHints,
+  buildRepoMetadata,
+  extractOcrText,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import { setFieldForAttachment } from '@/pages/requests/utils/fieldAttachmentMap'
+import {
+  planRepositoryFolderMetadata,
+  uploadInstanceAttachment,
+} from '@/pages/requests/utils/instanceAttachmentUpload'
+import { getFolderStructureFields } from '@/pages/requests/utils/repoFolderMetadata'
 import Attachments from '../sections/attachment/Attachments'
 import Comments from '../sections/comment/Comments'
 import History from '../sections/history/History'
 import AttachmentPreviewPanel from './AttachmentPreviewPanel'
+import AttachmentSplitView from './AttachmentSplitView'
+
+// A file picked through a form field, waiting on the one repository folder
+// field that actually varies per document before it can be posted.
+interface PendingFieldUpload {
+  baseMetadata: Record<string, string>
+  deepestField: RepositoryFieldSchema
+  fieldId: string
+  file: File
+}
 
 interface Props {
-  formModel: Record<string, any>
-  rawWorkflowData: any
-  rightView: 'overview' | 'history' | 'attachments' | 'comments'
-  selectedItem: any
   // Fetched once at the Request level (so the header's attachment count and
   // this view's file-field display and Attachments panel all agree on the
   // same list instead of each fetching it separately).
   attachments: AttachmentItem[]
+  formModel: Record<string, any>
+  rawWorkflowData: any
+  rightView: 'overview' | 'history' | 'attachments' | 'comments'
+  selectedItem: any
+  setRightView: (
+    view: 'overview' | 'history' | 'attachments' | 'comments',
+  ) => void
+  onAttachmentsChanged?: () => void
   onFieldChange: (fieldId: string, value: any) => void
-  setRightView: (view: 'overview' | 'history' | 'attachments' | 'comments') => void
 }
 
 // Generic (non-Accounts-Payable) request detail: the submitted form
 // rendered editable with the same component used to compose it in New
 // Request, always visible on the left; History/Attachments/Comments open
 // as a right-side panel driven by the header's icon buttons (rightView),
-// using the existing workflow-agnostic components for those.
+// using the existing workflow-agnostic components for those. Opening or
+// uploading a file swaps the whole area for AttachmentSplitView, matching
+// the New Request compose layout.
 const GenericRequestOverview = ({
   attachments,
   formModel,
   rawWorkflowData,
   rightView,
   selectedItem,
-  onFieldChange,
   setRightView,
+  onAttachmentsChanged,
+  onFieldChange,
 }: Props) => {
   const { t } = useLingui()
   const panels = useMemo(
@@ -50,10 +81,198 @@ const GenericRequestOverview = ({
 
   const [selectedAttachment, setSelectedAttachment] =
     useState<AttachmentItem | null>(null)
+  // Full-screen file workspace (preview left, repository fields right) —
+  // opened either by clicking an uploaded file or by picking a new one
+  // through a form field.
+  const [openedAttachment, setOpenedAttachment] =
+    useState<AttachmentItem | null>(null)
+  const [pendingUpload, setPendingUpload] = useState<PendingFieldUpload | null>(
+    null,
+  )
+  const [isUploading, setIsUploading] = useState(false)
+  const [folderFields, setFolderFields] = useState<RepositoryFieldSchema[]>([])
 
   useEffect(() => {
     setSelectedAttachment(null)
   }, [rightView, selectedItem])
+
+  // The repository's folder-structure schema — both panes of the split
+  // view read from it.
+  useEffect(() => {
+    if (!repositoryId) return
+    let cancelled = false
+    getRepositoryById(String(repositoryId)).then((res) => {
+      if (cancelled) return
+      setFolderFields(getFolderStructureFields(res?.data?.fields || []))
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [repositoryId])
+
+  const handleRequestUpload = useCallback(
+    async (fieldId: string, file: File) => {
+      if (!workflowId || !instanceId || !repositoryId) return
+      setIsUploading(true)
+      try {
+        // Nothing on this instance yet to inherit a folder path from — this
+        // is effectively the same situation as New Request's own first
+        // upload, so follow the exact same two-phase flow (OCR peek, then
+        // uploadWithOcr with metadata pulled from the form's own fields)
+        // and land the result straight on the field's formData value,
+        // instead of creating a standalone instance attachment.
+        if (attachments.length === 0) {
+          const repoFieldHints = buildRepoFieldHints(folderFields)
+          const { data: ocrData, error: ocrError } = await uploadForOcr(
+            String(repositoryId),
+            file,
+            repoFieldHints,
+          )
+          if (ocrError) {
+            console.warn('[uploadForOcr] OCR extraction warning:', ocrError)
+          }
+
+          const { data, error } = await uploadAndIndexApi.uploadWithOcr({
+            fields: repoFieldHints,
+            file,
+            metadata: buildRepoMetadata(
+              folderFields,
+              panels,
+              formModel,
+              file.name,
+            ),
+            ocrFieldList: ocrData?.ocrFieldList,
+            ocrJson: ocrData?.ocrJson,
+            ocrText: extractOcrText(ocrData?.ocrJson),
+            repositoryId: String(repositoryId),
+          })
+
+          if (error || !data) {
+            showToast({
+              message: t`Failed to upload the file.`,
+              variant: 'error',
+            })
+            return
+          }
+
+          onFieldChange(fieldId, {
+            fileId: data.fileId,
+            fileName: file.name,
+            ocrChecked: true,
+            repositoryId: data.repositoryId || repositoryId,
+          })
+          return
+        }
+
+        const existingItem = attachments.find((a) => a.itemId)
+        const { baseMetadata, deepestField } =
+          await planRepositoryFolderMetadata(
+            String(repositoryId),
+            existingItem
+              ? {
+                  itemId: existingItem.itemId,
+                  repositoryId: existingItem.repositoryId || repositoryId,
+                }
+              : undefined,
+          )
+
+        if (!deepestField) {
+          const res = await uploadInstanceAttachment(
+            workflowId,
+            instanceId,
+            repositoryId,
+            file,
+            baseMetadata,
+          )
+          if (res.error) {
+            showToast({
+              message: t`Failed to upload the file.`,
+              variant: 'error',
+            })
+          } else {
+            onAttachmentsChanged?.()
+          }
+          return
+        }
+
+        setPendingUpload({ baseMetadata, deepestField, fieldId, file })
+      } finally {
+        setIsUploading(false)
+      }
+    },
+    [
+      attachments,
+      folderFields,
+      formModel,
+      instanceId,
+      panels,
+      repositoryId,
+      workflowId,
+      onAttachmentsChanged,
+      onFieldChange,
+      t,
+    ],
+  )
+
+  const handleConfirmUpload = async (value: string) => {
+    if (!pendingUpload || !workflowId || !instanceId || !repositoryId) return
+    setIsUploading(true)
+    try {
+      const metadata = {
+        ...pendingUpload.baseMetadata,
+        [pendingUpload.deepestField.sqlColumnName]: value,
+      }
+      const res = await uploadInstanceAttachment(
+        workflowId,
+        instanceId,
+        repositoryId,
+        pendingUpload.file,
+        metadata,
+      )
+      if (res.error) {
+        showToast({ message: t`Failed to upload the file.`, variant: 'error' })
+        return
+      }
+      // Remember which field this file came from, so it renders under that
+      // field (and not some other one) on the next load.
+      const uploadedId = res.data?.itemId || res.data?.id || res.data?.fileId
+      if (uploadedId) {
+        setFieldForAttachment(instanceId, uploadedId, pendingUpload.fieldId)
+      }
+      setPendingUpload(null)
+      onAttachmentsChanged?.()
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  if (pendingUpload) {
+    return (
+      <AttachmentSplitView
+        file={pendingUpload.file}
+        folderFields={folderFields}
+        isSubmitting={isUploading}
+        metadata={pendingUpload.baseMetadata}
+        promptField={pendingUpload.deepestField}
+        repositoryId={repositoryId}
+        title={pendingUpload.file.name}
+        onClose={() => setPendingUpload(null)}
+        onConfirm={handleConfirmUpload}
+      />
+    )
+  }
+
+  if (openedAttachment) {
+    return (
+      <AttachmentSplitView
+        attachment={openedAttachment}
+        folderFields={folderFields}
+        repositoryId={repositoryId}
+        title={openedAttachment.name || t`Attachment`}
+        onClose={() => setOpenedAttachment(null)}
+      />
+    )
+  }
 
   return (
     <div className='flex min-h-0 flex-1 overflow-hidden'>
@@ -61,8 +280,12 @@ const GenericRequestOverview = ({
         <WorkflowFormRenderer
           attachments={attachments}
           formModel={formModel}
+          instanceId={instanceId}
           panels={panels}
+          repositoryId={repositoryId}
           onFieldChange={onFieldChange}
+          onOpenAttachment={setOpenedAttachment}
+          onRequestUpload={handleRequestUpload}
         />
       </div>
 
@@ -123,7 +346,7 @@ const GenericRequestOverview = ({
                     repositoryId={repositoryId}
                     workflowId={workflowId}
                     enabled
-                    onSelect={setSelectedAttachment}
+                    onSelect={setOpenedAttachment}
                   />
                 </div>
               </div>

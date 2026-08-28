@@ -1,18 +1,23 @@
+import { useLingui } from '@lingui/react/macro'
 import clsx, { type ClassValue } from 'clsx'
 import { useMemo, useRef, useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import { twMerge } from 'tailwind-merge'
+import type { RepositoryFieldSchema } from '@/pages/requests/utils/repoFolderMetadata'
 import fileApi from '@/api/file/file'
-import { workflowsApiV6 } from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   type AttachmentItem,
   useAttachments,
 } from '@/pages/requests/hooks/useAttachments'
+import {
+  planRepositoryFolderMetadata,
+  uploadInstanceAttachment,
+} from '@/pages/requests/utils/instanceAttachmentUpload'
 import authUserStore from '@/stores/authUserStore'
 import { formatUtcToLocalDate } from '@/utils/utcDate'
 import RelatedDocumentsFinder from '../overview/RelatedDocumentsFinder'
+import FolderFieldPrompt from './FolderFieldPrompt'
 
 type FileLike = AttachmentItem
 
@@ -162,27 +167,27 @@ export const getFileIcon = (fileNameOrExt: string): string => {
     .replace(/^\./, '')
 
   const iconMap: Record<string, string> = {
-    csv: 'vscode-icons:file-type-excel',
-    doc: 'vscode-icons:file-type-word',
-    docx: 'vscode-icons:file-type-word',
-    gif: 'vscode-icons:file-type-image',
-    jpeg: 'vscode-icons:file-type-image',
-    jpg: 'vscode-icons:file-type-image',
-    pdf: 'vscode-icons:file-type-pdf2',
-    png: 'vscode-icons:file-type-image',
-    ppt: 'vscode-icons:file-type-powerpoint',
-    pptx: 'vscode-icons:file-type-powerpoint',
-    rtf: 'vscode-icons:file-type-text',
-    svg: 'vscode-icons:file-type-image',
-    txt: 'vscode-icons:file-type-text',
-    webp: 'vscode-icons:file-type-image',
-    xls: 'vscode-icons:file-type-excel',
-    xlsx: 'vscode-icons:file-type-excel',
-    zip: 'vscode-icons:file-type-zip',
-    rar: 'vscode-icons:file-type-zip',
     '7z': 'vscode-icons:file-type-zip',
-    json: 'vscode-icons:file-type-json',
-    xml: 'vscode-icons:file-type-xml',
+    'csv': 'vscode-icons:file-type-excel',
+    'doc': 'vscode-icons:file-type-word',
+    'docx': 'vscode-icons:file-type-word',
+    'gif': 'vscode-icons:file-type-image',
+    'jpeg': 'vscode-icons:file-type-image',
+    'jpg': 'vscode-icons:file-type-image',
+    'json': 'vscode-icons:file-type-json',
+    'pdf': 'vscode-icons:file-type-pdf2',
+    'png': 'vscode-icons:file-type-image',
+    'ppt': 'vscode-icons:file-type-powerpoint',
+    'pptx': 'vscode-icons:file-type-powerpoint',
+    'rar': 'vscode-icons:file-type-zip',
+    'rtf': 'vscode-icons:file-type-text',
+    'svg': 'vscode-icons:file-type-image',
+    'txt': 'vscode-icons:file-type-text',
+    'webp': 'vscode-icons:file-type-image',
+    'xls': 'vscode-icons:file-type-excel',
+    'xlsx': 'vscode-icons:file-type-excel',
+    'xml': 'vscode-icons:file-type-xml',
+    'zip': 'vscode-icons:file-type-zip',
   }
   return iconMap[ext] || 'vscode-icons:file-type-text'
 }
@@ -248,15 +253,15 @@ export default function Attachments({
   canUpload = true,
   enabled = true,
   formModel,
+  initialData,
   instanceId,
   processId,
   repositoryId,
   selectedItem,
   workflowId,
-  onSelect,
   onOpenHistory,
   onOpenMailShare,
-  initialData,
+  onSelect,
 }: Props & { initialData?: any[] }) {
   const { t } = useLingui()
   const targetInstanceId = instanceId || processId
@@ -274,6 +279,14 @@ export default function Attachments({
 
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // The repository field the uploader still needs to supply (the deepest
+  // level of the folder hierarchy — see repoFolderMetadata.ts) before the
+  // selected file can actually be posted.
+  const [pendingUpload, setPendingUpload] = useState<{
+    baseMetadata: Record<string, string>
+    deepestField: RepositoryFieldSchema
+    file: File
+  } | null>(null)
 
   const attachedIds = useMemo(() => {
     const set = new Set<string>()
@@ -331,21 +344,132 @@ export default function Attachments({
     'Vendor',
   ])
 
+  // Legacy AP-style metadata, matched off the workflow's own form fields
+  // (Invoice/PO/Supplier...). Kept as a base layer so Accounts Payable
+  // repositories — whose fields really are named this way — keep working
+  // unchanged; for a generic workflow none of these match anything and the
+  // repository's OWN field schema (below) is what actually fills the
+  // required folder-structure values instead of leaving them blank.
+  const buildLegacyApMetadata = () => {
+    const getValueFromKeys = (obj: any, keys: string[]): string => {
+      if (!obj) return ''
+      for (const k of keys) {
+        const val = obj[k]
+        if (val !== undefined && val !== null) {
+          if (typeof val === 'object' && 'Invoice Value' in val) {
+            return String(val['Invoice Value'] ?? '')
+          }
+          return String(val)
+        }
+      }
+      return ''
+    }
+
+    const rawAmount = getValueFromKeys(formModel, [
+      'Invoice Amount',
+      'invoice_amount',
+      'Amount',
+      'amount',
+      'Total',
+      'total',
+    ])
+    const parsedAmount = Number(rawAmount.replace(/[^0-9.-]+/g, ''))
+    const amountVal = Number.isNaN(parsedAmount) ? 0 : parsedAmount
+
+    return {
+      Amount: amountVal,
+      Department: getValueFromKeys(formModel, ['Department', 'department']),
+      DocumentDate: getValueFromKeys(formModel, [
+        'Invoice Date',
+        'invoice_date',
+        'Document Date',
+        'document_date',
+        'Date',
+        'date',
+      ]),
+      DocumentType:
+        getValueFromKeys(formModel, [
+          'Document Type',
+          'document_type',
+          'Doc Type',
+          'doc_type',
+        ]) || 'Invoice',
+      InvoiceNumber: getValueFromKeys(formModel, [
+        'Invoice Number',
+        'invoice_number',
+        'Invoice No',
+        'invoice_no',
+        'Inv Number',
+      ]),
+      PoNumber: getValueFromKeys(formModel, [
+        'PO Number',
+        'po_number',
+        'PO No',
+        'po_no',
+        'Purchase Order',
+        'pono',
+        'poNumber',
+        'PO No.',
+      ]),
+      RiskLevel: getValueFromKeys(formModel, [
+        'Risk Level',
+        'risk_level',
+        'Risk',
+        'risk',
+      ]),
+      Source: getValueFromKeys(formModel, ['Source', 'source']) || 'Upload',
+      Status:
+        getValueFromKeys(formModel, ['Status', 'status']) ||
+        selectedItem?.status ||
+        selectedItem?.state ||
+        '',
+      Supplier: getValueFromKeys(formModel, [
+        'Supplier Name',
+        'supplier_name',
+        'Vendor Name',
+        'vendor_name',
+        'Supplier',
+        'Vendor',
+      ]),
+    }
+  }
+
+  const performUpload = async (
+    file: File,
+    extraMetadata: Record<string, unknown> = {},
+  ) => {
+    if (!workflowId || !targetInstanceId || !repositoryId) return
+
+    setIsUploading(true)
+    try {
+      const metadata = { ...buildLegacyApMetadata(), ...extraMetadata }
+      const res = await uploadInstanceAttachment(
+        workflowId,
+        targetInstanceId,
+        repositoryId,
+        file,
+        metadata,
+      )
+
+      if (res.error) {
+        console.error(
+          '[Attachments] Upload failed with response error:',
+          res.error,
+        )
+      } else {
+        await refetch()
+      }
+    } catch (err) {
+      console.error('Error uploading file:', err)
+    } finally {
+      setIsUploading(false)
+      setPendingUpload(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    console.log(
-      '[Attachments] Selected file:',
-      file?.name,
-      'Size:',
-      file?.size,
-      'Type:',
-      file?.type,
-    )
-    console.log('[Attachments] Upload Context:', {
-      repositoryId,
-      targetInstanceId,
-      workflowId,
-    })
 
     if (
       !file ||
@@ -369,115 +493,30 @@ export default function Attachments({
 
     setIsUploading(true)
     try {
-      const getValueFromKeys = (obj: any, keys: string[]): string => {
-        if (!obj) return ''
-        for (const k of keys) {
-          const val = obj[k]
-          if (val !== undefined && val !== null) {
-            if (typeof val === 'object' && 'Invoice Value' in val) {
-              return String(val['Invoice Value'] ?? '')
+      // Every attachment already on this instance shares the same folder,
+      // so its metadata seeds every level except the deepest one (the
+      // field that actually varies per document — see
+      // repoFolderMetadata.ts). Only that field needs asking about.
+      const existingItem = files.find((f) => f.itemId)
+      const { baseMetadata, deepestField } = await planRepositoryFolderMetadata(
+        String(repositoryId),
+        existingItem
+          ? {
+              itemId: existingItem.itemId,
+              repositoryId: existingItem.repositoryId || repositoryId,
             }
-            return String(val)
-          }
-        }
-        return ''
-      }
-
-      const rawAmount = getValueFromKeys(formModel, [
-        'Invoice Amount',
-        'invoice_amount',
-        'Amount',
-        'amount',
-        'Total',
-        'total',
-      ])
-      const parsedAmount = Number(rawAmount.replace(/[^0-9.-]+/g, ''))
-      const amountVal = Number.isNaN(parsedAmount) ? 0 : parsedAmount
-
-      const metadataObj = {
-        Amount: amountVal,
-        Department: getValueFromKeys(formModel, ['Department', 'department']),
-        DocumentDate: getValueFromKeys(formModel, [
-          'Invoice Date',
-          'invoice_date',
-          'Document Date',
-          'document_date',
-          'Date',
-          'date',
-        ]),
-        DocumentType:
-          getValueFromKeys(formModel, [
-            'Document Type',
-            'document_type',
-            'Doc Type',
-            'doc_type',
-          ]) || 'Invoice',
-        InvoiceNumber: getValueFromKeys(formModel, [
-          'Invoice Number',
-          'invoice_number',
-          'Invoice No',
-          'invoice_no',
-          'Inv Number',
-        ]),
-        PoNumber: getValueFromKeys(formModel, [
-          'PO Number',
-          'po_number',
-          'PO No',
-          'po_no',
-          'Purchase Order',
-          'pono',
-          'poNumber',
-          'PO No.',
-        ]),
-        RiskLevel: getValueFromKeys(formModel, [
-          'Risk Level',
-          'risk_level',
-          'Risk',
-          'risk',
-        ]),
-        Source: getValueFromKeys(formModel, ['Source', 'source']) || 'Upload',
-        Status:
-          getValueFromKeys(formModel, ['Status', 'status']) ||
-          selectedItem?.status ||
-          selectedItem?.state ||
-          '',
-        Supplier: getValueFromKeys(formModel, [
-          'Supplier Name',
-          'supplier_name',
-          'Vendor Name',
-          'vendor_name',
-          'Supplier',
-          'Vendor',
-        ]),
-      }
-
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('repositoryId', String(repositoryId))
-      formData.append('repositoryld', String(repositoryId)) // Support backend field typo
-      formData.append('metadata', JSON.stringify(metadataObj))
-
-      const res = await workflowsApiV6.addInstanceAttachment(
-        workflowId,
-        targetInstanceId,
-        formData,
+          : undefined,
       )
 
-      console.log('[Attachments] Upload response:', res)
-      if (res.error) {
-        console.error(
-          '[Attachments] Upload failed with response error:',
-          res.error,
-        )
-      } else {
-        console.log('[Attachments] Upload succeeded, refetching...')
+      if (deepestField) {
+        setIsUploading(false)
+        setPendingUpload({ baseMetadata, deepestField, file })
+        return
       }
 
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      await refetch()
+      await performUpload(file, baseMetadata)
     } catch (err) {
-      console.error('Error uploading file:', err)
-    } finally {
+      console.error('Error preparing upload:', err)
       setIsUploading(false)
     }
   }
@@ -604,6 +643,24 @@ export default function Attachments({
         </div>
       )}
 
+      {pendingUpload && (
+        <FolderFieldPrompt
+          field={pendingUpload.deepestField}
+          fileName={pendingUpload.file.name}
+          isSubmitting={isUploading}
+          onCancel={() => {
+            setPendingUpload(null)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+          }}
+          onConfirm={(value) =>
+            performUpload(pendingUpload.file, {
+              ...pendingUpload.baseMetadata,
+              [pendingUpload.deepestField.sqlColumnName]: value,
+            })
+          }
+        />
+      )}
+
       {/* List */}
       <div className='flex flex-col gap-2'>
         {isLoading && files.length === 0 ? (
@@ -656,8 +713,11 @@ export default function Attachments({
                       {displayTitle}
                     </span>
                     {file.isAiMatch && (
-                      <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)] shrink-0'>
-                        <AiBrandIcon className='size-3 shrink-0' variant='outline-purple' />
+                      <span className='inline-flex shrink-0 items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)]'>
+                        <AiBrandIcon
+                          className='size-3 shrink-0'
+                          variant='outline-purple'
+                        />
                         Added via AI match
                       </span>
                     )}
@@ -667,7 +727,7 @@ export default function Attachments({
                       </span>
                     )}
                   </div>
-                  <div className='mt-0.5 flex items-center gap-2 flex-wrap'>
+                  <div className='mt-0.5 flex flex-wrap items-center gap-2'>
                     {file.isAiMatch ? (
                       <span className='text-[11px] text-[var(--gray-9)]'>
                         Added just now · from AI cross-reference

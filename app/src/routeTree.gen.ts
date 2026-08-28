@@ -46,6 +46,7 @@ import { Route as StoriesInputRadioRouteImport } from './routes/stories/input-ra
 import { Route as StoriesInputPinRouteImport } from './routes/stories/input-pin'
 import { Route as StoriesInputPasswordRouteImport } from './routes/stories/input-password'
 import { Route as StoriesInputNumberRouteImport } from './routes/stories/input-number'
+import { Route as StoriesInputDateTimeRouteImport } from './routes/stories/input-date-time'
 import { Route as StoriesInputDateRouteImport } from './routes/stories/input-date'
 import { Route as StoriesInputCheckboxGroupRouteImport } from './routes/stories/input-checkbox-group'
 import { Route as StoriesInputCheckboxCardRouteImport } from './routes/stories/input-checkbox-card'
@@ -279,6 +280,11 @@ const StoriesInputPasswordRoute = StoriesInputPasswordRouteImport.update({
 const StoriesInputNumberRoute = StoriesInputNumberRouteImport.update({
   id: '/input-number',
   path: '/input-number',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
+const StoriesInputDateTimeRoute = StoriesInputDateTimeRouteImport.update({
+  id: '/input-date-time',
+  path: '/input-date-time',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
 const StoriesInputDateRoute = StoriesInputDateRouteImport.update({
@@ -575,6 +581,7 @@ export interface FileRoutesByFullPath {
   '/stories/input-checkbox-card': typeof StoriesInputCheckboxCardRoute
   '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
   '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-date-time': typeof StoriesInputDateTimeRoute
   '/stories/input-number': typeof StoriesInputNumberRoute
   '/stories/input-password': typeof StoriesInputPasswordRoute
   '/stories/input-pin': typeof StoriesInputPinRoute
@@ -660,6 +667,7 @@ export interface FileRoutesByTo {
   '/stories/input-checkbox-card': typeof StoriesInputCheckboxCardRoute
   '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
   '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-date-time': typeof StoriesInputDateTimeRoute
   '/stories/input-number': typeof StoriesInputNumberRoute
   '/stories/input-password': typeof StoriesInputPasswordRoute
   '/stories/input-pin': typeof StoriesInputPinRoute
@@ -749,6 +757,7 @@ export interface FileRoutesById {
   '/stories/input-checkbox-card': typeof StoriesInputCheckboxCardRoute
   '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
   '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-date-time': typeof StoriesInputDateTimeRoute
   '/stories/input-number': typeof StoriesInputNumberRoute
   '/stories/input-password': typeof StoriesInputPasswordRoute
   '/stories/input-pin': typeof StoriesInputPinRoute
@@ -837,6 +846,7 @@ export interface FileRouteTypes {
     | '/stories/input-checkbox-card'
     | '/stories/input-checkbox-group'
     | '/stories/input-date'
+    | '/stories/input-date-time'
     | '/stories/input-number'
     | '/stories/input-password'
     | '/stories/input-pin'
@@ -922,6 +932,7 @@ export interface FileRouteTypes {
     | '/stories/input-checkbox-card'
     | '/stories/input-checkbox-group'
     | '/stories/input-date'
+    | '/stories/input-date-time'
     | '/stories/input-number'
     | '/stories/input-password'
     | '/stories/input-pin'
@@ -1010,6 +1021,7 @@ export interface FileRouteTypes {
     | '/stories/input-checkbox-card'
     | '/stories/input-checkbox-group'
     | '/stories/input-date'
+    | '/stories/input-date-time'
     | '/stories/input-number'
     | '/stories/input-password'
     | '/stories/input-pin'
@@ -1327,6 +1339,13 @@ declare module '@tanstack/react-router' {
       path: '/input-number'
       fullPath: '/stories/input-number'
       preLoaderRoute: typeof StoriesInputNumberRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
+    '/stories/input-date-time': {
+      id: '/stories/input-date-time'
+      path: '/input-date-time'
+      fullPath: '/stories/input-date-time'
+      preLoaderRoute: typeof StoriesInputDateTimeRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
     '/stories/input-date': {
@@ -1779,6 +1798,7 @@ interface StoriesRouteRouteChildren {
   StoriesInputCheckboxCardRoute: typeof StoriesInputCheckboxCardRoute
   StoriesInputCheckboxGroupRoute: typeof StoriesInputCheckboxGroupRoute
   StoriesInputDateRoute: typeof StoriesInputDateRoute
+  StoriesInputDateTimeRoute: typeof StoriesInputDateTimeRoute
   StoriesInputNumberRoute: typeof StoriesInputNumberRoute
   StoriesInputPasswordRoute: typeof StoriesInputPasswordRoute
   StoriesInputPinRoute: typeof StoriesInputPinRoute
@@ -1829,6 +1849,7 @@ const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesInputCheckboxCardRoute: StoriesInputCheckboxCardRoute,
   StoriesInputCheckboxGroupRoute: StoriesInputCheckboxGroupRoute,
   StoriesInputDateRoute: StoriesInputDateRoute,
+  StoriesInputDateTimeRoute: StoriesInputDateTimeRoute,
   StoriesInputNumberRoute: StoriesInputNumberRoute,
   StoriesInputPasswordRoute: StoriesInputPasswordRoute,
   StoriesInputPinRoute: StoriesInputPinRoute,

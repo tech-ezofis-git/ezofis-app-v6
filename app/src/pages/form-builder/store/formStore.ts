@@ -180,7 +180,6 @@ export interface Question {
       autoGenerateValue?: { enabled?: boolean; prefix: string; suffix: string }
       bulkActionsEnabled?: boolean
       childFieldType?: string
-      columns?: any[]
       countryCodeSearchEnabled?: boolean
       currencyOptionsType?: 'ALL' | 'SPECIFIC'
       currencyParentFieldId?: string
@@ -220,6 +219,8 @@ export interface Question {
       optionsPerLine?: number
       optionsSource?: string
       optionsType?: string
+      repositoryId?: string
+      repositoryField?: string
       parentDateFieldId?: string
       parentDateOffset?: number
       parentFieldFilterValue?: any
@@ -285,6 +286,7 @@ export interface Question {
       pattern?: string
       rangeType?: 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED' | 'CUSTOM'
       requireCurrencyUnit?: boolean
+      requiredValidation?: 'ANY' | 'ALL'
       // Time specific
       timeFormat?: '12' | '24'
       timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
