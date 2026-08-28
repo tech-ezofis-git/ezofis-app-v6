@@ -1,6 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
 import { useMemo, useState } from 'react'
-import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
 import Icon from '@/components/base/icon/Icon'
 import InputText from '@/components/base/inputs/InputText'
 import { AnimateSlideUp, AnimateStagger } from '@/components/common/animations'
@@ -8,28 +7,36 @@ import cn from '@/utils/cn'
 import {
   portalWorkflowIcon,
   portalWorkflowKind,
+  portalWorkflowLabel,
+  type PortalWorkflowSummary,
+  workflowDescriptionFallback,
 } from '../helpers/portalWorkflows'
 import PortalBackButton from './PortalBackButton'
+import { PortalWorkflowCardsSkeleton } from './PortalLayoutSkeleton'
 
 type PortalPickerProps = {
-  portal: PortalConfig
+  loading?: boolean
+  workflows: PortalWorkflowSummary[]
   onBack: () => void
   onSelectWorkflow: (workflowId: string, workflowName: string) => void
 }
 
 export default function PortalPicker({
-  portal,
+  loading,
+  workflows,
   onBack,
   onSelectWorkflow,
 }: PortalPickerProps) {
   const { t } = useLingui()
   const [query, setQuery] = useState('')
-  const workflows = useMemo(() => {
+  const visibleWorkflows = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return portal.workflows.filter((workflow) =>
-      workflow.name.toLowerCase().includes(needle),
-    )
-  }, [portal.workflows, query])
+    return workflows.filter((workflow) => {
+      const name = portalWorkflowLabel(workflow).toLowerCase()
+      const description = String(workflow.description || '').toLowerCase()
+      return !needle || name.includes(needle) || description.includes(needle)
+    })
+  }, [query, workflows])
 
   return (
     <div className='flex flex-col gap-5'>
@@ -61,7 +68,9 @@ export default function PortalPicker({
         </div>
       </AnimateSlideUp>
 
-      {workflows.length === 0 ? (
+      {loading && workflows.length === 0 ? (
+        <PortalWorkflowCardsSkeleton />
+      ) : visibleWorkflows.length === 0 ? (
         <AnimateSlideUp delay={0.1}>
           <div className='rounded-xl border border-gray-4 bg-surface p-10 text-center text-13 text-gray-9'>
             {t`No workflows are connected to this portal yet.`}
@@ -72,8 +81,9 @@ export default function PortalPicker({
           className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'
           staggerDelay={0.06}
         >
-          {workflows.map((workflow, index) => {
-            const kind = portalWorkflowKind(workflow.name)
+          {visibleWorkflows.map((workflow, index) => {
+            const name = portalWorkflowLabel(workflow)
+            const kind = portalWorkflowKind(name)
 
             return (
               <button
@@ -83,9 +93,7 @@ export default function PortalPicker({
                   'flex flex-col gap-3 rounded-xl border border-gray-4 bg-surface p-4 text-left shadow-2xs transition',
                   'hover:border-primary-6 hover:shadow-xs active:scale-[0.99]',
                 )}
-                onClick={() =>
-                  onSelectWorkflow(String(workflow.id), workflow.name)
-                }
+                onClick={() => onSelectWorkflow(String(workflow.id), name)}
               >
                 <div className='flex items-start justify-between gap-3'>
                   <div className='flex min-w-0 items-start gap-3'>
@@ -97,7 +105,7 @@ export default function PortalPicker({
                     </span>
                     <div className='min-w-0 pt-1'>
                       <div className='truncate text-15 font-semibold text-gray-13'>
-                        {workflow.name}
+                        {name}
                       </div>
                     </div>
                   </div>
@@ -113,7 +121,7 @@ export default function PortalPicker({
                   </span>
                 </div>
                 <p className='line-clamp-2 text-13 text-gray-10'>
-                  {t`Start this request and we'll collect the details you need.`}
+                  {workflow.description || workflowDescriptionFallback(name)}
                 </p>
                 <div className='mt-auto flex justify-end border-t border-gray-3 pt-3 text-13 font-semibold text-primary-11'>
                   {t`Start`}

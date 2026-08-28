@@ -16,6 +16,7 @@ import type {
 import {
   portalWorkflowIcon,
   portalWorkflowKind,
+  portalWorkflowLabel,
   type PortalWorkflowSummary,
   workflowDescriptionFallback,
 } from '../helpers/portalWorkflows'
@@ -263,7 +264,8 @@ export default function PortalHome({
               staggerDelay={0.06}
             >
               {filteredWorkflows.map((workflow, index) => {
-                const kind = portalWorkflowKind(workflow.name)
+                const name = portalWorkflowLabel(workflow)
+                const kind = portalWorkflowKind(name)
 
                 return (
                   <button
@@ -288,7 +290,7 @@ export default function PortalHome({
                         </span>
                         <div className='min-w-0 pt-1.5'>
                           <div className='truncate text-15 font-semibold text-gray-13'>
-                            {workflow.name}
+                            {name}
                           </div>
                         </div>
                       </div>
@@ -305,7 +307,7 @@ export default function PortalHome({
                     </div>
                     <p className='line-clamp-2 min-h-10 text-13 text-gray-10'>
                       {workflow.description ||
-                        workflowDescriptionFallback(workflow.name)}
+                        workflowDescriptionFallback(name)}
                     </p>
                     <div className='mt-auto flex items-center justify-between border-t border-gray-3 pt-3'>
                       <span className='text-12 text-gray-9'>

@@ -1,7 +1,7 @@
+import type { PortalWorkflowLink } from '@/pages/settings/helpers/portalConfigStorage'
 import workflowsApiV6, {
   createPublishedWorkflowBrowsePayload,
 } from '@/api/v6/workflows'
-import type { PortalWorkflowLink } from '@/pages/settings/helpers/portalConfigStorage'
 
 export const PORTAL_WORKFLOW_ICONS = [
   'lucide:file-text',
@@ -22,6 +22,14 @@ export const isPortalUploadWorkflow = (name: string) => {
     normalized.includes('account payable') ||
     normalized.includes('payable')
   )
+}
+
+export const portalWorkflowLabel = (workflow: {
+  id?: number | string
+  name?: string
+}) => {
+  const name = String(workflow.name || '').trim()
+  return name || String(workflow.id || 'Workflow')
 }
 
 export const portalWorkflowKind = (name: string): 'form' | 'upload' =>
@@ -119,7 +127,7 @@ export const listPortalWorkflowSummaries = async ({
       description: meta?.description || '',
       id,
       inboxCount: count?.inboxCount || 0,
-      name: meta?.name || workflow.name || id,
+      name: meta?.name || portalWorkflowLabel(workflow),
       sentCount: count?.sentCount || 0,
       total: count?.total || 0,
     }
