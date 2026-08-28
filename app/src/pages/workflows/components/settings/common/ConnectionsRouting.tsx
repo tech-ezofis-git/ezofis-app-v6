@@ -2,6 +2,10 @@ import { type Node, useEdges, useNodes, useReactFlow } from '@xyflow/react'
 import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import {
+  getNodeToolType,
+  NODE_TOOL_TYPE,
+} from '@/pages/workflows/utils/nodeToolTypes'
 import SettingsSection from './SettingsSection'
 
 interface ConnectionsRoutingProps {
@@ -13,6 +17,7 @@ interface ConnectionWithData {
   edgeId: string
   targetId: string
   targetLabel: string
+  targetToolType: string
 }
 
 const routingActionOptions = [
@@ -63,18 +68,20 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
         edgeId: edge.id,
         targetId: edge.target,
         targetLabel: (targetNode?.data?.label as string) || 'Next Step',
+        targetToolType: getNodeToolType(targetNode?.data),
       }
     })
 
   const getTargetDescription = (conn: ConnectionWithData) => {
-    const label = conn.targetLabel.toLowerCase()
-    if (label.includes('success'))
+    if (conn.targetToolType === NODE_TOOL_TYPE.END)
       return 'Complete the workflow on this pathway'
-    if (label.includes('ap agent')) return 'Route to AP Agent for processing'
-    if (label.includes('ocr agent')) return 'Route to OCR Agent for extraction'
-    if (label.includes('ftp agent'))
+    if (conn.targetToolType === NODE_TOOL_TYPE.AP_AGENT)
+      return 'Route to AP Agent for processing'
+    if (conn.targetToolType === NODE_TOOL_TYPE.OCR_AGENT)
+      return 'Route to OCR Agent for extraction'
+    if (conn.targetToolType === NODE_TOOL_TYPE.FTP_AGENT)
       return 'Route to FTP Agent for file transfer'
-    if (label.includes('manual user'))
+    if (conn.targetToolType === NODE_TOOL_TYPE.MANUAL_USER)
       return 'Route for manual user intervention'
     return `Define behavior when routing to ${conn.targetLabel}`
   }

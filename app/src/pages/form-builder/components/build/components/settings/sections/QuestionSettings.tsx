@@ -62,9 +62,7 @@ interface QuestionSettingsProps {
   activeQuestion: Question
 }
 
-const QuestionSettings = ({
-  activeQuestion: rawQuestion,
-}: QuestionSettingsProps) => {
+const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps) => {
   const activeQuestion = {
     ...rawQuestion,
     settings: {

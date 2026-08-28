@@ -11,13 +11,17 @@ import {
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Option } from '@/types/option'
-import { getRepositorys, uploadForOcr } from '@/api/v6/folder/folder'
+import {
+  getRepositoryItemFacets,
+  getRepositorys,
+  uploadForOcr,
+} from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputTime from '@/components/base/inputs/InputTime'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
-import { applyCalculatedFields, getRepositoryItemFacets } from '@/pages/form-builder/helpers/formula'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import {
   type Question,
   useFormStore,

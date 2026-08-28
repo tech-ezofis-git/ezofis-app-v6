@@ -4,14 +4,16 @@ import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { generateId } from '../utils/generateId'
+import { NODE_TOOL_TYPE, type NodeToolType } from '../utils/nodeToolTypes'
 
 interface IntegrationItem {
   bgColor: string
-  category: TabType | 'utility' // keeping utility for type safety if needed, but mainly mapping to new tabs
+  category: TabType | 'utility'
   description: string
   icon: string
   iconColor: string
   label: string
+  toolType: NodeToolType
   type: 'popular' | 'highlight'
   actions?: string[]
   nodeType?: 'action' | 'end' | 'trigger'
@@ -72,7 +74,7 @@ const AddNodeMenu = () => {
               iconColor: item.iconColor,
               label: item.label,
               subLabel: item.description,
-              toolType: item.label,
+              toolType: item.toolType,
               type:
                 item.nodeType ??
                 (item.category === 'triggers' ? 'trigger' : 'action'),
@@ -109,7 +111,7 @@ const AddNodeMenu = () => {
               iconColor: item.iconColor,
               label: item.label,
               subLabel: item.description,
-              toolType: item.label,
+              toolType: item.toolType,
               type:
                 item.nodeType ??
                 (item.category === 'triggers' ? 'trigger' : 'action'),
@@ -234,6 +236,7 @@ const AddNodeMenu = () => {
       icon: 'logos:google-gmail',
       iconColor: '',
       label: 'Gmail',
+      toolType: NODE_TOOL_TYPE.GMAIL,
       type: 'popular',
     },
     {
@@ -244,6 +247,7 @@ const AddNodeMenu = () => {
       icon: 'vscode-icons:file-type-outlook',
       iconColor: '',
       label: 'Outlook',
+      toolType: NODE_TOOL_TYPE.OUTLOOK,
       type: 'popular',
     },
     {
@@ -253,6 +257,7 @@ const AddNodeMenu = () => {
       icon: 'logos:slack-icon',
       iconColor: '',
       label: 'Slack',
+      toolType: NODE_TOOL_TYPE.SLACK,
       type: 'popular',
     },
     {
@@ -262,6 +267,7 @@ const AddNodeMenu = () => {
       icon: 'logos:microsoft-teams',
       iconColor: '',
       label: 'Teams',
+      toolType: NODE_TOOL_TYPE.TEAMS,
       type: 'popular',
     },
 
@@ -273,6 +279,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:scan-text',
       iconColor: '#2563eb',
       label: 'OCR Agent',
+      toolType: NODE_TOOL_TYPE.OCR_AGENT,
       type: 'popular',
     },
     {
@@ -282,6 +289,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:receipt-text',
       iconColor: '#059669',
       label: 'AP Agent',
+      toolType: NODE_TOOL_TYPE.AP_AGENT,
       type: 'popular',
     },
     {
@@ -291,6 +299,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:server',
       iconColor: '#7c3aed',
       label: 'FTP Agent',
+      toolType: NODE_TOOL_TYPE.FTP_AGENT,
       type: 'popular',
     },
     {
@@ -300,6 +309,7 @@ const AddNodeMenu = () => {
       icon: 'logos:google-drive',
       iconColor: '',
       label: 'Google Drive',
+      toolType: NODE_TOOL_TYPE.GOOGLE_DRIVE,
       type: 'popular',
     },
     {
@@ -309,6 +319,7 @@ const AddNodeMenu = () => {
       icon: 'logos:microsoft-onedrive',
       iconColor: '',
       label: 'OneDrive',
+      toolType: NODE_TOOL_TYPE.ONEDRIVE,
       type: 'popular',
     },
 
@@ -320,6 +331,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:file-input',
       iconColor: '#ea580c',
       label: 'Form Submission',
+      toolType: NODE_TOOL_TYPE.FORM_SUBMISSION,
       type: 'highlight',
     },
     {
@@ -329,6 +341,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:user',
       iconColor: '#ec4899',
       label: 'Manual User',
+      toolType: NODE_TOOL_TYPE.MANUAL_USER,
       type: 'highlight',
     },
     {
@@ -338,6 +351,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:split',
       iconColor: '#f97316',
       label: 'Condition',
+      toolType: NODE_TOOL_TYPE.CONDITION,
       type: 'highlight',
     },
     {
@@ -348,6 +362,7 @@ const AddNodeMenu = () => {
       iconColor: 'var(--color-secondary-9)',
       label: 'End',
       nodeType: 'end',
+      toolType: NODE_TOOL_TYPE.END,
       type: 'highlight',
     },
   ]
