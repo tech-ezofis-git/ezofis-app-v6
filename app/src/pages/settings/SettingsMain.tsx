@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Code2,
   FolderOpen,
+  Globe,
   Palette,
   Shield,
   UserRoundCheck,
@@ -19,6 +20,7 @@ import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
 import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
+import PortalConfiguration from './components/PortalConfiguration'
 import RolesPermissions from './components/RolesPermissions'
 import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
 import useSettingsTopbar from './hooks/useSettingsTopbar'
@@ -37,6 +39,7 @@ const SETTINGS_PAGES = new Set([
   'folder-configuration',
   'group-management',
   'playground',
+  'portal-configuration',
   'roles-permissions',
   'settings',
   'user-management',
@@ -47,6 +50,7 @@ const PRIMARY_SETTINGS_KEYS = [
   'roles-permissions',
   'group-management',
   'folder-configuration',
+  'portal-configuration',
   'branding',
 ]
 
@@ -114,6 +118,14 @@ export default function SettingsMain() {
     return (
       <SettingsDetailShell>
         <DmsSettings onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
+  }
+
+  if (activePage === 'portal-configuration') {
+    return (
+      <SettingsDetailShell>
+        <PortalConfiguration onBack={() => setActivePage('settings')} />
       </SettingsDetailShell>
     )
   }
@@ -190,6 +202,12 @@ function SettingsLanding({
         icon: FolderOpen,
         key: 'folder-configuration',
         title: t`Folder Configuration`,
+      },
+      {
+        description: t`Create branded portals, configure login methods, and connect workflows.`,
+        icon: Globe,
+        key: 'portal-configuration',
+        title: t`Portal Configuration`,
       },
       {
         description: t`Customize logos, brand colors, and visual identity across the platform.`,

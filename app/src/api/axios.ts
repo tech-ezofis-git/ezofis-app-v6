@@ -142,7 +142,8 @@ const handleResponseError = (error: AxiosError) => {
     if (
       globalThis.window !== undefined &&
       !isAuthEntryPath(window.location.pathname) &&
-      !window.location.pathname.startsWith('/sign-request')
+      !window.location.pathname.startsWith('/sign-request') &&
+      !window.location.pathname.startsWith('/portal')
     ) {
       window.location.href = signInPath
     }

@@ -31,8 +31,9 @@ type Props = {
   repositoryId?: number | string
   selectedChecklistName?: string | null
   selectedItem?: any
+  showRelatedFinder?: boolean
   transactionId?: number | string
-  workflowId?: number
+  workflowId?: number | string
   onClose?: () => void
   onOpenComments?: (file: AttachmentItem) => void
   onOpenHistory?: (file: AttachmentItem) => void
@@ -258,6 +259,7 @@ export default function Attachments({
   processId,
   repositoryId,
   selectedItem,
+  showRelatedFinder = true,
   workflowId,
   onOpenHistory,
   onOpenMailShare,
@@ -565,18 +567,20 @@ export default function Attachments({
         onChange={onFileChange}
       />
 
-      <RelatedDocumentsFinder
-        agentData={selectedItem || formModel}
-        attachedIds={attachedIds}
-        instanceId={targetInstanceId}
-        invoiceAmount={invoiceAmount}
-        invoiceNumber={invoiceNumber}
-        poNumber={poNumber}
-        repositoryId={repositoryId}
-        supplierName={supplierName}
-        workflowId={workflowId}
-        onAttached={refetch}
-      />
+      {showRelatedFinder ? (
+        <RelatedDocumentsFinder
+          agentData={selectedItem || formModel}
+          attachedIds={attachedIds}
+          instanceId={targetInstanceId}
+          invoiceAmount={invoiceAmount}
+          invoiceNumber={invoiceNumber}
+          poNumber={poNumber}
+          repositoryId={repositoryId}
+          supplierName={supplierName}
+          workflowId={workflowId}
+          onAttached={refetch}
+        />
+      ) : null}
 
       {!isLoading && (
         <div className='mb-2.5 flex shrink-0 items-center justify-between'>
