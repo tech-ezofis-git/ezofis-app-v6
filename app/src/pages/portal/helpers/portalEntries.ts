@@ -46,7 +46,7 @@ export const extractPortalFormFields = (formJson: unknown): PortalFormField[] =>
       : []
 
   return rawFields
-    .map((field) => {
+    .map((field): PortalFormField | null => {
       const row = field as Record<string, unknown>
       const id = String(row.id || row.key || row.name || '')
       const name = String(row.label || row.title || row.name || row.id || '')
@@ -193,7 +193,7 @@ export const visibleEntryFields = (
   entries: Record<string, unknown>[],
 ) => {
   if (fields.length) {
-    return fields.filter((field) => !SYSTEM_ENTRY_KEYS.has(field.id))
+    return fields.filter((field) => !SYSTEM_ENTRY_KEYS.has(String(field.id)))
   }
 
   const keys = new Set<string>()

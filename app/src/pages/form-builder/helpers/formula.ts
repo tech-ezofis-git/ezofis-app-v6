@@ -94,7 +94,7 @@ const getDecimalPrecision = (field: Question): number | undefined => {
   const specific = field.settings?.specific?.decimalPrecision
   const validation = field.settings?.validation?.decimalDigits
   const raw = specific ?? validation
-  if (raw === undefined || raw === null || raw === '') return undefined
+  if (raw === undefined || raw === null || String(raw).trim() === '') return undefined
   const parsed = Number(raw)
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : undefined
 }

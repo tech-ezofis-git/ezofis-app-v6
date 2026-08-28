@@ -211,7 +211,7 @@ const extractFormFields = (formJson: unknown): Option[] => {
         : []
 
   return rawFields
-    .map((field) => {
+    .map((field): Option | null => {
       const row = field as Record<string, unknown>
       const id = String(row.id || row.key || row.name || '')
       const name = String(row.label || row.title || row.name || row.id || '')

@@ -35,6 +35,7 @@ export const getField = (fieldType: string) => {
       general: {
         hideLabel: false,
         placeholder: '',
+        readOnly: false,
         size: 'col-6',
         tooltip: '',
         url: '',
@@ -63,6 +64,7 @@ export const getField = (fieldType: string) => {
         allowedFileTypes: [] as string[],
         contentRule: '',
         fieldRule: 'OPTIONAL',
+        isCalculationEnabled: false,
         maxFileSize: 10,
         maximum: '',
         minimum: '',

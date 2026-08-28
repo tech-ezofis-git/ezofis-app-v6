@@ -97,8 +97,11 @@ const ChoiceRadioGroupField = ({
   const baseOptions = getFieldOptions(field).map((o) => o.name)
   const allOptions = [...baseOptions, ...customList]
 
-  const optionsPerLine = specific.optionsPerLine ?? 3
+  const optionsPerLine = specific.optionsPerLine ?? 0
   const isAutoFlex = optionsPerLine === 0
+  const effectiveCols = isAutoFlex
+    ? 0
+    : Math.min(optionsPerLine, Math.max(allOptions.length, 1))
   const selectedValue =
     value !== undefined && value !== null ? String(value) : ''
 
@@ -153,13 +156,13 @@ const ChoiceRadioGroupField = ({
       >
         <div
           className={cn(
-            'gap-2',
+            'gap-2 w-full',
             isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
           )}
           style={
             !isAutoFlex
               ? {
-                gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
               }
               : undefined
           }
@@ -170,8 +173,8 @@ const ChoiceRadioGroupField = ({
               <div
                 key={i}
                 className={cn(
-                  'flex min-h-[38px] items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
-                  isAutoFlex ? 'flex-shrink-0' : '',
+                  'flex min-h-[38px] flex-1 min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
+                  isAutoFlex ? 'min-w-[100px]' : '',
                   readOnly
                     ? 'cursor-default opacity-85'
                     : 'cursor-pointer active:scale-[0.99]',
@@ -272,8 +275,11 @@ const ChoiceCheckboxGroupField = ({
   const baseOptions = getFieldOptions(field).map((o) => o.name)
   const allOptions = [...baseOptions, ...customList]
 
-  const optionsPerLine = specific.optionsPerLine ?? 3
+  const optionsPerLine = specific.optionsPerLine ?? 0
   const isAutoFlex = optionsPerLine === 0
+  const effectiveCols = isAutoFlex
+    ? 0
+    : Math.min(optionsPerLine, Math.max(allOptions.length, 1))
   const selectedList = Array.isArray(value)
     ? value
     : value
@@ -341,13 +347,13 @@ const ChoiceCheckboxGroupField = ({
       >
         <div
           className={cn(
-            'gap-2',
+            'gap-2 w-full',
             isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
           )}
           style={
             !isAutoFlex
               ? {
-                gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
               }
               : undefined
           }
@@ -358,13 +364,13 @@ const ChoiceCheckboxGroupField = ({
               <div
                 key={i}
                 className={cn(
-                  'flex min-h-[38px] items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
-                  isAutoFlex ? 'flex-shrink-0' : '',
+                  'flex min-h-[38px] flex-1 min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
+                  isAutoFlex ? 'min-w-[100px]' : '',
                   readOnly
                     ? 'cursor-default opacity-85'
                     : 'cursor-pointer active:scale-[0.99]',
                   isSelected
-                    ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
+                    ? 'border-primary-9 bg-primary-9 text-white font-semibold shadow-2xs'
                     : readOnly
                       ? 'border-gray-2 bg-gray-1 text-gray-10'
                       : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
@@ -373,7 +379,7 @@ const ChoiceCheckboxGroupField = ({
               >
                 <div
                   className={cn(
-                    'flex size-4 shrink-0 items-center justify-center rounded-md border transition-colors',
+                    'flex size-4 shrink-0 items-center justify-center rounded border transition-colors',
                     isSelected
                       ? 'border-primary-9 bg-primary-9 text-white'
                       : 'border-gray-4 bg-white',
