@@ -22,7 +22,20 @@ import {
   isMatrixFieldType,
   isTableType,
 } from '../../utils/dynamicTable.utils'
+import { setFieldForAttachment } from '../../utils/fieldAttachmentMap'
 import { isAccountsPayableWorkflow } from '../../utils/workflow.utils'
+import {
+  attachmentToFormFileValue,
+  getFirstFileUploadField,
+  getFirstReceivedAttachment,
+  getFormPanels,
+  getWorkflowRepositoryId,
+  hasStoredFileValue,
+  isFileUploadField,
+  seedGmailFirstFileUpload,
+  shouldSeedFirstFileUploadFromAttachment,
+} from '../workflow-request/utils/gmailFormAttachment'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
@@ -1109,6 +1122,9 @@ const Request = ({
       ) || null
     )
   }, [rawWorkflowData, currentActivityId])
+
+  console.log('[Pending with] activityId:', currentActivityId)
+  console.log('[Pending with] matched block:', currentBlock)
   const currentBlockSettings: Record<string, any> = currentBlock?.settings || {}
 
   const assignedGroupIds = useMemo(
@@ -1195,16 +1211,93 @@ const Request = ({
   useEffect(() => {
     if (!isGenericWorkflow) return
     const activeItem = request || selectedItem
-    setGenericFormModel(safeParseFormData(activeItem?.formData))
+    const parsed = safeParseFormData(activeItem?.formData)
+    setGenericFormModel((prev) => {
+      const next = { ...parsed }
+      for (const [key, value] of Object.entries(prev)) {
+        if (hasStoredFileValue(value) && !hasStoredFileValue(next[key])) {
+          next[key] = value
+        }
+      }
+      return applyCalculatedFields(
+        getFormPanels(rawWorkflowData),
+        seedGmailFirstFileUpload(
+          next,
+          rawWorkflowData,
+          genericAttachments,
+          activeItem?.activityId,
+          rawWorkflowData?.repositoryId || activeItem?.repositoryId,
+        ),
+      )
+    })
   }, [
+    genericAttachments,
     isGenericWorkflow,
+    rawWorkflowData,
     request,
+    selectedItem?.activityId,
     selectedItem?.formData,
+    selectedItem?.repositoryId,
     selectedItem?.transactionId,
   ])
 
+  useEffect(() => {
+    if (!isGenericWorkflow) return
+    if (
+      !shouldSeedFirstFileUploadFromAttachment(
+        rawWorkflowData,
+        (request || selectedItem)?.activityId,
+      )
+    ) {
+      return
+    }
+    const firstField = getFirstFileUploadField(getFormPanels(rawWorkflowData))
+    if (!isFileUploadField(firstField)) return
+    const firstReceived = getFirstReceivedAttachment(genericAttachments)
+    const stored = attachmentToFormFileValue(
+      firstReceived,
+      getWorkflowRepositoryId(
+        rawWorkflowData,
+        rawWorkflowData?.repositoryId ||
+          selectedItem?.repositoryId ||
+          request?.repositoryId,
+      ),
+    )
+    if (!stored) return
+
+    setGenericFormModel((prev) =>
+      applyCalculatedFields(
+        getFormPanels(rawWorkflowData),
+        seedGmailFirstFileUpload(
+          prev,
+          rawWorkflowData,
+          genericAttachments,
+          (request || selectedItem)?.activityId,
+          stored.repositoryId,
+        ),
+      ),
+    )
+
+    const instanceKey = String(genericInstanceId || '')
+    if (instanceKey) {
+      setFieldForAttachment(instanceKey, stored.itemId, firstField.id)
+    }
+  }, [
+    genericAttachments,
+    genericInstanceId,
+    isGenericWorkflow,
+    rawWorkflowData,
+    request,
+    selectedItem,
+  ])
+
   const handleGenericFieldChange = (fieldId: string, value: any) =>
-    setGenericFormModel((prev) => ({ ...prev, [fieldId]: value }))
+    setGenericFormModel((prev) =>
+      applyCalculatedFields(getFormPanels(rawWorkflowData), {
+        ...prev,
+        [fieldId]: value,
+      }),
+    )
 
   const allowedLabels = useMemo(() => {
     const activeItem = request || selectedItem
@@ -1788,7 +1881,7 @@ const Request = ({
 
   return (
     <div
-      className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
+      className={`flex w-full min-h-0 flex-col overflow-hidden p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-full'}`}
     >
       <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
@@ -1943,6 +2036,7 @@ const Request = ({
                 selectedItem={request || selectedItem}
                 signatureConfirmed={signatureConfirmed}
                 userSignatureRequired={!!currentBlockSettings.userSignature}
+                viewOnly={requestListTab !== 'Inbox'}
                 setRightView={setRightView}
                 onAttachmentsChanged={refetchGenericAttachments}
                 onChecklistToggle={(id, checked) =>

@@ -20,11 +20,19 @@ import {
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import {
+  buildMergedOcrFieldHints,
+  facetsToFieldOptions,
+  findFieldOption,
+  getConfiguredFieldOptions,
   getDateTimeLimits,
+  getDropdownFacetSource,
   getFieldOptions,
   getFileExtension,
   isFieldReadOnly,
   isFieldRequired,
+  normalizeStoredMultiSelectValue,
+  selectOptionStoredValue,
+  withExtraFieldOptions,
 } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
 import TableFieldRenderer from './TableFieldRenderer'
@@ -39,6 +47,9 @@ interface Props {
   // when the field has no in-session value of its own (e.g. after a page
   // reload, since FILE_UPLOAD values never round-trip through formData).
   fallbackAttachments?: any[]
+  isPreparing?: boolean
+  panels?: any[]
+  preparePhase?: 'extracting' | 'uploading' | null
   repoFieldHints?: string[]
   viewOnly?: boolean
   onChange: (value: any) => void
@@ -48,15 +59,13 @@ interface Props {
   // Clicking an already-uploaded file below this field opens it in the
   // owning screen's full-screen preview.
   onOpenAttachment?: (attachment: any) => void
-  // Set only on the Overview of an already-submitted request (never during
-  // New Request compose): there is no later submit() to stage the file, so
-  // the owning screen takes over and uploads it for real.
-  onRequestUpload?: (file: File) => void
+  onRequestUpload?: (file: File) => void | Promise<void>
 }
 
 interface StagedFileValue {
   fileName: string
   fileId?: string
+  itemId?: string
   // See AttachmentEntry.ocrChecked in AttachmentsPanel.tsx — same purpose.
   ocrChecked?: boolean
   // Carried from the uploadForOcr response so stagePendingFiles can forward
@@ -176,12 +185,14 @@ const ChoiceRadioGroupField = ({
                   'flex min-h-[38px] flex-1 min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
                   isAutoFlex ? 'min-w-[100px]' : '',
                   readOnly
-                    ? 'cursor-default opacity-85'
+                    ? 'cursor-not-allowed bg-gray-3 text-gray-10 opacity-100'
                     : 'cursor-pointer active:scale-[0.99]',
                   isSelected
-                    ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
+                    ? readOnly
+                      ? 'border-gray-4 bg-gray-3 font-semibold text-gray-11'
+                      : 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
                     : readOnly
-                      ? 'border-gray-2 bg-gray-1 text-gray-10'
+                      ? 'border-gray-3 bg-gray-3 text-gray-10'
                       : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
                 )}
                 onClick={() => !readOnly && onChange(opt)}
@@ -367,12 +378,14 @@ const ChoiceCheckboxGroupField = ({
                   'flex min-h-[38px] flex-1 min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
                   isAutoFlex ? 'min-w-[100px]' : '',
                   readOnly
-                    ? 'cursor-default opacity-85'
+                    ? 'cursor-not-allowed bg-gray-3 text-gray-10 opacity-100'
                     : 'cursor-pointer active:scale-[0.99]',
                   isSelected
-                    ? 'border-primary-9 bg-primary-9 text-white font-semibold shadow-2xs'
+                    ? readOnly
+                      ? 'border-gray-4 bg-gray-3 font-semibold text-gray-11'
+                      : 'border-primary-9 bg-primary-9 text-white font-semibold shadow-2xs'
                     : readOnly
-                      ? 'border-gray-2 bg-gray-1 text-gray-10'
+                      ? 'border-gray-3 bg-gray-3 text-gray-10'
                       : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
                 )}
                 onClick={() => handleToggle(opt)}
@@ -464,6 +477,9 @@ const FieldRenderer = ({
   error,
   fallbackAttachments,
   field,
+  isPreparing,
+  panels,
+  preparePhase,
   repoFieldHints,
   repositoryId,
   value,
@@ -475,31 +491,41 @@ const FieldRenderer = ({
 }: Props) => {
   const { t } = useLingui()
   const [isUploading, setIsUploading] = useState(false)
+  const [clearedAttachmentKeys, setClearedAttachmentKeys] = useState<string[]>(
+    [],
+  )
   const general = field?.settings?.general || {}
   const required = isFieldRequired(field)
   const readOnly = viewOnly || isFieldReadOnly(field)
 
-  const isRepositoryMultiSelect =
-    field.type === 'MULTI_SELECT' &&
-    field.settings?.specific?.optionsType === 'REPOSITORY'
+  const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
+  const facetSource = getDropdownFacetSource(field, repositoryId)
 
-  const targetRepoId =
-    field.settings?.specific?.repositoryId || repositoryId || ''
-  const targetRepoField = field.settings?.specific?.repositoryField || ''
-
-  const { data: repositoryFacetOptions = [] } = useQuery({
-    queryKey: ['repositoryItemFacets', targetRepoId, targetRepoField],
+  const { data: uniqueFieldOptions = [] } = useQuery({
+    queryKey: [
+      'repositoryItemFacets',
+      facetSource.repositoryId,
+      facetSource.fieldName,
+    ],
     queryFn: async () => {
-      if (!targetRepoId || !targetRepoField) return []
       const res = await getRepositoryItemFacets({
-        repositoryId: targetRepoId,
-        fieldName: targetRepoField,
+        fieldName: facetSource.fieldName,
         limit: 1000,
+        repositoryId: facetSource.repositoryId,
       })
-      return (res.data || []).map((f) => ({ id: f.value, name: f.value }))
+      return facetsToFieldOptions(res.data, {
+        splitArrayValues: field.type === 'MULTI_SELECT',
+      })
     },
-    enabled: isRepositoryMultiSelect && !!targetRepoId && !!targetRepoField,
+    enabled: facetSource.enabled,
   })
+
+  const selectOptions = withExtraFieldOptions(
+    optionsType === 'DYNAMIC'
+      ? getFieldOptions(field)
+      : getConfiguredFieldOptions(field),
+    uniqueFieldOptions,
+  )
 
   const common = {
     disabled: readOnly,
@@ -642,13 +668,21 @@ const FieldRenderer = ({
       )
 
     case 'SINGLE_SELECT': {
-      const options = getFieldOptions(field)
+      const selected = findFieldOption(selectOptions, value)
       return (
         <InputSelect
           {...common}
-          options={options}
-          value={options.find((opt) => opt.id === value) || null}
-          onChange={(opt: Option | null) => onChange(opt ? opt.id : null)}
+          creatable
+          searchable
+          createOptionLabel={(query) => t`Add "${query}"`}
+          options={withExtraFieldOptions(
+            selectOptions,
+            selected ? [selected] : [],
+          )}
+          value={selected}
+          onChange={(opt: Option | null) =>
+            onChange(opt ? selectOptionStoredValue(opt, selectOptions) : null)
+          }
         />
       )
     }
@@ -666,15 +700,26 @@ const FieldRenderer = ({
       )
 
     case 'MULTI_SELECT': {
-      const isRepo = field.settings?.specific?.optionsType === 'REPOSITORY'
-      const options = isRepo ? repositoryFacetOptions : getFieldOptions(field)
-      const selectedIds: string[] = Array.isArray(value) ? value : []
+      const seen = new Set<string>()
+      const selected = normalizeStoredMultiSelectValue(value).flatMap((id) => {
+        const opt = findFieldOption(selectOptions, id)
+        if (!opt) return []
+        const key = String(opt.id).toLowerCase()
+        if (seen.has(key)) return []
+        seen.add(key)
+        return [opt]
+      })
       return (
         <InputSelectMultiple
           {...common}
-          options={options}
-          value={options.filter((opt) => selectedIds.includes(opt.id))}
-          onChange={(opts: Option[]) => onChange(opts.map((opt) => opt.id))}
+          creatable
+          searchable
+          createOptionLabel={(query) => t`Add "${query}"`}
+          options={withExtraFieldOptions(selectOptions, selected)}
+          value={selected}
+          onChange={(opts: Option[]) =>
+            onChange(opts.map((opt) => selectOptionStoredValue(opt, selectOptions)))
+          }
         />
       )
     }
@@ -699,39 +744,100 @@ const FieldRenderer = ({
 
     case 'IMAGE_UPLOAD':
     case 'FILE_UPLOAD': {
-      // Submitted files aren't part of formData (per the integration guide
-      // they travel as stagedFiles instead), so there's nothing meaningful
-      // to show inline here for an already-submitted request — point at
-      // the Attachments section instead of rendering a broken dropzone.
-      if (viewOnly) {
-        return (
-          <div>
-            {!general.hideLabel && (
-              <label className='mb-1.5 block text-13 font-medium text-gray-12'>
-                {field.label}
-              </label>
-            )}
-            <div className='rounded-lg border border-dashed border-gray-3 bg-gray-1 px-3 py-2.5 text-12 text-gray-8'>
-              {t`See the Attachments section for uploaded files.`}
-            </div>
-          </div>
-        )
+      const storedItemId = String(value?.itemId || value?.fileId || '').trim()
+      const staged: StagedFileValue | null =
+        value?.fileName && (value.ocrChecked || storedItemId)
+          ? {
+              ...value,
+              fileId: value.fileId || storedItemId,
+              fileName: value.fileName,
+              itemId: value.itemId || storedItemId,
+              repositoryId: value.repositoryId,
+            }
+          : null
+      const stagedKey = String(staged?.itemId || staged?.fileId || '')
+      // A FILE_UPLOAD field holds one file. Extra process/email attachments
+      // belong in the Attachments panel, not stacked under this control.
+      const extraFallbacks = staged
+        ? []
+        : (fallbackAttachments || [])
+            .filter((attachment) => {
+              const key = String(
+                attachment.itemId ?? attachment.id ?? attachment.fileId ?? '',
+              )
+              if (!key || clearedAttachmentKeys.includes(key)) return false
+              return !stagedKey || key !== stagedKey
+            })
+            .slice(0, 1)
+
+      const clearFile = (attachmentKey?: string) => {
+        if (attachmentKey) {
+          setClearedAttachmentKeys((keys) =>
+            keys.includes(attachmentKey) ? keys : [...keys, attachmentKey],
+          )
+        }
+        onChange(null)
       }
 
-      // Shown below the dropzone once a file is attached — true once phase-1
-      // OCR has resolved (compose flow) or, for an already-submitted request
-      // viewed on the overview, as soon as a fileId is present (that value
-      // never carries ocrChecked, since staging happens once at submit).
-      const staged: StagedFileValue | null =
-        value?.fileName && (value.ocrChecked || value.fileId) ? value : null
+      const ext = staged ? getFileExtension(staged.fileName) : ''
+      const icon = staged ? getFileIcon(ext) : ''
+      const styles = staged ? getFileIconClasses(ext) : null
+      const canOpenStaged = Boolean(
+        (staged?.itemId || staged?.fileId) && onOpenAttachment,
+      )
 
-      // Two-phase, matching the repository's mandatory-field rules: this
-      // is phase 1 only — an OCR-only peek (uploadForOcr, nothing
-      // persisted) to auto-fill matching fields. The file itself is kept
-      // as `rawFile` and only actually staged (uploadWithOcr, which is
-      // what produces the fileId used in `stagedFiles`) at submit time,
-      // after mandatory fields are confirmed filled — see
-      // useWorkflowForm's stagePendingFiles().
+      const stagedChip =
+        staged && styles ? (
+          <div
+            className={`mt-2 flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 ${
+              canOpenStaged
+                ? 'cursor-pointer transition-all hover:border-primary-5 hover:bg-primary-1/30'
+                : ''
+            }`}
+            onClick={() =>
+              canOpenStaged &&
+              onOpenAttachment?.({
+                fileName: staged.fileName,
+                id: staged.itemId || staged.fileId,
+                itemId: staged.itemId || staged.fileId,
+                name: staged.fileName,
+                repositoryId: staged.repositoryId,
+              })
+            }
+          >
+            <div
+              className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${styles.wrap}`}
+            >
+              <Icon className='size-4' name={icon} />
+            </div>
+            <div
+              className='flex min-w-0 flex-1 items-center gap-1'
+              title={staged.fileName}
+            >
+              <span
+                className={`min-w-0 truncate text-12 font-semibold text-gray-12 ${
+                  canOpenStaged ? 'hover:underline' : ''
+                }`}
+              >
+                {staged.fileName}
+              </span>
+              {!readOnly && (
+                <button
+                  aria-label={t`Remove file`}
+                  className='flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
+                  type='button'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    clearFile(stagedKey)
+                  }}
+                >
+                  <Icon className='size-3.5' name='tabler:x' />
+                </button>
+              )}
+            </div>
+          </div>
+        ) : null
+
       const handleFiles = async (files: FileList | null) => {
         const file = files?.[0]
         if (!file) return
@@ -750,7 +856,12 @@ const FieldRenderer = ({
         // preview left, repository fields right) — see
         // GenericAttachmentSplitView.
         if (onRequestUpload) {
-          onRequestUpload(file)
+          setIsUploading(true)
+          try {
+            await onRequestUpload(file)
+          } finally {
+            setIsUploading(false)
+          }
           return
         }
 
@@ -763,10 +874,15 @@ const FieldRenderer = ({
         onChange(fileEntry)
 
         setIsUploading(true)
+        const ocrHints = buildMergedOcrFieldHints(
+          repoFieldHints,
+          panels || [],
+          field,
+        )
         const { data, error } = await uploadForOcr(
           repositoryId,
           file,
-          repoFieldHints || [],
+          ocrHints,
         )
         setIsUploading(false)
 
@@ -788,10 +904,6 @@ const FieldRenderer = ({
         })
       }
 
-      const ext = staged ? getFileExtension(staged.fileName) : ''
-      const icon = staged ? getFileIcon(ext) : ''
-      const styles = staged ? getFileIconClasses(ext) : null
-
       return (
         <div>
           {!general.hideLabel && (
@@ -800,66 +912,40 @@ const FieldRenderer = ({
               {required && <span className='text-red-9'> *</span>}
             </label>
           )}
-          <CompactDropzone
-            accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
-            disabled={readOnly}
-            isLoading={isUploading}
-            loadingText={t`Extracting data from the document…`}
-            onFiles={handleFiles}
-          />
-          {staged && styles && (
-            <div
-              className={`mt-2 flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 ${staged.fileId && onOpenAttachment
-                  ? 'cursor-pointer transition-all hover:border-primary-5 hover:bg-primary-1/30'
-                  : ''
-                }`}
-              onClick={() =>
-                staged.fileId &&
-                onOpenAttachment?.({
-                  fileName: staged.fileName,
-                  id: staged.fileId,
-                  itemId: staged.fileId,
-                  name: staged.fileName,
-                  repositoryId: staged.repositoryId,
-                })
+          {!readOnly && (
+            <CompactDropzone
+              accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
+              disabled={readOnly}
+              isLoading={isUploading || Boolean(isPreparing)}
+              loadingText={
+                preparePhase === 'uploading'
+                  ? t`Uploading the document…`
+                  : t`Extracting data from the document…`
               }
-            >
-              <div
-                className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${styles.wrap}`}
-              >
-                <Icon className='size-4' name={icon} />
-              </div>
-              <div
-                className={`min-w-0 flex-1 truncate text-12 font-semibold text-gray-12 ${staged.fileId && onOpenAttachment ? 'hover:underline' : ''
-                  }`}
-                title={staged.fileName}
-              >
-                {staged.fileName}
-              </div>
-              {!readOnly && (
-                <button
-                  aria-label={t`Remove file`}
-                  className='flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
-                  type='button'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onChange(null)
-                  }}
-                >
-                  <Icon className='size-3.5' name='tabler:x' />
-                </button>
-              )}
+              onFiles={handleFiles}
+            />
+          )}
+          {readOnly && !stagedChip && extraFallbacks.length === 0 && (
+            <div className='rounded-lg border border-dashed border-gray-3 bg-gray-1 px-3 py-2.5 text-12 text-gray-8'>
+              {t`See the Attachments section for uploaded files.`}
             </div>
           )}
-          {fallbackAttachments?.map((attachment) => {
+          {stagedChip}
+          {extraFallbacks.map((attachment) => {
             const attName = attachment.name || attachment.fileName || ''
             const attExt = getFileExtension(attName)
             const attStyles = getFileIconClasses(attExt)
+            const attKey = String(
+              attachment.itemId ?? attachment.id ?? attachment.fileId ?? '',
+            )
             return (
-              <button
-                className='mt-2 flex w-full items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 text-left transition-all hover:border-primary-5 hover:bg-primary-1/30 active:scale-[0.99]'
+              <div
+                className={`mt-2 flex w-full items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 ${
+                  onOpenAttachment
+                    ? 'cursor-pointer transition-all hover:border-primary-5 hover:bg-primary-1/30'
+                    : ''
+                }`}
                 key={attachment.id ?? attName}
-                type='button'
                 onClick={() => onOpenAttachment?.(attachment)}
               >
                 <div
@@ -867,17 +953,25 @@ const FieldRenderer = ({
                 >
                   <Icon className='size-4' name={getFileIcon(attExt)} />
                 </div>
-                <div
-                  className='min-w-0 flex-1 truncate text-12 font-semibold text-gray-12'
-                  title={attName}
-                >
-                  {attName}
+                <div className='flex min-w-0 flex-1 items-center gap-1' title={attName}>
+                  <span className='min-w-0 truncate text-12 font-semibold text-gray-12'>
+                    {attName}
+                  </span>
+                  {!readOnly && (
+                    <button
+                      aria-label={t`Remove file`}
+                      className='flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
+                      type='button'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        clearFile(attKey)
+                      }}
+                    >
+                      <Icon className='size-3.5' name='tabler:x' />
+                    </button>
+                  )}
                 </div>
-                <Icon
-                  className='size-3.5 shrink-0 text-gray-8'
-                  name='tabler:eye'
-                />
-              </button>
+              </div>
             )
           })}
           {error && (

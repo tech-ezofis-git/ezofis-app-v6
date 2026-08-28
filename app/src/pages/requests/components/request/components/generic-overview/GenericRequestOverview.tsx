@@ -1,24 +1,37 @@
 import { useLingui } from '@lingui/react/macro'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
-import type { RepositoryFieldSchema } from '@/pages/requests/utils/repoFolderMetadata'
 import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
-import authUserStore from '@/stores/authUserStore'
 import {
+  buildMergedOcrFieldHints,
   buildRepoFieldHints,
   buildRepoMetadata,
   extractOcrText,
+  mapOcrFieldsToModel,
+  SYNTHETIC_FIELD_PREFIX,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import {
+  attachmentToFormFileValue,
+  getFirstFileUploadField,
+  getFirstReceivedAttachment,
+  getWorkflowRepositoryId,
+  hasStoredFileValue,
+} from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import { setFieldForAttachment } from '@/pages/requests/utils/fieldAttachmentMap'
 import {
   planRepositoryFolderMetadata,
   uploadInstanceAttachment,
 } from '@/pages/requests/utils/instanceAttachmentUpload'
-import { getFolderStructureFields } from '@/pages/requests/utils/repoFolderMetadata'
+import {
+  applyFilenamePreFill,
+  getFolderStructureFields,
+  type RepositoryFieldSchema,
+} from '@/pages/requests/utils/repoFolderMetadata'
+import authUserStore from '@/stores/authUserStore'
 import Attachments from '../sections/attachment/Attachments'
 import Comments from '../sections/comment/Comments'
 import History from '../sections/history/History'
@@ -32,13 +45,60 @@ interface ChecklistItem {
   required: boolean
 }
 
-// A file picked through a form field, waiting on the one repository folder
-// field that actually varies per document before it can be posted.
+// A file picked through a form field, waiting on the indexing page so the
+// uploader can review inherited / OCR values, fill blanks, and change
+// existing fields before the file is posted.
 interface PendingFieldUpload {
   baseMetadata: Record<string, string>
-  deepestField: RepositoryFieldSchema
   fieldId: string
   file: File
+  isFirstFile: boolean
+  ocrFieldList?: { name?: string; type?: string | null; value?: string }[]
+  ocrHints?: string[]
+  ocrJson?: string
+}
+
+const overlayIndexingMetadata = (
+  folderFields: RepositoryFieldSchema[],
+  inherited: Record<string, string>,
+  fromForm: Record<string, string>,
+): Record<string, string> => {
+  const next: Record<string, string> = {}
+  for (const field of folderFields) {
+    const formVal = String(
+      fromForm[field.sqlColumnName] || fromForm[field.name] || '',
+    ).trim()
+    const inheritedVal = String(
+      inherited[field.sqlColumnName] || inherited[field.name] || '',
+    ).trim()
+    next[field.sqlColumnName] = formVal || inheritedVal
+  }
+  return next
+}
+
+const toUploadMetadata = (
+  folderFields: RepositoryFieldSchema[],
+  values: Record<string, string>,
+): Record<string, string> => {
+  const next: Record<string, string> = {}
+  for (const field of folderFields) {
+    const value = String(
+      values[field.sqlColumnName] || values[field.name] || '',
+    ).trim()
+    next[field.sqlColumnName] = value
+    if (field.name) next[field.name] = value
+  }
+  return next
+}
+
+const formAccessMode = (value: unknown): 'ALL' | 'NONE' | 'CUSTOM' => {
+  const raw =
+    typeof value === 'string' || typeof value === 'number' ? value : 'ALL'
+  const access = String(raw).toUpperCase()
+  if (access === 'NONE') return 'NONE'
+  if (access === 'CUSTOM') return 'CUSTOM'
+  // ALL, FULL (legacy dummy/imported workflows), and unknown values.
+  return 'ALL'
 }
 
 interface Props {
@@ -57,6 +117,8 @@ interface Props {
   documentRequired?: boolean
   signatureConfirmed?: boolean
   userSignatureRequired?: boolean
+  // Sent/Closed (or not assigned) — the form is display-only.
+  viewOnly?: boolean
   setRightView: (
     view: 'overview' | 'history' | 'attachments' | 'comments',
   ) => void
@@ -75,15 +137,16 @@ interface Props {
 // the New Request compose layout.
 const GenericRequestOverview = ({
   attachments,
+  checklistChecked = {},
+  checklistItems = [],
+  documentRequired = false,
   formModel,
   rawWorkflowData,
   rightView,
   selectedItem,
-  checklistChecked = {},
-  checklistItems = [],
-  documentRequired = false,
   signatureConfirmed = false,
   userSignatureRequired = false,
+  viewOnly = false,
   setRightView,
   onAttachmentsChanged,
   onChecklistToggle,
@@ -121,19 +184,20 @@ const GenericRequestOverview = ({
   const currentUserId = String(authUserStore.getState().session?.id || '')
 
   const readOnlyFieldIds = useMemo(() => {
-    const access = blockSettings.formEditAccess || 'ALL'
+    const access = formAccessMode(blockSettings.formEditAccess)
     if (access === 'ALL') return undefined
     if (access === 'NONE') return new Set(allFieldIds)
     const rules = Array.isArray(blockSettings.formEditControls)
       ? blockSettings.formEditControls
       : []
     const rule = rules.find((r: any) => String(r.userId) === currentUserId)
+    if (!rule) return undefined
     const editable = new Set((rule?.formFields || []).map(String))
     return new Set(allFieldIds.filter((id) => !editable.has(id)))
   }, [blockSettings, allFieldIds, currentUserId])
 
   const hiddenFieldIds = useMemo(() => {
-    const access = blockSettings.formVisibilityAccess || 'ALL'
+    const access = formAccessMode(blockSettings.formVisibilityAccess)
     if (access === 'ALL') return undefined
     if (access === 'NONE') return new Set(allFieldIds)
     const rules = Array.isArray(blockSettings.formSecureControls)
@@ -154,6 +218,52 @@ const GenericRequestOverview = ({
 
   const showSidePanel = rightView !== 'overview'
 
+  const seededFileFieldRef = useRef('')
+
+  useEffect(() => {
+    const firstReceived = getFirstReceivedAttachment(attachments)
+    const attachmentId =
+      firstReceived?.itemId ?? firstReceived?.id ?? firstReceived?.fileId
+    const seedKey =
+      instanceId && attachmentId ? `${instanceId}:${attachmentId}` : ''
+    if (!seedKey || seededFileFieldRef.current === seedKey) return
+
+    const firstField = getFirstFileUploadField(panels)
+    const fieldId = firstField?.id || firstField?.jsonId
+    if (!fieldId) return
+
+    const current = formModel[fieldId]
+    if (hasStoredFileValue(current)) {
+      const currentId = String(current.itemId || current.fileId || '')
+      if (currentId === String(attachmentId) || current?.rawFile) {
+        seededFileFieldRef.current = seedKey
+        return
+      }
+    }
+
+    const stored = attachmentToFormFileValue(
+      firstReceived,
+      getWorkflowRepositoryId(
+        rawWorkflowData,
+        repositoryId || selectedItem?.repositoryId,
+      ),
+    )
+    if (!stored) return
+
+    seededFileFieldRef.current = seedKey
+    onFieldChange(fieldId, stored)
+    setFieldForAttachment(instanceId, stored.itemId, fieldId)
+  }, [
+    attachments,
+    formModel,
+    instanceId,
+    onFieldChange,
+    panels,
+    rawWorkflowData,
+    repositoryId,
+    selectedItem?.repositoryId,
+  ])
+
   const [selectedAttachment, setSelectedAttachment] =
     useState<AttachmentItem | null>(null)
   // Full-screen file workspace (preview left, repository fields right) —
@@ -165,7 +275,29 @@ const GenericRequestOverview = ({
     null,
   )
   const [isUploading, setIsUploading] = useState(false)
+  const [preparePhase, setPreparePhase] = useState<
+    'extracting' | 'uploading' | null
+  >(null)
+  const [preparingFieldId, setPreparingFieldId] = useState<string | null>(null)
   const [folderFields, setFolderFields] = useState<RepositoryFieldSchema[]>([])
+  const returnToFieldIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (pendingUpload?.fieldId) {
+      returnToFieldIdRef.current = String(pendingUpload.fieldId)
+      return
+    }
+    const fieldId = returnToFieldIdRef.current
+    if (!fieldId) return
+    const timeoutId = window.setTimeout(() => {
+      const node = document.querySelector(
+        `[data-field-id="${CSS.escape(fieldId)}"]`,
+      )
+      node?.scrollIntoView({ block: 'center', inline: 'nearest' })
+      returnToFieldIdRef.current = null
+    }, 80)
+    return () => window.clearTimeout(timeoutId)
+  }, [pendingUpload])
 
   useEffect(() => {
     setSelectedAttachment(null)
@@ -188,76 +320,91 @@ const GenericRequestOverview = ({
   const handleRequestUpload = useCallback(
     async (fieldId: string, file: File) => {
       if (!workflowId || !instanceId || !repositoryId) return
-      setIsUploading(true)
+      setPreparePhase('extracting')
+      setPreparingFieldId(fieldId)
       try {
-        // Nothing on this instance yet to inherit a folder path from — this
-        // is effectively the same situation as New Request's own first
-        // upload, so follow the exact same two-phase flow (OCR peek, then
-        // uploadWithOcr with metadata pulled from the form's own fields)
-        // and land the result straight on the field's formData value,
-        // instead of creating a standalone instance attachment.
-        if (attachments.length === 0) {
-          const repoFieldHints = buildRepoFieldHints(folderFields)
-          const { data: ocrData, error: ocrError } = await uploadForOcr(
-            String(repositoryId),
-            file,
-            repoFieldHints,
-          )
-          if (ocrError) {
-            console.warn('[uploadForOcr] OCR extraction warning:', ocrError)
-          }
+        const isFirstFile = attachments.length === 0
+        const uploadField = panels
+          .flatMap((panel: any) => panel.fields || [])
+          .find((f: any) => String(f.id) === String(fieldId))
+        const ocrHints = buildMergedOcrFieldHints(
+          buildRepoFieldHints(folderFields),
+          panels,
+          uploadField,
+        )
+        const { data: ocrData, error: ocrError } = await uploadForOcr(
+          String(repositoryId),
+          file,
+          ocrHints,
+        )
+        if (ocrError) {
+          console.warn('[uploadForOcr] OCR extraction warning:', ocrError)
+        }
 
-          const { data, error } = await uploadAndIndexApi.uploadWithOcr({
-            fields: repoFieldHints,
-            file,
-            metadata: buildRepoMetadata(
-              folderFields,
-              panels,
-              formModel,
-              file.name,
-            ),
-            ocrFieldList: ocrData?.ocrFieldList,
-            ocrJson: ocrData?.ocrJson,
-            ocrText: extractOcrText(ocrData?.ocrJson),
-            repositoryId: String(repositoryId),
-          })
+        setPreparePhase('uploading')
 
-          if (error || !data) {
-            showToast({
-              message: t`Failed to upload the file.`,
-              variant: 'error',
+        const ocrPatch = mapOcrFieldsToModel(panels, ocrData?.ocrFieldList)
+        for (const [id, value] of Object.entries(ocrPatch)) {
+          if (id.startsWith(SYNTHETIC_FIELD_PREFIX)) continue
+          if (String(id) === String(fieldId)) continue
+          onFieldChange(id, value)
+        }
+
+        const existingItem = attachments.find((a) => a.itemId)
+        const { baseMetadata } = await planRepositoryFolderMetadata(
+          String(repositoryId),
+          existingItem
+            ? {
+                itemId: existingItem.itemId,
+                repositoryId: existingItem.repositoryId || repositoryId,
+              }
+            : undefined,
+        )
+        const formMeta = buildRepoMetadata(
+          folderFields,
+          panels,
+          { ...formModel, ...ocrPatch },
+          file.name,
+        )
+        const seeded = applyFilenamePreFill(
+          overlayIndexingMetadata(folderFields, baseMetadata, formMeta),
+          folderFields,
+          file.name,
+        )
+
+        if (folderFields.length === 0) {
+          if (isFirstFile) {
+            const { data, error } = await uploadAndIndexApi.uploadWithOcr({
+              fields: ocrHints,
+              file,
+              metadata: formMeta,
+              ocrFieldList: ocrData?.ocrFieldList,
+              ocrJson: ocrData?.ocrJson,
+              ocrText: extractOcrText(ocrData?.ocrJson),
+              repositoryId: String(repositoryId),
+            })
+            if (error || !data) {
+              showToast({
+                message: t`Failed to upload the file.`,
+                variant: 'error',
+              })
+              return
+            }
+            onFieldChange(fieldId, {
+              fileId: data.fileId,
+              fileName: file.name,
+              ocrChecked: true,
+              repositoryId: data.repositoryId || repositoryId,
             })
             return
           }
 
-          onFieldChange(fieldId, {
-            fileId: data.fileId,
-            fileName: file.name,
-            ocrChecked: true,
-            repositoryId: data.repositoryId || repositoryId,
-          })
-          return
-        }
-
-        const existingItem = attachments.find((a) => a.itemId)
-        const { baseMetadata, deepestField } =
-          await planRepositoryFolderMetadata(
-            String(repositoryId),
-            existingItem
-              ? {
-                itemId: existingItem.itemId,
-                repositoryId: existingItem.repositoryId || repositoryId,
-              }
-              : undefined,
-          )
-
-        if (!deepestField) {
           const res = await uploadInstanceAttachment(
             workflowId,
             instanceId,
             repositoryId,
             file,
-            baseMetadata,
+            seeded,
           )
           if (res.error) {
             showToast({
@@ -270,9 +417,18 @@ const GenericRequestOverview = ({
           return
         }
 
-        setPendingUpload({ baseMetadata, deepestField, fieldId, file })
+        setPendingUpload({
+          baseMetadata: seeded,
+          fieldId,
+          file,
+          isFirstFile,
+          ocrFieldList: ocrData?.ocrFieldList,
+          ocrHints,
+          ocrJson: ocrData?.ocrJson,
+        })
       } finally {
-        setIsUploading(false)
+        setPreparePhase(null)
+        setPreparingFieldId(null)
       }
     },
     [
@@ -289,14 +445,40 @@ const GenericRequestOverview = ({
     ],
   )
 
-  const handleConfirmUpload = async (value: string) => {
+  const handleConfirmUpload = async (values: Record<string, string>) => {
     if (!pendingUpload || !workflowId || !instanceId || !repositoryId) return
     setIsUploading(true)
     try {
-      const metadata = {
-        ...pendingUpload.baseMetadata,
-        [pendingUpload.deepestField.sqlColumnName]: value,
+      const metadata = toUploadMetadata(folderFields, values)
+
+      if (pendingUpload.isFirstFile) {
+        const { data, error } = await uploadAndIndexApi.uploadWithOcr({
+          fields: pendingUpload.ocrHints,
+          file: pendingUpload.file,
+          metadata,
+          ocrFieldList: pendingUpload.ocrFieldList,
+          ocrJson: pendingUpload.ocrJson,
+          ocrText: extractOcrText(pendingUpload.ocrJson),
+          repositoryId: String(repositoryId),
+        })
+        if (error || !data) {
+          showToast({
+            message: t`Failed to upload the file.`,
+            variant: 'error',
+          })
+          return
+        }
+        onFieldChange(pendingUpload.fieldId, {
+          fileId: data.fileId,
+          fileName: pendingUpload.file.name,
+          ocrChecked: true,
+          repositoryId: data.repositoryId || repositoryId,
+        })
+        setPendingUpload(null)
+        onAttachmentsChanged?.()
+        return
       }
+
       const res = await uploadInstanceAttachment(
         workflowId,
         instanceId,
@@ -308,8 +490,6 @@ const GenericRequestOverview = ({
         showToast({ message: t`Failed to upload the file.`, variant: 'error' })
         return
       }
-      // Remember which field this file came from, so it renders under that
-      // field (and not some other one) on the next load.
       const uploadedId = res.data?.itemId || res.data?.id || res.data?.fileId
       if (uploadedId) {
         setFieldForAttachment(instanceId, uploadedId, pendingUpload.fieldId)
@@ -321,36 +501,18 @@ const GenericRequestOverview = ({
     }
   }
 
-  if (pendingUpload) {
-    return (
-      <AttachmentSplitView
-        file={pendingUpload.file}
-        folderFields={folderFields}
-        isSubmitting={isUploading}
-        metadata={pendingUpload.baseMetadata}
-        promptField={pendingUpload.deepestField}
-        repositoryId={repositoryId}
-        title={pendingUpload.file.name}
-        onClose={() => setPendingUpload(null)}
-        onConfirm={handleConfirmUpload}
-      />
-    )
-  }
-
-  if (openedAttachment) {
-    return (
-      <AttachmentSplitView
-        attachment={openedAttachment}
-        folderFields={folderFields}
-        repositoryId={repositoryId}
-        title={openedAttachment.name || t`Attachment`}
-        onClose={() => setOpenedAttachment(null)}
-      />
-    )
-  }
+  const showIndexing = Boolean(pendingUpload || openedAttachment)
 
   return (
-    <div className='flex min-h-0 flex-1 overflow-hidden'>
+    <div className='relative flex h-full min-h-0 flex-1 overflow-hidden'>
+      <div
+        aria-hidden={showIndexing}
+        className={
+          showIndexing
+            ? 'pointer-events-none invisible absolute inset-0 flex h-full min-h-0 overflow-hidden'
+            : 'flex h-full min-h-0 flex-1 overflow-hidden'
+        }
+      >
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
         <TaskRequirements
           attachmentCount={attachments.length}
@@ -368,11 +530,14 @@ const GenericRequestOverview = ({
           hiddenFieldIds={hiddenFieldIds}
           instanceId={instanceId}
           panels={panels}
+          preparePhase={preparePhase}
+          preparingFieldId={preparingFieldId}
           readOnlyFieldIds={readOnlyFieldIds}
           repositoryId={repositoryId}
+          viewOnly={viewOnly}
           onFieldChange={onFieldChange}
           onOpenAttachment={setOpenedAttachment}
-          onRequestUpload={handleRequestUpload}
+          onRequestUpload={viewOnly ? undefined : handleRequestUpload}
         />
       </div>
 
@@ -413,6 +578,7 @@ const GenericRequestOverview = ({
               </div>
             ) : (
               <Attachments
+                canUpload={!viewOnly}
                 initialData={attachments}
                 instanceId={instanceId}
                 processId={processId}
@@ -425,15 +591,43 @@ const GenericRequestOverview = ({
             ))}
           {rightView === 'comments' && (
             <Comments
-              enabled
               instanceId={instanceId}
               processId={processId}
               workflowId={workflowId}
+              enabled
               onClose={() => setRightView('overview')}
             />
           )}
         </div>
       )}
+      </div>
+
+      {pendingUpload ? (
+        <div className='flex h-full min-h-0 min-w-0 flex-1 overflow-hidden'>
+          <AttachmentSplitView
+            file={pendingUpload.file}
+            folderFields={folderFields}
+            isSubmitting={isUploading}
+            metadata={pendingUpload.baseMetadata}
+            repositoryId={repositoryId}
+            title={pendingUpload.file.name}
+            onClose={() => setPendingUpload(null)}
+            onConfirm={handleConfirmUpload}
+          />
+        </div>
+      ) : null}
+
+      {openedAttachment && !pendingUpload ? (
+        <div className='flex h-full min-h-0 min-w-0 flex-1 overflow-hidden'>
+          <AttachmentSplitView
+            attachment={openedAttachment}
+            folderFields={folderFields}
+            repositoryId={repositoryId}
+            title={openedAttachment.name || t`Attachment`}
+            onClose={() => setOpenedAttachment(null)}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }

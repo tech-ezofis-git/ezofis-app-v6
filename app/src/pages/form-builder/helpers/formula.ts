@@ -16,7 +16,9 @@ export type FormulaToken = {
 
 type FormulaFieldRef = {
   id: string
+  jsonId?: string
   label?: string
+  name?: string
   settings?: {
     specific?: {
       tableColumns?: Array<{ id: string; name?: string; type?: string }>
@@ -68,12 +70,53 @@ export const extractNumericValue = (value: unknown): number | null => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-export const sumTableColumn = (rows: unknown, columnId: string): number => {
-  if (!Array.isArray(rows) || !columnId) return 0
-  return rows.reduce((total, row) => {
-    if (!row || typeof row !== 'object') return total
+const normalizeTableRows = (rows: unknown): Array<Record<string, unknown>> => {
+  let parsed: unknown = rows
+  if (typeof parsed === 'string') {
+    const trimmed = parsed.trim()
+    if (!trimmed) return []
+    try {
+      parsed = JSON.parse(trimmed)
+    } catch {
+      return []
+    }
+  }
+  if (!Array.isArray(parsed)) return []
+  return parsed.filter(
+    (row): row is Record<string, unknown> =>
+      Boolean(row) && typeof row === 'object',
+  )
+}
+
+const cellValueFromRow = (
+  row: Record<string, unknown>,
+  columnId: string,
+  aliases: string[] = [],
+) => {
+  const keys = [columnId, ...aliases].filter(Boolean)
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && row[key] !== '') {
+      return row[key]
+    }
+  }
+  const wanted = columnId.trim().toLowerCase()
+  if (!wanted) return undefined
+  for (const [key, value] of Object.entries(row)) {
+    if (key.startsWith('_')) continue
+    if (key.trim().toLowerCase() === wanted) return value
+  }
+  return undefined
+}
+
+export const sumTableColumn = (
+  rows: unknown,
+  columnId: string,
+  aliases: string[] = [],
+): number => {
+  if (!columnId) return 0
+  return normalizeTableRows(rows).reduce((total, row) => {
     const parsed = extractNumericValue(
-      (row as Record<string, unknown>)[columnId],
+      cellValueFromRow(row, columnId, aliases),
     )
     return total + (parsed ?? 0)
   }, 0)
@@ -163,6 +206,7 @@ const getDecimalPrecision = (field: Question): number | undefined => {
 export const evaluateFormula = (
   tokens: FormulaToken[] | undefined,
   values: Record<string, unknown>,
+  fields: FormulaFieldRef[] = [],
 ): number | null => {
   if (!tokens?.length) return null
 
@@ -270,7 +314,23 @@ export const evaluateFormula = (
     if (token.type === 'TABLE_SUM') {
       consume()
       const { columnId, tableFieldId } = decodeTableSumValue(token.value)
-      return sumTableColumn(values[tableFieldId], columnId)
+      const table = fields.find(
+        (field) =>
+          field.id === tableFieldId ||
+          field.jsonId === tableFieldId ||
+          field.name === tableFieldId,
+      )
+      const column = table?.settings?.specific?.tableColumns?.find(
+        (item) => item.id === columnId || item.name === columnId,
+      )
+      const rows =
+        values[tableFieldId] ??
+        (table?.id ? values[table.id] : undefined) ??
+        (table?.jsonId ? values[table.jsonId] : undefined)
+      return sumTableColumn(rows, columnId, [
+        column?.id || '',
+        column?.name || '',
+      ])
     }
 
     throw new Error('Unexpected token')
@@ -301,6 +361,7 @@ export const applyCalculatedFields = (
       const result = evaluateFormula(
         field.settings?.specific?.formulaTokens,
         next,
+        fields,
       )
       const formatted =
         result === null

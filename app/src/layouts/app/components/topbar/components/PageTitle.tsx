@@ -187,6 +187,19 @@ const PageTitle = () => {
       )
     }
 
+    const isFormsListRoute = routeId === '/_app/forms'
+    if (
+      (isFormsListRoute || isWorkflowsRoute) &&
+      settingsBreadcrumbs.length > 1
+    ) {
+      return (
+        <SettingsBreadcrumbs
+          items={settingsBreadcrumbs}
+          onNavigate={settingsNavigate}
+        />
+      )
+    }
+
     if (isFoldersRoute && foldersBreadcrumbs?.length) {
       return (
         <SettingsBreadcrumbs

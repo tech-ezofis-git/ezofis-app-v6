@@ -70,6 +70,73 @@ export const getDeepestFolderField = (
   )
 }
 
+export const isIndexingFieldRequired = (
+  field: RepositoryFieldSchema,
+): boolean => Boolean(field.isMandatory)
+
+export const getMissingIndexingFields = (
+  folderFields: RepositoryFieldSchema[],
+  values: Record<string, string>,
+): string[] =>
+  folderFields
+    .filter(
+      (field) =>
+        isIndexingFieldRequired(field) &&
+        !String(values[field.sqlColumnName] || '').trim(),
+    )
+    .map((field) => field.name)
+
+export const sortIndexingFields = <
+  T extends { isMandatory?: boolean; level?: number },
+>(
+  fields: T[] = [],
+): T[] =>
+  fields.slice().sort((a, b) => {
+    const mandatoryDiff =
+      Number(Boolean(b.isMandatory)) - Number(Boolean(a.isMandatory))
+    if (mandatoryDiff !== 0) return mandatoryDiff
+    return (a.level ?? 0) - (b.level ?? 0)
+  })
+
+const normalizeIndexingKey = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+export const getFileNameWithoutExtension = (fileName: string) => {
+  if (!fileName) return ''
+  const lastDotIndex = fileName.lastIndexOf('.')
+  if (lastDotIndex <= 0) return fileName
+  return fileName.substring(0, lastDotIndex)
+}
+
+export const isFilenameField = (
+  field: Pick<RepositoryFieldSchema, 'name' | 'sqlColumnName'>,
+): boolean => {
+  const normName = normalizeIndexingKey(field.name || '')
+  const normSql = normalizeIndexingKey(field.sqlColumnName || '')
+  return (
+    normName === 'filename' ||
+    normSql === 'filename' ||
+    normName === 'file' ||
+    normSql === 'file' ||
+    normName === 'documentname' ||
+    normSql === 'documentname'
+  )
+}
+
+export const applyFilenamePreFill = (
+  values: Record<string, string>,
+  folderFields: RepositoryFieldSchema[],
+  fileName?: string,
+): Record<string, string> => {
+  const cleanFileName = getFileNameWithoutExtension(fileName || '')
+  if (!cleanFileName) return values
+  const next = { ...values }
+  for (const field of folderFields) {
+    if (isFilenameField(field)) next[field.sqlColumnName] = cleanFileName
+  }
+  return next
+}
+
 interface WorkspaceFieldRow {
   key?: string
   label?: string

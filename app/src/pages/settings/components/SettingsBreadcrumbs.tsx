@@ -28,9 +28,11 @@ export default function SettingsBreadcrumbs({ items, onNavigate }: Props) {
       case 'Folder Configuration':
         return t`Folder Configuration`
       case 'Form Configuration':
-        return t`Form Configuration`
+      case 'Forms':
+        return t`Forms`
       case 'Workflow Configuration':
-        return t`Workflow Configuration`
+      case 'Workflows':
+        return t`Workflows`
       case 'Portal Configuration':
         return t`Portal Configuration`
       case 'Branding':

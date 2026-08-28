@@ -10,7 +10,7 @@ const NewRequest = () => {
   // if (width >= SCREEN_XL && newRequest) {
 
   return (
-    <div className='flex h-full flex-1 flex-col border-l border-gray-3 bg-surface-muted'>
+    <div className='flex h-full min-w-0 flex-1 flex-col overflow-hidden border-l border-gray-3 bg-surface-muted'>
       {newRequest && <NewRequestSheet onClose={closeNewRequest} />}
     </div>
   )

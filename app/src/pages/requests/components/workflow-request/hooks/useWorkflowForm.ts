@@ -10,6 +10,7 @@ import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
 import {
+  applyFilenamePreFillToFormModel,
   buildInitialFormModel,
   buildRepoFieldDescriptors,
   buildRepoFieldHints,
@@ -91,7 +92,12 @@ export const useWorkflowForm = (workflow: any) => {
       }
 
       setForm(data)
-      setFormModel(applyCalculatedFields(data?.formJson?.panels || [], buildInitialFormModel(data?.formJson?.panels || [])))
+      setFormModel(
+        applyCalculatedFields(
+          data?.formJson?.panels || [],
+          buildInitialFormModel(data?.formJson?.panels || []),
+        ),
+      )
       setIsLoadingForm(false)
     }
 
@@ -162,6 +168,24 @@ export const useWorkflowForm = (workflow: any) => {
   }, [attachments, panels, formModel])
 
   const hasUploadedFile = uploadedFiles.length > 0
+  const pendingUploadFileName =
+    uploadedFiles.find((file) => file.rawFile)?.fileName || ''
+
+  // Same as folder / inbox indexing: fill empty Filename from the uploaded
+  // file (without extension) so a mandatory filename field is ready in the
+  // repository-field list instead of sitting blank at the bottom.
+  useEffect(() => {
+    if (!pendingUploadFileName || repoFieldDescriptors.length === 0) return
+    setFormModel((prev) => {
+      const patched = applyFilenamePreFillToFormModel(
+        prev,
+        repoFieldDescriptors,
+        pendingUploadFileName,
+      )
+      if (patched === prev) return prev
+      return applyCalculatedFields(panels, patched)
+    })
+  }, [panels, pendingUploadFileName, repoFieldDescriptors])
 
   // True while any pending (unstaged) file's own OCR phase-1 pass is still
   // in flight — drives the "Extracting…" loading state.
@@ -213,11 +237,21 @@ export const useWorkflowForm = (workflow: any) => {
     ocrFieldList: { name?: string; value?: string }[] | undefined,
   ) => {
     const ocrPatch = mapOcrFieldsToModel(panels, ocrFieldList)
-    if (Object.keys(ocrPatch).length > 0) {
-      setFormModel((prev) =>
-        applyCalculatedFields(panels, { ...ocrPatch, ...prev }),
-      )
-    }
+    if (Object.keys(ocrPatch).length === 0) return
+    setFormModel((prev) => {
+      const next = { ...prev }
+      for (const [key, value] of Object.entries(ocrPatch)) {
+        const existing = next[key]
+        if (
+          existing === undefined ||
+          existing === null ||
+          String(existing).trim() === ''
+        ) {
+          next[key] = value
+        }
+      }
+      return applyCalculatedFields(panels, next)
+    })
   }
 
   // Phase 1: OCR-only peek, nothing staged yet. Adds the file to the list
@@ -251,12 +285,12 @@ export const useWorkflowForm = (workflow: any) => {
         prev.map((a) =>
           a.localId === localId
             ? {
-              ...a,
-              ...(!error && data
-                ? { ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
-                : {}),
-              ocrChecked: true,
-            }
+                ...a,
+                ...(!error && data
+                  ? { ocrFieldList: data.ocrFieldList, ocrJson: data.ocrJson }
+                  : {}),
+                ocrChecked: true,
+              }
             : a,
         ),
       )
@@ -400,6 +434,20 @@ export const useWorkflowForm = (workflow: any) => {
     }
     if (!hasPendingFiles()) return
     if (decidedForCurrentBatchRef.current) return
+
+    // Don't decide until Filename has been seeded from the upload — otherwise
+    // a mandatory filename field looks empty and jumps the user to the
+    // indexing list even though we already know the value.
+    const withFilename = applyFilenamePreFillToFormModel(
+      formModel,
+      repoFieldDescriptors,
+      pendingUploadFileName,
+    )
+    if (withFilename !== formModel) {
+      setFormModel(applyCalculatedFields(panels, withFilename))
+      return
+    }
+
     decidedForCurrentBatchRef.current = true
 
     if (missingMandatoryFieldIds.size > 0) {
@@ -474,7 +522,9 @@ export const useWorkflowForm = (workflow: any) => {
     if (hasUploadedFile) {
       const missing = getMissingMandatoryFields(repoFieldDescriptors, formModel)
       if (missing.length > 0) {
-        setSubmitError(`Please fill in required field(s): ${missing.join(', ')}`)
+        setSubmitError(
+          `Please fill in required field(s): ${missing.join(', ')}`,
+        )
         return { success: false }
       }
     }

@@ -96,12 +96,17 @@ msgstr "{fieldName} إلزامي."
 msgid "{fileType} Viewer"
 msgstr "عارض {fileType}"
 
+#: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:85
+#: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:82
+msgid "{filledCount} of {totalCount} fields ready"
+msgstr ""
+
 #. placeholder {0}: repositoryFields.length
 #: src/pages/folders/components/Upload/Upload.tsx:1911
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr ""
 
-#: src/layouts/app/components/sidebar/sidebar-small/components/MenuItem.tsx:32
+#: src/layouts/app/components/sidebar/sidebar-small/components/MenuItem.tsx:33
 msgid "{label} (locked)"
 msgstr ""
 
@@ -323,7 +328,7 @@ msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1949
 #: src/pages/forms/FormEntriesPage.tsx:1273
-#: src/pages/forms/FormsPage.tsx:261
+#: src/pages/forms/FormsPage.tsx:263
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:266
 #: src/pages/workflows/components/Table.tsx:115
@@ -356,6 +361,11 @@ msgstr "الدليل النشط"
 #: src/pages/settings/components/credits/Credits.tsx:840
 msgid "Actual vs projected"
 msgstr "الفعلي مقابل المتوقع"
+
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:677
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:717
+msgid "Add \"{query}\""
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2361
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:337
@@ -411,19 +421,19 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:675
 #: src/pages/folders/components/FolderSharePopover.tsx:1003
-#: src/pages/requests/components/request/components/Header.tsx:1403
+#: src/pages/requests/components/request/components/Header.tsx:1430
 msgid "Add message (optional)"
 msgstr "أضف رسالة (اختياري)"
 
 #: src/components/common/SharePopover.tsx:358
 #: src/pages/folders/components/FolderSharePopover.tsx:570
-#: src/pages/requests/components/request/components/Header.tsx:1051
+#: src/pages/requests/components/request/components/Header.tsx:1078
 msgid "Add more people..."
 msgstr "أضف المزيد من الأشخاص..."
 
 #: src/components/common/SharePopover.tsx:359
 #: src/pages/folders/components/FolderSharePopover.tsx:571
-#: src/pages/requests/components/request/components/Header.tsx:1052
+#: src/pages/requests/components/request/components/Header.tsx:1079
 msgid "Add names or emails"
 msgstr "أضف أسماء أو بريداً إلكترونياً"
 
@@ -444,7 +454,7 @@ msgstr ""
 msgid "Add to related"
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:230
+#: src/pages/settings/SettingsMain.tsx:233
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
 msgstr "أضف وعدّل وأدر مستخدمي المنصة. قم بتكوين المصادقة وتعيين الأدوار."
 
@@ -496,7 +506,7 @@ msgstr "منشئ المجلدات بالذكاء الاصطناعي"
 msgid "AI generated"
 msgstr "مُولَّد بالذكاء الاصطناعي"
 
-#: src/pages/requests/components/request/components/Header.tsx:924
+#: src/pages/requests/components/request/components/Header.tsx:951
 msgid "AI Insights"
 msgstr "رؤى الذكاء الاصطناعي"
 
@@ -698,7 +708,7 @@ msgstr "قرار وكيل الحسابات الدائنة"
 msgid "AP Command Center"
 msgstr "مركز قيادة الحسابات الدائنة"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:250
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:263
 msgid "AP Team"
 msgstr "فريق الحسابات الدائنة"
 
@@ -729,7 +739,7 @@ msgstr ""
 msgid "Append new records"
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:690
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:689
 msgid "Apply primary color to the background"
 msgstr ""
 
@@ -762,7 +772,7 @@ msgstr "April"
 msgid "Archived"
 msgstr "مؤرشف"
 
-#: src/pages/forms/FormsPage.tsx:503
+#: src/pages/forms/FormsPage.tsx:505
 msgid "Are you sure you want to delete"
 msgstr "Are you sure you want to delete"
 
@@ -827,15 +837,15 @@ msgstr ""
 #~ msgid "Attach to invoice"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:368
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:626
 msgid "Attachment"
 msgstr ""
 
 #: src/pages/portal/components/PortalDetail.tsx:74
 #: src/pages/portal/components/PortalDetail.tsx:178
-#: src/pages/portal/components/PortalWizard.tsx:165
-#: src/pages/portal/components/PortalWizard.tsx:1035
-#: src/pages/portal/components/PortalWizard.tsx:1104
+#: src/pages/portal/components/PortalWizard.tsx:167
+#: src/pages/portal/components/PortalWizard.tsx:1051
+#: src/pages/portal/components/PortalWizard.tsx:1120
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:584
@@ -845,8 +855,8 @@ msgid "Attachments"
 msgstr "المرفقات"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:179
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:39
-#: src/pages/settings/SettingsMain.tsx:269
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:41
+#: src/pages/settings/SettingsMain.tsx:272
 msgid "Audit & Monitoring"
 msgstr "التدقيق والمراقبة"
 
@@ -926,7 +936,7 @@ msgstr "متوسط وقت المعالجة"
 #: src/pages/portal/components/PortalBackButton.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:86
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
-#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:155
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:906
@@ -937,7 +947,7 @@ msgstr "متوسط وقت المعالجة"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2068
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2369
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
-#: src/pages/settings/components/SettingsWizardLayout.tsx:195
+#: src/pages/settings/components/SettingsWizardLayout.tsx:202
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:112
 msgid "Back"
 msgstr "رجوع"
@@ -966,7 +976,7 @@ msgstr "العودة إلى إعداد أمر الشراء"
 msgid "Back to review"
 msgstr "العودة إلى المراجعة"
 
-#: src/pages/sign-in/components/SignInForm.tsx:475
+#: src/pages/sign-in/components/SignInForm.tsx:548
 msgid "Back to Sign In"
 msgstr "العودة لتسجيل الدخول"
 
@@ -986,7 +996,7 @@ msgstr "أساسي"
 msgid "Billing Terms"
 msgstr "شروط الفوترة"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:668
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:667
 msgid "Brand Colors"
 msgstr ""
 
@@ -995,7 +1005,7 @@ msgid "Brand Identity"
 msgstr ""
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:594
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:655
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:654
 msgid "Brand Name"
 msgstr ""
 
@@ -1004,8 +1014,8 @@ msgid "Brand preferences saved successfully!"
 msgstr ""
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:603
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
-#: src/pages/settings/SettingsMain.tsx:251
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:39
+#: src/pages/settings/SettingsMain.tsx:254
 msgid "Branding"
 msgstr ""
 
@@ -1013,11 +1023,11 @@ msgstr ""
 msgid "Branding not found"
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:734
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:733
 msgid "Branding URL"
 msgstr ""
 
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:54
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:56
 msgid "Breadcrumb"
 msgstr "مسار التنقل"
 
@@ -1106,8 +1116,8 @@ msgstr "يمكنه التعديل"
 msgid "Can View"
 msgstr "يمكنه العرض"
 
-#: src/pages/portal/components/PortalWizard.tsx:600
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:741
+#: src/pages/portal/components/PortalWizard.tsx:616
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:847
 msgid "Can't upload: this workflow has no repository configured."
 msgstr ""
 
@@ -1120,15 +1130,15 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:376
 #: src/pages/forms/FormEntriesPage.tsx:1986
 #: src/pages/forms/FormEntriesPage.tsx:2081
-#: src/pages/forms/FormsPage.tsx:523
+#: src/pages/forms/FormsPage.tsx:525
 #: src/pages/my-account/components/profile/Profile.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:68
-#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:226
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:221
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:660
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
 #: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:59
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1104
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:201
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:199
 msgid "Cancel"
 msgstr "إلغاء"
 
@@ -1316,7 +1326,7 @@ msgstr "انقر على أي معاينة للمعالجة"
 msgid "Click on the document to mark signature places."
 msgstr "انقر على المستند لتحديد مواضع التوقيع."
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:624
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:623
 msgid "Click or drag to upload logo"
 msgstr ""
 
@@ -1335,14 +1345,14 @@ msgstr "انقر لتحديد موضع توقيع المعيَّن"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:410
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:553
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:599
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:189
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:790
 msgid "Close"
 msgstr "إغلاق"
 
-#: src/pages/requests/components/request/components/Header.tsx:958
+#: src/pages/requests/components/request/components/Header.tsx:985
 msgid "Close AI Insights"
 msgstr "إغلاق رؤى الذكاء الاصطناعي"
 
@@ -1359,7 +1369,7 @@ msgstr ""
 msgid "Code"
 msgstr "الرمز"
 
-#: src/pages/portal/components/PortalLogin.tsx:238
+#: src/pages/portal/components/PortalLogin.tsx:300
 msgid "Code sent to {identifier}"
 msgstr ""
 
@@ -1404,7 +1414,7 @@ msgstr "الأعمدة المستوردة:"
 msgid "Comments"
 msgstr "التعليقات"
 
-#: src/pages/portal/components/PortalWizard.tsx:851
+#: src/pages/portal/components/PortalWizard.tsx:867
 msgid "complete"
 msgstr ""
 
@@ -1478,7 +1488,7 @@ msgstr "التكوين"
 msgid "Configuration for “{0}” is ready. Review each step and continue through the remaining options."
 msgstr "التكوين لـ «{0}» جاهز. راجع كل خطوة وتابع الخيارات المتبقية."
 
-#: src/pages/settings/SettingsMain.tsx:307
+#: src/pages/settings/SettingsMain.tsx:311
 msgid "Configuration modules"
 msgstr ""
 
@@ -1491,8 +1501,8 @@ msgid "Configure Approvers"
 msgstr "تكوين الموافقين"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:606
-msgid "Configure Branding"
-msgstr ""
+#~ msgid "Configure Branding"
+#~ msgstr ""
 
 #: src/pages/settings/components/ManageUser.tsx:2442
 #~ msgid "Configure user account details, business hierarchy, and permissions"
@@ -1563,13 +1573,13 @@ msgstr "اربط حساب QuickBooks لمزامنة بيانات أوامر ال
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:120
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:191
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:101
-#: src/pages/portal/components/PortalWizard.tsx:1148
+#: src/pages/portal/components/PortalWizard.tsx:1164
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:97
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1154
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1976
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2017
 #: src/pages/settings/components/SettingsWizardLayout.tsx:77
-#: src/pages/sign-in/components/SignInForm.tsx:689
+#: src/pages/sign-in/components/SignInForm.tsx:762
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
 msgid "Continue"
 msgstr "متابعة"
@@ -1612,7 +1622,7 @@ msgstr "نسخ الرابط"
 msgid "Copy this URL and open it in another tab to use the portal."
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:740
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:739
 #: src/pages/settings/components/PortalConfiguration.tsx:553
 #: src/pages/settings/components/PortalConfiguration.tsx:1541
 msgid "Copy URL"
@@ -1664,7 +1674,7 @@ msgstr "إنشاء وصول للمتابعة"
 msgid "Create access to sign"
 msgstr "إنشاء وصول للتوقيع"
 
-#: src/pages/settings/SettingsMain.tsx:210
+#: src/pages/settings/SettingsMain.tsx:213
 msgid "Create and manage forms with fields, validation, and data collection."
 msgstr ""
 
@@ -1676,7 +1686,7 @@ msgstr ""
 msgid "Create branded portals with login methods and connected workflows."
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:224
+#: src/pages/settings/SettingsMain.tsx:227
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr ""
 
@@ -1685,7 +1695,7 @@ msgid "Create Group"
 msgstr "إنشاء مجموعة"
 
 #: src/pages/settings/components/GroupManagement.tsx:589
-#: src/pages/settings/SettingsMain.tsx:236
+#: src/pages/settings/SettingsMain.tsx:239
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr "أنشئ مجموعات منطقية لتنظيم المستخدمين حسب الفريق أو القسم أو الوظيفة."
 
@@ -1712,7 +1722,7 @@ msgstr "إنشاء مستخدم"
 msgid "Created"
 msgstr "تم الإنشاء"
 
-#: src/pages/forms/FormsPage.tsx:233
+#: src/pages/forms/FormsPage.tsx:235
 #: src/pages/workflows/components/Table.tsx:87
 msgid "Created At"
 msgstr "إنشاءd At"
@@ -1724,8 +1734,8 @@ msgstr ""
 #: src/pages/folders/components/FolderTable.tsx:1146
 #: src/pages/forms/FormEntriesPage.tsx:1259
 #: src/pages/forms/FormEntriesPage.tsx:2152
-#: src/pages/forms/FormsPage.tsx:227
-#: src/pages/forms/FormsPage.tsx:612
+#: src/pages/forms/FormsPage.tsx:229
+#: src/pages/forms/FormsPage.tsx:614
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3371
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3373
 #: src/pages/workflows/components/Table.tsx:81
@@ -1734,7 +1744,7 @@ msgid "Created By"
 msgstr "إنشاءd By"
 
 #: src/pages/forms/FormEntriesPage.tsx:2160
-#: src/pages/forms/FormsPage.tsx:623
+#: src/pages/forms/FormsPage.tsx:625
 #: src/pages/settings/components/AuditMonitoring.tsx:359
 #: src/pages/workflows/components/Table.tsx:473
 msgid "Created Date"
@@ -1745,8 +1755,8 @@ msgid "Credit forecast"
 msgstr "توقعات الأرصدة"
 
 #: src/pages/settings/components/credits/Credits.tsx:563
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:41
-#: src/pages/settings/SettingsMain.tsx:257
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:43
+#: src/pages/settings/SettingsMain.tsx:260
 msgid "Credit Usage"
 msgstr "استخدام الأرصدة"
 
@@ -1826,7 +1836,7 @@ msgstr "Custom Range"
 msgid "Customize Design"
 msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:248
+#: src/pages/settings/SettingsMain.tsx:251
 msgid "Customize logos, brand colors, and visual identity across the platform."
 msgstr ""
 
@@ -1935,14 +1945,14 @@ msgstr "حدد حقول البيانات الوصفية المستخدمة لل�
 #~ msgid "Define role details, access scopes, and permission privilege matrices"
 #~ msgstr "حدد تفاصيل الدور ونطاقات الوصول ومصفوفات امتيازات الصلاحيات"
 
-#: src/pages/settings/SettingsMain.tsx:242
+#: src/pages/settings/SettingsMain.tsx:245
 msgid "Define roles and configure granular permissions across all modules."
 msgstr "حدد الأدوار وقم بتكوين أذونات تفصيلية عبر جميع الوحدات."
 
 #: src/pages/folders/components/DocumentsListView.tsx:1011
 #: src/pages/folders/components/FolderTable.tsx:833
 #: src/pages/folders/components/FolderTable.tsx:1204
-#: src/pages/forms/FormsPage.tsx:290
+#: src/pages/forms/FormsPage.tsx:292
 #: src/pages/requests/components/Table.tsx:119
 #: src/pages/settings/components/GroupManagement.tsx:502
 #: src/pages/settings/components/GroupManagement.tsx:579
@@ -1956,7 +1966,7 @@ msgstr "حدد الأدوار وقم بتكوين أذونات تفصيلية ع
 msgid "Delete"
 msgstr "حذف"
 
-#: src/pages/forms/FormsPage.tsx:501
+#: src/pages/forms/FormsPage.tsx:503
 msgid "Delete Form"
 msgstr "Delete نموذج"
 
@@ -2001,7 +2011,7 @@ msgstr "حذف هذا التوقيع؟"
 msgid "Delete User"
 msgstr "حذف المستخدم"
 
-#: src/pages/forms/FormsPage.tsx:536
+#: src/pages/forms/FormsPage.tsx:538
 msgid "Deleting form..."
 msgstr "Deleting form..."
 
@@ -2063,7 +2073,7 @@ msgstr ""
 msgid "Describe your custom dashboard design or metric requirements..."
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:202
+#: src/pages/forms/FormsPage.tsx:204
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1914
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3276
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3278
@@ -2089,7 +2099,7 @@ msgstr "الوصف قيد الانتظار"
 #~ msgid "Description ready: “{description}” Review it below, then continue to Storage."
 #~ msgstr "الوصف جاهز: «{description}» راجعه أدناه، ثم تابع إلى التخزين."
 
-#: src/pages/settings/SettingsMain.tsx:217
+#: src/pages/settings/SettingsMain.tsx:220
 msgid "Design and configure automated workflows and process routing."
 msgstr ""
 
@@ -2118,7 +2128,7 @@ msgstr "رفع مباشر"
 msgid "Discrepancies"
 msgstr "التناقضات"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:654
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:653
 msgid "Displayed in the header and login page"
 msgstr ""
 
@@ -2126,8 +2136,8 @@ msgstr ""
 msgid "Do you require an ERP or system integration, or should integrations be configured later?"
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:158
-#: src/pages/portal/components/PortalWizard.tsx:161
+#: src/pages/portal/components/PortalWizard.tsx:160
+#: src/pages/portal/components/PortalWizard.tsx:163
 msgid "Document"
 msgstr ""
 
@@ -2135,7 +2145,7 @@ msgstr ""
 msgid "Document attached"
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:331
+#: src/pages/portal/components/PortalWizard.tsx:347
 msgid "Document attached. Please confirm the details on the next steps."
 msgstr ""
 
@@ -2143,7 +2153,8 @@ msgstr ""
 msgid "Document Date"
 msgstr "مستند التاريخ"
 
-#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:139
+#: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:77
+#: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:74
 msgid "Document Info"
 msgstr ""
 
@@ -2249,7 +2260,7 @@ msgstr "جاري التنزيل..."
 msgid "DPO"
 msgstr "DPO"
 
-#: src/pages/forms/FormsPage.tsx:605
+#: src/pages/forms/FormsPage.tsx:607
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1095
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3351
 #: src/pages/settings/components/ManageUser.tsx:1422
@@ -2394,7 +2405,7 @@ msgstr ""
 msgid "e.g. Finance Team"
 msgstr "مثال: فريق المالية"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:656
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:655
 msgid "e.g. Pure Agentic"
 msgstr ""
 
@@ -2414,7 +2425,7 @@ msgstr ""
 #~ msgid "e.g. What is your name?"
 #~ msgstr "مثال: ما اسمك؟"
 
-#: src/pages/portal/components/PortalWizard.tsx:355
+#: src/pages/portal/components/PortalWizard.tsx:371
 msgid "Each file must be 10 MB or smaller."
 msgstr ""
 
@@ -2425,9 +2436,9 @@ msgstr "يحتاج كل موقّع إلى اسم وبريد إلكتروني."
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:640
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:675
 #: src/pages/forms/FormEntriesPage.tsx:1296
-#: src/pages/forms/FormsPage.tsx:279
-#: src/pages/portal/components/PortalWizard.tsx:928
-#: src/pages/portal/components/PortalWizard.tsx:933
+#: src/pages/forms/FormsPage.tsx:281
+#: src/pages/portal/components/PortalWizard.tsx:944
+#: src/pages/portal/components/PortalWizard.tsx:949
 #: src/pages/requests/components/Table.tsx:113
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2166
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2295
@@ -2505,20 +2516,20 @@ msgstr "تعديل المستخدم"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx:22
 #: src/pages/folders/components/SignRequestAssignForm.tsx:545
-#: src/pages/portal/components/PortalLogin.tsx:53
+#: src/pages/portal/components/PortalLogin.tsx:81
 #: src/pages/settings/components/ManageUser.tsx:1147
 #: src/pages/settings/components/ManageUser.tsx:1149
 #: src/pages/settings/components/ManageUser.tsx:1574
 #: src/pages/settings/components/ManageUser.tsx:2542
 #: src/pages/settings/components/RolesPermissions.tsx:2052
 #: src/pages/settings/components/RolesPermissions.tsx:2054
-#: src/pages/sign-in/components/SignInForm.tsx:620
-#: src/pages/sign-in/components/SignInForm.tsx:670
+#: src/pages/sign-in/components/SignInForm.tsx:693
+#: src/pages/sign-in/components/SignInForm.tsx:743
 msgid "Email"
 msgstr "البريد الإلكتروني"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:268
-#: src/pages/sign-in/components/SignInForm.tsx:745
+#: src/pages/sign-in/components/SignInForm.tsx:818
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:299
 msgid "Email / Username"
 msgstr "البريد / اسم المستخدم"
@@ -2531,8 +2542,8 @@ msgstr "عنوان البريد الإلكتروني"
 msgid "Email and password"
 msgstr "البريد الإلكتروني وكلمة المرور"
 
-#: src/pages/sign-in/components/SignInForm.tsx:278
-#: src/pages/sign-in/components/SignInForm.tsx:296
+#: src/pages/sign-in/components/SignInForm.tsx:347
+#: src/pages/sign-in/components/SignInForm.tsx:365
 msgid "Email is required"
 msgstr "البريد الإلكتروني مطلوب"
 
@@ -2578,7 +2589,7 @@ msgid "Enter a valid email address"
 msgstr "أدخل عنوان بريد إلكتروني صالح"
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:192
-#: src/pages/portal/components/PortalLogin.tsx:147
+#: src/pages/portal/components/PortalLogin.tsx:209
 msgid "Enter a valid email address."
 msgstr "أدخل بريداً إلكترونياً صالحاً."
 
@@ -2606,11 +2617,11 @@ msgstr "أدخل اسم العائلة"
 msgid "Enter phone number"
 msgstr "أدخل رقم الهاتف"
 
-#: src/pages/portal/components/PortalLogin.tsx:284
+#: src/pages/portal/components/PortalLogin.tsx:346
 msgid "Enter the 6-digit OTP to verify your identity"
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:173
+#: src/pages/portal/components/PortalLogin.tsx:235
 msgid "Enter the 6-digit OTP."
 msgstr ""
 
@@ -2635,7 +2646,7 @@ msgstr "أدخل اسمك الكامل"
 msgid "Enter your full name to create a typed signature."
 msgstr "أدخل اسمك الكامل لإنشاء توقيع مكتوب."
 
-#: src/pages/portal/components/PortalLogin.tsx:55
+#: src/pages/portal/components/PortalLogin.tsx:83
 msgid "Enter your username"
 msgstr ""
 
@@ -2671,7 +2682,7 @@ msgstr "خطأ في رفع الملف"
 msgid "Error uploading file: {error}"
 msgstr "خطأ في رفع الملف: {error}"
 
-#: src/pages/sign-in/components/SignInForm.tsx:318
+#: src/pages/sign-in/components/SignInForm.tsx:387
 msgid "Error validating email"
 msgstr "خطأ في التحقق من البريد الإلكتروني"
 
@@ -2730,7 +2741,7 @@ msgstr "ينتهي خلال (أيام)"
 msgid "Expires in days must be at least 1."
 msgstr "يجب أن تكون أيام الانتهاء 1 على الأقل."
 
-#: src/pages/settings/SettingsMain.tsx:260
+#: src/pages/settings/SettingsMain.tsx:263
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "استكشف واختبر وصحح نقاط نهاية واجهة برمجة التطبيقات بطلبات مباشرة واستجابات نموذجية."
 
@@ -2777,14 +2788,14 @@ msgstr "البيانات المستخرجة"
 msgid "Extracting data"
 msgstr "جاري استخراج البيانات"
 
-#: src/pages/portal/components/PortalWizard.tsx:403
-#: src/pages/portal/components/PortalWizard.tsx:628
-#: src/pages/portal/components/PortalWizard.tsx:995
-#: src/pages/portal/components/PortalWizard.tsx:1001
-#: src/pages/portal/components/PortalWizard.tsx:1045
-#: src/pages/portal/components/PortalWizard.tsx:1052
+#: src/pages/portal/components/PortalWizard.tsx:419
+#: src/pages/portal/components/PortalWizard.tsx:644
+#: src/pages/portal/components/PortalWizard.tsx:1011
+#: src/pages/portal/components/PortalWizard.tsx:1017
+#: src/pages/portal/components/PortalWizard.tsx:1061
+#: src/pages/portal/components/PortalWizard.tsx:1068
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:807
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:923
 msgid "Extracting data from the document…"
 msgstr ""
 
@@ -2836,7 +2847,7 @@ msgstr ""
 msgid "Failed to attach document."
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:545
+#: src/pages/forms/FormsPage.tsx:547
 msgid "Failed to delete form"
 msgstr "فشل to delete form"
 
@@ -2899,7 +2910,7 @@ msgstr ""
 msgid "Failed to save preferences: {message}"
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:100
+#: src/pages/portal/components/PortalLogin.tsx:179
 msgid "Failed to send OTP. Please try again."
 msgstr ""
 
@@ -2907,17 +2918,18 @@ msgstr ""
 msgid "Failed to start the workflow. Please try again."
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:249
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:286
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:330
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:388
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:411
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:466
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:490
 msgid "Failed to upload the file."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:116
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:115
 msgid "Failed to upload the file. Please try again."
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:637
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:636
 msgid "Favicon"
 msgstr ""
 
@@ -3035,7 +3047,7 @@ msgstr "رفع الملف"
 msgid "File uploaded successfully"
 msgstr "تم رفع الملف بنجاح"
 
-#: src/pages/portal/components/PortalWizard.tsx:571
+#: src/pages/portal/components/PortalWizard.tsx:587
 msgid "File uploaded."
 msgstr ""
 
@@ -3043,7 +3055,7 @@ msgstr ""
 #: src/pages/folders/components/FolderTable.tsx:929
 #: src/pages/folders/components/FolderTable.tsx:1114
 #: src/pages/folders/components/Upload/Upload.tsx:1619
-#: src/pages/portal/components/PortalWizard.tsx:957
+#: src/pages/portal/components/PortalWizard.tsx:973
 msgid "Files"
 msgstr "الملفات"
 
@@ -3051,7 +3063,7 @@ msgstr "الملفات"
 msgid "FILES IN THIS FOLDER"
 msgstr "الملفات في هذا المجلد"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:800
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:799
 msgid "Files must be under 5MB"
 msgstr ""
 
@@ -3118,7 +3130,7 @@ msgid "Folder “{folderName}” is ready. Continue to choose a storage provider
 msgstr "المجلد «{folderName}» جاهز. تابع لاختيار مزود التخزين."
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
-#: src/pages/settings/SettingsMain.tsx:207
+#: src/pages/settings/SettingsMain.tsx:210
 msgid "Folder Configuration"
 msgstr "تكوين المجلدات"
 
@@ -3191,7 +3203,7 @@ msgstr "توقعات الاستخدام حتى نهاية الشهر"
 msgid "Forgot Password"
 msgstr "نسيت كلمة المرور"
 
-#: src/pages/sign-in/components/SignInForm.tsx:802
+#: src/pages/sign-in/components/SignInForm.tsx:875
 msgid "Forgot password?"
 msgstr "نسيت كلمة المرور؟"
 
@@ -3218,10 +3230,10 @@ msgstr "منشئ النماذج"
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:31
 #: src/pages/settings/SettingsMain.tsx:214
-msgid "Form Configuration"
-msgstr ""
+#~ msgid "Form Configuration"
+#~ msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:550
+#: src/pages/forms/FormsPage.tsx:552
 msgid "Form deleted successfully"
 msgstr "نموذج deleted successfully"
 
@@ -3240,6 +3252,9 @@ msgstr "الصيغة"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:85
 #: src/pages/forms/components/Table.tsx:57
+#: src/pages/forms/FormsPage.tsx:80
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:32
+#: src/pages/settings/SettingsMain.tsx:217
 msgid "Forms"
 msgstr "النماذج"
 
@@ -3344,12 +3359,12 @@ msgid "Google Drive"
 msgstr "Google Drive"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:180
-#: src/pages/sign-in/components/SignInForm.tsx:358
+#: src/pages/sign-in/components/SignInForm.tsx:427
 msgid "Google sign-in failed"
 msgstr "فشل تسجيل الدخول عبر Google"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:144
-#: src/pages/sign-in/components/SignInForm.tsx:327
+#: src/pages/sign-in/components/SignInForm.tsx:396
 msgid "Google sign-in was cancelled or failed"
 msgstr "تم إلغاء تسجيل الدخول عبر Google أو فشل"
 
@@ -3374,7 +3389,7 @@ msgstr "تفاصيل المجموعة"
 #: src/pages/settings/components/GroupManagement.tsx:590
 #: src/pages/settings/components/GroupManagement.tsx:819
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:27
-#: src/pages/settings/SettingsMain.tsx:239
+#: src/pages/settings/SettingsMain.tsx:242
 msgid "Group Management"
 msgstr "إدارة المجموعات"
 
@@ -3443,7 +3458,7 @@ msgstr "إليك ما يمكنك توقعه:"
 msgid "Hi, Welcome back"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:445
+#: src/pages/sign-in/components/SignInForm.tsx:518
 msgid "Hi, Welcome back to {appName}"
 msgstr "مرحباً بعودتك إلى {appName}"
 
@@ -3452,7 +3467,7 @@ msgstr "مرحباً بعودتك إلى {appName}"
 msgid "Hi, Welcome back to EZOFIS"
 msgstr "مرحباً بعودتك إلى EZOFIS"
 
-#: src/pages/sign-in/components/SignInForm.tsx:436
+#: src/pages/sign-in/components/SignInForm.tsx:509
 msgid "Hi, Welcome!"
 msgstr "مرحباً، أهلاً بك!"
 
@@ -3499,7 +3514,7 @@ msgstr "نتائج المطابقة التاريخية"
 
 #: src/pages/portal/components/PortalDetail.tsx:75
 #: src/pages/portal/components/PortalDetail.tsx:197
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:407
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:550
 #: src/pages/requests/components/request/components/Header.tsx:470
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3504
 msgid "History"
@@ -3723,11 +3738,11 @@ msgstr "نوع ملف غير صالح. يرجى رفع PDF أو صورة."
 msgid "Invalid file type. Please upload a supported document."
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:183
+#: src/pages/portal/components/PortalLogin.tsx:245
 msgid "Invalid OTP. Please try again."
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:123
+#: src/pages/portal/components/PortalLogin.tsx:202
 msgid "Invalid username or password."
 msgstr ""
 
@@ -3745,15 +3760,15 @@ msgid "Invite sent"
 msgstr "تم إرسال الدعوة"
 
 #: src/components/common/SharePopover.tsx:569
-#: src/pages/requests/components/request/components/Header.tsx:1300
+#: src/pages/requests/components/request/components/Header.tsx:1327
 msgid "Invited"
 msgstr "مدعو"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:839
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1942
-#: src/pages/portal/components/PortalWizard.tsx:158
-#: src/pages/portal/components/PortalWizard.tsx:161
-#: src/pages/portal/components/PortalWizard.tsx:1099
+#: src/pages/portal/components/PortalWizard.tsx:160
+#: src/pages/portal/components/PortalWizard.tsx:163
+#: src/pages/portal/components/PortalWizard.tsx:1115
 msgid "Invoice"
 msgstr "الفاتورة"
 
@@ -3779,7 +3794,7 @@ msgstr "مبلغ الفاتورة"
 msgid "Invoice Date"
 msgstr "تاريخ الفاتورة"
 
-#: src/pages/requests/components/request/components/Header.tsx:954
+#: src/pages/requests/components/request/components/Header.tsx:981
 msgid "Invoice Decision Details"
 msgstr "تفاصيل قرار الفاتورة"
 
@@ -3817,7 +3832,7 @@ msgstr "توزيع حالة الفواتير"
 msgid "Invoice Summary"
 msgstr "ملخص الفاتورة"
 
-#: src/pages/requests/components/request/components/Header.tsx:870
+#: src/pages/requests/components/request/components/Header.tsx:897
 msgid "Invoice Value"
 msgstr "قيمة الفاتورة"
 
@@ -3849,11 +3864,11 @@ msgstr "تفاصيل الفواتير"
 #~ msgid "Is payables growth eating margin · future liquidity needs"
 #~ msgstr "هل نمو الذمم الدائنة يضغط الهامش · احتياجات السيولة المستقبلية"
 
-#: src/pages/sign-in/components/SignInForm.tsx:485
+#: src/pages/sign-in/components/SignInForm.tsx:558
 msgid "is used with more than one account. Which account do you want to use?"
 msgstr "مستخدم مع أكثر من حساب. أي حساب تريد استخدامه؟"
 
-#: src/pages/sign-in/components/SignInForm.tsx:481
+#: src/pages/sign-in/components/SignInForm.tsx:554
 msgid "It looks like"
 msgstr "يبدو أن"
 
@@ -3901,7 +3916,7 @@ msgstr "June"
 #~ msgid "Just 3 suppliers account for 19% of unpaid liabilities, led by Harbor Point Consulting at $686.5K."
 #~ msgstr "3 موردين فقط يمثلون 19% من الالتزامات غير المدفوعة، يتصدرهم Harbor Point Consulting بمبلغ 686.5 ألف دولار."
 
-#: src/pages/sign-in/components/SignInForm.tsx:792
+#: src/pages/sign-in/components/SignInForm.tsx:865
 msgid "Keep me logged in"
 msgstr "ابقني متصلاً"
 
@@ -4109,11 +4124,11 @@ msgstr "جاري تحميل التعليقات..."
 msgid "Loading document..."
 msgstr "جاري تحميل المستند..."
 
-#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:185
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:159
 msgid "Loading field data…"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:144
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:143
 msgid "Loading form…"
 msgstr ""
 
@@ -4175,7 +4190,7 @@ msgstr "جارٍ التحميل..."
 msgid "Location"
 msgstr "الموقع"
 
-#: src/pages/portal/components/PortalLogin.tsx:239
+#: src/pages/portal/components/PortalLogin.tsx:301
 msgid "Log in to submit and track your requests"
 msgstr ""
 
@@ -4216,7 +4231,7 @@ msgstr ""
 msgid "Login With OTP"
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:626
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:625
 msgid "Logo"
 msgstr ""
 
@@ -4252,7 +4267,7 @@ msgstr "إدارة"
 msgid "Manage navigation menus, routes, and display order across the platform."
 msgstr ""
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:240
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:253
 msgid "Management"
 msgstr "الإدارة"
 
@@ -4453,12 +4468,12 @@ msgid "Microsoft Dynamics"
 msgstr "Microsoft Dynamics"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:224
-#: src/pages/sign-in/components/SignInForm.tsx:401
+#: src/pages/sign-in/components/SignInForm.tsx:470
 msgid "Microsoft sign-in failed"
 msgstr "فشل تسجيل الدخول عبر Microsoft"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:222
-#: src/pages/sign-in/components/SignInForm.tsx:399
+#: src/pages/sign-in/components/SignInForm.tsx:468
 msgid "Microsoft sign-in was cancelled."
 msgstr "تم إلغاء تسجيل الدخول عبر Microsoft."
 
@@ -4479,19 +4494,19 @@ msgstr "سياق المشاركة مفقود"
 msgid "Mobile Preview"
 msgstr "معاينة الجوال"
 
-#: src/pages/forms/FormsPage.tsx:247
+#: src/pages/forms/FormsPage.tsx:249
 #: src/pages/workflows/components/Table.tsx:101
 msgid "Modified At"
 msgstr "Modified At"
 
-#: src/pages/forms/FormsPage.tsx:240
-#: src/pages/forms/FormsPage.tsx:617
+#: src/pages/forms/FormsPage.tsx:242
+#: src/pages/forms/FormsPage.tsx:619
 #: src/pages/workflows/components/Table.tsx:94
 #: src/pages/workflows/components/Table.tsx:467
 msgid "Modified By"
 msgstr "Modified By"
 
-#: src/pages/forms/FormsPage.tsx:628
+#: src/pages/forms/FormsPage.tsx:630
 #: src/pages/workflows/components/Table.tsx:478
 msgid "Modified Date"
 msgstr "Modified التاريخ"
@@ -4512,7 +4527,7 @@ msgstr "وصول الوحدات ومصفوفة الامتيازات"
 msgid "Modules"
 msgstr "الوحدات"
 
-#: src/pages/settings/SettingsMain.tsx:254
+#: src/pages/settings/SettingsMain.tsx:257
 msgid "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 msgstr "راقب استهلاك الأرصدة واتجاهات الاستخدام والنشاط حسب الوحدة عبر المنصة."
 
@@ -4583,8 +4598,8 @@ msgstr "غ/م"
 #: src/pages/folders/components/FolderTable.tsx:706
 #: src/pages/folders/components/FolderTable.tsx:1078
 #: src/pages/forms/FormEntriesPage.tsx:2143
-#: src/pages/forms/FormsPage.tsx:167
-#: src/pages/forms/FormsPage.tsx:595
+#: src/pages/forms/FormsPage.tsx:169
+#: src/pages/forms/FormsPage.tsx:597
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:618
 #: src/pages/settings/components/ManageUser.tsx:1124
@@ -4605,12 +4620,12 @@ msgid "Net 30 Days"
 msgstr "صافي 30 يوماً"
 
 #: src/components/common/SharePopover.tsx:705
-#: src/pages/requests/components/request/components/Header.tsx:1433
+#: src/pages/requests/components/request/components/Header.tsx:1460
 msgid "New"
 msgstr "جديد"
 
 #: src/pages/forms/components/AiFormBuilder.tsx:136
-#: src/pages/forms/FormsPage.tsx:575
+#: src/pages/forms/FormsPage.tsx:577
 msgid "New Form"
 msgstr "جديد نموذج"
 
@@ -4631,8 +4646,8 @@ msgstr "كلمة مرور جديدة"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:669
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:130
-#: src/pages/requests/RequestsPage.tsx:673
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:129
+#: src/pages/requests/RequestsPage.tsx:733
 msgid "New Request"
 msgstr "طلب جديد"
 
@@ -4642,8 +4657,8 @@ msgstr "طلب جديد"
 
 #: src/pages/portal/components/PortalHome.tsx:189
 #: src/pages/portal/components/PortalPicker.tsx:53
-#: src/pages/portal/components/PortalWizard.tsx:685
-#: src/pages/portal/PortalPage.tsx:368
+#: src/pages/portal/components/PortalWizard.tsx:701
+#: src/pages/portal/PortalPage.tsx:371
 msgid "New Submission"
 msgstr ""
 
@@ -4665,11 +4680,11 @@ msgid "Next Action"
 msgstr "الإجراء التالي"
 
 #: src/pages/requests/components/request/components/Header.tsx:511
-#: src/pages/requests/components/request/components/Header.tsx:675
+#: src/pages/requests/components/request/components/Header.tsx:702
 msgid "Next Request"
 msgstr "الطلب التالي"
 
-#: src/pages/portal/components/PortalLogin.tsx:78
+#: src/pages/portal/components/PortalLogin.tsx:157
 msgid "No account found for this username."
 msgstr ""
 
@@ -4722,7 +4737,7 @@ msgstr ""
 #~ msgid "No consumption data for this period."
 #~ msgstr "No consumption data for this period."
 
-#: src/pages/requests/components/request/components/Header.tsx:968
+#: src/pages/requests/components/request/components/Header.tsx:995
 msgid "No decision details available for this request."
 msgstr ""
 
@@ -4752,15 +4767,16 @@ msgstr "لا تكرار"
 msgid "No duplicates detected"
 msgstr "لم يتم اكتشاف تكرارات"
 
-#: src/pages/sign-in/components/SignInForm.tsx:347
+#: src/pages/sign-in/components/SignInForm.tsx:416
 msgid "No email returned from Google"
 msgstr "لم يُرجع Google بريداً إلكترونياً"
 
-#: src/pages/sign-in/components/SignInForm.tsx:384
+#: src/pages/sign-in/components/SignInForm.tsx:453
 msgid "No email returned from Microsoft"
 msgstr "لم يُرجع Microsoft بريداً إلكترونياً"
 
 #: src/pages/requests/components/request/components/generic-overview/DocumentFieldCards.tsx:40
+#: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:92
 msgid "No field data available for this document."
 msgstr ""
 
@@ -4946,8 +4962,8 @@ msgstr ""
 #~ msgid "Non-sequential"
 #~ msgstr "غير تسلسلي"
 
-#: src/pages/portal/components/PortalWizard.tsx:961
-#: src/pages/portal/components/PortalWizard.tsx:1108
+#: src/pages/portal/components/PortalWizard.tsx:977
+#: src/pages/portal/components/PortalWizard.tsx:1124
 msgid "None"
 msgstr ""
 
@@ -5000,7 +5016,7 @@ msgid "Notifications"
 msgstr "الإشعارات"
 
 #: src/components/common/SharePopover.tsx:702
-#: src/pages/requests/components/request/components/Header.tsx:1430
+#: src/pages/requests/components/request/components/Header.tsx:1457
 msgid "Notify me when accessed"
 msgstr "أعلمني عند الوصول"
 
@@ -5041,8 +5057,8 @@ msgid "One more detail before uploading"
 msgstr ""
 
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:194
-msgid "One more detail is needed before this file can be uploaded."
-msgstr ""
+#~ msgid "One more detail is needed before this file can be uploaded."
+#~ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:174
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:938
@@ -5102,7 +5118,7 @@ msgid "Optionally connect ERP or other systems so data can sync with this folder
 msgstr "اربط ERP أو أنظمة أخرى اختيارياً لمزامنة البيانات مع هذا المجلد."
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:337
-#: src/pages/sign-in/components/SignInForm.tsx:822
+#: src/pages/sign-in/components/SignInForm.tsx:895
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:373
 msgid "Or"
 msgstr "أو"
@@ -5176,7 +5192,7 @@ msgstr "المالك"
 #: src/components/common/SharePopover.tsx:561
 #: src/pages/folders/components/FolderSharePopover.tsx:777
 #: src/pages/folders/components/FolderSharePopover.tsx:832
-#: src/pages/requests/components/request/components/Header.tsx:1292
+#: src/pages/requests/components/request/components/Header.tsx:1319
 msgid "Owner"
 msgstr "المالك"
 
@@ -5191,16 +5207,16 @@ msgid "Partially Matched"
 msgstr "مطابق جزئياً"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx:31
-#: src/pages/portal/components/PortalLogin.tsx:262
+#: src/pages/portal/components/PortalLogin.tsx:324
 #: src/pages/settings/components/ManageUser.tsx:167
 #: src/pages/settings/components/ManageUser.tsx:358
 #: src/pages/settings/components/ManageUser.tsx:2455
 #: src/pages/settings/components/ManageUser.tsx:2460
 #: src/pages/sign-in/components/ShareSignInForm.tsx:278
 #: src/pages/sign-in/components/ShareSignInForm.tsx:312
-#: src/pages/sign-in/components/SignInForm.tsx:638
-#: src/pages/sign-in/components/SignInForm.tsx:725
-#: src/pages/sign-in/components/SignInForm.tsx:763
+#: src/pages/sign-in/components/SignInForm.tsx:711
+#: src/pages/sign-in/components/SignInForm.tsx:798
+#: src/pages/sign-in/components/SignInForm.tsx:836
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:309
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:346
 msgid "Password"
@@ -5225,7 +5241,7 @@ msgstr ""
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:85
 #: src/pages/sign-in/components/ShareSignInForm.tsx:114
-#: src/pages/sign-in/components/SignInForm.tsx:282
+#: src/pages/sign-in/components/SignInForm.tsx:351
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:137
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:172
 msgid "Password is required"
@@ -5385,7 +5401,7 @@ msgstr "Placeholder Column 1"
 msgid "Placeholder Column 2"
 msgstr "Placeholder Column 2"
 
-#: src/pages/settings/SettingsMain.tsx:337
+#: src/pages/settings/SettingsMain.tsx:341
 msgid "Platform and monitoring"
 msgstr ""
 
@@ -5393,16 +5409,16 @@ msgstr ""
 msgid "Playground"
 msgstr "ساحة التجربة"
 
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:43
-#: src/pages/settings/SettingsMain.tsx:263
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:45
+#: src/pages/settings/SettingsMain.tsx:266
 msgid "Playground API"
 msgstr "واجهة برمجة تطبيقات بيئة الاختبار"
 
-#: src/pages/portal/components/PortalWizard.tsx:200
+#: src/pages/portal/components/PortalWizard.tsx:202
 msgid "Please answer the required questions in this section."
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:205
+#: src/pages/portal/components/PortalWizard.tsx:207
 msgid "Please attach a file to continue."
 msgstr ""
 
@@ -5418,12 +5434,12 @@ msgstr ""
 msgid "Please describe what workflow you want to create"
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:560
-#: src/pages/portal/components/PortalWizard.tsx:722
+#: src/pages/portal/components/PortalWizard.tsx:576
+#: src/pages/portal/components/PortalWizard.tsx:738
 msgid "Please fill in required field(s): {missing}"
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:108
+#: src/pages/portal/components/PortalLogin.tsx:187
 msgid "Please fill the required field: {identifierLabel}"
 msgstr ""
 
@@ -5431,8 +5447,7 @@ msgstr ""
 msgid "Please fill the required field: Login type"
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:117
-#: src/pages/portal/components/PortalLogin.tsx:131
+#: src/pages/portal/components/PortalLogin.tsx:196
 msgid "Please fill the required field: Password"
 msgstr ""
 
@@ -5472,7 +5487,7 @@ msgstr ""
 msgid "Please try again."
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:796
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:795
 msgid "Please upload an image file"
 msgstr ""
 
@@ -5498,11 +5513,11 @@ msgstr "يرجى الانتظار أثناء معالجة مستندك"
 msgid "Please wait while your spreadsheet rows are parsed and added to the database."
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:634
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:633
 msgid "PNG or SVG"
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:623
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:622
 msgid "PNG, SVG or JPG, up to 5MB"
 msgstr ""
 
@@ -5577,7 +5592,7 @@ msgstr "مرجع أمر الشراء"
 msgid "PO Setup"
 msgstr "إعداد PO"
 
-#: src/pages/requests/components/request/components/Header.tsx:889
+#: src/pages/requests/components/request/components/Header.tsx:916
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 msgid "PO Value"
 msgstr "قيمة أمر الشراء"
@@ -5596,8 +5611,8 @@ msgstr "الامتثال للسياسات"
 
 #: src/pages/settings/components/PortalConfiguration.tsx:653
 #: src/pages/settings/components/PortalConfiguration.tsx:1105
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
-#: src/pages/settings/SettingsMain.tsx:227
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
+#: src/pages/settings/SettingsMain.tsx:230
 msgid "Portal Configuration"
 msgstr ""
 
@@ -5663,7 +5678,8 @@ msgstr "البوابات"
 #~ msgid "Posting..."
 #~ msgstr "جاري النشر..."
 
-#: src/pages/portal/components/PortalLogin.tsx:336
+#: src/pages/portal/components/PortalLogin.tsx:134
+#: src/pages/portal/components/PortalLogin.tsx:398
 msgid "Powered by"
 msgstr ""
 
@@ -5697,7 +5713,7 @@ msgstr "اضغط"
 msgid "Press Enter to add this email"
 msgstr "اضغط Enter لإضافة هذا البريد"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:701
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:700
 msgid "Preview"
 msgstr "معاينة"
 
@@ -5710,7 +5726,7 @@ msgid "Preview:"
 msgstr "معاينة:"
 
 #: src/pages/requests/components/request/components/Header.tsx:497
-#: src/pages/requests/components/request/components/Header.tsx:661
+#: src/pages/requests/components/request/components/Header.tsx:688
 msgid "Previous Request"
 msgstr "الطلب السابق"
 
@@ -5718,7 +5734,7 @@ msgstr "الطلب السابق"
 msgid "Price Variance"
 msgstr "تباين السعر"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:673
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:672
 msgid "Primary"
 msgstr ""
 
@@ -5819,7 +5835,7 @@ msgstr ""
 msgid "Properties"
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:604
+#: src/pages/forms/FormsPage.tsx:606
 #: src/pages/workflows/components/Table.tsx:454
 msgid "Published"
 msgstr "منشور"
@@ -5862,12 +5878,11 @@ msgstr "تجربة سريعة"
 msgid "Raised At"
 msgstr "Raised At"
 
-#: src/pages/requests/components/request/components/Header.tsx:542
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Raised By"
 
-#: src/pages/requests/components/request/components/Header.tsx:551
+#: src/pages/requests/components/request/components/Header.tsx:574
 msgid "Raised Date"
 msgstr ""
 
@@ -5931,7 +5946,7 @@ msgstr "إعادة"
 #: src/pages/folders/components/FolderFilterBar.tsx:708
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 #: src/pages/forms/FormEntriesPage.tsx:2121
-#: src/pages/forms/FormsPage.tsx:587
+#: src/pages/forms/FormsPage.tsx:589
 #: src/pages/requests/components/buttons/RefreshButton.tsx:13
 #: src/pages/requests/components/buttons/RefreshButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1896
@@ -5980,7 +5995,7 @@ msgstr "لم يتم العثور على مستندات ذات صلة"
 msgid "Remember your password?"
 msgstr "هل تتذكر كلمة المرور؟"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:863
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:862
 msgid "Remove"
 msgstr ""
 
@@ -5998,7 +6013,8 @@ msgid "Remove attachment"
 msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:688
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:841
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:826
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:962
 msgid "Remove file"
 msgstr "إزالة الملف"
 
@@ -6057,9 +6073,8 @@ msgid "Repository context and business scope."
 msgstr ""
 
 #: src/pages/folders/components/EditMetadataView.tsx:404
-#: src/pages/portal/components/PortalWizard.tsx:1012
-#: src/pages/portal/components/PortalWizard.tsx:1064
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:185
+#: src/pages/portal/components/PortalWizard.tsx:1028
+#: src/pages/portal/components/PortalWizard.tsx:1080
 msgid "Repository Fields"
 msgstr "حقول المستودع"
 
@@ -6076,8 +6091,8 @@ msgstr "معرف المستودع مفقود. لا يمكن الرفع."
 msgid "Request a Demo"
 msgstr "اطلب عرضاً توضيحياً"
 
-#: src/pages/portal/components/PortalWizard.tsx:711
-#: src/pages/portal/components/PortalWizard.tsx:754
+#: src/pages/portal/components/PortalWizard.tsx:727
+#: src/pages/portal/components/PortalWizard.tsx:770
 msgid "Request created. You can track it from My Submissions."
 msgstr ""
 
@@ -6085,7 +6100,7 @@ msgstr ""
 msgid "Request No"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1229
+#: src/pages/requests/components/request/components/Header.tsx:1256
 msgid "Request Owner"
 msgstr "مالك الطلب"
 
@@ -6124,7 +6139,7 @@ msgstr "حقل مطلوب"
 msgid "Required field must be mapped."
 msgstr "يجب ربط الحقل المطلوب."
 
-#: src/pages/portal/components/PortalLogin.tsx:47
+#: src/pages/portal/components/PortalLogin.tsx:75
 msgid "Resend OTP"
 msgstr ""
 
@@ -6221,8 +6236,8 @@ msgstr "مراجعة وحفظ الملف الشخصي"
 msgid "Review & save role configuration"
 msgstr "مراجعة وحفظ تكوين الدور"
 
-#: src/pages/portal/components/PortalWizard.tsx:167
-#: src/pages/portal/components/PortalWizard.tsx:1087
+#: src/pages/portal/components/PortalWizard.tsx:169
+#: src/pages/portal/components/PortalWizard.tsx:1103
 msgid "Review & Submit"
 msgstr ""
 
@@ -6287,7 +6302,7 @@ msgstr "الأدوار"
 
 #: src/pages/settings/components/RolesPermissions.tsx:982
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
-#: src/pages/settings/SettingsMain.tsx:245
+#: src/pages/settings/SettingsMain.tsx:248
 msgid "Roles & Permissions"
 msgstr "الأدوار والصلاحيات"
 
@@ -6327,7 +6342,7 @@ msgstr ""
 
 #: src/pages/folders/components/CollaboraEditor.tsx:253
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:1478
+#: src/pages/requests/components/request/components/Header.tsx:1505
 #: src/pages/settings/components/SettingsWizardLayout.tsx:78
 msgid "Save"
 msgstr "حفظ"
@@ -6414,7 +6429,7 @@ msgid "Saved signature removed."
 msgstr ""
 
 #: src/pages/folders/components/EditMetadataView.tsx:387
-#: src/pages/settings/components/SettingsWizardLayout.tsx:204
+#: src/pages/settings/components/SettingsWizardLayout.tsx:211
 msgid "Saving..."
 msgstr "جارٍ الحفظ..."
 
@@ -6523,7 +6538,7 @@ msgstr "البحث في المجلدات..."
 msgid "Search for people to share with"
 msgstr ""
 
-#: src/pages/forms/FormsPage.tsx:567
+#: src/pages/forms/FormsPage.tsx:569
 msgid "Search forms..."
 msgstr "بحث forms..."
 
@@ -6544,7 +6559,7 @@ msgid "Search keywords..."
 msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:2146
-#: src/pages/forms/FormsPage.tsx:598
+#: src/pages/forms/FormsPage.tsx:600
 #: src/pages/workflows/components/Table.tsx:448
 msgid "Search name..."
 msgstr "البحث بالاسم..."
@@ -6608,7 +6623,7 @@ msgstr "جاري البحث بالذكاء الاصطناعي"
 msgid "Searching…"
 msgstr "جاري البحث…"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:678
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:677
 msgid "Secondary"
 msgstr ""
 
@@ -6641,7 +6656,7 @@ msgstr "الأمان والتحقق"
 msgid "Security Protocol"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:715
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:930
 msgid "See the Attachments section for uploaded files."
 msgstr ""
 
@@ -6800,11 +6815,11 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:669
 #: src/pages/folders/components/FolderSharePopover.tsx:997
-#: src/pages/requests/components/request/components/Header.tsx:1397
+#: src/pages/requests/components/request/components/Header.tsx:1424
 msgid "Send notification"
 msgstr "إرسال إشعار"
 
-#: src/pages/portal/components/PortalLogin.tsx:271
+#: src/pages/portal/components/PortalLogin.tsx:333
 msgid "Send OTP"
 msgstr ""
 
@@ -6850,7 +6865,7 @@ msgstr ""
 msgid "Set the folder name and let AI draft a clear business description for this repository."
 msgstr "حدد اسم المجلد ودع الذكاء الاصطناعي يصوغ وصفاً تجارياً واضحاً لهذا المستودع."
 
-#: src/pages/settings/SettingsMain.tsx:204
+#: src/pages/settings/SettingsMain.tsx:207
 msgid "Set up folders with custom fields, storage, security, and versioning."
 msgstr "قم بإعداد المجلدات بحقول مخصصة وتخزين وأمان وإصدارات."
 
@@ -6862,8 +6877,8 @@ msgstr ""
 msgid "Set your brand name and colors"
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:266
-#: src/pages/portal/components/PortalWizard.tsx:294
+#: src/pages/portal/components/PortalWizard.tsx:282
+#: src/pages/portal/components/PortalWizard.tsx:310
 msgid "setting up..."
 msgstr ""
 
@@ -6877,7 +6892,8 @@ msgstr "جاري الإعداد..."
 #: src/pages/settings/components/SettingsPageHeader.tsx:51
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
 #: src/pages/settings/components/SettingsWizardLayout.tsx:90
-#: src/pages/settings/SettingsMain.tsx:289
+#: src/pages/settings/hooks/useSettingsOriginBreadcrumbs.ts:25
+#: src/pages/settings/SettingsMain.tsx:292
 msgid "Settings"
 msgstr "الإعدادات"
 
@@ -6912,12 +6928,12 @@ msgstr "الخطورة"
 #: src/pages/folders/components/FolderTable.tsx:825
 #: src/pages/folders/components/FolderTable.tsx:1198
 #: src/pages/folders/components/ShareView.tsx:321
-#: src/pages/requests/components/request/components/Header.tsx:995
-#: src/pages/requests/components/request/components/Header.tsx:1420
+#: src/pages/requests/components/request/components/Header.tsx:1022
+#: src/pages/requests/components/request/components/Header.tsx:1447
 msgid "Share"
 msgstr "مشاركة"
 
-#: src/pages/requests/components/request/components/Header.tsx:1020
+#: src/pages/requests/components/request/components/Header.tsx:1047
 msgid "Share Request"
 msgstr "مشاركة الطلب"
 
@@ -6932,7 +6948,7 @@ msgstr "تمت المشاركة بنجاح"
 
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/FolderSharePopover.tsx:1021
-#: src/pages/requests/components/request/components/Header.tsx:1420
+#: src/pages/requests/components/request/components/Header.tsx:1447
 msgid "Sharing..."
 msgstr "جاري المشاركة..."
 
@@ -7003,8 +7019,8 @@ msgstr "توقيع"
 msgid "Sign here"
 msgstr "وقّع هنا"
 
-#: src/pages/portal/components/PortalLogin.tsx:271
-#: src/pages/sign-in/components/SignInForm.tsx:655
+#: src/pages/portal/components/PortalLogin.tsx:333
+#: src/pages/sign-in/components/SignInForm.tsx:728
 msgid "Sign in"
 msgstr "تسجيل الدخول"
 
@@ -7013,18 +7029,22 @@ msgstr "تسجيل الدخول"
 #: src/layouts/auth/components/AuthHeader.tsx:36
 #: src/pages/sign-in/components/ShareSignInForm.tsx:301
 #: src/pages/sign-in/components/ShareSignInForm.tsx:326
-#: src/pages/sign-in/components/SignInForm.tsx:809
+#: src/pages/sign-in/components/SignInForm.tsx:882
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:360
 msgid "Sign In"
 msgstr "تسجيل الدخول"
 
+#: src/pages/sign-in/components/SignInForm.tsx:212
+msgid "Sign in succeeded but no access token was returned."
+msgstr ""
+
 #: src/pages/sign-in/components/ShareSignInForm.tsx:262
-#: src/pages/sign-in/components/SignInForm.tsx:605
+#: src/pages/sign-in/components/SignInForm.tsx:678
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:293
 msgid "Sign in to your account"
 msgstr "سجّل الدخول إلى حسابك"
 
-#: src/pages/sign-in/components/SignInForm.tsx:577
+#: src/pages/sign-in/components/SignInForm.tsx:650
 msgid "Sign in with a different email address"
 msgstr "تسجيل الدخول ببريد إلكتروني آخر"
 
@@ -7190,8 +7210,8 @@ msgstr "الحالة"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:844
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1947
-#: src/pages/forms/FormsPage.tsx:189
-#: src/pages/forms/FormsPage.tsx:602
+#: src/pages/forms/FormsPage.tsx:191
+#: src/pages/forms/FormsPage.tsx:604
 #: src/pages/portal/components/PortalHome.tsx:401
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
@@ -7223,7 +7243,7 @@ msgstr "Status: {val}"
 msgid "Statuses"
 msgstr "Statuses"
 
-#: src/pages/portal/components/PortalWizard.tsx:848
+#: src/pages/portal/components/PortalWizard.tsx:864
 msgid "Step {currentStep} of {totalSteps}"
 msgstr ""
 
@@ -7307,7 +7327,7 @@ msgstr ""
 #: src/pages/folders/components/DocumentDetailsView.tsx:1974
 #: src/pages/folders/components/DocumentDetailsView.tsx:1995
 #: src/pages/portal/components/PortalShell.tsx:78
-#: src/pages/portal/components/PortalWizard.tsx:1139
+#: src/pages/portal/components/PortalWizard.tsx:1155
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:108
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:121
 msgid "Submit"
@@ -7329,7 +7349,8 @@ msgstr ""
 msgid "Successfully imported {successCount} entries!"
 msgstr ""
 
-#: src/pages/sign-in/components/SignInForm.tsx:259
+#: src/pages/sign-in/components/SignInForm.tsx:215
+#: src/pages/sign-in/components/SignInForm.tsx:227
 msgid "Successfully logged in"
 msgstr "تم تسجيل الدخول بنجاح"
 
@@ -7549,7 +7570,7 @@ msgid "Theme"
 msgstr "المظهر"
 
 #: src/pages/forms/FormEntriesPage.tsx:2068
-#: src/pages/forms/FormsPage.tsx:511
+#: src/pages/forms/FormsPage.tsx:513
 msgid "This action is permanent and cannot be undone."
 msgstr "This action is permanent and cannot be undone."
 
@@ -7561,12 +7582,13 @@ msgstr "هذه المنطقة موقعة بالفعل."
 msgid "This branded sign-in link is invalid or no longer available."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:68
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:209
+#: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:101
+#: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:226
 msgid "This field is required."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:916
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1010
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr ""
 
@@ -7593,7 +7615,7 @@ msgstr "يستغرق الأمر وقتاً أطول قليلاً. يمكنك ا�
 msgid "This month"
 msgstr "This month"
 
-#: src/pages/portal/components/PortalLogin.tsx:66
+#: src/pages/portal/components/PortalLogin.tsx:145
 msgid "This portal is missing a master form or username field."
 msgstr ""
 
@@ -7631,7 +7653,7 @@ msgstr "This week"
 msgid "This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets."
 msgstr "يحتوي هذا المصنف على ورقة عمل واحدة فقط. يتطلب استيراد PO بيانات الرأس وبنود السطر. يرجى رفع ملف Excel يحتوي على ورقتي عمل على الأقل."
 
-#: src/pages/portal/components/PortalWizard.tsx:838
+#: src/pages/portal/components/PortalWizard.tsx:854
 msgid "This workflow has no form configured."
 msgstr ""
 
@@ -7647,7 +7669,7 @@ msgstr "المطابقة الثلاثية"
 msgid "Time Remaining"
 msgstr "الوقت المتبقي"
 
-#: src/pages/requests/components/request/components/Header.tsx:560
+#: src/pages/requests/components/request/components/Header.tsx:587
 msgid "Time running from last action"
 msgstr ""
 
@@ -7786,7 +7808,7 @@ msgid "Two-Step Verification"
 msgstr "التحقق بخطوتين"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2103
-#: src/pages/forms/FormsPage.tsx:215
+#: src/pages/forms/FormsPage.tsx:217
 msgid "Type"
 msgstr "النوع"
 
@@ -7832,7 +7854,7 @@ msgstr ""
 msgid "Unable to create sign request"
 msgstr "تعذر إنشاء طلب التوقيع"
 
-#: src/pages/portal/components/PortalWizard.tsx:763
+#: src/pages/portal/components/PortalWizard.tsx:779
 msgid "Unable to create this request."
 msgstr ""
 
@@ -7877,7 +7899,7 @@ msgstr ""
 msgid "Unable to load this request."
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:133
+#: src/pages/portal/components/PortalWizard.tsx:135
 msgid "Unable to load this workflow form."
 msgstr ""
 
@@ -7885,9 +7907,9 @@ msgstr ""
 msgid "Unable to open sign request"
 msgstr "تعذر فتح طلب التوقيع"
 
-#: src/pages/portal/components/PortalWizard.tsx:340
-#: src/pages/portal/components/PortalWizard.tsx:439
-#: src/pages/portal/components/PortalWizard.tsx:655
+#: src/pages/portal/components/PortalWizard.tsx:356
+#: src/pages/portal/components/PortalWizard.tsx:455
+#: src/pages/portal/components/PortalWizard.tsx:671
 msgid "Unable to process this document."
 msgstr ""
 
@@ -7900,7 +7922,7 @@ msgstr "تعذر قراءة الملف المحدد."
 msgid "Unable to remove related document"
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:204
+#: src/pages/portal/components/PortalLogin.tsx:266
 msgid "Unable to resend OTP"
 msgstr ""
 
@@ -7916,12 +7938,12 @@ msgstr "تعذر إرسال طلب التوقيع. حاول مرة أخرى."
 msgid "Unable to set password"
 msgstr "تعذر تعيين كلمة المرور"
 
-#: src/pages/portal/components/PortalLogin.tsx:164
-#: src/pages/sign-in/components/SignInForm.tsx:266
+#: src/pages/portal/components/PortalLogin.tsx:226
+#: src/pages/sign-in/components/SignInForm.tsx:335
 msgid "Unable to sign in"
 msgstr "تعذر تسجيل الدخول"
 
-#: src/pages/portal/components/PortalWizard.tsx:281
+#: src/pages/portal/components/PortalWizard.tsx:297
 msgid "Unable to start this workflow."
 msgstr ""
 
@@ -7929,16 +7951,16 @@ msgstr ""
 msgid "Unable to submit signature. Please try again."
 msgstr "تعذر إرسال التوقيع. حاول مرة أخرى."
 
-#: src/pages/portal/components/PortalWizard.tsx:499
-#: src/pages/portal/components/PortalWizard.tsx:540
+#: src/pages/portal/components/PortalWizard.tsx:515
+#: src/pages/portal/components/PortalWizard.tsx:556
 msgid "Unable to upload {fileName}."
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:579
+#: src/pages/portal/components/PortalWizard.tsx:595
 msgid "Unable to upload this file."
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:192
+#: src/pages/portal/components/PortalLogin.tsx:254
 msgid "Unable to verify OTP"
 msgstr ""
 
@@ -7975,8 +7997,8 @@ msgstr "بدون عنوان Field"
 msgid "Untitled folder"
 msgstr "مجلد بدون عنوان"
 
-#: src/pages/forms/FormsPage.tsx:182
-#: src/pages/forms/FormsPage.tsx:508
+#: src/pages/forms/FormsPage.tsx:184
+#: src/pages/forms/FormsPage.tsx:510
 msgid "Untitled Form"
 msgstr "بدون عنوان نموذج"
 
@@ -8024,13 +8046,13 @@ msgstr "يحدّث السجلات في قاعدة البيانات الرئيس�
 #: src/pages/folders/components/Upload/Upload.tsx:1618
 #: src/pages/portal/components/PortalHome.tsx:305
 #: src/pages/portal/components/PortalPicker.tsx:120
-#: src/pages/portal/components/PortalWizard.tsx:1126
-#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:232
+#: src/pages/portal/components/PortalWizard.tsx:1142
+#: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:227
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:591
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:639
 #: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:66
-#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:207
+#: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:205
 msgid "Upload"
 msgstr "رفع"
 
@@ -8061,7 +8083,7 @@ msgstr "ارفع المستندات بأمان، وعيّن البيانات ا�
 msgid "Upload failed"
 msgstr "فشل الرفع"
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:635
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:634
 msgid "Upload favicon"
 msgstr ""
 
@@ -8119,6 +8141,10 @@ msgstr "جاري الرفع والمعالجة..."
 msgid "Uploading file..."
 msgstr "جاري رفع الملف..."
 
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:922
+msgid "Uploading the document…"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:591
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:639
 msgid "Uploading..."
@@ -8128,7 +8154,7 @@ msgstr ""
 msgid "Uploading…"
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:750
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:749
 msgid "URL copied"
 msgstr ""
 
@@ -8141,7 +8167,7 @@ msgid "Usage Timeline"
 msgstr "الاستخدام Timeline"
 
 #. placeholder {0}: identifierLabel.toLowerCase()
-#: src/pages/portal/components/PortalLogin.tsx:312
+#: src/pages/portal/components/PortalLogin.tsx:374
 msgid "Use a different {0}"
 msgstr ""
 
@@ -8166,7 +8192,7 @@ msgstr "استخدام بيانات تجريبية"
 msgid "User"
 msgstr "المستخدم"
 
-#: src/pages/settings/SettingsMain.tsx:322
+#: src/pages/settings/SettingsMain.tsx:326
 msgid "User access modules"
 msgstr ""
 
@@ -8186,11 +8212,11 @@ msgstr "User Email"
 #: src/pages/settings/components/ManageUser.tsx:1542
 #: src/pages/settings/components/ManageUser.tsx:2829
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:23
-#: src/pages/settings/SettingsMain.tsx:233
+#: src/pages/settings/SettingsMain.tsx:236
 msgid "User Management"
 msgstr "إدارة المستخدمين"
 
-#: src/pages/sign-in/components/SignInForm.tsx:709
+#: src/pages/sign-in/components/SignInForm.tsx:782
 msgid "User name"
 msgstr "اسم المستخدم"
 
@@ -8198,11 +8224,11 @@ msgstr "اسم المستخدم"
 msgid "User Profile"
 msgstr "ملف المستخدم"
 
-#: src/pages/sign-in/components/SignInForm.tsx:710
+#: src/pages/sign-in/components/SignInForm.tsx:783
 msgid "username"
 msgstr "اسم المستخدم"
 
-#: src/pages/portal/components/PortalLogin.tsx:53
+#: src/pages/portal/components/PortalLogin.tsx:81
 #: src/pages/settings/components/ManageUser.tsx:2303
 msgid "Username"
 msgstr "اسم المستخدم"
@@ -8297,11 +8323,11 @@ msgstr "مُتحقق"
 msgid "Verify"
 msgstr "تحقق"
 
-#: src/pages/portal/components/PortalLogin.tsx:294
+#: src/pages/portal/components/PortalLogin.tsx:356
 msgid "Verify & Sign in"
 msgstr ""
 
-#: src/pages/portal/components/PortalLogin.tsx:234
+#: src/pages/portal/components/PortalLogin.tsx:296
 msgid "Verify OTP"
 msgstr ""
 
@@ -8325,7 +8351,7 @@ msgstr "تم حفظ استراتيجية الإصدارات. هل تحتاج ت�
 msgid "View"
 msgstr "عرض"
 
-#: src/pages/settings/SettingsMain.tsx:266
+#: src/pages/settings/SettingsMain.tsx:269
 msgid "View activity logs, security events, and configuration change history."
 msgstr "اعرض سجلات النشاط وأحداث الأمان وسجل تغييرات التكوين."
 
@@ -8388,7 +8414,7 @@ msgid "Welcome back, {displayName}."
 msgstr ""
 
 #. placeholder {0}: portal.name || 'EZOFIS Portal'
-#: src/pages/portal/components/PortalLogin.tsx:51
+#: src/pages/portal/components/PortalLogin.tsx:79
 msgid "Welcome to {0}"
 msgstr ""
 
@@ -8412,7 +8438,7 @@ msgstr ""
 msgid "What workflow shall we create?"
 msgstr ""
 
-#: src/pages/my-account/components/color-preference/ColorPreference.tsx:689
+#: src/pages/my-account/components/color-preference/ColorPreference.tsx:688
 msgid "When enabled, page and card backgrounds use a light or dark wash of the primary color."
 msgstr ""
 
@@ -8440,8 +8466,8 @@ msgstr "منشئ سير العمل"
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:33
 #: src/pages/settings/SettingsMain.tsx:221
-msgid "Workflow Configuration"
-msgstr ""
+#~ msgid "Workflow Configuration"
+#~ msgstr ""
 
 #: src/pages/forms/components/AiFormBuilder.tsx:69
 #: src/pages/forms/components/AiFormBuilder.tsx:98
@@ -8465,7 +8491,10 @@ msgstr "بدأ سير العمل لكنه لم يُرجع أي بيانات."
 #: src/pages/settings/components/PortalConfiguration.tsx:86
 #: src/pages/settings/components/PortalConfiguration.tsx:484
 #: src/pages/settings/components/PortalConfiguration.tsx:1526
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
+#: src/pages/settings/SettingsMain.tsx:224
 #: src/pages/workflows/components/Table.tsx:519
+#: src/pages/workflows/WorkflowsPage.tsx:13
 msgid "Workflows"
 msgstr "سير العمل"
 
@@ -8485,7 +8514,7 @@ msgstr "السنة"
 msgid "Yearly"
 msgstr "سنوي"
 
-#: src/pages/forms/FormsPage.tsx:557
+#: src/pages/forms/FormsPage.tsx:559
 msgid "Yes, Delete"
 msgstr "نعم, Delete"
 
@@ -8499,7 +8528,7 @@ msgstr "أمس"
 msgid "You"
 msgstr "أنت"
 
-#: src/pages/portal/components/PortalLogin.tsx:56
+#: src/pages/portal/components/PortalLogin.tsx:84
 msgid "you@company.com"
 msgstr ""
 

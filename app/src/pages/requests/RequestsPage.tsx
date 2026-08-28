@@ -108,6 +108,11 @@ const RequestsPage = () => {
   const [page, setPage] = useState(storedState?.page ?? 1)
   const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 100)
   const [groupBy, setGroupBy] = useState<string[]>(storedState?.groupBy ?? [])
+  const listTotalsRef = useRef<{
+    closed: number | null
+    inbox: number | null
+    sent: number | null
+  }>({ closed: null, inbox: null, sent: null })
 
   useEffect(() => {
     try {
@@ -184,6 +189,27 @@ const RequestsPage = () => {
     }
   }, [])
 
+  const applyInstanceCount = useCallback((raw?: any) => {
+    const data =
+      raw && typeof raw === 'object' && raw.inboxCount == null && raw.data
+        ? raw.data
+        : raw
+    const listTotals = listTotalsRef.current
+    setMetaData({
+      completedCount: String(listTotals.closed ?? data?.completedCount ?? 0),
+      inboxCount: String(listTotals.inbox ?? data?.inboxCount ?? 0),
+      sentCount: String(listTotals.sent ?? data?.sentCount ?? 0),
+    })
+  }, [])
+
+  const refreshInstanceCounts = useCallback(
+    async (workflowId: string) => {
+      const countRes = await workflowsApiV6.getInstanceCount(workflowId)
+      if (countRes?.data) applyInstanceCount(countRes.data)
+    },
+    [applyInstanceCount],
+  )
+
   const loadSelectedWorkflow = useCallback(
     async (workflowId: string, workflowName?: string) => {
       setWorkflowLoadStatus('loading')
@@ -200,11 +226,7 @@ const RequestsPage = () => {
         const wf = workflowRes.data
 
         if (countRes?.data) {
-          setMetaData({
-            completedCount: String(countRes.data.completedCount ?? 0),
-            inboxCount: String(countRes.data.inboxCount ?? 0),
-            sentCount: String(countRes.data.sentCount ?? 0),
-          })
+          applyInstanceCount(countRes.data)
         } else {
           setMetaData({
             completedCount: '0',
@@ -264,7 +286,7 @@ const RequestsPage = () => {
         setIsLoading(false)
       }
     },
-    [formApi, setRawWorflow],
+    [applyInstanceCount, setRawWorflow],
   )
 
   // Initial Load
@@ -515,6 +537,7 @@ const RequestsPage = () => {
     if (isNew || reloadMeta) {
       lastLoadedWorkflowIdRef.current = wfId
       if (isNew) {
+        listTotalsRef.current = { closed: null, inbox: null, sent: null }
         requestStore.getState().clearQuickFilters()
       }
       loadSelectedWorkflow(String(wfId), workflow.name)
@@ -532,10 +555,16 @@ const RequestsPage = () => {
     setActiveTab(tab)
     setRequestListTab(tab) // Sync to store
     requestStore.getState().clearQuickFilters()
+    setPage(1)
 
     // Only grouping for Inbox
     if (tab !== 'Inbox') {
       setGroupBy([])
+    }
+
+    const workflowId = selectedWorkflow?.id || workflow?.id
+    if (workflowId) {
+      void refreshInstanceCounts(String(workflowId))
     }
   }
 
@@ -556,6 +585,37 @@ const RequestsPage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAccountsPayable])
+
+  // Keep Inbox / Sent / Completed badges in sync with the list that just
+  // loaded. instance-count is fetched on workflow load and tab change, but
+  // the active tab's total from the list API is what the user is looking at.
+  useEffect(() => {
+    if (isFetching || inboxResult?.totalItems == null) return
+
+    const value = String(inboxResult.totalItems)
+    if (activeTab === 'Inbox') listTotalsRef.current.inbox = inboxResult.totalItems
+    if (activeTab === 'Sent') listTotalsRef.current.sent = inboxResult.totalItems
+    if (activeTab === 'Closed') {
+      listTotalsRef.current.closed = inboxResult.totalItems
+    }
+    setMetaData((prev) => {
+      const current = {
+        completedCount: prev?.completedCount ?? '0',
+        inboxCount: prev?.inboxCount ?? '0',
+        sentCount: prev?.sentCount ?? '0',
+      }
+      if (activeTab === 'Inbox' && current.inboxCount !== value) {
+        return { ...current, inboxCount: value }
+      }
+      if (activeTab === 'Sent' && current.sentCount !== value) {
+        return { ...current, sentCount: value }
+      }
+      if (activeTab === 'Closed' && current.completedCount !== value) {
+        return { ...current, completedCount: value }
+      }
+      return prev ?? current
+    })
+  }, [activeTab, inboxResult?.totalItems, isFetching])
 
   useEffect(() => {
     setupStore.getState().setIsActivatingAutomation(false)

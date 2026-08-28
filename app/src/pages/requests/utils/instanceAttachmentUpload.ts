@@ -11,12 +11,13 @@ import {
 } from './repoFolderMetadata'
 
 export interface RepositoryFolderPlan {
-  // Every level of the folder hierarchy except the deepest one, pre-filled
-  // from an existing attachment already filed under this instance (keyed
-  // by sqlColumnName, ready to spread into the upload's metadata).
+  // Folder-path values inherited from an existing attachment already filed
+  // under this instance (keyed by sqlColumnName). The indexing page shows
+  // these as editable defaults — empty ones still need to be collected.
   baseMetadata: Record<string, string>
-  // The one field the uploader actually needs to be asked for — null when
-  // the repository has no folder-structure fields at all (nothing to ask).
+  // The most specific folder-structure field — used by the Attachments
+  // sidebar's single-field prompt. The form-upload indexing page edits
+  // every field instead.
   deepestField: RepositoryFieldSchema | null
 }
 
@@ -37,16 +38,11 @@ export const planRepositoryFolderMetadata = async (
   let baseMetadata: Record<string, string> = {}
   const itemId = existingItem?.itemId
   if (itemId && folderFields.length > 0) {
-    const inheritableFields = folderFields.filter(
-      (f) => f.id !== deepestField?.id,
-    )
-    if (inheritableFields.length > 0) {
-      const { data: workspace } = await getRepositoryItemWorkspace({
-        itemId: String(itemId),
-        repositoryId: String(existingItem?.repositoryId || repositoryId),
-      })
-      baseMetadata = extractExistingFolderMetadata(workspace, inheritableFields)
-    }
+    const { data: workspace } = await getRepositoryItemWorkspace({
+      itemId: String(itemId),
+      repositoryId: String(existingItem?.repositoryId || repositoryId),
+    })
+    baseMetadata = extractExistingFolderMetadata(workspace, folderFields)
   }
 
   return { baseMetadata, deepestField }

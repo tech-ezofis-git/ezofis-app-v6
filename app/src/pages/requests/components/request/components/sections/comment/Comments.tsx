@@ -297,7 +297,7 @@ export default function Comments({
         })}
       </div>
 
-      <div className='shrink-0 border-t border-gray-3 px-3 pt-2.5 pb-0'>
+      <div className='shrink-0 border-t border-gray-3 px-3 pt-2 pb-2'>
         <div className='flex flex-col gap-2'>
           {!!fileOptions.length && (
             <div className='relative w-full'>

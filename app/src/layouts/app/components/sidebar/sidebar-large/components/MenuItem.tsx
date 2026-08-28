@@ -4,6 +4,7 @@ import Icon from '@/components/base/icon/Icon'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
+import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import cn from '@/utils/cn'
 
 interface Props extends Menu {
@@ -27,6 +28,7 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
   const handleClick = () => {
     // Close demo even when already on this route (pathname won't change).
     closeDemoForm()
+    clearOpenedFromSettings()
     if (route === '/') {
       exitSetupToDashboard()
     }

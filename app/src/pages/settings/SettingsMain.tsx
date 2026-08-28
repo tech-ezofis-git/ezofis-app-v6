@@ -25,7 +25,10 @@ import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
 import PortalConfiguration from './components/PortalConfiguration'
 import RolesPermissions from './components/RolesPermissions'
-import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
+import {
+  createSettingsRootBreadcrumbs,
+  markOpenedFromSettings,
+} from './helpers/settingsBreadcrumbs'
 import useSettingsTopbar from './hooks/useSettingsTopbar'
 
 type SettingsItem = {
@@ -211,14 +214,14 @@ function SettingsLanding({
         href: '/forms',
         icon: FileText,
         key: 'form-configuration',
-        title: t`Form Configuration`,
+        title: t`Forms`,
       },
       {
         description: t`Design and configure automated workflows and process routing.`,
         href: '/workflows',
         icon: GitFork,
         key: 'workflow-configuration',
-        title: t`Workflow Configuration`,
+        title: t`Workflows`,
       },
       {
         description: t`Create branded portals, configure login methods, and connect workflows.`,
@@ -293,6 +296,7 @@ function SettingsLanding({
 
   const openItem = (item: SettingsItem) => {
     if (item.href) {
+      markOpenedFromSettings()
       void navigate({ to: item.href })
       return
     }
