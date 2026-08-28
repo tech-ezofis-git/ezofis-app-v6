@@ -266,57 +266,60 @@ export default function PortalHome({
                 const kind = portalWorkflowKind(workflow.name)
 
                 return (
-                <button
-                  key={workflow.id}
-                  type='button'
-                  className={cn(
-                    'flex h-full w-full flex-col gap-3 rounded-xl border border-gray-4 bg-surface p-4 text-left shadow-2xs transition',
-                    'hover:border-primary-6 hover:shadow-xs active:scale-[0.99]',
-                  )}
-                  onClick={() => {
-                    setQuery('')
-                    onOpenWorkflow(workflow.id)
-                  }}
-                >
-                  <div className='flex items-start justify-between gap-3'>
-                    <div className='flex min-w-0 items-start gap-3'>
-                      <span className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-3 text-primary-11'>
-                        <Icon
-                          className='size-5'
-                          name={portalWorkflowIcon(index)}
-                        />
-                      </span>
-                      <div className='min-w-0 pt-1.5'>
-                        <div className='truncate text-15 font-semibold text-gray-13'>
-                          {workflow.name}
+                  <button
+                    key={workflow.id}
+                    type='button'
+                    className={cn(
+                      'flex h-full w-full flex-col gap-3 rounded-xl border border-gray-4 bg-surface p-4 text-left shadow-2xs transition',
+                      'hover:border-primary-6 hover:shadow-xs active:scale-[0.99]',
+                    )}
+                    onClick={() => {
+                      setQuery('')
+                      onOpenWorkflow(workflow.id)
+                    }}
+                  >
+                    <div className='flex items-start justify-between gap-3'>
+                      <div className='flex min-w-0 items-start gap-3'>
+                        <span className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-3 text-primary-11'>
+                          <Icon
+                            className='size-5'
+                            name={portalWorkflowIcon(index)}
+                          />
+                        </span>
+                        <div className='min-w-0 pt-1.5'>
+                          <div className='truncate text-15 font-semibold text-gray-13'>
+                            {workflow.name}
+                          </div>
                         </div>
                       </div>
+                      <span
+                        className={cn(
+                          'inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-11 font-semibold tracking-wide uppercase',
+                          kind === 'upload'
+                            ? 'bg-green-3 text-green-11'
+                            : 'bg-primary-3 text-primary-11',
+                        )}
+                      >
+                        {kind === 'upload' ? t`Upload` : t`Form`}
+                      </span>
                     </div>
-                    <span
-                      className={cn(
-                        'inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-11 font-semibold tracking-wide uppercase',
-                        kind === 'upload'
-                          ? 'bg-green-3 text-green-11'
-                          : 'bg-primary-3 text-primary-11',
-                      )}
-                    >
-                      {kind === 'upload' ? t`Upload` : t`Form`}
-                    </span>
-                  </div>
-                  <p className='line-clamp-2 min-h-10 text-13 text-gray-10'>
-                    {workflow.description ||
-                      workflowDescriptionFallback(workflow.name)}
-                  </p>
-                  <div className='mt-auto flex items-center justify-between border-t border-gray-3 pt-3'>
-                    <span className='text-12 text-gray-9'>
-                      {workflow.total} {t`submissions`}
-                    </span>
-                    <span className='inline-flex items-center text-13 font-semibold text-primary-11'>
-                      {t`Open`}
-                      <Icon className='ml-1 size-4' name='lucide:arrow-right' />
-                    </span>
-                  </div>
-                </button>
+                    <p className='line-clamp-2 min-h-10 text-13 text-gray-10'>
+                      {workflow.description ||
+                        workflowDescriptionFallback(workflow.name)}
+                    </p>
+                    <div className='mt-auto flex items-center justify-between border-t border-gray-3 pt-3'>
+                      <span className='text-12 text-gray-9'>
+                        {workflow.total} {t`submissions`}
+                      </span>
+                      <span className='inline-flex items-center text-13 font-semibold text-primary-11'>
+                        {t`Open`}
+                        <Icon
+                          className='ml-1 size-4'
+                          name='lucide:arrow-right'
+                        />
+                      </span>
+                    </div>
+                  </button>
                 )
               })}
             </AnimateStagger>
