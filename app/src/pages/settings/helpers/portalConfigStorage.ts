@@ -1,12 +1,5 @@
 export const PORTAL_CONFIG_STORAGE_KEY = 'ezofis_portal_configurations'
 
-export type PortalLoginType =
-  | 'applicationLogin'
-  | 'emailOtp'
-  | 'masterLogin'
-
-export type PortalPasswordType = 'OTP' | 'PASSWORD'
-
 export type PortalAuthentication = {
   firstnameField: string
   formId: number | string
@@ -20,15 +13,6 @@ export type PortalAuthentication = {
   signInType: boolean
   socialLogin: string[]
   usernameField: string[]
-}
-
-export type PortalWorkflowLink = {
-  category: unknown[]
-  categoryFieldId: string
-  categoryFieldMasterSync: unknown[]
-  id: number | string
-  name: string
-  processInfo: unknown[]
 }
 
 export type PortalBrandingSnapshot = {
@@ -63,6 +47,19 @@ export type PortalConfig = {
   workflow: string
   workflowId: number | string
   workflows: PortalWorkflowLink[]
+}
+
+export type PortalLoginType = 'applicationLogin' | 'emailOtp' | 'masterLogin'
+
+export type PortalPasswordType = 'OTP' | 'PASSWORD'
+
+export type PortalWorkflowLink = {
+  category: unknown[]
+  categoryFieldId: string
+  categoryFieldMasterSync: unknown[]
+  id: number | string
+  name: string
+  processInfo: unknown[]
 }
 
 type StoredPortalRecord = {
@@ -190,7 +187,8 @@ export const loginTypeFromAuth = (
   authentication: PortalAuthentication,
 ): PortalLoginType => {
   if (authentication.loginType === 'MASTER_LOGIN') return 'masterLogin'
-  if (authentication.loginType === 'APPLICATION_LOGIN') return 'applicationLogin'
+  if (authentication.loginType === 'APPLICATION_LOGIN')
+    return 'applicationLogin'
   if (Number(authentication.formId) > 0) return 'masterLogin'
   return 'emailOtp'
 }
@@ -213,11 +211,11 @@ export const applyLoginType = (
           : 'EMAIL_LOGIN',
     passwordTypes:
       loginType === 'masterLogin' ? authentication.passwordTypes : 'OTP',
-    signInType:
-      allowSocial ? authentication.signInType : false,
-    socialLogin: allowSocial && authentication.signInType
-      ? authentication.socialLogin
-      : [],
+    signInType: allowSocial ? authentication.signInType : false,
+    socialLogin:
+      allowSocial && authentication.signInType
+        ? authentication.socialLogin
+        : [],
   }
 }
 
@@ -243,9 +241,10 @@ const mapStoredRecord = (record: StoredPortalRecord): PortalConfig => {
     noSignInValue: Boolean(authRaw.noSignInValue),
     notification: Boolean(authRaw.notification),
     passwordField: String(authRaw.passwordField || ''),
-    passwordTypes:
-      authRaw.passwordTypes === 'PASSWORD' ? 'PASSWORD' : 'OTP',
-    signInType: Boolean(authRaw.signInType) || asStringArray(authRaw.socialLogin).length > 0,
+    passwordTypes: authRaw.passwordTypes === 'PASSWORD' ? 'PASSWORD' : 'OTP',
+    signInType:
+      Boolean(authRaw.signInType) ||
+      asStringArray(authRaw.socialLogin).length > 0,
     socialLogin: asStringArray(authRaw.socialLogin),
     usernameField: asStringArray(authRaw.usernameField),
   }
@@ -259,10 +258,19 @@ const mapStoredRecord = (record: StoredPortalRecord): PortalConfig => {
         ? row.categoryFieldMasterSync
         : [],
       id: (row.id as number | string) ?? '',
-      name: String(row.name || ''),
+      name: String(
+        row.name || row.title || row.workflowName || row.workflow || '',
+      ),
       processInfo: Array.isArray(row.processInfo) ? row.processInfo : [],
     }
   })
+
+  if (workflows[0] && !workflows[0].name) {
+    workflows[0] = {
+      ...workflows[0],
+      name: String(record.workflow || record.workflowId || workflows[0].id),
+    }
+  }
 
   const storedLoginType = String(settings.loginType || '')
   const storedMethods = asStringArray(settings.loginMethods)
@@ -289,9 +297,7 @@ const mapStoredRecord = (record: StoredPortalRecord): PortalConfig => {
     createdBy: String(record.createdBy || ''),
     createdByEmail: String(record.createdByEmail || ''),
     description: String(record.description || ''),
-    displayValues: String(
-      record.displayValues || settings.displayValues || '',
-    ),
+    displayValues: String(record.displayValues || settings.displayValues || ''),
     howItWorks: Array.isArray(content.howItWorks) ? content.howItWorks : [],
     id: Number(record.id || 0),
     isDeleted: Boolean(record.isDeleted),
@@ -308,7 +314,9 @@ const mapStoredRecord = (record: StoredPortalRecord): PortalConfig => {
   }
 }
 
-export const toStoredPortalRecord = (portal: PortalConfig): StoredPortalRecord => {
+export const toStoredPortalRecord = (
+  portal: PortalConfig,
+): StoredPortalRecord => {
   const primaryWorkflow = portal.workflows[0]
 
   return {
@@ -334,6 +342,9 @@ export const toStoredPortalRecord = (portal: PortalConfig): StoredPortalRecord =
     modifiedBy: portal.modifiedBy,
     modifiedByEmail: portal.modifiedByEmail,
     name: portal.name,
+    superUser: portal.superUser,
+    workflow: primaryWorkflow?.name || portal.workflow,
+    workflowId: primaryWorkflow?.id ?? portal.workflowId,
     settingsJson: JSON.stringify({
       authentication: portal.authentication,
       branding: portal.branding || {},
@@ -341,9 +352,6 @@ export const toStoredPortalRecord = (portal: PortalConfig): StoredPortalRecord =
       loginType: portal.loginType,
       tenantId: portal.tenantId || '',
     }),
-    superUser: portal.superUser,
-    workflow: primaryWorkflow?.name || portal.workflow,
-    workflowId: primaryWorkflow?.id ?? portal.workflowId,
   }
 }
 
@@ -370,9 +378,7 @@ export const listPortalConfigs = (): PortalConfig[] => {
     return [SEED_PORTAL]
   }
 
-  return records
-    .map(mapStoredRecord)
-    .filter((portal) => !portal.isDeleted)
+  return records.map(mapStoredRecord).filter((portal) => !portal.isDeleted)
 }
 
 export const savePortalConfig = (portal: PortalConfig) => {
@@ -387,6 +393,12 @@ export const savePortalConfig = (portal: PortalConfig) => {
   }
 
   writeRawList(records)
+  console.log('[portal settings] localStorage key:', PORTAL_CONFIG_STORAGE_KEY)
+  console.log('[portal settings] saved record:', nextRecord)
+  console.log(
+    '[portal settings] full localStorage JSON (paste this later):',
+    JSON.stringify(records, null, 2),
+  )
   return portal
 }
 

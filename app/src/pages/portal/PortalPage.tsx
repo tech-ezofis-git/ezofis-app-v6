@@ -17,6 +17,7 @@ import {
 } from './helpers/portalSubmissions'
 import {
   listPortalWorkflowSummaries,
+  portalWorkflowLabel,
   type PortalWorkflowSummary,
 } from './helpers/portalWorkflows'
 import usePortalSessionStore, {
@@ -218,6 +219,14 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     return <PortalLogin portal={portal} onAuthenticated={handleAuthenticated} />
   }
 
+  const selectedWorkflowName = portalWorkflowLabel(
+    workflowSummaries.find(
+      (workflow) => workflow.id === String(selectedWorkflowId),
+    ) ||
+      selectedWorkflow ||
+      {},
+  )
+
   const displayName = session.displayName || session.username
   const fallbackSummaries =
     workflowSummaries.length > 0
@@ -227,7 +236,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
           description: '',
           id: String(workflow.id),
           inboxCount: 0,
-          name: workflow.name,
+          name: portalWorkflowLabel(workflow),
           sentCount: 0,
           total: 0,
         }))
@@ -239,7 +248,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       loadingWorkflows={loadingWorkflows}
       showWorkflowCards={hasMultipleWorkflows && !selectedWorkflowId}
       submissions={submissions}
-      workflowName={selectedWorkflow?.name}
+      workflowName={selectedWorkflowName}
       workflows={fallbackSummaries}
       onBackToWorkflows={hasMultipleWorkflows ? backToWorkflows : undefined}
       onNewSubmission={() => startNewSubmission()}
@@ -254,7 +263,8 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
   if (view === 'picker') {
     content = (
       <PortalPicker
-        portal={portal}
+        loading={loadingWorkflows}
+        workflows={fallbackSummaries}
         onBack={() => setView('home')}
         onSelectWorkflow={(id) => startNewSubmission(id)}
       />
@@ -263,7 +273,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     content = (
       <PortalWizard
         workflowId={selectedWorkflowId}
-        workflowName={selectedWorkflow?.name}
+        workflowName={selectedWorkflowName}
         onChromeChange={handleWizardChromeChange}
         onSubmitted={() => {
           setSubmissionsTick((tick) => tick + 1)
@@ -300,7 +310,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
               submitting: Boolean(wizardChrome?.submitting),
               title:
                 wizardChrome?.title ||
-                selectedWorkflow?.name ||
+                selectedWorkflowName ||
                 t`New Submission`,
               onCancel: () => setView('home'),
               onSubmit: () => wizardSubmitRef.current(),
