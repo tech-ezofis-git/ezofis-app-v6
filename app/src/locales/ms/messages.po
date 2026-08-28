@@ -354,7 +354,7 @@ msgstr ""
 #: src/pages/forms/FormEntriesPage.tsx:1273
 #: src/pages/forms/FormsPage.tsx:261
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:271
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:266
 #: src/pages/workflows/components/Table.tsx:115
 msgid "Actions"
 msgstr ""
@@ -443,19 +443,19 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:675
 #: src/pages/folders/components/FolderSharePopover.tsx:1003
-#: src/pages/requests/components/request/components/Header.tsx:1394
+#: src/pages/requests/components/request/components/Header.tsx:1403
 msgid "Add message (optional)"
 msgstr ""
 
 #: src/components/common/SharePopover.tsx:358
 #: src/pages/folders/components/FolderSharePopover.tsx:570
-#: src/pages/requests/components/request/components/Header.tsx:1042
+#: src/pages/requests/components/request/components/Header.tsx:1051
 msgid "Add more people..."
 msgstr ""
 
 #: src/components/common/SharePopover.tsx:359
 #: src/pages/folders/components/FolderSharePopover.tsx:571
-#: src/pages/requests/components/request/components/Header.tsx:1043
+#: src/pages/requests/components/request/components/Header.tsx:1052
 msgid "Add names or emails"
 msgstr ""
 
@@ -532,7 +532,7 @@ msgstr ""
 msgid "AI generated"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:915
+#: src/pages/requests/components/request/components/Header.tsx:924
 msgid "AI Insights"
 msgstr ""
 
@@ -847,6 +847,10 @@ msgstr ""
 msgid "At least 1 uppercase (A-Z)"
 msgstr ""
 
+#: src/pages/requests/components/request/components/generic-overview/TaskRequirements.tsx:101
+msgid "At least one attachment is required"
+msgstr ""
+
 #: src/features/builder/components/FieldSidebar.tsx:251
 #~ msgid "Attach professional documents, each should not exceed 5mb"
 #~ msgstr ""
@@ -855,7 +859,7 @@ msgstr ""
 #~ msgid "Attach to invoice"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:271
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:346
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:590
 msgid "Attachment"
 msgstr ""
@@ -865,8 +869,8 @@ msgstr ""
 #: src/pages/portal/components/PortalWizard.tsx:165
 #: src/pages/portal/components/PortalWizard.tsx:1035
 #: src/pages/portal/components/PortalWizard.tsx:1104
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:331
-#: src/pages/requests/components/request/components/Header.tsx:473
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:418
+#: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:590
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3494
@@ -1141,7 +1145,7 @@ msgid "Can View"
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:600
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:735
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:741
 msgid "Can't upload: this workflow has no repository configured."
 msgstr ""
 
@@ -1373,14 +1377,14 @@ msgstr "Klik untuk tandakan tempat tandatangan"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:301
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:334
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:361
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:388
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:421
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:448
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:790
 msgid "Close"
 msgstr "Tutup"
 
-#: src/pages/requests/components/request/components/Header.tsx:949
+#: src/pages/requests/components/request/components/Header.tsx:958
 msgid "Close AI Insights"
 msgstr "Tutup Cerapan AI"
 
@@ -1434,8 +1438,8 @@ msgid "Columns Ingested:"
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1447
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:358
-#: src/pages/requests/components/request/components/Header.tsx:479
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:445
+#: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3499
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
@@ -2039,7 +2043,7 @@ msgstr ""
 msgid "Delete Portal"
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:302
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:297
 msgid "Delete row"
 msgstr ""
 
@@ -2191,6 +2195,10 @@ msgstr ""
 #: src/pages/portal/components/PortalWizard.tsx:158
 #: src/pages/portal/components/PortalWizard.tsx:161
 msgid "Document"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/TaskRequirements.tsx:100
+msgid "Document attached"
 msgstr ""
 
 #: src/pages/portal/components/PortalWizard.tsx:331
@@ -2858,7 +2866,7 @@ msgstr "Mengekstrak data"
 #: src/pages/portal/components/PortalWizard.tsx:1045
 #: src/pages/portal/components/PortalWizard.tsx:1052
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:801
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:807
 msgid "Extracting data from the document…"
 msgstr ""
 
@@ -2981,9 +2989,9 @@ msgstr ""
 msgid "Failed to start the workflow. Please try again."
 msgstr ""
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:152
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:189
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:233
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:227
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:264
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:308
 msgid "Failed to upload the file."
 msgstr ""
 
@@ -3605,8 +3613,8 @@ msgstr ""
 
 #: src/pages/portal/components/PortalDetail.tsx:75
 #: src/pages/portal/components/PortalDetail.tsx:197
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:298
-#: src/pages/requests/components/request/components/Header.tsx:468
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:385
+#: src/pages/requests/components/request/components/Header.tsx:470
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3504
 msgid "History"
 msgstr ""
@@ -3636,6 +3644,10 @@ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1025
 msgid "HR payslips folder"
+msgstr ""
+
+#: src/pages/requests/components/request/components/generic-overview/TaskRequirements.tsx:112
+msgid "I confirm this action with my signature"
 msgstr ""
 
 #: src/pages/forms/components/AiFormBuilder.tsx:188
@@ -3846,7 +3858,7 @@ msgid "Invite sent"
 msgstr "Jemputan dihantar"
 
 #: src/components/common/SharePopover.tsx:569
-#: src/pages/requests/components/request/components/Header.tsx:1291
+#: src/pages/requests/components/request/components/Header.tsx:1300
 msgid "Invited"
 msgstr "Dijemput"
 
@@ -3880,7 +3892,7 @@ msgstr "Jumlah Invois"
 msgid "Invoice Date"
 msgstr "Tarikh Invois"
 
-#: src/pages/requests/components/request/components/Header.tsx:945
+#: src/pages/requests/components/request/components/Header.tsx:954
 msgid "Invoice Decision Details"
 msgstr "Butiran Keputusan Invois"
 
@@ -3918,7 +3930,7 @@ msgstr "Taburan status invois"
 msgid "Invoice Summary"
 msgstr "Ringkasan Invois"
 
-#: src/pages/requests/components/request/components/Header.tsx:861
+#: src/pages/requests/components/request/components/Header.tsx:870
 msgid "Invoice Value"
 msgstr "Nilai Invois"
 
@@ -4714,7 +4726,7 @@ msgid "Net 30 Days"
 msgstr "Net 30 Hari"
 
 #: src/components/common/SharePopover.tsx:705
-#: src/pages/requests/components/request/components/Header.tsx:1424
+#: src/pages/requests/components/request/components/Header.tsx:1433
 msgid "New"
 msgstr ""
 
@@ -4782,8 +4794,8 @@ msgstr ""
 msgid "Next Action"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:509
-#: src/pages/requests/components/request/components/Header.tsx:666
+#: src/pages/requests/components/request/components/Header.tsx:511
+#: src/pages/requests/components/request/components/Header.tsx:675
 msgid "Next Request"
 msgstr ""
 
@@ -4839,7 +4851,7 @@ msgstr ""
 #~ msgid "No consumption data for this period."
 #~ msgstr "No consumption data for this period."
 
-#: src/pages/requests/components/request/components/Header.tsx:959
+#: src/pages/requests/components/request/components/Header.tsx:968
 msgid "No decision details available for this request."
 msgstr ""
 
@@ -5139,7 +5151,7 @@ msgid "Notifications"
 msgstr ""
 
 #: src/components/common/SharePopover.tsx:702
-#: src/pages/requests/components/request/components/Header.tsx:1421
+#: src/pages/requests/components/request/components/Header.tsx:1430
 msgid "Notify me when accessed"
 msgstr ""
 
@@ -5315,7 +5327,7 @@ msgstr ""
 #: src/components/common/SharePopover.tsx:561
 #: src/pages/folders/components/FolderSharePopover.tsx:777
 #: src/pages/folders/components/FolderSharePopover.tsx:832
-#: src/pages/requests/components/request/components/Header.tsx:1283
+#: src/pages/requests/components/request/components/Header.tsx:1292
 msgid "Owner"
 msgstr ""
 
@@ -5715,7 +5727,7 @@ msgstr "Rujukan PO"
 msgid "PO Setup"
 msgstr "Persediaan PO"
 
-#: src/pages/requests/components/request/components/Header.tsx:880
+#: src/pages/requests/components/request/components/Header.tsx:889
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
 msgid "PO Value"
 msgstr "Nilai PO"
@@ -5846,8 +5858,8 @@ msgstr "Pratonton & Sahkan"
 msgid "Preview:"
 msgstr "Pratonton:"
 
-#: src/pages/requests/components/request/components/Header.tsx:495
-#: src/pages/requests/components/request/components/Header.tsx:652
+#: src/pages/requests/components/request/components/Header.tsx:497
+#: src/pages/requests/components/request/components/Header.tsx:661
 msgid "Previous Request"
 msgstr "Permintaan Sebelumnya"
 
@@ -6003,12 +6015,12 @@ msgstr ""
 msgid "Raised At"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:533
+#: src/pages/requests/components/request/components/Header.tsx:542
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:542
+#: src/pages/requests/components/request/components/Header.tsx:551
 msgid "Raised Date"
 msgstr ""
 
@@ -6139,7 +6151,7 @@ msgid "Remove attachment"
 msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:688
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:835
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:841
 msgid "Remove file"
 msgstr "Buang fail"
 
@@ -6226,11 +6238,11 @@ msgstr ""
 msgid "Request No"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1220
+#: src/pages/requests/components/request/components/Header.tsx:1229
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
-#: src/pages/requests/components/request/components/Header.tsx:390
+#: src/pages/requests/components/request/components/Header.tsx:392
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
 
@@ -6480,7 +6492,7 @@ msgstr ""
 
 #: src/pages/folders/components/CollaboraEditor.tsx:253
 #: src/pages/my-account/components/profile/Profile.tsx:21
-#: src/pages/requests/components/request/components/Header.tsx:1469
+#: src/pages/requests/components/request/components/Header.tsx:1478
 #: src/pages/settings/components/SettingsWizardLayout.tsx:78
 msgid "Save"
 msgstr ""
@@ -6815,7 +6827,7 @@ msgstr ""
 #~ msgid "Security Summary"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:709
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:715
 msgid "See the Attachments section for uploaded files."
 msgstr ""
 
@@ -7011,7 +7023,7 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:669
 #: src/pages/folders/components/FolderSharePopover.tsx:997
-#: src/pages/requests/components/request/components/Header.tsx:1388
+#: src/pages/requests/components/request/components/Header.tsx:1397
 msgid "Send notification"
 msgstr "Hantar pemberitahuan"
 
@@ -7123,12 +7135,12 @@ msgstr ""
 #: src/pages/folders/components/FolderTable.tsx:825
 #: src/pages/folders/components/FolderTable.tsx:1198
 #: src/pages/folders/components/ShareView.tsx:321
-#: src/pages/requests/components/request/components/Header.tsx:986
-#: src/pages/requests/components/request/components/Header.tsx:1411
+#: src/pages/requests/components/request/components/Header.tsx:995
+#: src/pages/requests/components/request/components/Header.tsx:1420
 msgid "Share"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:1011
+#: src/pages/requests/components/request/components/Header.tsx:1020
 msgid "Share Request"
 msgstr ""
 
@@ -7143,7 +7155,7 @@ msgstr ""
 
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/FolderSharePopover.tsx:1021
-#: src/pages/requests/components/request/components/Header.tsx:1411
+#: src/pages/requests/components/request/components/Header.tsx:1420
 msgid "Sharing..."
 msgstr ""
 
@@ -7721,6 +7733,10 @@ msgstr ""
 #~ msgid "Target Users & Groups"
 #~ msgstr ""
 
+#: src/pages/requests/components/request/components/generic-overview/TaskRequirements.tsx:53
+msgid "Task Requirements"
+msgstr ""
+
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:93
 msgid "Tasks"
 msgstr ""
@@ -7784,11 +7800,11 @@ msgid "This branded sign-in link is invalid or no longer available."
 msgstr ""
 
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:68
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:189
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:209
 msgid "This field is required."
 msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:910
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:916
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr ""
 
@@ -7869,7 +7885,7 @@ msgstr ""
 msgid "Time Remaining"
 msgstr ""
 
-#: src/pages/requests/components/request/components/Header.tsx:551
+#: src/pages/requests/components/request/components/Header.tsx:560
 msgid "Time running from last action"
 msgstr ""
 
