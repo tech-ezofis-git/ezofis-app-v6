@@ -28,18 +28,25 @@ interface Props {
   field: any
   repositoryId: string | undefined
   value: any
-  // Already-submitted instance attachments to show below this field when it
-  // has no value of its own — see WorkflowFormRenderer's soleFileFieldId for
-  // why this is only ever populated for an unambiguous single-file-field
-  // form.
-  fallbackAttachments?: any[]
   error?: string
+  // Already-submitted instance attachments known to belong to THIS field
+  // (see WorkflowFormRenderer's getFieldAttachmentMap) — shown below it
+  // when the field has no in-session value of its own (e.g. after a page
+  // reload, since FILE_UPLOAD values never round-trip through formData).
+  fallbackAttachments?: any[]
   repoFieldHints?: string[]
   viewOnly?: boolean
   onChange: (value: any) => void
   onOcrFieldList?: (
     list: { name?: string; value?: string }[] | undefined,
   ) => void
+  // Clicking an already-uploaded file below this field opens it in the
+  // owning screen's full-screen preview.
+  onOpenAttachment?: (attachment: any) => void
+  // Set only on the Overview of an already-submitted request (never during
+  // New Request compose): there is no later submit() to stage the file, so
+  // the owning screen takes over and uploads it for real.
+  onRequestUpload?: (file: File) => void
 }
 
 interface StagedFileValue {
@@ -70,6 +77,8 @@ const FieldRenderer = ({
   viewOnly,
   onChange,
   onOcrFieldList,
+  onOpenAttachment,
+  onRequestUpload,
 }: Props) => {
   const { t } = useLingui()
   const [isUploading, setIsUploading] = useState(false)
@@ -249,6 +258,16 @@ const FieldRenderer = ({
           return
         }
 
+        // Overview of an already-submitted request: there's no later
+        // submit() to stage the file, so hand it up to the owning screen,
+        // which runs the real upload through its own split-view flow (file
+        // preview left, repository fields right) — see
+        // GenericAttachmentSplitView.
+        if (onRequestUpload) {
+          onRequestUpload(file)
+          return
+        }
+
         const fileEntry = {
           fileName: file.name,
           ocrChecked: false,
@@ -266,7 +285,10 @@ const FieldRenderer = ({
         setIsUploading(false)
 
         if (error || !data) {
-          console.warn('[uploadForOcr] OCR extraction warning:', error || 'OCR data unavailable')
+          console.warn(
+            '[uploadForOcr] OCR extraction warning:',
+            error || 'OCR data unavailable',
+          )
           onChange({ ...fileEntry, ocrChecked: true })
           return
         }
@@ -324,30 +346,35 @@ const FieldRenderer = ({
               )}
             </div>
           )}
-          {!staged &&
-            fallbackAttachments?.map((attachment) => {
-              const attName = attachment.name || attachment.fileName || ''
-              const attExt = getFileExtension(attName)
-              const attStyles = getFileIconClasses(attExt)
-              return (
+          {fallbackAttachments?.map((attachment) => {
+            const attName = attachment.name || attachment.fileName || ''
+            const attExt = getFileExtension(attName)
+            const attStyles = getFileIconClasses(attExt)
+            return (
+              <button
+                className='mt-2 flex w-full items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 text-left transition-all hover:border-primary-5 hover:bg-primary-1/30 active:scale-[0.99]'
+                key={attachment.id ?? attName}
+                type='button'
+                onClick={() => onOpenAttachment?.(attachment)}
+              >
                 <div
-                  className='mt-2 flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2'
-                  key={attachment.id ?? attName}
+                  className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${attStyles.wrap}`}
                 >
-                  <div
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${attStyles.wrap}`}
-                  >
-                    <Icon className='size-4' name={getFileIcon(attExt)} />
-                  </div>
-                  <div
-                    className='min-w-0 flex-1 truncate text-12 font-semibold text-gray-12'
-                    title={attName}
-                  >
-                    {attName}
-                  </div>
+                  <Icon className='size-4' name={getFileIcon(attExt)} />
                 </div>
-              )
-            })}
+                <div
+                  className='min-w-0 flex-1 truncate text-12 font-semibold text-gray-12'
+                  title={attName}
+                >
+                  {attName}
+                </div>
+                <Icon
+                  className='size-3.5 shrink-0 text-gray-8'
+                  name='tabler:eye'
+                />
+              </button>
+            )
+          })}
           {error && (
             <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
           )}
