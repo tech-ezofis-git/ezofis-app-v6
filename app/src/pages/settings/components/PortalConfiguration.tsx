@@ -68,7 +68,7 @@ const SESSION_KEY = 'ezofis_portal_configuration_state'
 
 const PORTAL_STEP_MSGS = [
   {
-    description: msg`Portal name, description, and display values`,
+    description: msg`Portal name and description`,
     icon: 'tabler:app-window',
     key: 'details' as const,
     title: msg`Portal Details`,
@@ -1098,17 +1098,6 @@ function PortalSetup({
                   }
                 />
               </AnimateFadeIn>
-              <AnimateFadeIn delay={0.2}>
-                <InputText
-                  description={t`Text shown to users on the portal sign-in screen`}
-                  label={t`Display values`}
-                  placeholder={t`e.g. Welcome to Access2Pay`}
-                  value={draftPortal.displayValues}
-                  onChange={(value) =>
-                    onChange({ ...draftPortal, displayValues: value })
-                  }
-                />
-              </AnimateFadeIn>
             </SettingsFormSection>
           </AnimateFadeIn>
         )}
@@ -1405,12 +1394,6 @@ function PortalSetup({
                     />
                   </AnimateFadeIn>
                   <AnimateFadeIn delay={0.21}>
-                    <SummaryItem
-                      label={t`Display values`}
-                      value={draftPortal.displayValues || '—'}
-                    />
-                  </AnimateFadeIn>
-                  <AnimateFadeIn delay={0.24}>
                     <SummaryItem
                       label={t`Login type`}
                       value={LOGIN_TYPE_LABELS[draftPortal.loginType]}

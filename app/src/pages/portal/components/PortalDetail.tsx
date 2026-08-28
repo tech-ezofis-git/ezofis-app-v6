@@ -3,8 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import showToast from '@/components/base/toast/showToast'
 import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import History from '@/pages/requests/components/request/components/sections/history/History'
-import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
-import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import type { PortalSubmission } from '../helpers/portalSubmissions'
 import {
   buildDetailFormModel,
@@ -19,6 +17,7 @@ import {
 } from '../helpers/portalWizardLoad'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
 import PortalPanelNav from './PortalPanelNav'
+import PortalSubmissionDetails from './PortalSubmissionDetails'
 
 type PortalDetailProps = {
   submission: PortalSubmission
@@ -81,12 +80,6 @@ export default function PortalDetail({ submission }: PortalDetailProps) {
   useEffect(() => {
     if (!activeId && sections[0]) setActiveId(sections[0].id)
   }, [activeId, sections])
-
-  const { data: attachments } = useAttachments(
-    submission.workflowId,
-    instanceId,
-    Boolean(submission.workflowId && instanceId),
-  )
 
   useEffect(() => {
     const root = scrollRef.current
@@ -170,17 +163,7 @@ export default function PortalDetail({ submission }: PortalDetailProps) {
         </div>
 
         {panels.length > 0 ? (
-          <div className='overflow-hidden rounded-xl border border-gray-4 bg-surface shadow-sm'>
-            <WorkflowFormRenderer
-              attachments={attachments}
-              formModel={formModel}
-              panels={panels}
-              repositoryId={resolvedRepositoryId}
-              disableOwnScroll
-              viewOnly
-              onFieldChange={() => undefined}
-            />
-          </div>
+          <PortalSubmissionDetails formModel={formModel} panels={panels} />
         ) : (
           <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>
             {t`No form panels found for this request.`}
