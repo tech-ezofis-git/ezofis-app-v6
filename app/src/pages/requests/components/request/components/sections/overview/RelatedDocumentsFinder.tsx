@@ -1,5 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
+import {
+  FileArchive,
+  FileCode,
+  File as FileIcon,
+  FileImage,
+  FileSpreadsheet,
+  FileText,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
@@ -13,14 +21,6 @@ import {
   getSearchHitTitle,
   type GlobalSearchHit,
 } from '@/layouts/app/components/topbar/components/globalSearchApi'
-import {
-  FileText,
-  FileSpreadsheet,
-  FileImage,
-  FileArchive,
-  FileCode,
-  File as FileIcon,
-} from 'lucide-react'
 import cn from '@/utils/cn'
 import { formatUtcToLocalDate, parseUtcDate } from '@/utils/utcDate'
 import { getFileIcon, getFileIconClasses } from '../attachment/Attachments'
@@ -37,11 +37,6 @@ type FolderItem = {
   name: string
 }
 
-type ScoredHit = GlobalSearchHit & {
-  pct: number
-  reasons: string[]
-}
-
 type Props = {
   agentData?: any
   attachedIds?: Set<string>
@@ -53,9 +48,14 @@ type Props = {
   poNumber?: string
   repositoryId?: number | string
   supplierName?: string
-  workflowId?: number
+  workflowId?: number | string
   onAttached?: () => void
   onLinkDocument?: (hit: GlobalSearchHit) => void
+}
+
+type ScoredHit = GlobalSearchHit & {
+  pct: number
+  reasons: string[]
 }
 
 const RESULTS_PREVIEW_COUNT = 4
@@ -75,14 +75,16 @@ const getFileExtLabel = (title: string): string => {
 
 const renderResultFileIcon = (title: string) => {
   const parts = title.split('.')
-  const ext = (parts.length > 1 ? parts.pop()?.toLowerCase() || 'pdf' : 'pdf').trim()
+  const ext = (
+    parts.length > 1 ? parts.pop()?.toLowerCase() || 'pdf' : 'pdf'
+  ).trim()
   const icon = getFileIcon(ext)
   const styles = getFileIconClasses(ext)
 
   return (
     <div
       className={cn(
-        'flex size-7 shrink-0 items-center justify-center rounded-lg mt-0.5',
+        'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg',
         styles.wrap,
       )}
     >
@@ -120,7 +122,8 @@ const RelatedDocumentsFinder = ({
   const [selectedFolders, setSelectedFolders] = useState<string[]>([])
   const [showFolderDropdown, setShowFolderDropdown] = useState(false)
   const [folderSearchQuery, setFolderSearchQuery] = useState('')
-  const [hasInitializedDefaultFolder, setHasInitializedDefaultFolder] = useState(false)
+  const [hasInitializedDefaultFolder, setHasInitializedDefaultFolder] =
+    useState(false)
 
   // Seeds / AI Context state
   const [activeSeedKeys, setActiveSeedKeys] = useState<Set<string>>(new Set())
@@ -172,11 +175,13 @@ const RelatedDocumentsFinder = ({
 
   const availableFolders: FolderItem[] = useMemo(() => {
     if (repositories.length > 0) {
-      return repositories.map((r: { count?: number; id: string; name: string }) => ({
-        count: r.count ?? 4,
-        id: String(r.id),
-        name: r.name,
-      }))
+      return repositories.map(
+        (r: { count?: number; id: string; name: string }) => ({
+          count: r.count ?? 4,
+          id: String(r.id),
+          name: r.name,
+        }),
+      )
     }
     return [
       { count: 3, id: 'ap', name: 'Accounts Payable' },
@@ -194,7 +199,9 @@ const RelatedDocumentsFinder = ({
     if (repositoryId) {
       const repoStr = String(repositoryId)
       const currentRepo = availableFolders.find(
-        (f) => String(f.id) === repoStr || f.name.toLowerCase() === repoStr.toLowerCase(),
+        (f) =>
+          String(f.id) === repoStr ||
+          f.name.toLowerCase() === repoStr.toLowerCase(),
       )
       if (currentRepo) {
         setSelectedFolders([currentRepo.name])
@@ -215,7 +222,12 @@ const RelatedDocumentsFinder = ({
   }, [availableFolders, folderSearchQuery])
 
   const defaultSeeds = useMemo(() => {
-    const seeds: { key: string; label: string; value: string; weight: number }[] = []
+    const seeds: {
+      key: string
+      label: string
+      value: string
+      weight: number
+    }[] = []
     const addedValues = new Set<string>()
 
     const addSeed = (key: string, rawVal: any, weight: number) => {
@@ -223,7 +235,11 @@ const RelatedDocumentsFinder = ({
       let valStr = ''
       if (typeof rawVal === 'object' && rawVal !== null) {
         valStr = String(
-          rawVal.value ?? rawVal.val ?? rawVal['Invoice Value'] ?? rawVal['InvoiceValue'] ?? '',
+          rawVal.value ??
+            rawVal.val ??
+            rawVal['Invoice Value'] ??
+            rawVal['InvoiceValue'] ??
+            '',
         ).trim()
       } else {
         valStr = String(rawVal).trim()
@@ -307,7 +323,15 @@ const RelatedDocumentsFinder = ({
     }
 
     return seeds
-  }, [agentData, metadata, poNumber, supplierName, invoiceAmount, invoiceNumber, t])
+  }, [
+    agentData,
+    metadata,
+    poNumber,
+    supplierName,
+    invoiceAmount,
+    invoiceNumber,
+    t,
+  ])
 
   const filteredAvailableSeeds = useMemo(() => {
     const remainingSeeds = defaultSeeds.slice(4)
@@ -493,7 +517,15 @@ const RelatedDocumentsFinder = ({
         return { ...hit, pct, reasons }
       })
       .sort((a, b) => b.pct - a.pct)
-  }, [results, selectedFolders, activeSeedKeys, poNumber, supplierName, invoiceAmount, t])
+  }, [
+    results,
+    selectedFolders,
+    activeSeedKeys,
+    poNumber,
+    supplierName,
+    invoiceAmount,
+    t,
+  ])
 
   const visibleResults = showAll
     ? scoredResults
@@ -601,16 +633,16 @@ const RelatedDocumentsFinder = ({
   }
 
   return (
-    <div className='animate-in fade-in zoom-in-95 fill-mode-both mb-4 rounded-2xl border border-[var(--primary-3)] border-l-4 border-l-[var(--primary-9)] bg-gradient-to-b from-[var(--primary-1)]/40 to-surface shadow-xs transition-all duration-300'>
+    <div className='animate-in fade-in zoom-in-95 fill-mode-both mb-4 rounded-2xl border border-l-4 border-[var(--primary-3)] border-l-[var(--primary-9)] bg-gradient-to-b from-[var(--primary-1)]/40 to-surface shadow-xs transition-all duration-300'>
       {stage === 'intro' ? (
         <div className='flex items-start justify-between gap-3 p-3.5 sm:p-4'>
-          <div className='flex items-start gap-3 min-w-0'>
-            <AiBrandIcon className='size-4 shrink-0 mt-0.5' />
+          <div className='flex min-w-0 items-start gap-3'>
+            <AiBrandIcon className='mt-0.5 size-4 shrink-0' />
             <div className='min-w-0 flex-1'>
               <h4 className='truncate text-[14px] font-bold text-[var(--gray-13)]'>
                 {t`Find related documents`}
               </h4>
-              <p className='mt-0.5 text-xs text-[var(--gray-9)] line-clamp-2'>
+              <p className='mt-0.5 line-clamp-2 text-xs text-[var(--gray-9)]'>
                 {t`Search and link related documents, contracts, records or files associated with this document.`}
               </p>
             </div>
@@ -626,11 +658,11 @@ const RelatedDocumentsFinder = ({
           </button>
         </div>
       ) : (
-        <div className='animate-in fade-in slide-in-from-top-1 p-3.5 sm:p-4 pb-2.5 sm:pb-3 duration-200'>
+        <div className='animate-in fade-in slide-in-from-top-1 p-3.5 pb-2.5 duration-200 sm:p-4 sm:pb-3'>
           {/* Panel Header */}
           <div className='flex items-start justify-between gap-2 border-b border-[var(--gray-3)] pb-3'>
-            <div className='flex items-start gap-2.5 min-w-0'>
-              <AiBrandIcon className='size-4 shrink-0 mt-0.5' />
+            <div className='flex min-w-0 items-start gap-2.5'>
+              <AiBrandIcon className='mt-0.5 size-4 shrink-0' />
               <div className='min-w-0 flex-1'>
                 <span className='block truncate text-[14px] font-bold text-[var(--gray-13)]'>
                   {t`Find related documents`}
@@ -641,16 +673,16 @@ const RelatedDocumentsFinder = ({
               </div>
             </div>
 
-            <div className='flex items-center gap-2 shrink-0'>
+            <div className='flex shrink-0 items-center gap-2'>
               {searched && !loading && (
-                <span className='rounded-full bg-[var(--primary-1)] border border-[var(--primary-3)] px-2.5 py-0.5 text-[11.5px] font-medium text-[var(--primary-9)]'>
+                <span className='rounded-full border border-[var(--primary-3)] bg-[var(--primary-1)] px-2.5 py-0.5 text-[11.5px] font-medium text-[var(--primary-9)]'>
                   {t`${matchCount} match${matchCount === 1 ? '' : 'es'}`}
                 </span>
               )}
               <button
                 className='flex size-7 items-center justify-center rounded-lg text-[var(--gray-9)] transition-colors hover:bg-[var(--primary-2)] hover:text-[var(--primary-9)]'
-                type='button'
                 title={t`Close`}
+                type='button'
                 onClick={closeSearch}
               >
                 <Icon className='h-4 w-4' name='tabler:x' />
@@ -716,7 +748,10 @@ const RelatedDocumentsFinder = ({
                     onClick={() => removeFolder(f)}
                   >
                     <span>{f}</span>
-                    <Icon className='h-3 w-3 opacity-60 hover:opacity-100' name='tabler:x' />
+                    <Icon
+                      className='h-3 w-3 opacity-60 hover:opacity-100'
+                      name='tabler:x'
+                    />
                   </button>
                 ))
               )}
@@ -724,9 +759,9 @@ const RelatedDocumentsFinder = ({
               {/* Dedicated container for folder dropdown ref */}
               <div className='relative inline-block' ref={folderDropdownRef}>
                 <button
-                  type='button'
-                  className='inline-flex items-center justify-center size-6 rounded-full border border-dashed border-[var(--primary-4)] bg-transparent text-xs font-medium text-[var(--primary-9)] transition-colors hover:bg-[var(--primary-1)]'
+                  className='inline-flex size-6 items-center justify-center rounded-full border border-dashed border-[var(--primary-4)] bg-transparent text-xs font-medium text-[var(--primary-9)] transition-colors hover:bg-[var(--primary-1)]'
                   title={t`Select folders`}
+                  type='button'
                   onClick={() => setShowFolderDropdown((prev) => !prev)}
                 >
                   <Icon className='h-3.5 w-3.5' name='tabler:plus' />
@@ -735,9 +770,12 @@ const RelatedDocumentsFinder = ({
                 {/* Searchable multi-select folder dropdown popover */}
                 {showFolderDropdown && (
                   <div className='animate-in fade-in slide-in-from-top-1 absolute top-8 left-0 z-50 w-60 overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface-raised shadow-lg duration-150'>
-                    <div className='p-2 border-b border-[var(--gray-3)] bg-surface'>
+                    <div className='border-b border-[var(--gray-3)] bg-surface p-2'>
                       <div className='flex h-8 items-center gap-1.5 rounded-lg border border-[var(--gray-4)] bg-surface px-2.5 transition-all focus-within:border-[var(--primary-6)]'>
-                        <Icon className='h-3.5 w-3.5 text-[var(--gray-8)] shrink-0' name='tabler:search' />
+                        <Icon
+                          className='h-3.5 w-3.5 shrink-0 text-[var(--gray-8)]'
+                          name='tabler:search'
+                        />
                         <input
                           className='w-full border-none bg-transparent text-xs text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:ring-0 focus:outline-none'
                           placeholder={t`Search folders...`}
@@ -746,8 +784,8 @@ const RelatedDocumentsFinder = ({
                         />
                         {folderSearchQuery && (
                           <button
-                            type='button'
                             className='text-[var(--gray-8)] hover:text-[var(--gray-11)]'
+                            type='button'
                             onClick={() => setFolderSearchQuery('')}
                           >
                             <Icon className='h-3 w-3' name='tabler:x' />
@@ -757,7 +795,7 @@ const RelatedDocumentsFinder = ({
                     </div>
                     <div className='max-h-48 overflow-y-auto p-1'>
                       {filteredAvailableFolders.length === 0 ? (
-                        <div className='px-3 py-2 text-xs text-[var(--gray-9)] text-center'>
+                        <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
                           {t`No matching folders`}
                         </div>
                       ) : (
@@ -765,8 +803,8 @@ const RelatedDocumentsFinder = ({
                           const isSelected = selectedFolders.includes(f.name)
                           return (
                             <div
+                              className='flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--gray-13)] transition-colors select-none hover:bg-[var(--primary-1)]'
                               key={f.id}
-                              className='flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-[var(--gray-13)] transition-colors hover:bg-[var(--primary-1)] font-medium select-none'
                               onClick={() => toggleFolder(f.name)}
                             >
                               <div
@@ -777,9 +815,16 @@ const RelatedDocumentsFinder = ({
                                     : 'border-[var(--gray-5)] bg-surface',
                                 )}
                               >
-                                {isSelected && <Icon className='h-3 w-3' name='tabler:check' />}
+                                {isSelected && (
+                                  <Icon
+                                    className='h-3 w-3'
+                                    name='tabler:check'
+                                  />
+                                )}
                               </div>
-                              <span className='min-w-0 flex-1 truncate'>{f.name}</span>
+                              <span className='min-w-0 flex-1 truncate'>
+                                {f.name}
+                              </span>
                             </div>
                           )
                         })
@@ -791,8 +836,8 @@ const RelatedDocumentsFinder = ({
 
               {selectedFolders.length > 0 && (
                 <button
-                  type='button'
                   className='inline-flex items-center rounded-full border border-dashed border-[var(--gray-5)] px-2.5 py-1 text-xs font-medium text-[var(--gray-9)] hover:border-[var(--primary-4)] hover:text-[var(--primary-9)]'
+                  type='button'
                   onClick={clearFolders}
                 >
                   {t`Clear`}
@@ -831,9 +876,9 @@ const RelatedDocumentsFinder = ({
                 if (!active) return null
                 return (
                   <button
+                    className='inline-flex items-center rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-semibold text-[var(--primary-10)] transition-all select-none'
                     key={seed.key}
                     type='button'
-                    className='inline-flex items-center rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-xs font-semibold text-[var(--primary-10)] transition-all select-none'
                     onClick={() => toggleSeed(seed.key)}
                   >
                     <span>{seed.label}</span>
@@ -852,11 +897,11 @@ const RelatedDocumentsFinder = ({
                   )}
                   onClick={() => toggleCustomChip(i)}
                 >
-                  <span className='opacity-75 font-bold'>{c.key}:</span>
+                  <span className='font-bold opacity-75'>{c.key}:</span>
                   <span>{c.value}</span>
                   <button
+                    className='ml-0.5 flex size-3.5 items-center justify-center rounded-full opacity-60 hover:bg-[var(--primary-3)] hover:opacity-100'
                     type='button'
-                    className='ml-0.5 flex size-3.5 items-center justify-center rounded-full opacity-60 hover:opacity-100 hover:bg-[var(--primary-3)]'
                     onClick={(e) => {
                       e.stopPropagation()
                       removeCustomChip(i)
@@ -870,9 +915,9 @@ const RelatedDocumentsFinder = ({
               {/* Dedicated container for keyword dropdown ref */}
               <div className='relative inline-block' ref={keywordDropdownRef}>
                 <button
-                  type='button'
-                  className='inline-flex items-center justify-center size-6 rounded-full border border-dashed border-[var(--primary-4)] bg-transparent text-xs font-medium text-[var(--primary-9)] transition-colors hover:bg-[var(--primary-1)]'
+                  className='inline-flex size-6 items-center justify-center rounded-full border border-dashed border-[var(--primary-4)] bg-transparent text-xs font-medium text-[var(--primary-9)] transition-colors hover:bg-[var(--primary-1)]'
                   title={t`Select keywords`}
+                  type='button'
                   onClick={() => setShowKeywordDropdown((prev) => !prev)}
                 >
                   <Icon className='h-3.5 w-3.5' name='tabler:plus' />
@@ -881,19 +926,24 @@ const RelatedDocumentsFinder = ({
                 {/* Searchable multi-select keyword dropdown popover */}
                 {showKeywordDropdown && (
                   <div className='animate-in fade-in slide-in-from-top-1 absolute top-8 left-0 z-50 w-64 overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface-raised shadow-lg duration-150'>
-                    <div className='p-2 border-b border-[var(--gray-3)] bg-surface'>
+                    <div className='border-b border-[var(--gray-3)] bg-surface p-2'>
                       <div className='flex h-8 items-center gap-1.5 rounded-lg border border-[var(--gray-4)] bg-surface px-2.5 transition-all focus-within:border-[var(--primary-6)]'>
-                        <Icon className='h-3.5 w-3.5 text-[var(--gray-8)] shrink-0' name='tabler:search' />
+                        <Icon
+                          className='h-3.5 w-3.5 shrink-0 text-[var(--gray-8)]'
+                          name='tabler:search'
+                        />
                         <input
                           className='w-full border-none bg-transparent text-xs text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:ring-0 focus:outline-none'
                           placeholder={t`Search keywords...`}
                           value={keywordSearchQuery}
-                          onChange={(e) => setKeywordSearchQuery(e.target.value)}
+                          onChange={(e) =>
+                            setKeywordSearchQuery(e.target.value)
+                          }
                         />
                         {keywordSearchQuery && (
                           <button
-                            type='button'
                             className='text-[var(--gray-8)] hover:text-[var(--gray-11)]'
+                            type='button'
                             onClick={() => setKeywordSearchQuery('')}
                           >
                             <Icon className='h-3 w-3' name='tabler:x' />
@@ -903,7 +953,7 @@ const RelatedDocumentsFinder = ({
                     </div>
                     <div className='max-h-48 overflow-y-auto p-1'>
                       {filteredAvailableSeeds.length === 0 ? (
-                        <div className='px-3 py-2 text-xs text-[var(--gray-9)] text-center'>
+                        <div className='px-3 py-2 text-center text-xs text-[var(--gray-9)]'>
                           {t`No matching keywords`}
                         </div>
                       ) : (
@@ -911,8 +961,8 @@ const RelatedDocumentsFinder = ({
                           const isSelected = activeSeedKeys.has(seed.key)
                           return (
                             <div
+                              className='flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[var(--gray-13)] transition-colors select-none hover:bg-[var(--primary-1)]'
                               key={seed.key}
-                              className='flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-[var(--gray-13)] transition-colors hover:bg-[var(--primary-1)] font-medium select-none'
                               onClick={() => toggleSeed(seed.key)}
                             >
                               <div
@@ -923,9 +973,16 @@ const RelatedDocumentsFinder = ({
                                     : 'border-[var(--gray-5)] bg-surface',
                                 )}
                               >
-                                {isSelected && <Icon className='h-3 w-3' name='tabler:check' />}
+                                {isSelected && (
+                                  <Icon
+                                    className='h-3 w-3'
+                                    name='tabler:check'
+                                  />
+                                )}
                               </div>
-                              <span className='min-w-0 flex-1 truncate'>{seed.label}</span>
+                              <span className='min-w-0 flex-1 truncate'>
+                                {seed.label}
+                              </span>
                             </div>
                           )
                         })
@@ -939,7 +996,7 @@ const RelatedDocumentsFinder = ({
 
           {/* Add Custom Field Form */}
           {showAddField && (
-            <div className='animate-in fade-in slide-in-from-top-1 mt-2.5 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--primary-3)] bg-[var(--primary-1)]/40 p-2.5 ml-2'>
+            <div className='animate-in fade-in slide-in-from-top-1 mt-2.5 ml-2 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--primary-3)] bg-[var(--primary-1)]/40 p-2.5'>
               <input
                 className='h-8 w-36 rounded-lg border border-[var(--gray-4)] bg-surface px-2.5 text-xs text-[var(--gray-13)] outline-none focus:border-[var(--primary-6)]'
                 placeholder={t`Keyword / Field`}
@@ -947,21 +1004,21 @@ const RelatedDocumentsFinder = ({
                 onChange={(e) => setNewFieldName(e.target.value)}
               />
               <input
-                className='h-8 flex-1 min-w-[120px] rounded-lg border border-[var(--gray-4)] bg-surface px-2.5 text-xs text-[var(--gray-13)] outline-none focus:border-[var(--primary-6)]'
+                className='h-8 min-w-[120px] flex-1 rounded-lg border border-[var(--gray-4)] bg-surface px-2.5 text-xs text-[var(--gray-13)] outline-none focus:border-[var(--primary-6)]'
                 placeholder={t`e.g. CT-908`}
                 value={newFieldValue}
                 onChange={(e) => setNewFieldValue(e.target.value)}
               />
               <button
-                type='button'
                 className='h-8 rounded-lg bg-[var(--primary-9)] px-3 text-xs font-bold text-white transition-all hover:bg-[var(--primary-10)] active:scale-95'
+                type='button'
                 onClick={handleAddCustomField}
               >
                 {t`+ Add`}
               </button>
               <button
-                type='button'
                 className='h-8 rounded-lg px-2.5 text-xs font-semibold text-[var(--gray-9)] hover:text-[var(--gray-13)]'
+                type='button'
                 onClick={() => setShowAddField(false)}
               >
                 {t`Cancel`}
@@ -971,144 +1028,153 @@ const RelatedDocumentsFinder = ({
 
           {/* Results List / Grid matching attachment-section-final HTML sample */}
           {(searched || loading) && (
-            <div className='mt-3 border-t border-[var(--gray-3)] bg-[var(--pane)] p-2.5 pb-0.5 rounded-xl'>
-            {loading ? (
-              <div className='flex flex-col items-center justify-center gap-2 py-6 text-[var(--gray-9)] text-xs'>
-                <AiBrandIcon className='size-5 animate-pulse' />
-                <p>{t`Looking through your folders…`}</p>
-              </div>
-            ) : error ? (
-              <div className='py-5 text-center text-xs text-[var(--red-10)]'>
-                {error}
-              </div>
-            ) : scoredResults.length === 0 ? (
-              <div className='py-5 text-center text-xs leading-relaxed text-[var(--gray-10)]'>
-                {t`No related documents found.`}<br />
-                {t`Try a different keyword, another folder, or switch off one of the invoice conditions.`}
-              </div>
-            ) : (
-              <>
-                <div
-                  className='grid gap-2'
-                  style={{
-                    gridTemplateColumns:
-                      'repeat(auto-fill, minmax(228px, 1fr))',
-                  }}
-                >
-                  {visibleResults.map((hit, idx) => {
-                    const key = hitKey(hit)
-                    const title = getSearchHitTitle(hit)
-                    const folderName =
-                      hit.name && hit.name !== 'Main Repository'
-                        ? hit.name
-                        : selectedFolders[0] ||
-                          availableFolders.find(
-                            (f) => String(f.id) === String(hit.id?.repositoryId || repositoryId),
-                          )?.name ||
-                          availableFolders[0]?.name ||
-                          'Accounts Payable'
-                    const attached = isAttached(hit)
-                    const attaching = attachingKey === key
-                    const isChecked = selectedResultKeys.has(key)
+            <div className='mt-3 rounded-xl border-t border-[var(--gray-3)] bg-[var(--pane)] p-2.5 pb-0.5'>
+              {loading ? (
+                <div className='flex flex-col items-center justify-center gap-2 py-6 text-xs text-[var(--gray-9)]'>
+                  <AiBrandIcon className='size-5 animate-pulse' />
+                  <p>{t`Looking through your folders…`}</p>
+                </div>
+              ) : error ? (
+                <div className='py-5 text-center text-xs text-[var(--red-10)]'>
+                  {error}
+                </div>
+              ) : scoredResults.length === 0 ? (
+                <div className='py-5 text-center text-xs leading-relaxed text-[var(--gray-10)]'>
+                  {t`No related documents found.`}
+                  <br />
+                  {t`Try a different keyword, another folder, or switch off one of the invoice conditions.`}
+                </div>
+              ) : (
+                <>
+                  <div
+                    className='grid gap-2'
+                    style={{
+                      gridTemplateColumns:
+                        'repeat(auto-fill, minmax(228px, 1fr))',
+                    }}
+                  >
+                    {visibleResults.map((hit, idx) => {
+                      const key = hitKey(hit)
+                      const title = getSearchHitTitle(hit)
+                      const folderName =
+                        hit.name && hit.name !== 'Main Repository'
+                          ? hit.name
+                          : selectedFolders[0] ||
+                            availableFolders.find(
+                              (f) =>
+                                String(f.id) ===
+                                String(hit.id?.repositoryId || repositoryId),
+                            )?.name ||
+                            availableFolders[0]?.name ||
+                            'Accounts Payable'
+                      const attached = isAttached(hit)
+                      const attaching = attachingKey === key
+                      const isChecked = selectedResultKeys.has(key)
 
-                    return (
-                      <div
-                        key={key + idx}
-                        className={cn(
-                          'animate-in fade-in slide-in-from-bottom-2 fill-mode-both flex items-start gap-2.5 rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 shadow-xs transition-all duration-300',
-                          attached
-                            ? 'opacity-55'
-                            : 'hover:border-[var(--primary-4)] hover:shadow-xs',
-                        )}
-                        style={{
-                          animationDelay: `${Math.min(idx, 12) * 40}ms`,
-                        }}
-                      >
-                        {/* PDF / File Icon */}
-                        {renderResultFileIcon(title)}
-
-                        <div className='min-w-0 flex-1'>
-                          {/* Title (.mn) */}
-                          <div
-                            className='truncate text-xs font-semibold text-[var(--primary-9)] hover:underline cursor-pointer'
-                            title={title}
-                          >
-                            {title}
-                          </div>
-                          {/* Folder (.mf) */}
-                          {folderName && (
-                            <div className='mt-1 flex items-center gap-1 text-[11px] font-medium text-[var(--primary-9)] truncate'>
-                              <Icon
-                                className='h-3 w-3 shrink-0 text-[var(--primary-9)]'
-                                name='tabler:folder'
-                              />
-                              <span className='truncate'>{folderName}</span>
-                            </div>
+                      return (
+                        <div
+                          key={key + idx}
+                          className={cn(
+                            'animate-in fade-in slide-in-from-bottom-2 fill-mode-both flex items-start gap-2.5 rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 shadow-xs transition-all duration-300',
+                            attached
+                              ? 'opacity-55'
+                              : 'hover:border-[var(--primary-4)] hover:shadow-xs',
                           )}
-                          {/* Why/reasons line (.mw) */}
-                          {hit.reasons.length > 0 && (
+                          style={{
+                            animationDelay: `${Math.min(idx, 12) * 40}ms`,
+                          }}
+                        >
+                          {/* PDF / File Icon */}
+                          {renderResultFileIcon(title)}
+
+                          <div className='min-w-0 flex-1'>
+                            {/* Title (.mn) */}
                             <div
-                              className='mt-1 truncate text-[10.5px] text-[var(--gray-9)]'
-                              title={hit.reasons.join(' · ')}
+                              className='cursor-pointer truncate text-xs font-semibold text-[var(--primary-9)] hover:underline'
+                              title={title}
                             >
-                              {hit.reasons.join(' · ')}
+                              {title}
                             </div>
+                            {/* Folder (.mf) */}
+                            {folderName && (
+                              <div className='mt-1 flex items-center gap-1 truncate text-[11px] font-medium text-[var(--primary-9)]'>
+                                <Icon
+                                  className='h-3 w-3 shrink-0 text-[var(--primary-9)]'
+                                  name='tabler:folder'
+                                />
+                                <span className='truncate'>{folderName}</span>
+                              </div>
+                            )}
+                            {/* Why/reasons line (.mw) */}
+                            {hit.reasons.length > 0 && (
+                              <div
+                                className='mt-1 truncate text-[10.5px] text-[var(--gray-9)]'
+                                title={hit.reasons.join(' · ')}
+                              >
+                                {hit.reasons.join(' · ')}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Score percentage (.pct) */}
+                          <span className='shrink-0 pt-0.5 text-[11.5px] font-medium text-[var(--gray-10)]'>
+                            {hit.pct}%
+                          </span>
+
+                          {/* Action button (Link Icon) */}
+                          {attached ? (
+                            <span
+                              className='flex size-6 shrink-0 items-center justify-center rounded-md text-xs font-bold text-[var(--green-9)]'
+                              title={t`Already in attachments`}
+                            >
+                              <Icon
+                                className='h-4 w-4 text-[var(--green-9)]'
+                                name='tabler:check'
+                              />
+                            </span>
+                          ) : (
+                            <button
+                              className='flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--primary-9)] transition-all hover:bg-[var(--primary-2)] active:scale-90'
+                              disabled={attaching}
+                              title={t`Link document`}
+                              type='button'
+                              onClick={() => void handleLinkHit(hit)}
+                            >
+                              {attaching ? (
+                                <Icon
+                                  className='h-3.5 w-3.5 animate-spin'
+                                  name='tabler:loader-2'
+                                />
+                              ) : (
+                                <Icon
+                                  className='h-4 w-4 text-[var(--primary-9)]'
+                                  name='tabler:link'
+                                />
+                              )}
+                            </button>
                           )}
                         </div>
+                      )
+                    })}
+                  </div>
 
-                        {/* Score percentage (.pct) */}
-                        <span className='shrink-0 text-[11.5px] text-[var(--gray-10)] pt-0.5 font-medium'>
-                          {hit.pct}%
-                        </span>
-
-                        {/* Action button (Link Icon) */}
-                        {attached ? (
-                          <span
-                            className='flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--green-9)] font-bold text-xs'
-                            title={t`Already in attachments`}
-                          >
-                            <Icon className='h-4 w-4 text-[var(--green-9)]' name='tabler:check' />
-                          </span>
-                        ) : (
-                          <button
-                            disabled={attaching}
-                            type='button'
-                            className='flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--primary-9)] transition-all hover:bg-[var(--primary-2)] active:scale-90'
-                            title={t`Link document`}
-                            onClick={() => void handleLinkHit(hit)}
-                          >
-                            {attaching ? (
-                              <Icon
-                                className='h-3.5 w-3.5 animate-spin'
-                                name='tabler:loader-2'
-                              />
-                            ) : (
-                              <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:link' />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {scoredResults.length > RESULTS_PREVIEW_COUNT && (
-                  <button
-                    className='mt-3.5 mb-0 py-0 block w-full text-center text-[11.5px] font-medium text-[var(--primary-9)] hover:underline'
-                    type='button'
-                    onClick={() => setShowAll((prev) => !prev)}
-                  >
-                    {showAll
-                      ? t`Show less`
-                      : t`Show more (${matchCount - RESULTS_PREVIEW_COUNT} more)`}
-                  </button>
-                )}
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    )}
+                  {scoredResults.length > RESULTS_PREVIEW_COUNT && (
+                    <button
+                      className='mt-3.5 mb-0 block w-full py-0 text-center text-[11.5px] font-medium text-[var(--primary-9)] hover:underline'
+                      type='button'
+                      onClick={() => setShowAll((prev) => !prev)}
+                    >
+                      {showAll
+                        ? t`Show less`
+                        : t`Show more (${matchCount - RESULTS_PREVIEW_COUNT} more)`}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

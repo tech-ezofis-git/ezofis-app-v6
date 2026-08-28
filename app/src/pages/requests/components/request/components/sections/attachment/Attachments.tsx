@@ -1,6 +1,6 @@
+import { useLingui } from '@lingui/react/macro'
 import clsx, { type ClassValue } from 'clsx'
 import { useMemo, useRef, useState } from 'react'
-import { useLingui } from '@lingui/react/macro'
 import { twMerge } from 'tailwind-merge'
 import fileApi from '@/api/file/file'
 import { workflowsApiV6 } from '@/api/v6/workflows'
@@ -26,8 +26,9 @@ type Props = {
   repositoryId?: number | string
   selectedChecklistName?: string | null
   selectedItem?: any
+  showRelatedFinder?: boolean
   transactionId?: number | string
-  workflowId?: number
+  workflowId?: number | string
   onClose?: () => void
   onOpenComments?: (file: AttachmentItem) => void
   onOpenHistory?: (file: AttachmentItem) => void
@@ -162,27 +163,27 @@ export const getFileIcon = (fileNameOrExt: string): string => {
     .replace(/^\./, '')
 
   const iconMap: Record<string, string> = {
-    csv: 'vscode-icons:file-type-excel',
-    doc: 'vscode-icons:file-type-word',
-    docx: 'vscode-icons:file-type-word',
-    gif: 'vscode-icons:file-type-image',
-    jpeg: 'vscode-icons:file-type-image',
-    jpg: 'vscode-icons:file-type-image',
-    pdf: 'vscode-icons:file-type-pdf2',
-    png: 'vscode-icons:file-type-image',
-    ppt: 'vscode-icons:file-type-powerpoint',
-    pptx: 'vscode-icons:file-type-powerpoint',
-    rtf: 'vscode-icons:file-type-text',
-    svg: 'vscode-icons:file-type-image',
-    txt: 'vscode-icons:file-type-text',
-    webp: 'vscode-icons:file-type-image',
-    xls: 'vscode-icons:file-type-excel',
-    xlsx: 'vscode-icons:file-type-excel',
-    zip: 'vscode-icons:file-type-zip',
-    rar: 'vscode-icons:file-type-zip',
     '7z': 'vscode-icons:file-type-zip',
-    json: 'vscode-icons:file-type-json',
-    xml: 'vscode-icons:file-type-xml',
+    'csv': 'vscode-icons:file-type-excel',
+    'doc': 'vscode-icons:file-type-word',
+    'docx': 'vscode-icons:file-type-word',
+    'gif': 'vscode-icons:file-type-image',
+    'jpeg': 'vscode-icons:file-type-image',
+    'jpg': 'vscode-icons:file-type-image',
+    'json': 'vscode-icons:file-type-json',
+    'pdf': 'vscode-icons:file-type-pdf2',
+    'png': 'vscode-icons:file-type-image',
+    'ppt': 'vscode-icons:file-type-powerpoint',
+    'pptx': 'vscode-icons:file-type-powerpoint',
+    'rar': 'vscode-icons:file-type-zip',
+    'rtf': 'vscode-icons:file-type-text',
+    'svg': 'vscode-icons:file-type-image',
+    'txt': 'vscode-icons:file-type-text',
+    'webp': 'vscode-icons:file-type-image',
+    'xls': 'vscode-icons:file-type-excel',
+    'xlsx': 'vscode-icons:file-type-excel',
+    'xml': 'vscode-icons:file-type-xml',
+    'zip': 'vscode-icons:file-type-zip',
   }
   return iconMap[ext] || 'vscode-icons:file-type-text'
 }
@@ -248,15 +249,16 @@ export default function Attachments({
   canUpload = true,
   enabled = true,
   formModel,
+  initialData,
   instanceId,
   processId,
   repositoryId,
   selectedItem,
+  showRelatedFinder = true,
   workflowId,
-  onSelect,
   onOpenHistory,
   onOpenMailShare,
-  initialData,
+  onSelect,
 }: Props & { initialData?: any[] }) {
   const { t } = useLingui()
   const targetInstanceId = instanceId || processId
@@ -526,18 +528,20 @@ export default function Attachments({
         onChange={onFileChange}
       />
 
-      <RelatedDocumentsFinder
-        agentData={selectedItem || formModel}
-        attachedIds={attachedIds}
-        instanceId={targetInstanceId}
-        invoiceAmount={invoiceAmount}
-        invoiceNumber={invoiceNumber}
-        poNumber={poNumber}
-        repositoryId={repositoryId}
-        supplierName={supplierName}
-        workflowId={workflowId}
-        onAttached={refetch}
-      />
+      {showRelatedFinder ? (
+        <RelatedDocumentsFinder
+          agentData={selectedItem || formModel}
+          attachedIds={attachedIds}
+          instanceId={targetInstanceId}
+          invoiceAmount={invoiceAmount}
+          invoiceNumber={invoiceNumber}
+          poNumber={poNumber}
+          repositoryId={repositoryId}
+          supplierName={supplierName}
+          workflowId={workflowId}
+          onAttached={refetch}
+        />
+      ) : null}
 
       {!isLoading && (
         <div className='mb-2.5 flex shrink-0 items-center justify-between'>
@@ -656,8 +660,11 @@ export default function Attachments({
                       {displayTitle}
                     </span>
                     {file.isAiMatch && (
-                      <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)] shrink-0'>
-                        <AiBrandIcon className='size-3 shrink-0' variant='outline-purple' />
+                      <span className='inline-flex shrink-0 items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)]'>
+                        <AiBrandIcon
+                          className='size-3 shrink-0'
+                          variant='outline-purple'
+                        />
                         Added via AI match
                       </span>
                     )}
@@ -667,7 +674,7 @@ export default function Attachments({
                       </span>
                     )}
                   </div>
-                  <div className='mt-0.5 flex items-center gap-2 flex-wrap'>
+                  <div className='mt-0.5 flex flex-wrap items-center gap-2'>
                     {file.isAiMatch ? (
                       <span className='text-[11px] text-[var(--gray-9)]'>
                         Added just now · from AI cross-reference

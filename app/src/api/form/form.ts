@@ -141,11 +141,16 @@ const getFormEntries = async (
   page: number = 1,
   size: number = 500,
   includeFormJson: boolean = true,
+  tenantIdOverride?: string,
 ) => {
   const response: any = { data: null, error: '' }
   try {
     const store = authUserStore.getState()
-    const tenantId = store.session?.tenantId || ''
+    const tenantId =
+      tenantIdOverride ||
+      store.session?.tenantId ||
+      store.identity?.tenantId ||
+      ''
     const { data, status } = await axiosV6.get(`/form/${formId}/entry/all`, {
       headers: {
         'X-Tenant-Id': tenantId,
@@ -165,15 +170,24 @@ const getFormEntries = async (
   return response
 }
 
-const searchFormEntries = async (formId: string, payload: any) => {
+const searchFormEntries = async (
+  formId: string,
+  payload: any,
+  tenantIdOverride?: string,
+) => {
   const response: any = { data: null, error: '' }
   try {
     const store = authUserStore.getState()
-    const tenantId = store.session?.tenantId || ''
+    const tenantId =
+      tenantIdOverride ||
+      store.session?.tenantId ||
+      store.identity?.tenantId ||
+      ''
     const { data, status } = await axiosV6.post(`/form/${formId}/entry/all`, payload, {
       headers: {
         'X-Tenant-Id': tenantId,
       },
+      skipCancellation: true,
     })
     if (status !== 200) throw new Error('Invalid status code')
     response.data = data

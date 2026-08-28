@@ -83,7 +83,7 @@ const WorkflowFormRenderer = ({
             chevron: 'text-gray-10',
             content: 'p-0',
             control: 'rounded-xl px-4 py-2.5 transition-colors hover:bg-gray-1',
-            item: 'mb-3 rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
+            item: 'mb-3 scroll-mt-3 rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
             label: 'text-14 font-bold tracking-tight text-gray-13',
             panel: 'px-6 pt-2 pb-6',
           }}
@@ -101,6 +101,7 @@ const WorkflowFormRenderer = ({
 
             return (
               <Accordion.Item
+                id={`form-panel-${panel.id || panelIndex}`}
                 key={panel.id || panelIndex}
                 value={`panel-${panelIndex}`}
               >
@@ -149,9 +150,6 @@ const WorkflowFormRenderer = ({
                         key={field.id}
                       >
                         <FieldRenderer
-                          fallbackAttachments={
-                            field.id === soleFileFieldId ? attachments : undefined
-                          }
                           field={field}
                           repoFieldHints={repoFieldHints}
                           repositoryId={repositoryId}
@@ -161,6 +159,11 @@ const WorkflowFormRenderer = ({
                             hasAttemptedSubmit &&
                             missingMandatoryFieldIds?.has(field.id)
                               ? t`This field is required.`
+                              : undefined
+                          }
+                          fallbackAttachments={
+                            field.id === soleFileFieldId
+                              ? attachments
                               : undefined
                           }
                           onChange={(value) => onFieldChange(field.id, value)}

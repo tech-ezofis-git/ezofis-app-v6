@@ -1,4 +1,7 @@
+import { msg } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import dayjs from 'dayjs'
 import {
   Check,
   KeyRound,
@@ -10,9 +13,8 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react'
+import { AnimatePresence } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { msg } from '@lingui/core/macro'
-import { useLingui } from '@lingui/react/macro'
 import {
   createUser,
   deleteUser as deleteUserApi,
@@ -21,9 +23,17 @@ import {
   getUsers,
   updateUser,
 } from '@/api/v6/user'
+import {
+  completeWizardDraft,
+  deleteWizardDraft,
+  getActiveWizardDraft,
+  saveWizardDraft,
+} from '@/api/v6/wizardDrafts'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
+import Icon from '@/components/base/icon/Icon'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
@@ -31,23 +41,15 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import ConfirmDialog from '@/components/base/ConfirmDialog'
-import Icon from '@/components/base/icon/Icon'
+import { AnimateFadeIn } from '@/components/common/animations'
+import CustomFilter from '@/components/common/CustomFilter'
 import PasswordRequirements, {
   requirementsConfig,
 } from '@/layouts/auth/components/PasswordRequirements'
-import { AnimatePresence } from 'motion/react'
-import { AnimateFadeIn } from '@/components/common/animations'
-import SettingsWizardLayout from './SettingsWizardLayout'
-import CustomFilter from '@/components/common/CustomFilter'
 import cn from '@/utils/cn'
-import dayjs from 'dayjs'
-import {
-  matchesCategoryFilterValue,
-} from '@/utils/filterUtils'
-import {
-  dummySettingsUsers,
-} from '../data/settingsDummyData'
+import { formatDatetime } from '@/utils/dayjs'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import { dummySettingsUsers } from '../data/settingsDummyData'
 import {
   countryDialCodeOptions,
   getCountrySelectValue,
@@ -81,29 +83,26 @@ import {
   type SettingsOption,
   type SettingsUser,
 } from '../helpers/userGroupMappers'
+import {
+  buildUserDraftJson,
+  hydrateUserFromDraft,
+  userStepIndexFromDraft,
+  userStepKey,
+} from '../helpers/wizardDraftState'
 import SettingsDateField from './SettingsDateField'
 import SettingsFormSection from './SettingsFormSection'
 import SettingsPageHeader from './SettingsPageHeader'
-import SettingsSelectField from './SettingsSelectField'
 import SettingsSelectedChips from './SettingsSelectedChips'
+import SettingsSelectField from './SettingsSelectField'
+import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
-import { formatDatetime } from '@/utils/dayjs'
 
 const SESSION_KEY = 'ezofis_manage_user_state'
 
-function getStoredState() {
-  try {
-    const stored = sessionStorage.getItem(SESSION_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
-
 type AppUser = SettingsUser
+
 type DraftUser = DraftSettingsUser
 type LoginType = 'Password' | 'GoogleSSO' | 'MS Entra ID' | 'LDAP/AD'
-
 type Step = {
   caption: string
   description: string
@@ -114,6 +113,15 @@ type Step = {
 type StepKey = 'login' | 'business' | 'groups' | 'authentication' | 'review'
 
 type UserStatus = 'active' | 'inactive' | 'pending'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
 
 const USER_SETUP_STEP_MSGS = [
   {
@@ -270,20 +278,22 @@ const mfaMethodOptions = [
 
 type LoginOption = {
   description: string
-  icon: () => React.ReactNode
   title: string
   value: LoginType
+  icon: () => React.ReactNode
 }
 
 function LoginTypeIcon({
-  type,
   className,
+  type,
 }: {
-  type: string
   className?: string
+  type: string
 }) {
   const iconClass = cn('size-3.5 shrink-0', className)
-  const normalized = String(type || '').trim().toLowerCase()
+  const normalized = String(type || '')
+    .trim()
+    .toLowerCase()
 
   switch (normalized) {
     case 'googlesso':
@@ -308,17 +318,16 @@ function LoginTypeIcon({
 }
 
 const LOGIN_TYPE_LABELS = {
-  password: msg`Password`,
+  activeDirectory: msg`Active Directory`,
   google: msg`Google`,
   microsoft: msg`Microsoft`,
-  activeDirectory: msg`Active Directory`,
+  password: msg`Password`,
 }
 
-function formatLoginTypeLabel(
-  type: string,
-  i18nOrT?: any,
-) {
-  const normalized = String(type || '').trim().toLowerCase()
+function formatLoginTypeLabel(type: string, i18nOrT?: any) {
+  const normalized = String(type || '')
+    .trim()
+    .toLowerCase()
   let msgDescriptor: any = null
 
   if (normalized === 'ezofis' || normalized === 'password') {
@@ -374,9 +383,7 @@ type ManageUserProps = {
   onBack?: () => void
 }
 
-export default function ManageUser({
-  onBack,
-}: ManageUserProps) {
+export default function ManageUser({ onBack }: ManageUserProps) {
   const { i18n, t } = useLingui()
   const [groupOptions, setGroupOptions] = useState<SettingsOption[]>([])
   const [settingsGroups, setSettingsGroups] = useState<SettingsGroup[]>([])
@@ -391,7 +398,9 @@ export default function ManageUser({
 
   const storedState = useMemo(() => getStoredState(), [])
 
-  const [isSetupOpen, setIsSetupOpen] = useState(storedState?.isSetupOpen ?? false)
+  const [isSetupOpen, setIsSetupOpen] = useState(
+    storedState?.isSetupOpen ?? false,
+  )
   const [editingUserId, setEditingUserId] = useState<string | number | null>(
     storedState?.editingUserId ?? null,
   )
@@ -408,7 +417,9 @@ export default function ManageUser({
         : emptyUser.mfaMethods,
     }
   })
-  const [originalUser, setOriginalUser] = useState<DraftUser | null>(storedState?.originalUser ?? null)
+  const [originalUser, setOriginalUser] = useState<DraftUser | null>(
+    storedState?.originalUser ?? null,
+  )
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
     storedState?.activeFilters ?? {},
   )
@@ -418,23 +429,33 @@ export default function ManageUser({
       sessionStorage.setItem(
         SESSION_KEY,
         JSON.stringify({
-          isSetupOpen,
-          editingUserId,
+          activeFilters,
           activeStep,
           draftUser,
+          editingUserId,
+          isSetupOpen,
           originalUser,
-          activeFilters,
         }),
       )
     } catch {
       // ignore
     }
-  }, [isSetupOpen, editingUserId, activeStep, draftUser, originalUser, activeFilters])
+  }, [
+    isSetupOpen,
+    editingUserId,
+    activeStep,
+    draftUser,
+    originalUser,
+    activeFilters,
+  ])
   const [isSaving, setIsSaving] = useState(false)
   const [deletingUserId, setDeletingUserId] = useState<string | number | null>(
     null,
   )
   const [isDeletingUser, setIsDeletingUser] = useState(false)
+  const userDraftIdRef = useRef<string | null>(null)
+  const draftUserRef = useRef(draftUser)
+  draftUserRef.current = draftUser
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -475,12 +496,7 @@ export default function ManageUser({
           key === 'jobTitle' ||
           key === 'manager'
         ) {
-          if (
-            !matchesCategoryFilterValue(
-              user[key as keyof AppUser],
-              value,
-            )
-          ) {
+          if (!matchesCategoryFilterValue(user[key as keyof AppUser], value)) {
             matches = false
           }
         }
@@ -606,9 +622,87 @@ export default function ManageUser({
     [users, editingUserId],
   )
 
-  const openAddUser = () => {
+  const persistUserWizardDraft = useCallback(
+    async (stepIndex: number) => {
+      const current = draftUserRef.current
+      const json = buildUserDraftJson(current, {
+        editingUserId,
+      })
+      const { data, error } = await saveWizardDraft('user', {
+        currentStep: stepIndex + 1,
+        currentStepKey: userStepKey(stepIndex),
+        draftId: userDraftIdRef.current,
+        draftJson: JSON.stringify(json),
+      })
+      if (data?.id) userDraftIdRef.current = data.id
+      if (error) {
+        showToast({
+          message: error,
+          variant: 'warning',
+        })
+      }
+    },
+    [editingUserId],
+  )
+
+  const finishUserWizardDraft = useCallback(async () => {
+    let draftId = userDraftIdRef.current
+    userDraftIdRef.current = null
+    if (!draftId) {
+      const { data } = await getActiveWizardDraft('user')
+      draftId = data?.id ?? null
+    }
+    if (!draftId) return
+    await completeWizardDraft('user', draftId)
+  }, [])
+
+  const discardUserWizardDraft = useCallback(async () => {
+    const draftId = userDraftIdRef.current
+    userDraftIdRef.current = null
+    if (!draftId) return
+    await deleteWizardDraft('user', draftId)
+  }, [])
+
+  useEffect(() => {
+    if (!isSetupOpen) return
+    if (userDraftIdRef.current) return
+
+    let cancelled = false
+    void (async () => {
+      const { data } = await getActiveWizardDraft('user')
+      if (cancelled) return
+      if (data?.id) userDraftIdRef.current = data.id
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isSetupOpen])
+
+  const openAddUser = async () => {
     setEditingUserId(null)
     setOriginalUser(null)
+
+    const { data } = await getActiveWizardDraft('user')
+    userDraftIdRef.current = data?.id ?? null
+
+    if (data?.draftJson) {
+      const hydrated = hydrateUserFromDraft(data.draftJson, emptyUser)
+
+      if (hydrated.editingUserId == null) {
+        setDraftUser({
+          ...hydrated.user,
+          id: Date.now(),
+          password: '',
+        })
+        setActiveStep(
+          userStepIndexFromDraft(data.currentStep, data.currentStepKey),
+        )
+        setIsSetupOpen(true)
+        return
+      }
+    }
+
     setDraftUser({
       ...emptyUser,
       id: Date.now(),
@@ -617,7 +711,7 @@ export default function ManageUser({
     setIsSetupOpen(true)
   }
 
-  const openEditUser = (user: AppUser) => {
+  const openEditUser = async (user: AppUser) => {
     const clearPlaceholder = (value: string) => {
       const trimmed = String(value || '').trim()
       return !trimmed || trimmed === '—' ? '' : trimmed
@@ -677,6 +771,23 @@ export default function ManageUser({
     setDraftUser(snapshot)
     setActiveStep(0)
     setIsSetupOpen(true)
+
+    const { data } = await getActiveWizardDraft('user')
+    userDraftIdRef.current = data?.id ?? null
+
+    if (!data?.draftJson) return
+
+    const hydrated = hydrateUserFromDraft(data.draftJson, snapshot)
+
+    if (String(hydrated.editingUserId ?? '') !== String(user.id)) return
+
+    setDraftUser({
+      ...snapshot,
+      ...hydrated.user,
+      id: user.id,
+      password: '',
+    })
+    setActiveStep(userStepIndexFromDraft(data.currentStep, data.currentStepKey))
   }
 
   const deletingUser = useMemo(
@@ -725,7 +836,11 @@ export default function ManageUser({
         `${draftUser.firstName}.${draftUser.lastName}`.toLowerCase(),
     }
 
-    const validationMessage = getUserSetupValidationMessage(normalizedUser, t, i18n)
+    const validationMessage = getUserSetupValidationMessage(
+      normalizedUser,
+      t,
+      i18n,
+    )
 
     if (validationMessage) {
       const nextStep =
@@ -741,6 +856,8 @@ export default function ManageUser({
       })
       return
     }
+
+    await persistUserWizardDraft(4)
 
     if (editingUserId) {
       if (!originalUser) {
@@ -783,6 +900,7 @@ export default function ManageUser({
         }
 
         showToast({ message: 'User updated successfully', variant: 'success' })
+        await finishUserWizardDraft()
         setOriginalUser(null)
         setIsSetupOpen(false)
       } finally {
@@ -806,9 +924,9 @@ export default function ManageUser({
 
       const createdUser = response.data
         ? mapApiUserToSettingsUser(
-          response.data as Record<string, unknown>,
-          users.length,
-        )
+            response.data as Record<string, unknown>,
+            users.length,
+          )
         : null
       const listResponse = await getUsers()
 
@@ -837,6 +955,7 @@ export default function ManageUser({
       }
 
       showToast({ message: 'User created successfully', variant: 'success' })
+      await finishUserWizardDraft()
       setIsSetupOpen(false)
     } finally {
       setIsSaving(false)
@@ -867,31 +986,28 @@ export default function ManageUser({
         },
       }),
 
-      userColumnHelper.accessor(
-        (row) => `${row.firstName} ${row.lastName}`,
-        {
-          enableSorting: false,
-          header: t`Name`,
-          id: 'name',
-          meta: { ...settingsHeaderMeta.start, label: t`Name` },
-          minSize: 40,
-          size: 180,
-          cell: ({ row }) => {
-            const user = row.original
-            const fullName = `${user.firstName} ${user.lastName}`.trim()
+      userColumnHelper.accessor((row) => `${row.firstName} ${row.lastName}`, {
+        enableSorting: false,
+        header: t`Name`,
+        id: 'name',
+        meta: { ...settingsHeaderMeta.start, label: t`Name` },
+        minSize: 40,
+        size: 180,
+        cell: ({ row }) => {
+          const user = row.original
+          const fullName = `${user.firstName} ${user.lastName}`.trim()
 
-            return (
-              <button
-                className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline'
-                type='button'
-                onClick={() => openEditUser(user)}
-              >
-                {fullName || ''}
-              </button>
-            )
-          },
+          return (
+            <button
+              className='max-w-full text-left font-semibold text-[var(--gray-13)] transition-colors hover:underline'
+              type='button'
+              onClick={() => openEditUser(user)}
+            >
+              {fullName || ''}
+            </button>
+          )
         },
-      ),
+      }),
 
       userColumnHelper.accessor('email', {
         enableSorting: false,
@@ -956,13 +1072,13 @@ export default function ManageUser({
         enableSorting: false,
         header: t`Login Type`,
         id: 'loginType',
+        maxSize: 156,
         meta: {
           ...settingsHeaderMeta.start,
           className: '!px-2',
           disableEllipsis: true,
           label: t`Login Type`,
         },
-        maxSize: 156,
         minSize: 156,
         size: 156,
         cell: ({ getValue }) => {
@@ -1108,19 +1224,15 @@ export default function ManageUser({
         })
         .filter(Boolean)
         .sort((a, b) => a!.label.localeCompare(b!.label)) as {
-          label: string
-          value: string
-        }[],
+        label: string
+        value: string
+      }[],
     [users],
   )
   const emailOptions = useMemo(
     () =>
       Array.from(
-        new Set(
-          users
-            .map((u) => String(u.email || '').trim())
-            .filter(Boolean),
-        ),
+        new Set(users.map((u) => String(u.email || '').trim()).filter(Boolean)),
       )
         .sort((a, b) => a.localeCompare(b))
         .map((email) => ({ label: email, value: email })),
@@ -1237,33 +1349,45 @@ export default function ManageUser({
         managerOptions={managerOptions}
         roleOptions={apiRoleOptions}
         onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
-        onBackToSettings={onBack}
+        onBackToSettings={() => {
+          void discardUserWizardDraft()
+          onBack?.()
+        }}
         onCancel={() => {
+          void discardUserWizardDraft()
           setOriginalUser(null)
           setIsSetupOpen(false)
         }}
         onChange={setDraftUser}
-        onNext={() =>
-          setActiveStep((step: number) => Math.min(step + 1, 4))
-        }
+        onNext={() => {
+          void (async () => {
+            await persistUserWizardDraft(activeStep)
+            setActiveStep((step: number) => Math.min(step + 1, 4))
+          })()
+        }}
         onSave={saveUser}
-        onStepChange={setActiveStep}
+        onStepChange={(nextStep) => {
+          if (nextStep > activeStep) {
+            void persistUserWizardDraft(activeStep)
+          }
+          setActiveStep(nextStep)
+        }}
       />
     )
   }
   return (
     <main className='flex h-full flex-col bg-[var(--surface)]'>
       <ConfirmDialog
+        confirmLabel={t`Delete`}
+        isConfirming={isDeletingUser}
         opened={deletingUserId != null}
         title={t`Delete User`}
+        variant='danger'
         description={
           deletingUser
             ? `Are you sure you want to delete "${`${deletingUser.firstName} ${deletingUser.lastName}`.trim() || deletingUser.email}"? This action cannot be undone.`
             : 'Are you sure you want to delete this user? This action cannot be undone.'
         }
-        confirmLabel={t`Delete`}
-        isConfirming={isDeletingUser}
-        variant='danger'
         onCancel={cancelDeleteUser}
         onConfirm={() => {
           void confirmDeleteUser()
@@ -1276,9 +1400,6 @@ export default function ManageUser({
           <CustomFilter
             activeFilters={activeFilters}
             customSearchComponent={<TableSearch table={userTable as any} />}
-            trailingActions={
-              <TableExport fileName='users' table={userTable as any} />
-            }
             actionButtons={[
               {
                 color: 'gray',
@@ -1358,6 +1479,9 @@ export default function ManageUser({
             showReset={
               Object.keys(activeFilters).some((k) => activeFilters[k]) ||
               !!tableSearchOptions.state.globalFilter?.value
+            }
+            trailingActions={
+              <TableExport fileName='users' table={userTable as any} />
             }
             onFilterChange={(id, val) =>
               setActiveFilters((prev) => ({ ...prev, [id]: val }))
@@ -1470,14 +1594,9 @@ function Authentication({
 
                 return (
                   <button
+                    disabled={isDisabled}
                     key={opt.value}
                     type='button'
-                    disabled={isDisabled}
-                    title={
-                      isDisabled
-                        ? 'Add a phone number in Login Details to enable Mobile OTP'
-                        : undefined
-                    }
                     className={[
                       'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
                       isDisabled
@@ -1492,6 +1611,11 @@ function Authentication({
                     ]
                       .filter(Boolean)
                       .join(' ')}
+                    title={
+                      isDisabled
+                        ? 'Add a phone number in Login Details to enable Mobile OTP'
+                        : undefined
+                    }
                     onClick={() => {
                       if (isDisabled) return
                       onChange({
@@ -1521,7 +1645,7 @@ function Authentication({
                     />
 
                     <div className='min-w-0 flex-1'>
-                      <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
+                      <div className='text-xs leading-snug font-semibold text-[var(--gray-13)]'>
                         {opt.title}
                       </div>
                       {isDisabled ? (
@@ -1582,12 +1706,12 @@ function BusinessDetails({
       <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
         <AnimateFadeIn delay={0.15}>
           <SettingsSelectField
-            clearable
-            creatable
             label={t`Job Title`}
             options={jobTitleOptions}
             placeholder={t`Select or type job title`}
             value={user.jobTitle === '—' ? '' : user.jobTitle}
+            clearable
+            creatable
             onChange={(value) => onChange({ ...user, jobTitle: value })}
           />
         </AnimateFadeIn>
@@ -1603,47 +1727,47 @@ function BusinessDetails({
 
         <AnimateFadeIn delay={0.25}>
           <SettingsSelectField
-            creatable
             label={t`Department`}
             options={departments}
             placeholder={t`Select or type department`}
             value={user.department}
+            creatable
             onChange={(value) => onChange({ ...user, department: value })}
           />
         </AnimateFadeIn>
 
         <AnimateFadeIn delay={0.3}>
           <SettingsSelectField
-            clearable
-            creatable
             label={t`Business Unit`}
             options={businessUnitOptions}
             placeholder={t`Select or type business unit`}
             value={user.businessUnit === '—' ? '' : user.businessUnit}
+            clearable
+            creatable
             onChange={(value) => onChange({ ...user, businessUnit: value })}
           />
         </AnimateFadeIn>
 
         <AnimateFadeIn delay={0.35}>
           <SettingsSelectField
-            clearable
             label={t`Manager`}
             options={managerOptions}
             placeholder={t`Select`}
-            searchable
             value={user.manager}
+            clearable
+            searchable
             onChange={(value) => onChange({ ...user, manager: value })}
           />
         </AnimateFadeIn>
 
         <AnimateFadeIn delay={0.4}>
           <SettingsSelectField
-            clearable
-            creatable
             label={t`Location`}
             options={locationOptions}
             placeholder={t`Select or type location`}
             value={user.location === '—' ? '' : user.location}
+            clearable
+            creatable
             onChange={(value) => onChange({ ...user, location: value })}
           />
         </AnimateFadeIn>
@@ -1732,9 +1856,7 @@ function getPasswordRequirementError(
   t: (strings: TemplateStringsArray, ...values: any[]) => string,
 ) {
   const unmet = requirementsConfig.find((req) => !req.regex.test(password))
-  return unmet
-    ? t`Password must meet: ${i18n._(unmet.label)}`
-    : undefined
+  return unmet ? t`Password must meet: ${i18n._(unmet.label)}` : undefined
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -1880,14 +2002,14 @@ function GroupAssignment({
           <InputSelectMultiple
             label={t`Groups`}
             options={groupOptions}
+            value={selectedGroups}
+            clearable
+            searchable
             placeholder={
               isLoadingGroups
                 ? 'Loading groups...'
                 : 'Search and select groups...'
             }
-            value={selectedGroups}
-            clearable
-            searchable
             onChange={(value) =>
               onChange({
                 ...user,
@@ -1946,9 +2068,9 @@ function LoginDetails({
     () =>
       LOGIN_OPTION_MSGS.map((opt) => ({
         description: i18n._(opt.description),
-        icon: () => <LoginTypeIcon type={opt.value} />,
         title: i18n._(opt.title),
         value: opt.value,
+        icon: () => <LoginTypeIcon type={opt.value} />,
       })),
     [i18n],
   )
@@ -1976,17 +2098,17 @@ function LoginDetails({
       <AnimateFadeIn delay={0.1}>
         <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
           <InputText
-            ref={firstNameRef}
             autoFocus={Boolean(autoFocusFirstName)}
+            label={t`First Name`}
+            placeholder={t`Enter first name`}
+            ref={firstNameRef}
+            value={user.firstName}
+            required
             error={getFieldRequiredError(
               'First Name',
               Boolean(showErrors),
               user.firstName,
             )}
-            label={t`First Name`}
-            placeholder={t`Enter first name`}
-            required
-            value={user.firstName}
             onChange={(value) => onChange({ ...user, firstName: value })}
           />
 
@@ -2008,12 +2130,12 @@ function LoginDetails({
       <AnimateFadeIn delay={0.15}>
         <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
           <EzTextField
+            disabled={isEditing}
             label={t`Email Address`}
             placeholder='user@company.com'
             type='email'
             value={user.email}
             required
-            disabled={isEditing}
             error={
               getFieldRequiredError(
                 'Email Address',
@@ -2032,10 +2154,10 @@ function LoginDetails({
           />
 
           <EzTextField
+            disabled={isEditing}
             label={t`Username`}
             placeholder={t`Enter username`}
             value={user.username}
-            disabled={isEditing}
             onChange={(value) => onChange({ ...user, username: value })}
           />
         </div>
@@ -2048,11 +2170,11 @@ function LoginDetails({
           </label>
           <div className='grid grid-cols-[120px_minmax(0,1fr)] gap-3'>
             <SettingsSelectField
-              clearable
               options={countryDialCodeOptions}
               placeholder={t`Code`}
-              searchable
               value={getCountrySelectValue(user.countryCode || '')}
+              clearable
+              searchable
               onChange={(value) =>
                 onChange({
                   ...user,
@@ -2093,9 +2215,9 @@ function LoginDetails({
 
               return (
                 <button
+                  disabled={isEditing}
                   key={opt.value}
                   type='button'
-                  disabled={isEditing}
                   className={[
                     'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
                     isEditing
@@ -2141,7 +2263,7 @@ function LoginDetails({
                   {opt.icon()}
 
                   <div className='min-w-0 flex-1'>
-                    <div className='text-xs font-semibold leading-snug text-[var(--gray-13)]'>
+                    <div className='text-xs leading-snug font-semibold text-[var(--gray-13)]'>
                       {opt.title}
                     </div>
                   </div>
@@ -2229,9 +2351,7 @@ function LoginDetails({
             disabled={user.loginType !== 'Password'}
             label={t`Account Expiry Date`}
             minDate={dayjs().add(1, 'day').format('YYYY-MM-DD')}
-            value={
-              user.loginType === 'Password' ? user.accountExpiryDate : ''
-            }
+            value={user.loginType === 'Password' ? user.accountExpiryDate : ''}
             onChange={(value) =>
               onChange({
                 ...user,
@@ -2293,7 +2413,10 @@ function Review({ user }: { user: DraftUser }) {
             <SummaryItem label={t`Manager`} value={user.manager || ''} />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.3}>
-            <SummaryItem label={t`Login`} value={formatLoginTypeLabel(user.loginType, t)} />
+            <SummaryItem
+              label={t`Login`}
+              value={formatLoginTypeLabel(user.loginType, t)}
+            />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.33}>
             <SummaryItem label={t`Department`} value={user.department || ''} />
@@ -2532,35 +2655,44 @@ function UserSetup({
   const wizardSteps = useMemo(() => {
     const isEditMode = editingUserId !== null
     return steps.map((s, idx) => ({
+      clickable: isEditMode ? true : undefined,
+      description: s.description,
+      disabled: isEditMode ? false : undefined,
+      icon:
+        s.key === 'login'
+          ? 'tabler:user'
+          : s.key === 'business'
+            ? 'tabler:building'
+            : s.key === 'groups'
+              ? 'tabler:users'
+              : s.key === 'authentication'
+                ? 'tabler:shield'
+                : 'tabler:check',
       id: idx,
       label: s.title,
-      description: s.description,
-      icon: s.key === 'login' ? 'tabler:user' : s.key === 'business' ? 'tabler:building' : s.key === 'groups' ? 'tabler:users' : s.key === 'authentication' ? 'tabler:shield' : 'tabler:check',
-      clickable: isEditMode ? true : undefined,
-      disabled: isEditMode ? false : undefined,
     }))
   }, [steps, editingUserId])
 
   return (
     <SettingsWizardLayout
       activeStep={activeStep}
+      headerDescription={USER_SETUP_STEP_MSGS[activeStep]?.description}
+      headerTitle={USER_SETUP_STEP_MSGS[activeStep]?.title}
+      isSaving={isSaving}
+      moduleTitle={msg`User Management`}
+      saveLabel={editingUserId ? t`Update User` : t`Save User`}
       steps={wizardSteps}
-      onStepChange={handleStepChange}
+      setupTitle={editingUserId ? msg`Edit User` : msg`Create User`}
       onBack={handleBack}
+      onBackToSettings={onBack}
+      onCancel={onCancel}
       onNext={handleNext}
       onSave={handleSave}
-      onCancel={onCancel}
-      onBackToSettings={onBack}
-      isSaving={isSaving}
-      saveLabel={editingUserId ? t`Update User` : t`Save User`}
-      moduleTitle={msg`User Management`}
-      setupTitle={editingUserId ? msg`Edit User` : msg`Create User`}
-      headerTitle={USER_SETUP_STEP_MSGS[activeStep]?.title}
-      headerDescription={USER_SETUP_STEP_MSGS[activeStep]?.description}
+      onStepChange={handleStepChange}
     >
-      <AnimatePresence mode='wait' initial={false}>
+      <AnimatePresence initial={false} mode='wait'>
         {activeStep === 0 && (
-          <AnimateFadeIn key='step-0' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-0'>
             <LoginDetails
               autoFocusFirstName={!editingUserId}
               isEditing={Boolean(editingUserId)}
@@ -2571,7 +2703,7 @@ function UserSetup({
           </AnimateFadeIn>
         )}
         {activeStep === 1 && (
-          <AnimateFadeIn key='step-1' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-1'>
             <BusinessDetails
               businessUnitOptions={businessUnitOptions}
               isLoadingRoles={isLoadingRoles}
@@ -2586,7 +2718,7 @@ function UserSetup({
           </AnimateFadeIn>
         )}
         {activeStep === 2 && (
-          <AnimateFadeIn key='step-2' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-2'>
             <GroupAssignment
               groupOptions={groupOptions}
               isLoadingGroups={isLoadingGroups}
@@ -2596,7 +2728,7 @@ function UserSetup({
           </AnimateFadeIn>
         )}
         {activeStep === 3 && (
-          <AnimateFadeIn key='step-3' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-3'>
             <Authentication
               showErrors={showErrors}
               user={draftUser}
@@ -2605,7 +2737,7 @@ function UserSetup({
           </AnimateFadeIn>
         )}
         {activeStep === 4 && (
-          <AnimateFadeIn key='step-4' className='flex flex-col gap-6 md:gap-7'>
+          <AnimateFadeIn className='flex flex-col gap-6 md:gap-7' key='step-4'>
             <Review user={draftUser} />
           </AnimateFadeIn>
         )}

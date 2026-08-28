@@ -581,7 +581,9 @@ const ColorPreference = ({ onBack }: ColorPreferenceProps) => {
   const wizardSteps = useMemo(
     () =>
       BRANDING_STEP_MSGS.map((step, index) => ({
+        clickable: true,
         description: i18n._(step.description),
+        disabled: false,
         icon: step.icon,
         id: index,
         label: i18n._(step.title),

@@ -34,6 +34,7 @@ export type ResolvedBranding = {
   encryptedBrandingName?: string
   json: BrandingJson | null
   name: string
+  tenantId?: string
 }
 
 export type SaveBrandingPayload = {
@@ -91,7 +92,7 @@ export const resolveBrandingFromResponse = (
   data: unknown,
   depth = 0,
 ): ResolvedBranding => {
-  const empty: ResolvedBranding = { json: null, name: '' }
+  const empty: ResolvedBranding = { json: null, name: '', tenantId: undefined }
   if (!data || depth > 5) return empty
 
   if (Array.isArray(data)) {
@@ -132,6 +133,10 @@ export const resolveBrandingFromResponse = (
     nestedJson.encryptedBrandingName,
   ].find((value) => typeof value === 'string' && value.trim())
 
+  const tenantCandidate = [record.tenantId, nestedJson.tenantId].find(
+    (value) => typeof value === 'string' && value.trim(),
+  )
+
   return {
     encryptedBrandingName:
       typeof encryptedCandidate === 'string'
@@ -139,6 +144,8 @@ export const resolveBrandingFromResponse = (
         : undefined,
     json,
     name: typeof nameCandidate === 'string' ? nameCandidate.trim() : '',
+    tenantId:
+      typeof tenantCandidate === 'string' ? tenantCandidate.trim() : undefined,
   }
 }
 
