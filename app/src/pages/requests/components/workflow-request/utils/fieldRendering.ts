@@ -91,6 +91,14 @@ export const buildInitialFormModel = (panels: any[]): Record<string, any> => {
         ) {
           model[field.id] = specific.defaultValue
         }
+      } else if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
+        const rowsType = specific.rowsType || 'ON_DEMAND'
+        const fixedRowCount = specific.fixedRowCount || 5
+        if (rowsType === 'FIXED') {
+          model[field.id] = Array.from({ length: fixedRowCount }, () => ({}))
+        } else {
+          model[field.id] = [{}]
+        }
       }
     }
   }
@@ -191,6 +199,8 @@ export const SUPPORTED_TYPES = new Set([
   'IMAGE_UPLOAD',
   'YES_NO_TOGGLE',
   'CONSENT',
+  'TABLE',
+  'DYNAMIC_TABLE',
   'HEADING',
   'LABEL',
   'DIVIDER',
@@ -472,6 +482,20 @@ export const isFieldFilled = (field: any, value: any): boolean => {
   }
   if (field.type === 'YES_NO_TOGGLE' || field.type === 'CONSENT') {
     return value === true
+  }
+  if (field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE') {
+    return (
+      Array.isArray(value) &&
+      value.some((row) =>
+        Object.entries(row).some(
+          ([k, v]) =>
+            !k.startsWith('_') &&
+            v !== undefined &&
+            v !== null &&
+            String(v).trim() !== '',
+        ),
+      )
+    )
   }
   return value !== undefined && value !== null && String(value).trim() !== ''
 }

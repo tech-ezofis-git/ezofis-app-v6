@@ -26,6 +26,7 @@ import {
   isFieldRequired,
 } from '../utils/fieldRendering'
 import CompactDropzone from './CompactDropzone'
+import TableFieldRenderer from './TableFieldRenderer'
 
 interface Props {
   field: any
@@ -470,6 +471,24 @@ const FieldRenderer = ({
               </button>
             )
           })}
+          {error && (
+            <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
+          )}
+        </div>
+      )
+    }
+
+    case 'TABLE':
+    case 'DYNAMIC_TABLE': {
+      return (
+        <div className='w-full'>
+          <TableFieldRenderer
+            field={field}
+            readOnly={readOnly}
+            required={required}
+            value={Array.isArray(value) ? value : []}
+            onChange={onChange}
+          />
           {error && (
             <p className='mt-1 text-12 font-medium text-red-9'>{error}</p>
           )}

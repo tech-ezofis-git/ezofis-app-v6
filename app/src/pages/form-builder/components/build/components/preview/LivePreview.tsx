@@ -12,7 +12,9 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
+import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
+import InputTime from '@/components/base/inputs/InputTime'
 import { uploadForOcr, getRepositorys, getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import {
   type Question,
@@ -461,19 +463,23 @@ const renderPreviewInput = (
     }
     case 'TIME':
       return (
-        <div className='flex items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11'>
-          <Icon height={15} name='tabler:clock' width={15} />
-          <span>{fieldValue ? String(fieldValue) : 'HH : MM AM/PM'}</span>
-        </div>
+        <InputTime
+          format={
+            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+          }
+          value={fieldValue || ''}
+          onChange={(val) => onChange(field.id, val)}
+        />
       )
     case 'DATE_TIME':
       return (
-        <div className='flex items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11'>
-          <Icon height={15} name='tabler:calendar-time' width={15} />
-          <span>
-            {fieldValue ? String(fieldValue) : 'YYYY-MM-DD  HH : MM AM/PM'}
-          </span>
-        </div>
+        <InputDateTime
+          format={
+            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+          }
+          value={fieldValue || null}
+          onChange={(val) => onChange(field.id, val)}
+        />
       )
     case 'TABLE':
       const columns = field.settings.specific.tableColumns || [
