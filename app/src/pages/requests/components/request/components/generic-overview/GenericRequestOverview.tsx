@@ -223,6 +223,7 @@ const GenericRequestOverview = ({
           formModel={formModel}
           instanceId={instanceId}
           panels={panels}
+          repositoryId={repositoryId}
           onFieldChange={onFieldChange}
           onOpenAttachment={setOpenedAttachment}
           onRequestUpload={handleRequestUpload}
