@@ -5,10 +5,13 @@ import Icon from '@/components/base/icon/Icon'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import {
+  encodeTableSumValue,
   formatFormulaExpression,
   type FormulaToken,
+  getNumericTableColumns,
   isFormulaSourceType,
   isInsideUnclosedAverage,
+  isTableFieldType,
 } from '@/pages/form-builder/helpers/formula'
 import cn from '@/utils/cn'
 
@@ -33,6 +36,8 @@ const GROUPING: { label: string; value: string }[] = [
 
 const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
   const [manualValue, setManualValue] = useState<string | number>('')
+  const [tableFieldId, setTableFieldId] = useState<string | null>(null)
+  const [columnId, setColumnId] = useState<string | null>(null)
   const tokens: FormulaToken[] =
     activeQuestion.settings.specific.formulaTokens || []
 
@@ -40,6 +45,11 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
     (field) =>
       field.id !== activeQuestion.id && isFormulaSourceType(field.type),
   )
+  const tableFields = fields.filter(
+    (field) => field.id !== activeQuestion.id && isTableFieldType(field.type),
+  )
+  const selectedTable = tableFields.find((field) => field.id === tableFieldId)
+  const numericColumns = getNumericTableColumns(selectedTable)
 
   const setTokens = (next: FormulaToken[]) => onChange(next)
 
@@ -49,9 +59,13 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
     const last = next.at(-1)
     const shouldInsertComma =
       first &&
-      (first.type === 'FIELD' || first.type === 'NUMBER') &&
+      (first.type === 'FIELD' ||
+        first.type === 'NUMBER' ||
+        first.type === 'TABLE_SUM') &&
       last &&
-      (last.type === 'FIELD' || last.type === 'NUMBER') &&
+      (last.type === 'FIELD' ||
+        last.type === 'NUMBER' ||
+        last.type === 'TABLE_SUM') &&
       isInsideUnclosedAverage(next)
 
     if (shouldInsertComma) next.push({ type: 'OPERATOR', value: ',' })
@@ -68,6 +82,16 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
     if (!Number.isFinite(parsed) || String(manualValue).trim() === '') return
     appendTokens([{ type: 'NUMBER', value: String(parsed) }])
     setManualValue('')
+  }
+
+  const addTableColumnSum = () => {
+    if (!tableFieldId || !columnId) return
+    appendTokens([
+      {
+        type: 'TABLE_SUM',
+        value: encodeTableSumValue(tableFieldId, columnId),
+      },
+    ])
   }
 
   const formulaPreview = formatFormulaExpression(tokens, fields)
@@ -103,6 +127,8 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
                 'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-bold duration-200',
                 token.type === 'FIELD' &&
                   'border-accent-soft bg-accent-soft text-accent-primary',
+                token.type === 'TABLE_SUM' &&
+                  'border-accent-soft bg-accent-soft text-accent-primary',
                 token.type === 'OPERATOR' &&
                   'border-gray-3 bg-surface-secondary text-gray-12',
                 token.type === 'NUMBER' &&
@@ -114,7 +140,9 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
               {token.type === 'FIELD'
                 ? fields.find((field) => field.id === token.value)?.label ||
                   'Deleted field'
-                : token.type === 'FUNCTION'
+                : token.type === 'TABLE_SUM'
+                  ? formatFormulaExpression([token], fields) || 'Table sum'
+                  : token.type === 'FUNCTION'
                   ? token.value.toUpperCase()
                   : token.value === '*'
                     ? '×'
@@ -225,7 +253,7 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
         <InputSelect
           placeholder={
             sourceFields.length
-              ? 'Number, currency, or counter'
+              ? 'Number, currency, counter, or calculated'
               : 'No compatible fields yet'
           }
           value={null}
@@ -239,7 +267,71 @@ const FormulaBuilder = ({ activeQuestion, fields, onChange }: Props) => {
           }
         />
         <p className='text-[10px] text-gray-7'>
-          Only Number, Currency, and Counter fields can be used in a formula.
+          Only Number, Currency, Counter, and Calculated fields can be used in a
+          formula.
+        </p>
+      </div>
+
+      <div className='space-y-2'>
+        <label className='block text-[10px] font-bold tracking-wider text-gray-7 uppercase'>
+          Sum of table column
+        </label>
+        <InputSelect
+          placeholder={
+            tableFields.length ? 'Select table' : 'No table fields yet'
+          }
+          value={
+            selectedTable
+              ? { id: selectedTable.id, name: selectedTable.label || 'Untitled' }
+              : null
+          }
+          options={tableFields.map((field) => ({
+            id: field.id,
+            name: field.label || 'Untitled',
+          }))}
+          onChange={(option) => {
+            setTableFieldId(option ? String(option.id) : null)
+            setColumnId(null)
+          }}
+        />
+        <InputSelect
+          disabled={!selectedTable}
+          placeholder={
+            !selectedTable
+              ? 'Select a table first'
+              : numericColumns.length
+                ? 'Select numeric column'
+                : 'No number, currency, counter, or calculated columns'
+          }
+          value={
+            numericColumns.find((column) => column.id === columnId)
+              ? {
+                  id: columnId as string,
+                  name:
+                    numericColumns.find((column) => column.id === columnId)
+                      ?.name || 'Column',
+                }
+              : null
+          }
+          options={numericColumns.map((column) => ({
+            id: column.id,
+            name: column.name || 'Untitled',
+          }))}
+          onChange={(option) =>
+            setColumnId(option ? String(option.id) : null)
+          }
+        />
+        <Button
+          className='w-full'
+          disabled={!tableFieldId || !columnId}
+          label='Add column sum'
+          size='sm'
+          type='button'
+          variant='outline'
+          onClick={addTableColumnSum}
+        />
+        <p className='text-[10px] text-gray-7'>
+          Adds the sum of that column across all table rows.
         </p>
       </div>
     </div>

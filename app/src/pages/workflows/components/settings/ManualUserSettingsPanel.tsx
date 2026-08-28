@@ -8,11 +8,39 @@ import {
   getGroupListQueryOptions,
   getUserListQueryOptions,
 } from '@/api/userQueries'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
+import InputTextarea from '@/components/base/inputs/InputTextarea'
+import {
+  getNodeToolType,
+  NODE_TOOL_TYPE,
+} from '@/pages/workflows/utils/nodeToolTypes'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
+
+const PDF_TEMPLATE_PLACEHOLDER = `{
+  "name": "",
+  "fields": []
+}`
+
+const toTemplateJsonString = (value: unknown): string => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return ''
+    try {
+      return JSON.stringify(JSON.parse(trimmed), null, 2)
+    } catch {
+      return value
+    }
+  }
+  if (value && typeof value === 'object') {
+    return JSON.stringify(value, null, 2)
+  }
+  return ''
+}
 
 export default function ManualUserSettingsPanel({
   node: initialNode,
@@ -88,6 +116,12 @@ export default function ManualUserSettingsPanel({
     useState<Option[]>(initialSelectedGroups)
 
   const [openBasic, setOpenBasic] = useState(true)
+  const [openGeneratePdf, setOpenGeneratePdf] = useState(true)
+  const [pdfTemplateJson, setPdfTemplateJson] = useState(() =>
+    toTemplateJsonString(nodeData.pdfTemplateJson ?? nodeData.pdfTemplate),
+  )
+  const [pdfTemplateError, setPdfTemplateError] = useState('')
+  const [jsonCopied, setJsonCopied] = useState(false)
 
   const updateNodeData = (key: string, value: any) => {
     if (currentNode) {
@@ -99,6 +133,35 @@ export default function ManualUserSettingsPanel({
         ),
       )
     }
+  }
+
+  useEffect(() => {
+    setPdfTemplateJson(
+      toTemplateJsonString(nodeData.pdfTemplateJson ?? nodeData.pdfTemplate),
+    )
+    setPdfTemplateError('')
+  }, [currentNode?.id])
+
+  const persistPdfTemplate = (value: string) => {
+    setPdfTemplateJson(value)
+    updateNodeData('pdfTemplateJson', value)
+    if (!value.trim()) {
+      setPdfTemplateError('')
+      return
+    }
+    try {
+      JSON.parse(value)
+      setPdfTemplateError('')
+    } catch {
+      setPdfTemplateError('Enter valid JSON')
+    }
+  }
+
+  const copyPdfTemplate = async () => {
+    if (!pdfTemplateJson.trim()) return
+    await navigator.clipboard?.writeText(pdfTemplateJson)
+    setJsonCopied(true)
+    window.setTimeout(() => setJsonCopied(false), 1500)
   }
 
   // Resolve placeholders (e.g., "User 7") to actual names/emails once options are loaded
@@ -321,6 +384,72 @@ export default function ManualUserSettingsPanel({
             </div>
           </div>
         </SettingsSection>
+
+        {getNodeToolType(nodeData) === NODE_TOOL_TYPE.MANUAL_USER && (
+          <SettingsSection
+            icon='lucide:file-text'
+            isOpen={openGeneratePdf}
+            title='Generate PDF'
+            variant='premium'
+            onToggle={() => setOpenGeneratePdf(!openGeneratePdf)}
+          >
+            <div className='space-y-3 rounded-xl bg-white p-4 shadow-sm'>
+              <div className='flex items-center justify-between'>
+                <div className='flex items-center gap-2.5'>
+                  <Icon
+                    className='h-4 w-4 stroke-[2] text-gray-11'
+                    name='lucide:file-text'
+                  />
+                  <div className='flex flex-col space-y-1'>
+                    <span className='text-13 font-medium text-gray-12'>
+                      Generate PDF
+                    </span>
+                    <span className='text-11 leading-tight text-gray-9'>
+                      Generate a PDF when this step starts
+                    </span>
+                  </div>
+                </div>
+                <InputCheckbox
+                  checked={Boolean(nodeData.generatePDF)}
+                  onChange={(checked) =>
+                    updateNodeData('generatePDF', checked)
+                  }
+                />
+              </div>
+
+              {Boolean(nodeData.generatePDF) && (
+                <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-13 font-medium text-gray-12'>
+                      Form template JSON{' '}
+                      <span className='text-red-11'>*</span>
+                    </span>
+                    <IconButton
+                      ariaLabel={jsonCopied ? 'Copied' : 'Copy JSON'}
+                      color={jsonCopied ? 'green' : 'gray'}
+                      disabled={!pdfTemplateJson.trim()}
+                      icon={jsonCopied ? 'lucide:check' : 'lucide:copy'}
+                      size='xs'
+                      tooltip={jsonCopied ? 'Copied' : 'Copy JSON'}
+                      type='button'
+                      variant='ghost'
+                      onClick={copyPdfTemplate}
+                    />
+                  </div>
+                  <div className='[&_textarea]:!h-[220px] [&_textarea]:max-h-[220px] [&_textarea]:overflow-y-auto [&_textarea]:font-mono [&_textarea]:text-12 [&_textarea]:resize-none'>
+                    <InputTextarea
+                      error={pdfTemplateError || undefined}
+                      placeholder={PDF_TEMPLATE_PLACEHOLDER}
+                      rows={10}
+                      value={pdfTemplateJson}
+                      onChange={persistPdfTemplate}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </SettingsSection>
+        )}
 
         <ConnectionsRouting node={currentNode as any} />
       </div>

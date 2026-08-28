@@ -766,11 +766,29 @@ const renderPreviewInput = (
         />
       )
     case 'TABLE':
+    case 'DYNAMIC_TABLE': {
       const columns = field.settings.specific.tableColumns || [
         { id: '1', name: 'Column 1', size: 'MEDIUM', type: 'SHORT_TEXT' },
         { id: '2', name: 'Column 2', size: 'MEDIUM', type: 'SHORT_TEXT' },
         { id: '3', name: 'Column 3', size: 'MEDIUM', type: 'SHORT_TEXT' },
       ]
+      const rows: Array<Record<string, unknown>> = Array.isArray(fieldValue)
+        ? fieldValue.length > 0
+          ? fieldValue
+          : [{ _rowId: '1' }, { _rowId: '2' }]
+        : [{ _rowId: '1' }, { _rowId: '2' }]
+
+      const updateCell = (
+        rowIndex: number,
+        columnId: string,
+        cellValue: string,
+      ) => {
+        const next = rows.map((row, index) =>
+          index === rowIndex ? { ...row, [columnId]: cellValue } : { ...row },
+        )
+        onChange(field.id, next)
+      }
+
       return (
         <div className='overflow-x-auto rounded-lg border border-gray-3 bg-white'>
           <table className='w-full border-collapse text-left text-xs'>
@@ -787,14 +805,32 @@ const renderPreviewInput = (
               </tr>
             </thead>
             <tbody>
-              {[1, 2].map((i) => (
-                <tr className='border-b border-gray-2 last:border-0' key={i}>
+              {rows.map((row, rowIndex) => (
+                <tr
+                  className='border-b border-gray-2 last:border-0'
+                  key={String(row._rowId || rowIndex)}
+                >
                   {columns.map((col: any) => (
                     <td className='p-2' key={col.id}>
                       <TextInput
                         placeholder='...'
                         size='xs'
+                        type={
+                          col.type === 'NUMBER' ||
+                          col.type === 'COUNTER' ||
+                          col.type === 'CURRENCY_AMOUNT'
+                            ? 'number'
+                            : 'text'
+                        }
+                        value={
+                          row[col.id] === undefined || row[col.id] === null
+                            ? ''
+                            : String(row[col.id])
+                        }
                         variant='unstyled'
+                        onChange={(event) =>
+                          updateCell(rowIndex, col.id, event.target.value)
+                        }
                       />
                     </td>
                   ))}
@@ -804,6 +840,7 @@ const renderPreviewInput = (
           </table>
         </div>
       )
+    }
     case 'SHORT_TEXT':
     case 'EMAIL':
     case 'PHONE_NUMBER':
