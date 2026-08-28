@@ -1,6 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import formApi from '@/api/form/form'
+import {
+  getGroupListQueryOptions,
+  getUserListQueryOptions,
+} from '@/api/userQueries'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
@@ -1093,6 +1098,79 @@ const Request = ({
     return !!currentUserId && assignedUserIds.includes(String(currentUserId))
   }, [assignedUserIds])
 
+  // The current activity's block carries the Manual User (INTERNAL_ACTOR)
+  // settings authored in the workflow builder - assignment mode, checklist
+  // items, document/signature requirements, mandatory fields.
+  const currentBlock = useMemo(() => {
+    if (!currentActivityId) return null
+    return (
+      (rawWorkflowData?.workflowJson?.blocks || []).find(
+        (b: any) => b.id === currentActivityId,
+      ) || null
+    )
+  }, [rawWorkflowData, currentActivityId])
+  const currentBlockSettings: Record<string, any> = currentBlock?.settings || {}
+
+  const assignedGroupIds = useMemo(
+    () => (currentBlockSettings.groups || []).map(String),
+    [currentBlockSettings],
+  )
+
+  const { data: allUsersForAssignee } = useQuery(getUserListQueryOptions())
+  const { data: allGroupsForAssignee } = useQuery(getGroupListQueryOptions())
+
+  const assigneeLabel = useMemo(() => {
+    if (!currentBlock) return undefined
+    const names: string[] = []
+    if (assignedUserIds.length && Array.isArray(allUsersForAssignee)) {
+      assignedUserIds.forEach((id: string) => {
+        const u = (allUsersForAssignee as any[]).find(
+          (candidate) => String(candidate.id ?? candidate.value) === id,
+        )
+        if (u) {
+          names.push(
+            u.name || u.value || u.loginName || u.email || `User ${id}`,
+          )
+        }
+      })
+    }
+    if (assignedGroupIds.length && Array.isArray(allGroupsForAssignee)) {
+      assignedGroupIds.forEach((id: string) => {
+        const g = (allGroupsForAssignee as any[]).find(
+          (candidate) => String(candidate.groupId ?? candidate.id) === id,
+        )
+        if (g) names.push(g.groupName || g.name || `Group ${id}`)
+      })
+    }
+    if (currentBlockSettings.isManagerEnabled) names.push('Manager')
+    if (currentBlockSettings.isToRequesterEnabled) names.push('Requester')
+    if (currentBlockSettings.isCoordinatorEnabled) names.push('Coordinator')
+    if (currentBlockSettings.isDynamicUserEnabled)
+      names.push('Dynamically assigned user')
+    if (currentBlockSettings.isMasterUserEnabled)
+      names.push('Master table lookup')
+    if (!names.length) return undefined
+    return `Pending with ${names.join(', ')}`
+  }, [
+    currentBlock,
+    currentBlockSettings,
+    assignedUserIds,
+    assignedGroupIds,
+    allUsersForAssignee,
+    allGroupsForAssignee,
+  ])
+
+  // Task-requirement gating state (Checklist / Signature), from the Manual
+  // User node's Phase-1 settings - reset whenever the active stage changes.
+  const [checklistChecked, setChecklistChecked] = useState<
+    Record<string, boolean>
+  >({})
+  const [signatureConfirmed, setSignatureConfirmed] = useState(false)
+  useEffect(() => {
+    setChecklistChecked({})
+    setSignatureConfirmed(false)
+  }, [currentActivityId, selectedItem?.transactionId])
+
   const headerActions = useMemo(() => {
     if (isApAgentStage) return []
     // Sent/Closed are read-only views of a request that has already moved
@@ -1224,6 +1302,54 @@ const Request = ({
   }, [hasAgentData, activeTabValue])
 
   const handleMoveNext = async (action: string) => {
+    const checklistItems: { id: string; label: string; required: boolean }[] =
+      Array.isArray(currentBlockSettings.checklistItems)
+        ? currentBlockSettings.checklistItems
+        : []
+    const missingChecklistItem = checklistItems.find(
+      (item) => item.required && !checklistChecked[item.id],
+    )
+    if (missingChecklistItem) {
+      showToast({
+        message: `Please complete the checklist item "${missingChecklistItem.label}" before proceeding.`,
+        variant: 'error',
+      })
+      return
+    }
+    if (currentBlockSettings.documentRequired && genericAttachments.length === 0) {
+      showToast({
+        message: 'At least one attachment is required before proceeding.',
+        variant: 'error',
+      })
+      return
+    }
+    if (currentBlockSettings.userSignature && !signatureConfirmed) {
+      showToast({
+        message: 'Please confirm your signature before proceeding.',
+        variant: 'error',
+      })
+      return
+    }
+    const mandatoryFields: string[] = Array.isArray(
+      currentBlockSettings.mandatoryFields,
+    )
+      ? currentBlockSettings.mandatoryFields
+      : []
+    if (mandatoryFields.length) {
+      const activeModel = isGenericWorkflow ? genericFormModel : formModel
+      const missingField = mandatoryFields.find((fieldId) => {
+        const val = activeModel?.[fieldId]
+        return val === undefined || val === null || val === ''
+      })
+      if (missingField) {
+        showToast({
+          message: 'Please fill all mandatory fields before proceeding.',
+          variant: 'error',
+        })
+        return
+      }
+    }
+
     try {
       setSubmitting(true)
 
@@ -1668,6 +1794,7 @@ const Request = ({
         <Header
           actions={headerActions}
           agentData={currentAgentData}
+          assigneeLabel={assigneeLabel}
           approveLoading={submitting}
           commentsCount={selectedItem?.commentsCount || 0}
           currency={currency}
@@ -1803,13 +1930,26 @@ const Request = ({
             {isGenericWorkflow ? (
               <GenericRequestOverview
                 attachments={genericAttachments}
+                checklistChecked={checklistChecked}
+                checklistItems={
+                  Array.isArray(currentBlockSettings.checklistItems)
+                    ? currentBlockSettings.checklistItems
+                    : []
+                }
+                documentRequired={!!currentBlockSettings.documentRequired}
                 formModel={genericFormModel}
                 rawWorkflowData={rawWorkflowData}
                 rightView={rightView}
                 selectedItem={request || selectedItem}
+                signatureConfirmed={signatureConfirmed}
+                userSignatureRequired={!!currentBlockSettings.userSignature}
                 setRightView={setRightView}
                 onAttachmentsChanged={refetchGenericAttachments}
+                onChecklistToggle={(id, checked) =>
+                  setChecklistChecked((prev) => ({ ...prev, [id]: checked }))
+                }
                 onFieldChange={handleGenericFieldChange}
+                onSignatureToggle={setSignatureConfirmed}
               />
             ) : (
               <Overview

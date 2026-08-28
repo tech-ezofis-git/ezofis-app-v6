@@ -30,9 +30,15 @@ interface Props {
   // fight the outer container for scroll ownership.
   disableOwnScroll?: boolean
   hasAttemptedSubmit?: boolean
+  // Field ids hidden from the current acting user by the current stage's
+  // Security & Form Access settings (formVisibilityAccess / formSecureControls).
+  hiddenFieldIds?: Set<string>
   // Overview only — scopes the local field↔attachment map to this request.
   instanceId?: string | number
   missingMandatoryFieldIds?: Set<string>
+  // Field ids the current acting user can see but not edit, from the same
+  // Security & Form Access settings (formEditAccess / formEditControls).
+  readOnlyFieldIds?: Set<string>
   repoFieldHints?: string[]
   repositoryId?: string
   viewOnly?: boolean
@@ -58,9 +64,11 @@ const WorkflowFormRenderer = ({
   disableOwnScroll,
   formModel,
   hasAttemptedSubmit,
+  hiddenFieldIds,
   instanceId,
   missingMandatoryFieldIds,
   panels,
+  readOnlyFieldIds,
   repoFieldHints,
   repositoryId,
   viewOnly,
@@ -118,7 +126,8 @@ const WorkflowFormRenderer = ({
         >
           {panels.map((panel: any, panelIndex: number) => {
             const visibleFields = (panel.fields || []).filter(
-              (field: any) => !isFieldHidden(field),
+              (field: any) =>
+                !isFieldHidden(field) && !hiddenFieldIds?.has(field.id),
             )
             if (visibleFields.length === 0) return null
 
@@ -182,7 +191,7 @@ const WorkflowFormRenderer = ({
                           repoFieldHints={repoFieldHints}
                           repositoryId={repositoryId}
                           value={formModel[field.id]}
-                          viewOnly={viewOnly}
+                          viewOnly={viewOnly || readOnlyFieldIds?.has(field.id)}
                           error={
                             hasAttemptedSubmit &&
                             missingMandatoryFieldIds?.has(field.id)

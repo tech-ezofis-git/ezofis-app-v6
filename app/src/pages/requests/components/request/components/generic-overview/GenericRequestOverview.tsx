@@ -6,6 +6,7 @@ import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
+import authUserStore from '@/stores/authUserStore'
 import {
   buildRepoFieldHints,
   buildRepoMetadata,
@@ -23,6 +24,13 @@ import Comments from '../sections/comment/Comments'
 import History from '../sections/history/History'
 import AttachmentPreviewPanel from './AttachmentPreviewPanel'
 import AttachmentSplitView from './AttachmentSplitView'
+import TaskRequirements from './TaskRequirements'
+
+interface ChecklistItem {
+  id: string
+  label: string
+  required: boolean
+}
 
 // A file picked through a form field, waiting on the one repository folder
 // field that actually varies per document before it can be posted.
@@ -42,11 +50,20 @@ interface Props {
   rawWorkflowData: any
   rightView: 'overview' | 'history' | 'attachments' | 'comments'
   selectedItem: any
+  // Manual User (INTERNAL_ACTOR) task requirements for the current stage,
+  // owned/gated by Request.tsx before it lets the action buttons submit.
+  checklistChecked?: Record<string, boolean>
+  checklistItems?: ChecklistItem[]
+  documentRequired?: boolean
+  signatureConfirmed?: boolean
+  userSignatureRequired?: boolean
   setRightView: (
     view: 'overview' | 'history' | 'attachments' | 'comments',
   ) => void
   onAttachmentsChanged?: () => void
+  onChecklistToggle?: (id: string, checked: boolean) => void
   onFieldChange: (fieldId: string, value: any) => void
+  onSignatureToggle?: (confirmed: boolean) => void
 }
 
 // Generic (non-Accounts-Payable) request detail: the submitted form
@@ -62,15 +79,73 @@ const GenericRequestOverview = ({
   rawWorkflowData,
   rightView,
   selectedItem,
+  checklistChecked = {},
+  checklistItems = [],
+  documentRequired = false,
+  signatureConfirmed = false,
+  userSignatureRequired = false,
   setRightView,
   onAttachmentsChanged,
+  onChecklistToggle,
   onFieldChange,
+  onSignatureToggle,
 }: Props) => {
   const { t } = useLingui()
   const panels = useMemo(
     () => rawWorkflowData?.formJson?.panels || [],
     [rawWorkflowData],
   )
+
+  // The current activity's block carries the Manual User (INTERNAL_ACTOR)
+  // Security & Form Access settings authored in the workflow builder -
+  // which fields this acting user can edit/see at this stage.
+  const currentBlock = useMemo(() => {
+    const activityId = selectedItem?.activityId
+    if (!activityId) return null
+    return (
+      (rawWorkflowData?.workflowJson?.blocks || []).find(
+        (b: any) => b.id === activityId,
+      ) || null
+    )
+  }, [rawWorkflowData, selectedItem?.activityId])
+  const blockSettings: Record<string, any> = currentBlock?.settings || {}
+
+  const allFieldIds = useMemo(() => {
+    const ids: string[] = []
+    panels.forEach((panel: any) =>
+      (panel.fields || []).forEach((f: any) => ids.push(String(f.id))),
+    )
+    return ids
+  }, [panels])
+
+  const currentUserId = String(authUserStore.getState().session?.id || '')
+
+  const readOnlyFieldIds = useMemo(() => {
+    const access = blockSettings.formEditAccess || 'ALL'
+    if (access === 'ALL') return undefined
+    if (access === 'NONE') return new Set(allFieldIds)
+    const rules = Array.isArray(blockSettings.formEditControls)
+      ? blockSettings.formEditControls
+      : []
+    const rule = rules.find((r: any) => String(r.userId) === currentUserId)
+    const editable = new Set((rule?.formFields || []).map(String))
+    return new Set(allFieldIds.filter((id) => !editable.has(id)))
+  }, [blockSettings, allFieldIds, currentUserId])
+
+  const hiddenFieldIds = useMemo(() => {
+    const access = blockSettings.formVisibilityAccess || 'ALL'
+    if (access === 'ALL') return undefined
+    if (access === 'NONE') return new Set(allFieldIds)
+    const rules = Array.isArray(blockSettings.formSecureControls)
+      ? blockSettings.formSecureControls
+      : []
+    const rule = rules.find((r: any) => String(r.userId) === currentUserId)
+    // No rule for this user under a CUSTOM policy - default to visible
+    // rather than surprising the user by hiding fields nobody configured.
+    if (!rule) return undefined
+    const visible = new Set((rule.formFields || []).map(String))
+    return new Set(allFieldIds.filter((id) => !visible.has(id)))
+  }, [blockSettings, allFieldIds, currentUserId])
 
   const workflowId = rawWorkflowData?.id
   const instanceId = selectedItem?.workflowInstanceId || selectedItem?.processId
@@ -277,11 +352,23 @@ const GenericRequestOverview = ({
   return (
     <div className='flex min-h-0 flex-1 overflow-hidden'>
       <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+        <TaskRequirements
+          attachmentCount={attachments.length}
+          checklistChecked={checklistChecked}
+          checklistItems={checklistItems}
+          documentRequired={documentRequired}
+          signatureConfirmed={signatureConfirmed}
+          userSignatureRequired={userSignatureRequired}
+          onChecklistToggle={onChecklistToggle}
+          onSignatureToggle={onSignatureToggle}
+        />
         <WorkflowFormRenderer
           attachments={attachments}
           formModel={formModel}
+          hiddenFieldIds={hiddenFieldIds}
           instanceId={instanceId}
           panels={panels}
+          readOnlyFieldIds={readOnlyFieldIds}
           repositoryId={repositoryId}
           onFieldChange={onFieldChange}
           onOpenAttachment={setOpenedAttachment}

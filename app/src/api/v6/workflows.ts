@@ -256,7 +256,14 @@ export interface StartWorkflowJsonPayload {
   context?: string
   envType?: string
   formData?: Record<string, any>
-  stagedFiles?: { fileId: string; repositoryId: string }[]
+  stagedFiles?: {
+    fileId: string
+    repositoryId: string
+    fieldId?: string
+    fieldName?: string
+    fileName?: string
+    itemId?: string
+  }[]
 }
 
 // Preferred start endpoint for normal (non-AP-Agent) workflows — see the
