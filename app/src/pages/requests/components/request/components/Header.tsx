@@ -43,6 +43,7 @@ interface HeaderProps {
    * or Share, all of which are AP-specific or not yet wired for a generic
    * workflow instance. */
   simple?: boolean
+  assigneeLabel?: string
   stage?: any
   status?: string
   ticketUserId?: string
@@ -165,6 +166,7 @@ const Header: React.FC<HeaderProps> = ({
   rightView,
   showApprove: _showApprove,
   simple = false,
+  assigneeLabel,
   stage,
   status = 'Pending Review',
   ticketUserId,
@@ -521,6 +523,13 @@ const Header: React.FC<HeaderProps> = ({
             {stage && (
               <span className='animate-in fade-in slide-in-from-left-2 inline-flex items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs dark:border-purple-9/30 dark:bg-purple-950/40 dark:text-purple-400'>
                 {stage}
+              </span>
+            )}
+
+            {assigneeLabel && (
+              <span className='animate-in fade-in slide-in-from-left-2 inline-flex items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+                <Icon className='size-3' name='lucide:user' />
+                {assigneeLabel}
               </span>
             )}
           </div>

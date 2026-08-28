@@ -1,4 +1,5 @@
 import type { Edge, Node } from '@xyflow/react'
+import { generateId } from './generateId'
 import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 
 function getNodeDefaults(toolType: string) {
@@ -450,6 +451,71 @@ export const importWorkflow = (
         toolType: normalizeNodeToolType(toolType),
         type: nodeType,
         warning: false,
+
+        // Manual User (INTERNAL_ACTOR) - General / Action-By
+        isManagerEnabled: block.settings?.isManagerEnabled ?? false,
+        isToRequesterEnabled: block.settings?.isToRequesterEnabled ?? false,
+        isDynamicUserEnabled: block.settings?.isDynamicUserEnabled ?? false,
+        dynamicUserField: block.settings?.dynamicUserField ?? null,
+        isMasterUserEnabled: block.settings?.isMasterUserEnabled ?? false,
+        masterUserColumn: block.settings?.masterUserColumn ?? '',
+        isActedActivityEnabled:
+          block.settings?.isActedActivityEnabled ?? false,
+        actedActivityBlockId: block.settings?.actedActivityBlockId ?? null,
+        isCoordinatorEnabled: block.settings?.isCoordinatorEnabled ?? false,
+        internalForward: block.settings?.internalForward ?? false,
+        forwardedUserAction: block.settings?.forwardedUserAction ?? '',
+        internalForwardUser: Array.isArray(block.settings?.internalForwardUser)
+          ? block.settings.internalForwardUser.map(String)
+          : [],
+        internalForwardGroup: Array.isArray(
+          block.settings?.internalForwardGroup,
+        )
+          ? block.settings.internalForwardGroup.map(String)
+          : [],
+        partialApprove: block.settings?.partialApprove ?? 'ALL',
+        fullApprovalAction: block.settings?.fullApprovalAction ?? '',
+        documentRequired: block.settings?.documentRequired ?? false,
+        userSignature: block.settings?.userSignature ?? false,
+        generatePDFFields: Array.isArray(block.settings?.generatePDFFields)
+          ? block.settings.generatePDFFields.map(String)
+          : [],
+        hasFooter: block.settings?.hasFooter ?? false,
+        footerText: block.settings?.footerText ?? '',
+        generateCSV: block.settings?.generateCSV ?? false,
+        generateCSVFields: Array.isArray(block.settings?.generateCSVFields)
+          ? block.settings.generateCSVFields.map(String)
+          : [],
+
+        // Manual User - Security & Form Access
+        formEditAccess: block.settings?.formEditAccess ?? 'ALL',
+        formEditControls: Array.isArray(block.settings?.formEditControls)
+          ? block.settings.formEditControls.map((r: any) => ({
+              id: r.id || generateId(),
+              formFields: Array.isArray(r.formFields) ? r.formFields : [],
+              userId: String(r.userId ?? ''),
+            }))
+          : [],
+        formVisibilityAccess: block.settings?.formVisibilityAccess ?? 'ALL',
+        formSecureControls: Array.isArray(block.settings?.formSecureControls)
+          ? block.settings.formSecureControls.map((r: any) => ({
+              id: r.id || generateId(),
+              formFields: Array.isArray(r.formFields) ? r.formFields : [],
+              userId: String(r.userId ?? ''),
+            }))
+          : [],
+        mandatoryFields: Array.isArray(block.settings?.mandatoryFields)
+          ? block.settings.mandatoryFields.map(String)
+          : [],
+
+        // Manual User - Checklist
+        checklistItems: Array.isArray(block.settings?.checklistItems)
+          ? block.settings.checklistItems.map((i: any) => ({
+              id: i.id || generateId(),
+              label: i.label || '',
+              required: i.required !== false,
+            }))
+          : [],
         ...apAgentUi,
         // specifically map the legacy block properties we might need for rendering
         // but avoid polluting the new structure with unmapped settings

@@ -9,6 +9,15 @@ export interface StagedFile {
   fileId: string
   repositoryId: string
   fileName?: string
+  // Identify which FILE_UPLOAD/IMAGE_UPLOAD field this entry came from, so a
+  // form with multiple file fields can be re-associated on the backend.
+  // Undefined for extraAttachments (sidebar attachments aren't tied to a
+  // field). itemId mirrors fileId, matching the convention already used by
+  // FieldRenderer's onOpenAttachment call.
+  fieldId?: string
+  fieldName?: string
+  itemId?: string
+  jsonId?: string
 }
 
 const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
@@ -48,8 +57,12 @@ export const buildStartWorkflowPayload = (
       if (FILE_FIELD_TYPES.has(field.type)) {
         if (value.fileId && value.repositoryId) {
           stagedFiles.push({
+            fieldId: field.id,
+            fieldName: field.label,
             fileId: value.fileId,
             fileName: value.fileName,
+            itemId: value.fileId,
+            jsonId: field.id,
             repositoryId: value.repositoryId,
           })
         }

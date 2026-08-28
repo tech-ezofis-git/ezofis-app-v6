@@ -2,6 +2,7 @@ import { type Node, useEdges, useNodes, useReactFlow } from '@xyflow/react'
 import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import {
   getNodeToolType,
   NODE_TOOL_TYPE,
@@ -14,7 +15,11 @@ interface ConnectionsRoutingProps {
 
 interface ConnectionWithData {
   action: string
+  confirm: boolean
   edgeId: string
+  passwordAccess: boolean
+  remarks: boolean
+  signature: boolean
   targetId: string
   targetLabel: string
   targetToolType: string
@@ -46,6 +51,16 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     )
   }
 
+  const onUpdateFlag = (
+    edgeId: string,
+    key: 'remarks' | 'confirm' | 'passwordAccess' | 'signature',
+    value: boolean,
+  ) => {
+    setEdges((eds) =>
+      eds.map((e) => (e.id === edgeId ? { ...e, data: { ...e.data, [key]: value } } : e)),
+    )
+  }
+
   // Find all edges coming out of this node
   const outgoingEdges = edges.filter((e) => e.source === node.id)
 
@@ -63,9 +78,14 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     .filter((edge) => nodes.some((n) => n.id === edge.target))
     .map((edge) => {
       const targetNode = nodes.find((n) => n.id === edge.target)
+      const edgeData = (edge.data || {}) as Record<string, unknown>
       return {
-        action: getRoutingAction(edge.data as Record<string, unknown>),
+        action: getRoutingAction(edgeData),
+        confirm: !!edgeData.confirm,
         edgeId: edge.id,
+        passwordAccess: !!edgeData.passwordAccess,
+        remarks: !!edgeData.remarks,
+        signature: !!edgeData.signature,
         targetId: edge.target,
         targetLabel: (targetNode?.data?.label as string) || 'Next Step',
         targetToolType: getNodeToolType(targetNode?.data),
@@ -135,6 +155,45 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
                     }
                   }}
                 />
+              </div>
+
+              <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1'>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Remarks required</span>
+                  <InputSwitch
+                    checked={conn.remarks}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'remarks', checked)
+                    }
+                  />
+                </div>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Confirmation dialog</span>
+                  <InputSwitch
+                    checked={conn.confirm}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'confirm', checked)
+                    }
+                  />
+                </div>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Password verification</span>
+                  <InputSwitch
+                    checked={conn.passwordAccess}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'passwordAccess', checked)
+                    }
+                  />
+                </div>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Signature required</span>
+                  <InputSwitch
+                    checked={conn.signature}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'signature', checked)
+                    }
+                  />
+                </div>
               </div>
             </div>
           ))

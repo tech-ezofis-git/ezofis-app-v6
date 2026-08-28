@@ -95,6 +95,42 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
         : []
     }
 
+    // Normalize Manual User (INTERNAL_ACTOR) option-array fields to plain IDs
+    const toIdArray = (val: any): string[] =>
+      Array.isArray(val)
+        ? val.map((v: any) => (typeof v === 'object' ? String(v.id ?? v.value ?? v) : String(v)))
+        : []
+
+    if (Array.isArray(data.internalForwardUser)) {
+      settings.internalForwardUser = toIdArray(data.internalForwardUser)
+    }
+    if (Array.isArray(data.internalForwardGroup)) {
+      settings.internalForwardGroup = toIdArray(data.internalForwardGroup)
+    }
+    if (Array.isArray(data.generatePDFFields)) {
+      settings.generatePDFFields = toIdArray(data.generatePDFFields)
+    }
+    if (Array.isArray(data.generateCSVFields)) {
+      settings.generateCSVFields = toIdArray(data.generateCSVFields)
+    }
+    if (data.dynamicUserField && typeof data.dynamicUserField === 'object') {
+      settings.dynamicUserField = String(
+        (data.dynamicUserField as any).id ?? '',
+      )
+    }
+    if (Array.isArray(data.formEditControls)) {
+      settings.formEditControls = data.formEditControls.map((r: any) => ({
+        formFields: Array.isArray(r.formFields) ? r.formFields : [],
+        userId: String(r.userId ?? ''),
+      }))
+    }
+    if (Array.isArray(data.formSecureControls)) {
+      settings.formSecureControls = data.formSecureControls.map((r: any) => ({
+        formFields: Array.isArray(r.formFields) ? r.formFields : [],
+        userId: String(r.userId ?? ''),
+      }))
+    }
+
     // Reconstruct nested settings for specific types
     if (
       toolType === NODE_TOOL_TYPE.GMAIL ||
