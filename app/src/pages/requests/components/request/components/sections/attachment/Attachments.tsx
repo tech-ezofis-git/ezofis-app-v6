@@ -5,7 +5,9 @@ import { twMerge } from 'tailwind-merge'
 import type { RepositoryFieldSchema } from '@/pages/requests/utils/repoFolderMetadata'
 import fileApi from '@/api/file/file'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   type AttachmentItem,
@@ -263,6 +265,7 @@ export default function Attachments({
   // Hidden for now; pass showRelatedFinder={true} to restore Find related documents.
   showRelatedFinder = false,
   workflowId,
+  onClose,
   onOpenHistory,
   onOpenMailShare,
   onSelect,
@@ -561,13 +564,55 @@ export default function Attachments({
   }
 
   return (
-    <div className='relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'>
+    <div
+      className={
+        onClose
+          ? 'flex h-full min-h-0 w-full flex-col font-sans'
+          : 'relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'
+      }
+    >
       <input
         className='hidden'
         ref={fileInputRef}
         type='file'
         onChange={onFileChange}
       />
+
+      {onClose && (
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+          <span className='text-xs font-semibold text-gray-12'>
+            {t`Attachments`} ({files.length})
+          </span>
+          <div className='flex items-center gap-1'>
+            {canUpload && !isLoading && (
+              <Button
+                disabled={isUploading}
+                icon='tabler:upload'
+                label={isUploading ? t`Uploading...` : t`Upload`}
+                loading={isUploading}
+                size='sm'
+                type='button'
+                onClick={() => fileInputRef.current?.click()}
+              />
+            )}
+            <IconButton
+              ariaLabel={t`Close`}
+              icon='tabler:x'
+              size='sm'
+              variant='ghost'
+              onClick={onClose}
+            />
+          </div>
+        </div>
+      )}
+
+      <div
+        className={
+          onClose
+            ? 'relative min-h-0 flex-1 overflow-y-auto px-4 py-4'
+            : 'contents'
+        }
+      >
 
       {showRelatedFinder ? (
         <RelatedDocumentsFinder
@@ -586,7 +631,7 @@ export default function Attachments({
         />
       ) : null}
 
-      {canUpload && !isLoading && (
+      {canUpload && !isLoading && !onClose && (
         <div className='mb-3 flex shrink-0 justify-end'>
           <Button
             disabled={isUploading}
@@ -686,27 +731,30 @@ export default function Attachments({
                       </span>
                     )}
                   </div>
-                  <div className='mt-0.5 flex flex-wrap items-center gap-2'>
+                  <div className='mt-0.5 flex min-w-0 items-center gap-2'>
                     {file.isAiMatch ? (
                       <span className='text-[11px] text-[var(--gray-9)]'>
                         Added just now · from AI cross-reference
                       </span>
                     ) : (
                       <>
-                        <span className='text-[11px] text-gray-8'>
+                        <span className='shrink-0 text-[11px] text-gray-8'>
                           {file.createdAt
                             ? formatUtcToLocalDate(file.createdAt)
                             : 'Unknown date'}
                         </span>
                         {file.uploadedBy && (
                           <>
-                            <span className='size-0.5 rounded-full bg-gray-4' />
-                            <span
-                              className='line-clamp-1 max-w-[120px] text-[11px] font-medium text-gray-9'
-                              title={file.uploadedBy}
+                            <span className='size-0.5 shrink-0 rounded-full bg-gray-4' />
+                            <Tooltip
+                              className='min-w-0 max-w-full flex-1 justify-start'
+                              content={file.uploadedBy}
+                              position='top'
                             >
-                              {file.uploadedBy}
-                            </span>
+                              <span className='block min-w-0 w-full truncate text-[11px] font-medium text-gray-9'>
+                                {file.uploadedBy}
+                              </span>
+                            </Tooltip>
                           </>
                         )}
                       </>
@@ -725,6 +773,7 @@ export default function Attachments({
             )
           })
         )}
+      </div>
       </div>
     </div>
   )

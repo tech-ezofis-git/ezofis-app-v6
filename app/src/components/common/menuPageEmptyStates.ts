@@ -17,10 +17,14 @@ export type MenuPageEmptyVariant = 'initial' | 'filtered' | 'unavailable'
 
 type EmptyContent = {
   description: string
+  // Used when the empty view has no create/start action (some users cannot
+  // raise a new request). Falls back to `description` when omitted.
+  descriptionWithoutAction?: string
   icon: string
   primaryActionLabel?: string
   secondaryActionLabel?: string
   title: string
+  titleWithoutAction?: string
 }
 
 export const MENU_PAGE_EMPTY_STATES: MenuPageEmptyStateConfig = {
@@ -54,14 +58,17 @@ export const MENU_PAGE_EMPTY_STATES: MenuPageEmptyStateConfig = {
     },
     initial: {
       description:
-        'Submit a new request to start processing invoices and track them in your inbox.',
+        'Start a request from any workflow. New items will appear here so you can review and track them.',
+      descriptionWithoutAction:
+        "There's nothing waiting for you right now. Requests assigned to you will appear here when they need your attention.",
       icon: 'tabler:inbox',
       primaryActionLabel: 'New Request',
-      title: 'No requests yet',
+      title: 'Your inbox is empty',
+      titleWithoutAction: 'Nothing assigned to you',
     },
     unavailable: {
       description:
-        'We could not find a workflow for your account. Complete AP setup or contact your administrator if this continues.',
+        'No workflow is available for your account. Refresh the page or contact your administrator if this continues.',
       icon: 'lucide:folder-search',
       title: 'No workflow found',
     },

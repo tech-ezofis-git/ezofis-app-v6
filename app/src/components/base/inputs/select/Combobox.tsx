@@ -48,6 +48,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
     },
     ref,
   ) => {
+    const isLocked = Boolean(rest.disabled || rest.readOnly)
     const comboboxStore = useCombobox({
       onDropdownClose: () => {
         onSearch('')
@@ -57,10 +58,10 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
     })
 
     useEffect(() => {
-      if (!autoOpen) return
+      if (!autoOpen || isLocked) return
       comboboxStore.openDropdown()
       // eslint-disable-next-line react-hooks/exhaustive-deps -- open once when autoOpen is set
-    }, [autoOpen])
+    }, [autoOpen, isLocked])
 
     useEffect(() => {
       if (comboboxStore.dropdownOpened) {
@@ -124,7 +125,10 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
           value={value}
           variant={variant}
           onChange={onChange}
-          onClick={() => comboboxStore.toggleDropdown()}
+          onClick={() => {
+            if (isLocked) return
+            comboboxStore.toggleDropdown()
+          }}
         />
 
         <Base.Dropdown

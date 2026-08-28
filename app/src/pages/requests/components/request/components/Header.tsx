@@ -483,20 +483,20 @@ const Header: React.FC<HeaderProps> = ({
       ]
 
     return (
-      <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
-        <div className='flex items-center gap-4 p-0'>
+      <OverlayHeaderWrapper className='h-14 flex-nowrap justify-between gap-3 overflow-hidden px-4'>
+        <div className='flex min-w-0 flex-1 items-center gap-2 overflow-hidden'>
           <IconButton
-            className='cursor-pointer hover:bg-[var(--gray-2)]'
+            className='shrink-0 cursor-pointer hover:bg-gray-2'
             color='gray'
             icon='tabler:arrow-left'
             size='sm'
             variant='ghost'
             onClick={onBack}
           />
-          <div className='flex items-center gap-3'>
+          <div className='flex min-w-0 items-center gap-2 overflow-hidden'>
             <Tooltip content={t`Previous Request`} position='bottom'>
               <IconButton
-                className='size-7 cursor-pointer hover:bg-surface'
+                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
                 color='gray'
                 disabled={!onPrev}
                 icon='tabler:chevron-left'
@@ -505,12 +505,12 @@ const Header: React.FC<HeaderProps> = ({
                 onClick={onPrev}
               />
             </Tooltip>
-            <h1 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
+            <h1 className='shrink-0 text-[15px] font-semibold tracking-tight whitespace-nowrap text-gray-13'>
               {requestNo}
             </h1>
             <Tooltip content={t`Next Request`} position='bottom'>
               <IconButton
-                className='size-7 cursor-pointer hover:bg-surface'
+                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
                 color='gray'
                 disabled={!onNext}
                 icon='tabler:chevron-right'
@@ -521,61 +521,88 @@ const Header: React.FC<HeaderProps> = ({
             </Tooltip>
 
             {stage && (
-              <span className='animate-in fade-in slide-in-from-left-2 inline-flex items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs dark:border-purple-9/30 dark:bg-purple-950/40 dark:text-purple-400'>
-                {stage}
-              </span>
+              <Tooltip
+                className='min-w-0 max-w-[11rem]'
+                content={String(stage)}
+                position='bottom'
+              >
+                <span className='inline-flex min-w-0 max-w-full items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+                  <span className='truncate'>{stage}</span>
+                </span>
+              </Tooltip>
             )}
 
             {assigneeLabel && (
-              <span className='animate-in fade-in slide-in-from-left-2 inline-flex items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
-                <Icon className='size-3' name='lucide:user' />
-                {assigneeLabel}
-              </span>
+              <Tooltip
+                className='min-w-0 max-w-[16rem]'
+                content={assigneeLabel}
+                position='bottom'
+              >
+                <span className='inline-flex min-w-0 max-w-full items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+                  <Icon className='size-3 shrink-0' name='lucide:user' />
+                  <span className='min-w-0 truncate'>{assigneeLabel}</span>
+                </span>
+              </Tooltip>
             )}
           </div>
         </div>
 
-        <div className='flex items-center gap-3'>
+        <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
           {(raisedByDisplay || raisedAt || lastActionAt) && (
-            <div className='hidden md:flex items-center gap-3 border-r border-[var(--gray-3)] pr-3 text-[12px] text-[var(--gray-11)]'>
+            <div className='hidden min-w-0 max-w-[28rem] items-center gap-2.5 border-r border-gray-3 pr-3 text-[12px] text-gray-11 md:flex'>
               {raisedByDisplay && (
-                <div className='flex items-center gap-1.5' title={t`Raised By`}>
-                  <Icon className='size-3.5 text-[var(--gray-9)]' name='lucide:user' />
-                  <span className='font-medium text-[var(--gray-12)]'>
-                    {raisedByDisplay}
-                  </span>
-                </div>
+                <Tooltip
+                  className='min-w-0 max-w-[9rem] lg:max-w-[12rem]'
+                  content={String(raisedByDisplay)}
+                  position='bottom'
+                >
+                  <div className='flex min-w-0 max-w-full items-center gap-1.5'>
+                    <Icon
+                      className='size-3.5 shrink-0 text-gray-9'
+                      name='lucide:user'
+                    />
+                    <span className='min-w-0 truncate font-medium text-gray-12'>
+                      {raisedByDisplay}
+                    </span>
+                  </div>
+                </Tooltip>
               )}
 
               {raisedAt && (
-                <div className='flex items-center gap-1.5' title={t`Raised Date`}>
-                  <Icon className='size-3.5 text-[var(--gray-9)]' name='lucide:calendar' />
+                <div
+                  className='hidden shrink-0 items-center gap-1.5 whitespace-nowrap lg:flex'
+                  title={t`Raised Date`}
+                >
+                  <Icon
+                    className='size-3.5 shrink-0 text-gray-9'
+                    name='lucide:calendar'
+                  />
                   <span>{formatRaisedDate(raisedAt)}</span>
                 </div>
               )}
 
               {(lastActionAt || raisedAt) && (
                 <div
-                  className='flex items-center gap-1.5 rounded-full border border-orange-4 bg-orange-2 px-2.5 py-0.5 text-[11px] font-medium text-orange-11'
+                  className='flex shrink-0 items-center gap-1.5 rounded-full border border-orange-4 bg-orange-2 px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-orange-11'
                   title={t`Time running from last action`}
                 >
-                  <Icon className='size-3 text-orange-9' name='lucide:clock' />
+                  <Icon className='size-3 shrink-0 text-orange-9' name='lucide:clock' />
                   <span>{formatElapsedTime(lastActionAt || raisedAt)}</span>
                 </div>
               )}
             </div>
           )}
-          <div className='flex items-center gap-1'>
+          <div className='flex shrink-0 items-center gap-1'>
             {rightViewTabs.map((tab) => (
               <Tooltip content={tab.label} key={tab.id} position='bottom'>
                 <button
                   aria-label={tab.label}
                   type='button'
                   className={cn(
-                    'flex size-8 cursor-pointer items-center justify-center rounded-lg transition-all hover:bg-[var(--gray-2)] active:scale-95',
+                    'flex size-8 cursor-pointer items-center justify-center rounded-lg transition-all hover:bg-gray-2 active:scale-95',
                     rightView === tab.id
-                      ? 'bg-[var(--primary-2)] text-[var(--primary-11)]'
-                      : 'text-[var(--gray-10)]',
+                      ? 'bg-primary-2 text-primary-11'
+                      : 'text-gray-10',
                   )}
                   onClick={() => setRightView(tab.id)}
                 >
@@ -592,7 +619,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           {!isProcessing && actions && actions.length > 0 && (
-            <div className='flex items-center gap-2 border-l border-[var(--gray-3)] pl-3'>
+            <div className='flex shrink-0 items-center gap-2 border-l border-gray-3 pl-3'>
               {actions.map((action: any) => {
                 const label = String(action?.label || '').toLowerCase()
                 let btnColor:

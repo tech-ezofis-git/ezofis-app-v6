@@ -32,9 +32,9 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   // Clicking a repository field highlights its value in the file preview —
   // focusRequestId is bumped on every click (even re-clicking the same
   // field) so the viewer re-scrolls to it each time.
-  const [activeHighlightTerm, setActiveHighlightTerm] = useState<
-    string | null
-  >(null)
+  const [activeHighlightTerm, setActiveHighlightTerm] = useState<string | null>(
+    null,
+  )
   const [focusRequestId, setFocusRequestId] = useState(0)
 
   const handleFieldFocus = (value: any) => {
@@ -112,15 +112,14 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
     setIsConfirmingUpload(false)
     if (!result.success) {
       showToast({
-        message:
-          submitError || t`Failed to upload the file. Please try again.`,
+        message: submitError || t`Failed to upload the file. Please try again.`,
         variant: 'error',
       })
     }
   }
 
   return (
-    <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
+    <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
       <Header
         activePanel={activePanel}
         attachmentCount={attachments.length}
@@ -151,7 +150,7 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
           <p className='text-14 font-medium text-gray-12'>{loadError}</p>
         </AnimateFadeIn>
       ) : (
-        <div className='flex min-h-0 flex-1 overflow-hidden'>
+        <div className='flex min-h-0 min-w-0 flex-1 overflow-hidden'>
           {!needsManualUpload ? (
             // Plain form view — covers "no file yet", "still extracting"
             // (the dropzone/field itself shows its own loading state), and
@@ -182,7 +181,6 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
                 />
               </div>
               <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-                <h3 className='mb-3 text-14 font-bold text-gray-13'>{t`Repository Fields`}</h3>
                 <div className='min-h-0 flex-1 overflow-y-auto pr-1'>
                   <RepoFieldsPanel
                     descriptors={repoFieldDescriptors}

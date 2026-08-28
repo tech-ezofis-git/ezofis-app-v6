@@ -603,7 +603,6 @@ const ColorPreference = ({ onBack }: ColorPreferenceProps) => {
         moduleTitle={onBack ? msg`Branding` : undefined}
         saveLabel={t`Save Branding`}
         steps={wizardSteps}
-        setupTitle={onBack ? msg`Configure Branding` : undefined}
         onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={() => setActiveStep(0)}

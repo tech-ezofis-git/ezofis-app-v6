@@ -9,6 +9,47 @@ import {
 } from '../utils/inboxList.utils'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
+const toFiniteCount = (value: unknown): number | null => {
+  const count = Number(value)
+  return Number.isFinite(count) && count >= 0 ? count : null
+}
+
+const unwrapListPayload = (raw: unknown): Record<string, unknown> => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const record = raw as Record<string, unknown>
+  if (Array.isArray(record.items) || record.totalCount != null) return record
+  if (
+    record.data &&
+    typeof record.data === 'object' &&
+    !Array.isArray(record.data)
+  ) {
+    return record.data as Record<string, unknown>
+  }
+  return record
+}
+
+const readListItems = (payload: Record<string, unknown>): any[] =>
+  Array.isArray(payload.items) ? payload.items : []
+
+const readListTotalCount = (
+  payload: Record<string, unknown>,
+  itemCount: number,
+): number => {
+  const meta =
+    payload.meta && typeof payload.meta === 'object'
+      ? (payload.meta as Record<string, unknown>)
+      : null
+  const fromApi =
+    toFiniteCount(payload.totalCount) ??
+    toFiniteCount(payload.TotalCount) ??
+    toFiniteCount(payload.totalItems) ??
+    toFiniteCount(payload.total) ??
+    toFiniteCount(meta?.totalCount) ??
+    toFiniteCount(meta?.totalItems)
+  if (fromApi != null && (fromApi > 0 || itemCount === 0)) return fromApi
+  return itemCount
+}
+
 export const transformProcess = (
   process: any,
   groupKey: string,
@@ -205,17 +246,17 @@ const fetchInboxDataFn = async (
       if (sentRes.error) {
         throw new Error(sentRes.error)
       }
-      const responseData = sentRes.data || {}
+      const payload = unwrapListPayload(sentRes.data)
+      const items = readListItems(payload)
       return {
         data: [
           {
             key: 'root',
-            value: responseData.items || [],
+            value: items,
           },
         ],
         meta: {
-          totalItems:
-            responseData.totalCount || responseData.items?.length || 0,
+          totalItems: readListTotalCount(payload, items.length),
         },
       }
     }
@@ -228,17 +269,17 @@ const fetchInboxDataFn = async (
       if (completedRes.error) {
         throw new Error(completedRes.error)
       }
-      const responseData = completedRes.data || {}
+      const payload = unwrapListPayload(completedRes.data)
+      const items = readListItems(payload)
       return {
         data: [
           {
             key: 'root',
-            value: responseData.items || [],
+            value: items,
           },
         ],
         meta: {
-          totalItems:
-            responseData.totalCount || responseData.items?.length || 0,
+          totalItems: readListTotalCount(payload, items.length),
         },
       }
     }
@@ -251,12 +292,14 @@ const fetchInboxDataFn = async (
       if (sentRes.error) throw new Error(sentRes.error)
       if (completedRes.error) throw new Error(completedRes.error)
 
-      const sentItems = sentRes.data?.items || []
-      const completedItems = completedRes.data?.items || []
+      const sentPayload = unwrapListPayload(sentRes.data)
+      const completedPayload = unwrapListPayload(completedRes.data)
+      const sentItems = readListItems(sentPayload)
+      const completedItems = readListItems(completedPayload)
       const combinedData = [...sentItems, ...completedItems]
       const totalItems =
-        (sentRes.data?.totalCount || sentItems.length) +
-        (completedRes.data?.totalCount || completedItems.length)
+        readListTotalCount(sentPayload, sentItems.length) +
+        readListTotalCount(completedPayload, completedItems.length)
 
       return {
         data: [
@@ -281,17 +324,17 @@ const fetchInboxDataFn = async (
       if (v6Res.error) {
         throw new Error(v6Res.error)
       }
-      const responseData = v6Res.data || {}
+      const payload = unwrapListPayload(v6Res.data)
+      const items = readListItems(payload)
       return {
         data: [
           {
             key: 'root',
-            value: responseData.items || [],
+            value: items,
           },
         ],
         meta: {
-          totalItems:
-            responseData.totalCount || responseData.items?.length || 0,
+          totalItems: readListTotalCount(payload, items.length),
         },
       }
     }
@@ -486,12 +529,8 @@ export const useInboxData = (
               .filter((group) => group.items.length > 0)
           : groupedData
 
-      const tabTotalItems =
-        activeTab === 'Exceptions'
-          ? exceptionsCount
-          : activeTab === 'Inbox'
-            ? inboxTabCount
-            : totalItems
+      let tabTotalItems = totalItems > 0 ? totalItems : inboxTabCount
+      if (activeTab === 'Exceptions') tabTotalItems = exceptionsCount
 
       return {
         data: filteredGroupedData,

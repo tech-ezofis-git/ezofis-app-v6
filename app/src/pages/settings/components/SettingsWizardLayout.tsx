@@ -84,13 +84,20 @@ export default function SettingsWizardLayout({
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const breadcrumbConfig = useMemo(() => {
-    if (!resolvedModuleTitle || !resolvedSetupTitle) return { items: [] }
+    if (!resolvedModuleTitle) return { items: [] }
+
+    const items = [
+      { key: 'settings', label: t`Settings` },
+      resolvedSetupTitle
+        ? { key: 'module', label: resolvedModuleTitle }
+        : { label: resolvedModuleTitle },
+    ]
+    if (resolvedSetupTitle) {
+      items.push({ label: resolvedSetupTitle })
+    }
+
     return {
-      items: [
-        { key: 'settings', label: t`Settings` },
-        { key: 'module', label: resolvedModuleTitle },
-        { label: resolvedSetupTitle },
-      ],
+      items,
       onNavigate: (key: string) => {
         if (key === 'settings') {
           if (onBackToSettings) {

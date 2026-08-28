@@ -1,26 +1,24 @@
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
+import {
+  applyFilenamePreFill,
+  getMissingIndexingFields,
+  type RepositoryFieldSchema,
+} from '@/pages/requests/utils/repoFolderMetadata'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
-import InputSelect from '@/components/base/inputs/InputSelect'
-import InputText from '@/components/base/inputs/InputText'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import folderApi from '@/pages/folders/api/folderApi'
 import { getFileExtension } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { useAttachmentPreviewUrl } from '@/pages/requests/hooks/useAttachmentPreviewUrl'
-import {
-  parseFieldOptionValues,
-  type RepositoryFieldSchema,
-} from '@/pages/requests/utils/repoFolderMetadata'
 import type { DetailCard } from './DocumentFieldCards'
 import DocumentFieldCards from './DocumentFieldCards'
+import IndexingFieldsForm from './IndexingFieldsForm'
 
 interface Props {
-  // Every folder-structure field of the repository, deepest last. Only used
-  // for a not-yet-uploaded file, which has no repository item to read field
-  // data back from yet — an already-uploaded attachment shows the same
-  // sectioned cards the folders' document view does instead.
+  // Every folder-structure field of the repository. Used as editable
+  // indexing controls while a file is still being uploaded.
   folderFields: RepositoryFieldSchema[]
   title: string
   // An already-uploaded attachment (preview + field data are fetched from
@@ -30,15 +28,12 @@ interface Props {
   // URL); mutually exclusive with `attachment`.
   file?: File | null
   isSubmitting?: boolean
-  // Only used for the pending-upload fallback cards (attachment mode fetches
-  // its own real field data — see the getDocumentDetail effect below).
+  // Seeded values for the pending-upload form (inherited from an existing
+  // attachment on this request, OCR, and matching form fields).
   metadata?: Record<string, string>
-  // Set only in the upload flow — the one field the uploader must fill in
-  // before the file can be posted.
-  promptField?: RepositoryFieldSchema | null
   repositoryId?: string | number
   onClose: () => void
-  onConfirm?: (value: string) => void
+  onConfirm?: (values: Record<string, string>) => void
 }
 
 const isPdf = (name: string, type?: string) =>
@@ -48,22 +43,34 @@ const isImage = (name: string, type?: string) =>
   Boolean(type?.startsWith('image/')) ||
   ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(getFileExtension(name))
 
+const seedIndexingValues = (
+  folderFields: RepositoryFieldSchema[],
+  metadata?: Record<string, string>,
+  fileName?: string,
+): Record<string, string> => {
+  const next: Record<string, string> = {}
+  for (const field of folderFields) {
+    next[field.sqlColumnName] = String(
+      metadata?.[field.sqlColumnName] || metadata?.[field.name] || '',
+    ).trim()
+  }
+  return applyFilenamePreFill(next, folderFields, fileName)
+}
+
 // Full-screen document workspace for a generic request's attachments: file
 // preview on the left, repository fields on the right. For an
 // already-uploaded file the right pane is the same workspace-driven field
 // UI the folders' document view uses (folderApi.getDocumentDetail →
-// infoCards → DocumentFieldCards), so a document reads identically whether
-// it's opened from Folders or from a request. For a file still being
-// uploaded there is no repository item to read yet, so the pane falls back
-// to the folder-path values inherited from the instance plus the one field
-// the uploader still has to supply.
+// infoCards → DocumentFieldCards). For a file still being uploaded every
+// repository field is an editable control, pre-filled with inherited / OCR
+// values, so the uploader can change existing data and fill blanks before
+// confirming.
 const AttachmentSplitView = ({
   attachment,
   file,
   folderFields,
   isSubmitting,
   metadata,
-  promptField,
   repositoryId,
   title,
   onClose,
@@ -71,9 +78,17 @@ const AttachmentSplitView = ({
 }: Props) => {
   const { t } = useLingui()
   const [localUrl, setLocalUrl] = useState<string | null>(null)
-  const [promptValue, setPromptValue] = useState('')
   const [cards, setCards] = useState<DetailCard[]>([])
   const [isLoadingFields, setIsLoadingFields] = useState(false)
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
+    seedIndexingValues(folderFields, metadata, file?.name),
+  )
+
+  useEffect(() => {
+    setFieldValues(seedIndexingValues(folderFields, metadata, file?.name))
+    setAttemptedSubmit(false)
+  }, [file?.name, folderFields, metadata])
 
   useEffect(() => {
     if (!file) {
@@ -85,7 +100,6 @@ const AttachmentSplitView = ({
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  // Same call the folders' document view makes for its field panel.
   const attachmentItemId = attachment?.itemId || attachment?.id
   const attachmentRepoId = attachment?.repositoryId || repositoryId
   useEffect(() => {
@@ -122,23 +136,46 @@ const AttachmentSplitView = ({
     file?.name || attachment?.name || attachment?.fileName || title
   const previewUrl = file ? localUrl : remoteUrl
   const previewType = file ? file.type : mimeType || undefined
-  const promptOptions = promptField ? parseFieldOptionValues(promptField) : []
+  const isPendingUpload = Boolean(file) && Boolean(onConfirm)
+  const missingFields = useMemo(
+    () => getMissingIndexingFields(folderFields, fieldValues),
+    [folderFields, fieldValues],
+  )
 
-  // Pre-upload fallback: the folder path this file is about to land under,
-  // shaped like the workspace's own cards so both states render through the
-  // same component.
-  const pendingCards = useMemo((): DetailCard[] => {
-    const rows = folderFields
-      .filter((f) => f.id !== promptField?.id)
-      .map((f) => ({
-        label: f.name,
-        value: metadata?.[f.sqlColumnName] || '-',
-      }))
-    if (rows.length === 0) return []
-    return [
-      { iconKey: 'fileText', id: 'folder-path', rows, title: t`Document Info` },
-    ]
-  }, [folderFields, metadata, promptField, t])
+  const handleUpload = () => {
+    setAttemptedSubmit(true)
+    if (missingFields.length > 0) return
+    onConfirm?.(fieldValues)
+  }
+
+  let infoPane = <DocumentFieldCards cards={cards} />
+  if (isLoadingFields) {
+    infoPane = (
+      <div className='flex items-center justify-center gap-2 py-10 text-13 text-gray-9'>
+        <Icon
+          className='size-4 animate-spin text-primary-9'
+          name='tabler:loader-2'
+        />
+        <span>{t`Loading field data…`}</span>
+      </div>
+    )
+  }
+  if (isPendingUpload) {
+    infoPane = (
+      <IndexingFieldsForm
+        attemptedSubmit={attemptedSubmit}
+        folderFields={folderFields}
+        repositoryId={repositoryId}
+        values={fieldValues}
+        onChange={(sqlColumnName, value) =>
+          setFieldValues((prev) => ({
+            ...prev,
+            [sqlColumnName]: value,
+          }))
+        }
+      />
+    )
+  }
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-gray-1'>
@@ -175,51 +212,9 @@ const AttachmentSplitView = ({
         </div>
 
         <aside className='flex w-[400px] shrink-0 flex-col overflow-hidden'>
-          <div className='min-h-0 flex-1 overflow-y-auto pr-0.5'>
-            {isLoadingFields ? (
-              <div className='flex items-center justify-center gap-2 py-10 text-13 text-gray-9'>
-                <Icon
-                  className='size-4 animate-spin text-primary-9'
-                  name='tabler:loader-2'
-                />
-                <span>{t`Loading field data…`}</span>
-              </div>
-            ) : (
-              <DocumentFieldCards cards={attachment ? cards : pendingCards} />
-            )}
+          <div className='min-h-0 flex-1 overflow-y-auto pr-0.5'>{infoPane}</div>
 
-            {promptField && (
-              <div className='mt-4 rounded-xl border border-primary-4 bg-primary-1/40 p-4'>
-                <p className='mb-3 text-12 font-medium text-gray-11'>
-                  {t`One more detail is needed before this file can be uploaded.`}
-                </p>
-                {promptOptions.length > 0 ? (
-                  <InputSelect
-                    label={promptField.name}
-                    options={promptOptions.map((o) => ({ id: o, name: o }))}
-                    required
-                    value={
-                      promptValue
-                        ? { id: promptValue, name: promptValue }
-                        : null
-                    }
-                    onChange={(opt) =>
-                      setPromptValue(opt ? String(opt.id) : '')
-                    }
-                  />
-                ) : (
-                  <InputText
-                    label={promptField.name}
-                    value={promptValue}
-                    required
-                    onChange={setPromptValue}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-
-          {promptField && (
+          {isPendingUpload && (
             <div className='mt-3 flex shrink-0 items-center justify-end gap-2 border-t border-gray-3 pt-3'>
               <Button
                 disabled={isSubmitting}
@@ -228,11 +223,11 @@ const AttachmentSplitView = ({
                 onClick={onClose}
               />
               <Button
-                disabled={isSubmitting || !promptValue.trim()}
+                disabled={isSubmitting}
                 label={t`Upload`}
                 loading={isSubmitting}
                 variant='solid'
-                onClick={() => onConfirm?.(promptValue.trim())}
+                onClick={handleUpload}
               />
             </div>
           )}

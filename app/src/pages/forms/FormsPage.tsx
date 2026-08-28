@@ -28,6 +28,7 @@ import {
 } from '@/utils/filterUtils'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { useFormStore } from '@/pages/form-builder/store/formStore'
+import useSettingsOriginBreadcrumbs from '@/pages/settings/hooks/useSettingsOriginBreadcrumbs'
 import AiFormBuilder from './components/AiFormBuilder'
 import Table from './components/Table'
 
@@ -76,6 +77,7 @@ function getStoredState() {
 const FormsPage = () => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  useSettingsOriginBreadcrumbs(t`Forms`)
   const queryClient = useQueryClient()
   const storedState = useMemo(() => getStoredState(), [])
   const [page, setPage] = useState(storedState?.page ?? 1)

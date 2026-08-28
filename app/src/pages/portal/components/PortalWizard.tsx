@@ -17,6 +17,7 @@ import CompactDropzone from '@/pages/requests/components/workflow-request/compon
 import RepoFieldsPanel from '@/pages/requests/components/workflow-request/components/RepoFieldsPanel'
 import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
 import {
+  buildFormFieldOcrHints,
   buildRepoFieldDescriptors,
   buildRepoFieldHints,
   buildRepoMetadata,
@@ -24,6 +25,7 @@ import {
   getFileExtension,
   getMissingMandatoryFieldIds,
   getMissingMandatoryFields,
+  mergeOcrFieldHints,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
 import {
@@ -231,6 +233,20 @@ const PortalWizard = ({
     () => buildRepoFieldHints(repositoryFields),
     [repositoryFields],
   )
+  const ocrFieldHints = useMemo(() => {
+    const fileFields = (source?.panels || []).flatMap(
+      (panel: any) => panel.fields || [],
+    )
+    return mergeOcrFieldHints(
+      repoFieldHints,
+      ...fileFields.map((field: any) =>
+        buildFormFieldOcrHints(
+          source?.panels || [],
+          field?.settings?.validation?.assignOtherControls,
+        ),
+      ),
+    )
+  }, [repoFieldHints, source?.panels])
   const portalFormModel = useMemo(
     () => buildPortalFormModel(source?.questions || [], answers),
     [answers, source?.questions],
@@ -408,7 +424,7 @@ const PortalWizard = ({
       const { data, error } = await uploadForOcr(
         String(source.repositoryId),
         file,
-        repoFieldHints,
+        ocrFieldHints,
       )
       if (error || !data) {
         console.warn(
@@ -483,7 +499,7 @@ const PortalWizard = ({
     if (!source?.repositoryId || !pending || pending.fileId) return pending
     const formModel = buildPortalFormModel(source.questions, answers)
     const { data, error } = await uploadAndIndexApi.uploadWithOcr({
-      fields: repoFieldHints,
+      fields: ocrFieldHints,
       file: pending.file,
       metadata: buildRepoMetadata(
         repositoryFields,
@@ -524,7 +540,7 @@ const PortalWizard = ({
         continue
       }
       const { data, error } = await uploadAndIndexApi.uploadWithOcr({
-        fields: repoFieldHints,
+        fields: ocrFieldHints,
         file: pending.file,
         metadata: buildRepoMetadata(
           repositoryFields,
@@ -633,7 +649,7 @@ const PortalWizard = ({
         const { data, error } = await uploadForOcr(
           String(source.repositoryId),
           file,
-          repoFieldHints,
+          ocrFieldHints,
         )
         if (!error && data) applyOcrToAnswers(data.ocrFieldList)
         setExtraPending((prev) => [

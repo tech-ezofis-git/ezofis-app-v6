@@ -55,15 +55,17 @@ export const buildStartWorkflowPayload = (
       if (value === undefined || value === null) continue
 
       if (FILE_FIELD_TYPES.has(field.type)) {
-        if (value.fileId && value.repositoryId) {
+        const fileId = String(value.fileId || value.itemId || '').trim()
+        const repositoryId = String(value.repositoryId || '').trim()
+        if (fileId && repositoryId) {
           stagedFiles.push({
             fieldId: field.id,
             fieldName: field.label,
-            fileId: value.fileId,
+            fileId,
             fileName: value.fileName,
-            itemId: value.fileId,
+            itemId: String(value.itemId || fileId),
             jsonId: field.id,
-            repositoryId: value.repositoryId,
+            repositoryId,
           })
         }
         continue

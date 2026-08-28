@@ -3,6 +3,11 @@
 // existing @/components/base input components.
 
 import dayjs from 'dayjs'
+import {
+  getFileNameWithoutExtension,
+  isFilenameField,
+  sortIndexingFields,
+} from '@/pages/requests/utils/repoFolderMetadata'
 
 export interface DateTimeLimits {
   maxDate?: string
@@ -180,6 +185,195 @@ export const getFieldOptions = (field: any): FieldOption[] => {
     .map((opt: string) => ({ id: opt, name: opt }))
 }
 
+// Configured dropdown options only — skips the placeholder Option 1/2/3
+// list used when a field has no customOptions yet.
+export const getConfiguredFieldOptions = (field: any): FieldOption[] => {
+  const specific = field?.settings?.specific
+  if (specific?.optionsType === 'DYNAMIC') return getFieldOptions(field)
+  const raw: string = specific?.customOptions || ''
+  if (!String(raw).trim()) return []
+  return getFieldOptions(field)
+}
+
+export const findFieldOption = (
+  options: FieldOption[],
+  value: unknown,
+): FieldOption | null => {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return null
+  }
+  const raw = String(value)
+  const lower = raw.toLowerCase()
+  return (
+    options.find(
+      (opt) => String(opt.id) === raw || opt.name.toLowerCase() === lower,
+    ) || { id: raw, name: raw }
+  )
+}
+
+export const withExtraFieldOptions = (
+  options: FieldOption[],
+  extras: FieldOption[],
+): FieldOption[] => {
+  const next = [...options]
+  for (const extra of extras) {
+    const exists = next.some(
+      (opt) =>
+        String(opt.id) === String(extra.id) ||
+        opt.name.toLowerCase() === extra.name.toLowerCase(),
+    )
+    if (!exists) next.push(extra)
+  }
+  return next
+}
+
+export const getDropdownFacetSource = (
+  field: any,
+  fallbackRepositoryId?: string,
+): { enabled: boolean; fieldName: string; repositoryId: string } => {
+  const isSelect =
+    field?.type === 'SINGLE_SELECT' || field?.type === 'MULTI_SELECT'
+  const specific = field?.settings?.specific || {}
+  const optionsType = specific.optionsType || 'CUSTOM'
+  const repositoryId = String(
+    specific.repositoryId || fallbackRepositoryId || '',
+  ).trim()
+  const fieldName = String(
+    optionsType === 'REPOSITORY'
+      ? specific.repositoryField || ''
+      : field?.label || '',
+  ).trim()
+
+  return {
+    enabled:
+      isSelect && optionsType !== 'DYNAMIC' && !!repositoryId && !!fieldName,
+    fieldName,
+    repositoryId,
+  }
+}
+
+const scalarFromSelectItem = (item: unknown): string[] => {
+  if (item == null || item === '') return []
+  if (Array.isArray(item)) return item.flatMap(scalarFromSelectItem)
+  if (typeof item === 'object') {
+    const obj = item as { id?: unknown; name?: unknown; value?: unknown }
+    const scalar = obj.id ?? obj.value ?? obj.name
+    if (scalar == null || scalar === '' || typeof scalar === 'object') return []
+    return [String(scalar)]
+  }
+  const text = String(item).trim()
+  if (!text) return []
+  if (text.startsWith('[') && text.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(text)
+      if (Array.isArray(parsed)) return parsed.flatMap(scalarFromSelectItem)
+    } catch {
+      // keep the original token
+    }
+  }
+  return [text]
+}
+
+// Multi-select unique values are often stored as one array per row
+// (JSON `["A","B"]`, comma/`|` joined, or a real array). Split those into
+// individual option labels so the dropdown lists A and B, not the blob.
+export const splitStoredSelectValues = (raw: unknown): string[] => {
+  if (raw == null || raw === '') return []
+  if (Array.isArray(raw)) return raw.flatMap(splitStoredSelectValues)
+  if (typeof raw === 'object') return scalarFromSelectItem(raw)
+
+  const text = String(raw).trim()
+  if (!text) return []
+
+  if (text.startsWith('[') && text.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(text)
+      if (Array.isArray(parsed)) return parsed.flatMap(splitStoredSelectValues)
+    } catch {
+      // not JSON — fall through to delimiter split
+    }
+  }
+
+  if (text.includes('|')) {
+    return text
+      .split('|')
+      .map((part) => part.trim())
+      .filter(Boolean)
+  }
+
+  if (text.includes(',')) {
+    return text
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+  }
+
+  return [text]
+}
+
+// Resolve whatever the backend stored for a MULTI_SELECT field into the
+// individual option ids/labels the control should show as selected.
+// Arrays of primitives/objects stay as one token per item (so "Smith, John"
+// is not split). JSON / comma / pipe strings from older rows are expanded.
+export const normalizeStoredMultiSelectValue = (raw: unknown): string[] => {
+  if (raw == null || raw === '') return []
+
+  if (Array.isArray(raw) || typeof raw === 'object') {
+    return scalarFromSelectItem(raw)
+  }
+
+  const text = String(raw).trim()
+  if (!text) return []
+
+  if (text.startsWith('[') && text.endsWith(']')) {
+    try {
+      const parsed = JSON.parse(text)
+      if (Array.isArray(parsed)) return scalarFromSelectItem(parsed)
+    } catch {
+      // fall through to delimiter split
+    }
+  }
+
+  if (text.includes('|')) {
+    return text
+      .split('|')
+      .map((part) => part.trim())
+      .filter(Boolean)
+  }
+
+  if (text.includes(',')) {
+    return text
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+  }
+
+  return [text]
+}
+
+export const facetsToFieldOptions = (
+  facets: { value?: unknown }[] | undefined,
+  options?: { splitArrayValues?: boolean },
+): FieldOption[] => {
+  const unique = new Set<string>()
+  for (const facet of facets || []) {
+    const parts = options?.splitArrayValues
+      ? splitStoredSelectValues(facet?.value)
+      : [String(facet?.value ?? '').trim()].filter(Boolean)
+    for (const value of parts) unique.add(value)
+  }
+  return Array.from(unique).map((value) => ({ id: value, name: value }))
+}
+
+export const selectOptionStoredValue = (
+  opt: { id?: string | number; name?: string; value?: string },
+  knownOptions: FieldOption[],
+): string => {
+  const known = knownOptions.find((item) => String(item.id) === String(opt.id))
+  if (known) return String(known.id)
+  return String(opt.value || opt.name || opt.id)
+}
+
 // Every field the panels/fields loop should skip rendering an input for
 // (purely presentational blocks).
 export const PRESENTATIONAL_TYPES = new Set(['HEADING', 'LABEL', 'DIVIDER'])
@@ -235,7 +429,66 @@ export const buildRepoFieldHints = (
     .filter((f) => f?.name)
     .map((f) => `${f.name},${f.dataType || 'SHORT_TEXT'}`)
 
+const hintFieldName = (hint: string): string =>
+  (hint.split(',')[0] || '').trim()
+
 const normalizeName = (s: string) => s.trim().toLowerCase()
+
+// FILE_UPLOAD "Auto-fill from Document" targets, same "Name,TYPE" shape as
+// repository OCR hints so uploadForOcr can extract both in one pass.
+export const buildFormFieldOcrHints = (
+  panels: any[],
+  assignedFieldIds: string[] | undefined,
+): string[] => {
+  if (!assignedFieldIds?.length) return []
+  const idSet = new Set(assignedFieldIds.map(String))
+  const hints: string[] = []
+  for (const panel of panels || []) {
+    for (const field of panel.fields || []) {
+      if (!idSet.has(String(field.id)) || !field.label) continue
+      hints.push(`${field.label},${field.type || 'SHORT_TEXT'}`)
+    }
+  }
+  return hints
+}
+
+// Union of repository + auto-fill form hints. Same field name (case
+// insensitive) is kept once — repository entry wins when both exist.
+export const mergeOcrFieldHints = (
+  ...hintLists: Array<string[] | undefined>
+): string[] => {
+  const byName = new Map<string, string>()
+  for (const list of hintLists) {
+    for (const hint of list || []) {
+      const name = hintFieldName(hint)
+      if (!name) continue
+      const key = normalizeName(name)
+      if (!byName.has(key)) byName.set(key, hint)
+    }
+  }
+  return [...byName.values()]
+}
+
+export const buildMergedOcrFieldHints = (
+  repoHints: string[] | undefined,
+  panels: any[],
+  uploadField: any,
+): string[] =>
+  mergeOcrFieldHints(
+    repoHints,
+    buildFormFieldOcrHints(
+      panels,
+      uploadField?.settings?.validation?.assignOtherControls,
+    ),
+  )
+
+const ocrItemName = (raw?: string): string => {
+  if (!raw) return ''
+  const trimmed = raw.trim()
+  const comma = trimmed.indexOf(',')
+  if (comma <= 0) return trimmed
+  return trimmed.slice(0, comma).trim()
+}
 
 // Finds the form field whose label matches a repository field's name (same
 // convention the OCR mapping relies on: forms built off a repository use
@@ -270,7 +523,13 @@ export const syntheticFieldId = (name: string): string =>
 
 export interface RepoFieldDescriptor {
   fieldId: string
-  repoField: { dataType?: string; isMandatory?: boolean; name?: string }
+  repoField: {
+    dataType?: string
+    isMandatory?: boolean
+    level?: number
+    name?: string
+    sqlColumnName?: string
+  }
   matchedFieldId?: string
   matchedFieldType?: string
 }
@@ -281,27 +540,30 @@ export interface RepoFieldDescriptor {
 // any) is kept only so callers can mirror values into it and hide it from
 // the plain form renderer — see getRepoFieldValue below for how an
 // already-filled form field's value carries over.
+// Order matches folder indexing: mandatory first, then folder `level`.
 export const buildRepoFieldDescriptors = (
   repositoryFields: {
     dataType?: string
     isMandatory?: boolean
+    level?: number
     name?: string
+    sqlColumnName?: string
   }[],
   panels: any[],
 ): RepoFieldDescriptor[] =>
-  (repositoryFields || [])
-    .filter((f) => f?.name && f.dataType !== 'TABLE')
-    .map((repoField) => {
-      const matchedFieldId = findFormFieldIdByName(panels, repoField.name!)
-      return {
-        fieldId: syntheticFieldId(repoField.name!),
-        matchedFieldId,
-        matchedFieldType: matchedFieldId
-          ? findFormFieldById(panels, matchedFieldId)?.type
-          : undefined,
-        repoField,
-      }
-    })
+  sortIndexingFields(
+    (repositoryFields || []).filter((f) => f?.name && f.dataType !== 'TABLE'),
+  ).map((repoField) => {
+    const matchedFieldId = findFormFieldIdByName(panels, repoField.name!)
+    return {
+      fieldId: syntheticFieldId(repoField.name!),
+      matchedFieldId,
+      matchedFieldType: matchedFieldId
+        ? findFormFieldById(panels, matchedFieldId)?.type
+        : undefined,
+      repoField,
+    }
+  })
 
 // A repo field's current value: its own slot if set, else whatever the
 // matching form field already holds (e.g. typed before any file was
@@ -363,6 +625,38 @@ const isValueEmpty = (value: any): boolean =>
   value === undefined ||
   value === null ||
   (typeof value === 'string' && value.trim() === '')
+
+// Seeds empty Filename / File Name / Document Name repo fields from the
+// uploaded file (extension stripped), same as folder indexing.
+export const applyFilenamePreFillToFormModel = (
+  formModel: Record<string, any>,
+  descriptors: RepoFieldDescriptor[],
+  fileName?: string,
+): Record<string, any> => {
+  const cleanFileName = getFileNameWithoutExtension(fileName || '')
+  if (!cleanFileName) return formModel
+
+  const next = { ...formModel }
+  let changed = false
+  for (const descriptor of descriptors) {
+    if (
+      !isFilenameField({
+        name: descriptor.repoField.name || '',
+        sqlColumnName: descriptor.repoField.sqlColumnName || '',
+      })
+    ) {
+      continue
+    }
+    const current = String(getRepoFieldValue(descriptor, next) ?? '').trim()
+    if (current === cleanFileName) continue
+    next[descriptor.fieldId] = cleanFileName
+    if (descriptor.matchedFieldId) {
+      next[descriptor.matchedFieldId] = cleanFileName
+    }
+    changed = true
+  }
+  return changed ? next : formModel
+}
 
 const stringifyFieldValue = (value: any): string => {
   if (isValueEmpty(value)) return ''
@@ -467,9 +761,10 @@ export const mapOcrFieldsToModel = (
   if (!Array.isArray(ocrFieldList) || ocrFieldList.length === 0) return patch
 
   for (const item of ocrFieldList) {
-    if (!item?.name || !item.value) continue
-    patch[syntheticFieldId(item.name)] = item.value
-    const matchedFieldId = findFormFieldIdByName(panels, item.name)
+    const name = ocrItemName(item?.name)
+    if (!name || !item.value) continue
+    patch[syntheticFieldId(name)] = item.value
+    const matchedFieldId = findFormFieldIdByName(panels, name)
     if (matchedFieldId) patch[matchedFieldId] = item.value
   }
 
@@ -491,10 +786,10 @@ export const isFieldFilled = (field: any, value: any): boolean => {
   if (PRESENTATIONAL_TYPES.has(field.type)) return true
 
   if (field.type === 'FILE_UPLOAD' || field.type === 'IMAGE_UPLOAD') {
-    return Boolean(value?.fileId)
+    return Boolean(value?.fileId || value?.itemId)
   }
   if (field.type === 'MULTI_SELECT') {
-    return Array.isArray(value) && value.length > 0
+    return normalizeStoredMultiSelectValue(value).length > 0
   }
   if (field.type === 'MULTIPLE_CHOICE') {
     if (!Array.isArray(value) || value.length === 0) return false

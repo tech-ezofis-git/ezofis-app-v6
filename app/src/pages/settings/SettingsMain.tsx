@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
+import { useNavigate } from '@tanstack/react-router'
 import {
   BadgeDollarSign,
   ChevronRight,
@@ -26,11 +27,15 @@ import ManageUser from './components/ManageUser'
 import PortalConfiguration from './components/PortalConfiguration'
 import RolesPermissions from './components/RolesPermissions'
 import WorkflowConfiguration from './components/WorkflowConfiguration'
-import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
+import {
+  createSettingsRootBreadcrumbs,
+  markOpenedFromSettings,
+} from './helpers/settingsBreadcrumbs'
 import useSettingsTopbar from './hooks/useSettingsTopbar'
 
 type SettingsItem = {
   description: string
+  href?: string
   icon: React.ElementType
   key: string
   permissionKey?: string
@@ -230,6 +235,7 @@ function SettingsLanding({
   onOpenPage: (page: string) => void
 }) {
   const { i18n, t } = useLingui()
+  const navigate = useNavigate()
   const isAdmin = authUserStore(
     (state) => state.session?.role?.toLowerCase() === 'admin',
   )
@@ -248,17 +254,19 @@ function SettingsLanding({
       },
       {
         description: t`Create and manage forms with fields, validation, and data collection.`,
+        href: '/forms',
         icon: FileText,
         key: 'form-configuration',
         permissionKey: 'form',
-        title: t`Form Configuration`,
+        title: t`Forms`,
       },
       {
         description: t`Design and configure automated workflows and process routing.`,
+        href: '/workflows',
         icon: GitFork,
         key: 'workflow-configuration',
         permissionKey: 'workflow',
-        title: t`Workflow Configuration`,
+        title: t`Workflows`,
       },
       {
         description: t`Create branded portals, configure login methods, and connect workflows.`,
@@ -335,6 +343,11 @@ function SettingsLanding({
   useSettingsTopbar(rootBreadcrumbs)
 
   const openItem = (item: SettingsItem) => {
+    if (item.href) {
+      markOpenedFromSettings()
+      void navigate({ to: item.href })
+      return
+    }
     onOpenPage(item.key)
   }
 

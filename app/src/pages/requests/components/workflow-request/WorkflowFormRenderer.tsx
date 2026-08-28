@@ -12,6 +12,7 @@ import {
   isFieldHidden,
   isFieldRequired,
 } from './utils/fieldRendering'
+import { getFirstReceivedAttachment } from './utils/gmailFormAttachment'
 
 interface Props {
   formModel: Record<string, any>
@@ -20,9 +21,9 @@ interface Props {
   // nothing to fall back to yet). File fields are never part of formData
   // once submitted (see buildStartWorkflowPayload), so the backend has no
   // record of which attachment came from which field: uploads made through
-  // this screen are remembered locally (getFieldAttachmentMap), and
-  // anything with no such record falls back to the single file field when
-  // the form has exactly one, since there's no ambiguity there.
+  // this screen are remembered locally (getFieldAttachmentMap). Email /
+  // process files with no mapping: only the first one is shown on the first
+  // FILE_UPLOAD field; the rest stay in the Attachments panel.
   attachments?: any[]
   // Skips the internal ScrollArea (height: 100%) — used when this renderer
   // is nested inside another scrollable container (the split-view's
@@ -36,6 +37,8 @@ interface Props {
   // Overview only — scopes the local field↔attachment map to this request.
   instanceId?: string | number
   missingMandatoryFieldIds?: Set<string>
+  preparePhase?: 'extracting' | 'uploading' | null
+  preparingFieldId?: string | null
   // Field ids the current acting user can see but not edit, from the same
   // Security & Form Access settings (formEditAccess / formEditControls).
   readOnlyFieldIds?: Set<string>
@@ -47,8 +50,7 @@ interface Props {
     list: { name?: string; value?: string }[] | undefined,
   ) => void
   onOpenAttachment?: (attachment: any) => void
-  // Overview only — see FieldRenderer's onRequestUpload.
-  onRequestUpload?: (fieldId: string, file: File) => void
+  onRequestUpload?: (fieldId: string, file: File) => void | Promise<void>
 }
 
 const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
@@ -68,6 +70,8 @@ const WorkflowFormRenderer = ({
   instanceId,
   missingMandatoryFieldIds,
   panels,
+  preparePhase,
+  preparingFieldId,
   readOnlyFieldIds,
   repoFieldHints,
   repositoryId,
@@ -79,36 +83,50 @@ const WorkflowFormRenderer = ({
 }: Props) => {
   const { t } = useLingui()
 
-  const soleFileFieldId = useMemo(() => {
+  const firstFileFieldId = useMemo(() => {
     const fileFieldIds = panels.flatMap((panel: any) =>
       (panel.fields || [])
         .filter((field: any) => FILE_FIELD_TYPES.has(field.type))
-        .map((field: any) => field.id),
+        .map((field: any) => field.id || field.jsonId),
     )
-    return fileFieldIds.length === 1 ? fileFieldIds[0] : null
+    return fileFieldIds[0] || null
   }, [panels])
 
-  // fieldId -> the attachments uploaded through it. Anything with no
-  // recorded field falls back to the sole file field when the form has
-  // exactly one (see the `attachments` prop comment).
+  // fieldId -> attachments uploaded through that field. Unmapped process
+  // files (e.g. Gmail) only pin the first one onto the first FILE_UPLOAD
+  // field — extra email attachments are not listed under the form field.
   const attachmentsByField = useMemo(() => {
     const grouped: Record<string, any[]> = {}
     if (!attachments?.length) return grouped
     const recorded = getFieldAttachmentMap(instanceId)
+    const unmapped: any[] = []
 
     attachments.forEach((attachment: any) => {
       const key = String(
         attachment.itemId ?? attachment.id ?? attachment.fileId ?? '',
       )
-      const fieldId = recorded[key] || soleFileFieldId
-      if (!fieldId) return
-      grouped[fieldId] = [...(grouped[fieldId] || []), attachment]
+      const fieldId = recorded[key]
+      if (fieldId) {
+        grouped[fieldId] = [...(grouped[fieldId] || []), attachment]
+        return
+      }
+      if (key) unmapped.push(attachment)
     })
+
+    const firstUnmapped = getFirstReceivedAttachment(unmapped)
+    if (
+      firstFileFieldId &&
+      firstUnmapped &&
+      !(grouped[firstFileFieldId] || []).length
+    ) {
+      grouped[firstFileFieldId] = [firstUnmapped]
+    }
+
     return grouped
-  }, [attachments, instanceId, soleFileFieldId])
+  }, [attachments, firstFileFieldId, instanceId])
 
   const content = (
-    <div className='w-full px-6 py-6'>
+    <div className='w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'>
       <AnimateFadeIn delay={0.1}>
         <Accordion
           defaultValue={panels.map((_, idx) => `panel-${idx}`)}
@@ -119,9 +137,9 @@ const WorkflowFormRenderer = ({
             chevron: 'text-gray-10',
             content: 'p-0',
             control: 'rounded-xl px-4 py-2.5 transition-colors hover:bg-gray-1',
-            item: 'mb-3 rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
+            item: 'mb-3 min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
             label: 'text-14 font-bold tracking-tight text-gray-13',
-            panel: 'px-6 pt-2 pb-6',
+            panel: 'min-w-0 overflow-hidden px-6 pt-2 pb-6',
           }}
         >
           {panels.map((panel: any, panelIndex: number) => {
@@ -197,23 +215,32 @@ const WorkflowFormRenderer = ({
                           <FieldRenderer
                             fallbackAttachments={attachmentsByField[field.id]}
                             field={field}
+                            panels={panels}
+                            preparePhase={preparePhase}
                             repoFieldHints={repoFieldHints}
                             repositoryId={repositoryId}
                             value={formModel[field.id]}
-                            viewOnly={
-                              viewOnly || readOnlyFieldIds?.has(field.id)
-                            }
                             error={
                               hasAttemptedSubmit &&
                               missingMandatoryFieldIds?.has(field.id)
                                 ? t`This field is required.`
                                 : undefined
                             }
+                            isPreparing={
+                              Boolean(preparePhase) &&
+                              preparingFieldId === String(field.id)
+                            }
+                            viewOnly={
+                              viewOnly ||
+                              Boolean(readOnlyFieldIds?.has(String(field.id)))
+                            }
                             onChange={(value) => onFieldChange(field.id, value)}
                             onOcrFieldList={onOcrFieldList}
                             onOpenAttachment={onOpenAttachment}
                             onRequestUpload={
-                              onRequestUpload
+                              onRequestUpload &&
+                              !viewOnly &&
+                              !readOnlyFieldIds?.has(String(field.id))
                                 ? (file) => onRequestUpload(field.id, file)
                                 : undefined
                             }
@@ -234,7 +261,11 @@ const WorkflowFormRenderer = ({
   return disableOwnScroll ? (
     content
   ) : (
-    <ScrollArea height='100%'>{content}</ScrollArea>
+    <div className='h-full min-h-0 min-w-0 w-full overflow-hidden'>
+      <ScrollArea className='h-full min-w-0 w-full' height='100%'>
+        {content}
+      </ScrollArea>
+    </div>
   )
 }
 

@@ -26,7 +26,17 @@ import {
   type Question,
   useFormStore,
 } from '@/pages/form-builder/store/formStore'
-import { mapOcrFieldsToModel } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import {
+  buildMergedOcrFieldHints,
+  facetsToFieldOptions,
+  findFieldOption,
+  getConfiguredFieldOptions,
+  getDropdownFacetSource,
+  getFieldOptions as getSharedFieldOptions,
+  mapOcrFieldsToModel,
+  normalizeStoredMultiSelectValue,
+  withExtraFieldOptions,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
 
 const LivePreview = () => {
@@ -102,9 +112,7 @@ const LivePreview = () => {
         .flatMap((p) => p.fields || [])
         .filter((f) => assignedFieldIds.includes(f.id))
 
-      const fieldHints = assignedFields
-        .filter((f) => f.label)
-        .map((f) => `${f.label},${f.type || 'SHORT_TEXT'}`)
+      const fieldHints = buildMergedOcrFieldHints([], panels, field)
 
       const repoIdToUse =
         selectedRepoId || (repositories[0]?.id ?? 'default-repo')
@@ -327,6 +335,7 @@ const LivePreview = () => {
                           handleFieldValueChange,
                           (file) => handleOcrFileSelect(file, field),
                           extractingFieldId === field.id,
+                          selectedRepoId,
                         )}
                       </div>
                     ))}
@@ -354,55 +363,82 @@ const getFieldOptions = (field: Question): string[] => {
   return options.length > 0 ? options : ['Option A', 'Option B', 'Option C']
 }
 
-const LivePreviewMultiSelect = ({
+const LivePreviewDropdown = ({
   field,
+  fallbackRepositoryId,
+  multiple,
   value,
   onChange,
 }: {
   field: Question
+  fallbackRepositoryId?: string
+  multiple?: boolean
   value: any
   onChange: (val: any) => void
 }) => {
-  const specific = field.settings?.specific ?? {}
-  const optionsType = specific.optionsType
-  const repositoryId = specific.repositoryId || ''
-  const repositoryField = specific.repositoryField || ''
+  const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
+  const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
 
-  const { data: repoOptions = [] } = useQuery({
-    queryKey: ['livePreviewFacets', repositoryId, repositoryField],
+  const { data: uniqueFieldOptions = [] } = useQuery({
+    queryKey: [
+      'livePreviewFacets',
+      facetSource.repositoryId,
+      facetSource.fieldName,
+    ],
     queryFn: async () => {
-      if (!repositoryId || !repositoryField) return []
       const res = await getRepositoryItemFacets({
-        repositoryId,
-        fieldName: repositoryField,
+        fieldName: facetSource.fieldName,
         limit: 1000,
+        repositoryId: facetSource.repositoryId,
       })
-      return (res.data || []).map((f) => ({ id: f.value, name: f.value }))
+      return facetsToFieldOptions(res.data, {
+        splitArrayValues: field.type === 'MULTI_SELECT',
+      })
     },
-    enabled: optionsType === 'REPOSITORY' && !!repositoryId && !!repositoryField,
+    enabled: facetSource.enabled,
   })
 
-  const rawOptions: Option[] =
-    optionsType === 'REPOSITORY'
-      ? repoOptions
-      : getFieldOptions(field).map((opt) => ({ id: opt, name: opt }))
-
-  const selectedIds: string[] = Array.isArray(value)
-    ? value
-    : value
-      ? [String(value)]
-      : []
-
-  const selectedOptions = rawOptions.filter((opt) =>
-    selectedIds.includes(String(opt.id)),
+  const selectOptions = withExtraFieldOptions(
+    optionsType === 'DYNAMIC'
+      ? getSharedFieldOptions(field)
+      : getConfiguredFieldOptions(field),
+    uniqueFieldOptions,
   )
 
+  if (multiple) {
+    const seen = new Set<string>()
+    const selectedOptions = normalizeStoredMultiSelectValue(value).flatMap(
+      (id) => {
+        const opt = findFieldOption(selectOptions, id)
+        if (!opt) return []
+        const key = String(opt.id).toLowerCase()
+        if (seen.has(key)) return []
+        seen.add(key)
+        return [opt]
+      },
+    )
+
+    return (
+      <InputSelectMultiple
+        options={withExtraFieldOptions(selectOptions, selectedOptions)}
+        placeholder={field.settings?.general?.placeholder || 'Select options...'}
+        value={selectedOptions}
+        onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
+      />
+    )
+  }
+
   return (
-    <InputSelectMultiple
-      options={rawOptions}
-      placeholder={field.settings?.general?.placeholder || 'Select options...'}
-      value={selectedOptions}
-      onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
+    <Select
+      data={selectOptions.map((opt) => opt.name)}
+      placeholder={field.settings.general.placeholder || 'Select an option'}
+      size='sm'
+      value={String(value) || null}
+      classNames={{
+        input:
+          'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+      }}
+      onChange={(val) => onChange(val)}
     />
   )
 }
@@ -636,6 +672,7 @@ const renderPreviewInput = (
   onChange: (fieldId: string, value: any) => void,
   onOcrProcessFile?: (file: File) => void,
   isExtracting?: boolean,
+  fallbackRepositoryId?: string,
 ) => {
   const fieldValue = model[field.id] ?? ''
 
@@ -904,26 +941,21 @@ const renderPreviewInput = (
           onChange={(val) => onChange(field.id, val)}
         />
       )
-    case 'SINGLE_SELECT': {
-      const options = getFieldOptions(field)
+    case 'SINGLE_SELECT':
       return (
-        <Select
-          data={options}
-          placeholder={field.settings.general.placeholder || 'Select an option'}
-          size='sm'
-          value={String(fieldValue) || null}
-          classNames={{
-            input:
-              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
-          }}
+        <LivePreviewDropdown
+          field={field}
+          fallbackRepositoryId={fallbackRepositoryId}
+          value={fieldValue}
           onChange={(val) => onChange(field.id, val)}
         />
       )
-    }
     case 'MULTI_SELECT':
       return (
-        <LivePreviewMultiSelect
+        <LivePreviewDropdown
           field={field}
+          fallbackRepositoryId={fallbackRepositoryId}
+          multiple
           value={fieldValue}
           onChange={(val) => onChange(field.id, val)}
         />
