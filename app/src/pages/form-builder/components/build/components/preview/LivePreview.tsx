@@ -476,10 +476,10 @@ const renderPreviewInput = (
         </div>
       )
     case 'TABLE':
-      const columns = field.settings.specific.columns || [
-        { id: '1', label: 'Column 1', size: 'col-4', type: 'SHORT_TEXT' },
-        { id: '2', label: 'Column 2', size: 'col-4', type: 'SHORT_TEXT' },
-        { id: '3', label: 'Column 3', size: 'col-4', type: 'SHORT_TEXT' },
+      const columns = field.settings.specific.tableColumns || [
+        { id: '1', name: 'Column 1', size: 'MEDIUM', type: 'SHORT_TEXT' },
+        { id: '2', name: 'Column 2', size: 'MEDIUM', type: 'SHORT_TEXT' },
+        { id: '3', name: 'Column 3', size: 'MEDIUM', type: 'SHORT_TEXT' },
       ]
       return (
         <div className='overflow-x-auto rounded-lg border border-gray-3 bg-white'>
@@ -491,7 +491,7 @@ const renderPreviewInput = (
                     key={col.id}
                     className='p-2.5 font-bold whitespace-nowrap text-gray-12'
                   >
-                    {col.label}
+                    {col.name || col.label || 'Column'}
                   </th>
                 ))}
               </tr>

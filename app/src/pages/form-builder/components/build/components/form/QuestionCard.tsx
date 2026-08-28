@@ -400,132 +400,126 @@ const QuestionCard = ({
                 </div>
               </div>
             </div>
-          ) : question.type === 'TABLE' ? (
-            <div
-              className={cn(
-                'w-full overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300',
-                isActive
-                  ? 'border-accent-primary/60'
-                  : 'border-gray-2 group-hover:border-gray-3',
-              )}
-            >
-              {/* Table Toolbar */}
-              <div className='bg-gray-50/50 flex items-center justify-between border-b border-gray-1 px-3 py-2'>
-                <div className='flex items-center gap-2'>
-                  <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-2 py-1 shadow-xs transition-colors'>
-                    <Icon
-                      className='text-gray-6'
-                      height={14}
-                      name='lucide:qr-code'
-                      width={14}
-                    />
-                    <span className='text-[11px] font-bold text-gray-8'>
-                      Scan Row
+          ) : question.type === 'TABLE' ||
+            question.type === 'DYNAMIC_TABLE' ? (
+            (() => {
+              const tableColumns =
+                question.settings?.specific?.tableColumns || []
+              const gridTemplate =
+                tableColumns.length > 0
+                  ? `32px ${tableColumns
+                      .map((col) => {
+                        if (col.size === 'SMALL') return 'minmax(90px, 1fr)'
+                        if (col.size === 'LARGE') return 'minmax(180px, 3fr)'
+                        return 'minmax(130px, 2fr)'
+                      })
+                      .join(' ')}`
+                  : '1fr'
+
+              return (
+                <div
+                  className={cn(
+                    'w-full overflow-hidden rounded-xl border bg-white shadow-sm transition-all duration-300',
+                    isActive
+                      ? 'border-accent-primary/60'
+                      : 'border-gray-2 group-hover:border-gray-3',
+                  )}
+                >
+                  {/* Table Toolbar */}
+                  <div className='bg-gray-50/50 flex items-center justify-between border-b border-gray-1 px-3 py-2'>
+                    <div className='flex items-center gap-2'>
+                      <div className='hover:bg-gray-50 flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-1 bg-white px-2 py-1 shadow-xs transition-colors'>
+                        <Icon
+                          className='text-gray-6'
+                          height={14}
+                          name='lucide:qr-code'
+                          width={14}
+                        />
+                        <span className='text-[11px] font-bold text-gray-8'>
+                          Scan Row
+                        </span>
+                      </div>
+                    </div>
+                    <div className='flex items-center gap-1.5'>
+                      <IconButton
+                        color='gray'
+                        icon='lucide:download'
+                        size='xs'
+                        variant='ghost'
+                      />
+                      <IconButton
+                        color='gray'
+                        icon='lucide:upload'
+                        size='xs'
+                        variant='ghost'
+                      />
+                    </div>
+                  </div>
+
+                  {/* Grid Content */}
+                  {tableColumns.length === 0 ? (
+                    <div className='p-6 text-center text-xs text-gray-8 italic'>
+                      No table columns configured. Add columns in the settings panel.
+                    </div>
+                  ) : (
+                    <div className='overflow-x-auto'>
+                      {/* Grid Header */}
+                      <div
+                        className='bg-gray-50/80 grid border-b border-gray-1 px-3 py-2 text-[10px] font-bold tracking-wider text-gray-5 uppercase'
+                        style={{ gridTemplateColumns: gridTemplate }}
+                      >
+                        <div className='flex items-center justify-center'>
+                          <div className='h-3 w-3 rounded border border-gray-3' />
+                        </div>
+                        {tableColumns.map((col) => (
+                          <div
+                            key={col.id}
+                            className='flex items-center gap-1.5 overflow-hidden px-2'
+                          >
+                            <span className='truncate font-bold text-gray-8'>
+                              {col.name || 'Column'}
+                            </span>
+                            <span className='text-[8px] font-medium text-gray-4 lowercase'>
+                              ({col.type?.replace('_', ' ') || 'text'})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Placeholder Row */}
+                      <div
+                        className='hover:bg-gray-50/30 grid items-center px-3 py-2.5 transition-colors'
+                        style={{ gridTemplateColumns: gridTemplate }}
+                      >
+                        <div className='flex items-center justify-center'>
+                          <div className='h-3 w-3 rounded border border-gray-2' />
+                        </div>
+                        {tableColumns.map((col) => (
+                          <div key={col.id} className='px-2'>
+                            <div className='flex h-7 w-full items-center rounded border border-dashed border-gray-2 bg-gray-50/40 px-2 text-[11px] text-gray-4 italic'>
+                              {col.name}...
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Grid Footer */}
+                  <div className='bg-gray-50/50 flex items-center justify-between border-t border-gray-1 px-3 py-2'>
+                    <div className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-accent-primary/50 bg-white px-3 py-1.5 text-accent-primary shadow-xs transition-all hover:bg-accent-soft/10'>
+                      <Icon height={14} name='lucide:plus' width={14} />
+                      <span className='text-[11px] font-bold tracking-tight uppercase'>
+                        Add New Row
+                      </span>
+                    </div>
+                    <span className='text-[10px] text-gray-4 italic'>
+                      Auto-save enabled for table rows
                     </span>
                   </div>
                 </div>
-                <div className='flex items-center gap-1.5'>
-                  <IconButton
-                    color='gray'
-                    icon='lucide:download'
-                    size='xs'
-                    variant='ghost'
-                  />
-                  <IconButton
-                    color='gray'
-                    icon='lucide:upload'
-                    size='xs'
-                    variant='ghost'
-                  />
-                </div>
-              </div>
-
-              {/* Grid Header */}
-              <div className='bg-gray-50/80 grid grid-cols-[30px_1fr_80px_100px_100px] border-b border-gray-1 px-3 py-2'>
-                <div className='flex items-center justify-center'>
-                  <div className='h-3 w-3 rounded border border-gray-3' />
-                </div>
-                <div className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Item Description
-                </div>
-                <div className='text-center text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Qty
-                </div>
-                <div className='text-right text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Unit Price
-                </div>
-                <div className='pr-2 text-right text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
-                  Total
-                </div>
-              </div>
-
-              {/* Grid Rows */}
-              <div className='divide-y divide-gray-1'>
-                {[
-                  {
-                    item: 'Professional Services',
-                    price: '150.00',
-                    qty: '12',
-                    total: '1,800.00',
-                  },
-                  {
-                    item: 'Software Licensing',
-                    price: '450.00',
-                    qty: '1',
-                    total: '450.00',
-                  },
-                ].map((row, i) => (
-                  <div
-                    className='hover:bg-gray-50/30 grid grid-cols-[30px_1fr_80px_100px_100px] items-center px-3 py-2.5 transition-colors'
-                    key={i}
-                  >
-                    <div className='flex items-center justify-center'>
-                      <div className='h-3 w-3 rounded border border-gray-2' />
-                    </div>
-                    <div className='text-[12px] font-medium text-gray-12'>
-                      {row.item}
-                    </div>
-                    <div className='text-center text-[12px] font-bold text-gray-8'>
-                      {row.qty}
-                    </div>
-                    <div className='text-right text-[12px] font-medium text-gray-12'>
-                      {row.price}
-                    </div>
-                    <div className='pr-2 text-right text-[12px] font-bold text-accent-primary'>
-                      {row.total}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Grid Summary */}
-              <div className='grid grid-cols-[30px_1fr_80px_100px_100px] border-t border-gray-1 bg-accent-soft/5 px-3 py-2.5'>
-                <div />
-                <div className='text-[11px] font-bold text-gray-8 uppercase'>
-                  Grand Total
-                </div>
-                <div className='text-center text-[11px] font-bold text-gray-10'>
-                  13
-                </div>
-                <div />
-                <div className='pr-2 text-right text-[12px] font-bold text-accent-primary underline decoration-accent-soft underline-offset-4'>
-                  2,250.00
-                </div>
-              </div>
-
-              {/* Grid Footer */}
-              <div className='bg-gray-50/50 flex items-center justify-between border-t border-gray-1 px-3 py-2'>
-                <div className='flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-accent-primary/50 bg-white px-3 py-1.5 text-accent-primary shadow-xs transition-all hover:bg-accent-soft/10'>
-                  <Icon height={14} name='lucide:plus' width={14} />
-                  <span className='text-[11px] font-bold tracking-tight uppercase'>
-                    Add New Row
-                  </span>
-                </div>
-                <span className='text-[10px] text-gray-4 italic'>
-                  Auto-save enabled for table rows
-                </span>
-              </div>
-            </div>
+              )
+            })()
           ) : question.type === 'FILE_UPLOAD' ||
             question.type === 'IMAGE_UPLOAD' ? (
             <div className='space-y-3'>

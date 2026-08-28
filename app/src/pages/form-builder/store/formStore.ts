@@ -180,7 +180,6 @@ export interface Question {
       autoGenerateValue?: { enabled?: boolean; prefix: string; suffix: string }
       bulkActionsEnabled?: boolean
       childFieldType?: string
-      columns?: any[]
       countryCodeSearchEnabled?: boolean
       currencyOptionsType?: 'ALL' | 'SPECIFIC'
       currencyParentFieldId?: string

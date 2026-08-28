@@ -3,12 +3,13 @@ import {
   Divider,
   NumberInput,
   SegmentedControl,
+  Select,
   Tooltip,
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { getRepositoryItemFilterFields, getRepositorys } from '@/api/v6/folder/folder'
-import type { LogicRule, Question } from '@/pages/form-builder/store/formStore'
+import type { LogicRule, Question, QuestionType } from '@/pages/form-builder/store/formStore'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -16,9 +17,37 @@ import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import { classNames as baseInputClassNames } from '@/components/base/inputs/shared/constants'
+import SortableContainer from '@/components/base/sortable/SortableContainer'
+import SortableItem from '@/components/base/sortable/SortableItem'
 import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 import SettingsSection from '../../../../common/SettingsSection'
+const TABLE_COLUMN_TYPES: Array<{ label: string; value: QuestionType }> = [
+  { label: 'Short Text', value: 'SHORT_TEXT' },
+  { label: 'Long Text', value: 'LONG_TEXT' },
+  { label: 'Number', value: 'NUMBER' },
+  { label: 'Currency', value: 'CURRENCY_AMOUNT' },
+  { label: 'Date', value: 'DATE' },
+  { label: 'Time', value: 'TIME' },
+  { label: 'Date & Time', value: 'DATE_TIME' },
+  { label: 'Single Select', value: 'SINGLE_SELECT' },
+  { label: 'Multi Select', value: 'MULTI_SELECT' },
+  { label: 'Single Choice', value: 'SINGLE_CHOICE' },
+  { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
+  { label: 'File Upload', value: 'FILE_UPLOAD' },
+  { label: 'Image Upload', value: 'IMAGE_UPLOAD' },
+  { label: 'Signature', value: 'SIGNATURE' },
+  { label: 'Rating', value: 'RATING' },
+  { label: 'Yes/No Toggle', value: 'YES_NO_TOGGLE' },
+  { label: 'Phone Number', value: 'PHONE_NUMBER' },
+  { label: 'Email', value: 'EMAIL' },
+  { label: 'URL', value: 'URL' },
+  { label: 'Calculated', value: 'CALCULATED' },
+  { label: 'Address', value: 'ADDRESS' },
+  { label: 'Counter', value: 'COUNTER' },
+  { label: 'Opinion Scale', value: 'OPINION_SCALE' },
+  { label: 'Score', value: 'SCORE' },
+]
 
 interface QuestionSettingsProps {
   activeQuestion: Question
@@ -183,7 +212,9 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
     activeQuestion.type === 'FILE_UPLOAD' ||
     activeQuestion.type === 'IMAGE_UPLOAD'
   const isTextBuilder = activeQuestion.type === 'TEXT_BUILDER'
-  const isTable = activeQuestion.type === 'TABLE'
+  const isTable =
+    activeQuestion.type === 'TABLE' ||
+    activeQuestion.type === 'DYNAMIC_TABLE'
   const isRating = activeQuestion.type === 'RATING'
   const isOpinionScale = activeQuestion.type === 'OPINION_SCALE'
   const isSignature = activeQuestion.type === 'SIGNATURE'
@@ -1629,75 +1660,164 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 </div>
               )}
 
-              {isTable && (
-                <div className='space-y-6'>
-                  {/* Columns Builder Simulation */}
-                  <div className='space-y-3'>
-                    <div className='flex items-center justify-between'>
-                      <label className='block text-13 font-bold text-gray-12'>
-                        Table Columns
-                      </label>
-                      <div className='flex cursor-pointer items-center gap-1 rounded border border-accent-soft/20 bg-accent-soft/10 px-2 py-0.5 text-[10px] font-bold text-accent-primary transition-colors hover:bg-accent-soft/20'>
-                        <Icon height={10} name='lucide:plus' width={10} />
-                        Add Column
-                      </div>
-                    </div>
-                    <div className='space-y-2'>
-                      {(
-                        activeQuestion.settings.specific.tableColumns || [
-                          {
-                            id: '1',
-                            name: 'Item Name',
-                            size: 'MEDIUM',
-                            type: 'SHORT_TEXT',
-                          },
-                          { id: '2', name: 'Qty', size: 'SMALL', type: 'NUMBER' },
-                          {
-                            id: '3',
-                            name: 'Price',
-                            size: 'SMALL',
-                            type: 'CURRENCY_AMOUNT',
-                          },
-                        ]
-                      ).map((col: any) => (
-                        <div
-                          className='bg-gray-50 group/col flex items-center justify-between rounded-lg border border-gray-1 p-2'
-                          key={col.id}
+              {isTable && (() => {
+                const tableColumns =
+                  activeQuestion.settings.specific.tableColumns || []
+
+                const handleAddTableColumn = () => {
+                  const newColNumber = tableColumns.length + 1
+                  updateNested('specific', {
+                    tableColumns: [
+                      ...tableColumns,
+                      {
+                        id: generateId(),
+                        name: `Column ${newColNumber}`,
+                        size: 'MEDIUM',
+                        type: 'SHORT_TEXT',
+                      },
+                    ],
+                  })
+                }
+
+                const handleUpdateTableColumn = (
+                  colId: string,
+                  patch: Partial<{
+                    name: string
+                    size: 'SMALL' | 'MEDIUM' | 'LARGE'
+                    type: QuestionType
+                  }>,
+                ) => {
+                  updateNested('specific', {
+                    tableColumns: tableColumns.map((c) =>
+                      c.id === colId ? { ...c, ...patch } : c,
+                    ),
+                  })
+                }
+
+                const handleDeleteTableColumn = (colId: string) => {
+                  if (tableColumns.length <= 1) return
+                  updateNested('specific', {
+                    tableColumns: tableColumns.filter((c) => c.id !== colId),
+                  })
+                }
+
+                const handleReorderTableColumns = (newOrderIds: string[]) => {
+                  const reordered = newOrderIds
+                    .map((id) => tableColumns.find((c) => c.id === id))
+                    .filter(Boolean) as typeof tableColumns
+                  updateNested('specific', { tableColumns: reordered })
+                }
+
+                return (
+                  <div className='space-y-6'>
+                    {/* Columns Builder */}
+                    <div className='space-y-3'>
+                      <div className='flex items-center justify-between'>
+                        <label className='block text-13 font-bold text-gray-12'>
+                          Table Columns
+                        </label>
+                        <button
+                          type='button'
+                          className='flex cursor-pointer items-center gap-1 rounded border border-accent-soft/20 bg-accent-soft/10 px-2 py-0.5 text-[10px] font-bold text-accent-primary transition-colors hover:bg-accent-soft/20'
+                          onClick={handleAddTableColumn}
                         >
-                          <div className='flex items-center gap-2'>
-                            <Icon
-                              className='cursor-grab text-gray-3'
-                              height={12}
-                              name='lucide:grip-vertical'
-                              width={12}
-                            />
-                            <div className='flex flex-col'>
-                              <span className='text-[11px] font-bold text-gray-12'>
-                                {col.name}
-                              </span>
-                              <span className='text-[9px] font-medium text-gray-5 uppercase'>
-                                {col.type.replace('_', ' ')} • {col.size}
-                              </span>
-                            </div>
-                          </div>
-                          <div className='flex items-center gap-1 opacity-0 transition-opacity group-hover/col:opacity-100'>
-                            <IconButton
-                              color='gray'
-                              icon='lucide:settings'
-                              size='xs'
-                              variant='ghost'
-                            />
-                            <IconButton
-                              color='red'
-                              icon='lucide:trash-2'
-                              size='xs'
-                              variant='ghost'
-                            />
-                          </div>
+                          <Icon height={10} name='lucide:plus' width={10} />
+                          Add Column
+                        </button>
+                      </div>
+
+                      {tableColumns.length === 0 ? (
+                        <div className='rounded-lg border border-dashed border-gray-2 p-4 text-center text-xs text-gray-8'>
+                          No columns yet. Click "Add Column" to configure columns.
                         </div>
-                      ))}
+                      ) : (
+                        <SortableContainer
+                          items={tableColumns.map((c) => c.id)}
+                          onItemsChange={handleReorderTableColumns}
+                        >
+                          <div className='space-y-2'>
+                            {tableColumns.map((col) => (
+                              <SortableItem
+                                key={col.id}
+                                id={col.id}
+                                handlerPosition='before'
+                                className='items-stretch'
+                              >
+                                <div className='group/col flex-1 rounded-lg border border-gray-2 bg-gray-50/80 p-2.5 space-y-2 transition-colors hover:border-gray-3'>
+                                  <div className='flex items-center justify-between gap-2'>
+                                    <input
+                                      type='text'
+                                      value={col.name}
+                                      placeholder='Column name...'
+                                      className='flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-white focus:border-accent-primary focus:bg-white focus:outline-none'
+                                      onChange={(e) =>
+                                        handleUpdateTableColumn(col.id, {
+                                          name: e.target.value,
+                                        })
+                                      }
+                                    />
+                                    <div className='flex items-center gap-0.5 shrink-0'>
+                                      <IconButton
+                                        color='gray'
+                                        icon='lucide:settings'
+                                        size='xs'
+                                        variant='ghost'
+                                      />
+                                      <IconButton
+                                        color='red'
+                                        disabled={tableColumns.length <= 1}
+                                        icon='lucide:trash-2'
+                                        size='xs'
+                                        variant='ghost'
+                                        onClick={() =>
+                                          handleDeleteTableColumn(col.id)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className='flex items-center gap-2'>
+                                    <div className='flex-1'>
+                                      <Select
+                                        size='xs'
+                                        data={TABLE_COLUMN_TYPES}
+                                        value={col.type || 'SHORT_TEXT'}
+                                        onChange={(val) =>
+                                          val &&
+                                          handleUpdateTableColumn(col.id, {
+                                            type: val as QuestionType,
+                                          })
+                                        }
+                                        classNames={{
+                                          input:
+                                            'bg-white border-gray-3 text-xs h-7 text-gray-12 font-medium',
+                                        }}
+                                      />
+                                    </div>
+                                    <div className='w-28 shrink-0'>
+                                      <SegmentedControl
+                                        size='xs'
+                                        fullWidth
+                                        data={[
+                                          { label: 'S', value: 'SMALL' },
+                                          { label: 'M', value: 'MEDIUM' },
+                                          { label: 'L', value: 'LARGE' },
+                                        ]}
+                                        value={col.size || 'MEDIUM'}
+                                        onChange={(val) =>
+                                          handleUpdateTableColumn(col.id, {
+                                            size: val as any,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </SortableItem>
+                            ))}
+                          </div>
+                        </SortableContainer>
+                      )}
                     </div>
-                  </div>
 
                   <Divider className='border-dashed border-gray-1' />
 
@@ -1816,9 +1936,10 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     </>
                   )}
                 </div>
-              )}
+              )
+            })()}
 
-              {isRating && (
+            {isRating && (
                 <div className='space-y-4'>
                   <div className='space-y-2'>
                     <label className='block text-13 font-medium text-gray-11'>

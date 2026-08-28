@@ -58,8 +58,6 @@ export const getField = (fieldType: string) => {
         optionsSource: 'CUSTOM',
         optionsType: 'CUSTOM',
         separateOptionsUsing: 'COMMA',
-        tableColumns: [] as any[],
-        tableRowsType: 'ON_DEMAND',
       },
       validation: {
         allowedFileTypes: [] as string[],
@@ -81,8 +79,8 @@ export const getField = (fieldType: string) => {
       s.tableColumns = [
         {
           id: generateId(),
-          label: 'Column 1',
-          size: 'col-6',
+          name: 'Column 1',
+          size: 'MEDIUM',
           type: 'SHORT_TEXT',
         },
       ]
