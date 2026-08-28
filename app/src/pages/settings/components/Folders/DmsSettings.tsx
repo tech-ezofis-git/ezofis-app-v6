@@ -70,6 +70,7 @@ import BrandCard from '@/pages/dashboard/workflows/accounts-payable/components/s
 import SectionHeader from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/SectionHeader'
 import { OrDivider } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/StepLayout'
 import { DynamicIcon } from '@/pages/folders/components/icons'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'

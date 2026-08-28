@@ -245,9 +245,9 @@ const GenericRequestOverview = ({
             String(repositoryId),
             existingItem
               ? {
-                  itemId: existingItem.itemId,
-                  repositoryId: existingItem.repositoryId || repositoryId,
-                }
+                itemId: existingItem.itemId,
+                repositoryId: existingItem.repositoryId || repositoryId,
+              }
               : undefined,
           )
 
@@ -377,7 +377,7 @@ const GenericRequestOverview = ({
       </div>
 
       {showSidePanel && (
-        <div className='flex w-[380px] shrink-0 flex-col overflow-hidden border-l border-gray-3 bg-gray-1'>
+        <div className='flex h-full min-h-0 w-[380px] shrink-0 flex-col overflow-hidden border-l border-gray-3 bg-gray-1'>
           {rightView === 'history' && (
             <div className='flex h-full min-h-0 flex-col'>
               <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
@@ -412,55 +412,25 @@ const GenericRequestOverview = ({
                 />
               </div>
             ) : (
-              <div className='flex h-full min-h-0 flex-col'>
-                <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
-                  <span className='text-xs font-semibold text-gray-12'>
-                    {t`Attachments`}
-                  </span>
-                  <IconButton
-                    ariaLabel={t`Close`}
-                    icon='tabler:x'
-                    size='sm'
-                    variant='ghost'
-                    onClick={() => setRightView('overview')}
-                  />
-                </div>
-                <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
-                  <Attachments
-                    initialData={attachments}
-                    instanceId={instanceId}
-                    processId={processId}
-                    repositoryId={repositoryId}
-                    workflowId={workflowId}
-                    enabled
-                    onSelect={setOpenedAttachment}
-                  />
-                </div>
-              </div>
+              <Attachments
+                initialData={attachments}
+                instanceId={instanceId}
+                processId={processId}
+                repositoryId={repositoryId}
+                workflowId={workflowId}
+                enabled
+                onClose={() => setRightView('overview')}
+                onSelect={setOpenedAttachment}
+              />
             ))}
           {rightView === 'comments' && (
-            <div className='flex h-full min-h-0 flex-col'>
-              <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
-                <span className='text-xs font-semibold text-gray-12'>
-                  {t`Comments`}
-                </span>
-                <IconButton
-                  ariaLabel={t`Close`}
-                  icon='tabler:x'
-                  size='sm'
-                  variant='ghost'
-                  onClick={() => setRightView('overview')}
-                />
-              </div>
-              <div className='flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4'>
-                <Comments
-                  instanceId={instanceId}
-                  processId={processId}
-                  workflowId={workflowId}
-                  enabled
-                />
-              </div>
-            </div>
+            <Comments
+              enabled
+              instanceId={instanceId}
+              processId={processId}
+              workflowId={workflowId}
+              onClose={() => setRightView('overview')}
+            />
           )}
         </div>
       )}

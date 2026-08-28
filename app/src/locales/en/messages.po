@@ -44,7 +44,7 @@ msgid "{0} fields"
 msgstr "{0} fields"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2132
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2122
 msgid "{0} fields configured"
 msgstr "{0} fields configured"
 
@@ -317,15 +317,15 @@ msgstr "Access"
 msgid "Access Pages"
 msgstr "Access Pages"
 
-#: src/pages/settings/components/ManageUser.tsx:128
+#: src/pages/settings/components/ManageUser.tsx:130
 msgid "Account credentials & identity"
 msgstr "Account credentials & identity"
 
-#: src/pages/settings/components/ManageUser.tsx:2352
+#: src/pages/settings/components/ManageUser.tsx:2497
 msgid "Account Expiry Date"
 msgstr "Account Expiry Date"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1014
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1003
 msgid "Accounts Payable"
 msgstr "Accounts Payable"
 
@@ -333,11 +333,11 @@ msgstr "Accounts Payable"
 msgid "Accounts Payable Automation"
 msgstr "Accounts Payable Automation"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1035
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1024
 msgid "Accounts payable folder"
 msgstr "Accounts payable folder"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1015
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1004
 msgid "Accounts Receivable"
 msgstr "Accounts Receivable"
 
@@ -359,11 +359,12 @@ msgstr "Action Required"
 msgid "Actions"
 msgstr "Actions"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:1012
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3172
+#: src/pages/settings/components/Folders/DmsSettings.tsx:1094
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3351
 #: src/pages/settings/components/GroupManagement.tsx:103
 #: src/pages/settings/components/GroupManagement.tsx:950
-#: src/pages/settings/components/ManageUser.tsx:2459
+#: src/pages/settings/components/ManageUser.tsx:1428
+#: src/pages/settings/components/ManageUser.tsx:2604
 #: src/pages/settings/components/RolesPermissions.tsx:1669
 msgid "Active"
 msgstr "Active"
@@ -372,8 +373,8 @@ msgstr "Active"
 msgid "Active AI agents"
 msgstr "Active AI agents"
 
-#: src/pages/settings/components/ManageUser.tsx:180
-#: src/pages/settings/components/ManageUser.tsx:321
+#: src/pages/settings/components/ManageUser.tsx:182
+#: src/pages/settings/components/ManageUser.tsx:355
 msgid "Active Directory"
 msgstr "Active Directory"
 
@@ -386,7 +387,7 @@ msgid "Actual vs projected"
 msgstr "Actual vs projected"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2361
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:321
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:337
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:104
 msgid "Add a comment..."
 msgstr "Add a comment..."
@@ -423,8 +424,8 @@ msgstr "Add every row from this file as new entries. Matching PO numbers may be 
 #~ msgid "Add extra instructions for the user..."
 #~ msgstr "Add extra instructions for the user..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:529
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:531
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:525
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:527
 msgid "Add field"
 msgstr "Add field"
 
@@ -476,7 +477,7 @@ msgstr "Add Row"
 msgid "Add to related"
 msgstr "Add to related"
 
-#: src/pages/settings/SettingsMain.tsx:183
+#: src/pages/settings/SettingsMain.tsx:230
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
 msgstr "Add, edit, and manage platform users. Configure authentication and assign roles."
 
@@ -520,15 +521,15 @@ msgstr "AI Extract"
 msgid "AI EXTRACTION"
 msgstr "AI EXTRACTION"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2190
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2180
 msgid "AI fields"
 msgstr "AI fields"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2388
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2378
 msgid "AI Folder Builder"
 msgstr "AI Folder Builder"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:109
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:105
 msgid "AI generated"
 msgstr "AI generated"
 
@@ -623,7 +624,7 @@ msgstr "All Status"
 msgid "All Submissions"
 msgstr "All Submissions"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1285
+#: src/pages/settings/components/PortalConfiguration.tsx:1331
 msgid "Allow users to sign in with Google or Microsoft"
 msgstr "Allow users to sign in with Google or Microsoft"
 
@@ -793,8 +794,8 @@ msgstr "Approver delay averages over weeks"
 msgid "April"
 msgstr "April"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:1013
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3172
+#: src/pages/settings/components/Folders/DmsSettings.tsx:1096
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3351
 msgid "Archived"
 msgstr "Archived"
 
@@ -823,7 +824,7 @@ msgstr "Assign group members"
 msgid "Assign user"
 msgstr "Assign user"
 
-#: src/pages/settings/components/ManageUser.tsx:138
+#: src/pages/settings/components/ManageUser.tsx:140
 msgid "Assign user access groups"
 msgstr "Assign user access groups"
 
@@ -851,6 +852,10 @@ msgstr "At least 1 uppercase (A-Z)"
 msgid "At least one attachment is required"
 msgstr "At least one attachment is required"
 
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:309
+msgid "Attach file (optional)..."
+msgstr "Attach file (optional)..."
+
 #: src/features/builder/components/FieldSidebar.tsx:251
 #~ msgid "Attach professional documents, each should not exceed 5mb"
 #~ msgstr "Attach professional documents, each should not exceed 5mb"
@@ -859,8 +864,7 @@ msgstr "At least one attachment is required"
 #~ msgid "Attach to invoice"
 #~ msgstr "Attach to invoice"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:346
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:590
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:368
 msgid "Attachment"
 msgstr "Attachment"
 
@@ -869,18 +873,17 @@ msgstr "Attachment"
 #: src/pages/portal/components/PortalWizard.tsx:165
 #: src/pages/portal/components/PortalWizard.tsx:1035
 #: src/pages/portal/components/PortalWizard.tsx:1104
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:418
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:590
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:584
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3494
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "Attachments"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:179
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:33
-#: src/pages/settings/SettingsMain.tsx:222
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:39
+#: src/pages/settings/SettingsMain.tsx:269
 msgid "Audit & Monitoring"
 msgstr "Audit & Monitoring"
 
@@ -893,7 +896,7 @@ msgid "August"
 msgstr "August"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:138
-#: src/pages/settings/components/ManageUser.tsx:145
+#: src/pages/settings/components/ManageUser.tsx:147
 #: src/pages/settings/components/PortalConfiguration.tsx:80
 msgid "Authentication"
 msgstr "Authentication"
@@ -965,11 +968,11 @@ msgstr "Avg. Processing Time"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:906
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3972
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2003
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2044
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2061
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2078
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2379
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2068
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2369
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
 #: src/pages/settings/components/SettingsWizardLayout.tsx:195
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:112
@@ -996,7 +999,7 @@ msgstr "Back to Forms"
 msgid "Back to PO Setup"
 msgstr "Back to PO Setup"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2098
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2088
 msgid "Back to review"
 msgstr "Back to review"
 
@@ -1042,8 +1045,8 @@ msgid "Brand preferences saved successfully!"
 msgstr "Brand preferences saved successfully!"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:603
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:31
-#: src/pages/settings/SettingsMain.tsx:216
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
+#: src/pages/settings/SettingsMain.tsx:251
 msgid "Branding"
 msgstr "Branding"
 
@@ -1055,7 +1058,7 @@ msgstr "Branding not found"
 msgid "Branding URL"
 msgstr "Branding URL"
 
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:48
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:54
 msgid "Breadcrumb"
 msgstr "Breadcrumb"
 
@@ -1092,11 +1095,11 @@ msgstr "Bulk Import"
 msgid "Bulk Import Entries"
 msgstr "Bulk Import Entries"
 
-#: src/pages/settings/components/ManageUser.tsx:135
+#: src/pages/settings/components/ManageUser.tsx:137
 msgid "Business Detail"
 msgstr "Business Detail"
 
-#: src/pages/settings/components/ManageUser.tsx:1741
+#: src/pages/settings/components/ManageUser.tsx:1886
 msgid "Business Unit"
 msgstr "Business Unit"
 
@@ -1108,7 +1111,7 @@ msgstr "Buyer"
 msgid "By agent, stacked"
 msgstr "By agent, stacked"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:975
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:964
 msgid "By customer"
 msgstr "By customer"
 
@@ -1116,11 +1119,11 @@ msgstr "By customer"
 msgid "By department performance"
 msgstr "By department performance"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:971
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:960
 msgid "By document type"
 msgstr "By document type"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:967
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:956
 msgid "By employee"
 msgstr "By employee"
 
@@ -1132,7 +1135,7 @@ msgstr "By monthly trend analytics"
 msgid "By risk & compliance"
 msgstr "By risk & compliance"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:963
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:952
 msgid "By supplier / vendor"
 msgstr "By supplier / vendor"
 
@@ -1248,13 +1251,13 @@ msgstr "Change theme"
 msgid "Change Theme"
 msgstr "Change Theme"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:463
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:592
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:459
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:588
 msgid "Change to folder field"
 msgstr "Change to folder field"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:463
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:591
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:459
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:587
 msgid "Change to normal field"
 msgstr "Change to normal field"
 
@@ -1303,7 +1306,7 @@ msgstr "Choose signature"
 msgid "Choose what you'd like to submit. We'll guide you through the rest."
 msgstr "Choose what you'd like to submit. We'll guide you through the rest."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:923
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:912
 msgid "Choose where documents in this folder will be stored and accessed."
 msgstr "Choose where documents in this folder will be stored and accessed."
 
@@ -1377,9 +1380,9 @@ msgstr "Click to mark assignee signature place"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:388
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:421
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:448
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:410
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:599
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:189
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:790
 msgid "Close"
 msgstr "Close"
@@ -1397,7 +1400,7 @@ msgstr "Close panel"
 msgid "Cloud Integrations"
 msgstr "Cloud Integrations"
 
-#: src/pages/settings/components/ManageUser.tsx:2174
+#: src/pages/settings/components/ManageUser.tsx:2319
 msgid "Code"
 msgstr "Code"
 
@@ -1438,9 +1441,9 @@ msgid "Columns Ingested:"
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1447
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:445
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3499
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
@@ -1458,7 +1461,7 @@ msgstr "Complete"
 msgid "Complete document match."
 msgstr "Complete document match."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2391
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2381
 msgid "Complete each stage, then continue"
 msgstr "Complete each stage, then continue"
 
@@ -1516,9 +1519,13 @@ msgid "Configuration"
 msgstr "Configuration"
 
 #. placeholder {0}: suggestion.folderName
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1443
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1433
 msgid "Configuration for “{0}” is ready. Review each step and continue through the remaining options."
 msgstr "Configuration for “{0}” is ready. Review each step and continue through the remaining options."
+
+#: src/pages/settings/SettingsMain.tsx:307
+msgid "Configuration modules"
+msgstr "Configuration modules"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:145
 msgid "Configuration Summary"
@@ -1612,8 +1619,8 @@ msgstr "Connect your QuickBooks account to sync PO and invoice data automaticall
 #: src/pages/portal/components/PortalWizard.tsx:1148
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:97
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1154
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1986
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2027
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1976
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2017
 #: src/pages/settings/components/SettingsWizardLayout.tsx:77
 #: src/pages/sign-in/components/SignInForm.tsx:689
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
@@ -1654,13 +1661,13 @@ msgstr "Copy JSON"
 msgid "Copy link"
 msgstr "Copy link"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1521
+#: src/pages/settings/components/PortalConfiguration.tsx:1567
 msgid "Copy this URL and open it in another tab to use the portal."
 msgstr "Copy this URL and open it in another tab to use the portal."
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:740
-#: src/pages/settings/components/PortalConfiguration.tsx:520
-#: src/pages/settings/components/PortalConfiguration.tsx:1495
+#: src/pages/settings/components/PortalConfiguration.tsx:553
+#: src/pages/settings/components/PortalConfiguration.tsx:1541
 msgid "Copy URL"
 msgstr "Copy URL"
 
@@ -1677,20 +1684,20 @@ msgstr "Could not complete search."
 msgid "Could not copy link"
 msgstr "Could not copy link"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:405
-#: src/pages/settings/components/PortalConfiguration.tsx:1511
+#: src/pages/settings/components/PortalConfiguration.tsx:436
+#: src/pages/settings/components/PortalConfiguration.tsx:1557
 msgid "Could not copy URL"
 msgstr "Could not copy URL"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1351
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1341
 msgid "Could not generate description. You can retry with another folder name."
 msgstr "Could not generate description. You can retry with another folder name."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1411
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1401
 msgid "Could not generate fields. Try Recommend fields again."
 msgstr "Could not generate fields. Try Recommend fields again."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1450
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1440
 msgid "Could not generate folder configuration. Try again."
 msgstr "Could not generate folder configuration. Try again."
 
@@ -1714,15 +1721,19 @@ msgstr "Create access to sign"
 #~ msgid "Create and manage folders with custom fields, storage, and versioning."
 #~ msgstr ""
 
+#: src/pages/settings/SettingsMain.tsx:210
+msgid "Create and manage forms with fields, validation, and data collection."
+msgstr "Create and manage forms with fields, validation, and data collection."
+
 #: src/pages/settings/components/GroupManagement.tsx:771
 #~ msgid "Create and manage user group memberships for shared access control"
 #~ msgstr "Create and manage user group memberships for shared access control"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:615
+#: src/pages/settings/components/PortalConfiguration.tsx:652
 msgid "Create branded portals with login methods and connected workflows."
 msgstr "Create branded portals with login methods and connected workflows."
 
-#: src/pages/settings/SettingsMain.tsx:207
+#: src/pages/settings/SettingsMain.tsx:224
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr "Create branded portals, configure login methods, and connect workflows."
 
@@ -1735,11 +1746,11 @@ msgid "Create Group"
 msgstr "Create Group"
 
 #: src/pages/settings/components/GroupManagement.tsx:589
-#: src/pages/settings/SettingsMain.tsx:195
+#: src/pages/settings/SettingsMain.tsx:236
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr "Create logical groups to organize users by team, department, or function."
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1061
+#: src/pages/settings/components/PortalConfiguration.tsx:1108
 msgid "Create Portal"
 msgstr "Create Portal"
 
@@ -1752,15 +1763,15 @@ msgstr "Create Role"
 #~ msgid "Create signature request"
 #~ msgstr ""
 
-#: src/pages/settings/components/ManageUser.tsx:2685
+#: src/pages/settings/components/ManageUser.tsx:2832
 msgid "Create User"
 msgstr "Create User"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3179
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3181
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3358
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3360
 #: src/pages/settings/components/GroupManagement.tsx:452
-#: src/pages/settings/components/ManageUser.tsx:1114
-#: src/pages/settings/components/PortalConfiguration.tsx:465
+#: src/pages/settings/components/ManageUser.tsx:1247
+#: src/pages/settings/components/PortalConfiguration.tsx:498
 #: src/pages/settings/components/RolesPermissions.tsx:1676
 #: src/pages/settings/components/RolesPermissions.tsx:1678
 msgid "Created"
@@ -1771,7 +1782,7 @@ msgstr "Created"
 msgid "Created At"
 msgstr "Created At"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:478
+#: src/pages/settings/components/PortalConfiguration.tsx:511
 msgid "Created by"
 msgstr "Created by"
 
@@ -1780,8 +1791,8 @@ msgstr "Created by"
 #: src/pages/forms/FormEntriesPage.tsx:2152
 #: src/pages/forms/FormsPage.tsx:227
 #: src/pages/forms/FormsPage.tsx:612
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3192
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3194
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3371
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3373
 #: src/pages/workflows/components/Table.tsx:81
 #: src/pages/workflows/components/Table.tsx:462
 msgid "Created By"
@@ -1799,8 +1810,8 @@ msgid "Credit forecast"
 msgstr "Credit forecast"
 
 #: src/pages/settings/components/credits/Credits.tsx:563
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
-#: src/pages/settings/SettingsMain.tsx:234
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:41
+#: src/pages/settings/SettingsMain.tsx:257
 msgid "Credit Usage"
 msgstr "Credit Usage"
 
@@ -1866,7 +1877,7 @@ msgstr "Current Stage"
 msgid "Currently Shared With"
 msgstr "Currently Shared With"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:998
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:987
 msgid "Custom API"
 msgstr "Custom API"
 
@@ -1884,7 +1895,7 @@ msgstr "Custom Range"
 msgid "Customize Design"
 msgstr "Customize Design"
 
-#: src/pages/settings/SettingsMain.tsx:213
+#: src/pages/settings/SettingsMain.tsx:248
 msgid "Customize logos, brand colors, and visual identity across the platform."
 msgstr "Customize logos, brand colors, and visual identity across the platform."
 
@@ -1972,11 +1983,11 @@ msgstr "Date To"
 msgid "December"
 msgstr "December"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:928
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:917
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr "Decide how document revisions are tracked when files are updated."
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3124
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3300
 msgid "Default"
 msgstr "Default"
 
@@ -1985,7 +1996,7 @@ msgstr "Default"
 msgid "Default Storage"
 msgstr "Default Storage"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:918
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:907
 msgid "Define metadata fields used for search, filtering, and folder structure."
 msgstr "Define metadata fields used for search, filtering, and folder structure."
 
@@ -1993,7 +2004,7 @@ msgstr "Define metadata fields used for search, filtering, and folder structure.
 #~ msgid "Define role details, access scopes, and permission privilege matrices"
 #~ msgstr "Define role details, access scopes, and permission privilege matrices"
 
-#: src/pages/settings/SettingsMain.tsx:189
+#: src/pages/settings/SettingsMain.tsx:242
 msgid "Define roles and configure granular permissions across all modules."
 msgstr "Define roles and configure granular permissions across all modules."
 
@@ -2012,12 +2023,12 @@ msgstr "Define roles and configure granular permissions across all modules."
 #: src/pages/requests/components/Table.tsx:119
 #: src/pages/settings/components/GroupManagement.tsx:502
 #: src/pages/settings/components/GroupManagement.tsx:579
-#: src/pages/settings/components/ManageUser.tsx:1164
-#: src/pages/settings/components/ManageUser.tsx:1381
+#: src/pages/settings/components/ManageUser.tsx:1297
+#: src/pages/settings/components/ManageUser.tsx:1526
 #: src/pages/settings/components/Menus.tsx:452
 #: src/pages/settings/components/Menus.tsx:530
-#: src/pages/settings/components/PortalConfiguration.tsx:538
-#: src/pages/settings/components/PortalConfiguration.tsx:601
+#: src/pages/settings/components/PortalConfiguration.tsx:571
+#: src/pages/settings/components/PortalConfiguration.tsx:638
 #: src/pages/workflows/components/Table.tsx:145
 msgid "Delete"
 msgstr "Delete"
@@ -2039,7 +2050,7 @@ msgstr "Delete Menu"
 msgid "Delete Permanently"
 msgstr "Delete Permanently"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:608
+#: src/pages/settings/components/PortalConfiguration.tsx:640
 msgid "Delete Portal"
 msgstr "Delete Portal"
 
@@ -2063,7 +2074,7 @@ msgstr "Delete this signature"
 msgid "Delete this signature?"
 msgstr "Delete this signature?"
 
-#: src/pages/settings/components/ManageUser.tsx:1384
+#: src/pages/settings/components/ManageUser.tsx:1529
 msgid "Delete User"
 msgstr "Delete User"
 
@@ -2079,13 +2090,13 @@ msgstr "Demo data selected. This data will be used for invoice processing."
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:453
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:841
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1944
-#: src/pages/settings/components/ManageUser.tsx:1028
-#: src/pages/settings/components/ManageUser.tsx:1730
-#: src/pages/settings/components/ManageUser.tsx:2422
+#: src/pages/settings/components/ManageUser.tsx:1161
+#: src/pages/settings/components/ManageUser.tsx:1875
+#: src/pages/settings/components/ManageUser.tsx:2567
 msgid "Department"
 msgstr "Department"
 
-#: src/pages/settings/components/ManageUser.tsx:133
+#: src/pages/settings/components/ManageUser.tsx:135
 msgid "Department & business hierarchy"
 msgstr "Department & business hierarchy"
 
@@ -2093,7 +2104,7 @@ msgstr "Department & business hierarchy"
 #~ msgid "Department-wise spend"
 #~ msgstr "Department-wise spend"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1733
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1723
 msgid "Describe structure or fields…"
 msgstr "Describe structure or fields…"
 
@@ -2101,7 +2112,7 @@ msgstr "Describe structure or fields…"
 msgid "Describe the form you want to create..."
 msgstr "Describe the form you want to create..."
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3883
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4064
 msgid "Describe the purpose of this folder..."
 msgstr "Describe the purpose of this folder..."
 
@@ -2121,7 +2132,7 @@ msgstr "Describe this role's responsibilities and scope..."
 #~ msgid "Describe what form you want to create (e.g. Vendor Onboarding, Employee Leave Request)..."
 #~ msgstr "Describe what form you want to create (e.g. Vendor Onboarding, Employee Leave Request)..."
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1095
+#: src/pages/settings/components/PortalConfiguration.tsx:1143
 msgid "Describe what this portal is used for..."
 msgstr "Describe what this portal is used for..."
 
@@ -2130,16 +2141,16 @@ msgid "Describe your custom dashboard design or metric requirements..."
 msgstr "Describe your custom dashboard design or metric requirements..."
 
 #: src/pages/forms/FormsPage.tsx:202
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1924
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3100
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3102
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3881
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1914
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3276
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3278
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4062
 #: src/pages/settings/components/GroupManagement.tsx:411
 #: src/pages/settings/components/GroupManagement.tsx:413
 #: src/pages/settings/components/GroupManagement.tsx:911
-#: src/pages/settings/components/PortalConfiguration.tsx:425
-#: src/pages/settings/components/PortalConfiguration.tsx:1093
-#: src/pages/settings/components/PortalConfiguration.tsx:1393
+#: src/pages/settings/components/PortalConfiguration.tsx:458
+#: src/pages/settings/components/PortalConfiguration.tsx:1141
+#: src/pages/settings/components/PortalConfiguration.tsx:1439
 #: src/pages/settings/components/RolesPermissions.tsx:1005
 #: src/pages/settings/components/RolesPermissions.tsx:1602
 #: src/pages/settings/components/RolesPermissions.tsx:1604
@@ -2151,13 +2162,17 @@ msgstr "Description"
 #~ msgid "Description *"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2116
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2106
 msgid "Description pending"
 msgstr "Description pending"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1163
 #~ msgid "Description ready: “{description}” Review it below, then continue to Storage."
 #~ msgstr "Description ready: “{description}” Review it below, then continue to Storage."
+
+#: src/pages/settings/SettingsMain.tsx:217
+msgid "Design and configure automated workflows and process routing."
+msgstr "Design and configure automated workflows and process routing."
 
 #. placeholder {0}: response?.headers.length
 #. placeholder {1}: response?.rowCount
@@ -2188,7 +2203,7 @@ msgstr "Discrepancies"
 msgid "Displayed in the header and login page"
 msgstr "Displayed in the header and login page"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1834
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1824
 msgid "Do you require an ERP or system integration, or should integrations be configured later?"
 msgstr "Do you require an ERP or system integration, or should integrations be configured later?"
 
@@ -2243,8 +2258,8 @@ msgstr "Document Type"
 msgid "Document updated successfully."
 msgstr "Document updated successfully."
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3134
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3139
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3310
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3315
 msgid "Documents"
 msgstr "Documents"
 
@@ -2258,8 +2273,8 @@ msgstr "Don't have an account?"
 
 #: src/pages/folders/components/Upload/Upload.tsx:588
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1692
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1985
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2027
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1975
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2017
 msgid "Done"
 msgstr "Done"
 
@@ -2274,7 +2289,7 @@ msgstr ""
 #: src/pages/folders/components/DocumentDetailsView.tsx:2526
 #: src/pages/folders/components/DocumentDetailsView.tsx:2529
 #: src/pages/folders/components/DocumentSigningPage.tsx:2860
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:766
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:767
 msgid "Download"
 msgstr "Download"
 
@@ -2316,6 +2331,10 @@ msgid "DPO"
 msgstr "DPO"
 
 #: src/pages/forms/FormsPage.tsx:605
+#: src/pages/settings/components/Folders/DmsSettings.tsx:1095
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3351
+#: src/pages/settings/components/ManageUser.tsx:1422
+#: src/pages/settings/components/ManageUser.tsx:2608
 #: src/pages/workflows/components/Table.tsx:455
 msgid "Draft"
 msgstr "Draft"
@@ -2436,11 +2455,11 @@ msgstr "Duplicates Value"
 msgid "e.g. /reports"
 msgstr "e.g. /reports"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1086
+#: src/pages/settings/components/PortalConfiguration.tsx:1127
 msgid "e.g. Access2Pay Portal"
 msgstr "e.g. Access2Pay Portal"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3865
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4046
 msgid "e.g. AP Invoices 2026"
 msgstr "e.g. AP Invoices 2026"
 
@@ -2503,16 +2522,16 @@ msgstr "Each signer needs a name and email."
 #: src/pages/portal/components/PortalWizard.tsx:928
 #: src/pages/portal/components/PortalWizard.tsx:933
 #: src/pages/requests/components/Table.tsx:113
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2176
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2305
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2324
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2343
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2364
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3234
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2166
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2295
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2314
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2333
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2354
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3413
 #: src/pages/settings/components/GroupManagement.tsx:495
-#: src/pages/settings/components/ManageUser.tsx:1157
+#: src/pages/settings/components/ManageUser.tsx:1290
 #: src/pages/settings/components/Menus.tsx:442
-#: src/pages/settings/components/PortalConfiguration.tsx:515
+#: src/pages/settings/components/PortalConfiguration.tsx:548
 #: src/pages/workflows/components/Table.tsx:133
 msgid "Edit"
 msgstr "Edit"
@@ -2565,7 +2584,7 @@ msgstr "Edit Metadata"
 msgid "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 msgstr "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1061
+#: src/pages/settings/components/PortalConfiguration.tsx:1108
 msgid "Edit Portal"
 msgstr "Edit Portal"
 
@@ -2577,7 +2596,7 @@ msgstr "Edit Role"
 #~ msgid "Edit Role Setup"
 #~ msgstr "Edit Role Setup"
 
-#: src/pages/settings/components/ManageUser.tsx:2685
+#: src/pages/settings/components/ManageUser.tsx:2832
 msgid "Edit User"
 msgstr "Edit User"
 
@@ -2588,10 +2607,10 @@ msgstr "Edit User"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx:22
 #: src/pages/folders/components/SignRequestAssignForm.tsx:545
 #: src/pages/portal/components/PortalLogin.tsx:53
-#: src/pages/settings/components/ManageUser.tsx:1014
-#: src/pages/settings/components/ManageUser.tsx:1016
-#: src/pages/settings/components/ManageUser.tsx:1429
-#: src/pages/settings/components/ManageUser.tsx:2397
+#: src/pages/settings/components/ManageUser.tsx:1147
+#: src/pages/settings/components/ManageUser.tsx:1149
+#: src/pages/settings/components/ManageUser.tsx:1574
+#: src/pages/settings/components/ManageUser.tsx:2542
 #: src/pages/settings/components/RolesPermissions.tsx:2052
 #: src/pages/settings/components/RolesPermissions.tsx:2054
 #: src/pages/sign-in/components/SignInForm.tsx:620
@@ -2605,11 +2624,11 @@ msgstr "Email"
 msgid "Email / Username"
 msgstr "Email / Username"
 
-#: src/pages/settings/components/ManageUser.tsx:2134
+#: src/pages/settings/components/ManageUser.tsx:2279
 msgid "Email Address"
 msgstr "Email Address"
 
-#: src/pages/settings/components/ManageUser.tsx:164
+#: src/pages/settings/components/ManageUser.tsx:166
 msgid "Email and password"
 msgstr "Email and password"
 
@@ -2618,7 +2637,7 @@ msgstr "Email and password"
 msgid "Email is required"
 msgstr "Email is required"
 
-#: src/pages/settings/components/ManageUser.tsx:1721
+#: src/pages/settings/components/ManageUser.tsx:1866
 msgid "Employee ID"
 msgstr "Employee ID"
 
@@ -2641,7 +2660,7 @@ msgstr "Empty form field"
 msgid "Empty Rows Skipped"
 msgstr "Empty Rows Skipped"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1050
+#: src/pages/settings/components/PortalConfiguration.tsx:1096
 msgid "Enabled"
 msgstr "Enabled"
 
@@ -2664,11 +2683,11 @@ msgstr "Enter a valid email address"
 msgid "Enter a valid email address."
 msgstr "Enter a valid email address."
 
-#: src/pages/settings/components/ManageUser.tsx:2103
+#: src/pages/settings/components/ManageUser.tsx:2248
 msgid "Enter first name"
 msgstr "Enter first name"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1735
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1725
 msgid "Enter folder name…"
 msgstr "Enter folder name…"
 
@@ -2680,11 +2699,11 @@ msgstr "Enter IMAP server details for your custom email provider."
 msgid "Enter itemized quantity, pricing, and specs inline below."
 msgstr "Enter itemized quantity, pricing, and specs inline below."
 
-#: src/pages/settings/components/ManageUser.tsx:2117
+#: src/pages/settings/components/ManageUser.tsx:2262
 msgid "Enter last name"
 msgstr "Enter last name"
 
-#: src/pages/settings/components/ManageUser.tsx:2186
+#: src/pages/settings/components/ManageUser.tsx:2331
 msgid "Enter phone number"
 msgstr "Enter phone number"
 
@@ -2704,7 +2723,7 @@ msgstr "Enter the code from your authenticator app."
 msgid "Enter the user’s name."
 msgstr "Enter the user’s name."
 
-#: src/pages/settings/components/ManageUser.tsx:2159
+#: src/pages/settings/components/ManageUser.tsx:2304
 msgid "Enter username"
 msgstr "Enter username"
 
@@ -2812,7 +2831,7 @@ msgstr "Expires in days"
 msgid "Expires in days must be at least 1."
 msgstr "Expires in days must be at least 1."
 
-#: src/pages/settings/SettingsMain.tsx:225
+#: src/pages/settings/SettingsMain.tsx:260
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "Explore, test, and debug API endpoints with live requests and sample responses."
 
@@ -2900,9 +2919,9 @@ msgstr ""
 #~ msgid "EZOFIS AI Summary"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:176
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:948
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1005
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:172
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:937
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:994
 msgid "EZOFIS Drive"
 msgstr "EZOFIS Drive"
 
@@ -2989,9 +3008,9 @@ msgstr "Failed to send OTP. Please try again."
 msgid "Failed to start the workflow. Please try again."
 msgstr "Failed to start the workflow. Please try again."
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:227
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:264
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:308
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:249
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:286
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:330
 msgid "Failed to upload the file."
 msgstr "Failed to upload the file."
 
@@ -3015,11 +3034,15 @@ msgstr "February"
 msgid "Fetching Details.."
 msgstr "Fetching Details.."
 
+#: src/pages/portal/PortalPage.tsx:255
+msgid "Fetching the latest portal configuration."
+msgstr "Fetching the latest portal configuration."
+
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:255
 msgid "Field Matching"
 msgstr "Field Matching"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:489
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:485
 msgid "Field name"
 msgstr "Field name"
 
@@ -3027,7 +3050,7 @@ msgstr "Field name"
 #~ msgid "Field Settings"
 #~ msgstr "Field Settings"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:754
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:750
 msgid "Field type"
 msgstr "Field type"
 
@@ -3039,12 +3062,12 @@ msgstr "fields"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
 #: src/pages/folders/components/Upload/Upload.tsx:1927
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:920
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
 msgid "Fields"
 msgstr "Fields"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2187
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2177
 msgid "Fields ({0})"
 msgstr "Fields ({0})"
 
@@ -3058,7 +3081,7 @@ msgstr "Fields Matched"
 msgid "Fields Needing Review"
 msgstr "Fields Needing Review"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2133
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2123
 msgid "Fields pending"
 msgstr "Fields pending"
 
@@ -3159,15 +3182,15 @@ msgstr "Financial Year"
 msgid "Find related documents"
 msgstr "Find related documents"
 
-#: src/pages/settings/components/ManageUser.tsx:2102
+#: src/pages/settings/components/ManageUser.tsx:2247
 msgid "First Name"
 msgstr "First Name"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1430
+#: src/pages/settings/components/PortalConfiguration.tsx:1476
 msgid "First Name Field"
 msgstr "First Name Field"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1191
+#: src/pages/settings/components/PortalConfiguration.tsx:1234
 msgid "First Name Field *"
 msgstr "First Name Field *"
 
@@ -3185,18 +3208,18 @@ msgstr "Flat"
 msgid "Flexible Order"
 msgstr "Flexible Order"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2719
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3083
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3085
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2895
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3259
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3261
 msgid "Folder"
 msgstr "Folder"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1343
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1333
 msgid "Folder “{folderName}” is ready. Continue to choose a storage provider."
 msgstr "Folder “{folderName}” is ready. Continue to choose a storage provider."
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
-#: src/pages/settings/SettingsMain.tsx:204
+#: src/pages/settings/SettingsMain.tsx:207
 msgid "Folder Configuration"
 msgstr ""
 
@@ -3208,37 +3231,37 @@ msgstr ""
 #~ msgid "Folder created successfully."
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1903
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2154
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1893
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2144
 msgid "Folder details"
 msgstr "Folder details"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:915
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:904
 msgid "Folder Details"
 msgstr "Folder Details"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1342
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1332
 msgid "Folder details ready: “{dbDescription}” Review requirements & description below, then continue."
 msgstr "Folder details ready: “{dbDescription}” Review requirements & description below, then continue."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1477
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1467
 msgid "Folder details updated. Regenerating recommended fields for “{nameTrimmed}”…"
 msgstr "Folder details updated. Regenerating recommended fields for “{nameTrimmed}”…"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:472
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:601
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:468
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:597
 msgid "Folder field — click for normal"
 msgstr "Folder field — click for normal"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:516
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:512
 msgid "Folder fields are mandatory"
 msgstr "Folder fields are mandatory"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1908
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1898
 msgid "Folder Name"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3864
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4045
 msgid "Folder Name *"
 msgstr "Folder Name *"
 
@@ -3250,7 +3273,7 @@ msgstr "Folder Name *"
 #~ msgid "Folder name recorded as “{folderName}”. Generating a business description now…"
 #~ msgstr "Folder name recorded as “{folderName}”. Generating a business description now…"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1655
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1645
 msgid "Folder name recorded as “{folderName}”. Generating details now…"
 msgstr "Folder name recorded as “{folderName}”. Generating details now…"
 
@@ -3272,7 +3295,7 @@ msgstr "Folder name recorded as “{folderName}”. Generating details now…"
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:59
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:81
-#: src/pages/folders/components/FolderExplorer.tsx:288
+#: src/pages/folders/components/FolderExplorer.tsx:289
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:21
 msgid "Folders"
 msgstr "Folders"
@@ -3281,7 +3304,7 @@ msgstr "Folders"
 msgid "FOLDERS"
 msgstr "FOLDERS"
 
-#: src/pages/settings/components/ManageUser.tsx:2368
+#: src/pages/settings/components/ManageUser.tsx:2513
 msgid "Force password reset on first login"
 msgstr "Force password reset on first login"
 
@@ -3318,6 +3341,11 @@ msgstr "Form Builder"
 #~ msgid "Form cannot be submitted without this."
 #~ msgstr "Form cannot be submitted without this."
 
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:31
+#: src/pages/settings/SettingsMain.tsx:214
+msgid "Form Configuration"
+msgstr "Form Configuration"
+
 #: src/pages/forms/FormsPage.tsx:550
 msgid "Form deleted successfully"
 msgstr "Form deleted successfully"
@@ -3335,7 +3363,6 @@ msgstr "Form Sections"
 msgid "Format"
 msgstr "Format"
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:76
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:85
 #: src/pages/forms/components/Table.tsx:57
 msgid "Forms"
@@ -3377,24 +3404,24 @@ msgstr "Fully Matched"
 msgid "Generate Dashboard Design"
 msgstr "Generate Dashboard Design"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:582
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1943
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2121
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2166
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2231
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2283
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:578
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1933
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2111
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2156
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2221
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2273
 msgid "Generated by AI"
 msgstr "Generated by AI"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1888
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1878
 msgid "Generating description…"
 msgstr "Generating description…"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1690
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1680
 msgid "Generating recommended fields for this folder…"
 msgstr "Generating recommended fields for this folder…"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1890
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1880
 msgid "Generating recommended fields…"
 msgstr "Generating recommended fields…"
 
@@ -3429,15 +3456,15 @@ msgstr "Go Back"
 msgid "Go to Inbox"
 msgstr "Go to Inbox"
 
-#: src/pages/settings/components/ManageUser.tsx:170
-#: src/pages/settings/components/ManageUser.tsx:322
-#: src/pages/settings/components/PortalConfiguration.tsx:1297
+#: src/pages/settings/components/ManageUser.tsx:172
+#: src/pages/settings/components/ManageUser.tsx:356
+#: src/pages/settings/components/PortalConfiguration.tsx:1340
 msgid "Google"
 msgstr "Google"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:177
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:950
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1006
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:173
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:939
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:995
 msgid "Google Drive"
 msgstr "Google Drive"
 
@@ -3461,7 +3488,7 @@ msgstr "Grid View"
 msgid "Group"
 msgstr "Group"
 
-#: src/pages/settings/components/ManageUser.tsx:140
+#: src/pages/settings/components/ManageUser.tsx:142
 msgid "Group Assignment"
 msgstr "Group Assignment"
 
@@ -3472,7 +3499,7 @@ msgstr "Group Details"
 #: src/pages/settings/components/GroupManagement.tsx:590
 #: src/pages/settings/components/GroupManagement.tsx:819
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:27
-#: src/pages/settings/SettingsMain.tsx:198
+#: src/pages/settings/SettingsMain.tsx:239
 msgid "Group Management"
 msgstr "Group Management"
 
@@ -3505,8 +3532,8 @@ msgstr "Group name & description"
 #~ msgstr ""
 
 #: src/pages/settings/components/GroupManagement.tsx:663
-#: src/pages/settings/components/ManageUser.tsx:2003
-#: src/pages/settings/components/ManageUser.tsx:2432
+#: src/pages/settings/components/ManageUser.tsx:2148
+#: src/pages/settings/components/ManageUser.tsx:2577
 msgid "Groups"
 msgstr "Groups"
 
@@ -3613,7 +3640,7 @@ msgstr "Historical Match Results"
 
 #: src/pages/portal/components/PortalDetail.tsx:75
 #: src/pages/portal/components/PortalDetail.tsx:197
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:385
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:407
 #: src/pages/requests/components/request/components/Header.tsx:470
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3504
 msgid "History"
@@ -3623,10 +3650,10 @@ msgstr "History"
 msgid "Hold"
 msgstr "Hold"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1499
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1576
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1843
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2016
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1489
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1566
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1833
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2006
 msgid "How should documents be organized? Choose Recommend fields or another option."
 msgstr "How should documents be organized? Choose Recommend fields or another option."
 
@@ -3638,11 +3665,11 @@ msgstr "How should this data be applied?"
 msgid "How should your dashboard be organized? Choose a template or describe your custom design."
 msgstr "How should your dashboard be organized? Choose a template or describe your custom design."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1016
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1005
 msgid "HR Documents"
 msgstr "HR Documents"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1025
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1014
 msgid "HR payslips folder"
 msgstr "HR payslips folder"
 
@@ -3706,7 +3733,8 @@ msgstr "In progress..."
 
 #: src/pages/settings/components/GroupManagement.tsx:104
 #: src/pages/settings/components/GroupManagement.tsx:950
-#: src/pages/settings/components/ManageUser.tsx:2462
+#: src/pages/settings/components/ManageUser.tsx:1426
+#: src/pages/settings/components/ManageUser.tsx:2609
 #: src/pages/settings/components/RolesPermissions.tsx:1669
 msgid "Inactive"
 msgstr "Inactive"
@@ -3725,7 +3753,7 @@ msgstr "Inbox ({inboxCount})"
 msgid "Incoming workload volumes over the last 6 months"
 msgstr "Incoming workload volumes over the last 6 months"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:984
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:973
 msgid "Incremental Version"
 msgstr "Incremental Version"
 
@@ -3801,8 +3829,8 @@ msgid "Instant Processing"
 msgstr "Instant Processing"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Integrations.tsx:62
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:935
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2353
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:924
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2343
 msgid "Integrations"
 msgstr "Integrations"
 
@@ -3989,8 +4017,8 @@ msgstr "Items"
 msgid "January"
 msgstr "January"
 
-#: src/pages/settings/components/ManageUser.tsx:1709
-#: src/pages/settings/components/ManageUser.tsx:2410
+#: src/pages/settings/components/ManageUser.tsx:1854
+#: src/pages/settings/components/ManageUser.tsx:2555
 msgid "Job Title"
 msgstr "Job Title"
 
@@ -4078,7 +4106,7 @@ msgstr "Last Action At"
 msgid "Last Action By"
 msgstr "Last Action By"
 
-#: src/pages/settings/components/ManageUser.tsx:1100
+#: src/pages/settings/components/ManageUser.tsx:1233
 msgid "Last Login"
 msgstr "Last Login"
 
@@ -4091,7 +4119,7 @@ msgstr "last month"
 msgid "Last month"
 msgstr "Last month"
 
-#: src/pages/settings/components/ManageUser.tsx:2116
+#: src/pages/settings/components/ManageUser.tsx:2261
 msgid "Last Name"
 msgstr "Last Name"
 
@@ -4107,11 +4135,11 @@ msgstr "Launch Workflow"
 msgid "Ledger Verification Note:"
 msgstr "Ledger Verification Note:"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1017
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1006
 msgid "Legal Contracts"
 msgstr "Legal Contracts"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1030
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1019
 msgid "Legal contracts folder"
 msgstr "Legal contracts folder"
 
@@ -4123,7 +4151,7 @@ msgstr "Legal contracts folder"
 msgid "Legal Matter Association Check"
 msgstr "Legal Matter Association Check"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:271
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:267
 msgid "Less"
 msgstr "Less"
 
@@ -4246,6 +4274,10 @@ msgstr "Loading notifications..."
 msgid "Loading older comments..."
 msgstr "Loading older comments..."
 
+#: src/pages/portal/PortalPage.tsx:253
+msgid "Loading portal"
+msgstr "Loading portal"
+
 #: src/pages/folders/components/DocumentDetailsView.tsx:2448
 #: src/pages/folders/components/DocumentDetailsView.tsx:2454
 msgid "Loading related documents..."
@@ -4283,8 +4315,8 @@ msgstr "Loading your branded sign-in"
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/pages/settings/components/ManageUser.tsx:1765
-#: src/pages/settings/components/ManageUser.tsx:2428
+#: src/pages/settings/components/ManageUser.tsx:1910
+#: src/pages/settings/components/ManageUser.tsx:2573
 msgid "Location"
 msgstr "Location"
 
@@ -4296,36 +4328,36 @@ msgstr "Log in to submit and track your requests"
 msgid "Log out"
 msgstr "Log out"
 
-#: src/pages/settings/components/ManageUser.tsx:2417
-#: src/pages/settings/components/PortalConfiguration.tsx:434
-#: src/pages/settings/components/PortalConfiguration.tsx:652
+#: src/pages/settings/components/ManageUser.tsx:2562
+#: src/pages/settings/components/PortalConfiguration.tsx:467
+#: src/pages/settings/components/PortalConfiguration.tsx:689
 msgid "Login"
 msgstr "Login"
 
-#: src/pages/settings/components/ManageUser.tsx:130
+#: src/pages/settings/components/ManageUser.tsx:132
 msgid "Login Details"
 msgstr "Login Details"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1445
+#: src/pages/settings/components/PortalConfiguration.tsx:1491
 msgid "Login Password Field"
 msgstr "Login Password Field"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1399
+#: src/pages/settings/components/PortalConfiguration.tsx:1445
 msgid "Login type"
 msgstr "Login type"
 
-#: src/pages/settings/components/ManageUser.tsx:1073
-#: src/pages/settings/components/ManageUser.tsx:1080
-#: src/pages/settings/components/ManageUser.tsx:1475
-#: src/pages/settings/components/ManageUser.tsx:2210
+#: src/pages/settings/components/ManageUser.tsx:1206
+#: src/pages/settings/components/ManageUser.tsx:1213
+#: src/pages/settings/components/ManageUser.tsx:1620
+#: src/pages/settings/components/ManageUser.tsx:2355
 msgid "Login Type"
 msgstr "Login Type"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1116
+#: src/pages/settings/components/PortalConfiguration.tsx:1159
 msgid "Login type *"
 msgstr "Login type *"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1446
+#: src/pages/settings/components/PortalConfiguration.tsx:1492
 msgid "Login With OTP"
 msgstr "Login With OTP"
 
@@ -4369,8 +4401,8 @@ msgstr "Manage navigation menus, routes, and display order across the platform."
 msgid "Management"
 msgstr "Management"
 
-#: src/pages/settings/components/ManageUser.tsx:1753
-#: src/pages/settings/components/ManageUser.tsx:2413
+#: src/pages/settings/components/ManageUser.tsx:1898
+#: src/pages/settings/components/ManageUser.tsx:2558
 msgid "Manager"
 msgstr ""
 
@@ -4378,8 +4410,8 @@ msgstr ""
 #~ msgid "Mandatory"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:518
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:656
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:514
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:652
 msgid "Mandatory — click to make optional"
 msgstr "Mandatory — click to make optional"
 
@@ -4444,13 +4476,13 @@ msgstr "March"
 msgid "Mark all as read"
 msgstr "Mark all as read"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:506
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:646
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:502
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:642
 msgid "Mark as mandatory"
 msgstr "Mark as mandatory"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:505
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:646
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:501
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:642
 msgid "Mark as optional"
 msgstr "Mark as optional"
 
@@ -4475,11 +4507,11 @@ msgstr "Master Field"
 msgid "Master fields mapped and saved successfully."
 msgstr "Master fields mapped and saved successfully."
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1408
+#: src/pages/settings/components/PortalConfiguration.tsx:1454
 msgid "Master Form"
 msgstr "Master Form"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1136
+#: src/pages/settings/components/PortalConfiguration.tsx:1175
 msgid "Master Form *"
 msgstr "Master Form *"
 
@@ -4559,17 +4591,17 @@ msgstr "Message"
 msgid "Metadata Workspace:"
 msgstr "Metadata Workspace:"
 
-#: src/pages/settings/components/ManageUser.tsx:2438
+#: src/pages/settings/components/ManageUser.tsx:2583
 msgid "MFA"
 msgstr "MFA"
 
-#: src/pages/settings/components/ManageUser.tsx:175
-#: src/pages/settings/components/ManageUser.tsx:323
-#: src/pages/settings/components/PortalConfiguration.tsx:1306
+#: src/pages/settings/components/ManageUser.tsx:177
+#: src/pages/settings/components/ManageUser.tsx:357
+#: src/pages/settings/components/PortalConfiguration.tsx:1349
 msgid "Microsoft"
 msgstr "Microsoft"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:996
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:985
 msgid "Microsoft Dynamics"
 msgstr "Microsoft Dynamics"
 
@@ -4629,11 +4661,11 @@ msgstr "Modify existing form response answers and save changes."
 msgid "Module access & privilege matrix"
 msgstr "Module access & privilege matrix"
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:87
+#: src/layouts/app/components/sidebar/Sidebar.tsx:75
 msgid "Modules"
 msgstr "Modules"
 
-#: src/pages/settings/SettingsMain.tsx:231
+#: src/pages/settings/SettingsMain.tsx:254
 msgid "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 msgstr "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 
@@ -4661,7 +4693,7 @@ msgstr "Monthly invoice trend"
 msgid "more"
 msgstr "more"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:260
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:256
 msgid "More (+{hiddenCount})"
 msgstr "More (+{hiddenCount})"
 
@@ -4708,13 +4740,13 @@ msgstr "N/A"
 #: src/pages/forms/FormsPage.tsx:595
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:618
-#: src/pages/settings/components/ManageUser.tsx:991
-#: src/pages/settings/components/ManageUser.tsx:993
-#: src/pages/settings/components/ManageUser.tsx:1422
-#: src/pages/settings/components/ManageUser.tsx:2392
-#: src/pages/settings/components/PortalConfiguration.tsx:417
-#: src/pages/settings/components/PortalConfiguration.tsx:419
-#: src/pages/settings/components/PortalConfiguration.tsx:641
+#: src/pages/settings/components/ManageUser.tsx:1124
+#: src/pages/settings/components/ManageUser.tsx:1126
+#: src/pages/settings/components/ManageUser.tsx:1567
+#: src/pages/settings/components/ManageUser.tsx:2537
+#: src/pages/settings/components/PortalConfiguration.tsx:450
+#: src/pages/settings/components/PortalConfiguration.tsx:452
+#: src/pages/settings/components/PortalConfiguration.tsx:678
 #: src/pages/settings/components/RolesPermissions.tsx:1771
 #: src/pages/workflows/components/Table.tsx:53
 #: src/pages/workflows/components/Table.tsx:445
@@ -4752,8 +4784,8 @@ msgstr "New Form Entry"
 #~ msgid "New Group Setup"
 #~ msgstr "New Group Setup"
 
-#: src/pages/settings/components/ManageUser.tsx:2310
-#: src/pages/settings/components/ManageUser.tsx:2315
+#: src/pages/settings/components/ManageUser.tsx:2455
+#: src/pages/settings/components/ManageUser.tsx:2460
 msgid "New Password"
 msgstr "New Password"
 
@@ -4773,7 +4805,7 @@ msgstr "New Request"
 #: src/pages/portal/components/PortalHome.tsx:189
 #: src/pages/portal/components/PortalPicker.tsx:53
 #: src/pages/portal/components/PortalWizard.tsx:685
-#: src/pages/portal/PortalPage.tsx:314
+#: src/pages/portal/PortalPage.tsx:368
 msgid "New Submission"
 msgstr "New Submission"
 
@@ -4839,6 +4871,7 @@ msgstr "No comments are available for this document. Add the first comment to st
 msgid "No comments found"
 msgstr "No comments found"
 
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:208
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:72
 msgid "No comments yet"
 msgstr "No comments yet"
@@ -4917,9 +4950,9 @@ msgstr "No form panels found for this request."
 #~ msgid "No groups yet"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:993
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2145
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2357
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:982
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2135
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2347
 msgid "No integrations"
 msgstr "No integrations"
 
@@ -5062,7 +5095,7 @@ msgstr ""
 msgid "No timeline found"
 msgstr "No timeline found"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:795
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:791
 msgid "No types found"
 msgstr "No types found"
 
@@ -5102,8 +5135,8 @@ msgstr "No workflows match your search."
 msgid "None"
 msgstr "None"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:473
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:602
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:469
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:598
 msgid "Normal field — click for folder"
 msgstr "Normal field — click for folder"
 
@@ -5179,7 +5212,7 @@ msgstr "October"
 msgid "of"
 msgstr "of"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1051
+#: src/pages/settings/components/PortalConfiguration.tsx:1097
 msgid "Off"
 msgstr "Off"
 
@@ -5195,9 +5228,9 @@ msgstr "One more detail before uploading"
 msgid "One more detail is needed before this file can be uploaded."
 msgstr "One more detail is needed before this file can be uploaded."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:178
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:949
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1007
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:174
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:938
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:996
 msgid "OneDrive"
 msgstr "OneDrive"
 
@@ -5216,8 +5249,8 @@ msgid "Open Invoices"
 msgstr "Open Invoices"
 
 #: src/pages/settings/components/PortalConfiguration.tsx:525
-msgid "Open portal"
-msgstr "Open portal"
+#~ msgid "Open portal"
+#~ msgstr "Open portal"
 
 #: src/pages/folders/components/CollaboraEditor.tsx:270
 msgid "Opening document..."
@@ -5235,8 +5268,8 @@ msgstr "Opening sign in..."
 msgid "Opening sign request..."
 msgstr "Opening sign request..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:519
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:657
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:515
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:653
 msgid "Optional — click to make mandatory"
 msgstr "Optional — click to make mandatory"
 
@@ -5248,7 +5281,7 @@ msgstr "Optional Field"
 msgid "Optional supporting documents"
 msgstr "Optional supporting documents"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:933
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:922
 msgid "Optionally connect ERP or other systems so data can sync with this folder."
 msgstr "Optionally connect ERP or other systems so data can sync with this folder."
 
@@ -5263,19 +5296,19 @@ msgstr "Or"
 msgid "Or prefer to build from scratch?"
 msgstr "Or prefer to build from scratch?"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1736
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1726
 msgid "Or type a storage provider…"
 msgstr "Or type a storage provider…"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1737
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1727
 msgid "Or type a versioning strategy…"
 msgstr "Or type a versioning strategy…"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1734
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1724
 msgid "Or type an integration…"
 msgstr "Or type an integration…"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:995
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:984
 msgid "Oracle ERP"
 msgstr "Oracle ERP"
 
@@ -5343,10 +5376,10 @@ msgstr "Partially Matched"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx:31
 #: src/pages/portal/components/PortalLogin.tsx:262
-#: src/pages/settings/components/ManageUser.tsx:165
-#: src/pages/settings/components/ManageUser.tsx:324
-#: src/pages/settings/components/ManageUser.tsx:2310
-#: src/pages/settings/components/ManageUser.tsx:2315
+#: src/pages/settings/components/ManageUser.tsx:167
+#: src/pages/settings/components/ManageUser.tsx:358
+#: src/pages/settings/components/ManageUser.tsx:2455
+#: src/pages/settings/components/ManageUser.tsx:2460
 #: src/pages/sign-in/components/ShareSignInForm.tsx:278
 #: src/pages/sign-in/components/ShareSignInForm.tsx:312
 #: src/pages/sign-in/components/SignInForm.tsx:638
@@ -5357,20 +5390,20 @@ msgstr "Partially Matched"
 msgid "Password"
 msgstr "Password"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1213
-#: src/pages/settings/components/PortalConfiguration.tsx:1441
+#: src/pages/settings/components/PortalConfiguration.tsx:1259
+#: src/pages/settings/components/PortalConfiguration.tsx:1487
 msgid "Password & authentication method"
 msgstr "Password & authentication method"
 
-#: src/pages/settings/components/ManageUser.tsx:2334
+#: src/pages/settings/components/ManageUser.tsx:2479
 msgid "Password Expiry (Days)"
 msgstr "Password Expiry (Days)"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1454
+#: src/pages/settings/components/PortalConfiguration.tsx:1500
 msgid "Password Field"
 msgstr "Password Field"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1254
+#: src/pages/settings/components/PortalConfiguration.tsx:1295
 msgid "Password Field *"
 msgstr "Password Field *"
 
@@ -5448,7 +5481,8 @@ msgstr "Pen width"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2434
 #: src/pages/portal/components/PortalHome.tsx:82
 #: src/pages/portal/components/PortalHome.tsx:130
-#: src/pages/settings/components/ManageUser.tsx:2461
+#: src/pages/settings/components/ManageUser.tsx:1424
+#: src/pages/settings/components/ManageUser.tsx:2606
 msgid "Pending"
 msgstr "Pending"
 
@@ -5484,11 +5518,11 @@ msgstr "Permission"
 msgid "Permissions"
 msgstr "Permissions"
 
-#: src/pages/settings/components/ManageUser.tsx:2401
+#: src/pages/settings/components/ManageUser.tsx:2546
 msgid "Phone"
 msgstr "Phone"
 
-#: src/pages/settings/components/ManageUser.tsx:2169
+#: src/pages/settings/components/ManageUser.tsx:2314
 msgid "Phone Number"
 msgstr "Phone Number"
 
@@ -5535,12 +5569,16 @@ msgstr "Placeholder Column 1"
 msgid "Placeholder Column 2"
 msgstr "Placeholder Column 2"
 
+#: src/pages/settings/SettingsMain.tsx:337
+msgid "Platform and monitoring"
+msgstr "Platform and monitoring"
+
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:117
 msgid "Playground"
 msgstr "Playground"
 
-#: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
-#: src/pages/settings/SettingsMain.tsx:228
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:43
+#: src/pages/settings/SettingsMain.tsx:263
 msgid "Playground API"
 msgstr "Playground API"
 
@@ -5573,7 +5611,7 @@ msgstr "Please fill in required field(s): {missing}"
 msgid "Please fill the required field: {identifierLabel}"
 msgstr "Please fill the required field: {identifierLabel}"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1113
+#: src/pages/settings/components/PortalConfiguration.tsx:1164
 msgid "Please fill the required field: Login type"
 msgstr "Please fill the required field: Login type"
 
@@ -5740,17 +5778,18 @@ msgstr "PO Verified"
 msgid "Policy Compliance"
 msgstr "Policy Compliance"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:616
-#: src/pages/settings/components/PortalConfiguration.tsx:1059
-#: src/pages/settings/SettingsMain.tsx:210
+#: src/pages/settings/components/PortalConfiguration.tsx:653
+#: src/pages/settings/components/PortalConfiguration.tsx:1105
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
+#: src/pages/settings/SettingsMain.tsx:227
 msgid "Portal Configuration"
 msgstr "Portal Configuration"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:382
+#: src/pages/settings/components/PortalConfiguration.tsx:409
 msgid "Portal created successfully"
 msgstr "Portal created successfully"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:395
+#: src/pages/settings/components/PortalConfiguration.tsx:426
 msgid "Portal deleted successfully"
 msgstr "Portal deleted successfully"
 
@@ -5758,11 +5797,11 @@ msgstr "Portal deleted successfully"
 msgid "Portal Details"
 msgstr "Portal Details"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1387
+#: src/pages/settings/components/PortalConfiguration.tsx:1433
 msgid "Portal Name"
 msgstr "Portal Name"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1085
+#: src/pages/settings/components/PortalConfiguration.tsx:1126
 msgid "Portal Name *"
 msgstr "Portal Name *"
 
@@ -5770,29 +5809,29 @@ msgstr "Portal Name *"
 msgid "Portal name and description"
 msgstr "Portal name and description"
 
-#: src/pages/portal/PortalPage.tsx:210
+#: src/pages/portal/PortalPage.tsx:264
 msgid "Portal not found"
 msgstr "Portal not found"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1380
+#: src/pages/settings/components/PortalConfiguration.tsx:1426
 msgid "Portal Summary"
 msgstr "Portal Summary"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:381
+#: src/pages/settings/components/PortalConfiguration.tsx:408
 msgid "Portal updated successfully"
 msgstr "Portal updated successfully"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1489
+#: src/pages/settings/components/PortalConfiguration.tsx:1535
 msgid "Portal URL"
 msgstr "Portal URL"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:403
-#: src/pages/settings/components/PortalConfiguration.tsx:1505
+#: src/pages/settings/components/PortalConfiguration.tsx:434
+#: src/pages/settings/components/PortalConfiguration.tsx:1551
 msgid "Portal URL copied"
 msgstr "Portal URL copied"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:115
-#: src/pages/settings/components/PortalConfiguration.tsx:697
+#: src/pages/settings/components/PortalConfiguration.tsx:735
 msgid "Portals"
 msgstr "Portals"
 
@@ -6048,8 +6087,8 @@ msgstr "Received"
 msgid "Recognizing table structures"
 msgstr "Recognizing table structures"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:959
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1687
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:948
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1677
 msgid "Recommend fields"
 msgstr "Recommend fields"
 
@@ -6059,7 +6098,7 @@ msgstr "Recommended"
 
 #. placeholder {0}: fields.length
 #. placeholder {1}: answers.folderName
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1403
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1393
 msgid "Recommended {0} fields for “{1}”. Adjust them below, then continue."
 msgstr "Recommended {0} fields for “{1}”. Adjust them below, then continue."
 
@@ -6077,7 +6116,7 @@ msgstr "Records matched successfully"
 msgid "Redo"
 msgstr "Redo"
 
-#: src/pages/folders/components/FolderFilterBar.tsx:705
+#: src/pages/folders/components/FolderFilterBar.tsx:708
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 #: src/pages/forms/FormEntriesPage.tsx:2121
 #: src/pages/forms/FormsPage.tsx:587
@@ -6098,12 +6137,12 @@ msgstr "Refresh credit usage"
 msgid "Refresh Preview"
 msgstr "Refresh Preview"
 
-#: src/pages/folders/components/FolderFilterBar.tsx:705
+#: src/pages/folders/components/FolderFilterBar.tsx:708
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 msgid "Refreshing..."
 msgstr "Refreshing..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2011
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2001
 msgid "Regenerate"
 msgstr "Regenerate"
 
@@ -6134,7 +6173,7 @@ msgid "Remove"
 msgstr "Remove"
 
 #. placeholder {0}: field.fieldName
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:570
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:566
 msgid "Remove {0}"
 msgstr "Remove {0}"
 
@@ -6176,7 +6215,7 @@ msgstr "Rename"
 msgid "Replace"
 msgstr "Replace"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:986
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:975
 msgid "Replace Existing"
 msgstr "Replace Existing"
 
@@ -6286,7 +6325,7 @@ msgstr "Reset"
 msgid "Reset mappings to matching suggestions."
 msgstr "Reset mappings to matching suggestions."
 
-#: src/pages/settings/components/ManageUser.tsx:2294
+#: src/pages/settings/components/ManageUser.tsx:2439
 msgid "Reset password"
 msgstr "Reset password"
 
@@ -6326,7 +6365,7 @@ msgstr "Restore"
 msgid "Result"
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1171
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1161
 msgid "Resumed your saved folder setup. Continue from where you left off."
 msgstr "Resumed your saved folder setup. Continue from where you left off."
 
@@ -6342,9 +6381,9 @@ msgstr "Retry Ingestion"
 msgid "Retry Loading"
 msgstr "Retry Loading"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:940
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:929
 #: src/pages/settings/components/GroupManagement.tsx:87
-#: src/pages/settings/components/ManageUser.tsx:150
+#: src/pages/settings/components/ManageUser.tsx:152
 #: src/pages/settings/components/PortalConfiguration.tsx:92
 #: src/pages/settings/components/RolesPermissions.tsx:151
 msgid "Review"
@@ -6362,7 +6401,7 @@ msgstr "Review & Confirm"
 msgid "Review & save group settings"
 msgstr "Review & save group settings"
 
-#: src/pages/settings/components/ManageUser.tsx:148
+#: src/pages/settings/components/ManageUser.tsx:150
 msgid "Review & save profile"
 msgstr "Review & save profile"
 
@@ -6395,7 +6434,7 @@ msgstr "Review your column mapping summary before finalizing the PO configuratio
 msgid "Review your connections and confirm your setup before activation."
 msgstr "Review your connections and confirm your setup before activation."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:938
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:927
 msgid "Review your full folder setup, then apply it to create the repository."
 msgstr "Review your full folder setup, then apply it to create the repository."
 
@@ -6408,11 +6447,11 @@ msgstr "Reviewed"
 msgid "Revoke"
 msgstr "Revoke"
 
-#: src/pages/settings/components/ManageUser.tsx:1041
-#: src/pages/settings/components/ManageUser.tsx:1046
-#: src/pages/settings/components/ManageUser.tsx:1434
-#: src/pages/settings/components/ManageUser.tsx:1696
-#: src/pages/settings/components/ManageUser.tsx:2425
+#: src/pages/settings/components/ManageUser.tsx:1174
+#: src/pages/settings/components/ManageUser.tsx:1179
+#: src/pages/settings/components/ManageUser.tsx:1579
+#: src/pages/settings/components/ManageUser.tsx:1841
+#: src/pages/settings/components/ManageUser.tsx:2570
 #: src/pages/settings/components/RolesPermissions.tsx:1584
 #: src/pages/settings/components/RolesPermissions.tsx:1586
 msgid "Role"
@@ -6448,7 +6487,7 @@ msgstr "Roles"
 
 #: src/pages/settings/components/RolesPermissions.tsx:982
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
-#: src/pages/settings/SettingsMain.tsx:192
+#: src/pages/settings/SettingsMain.tsx:245
 msgid "Roles & Permissions"
 msgstr "Roles & Permissions"
 
@@ -6501,7 +6540,7 @@ msgstr "Save & Add Another"
 #~ msgid "Save & Next"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1983
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1973
 msgid "Save & Regenerate Fields"
 msgstr "Save & Regenerate Fields"
 
@@ -6531,7 +6570,7 @@ msgstr "Save Entry"
 msgid "Save failed inside the document editor."
 msgstr "Save failed inside the document editor."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2399
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2389
 msgid "Save Folder"
 msgstr "Save Folder"
 
@@ -6553,7 +6592,7 @@ msgstr "Save Line Item"
 msgid "Save Mappings"
 msgstr "Save Mappings"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1060
+#: src/pages/settings/components/PortalConfiguration.tsx:1106
 msgid "Save Portal"
 msgstr "Save Portal"
 
@@ -6565,7 +6604,7 @@ msgstr "Save request timed out inside the document editor."
 msgid "Save Role"
 msgstr "Save Role"
 
-#: src/pages/settings/components/ManageUser.tsx:2683
+#: src/pages/settings/components/ManageUser.tsx:2830
 msgid "Save User"
 msgstr "Save User"
 
@@ -6583,7 +6622,7 @@ msgstr "Saved signature removed."
 msgid "Saving..."
 msgstr "Saving..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2399
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2389
 msgid "Saving…"
 msgstr "Saving…"
 
@@ -6638,7 +6677,7 @@ msgstr "Search and link related documents, contracts, records or files associate
 #~ msgid "Search and select users..."
 #~ msgstr ""
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1335
+#: src/pages/settings/components/PortalConfiguration.tsx:1375
 msgid "Search and select workflows..."
 msgstr "Search and select workflows..."
 
@@ -6696,7 +6735,7 @@ msgstr "Search for people to share with"
 msgid "Search forms..."
 msgstr "Search forms..."
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2217
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2393
 msgid "Search icons"
 msgstr "Search icons"
 
@@ -6749,7 +6788,7 @@ msgstr "Search supplier..."
 msgid "Search suppliers..."
 msgstr "Search suppliers..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:785
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:781
 msgid "Search type"
 msgstr "Search type"
 
@@ -6794,7 +6833,7 @@ msgstr "Section {0}"
 #: src/pages/my-account/components/security/Security.tsx:13
 #: src/pages/my-account/MyAccountPage.tsx:37
 #: src/pages/settings/components/AuditMonitoring.tsx:140
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3239
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3419
 msgid "Security"
 msgstr "Security"
 
@@ -6802,7 +6841,7 @@ msgstr "Security"
 msgid "Security & Auditing Policy"
 msgstr "Security & Auditing Policy"
 
-#: src/pages/settings/components/ManageUser.tsx:143
+#: src/pages/settings/components/ManageUser.tsx:145
 msgid "Security & verification"
 msgstr "Security & verification"
 
@@ -6828,7 +6867,7 @@ msgid "See the Attachments section for uploaded files."
 msgstr "See the Attachments section for uploaded files."
 
 #: src/pages/folders/components/DocumentsListView.tsx:613
-#: src/pages/settings/components/ManageUser.tsx:1755
+#: src/pages/settings/components/ManageUser.tsx:1900
 msgid "Select"
 msgstr "Select"
 
@@ -6836,8 +6875,8 @@ msgstr "Select"
 msgid "Select a column…"
 msgstr "Select a column…"
 
-#: src/pages/folders/components/FolderExplorer.tsx:308
-#: src/pages/folders/components/FolderExplorer.tsx:321
+#: src/pages/folders/components/FolderExplorer.tsx:309
+#: src/pages/folders/components/FolderExplorer.tsx:322
 msgid "Select a repository before uploading."
 msgstr "Select a repository before uploading."
 
@@ -6873,7 +6912,7 @@ msgstr ""
 msgid "Select File Column"
 msgstr "Select File Column"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1194
+#: src/pages/settings/components/PortalConfiguration.tsx:1237
 msgid "Select first name field"
 msgstr "Select first name field"
 
@@ -6885,7 +6924,7 @@ msgstr "Select folders"
 msgid "Select keywords"
 msgstr "Select keywords"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1139
+#: src/pages/settings/components/PortalConfiguration.tsx:1178
 msgid "Select master form"
 msgstr "Select master form"
 
@@ -6909,11 +6948,11 @@ msgstr "Select or add at least one valid email"
 msgid "Select or customize your interface color scheme"
 msgstr "Select or customize your interface color scheme"
 
-#: src/pages/settings/components/ManageUser.tsx:1743
+#: src/pages/settings/components/ManageUser.tsx:1888
 msgid "Select or type business unit"
 msgstr "Select or type business unit"
 
-#: src/pages/settings/components/ManageUser.tsx:1732
+#: src/pages/settings/components/ManageUser.tsx:1877
 msgid "Select or type department"
 msgstr "Select or type department"
 
@@ -6921,15 +6960,15 @@ msgstr "Select or type department"
 msgid "Select or type email…"
 msgstr "Select or type email…"
 
-#: src/pages/settings/components/ManageUser.tsx:1711
+#: src/pages/settings/components/ManageUser.tsx:1856
 msgid "Select or type job title"
 msgstr "Select or type job title"
 
-#: src/pages/settings/components/ManageUser.tsx:1767
+#: src/pages/settings/components/ManageUser.tsx:1912
 msgid "Select or type location"
 msgstr "Select or type location"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1257
+#: src/pages/settings/components/PortalConfiguration.tsx:1298
 msgid "Select password field"
 msgstr "Select password field"
 
@@ -6949,12 +6988,12 @@ msgstr "Select Storage"
 #~ msgid "Select storage provider"
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1548
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1816
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1538
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1806
 msgid "Select the storage provider where documents for this folder should be stored."
 msgstr "Select the storage provider where documents for this folder should be stored."
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1167
+#: src/pages/settings/components/PortalConfiguration.tsx:1210
 msgid "Select username / email field"
 msgstr "Select username / email field"
 
@@ -7007,12 +7046,13 @@ msgstr "Selected user needs an email address."
 #: src/pages/folders/components/DocumentDetailsView.tsx:1994
 #: src/pages/forms/components/AiFormBuilder.tsx:226
 #: src/pages/portal/components/PortalWizardChat.tsx:298
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1791
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1781
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:165
 msgid "Send"
 msgstr "Send"
 
-#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:339
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:351
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:353
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:120
 msgid "Send comment"
 msgstr "Send comment"
@@ -7065,11 +7105,11 @@ msgstr "September"
 msgid "Sequential: mark place(s) for {0} first, then switch to the next signer."
 msgstr ""
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:913
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:902
 msgid "Set the folder name and let AI draft a clear business description for this repository."
 msgstr "Set the folder name and let AI draft a clear business description for this repository."
 
-#: src/pages/settings/SettingsMain.tsx:201
+#: src/pages/settings/SettingsMain.tsx:204
 msgid "Set up folders with custom fields, storage, security, and versioning."
 msgstr "Set up folders with custom fields, storage, security, and versioning."
 
@@ -7090,13 +7130,13 @@ msgstr "setting up..."
 msgid "Setting up..."
 msgstr "Setting up..."
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:82
+#: src/layouts/app/components/sidebar/Sidebar.tsx:70
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:89
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:19
 #: src/pages/settings/components/SettingsPageHeader.tsx:51
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
 #: src/pages/settings/components/SettingsWizardLayout.tsx:90
-#: src/pages/settings/SettingsMain.tsx:255
+#: src/pages/settings/SettingsMain.tsx:289
 msgid "Settings"
 msgstr "Settings"
 
@@ -7105,12 +7145,12 @@ msgstr "Settings"
 #~ msgstr "Settings & Logic"
 
 #: src/pages/settings/SettingsMain.tsx:265
-msgid "Settings administration modules"
-msgstr "Settings administration modules"
+#~ msgid "Settings administration modules"
+#~ msgstr "Settings administration modules"
 
 #: src/pages/settings/SettingsMain.tsx:280
-msgid "Settings tools and monitoring"
-msgstr "Settings tools and monitoring"
+#~ msgid "Settings tools and monitoring"
+#~ msgstr "Settings tools and monitoring"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:203
 #: src/pages/settings/components/AuditMonitoring.tsx:349
@@ -7247,15 +7287,15 @@ msgstr "Sign in to your account"
 msgid "Sign in with a different email address"
 msgstr "Sign in with a different email address"
 
-#: src/pages/settings/components/ManageUser.tsx:179
+#: src/pages/settings/components/ManageUser.tsx:181
 msgid "Sign in with Active Directory"
 msgstr "Sign in with Active Directory"
 
-#: src/pages/settings/components/ManageUser.tsx:169
+#: src/pages/settings/components/ManageUser.tsx:171
 msgid "Sign in with Google"
 msgstr "Sign in with Google"
 
-#: src/pages/settings/components/ManageUser.tsx:174
+#: src/pages/settings/components/ManageUser.tsx:176
 msgid "Sign in with Microsoft"
 msgstr ""
 
@@ -7346,8 +7386,8 @@ msgstr "Smart PO Matching"
 msgid "SOC2 Compliant"
 msgstr "SOC2 Compliant"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1286
-#: src/pages/settings/components/PortalConfiguration.tsx:1470
+#: src/pages/settings/components/PortalConfiguration.tsx:1332
+#: src/pages/settings/components/PortalConfiguration.tsx:1516
 msgid "Social Login"
 msgstr "Social Login"
 
@@ -7425,14 +7465,14 @@ msgstr "status"
 #: src/pages/portal/components/PortalHome.tsx:401
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3151
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3156
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3327
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3332
 #: src/pages/settings/components/GroupManagement.tsx:439
 #: src/pages/settings/components/GroupManagement.tsx:444
 #: src/pages/settings/components/GroupManagement.tsx:627
-#: src/pages/settings/components/ManageUser.tsx:1059
-#: src/pages/settings/components/ManageUser.tsx:1064
-#: src/pages/settings/components/ManageUser.tsx:1435
+#: src/pages/settings/components/ManageUser.tsx:1192
+#: src/pages/settings/components/ManageUser.tsx:1197
+#: src/pages/settings/components/ManageUser.tsx:1580
 #: src/pages/settings/components/RolesPermissions.tsx:1648
 #: src/pages/settings/components/RolesPermissions.tsx:1653
 #: src/pages/workflows/components/Table.tsx:63
@@ -7457,26 +7497,26 @@ msgstr "Statuses"
 msgid "Step {currentStep} of {totalSteps}"
 msgstr "Step {currentStep} of {totalSteps}"
 
-#: src/pages/settings/components/ManageUser.tsx:155
+#: src/pages/settings/components/ManageUser.tsx:157
 #: src/pages/settings/components/RolesPermissions.tsx:155
 msgid "Step 1"
 msgstr "Step 1"
 
-#: src/pages/settings/components/ManageUser.tsx:156
+#: src/pages/settings/components/ManageUser.tsx:158
 #: src/pages/settings/components/RolesPermissions.tsx:155
 msgid "Step 2"
 msgstr "Step 2"
 
-#: src/pages/settings/components/ManageUser.tsx:157
+#: src/pages/settings/components/ManageUser.tsx:159
 #: src/pages/settings/components/RolesPermissions.tsx:155
 msgid "Step 3"
 msgstr "Step 3"
 
-#: src/pages/settings/components/ManageUser.tsx:158
+#: src/pages/settings/components/ManageUser.tsx:160
 msgid "Step 4"
 msgstr "Step 4"
 
-#: src/pages/settings/components/ManageUser.tsx:159
+#: src/pages/settings/components/ManageUser.tsx:161
 msgid "Step 5"
 msgstr "Step 5"
 
@@ -7485,10 +7525,10 @@ msgid "Still opening... this is taking longer than expected. Check the browser c
 msgstr "Still opening... this is taking longer than expected. Check the browser console / the document editor below for details."
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:132
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:925
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2315
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3113
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3118
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:914
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2305
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3289
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3294
 msgid "Storage"
 msgstr "Storage"
 
@@ -7831,7 +7871,7 @@ msgstr "This month"
 msgid "This portal is missing a master form or username field."
 msgstr "This portal is missing a master form or username field."
 
-#: src/pages/portal/PortalPage.tsx:212
+#: src/pages/portal/PortalPage.tsx:266
 msgid "This portal link is invalid or has not been published yet."
 msgstr "This portal link is invalid or has not been published yet."
 
@@ -7894,11 +7934,11 @@ msgstr "Timeframe"
 msgid "Timeline"
 msgstr "Timeline"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:985
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:974
 msgid "Timestamp Version"
 msgstr "Timestamp Version"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1043
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1032
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 
@@ -8037,7 +8077,7 @@ msgstr "Type"
 #~ msgstr "Type what you remember, pick the folders to look in, then press Search."
 
 #: src/pages/portal/components/PortalWizardChat.tsx:273
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1778
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1768
 msgid "Type your answer…"
 msgstr "Type your answer…"
 
@@ -8107,7 +8147,7 @@ msgstr "Unable to load sign request"
 msgid "Unable to load sign requests"
 msgstr "Unable to load sign requests"
 
-#: src/pages/portal/PortalPage.tsx:149
+#: src/pages/portal/PortalPage.tsx:192
 msgid "Unable to load submissions for the selected workflows."
 msgstr "Unable to load submissions for the selected workflows."
 
@@ -8201,7 +8241,7 @@ msgstr "Unsupported file type. Please upload a CSV or XLSX file."
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:121
 #: src/pages/folders/components/DocumentDetailsView.tsx:436
 #: src/pages/folders/components/ShareView.tsx:323
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:640
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:636
 msgid "Untitled"
 msgstr "Untitled"
 
@@ -8209,7 +8249,7 @@ msgstr "Untitled"
 msgid "Untitled Field"
 msgstr "Untitled Field"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2112
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2102
 msgid "Untitled folder"
 msgstr "Untitled folder"
 
@@ -8222,7 +8262,7 @@ msgstr "Untitled Form"
 msgid "Update Group"
 msgstr "Update Group"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1060
+#: src/pages/settings/components/PortalConfiguration.tsx:1106
 msgid "Update Portal"
 msgstr "Update Portal"
 
@@ -8230,19 +8270,19 @@ msgstr "Update Portal"
 msgid "Update Role"
 msgstr "Update Role"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1598
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1588
 msgid "Update the integration preference for this folder."
 msgstr "Update the integration preference for this folder."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1584
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1574
 msgid "Update the storage provider for this folder."
 msgstr "Update the storage provider for this folder."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1591
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1581
 msgid "Update the versioning strategy for this folder."
 msgstr "Update the versioning strategy for this folder."
 
-#: src/pages/settings/components/ManageUser.tsx:2683
+#: src/pages/settings/components/ManageUser.tsx:2830
 msgid "Update User"
 msgstr "Update User"
 
@@ -8257,14 +8297,16 @@ msgid "Updates records in master database"
 msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2104
-#: src/pages/folders/components/FolderExplorer.tsx:294
-#: src/pages/folders/components/FolderFilterBar.tsx:695
+#: src/pages/folders/components/FolderExplorer.tsx:295
+#: src/pages/folders/components/FolderFilterBar.tsx:697
 #: src/pages/folders/components/Upload/Upload.tsx:1618
 #: src/pages/portal/components/PortalHome.tsx:305
 #: src/pages/portal/components/PortalPicker.tsx:120
 #: src/pages/portal/components/PortalWizard.tsx:1126
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:232
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:591
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:639
 #: src/pages/requests/components/request/components/sections/attachment/FolderFieldPrompt.tsx:66
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:207
 msgid "Upload"
@@ -8355,6 +8397,11 @@ msgstr "Uploading & Processing..."
 msgid "Uploading file..."
 msgstr "Uploading file..."
 
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:591
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:639
+msgid "Uploading..."
+msgstr "Uploading..."
+
 #: src/pages/requests/components/workflow-request/components/CompactDropzone.tsx:96
 msgid "Uploading…"
 msgstr "Uploading…"
@@ -8392,12 +8439,18 @@ msgstr ""
 #~ msgstr "Use this setup"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2251
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:219
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:220
 #: src/pages/settings/components/AuditMonitoring.tsx:329
 #: src/pages/settings/components/AuditMonitoring.tsx:330
 #: src/pages/settings/components/RolesPermissions.tsx:2039
 #: src/pages/settings/components/RolesPermissions.tsx:2041
 msgid "User"
 msgstr "User"
+
+#: src/pages/settings/SettingsMain.tsx:322
+msgid "User access modules"
+msgstr "User access modules"
 
 #: src/features/builder/components/FieldSidebar.tsx:190
 #~ msgid "User can see but not edit data."
@@ -8412,10 +8465,10 @@ msgstr "User Email"
 #~ msgstr "User found with multiple tenants"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:139
-#: src/pages/settings/components/ManageUser.tsx:1397
-#: src/pages/settings/components/ManageUser.tsx:2682
+#: src/pages/settings/components/ManageUser.tsx:1542
+#: src/pages/settings/components/ManageUser.tsx:2829
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:23
-#: src/pages/settings/SettingsMain.tsx:186
+#: src/pages/settings/SettingsMain.tsx:233
 msgid "User Management"
 msgstr "User Management"
 
@@ -8432,19 +8485,19 @@ msgid "username"
 msgstr "username"
 
 #: src/pages/portal/components/PortalLogin.tsx:53
-#: src/pages/settings/components/ManageUser.tsx:2158
+#: src/pages/settings/components/ManageUser.tsx:2303
 msgid "Username"
 msgstr "Username"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1419
+#: src/pages/settings/components/PortalConfiguration.tsx:1465
 msgid "Username Field"
 msgstr "Username Field"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1164
+#: src/pages/settings/components/PortalConfiguration.tsx:1207
 msgid "Username Field *"
 msgstr "Username Field *"
 
-#: src/pages/settings/components/ManageUser.tsx:1516
+#: src/pages/settings/components/ManageUser.tsx:1661
 #: src/pages/settings/components/RolesPermissions.tsx:1614
 #: src/pages/settings/components/RolesPermissions.tsx:1619
 msgid "Users"
@@ -8539,12 +8592,12 @@ msgstr "Verify OTP"
 msgid "Verifying..."
 msgstr "Verifying..."
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:930
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2334
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:919
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2324
 msgid "Versioning"
 msgstr "Versioning"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1715
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1705
 msgid "Versioning strategy saved. Do you require an ERP or system integration, or should integrations be configured later?"
 msgstr "Versioning strategy saved. Do you require an ERP or system integration, or should integrations be configured later?"
 
@@ -8554,7 +8607,7 @@ msgstr "Versioning strategy saved. Do you require an ERP or system integration, 
 msgid "View"
 msgstr "View"
 
-#: src/pages/settings/SettingsMain.tsx:219
+#: src/pages/settings/SettingsMain.tsx:266
 msgid "View activity logs, security events, and configuration change history."
 msgstr "View activity logs, security events, and configuration change history."
 
@@ -8657,8 +8710,8 @@ msgstr "When enabled, page and card backgrounds use a light or dark wash of the 
 msgid "Which vendors carry the most risk exposure?"
 msgstr "Which vendors carry the most risk exposure?"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1674
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1825
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1664
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1815
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr "Which versioning strategy should apply when the same file is uploaded again?"
 
@@ -8670,6 +8723,11 @@ msgstr "Workflow"
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:147
 msgid "Workflow Builder"
 msgstr "Workflow Builder"
+
+#: src/pages/settings/components/SettingsBreadcrumbs.tsx:33
+#: src/pages/settings/SettingsMain.tsx:221
+msgid "Workflow Configuration"
+msgstr "Workflow Configuration"
 
 #: src/pages/forms/components/AiFormBuilder.tsx:69
 #: src/pages/forms/components/AiFormBuilder.tsx:98
@@ -8688,21 +8746,20 @@ msgstr "Workflow started but did not return a valid instanceId or apAgentJobId."
 msgid "Workflow started but did not return any data."
 msgstr "Workflow started but did not return any data."
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:70
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:83
 #: src/pages/portal/components/PortalHome.tsx:237
 #: src/pages/settings/components/PortalConfiguration.tsx:86
-#: src/pages/settings/components/PortalConfiguration.tsx:451
-#: src/pages/settings/components/PortalConfiguration.tsx:1480
+#: src/pages/settings/components/PortalConfiguration.tsx:484
+#: src/pages/settings/components/PortalConfiguration.tsx:1526
 #: src/pages/workflows/components/Table.tsx:519
 msgid "Workflows"
 msgstr "Workflows"
 
-#: src/pages/settings/components/PortalConfiguration.tsx:1332
+#: src/pages/settings/components/PortalConfiguration.tsx:1372
 msgid "Workflows *"
 msgstr "Workflows *"
 
-#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1891
+#: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1881
 msgid "Working…"
 msgstr "Working…"
 
@@ -8723,6 +8780,7 @@ msgstr "Yes, Delete"
 msgid "Yesterday"
 msgstr "Yesterday"
 
+#: src/pages/requests/components/request/components/sections/comment/Comments.tsx:217
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:83
 msgid "You"
 msgstr "You"

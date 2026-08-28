@@ -500,15 +500,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-            String(p.processId || p.id) === jobKey
-              ? {
-                  ...p,
-                  apAgentJobId: null,
-                  id: jobData.instanceId,
-                  processId: jobData.instanceId,
-                }
-              : p,
-          )
+          String(p.processId || p.id) === jobKey
+            ? {
+              ...p,
+              apAgentJobId: null,
+              id: jobData.instanceId,
+              processId: jobData.instanceId,
+            }
+            : p,
+        )
         : state.processingProcesses
 
       return {
@@ -1029,10 +1029,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-        request.review ||
-        request._agentData?.[0]?.decision ||
-        request.completedAtUtc
-      )
+      request.review ||
+      request._agentData?.[0]?.decision ||
+      request.completedAtUtc
+    )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1386,8 +1386,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-                selectedItem?.agentResponse || request?.agentResponse || {},
-              ),
+              selectedItem?.agentResponse || request?.agentResponse || {},
+            ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1488,10 +1488,10 @@ const Request = ({
             ? genericFormModel
             : Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                  formModel,
-                  selectedWorkflow,
-                  request?._formDefinition,
-                )
+                formModel,
+                selectedWorkflow,
+                request?._formDefinition,
+              )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1861,33 +1861,33 @@ const Request = ({
               ? selectedItem?.formEntryId
                 ? `REQ-${selectedItem.formEntryId}`
                 : selectedItem?.referenceNumber ||
-                  selectedItem?.requestNo ||
-                  'REQ - ...'
-              : formModel?.['Invoice Number'] ||
-                formModel?.['Invoice No'] ||
-                formModel?.['invoice_number'] ||
-                formModel?.['invoice_no'] ||
-                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-                  'Invoice No'
-                ] ||
-                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-                  'invoice_no'
-                ] ||
-                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-                  'Invoice Number'
-                ] ||
-                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-                  'invoice_number'
-                ] ||
-                currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-                  'invoice_num'
-                ] ||
-                currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
-                selectedItem?.reqNo ||
-                selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
-                selectedItem?.invoiceNumber ||
                 selectedItem?.requestNo ||
                 'REQ - ...'
+              : formModel?.['Invoice Number'] ||
+              formModel?.['Invoice No'] ||
+              formModel?.['invoice_number'] ||
+              formModel?.['invoice_no'] ||
+              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'Invoice No'
+              ] ||
+              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'invoice_no'
+              ] ||
+              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'Invoice Number'
+              ] ||
+              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'invoice_number'
+              ] ||
+              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+              'invoice_num'
+              ] ||
+              currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
+              selectedItem?.reqNo ||
+              selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
+              selectedItem?.invoiceNumber ||
+              selectedItem?.requestNo ||
+              'REQ - ...'
           }
           stage={
             // `lastActionStageName` is the stage the request came FROM (the

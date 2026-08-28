@@ -1,5 +1,10 @@
 import { Textarea as Base } from '@mantine/core'
-import { type ChangeEvent, forwardRef, useState } from 'react'
+import {
+  type ChangeEvent,
+  forwardRef,
+  type KeyboardEvent,
+  useState,
+} from 'react'
 import cn from '@/utils/cn'
 import type { InputProps } from './shared/types'
 import InputLabel from './InputLabel'
@@ -14,6 +19,7 @@ interface Props extends InputProps {
   resize?: 'none' | 'vertical' | 'both'
   rows?: number
   onChange: (value: string) => void
+  onKeyDown?: (e: KeyboardEvent<HTMLTextAreaElement>) => void
 }
 
 const _classNames = {

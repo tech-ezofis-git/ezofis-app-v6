@@ -5,9 +5,10 @@ import cn from '@/utils/cn'
 
 interface Props {
   children: ReactNode
-  content: string
+  className?: string
   closeDelay?: number
   color?: TooltipColor
+  content: string
   disabled?: boolean
   offset?: BaseProps['offset']
   openDelay?: number
@@ -28,6 +29,7 @@ const colorClassName: Record<TooltipColor, string> = {
 
 const Tooltip = ({
   children,
+  className,
   closeDelay = 0,
   color = 'gray',
   content,
@@ -64,7 +66,12 @@ const Tooltip = ({
         tooltip: _className,
       }}
     >
-      <div className='group inline-flex items-center justify-center'>
+      <div
+        className={cn(
+          'group inline-flex items-center justify-center',
+          className,
+        )}
+      >
         {children}
       </div>
     </Base>
