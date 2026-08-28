@@ -1,16 +1,21 @@
 import { Tooltip as Base } from '@mantine/core'
 import { useEffect, useRef, useState } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
 type PortalMetaRowProps = {
+  badge?: 'ocr'
   bordered?: boolean
   label: string
+  padded?: boolean
   value: string
 }
 
 const PortalMetaRow = ({
+  badge,
   bordered = true,
   label,
+  padded = true,
   value,
 }: PortalMetaRowProps) => {
   const display = value || '—'
@@ -34,11 +39,26 @@ const PortalMetaRow = ({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-4 px-4 py-2.5',
+        'flex items-center justify-between gap-3 py-2.5',
+        padded && 'px-4',
         bordered && 'border-b border-gray-3 last:border-b-0',
       )}
     >
-      <span className='max-w-[42%] shrink-0 text-12 text-gray-9'>{label}</span>
+      <span className='flex max-w-[58%] min-w-0 shrink-0 items-center gap-2'>
+        <span className='truncate text-13 text-gray-11'>{label}</span>
+        {badge === 'ocr' && (
+          <span
+            className='inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--teal-3)] bg-[var(--teal-1)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--teal-10)]'
+            title='Source: OCR Document'
+          >
+            <Icon
+              className='size-2.5 text-[var(--teal-9)]'
+              name='lucide:scan-text'
+            />
+            <span>OCR</span>
+          </span>
+        )}
+      </span>
       <div className='min-w-0 flex-1 text-right'>
         <Base
           arrowOffset={8}
@@ -56,7 +76,7 @@ const PortalMetaRow = ({
           }}
         >
           <span
-            className='block cursor-default truncate text-13 font-semibold text-gray-9'
+            className='block cursor-default truncate text-13 font-semibold text-gray-13'
             ref={valueRef}
           >
             {display}
