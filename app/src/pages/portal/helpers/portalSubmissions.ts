@@ -14,11 +14,14 @@ export const PORTAL_STATUS_TONE: Record<PortalSubmissionStatus, string> = {
   'Rejected': 'bg-red-3 text-red-11',
 }
 
+export type PortalSubmissionSource = 'completed' | 'inbox' | 'sent'
+
 export type PortalSubmission = {
   amount: string
   id: string
   raw: Record<string, unknown>
   requestNo: string
+  source: PortalSubmissionSource
   status: PortalSubmissionStatus
   submittedAt: string
   title: string
@@ -26,12 +29,10 @@ export type PortalSubmission = {
   workflowName: string
 }
 
-type ListSource = 'completed' | 'inbox' | 'sent'
-
 const PAGE_SIZE = 100
-const SOURCE_RANK: Record<ListSource, number> = {
-  completed: 3,
-  inbox: 1,
+const SOURCE_RANK: Record<PortalSubmissionSource, number> = {
+  completed: 1,
+  inbox: 3,
   sent: 2,
 }
 
@@ -112,7 +113,7 @@ const formatAmount = (raw: string) => {
 const classifyStatus = (
   item: Record<string, unknown>,
   fields: Record<string, unknown>,
-  source: ListSource,
+  source: PortalSubmissionSource,
 ): PortalSubmissionStatus => {
   const raw = [
     textOf(fields.status),
@@ -223,7 +224,7 @@ const fetchWorkflowList = async (
 const toSubmission = (
   item: Record<string, unknown>,
   workflow: PortalWorkflowLink,
-  source: ListSource,
+  source: PortalSubmissionSource,
 ): PortalSubmission | null => {
   const id = instanceIdOf(item)
   if (!id) return null
@@ -242,6 +243,7 @@ const toSubmission = (
     id,
     raw: item,
     requestNo,
+    source,
     status: classifyStatus(item, fields, source),
     submittedAt: submittedAtOf(item),
     title,

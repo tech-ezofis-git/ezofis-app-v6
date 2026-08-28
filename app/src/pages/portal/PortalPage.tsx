@@ -68,6 +68,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
   const [submissionsTick, setSubmissionsTick] = useState(0)
   const [wizardChrome, setWizardChrome] = useState<{
     canSubmit: boolean
+    submitLabel: string
     submitting: boolean
     title: string
   } | null>(null)
@@ -76,6 +77,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     (
       chrome: {
         canSubmit: boolean
+        submitLabel: string
         submitting: boolean
         title: string
         onSubmit: () => void
@@ -86,6 +88,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         if (!chrome) return prev ? null : prev
         if (
           prev?.canSubmit === chrome.canSubmit &&
+          prev?.submitLabel === chrome.submitLabel &&
           prev?.submitting === chrome.submitting &&
           prev?.title === chrome.title
         ) {
@@ -93,9 +96,42 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         }
         return {
           canSubmit: chrome.canSubmit,
+          submitLabel: chrome.submitLabel,
           submitting: chrome.submitting,
           title: chrome.title,
         }
+      })
+    },
+    [],
+  )
+  const [detailChrome, setDetailChrome] = useState<{
+    acting: boolean
+    actions: { label: string; value: string }[]
+  } | null>(null)
+  const detailActionRef = useRef<(value: string) => void>(() => {})
+  const handleDetailChromeChange = useCallback(
+    (
+      chrome: {
+        acting: boolean
+        actions: { label: string; value: string }[]
+        onAction: (value: string) => void
+      } | null,
+    ) => {
+      if (chrome) detailActionRef.current = chrome.onAction
+      setDetailChrome((prev) => {
+        if (!chrome) return prev ? null : prev
+        if (
+          prev?.acting === chrome.acting &&
+          prev.actions.length === chrome.actions.length &&
+          prev.actions.every(
+            (action, index) =>
+              action.label === chrome.actions[index]?.label &&
+              action.value === chrome.actions[index]?.value,
+          )
+        ) {
+          return prev
+        }
+        return { acting: chrome.acting, actions: chrome.actions }
       })
     },
     [],
@@ -153,6 +189,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     setLoadingWorkflows(true)
     void listPortalWorkflowSummaries({
       tenantId: portal.tenantId,
+      userId: session.userId,
       workflows: portal.workflows,
     })
       .then((summaries) => {
@@ -218,11 +255,20 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
 
   const startNewSubmission = (workflowId?: string) => {
     if (!portal) return
+    const allowed = (
+      workflowSummaries.length > 0
+        ? workflowSummaries
+        : portal.workflows.map((workflow) => ({
+            canCreate: true,
+            id: String(workflow.id),
+            name: portalWorkflowLabel(workflow),
+          }))
+    ).filter((workflow) => workflow.canCreate !== false)
+
     const targetId = workflowId || selectedWorkflowId
     const target =
-      portal.workflows.find(
-        (workflow) => String(workflow.id) === String(targetId),
-      ) || (portal.workflows.length === 1 ? portal.workflows[0] : null)
+      allowed.find((workflow) => String(workflow.id) === String(targetId)) ||
+      (allowed.length === 1 ? allowed[0] : null)
 
     if (target) {
       setSelectedWorkflowId(String(target.id))
@@ -231,6 +277,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       return
     }
 
+    if (!allowed.length) return
     setView('picker')
   }
 
@@ -289,17 +336,27 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     workflowSummaries.length > 0
       ? workflowSummaries
       : portal.workflows.map((workflow) => ({
+          canCreate: true,
           completedCount: 0,
           description: '',
           id: String(workflow.id),
           inboxCount: 0,
           name: portalWorkflowLabel(workflow),
           sentCount: 0,
+          startActionLabel: 'Submit',
           total: 0,
+          workflow: null,
         }))
+  const selectedSummary = fallbackSummaries.find(
+    (workflow) => workflow.id === String(selectedWorkflowId),
+  )
+  const canCreateSubmission = selectedWorkflowId
+    ? selectedSummary?.canCreate !== false
+    : fallbackSummaries.some((workflow) => workflow.canCreate !== false)
 
   let content = (
     <PortalHome
+      canCreateSubmission={canCreateSubmission}
       displayName={displayName}
       loadingSubmissions={loadingSubmissions}
       loadingWorkflows={loadingWorkflows}
@@ -339,7 +396,18 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       />
     )
   } else if (view === 'detail' && selectedSubmission) {
-    content = <PortalDetail submission={selectedSubmission} />
+    content = (
+      <PortalDetail
+        submission={selectedSubmission}
+        userId={session.userId}
+        onChromeChange={handleDetailChromeChange}
+        onMoved={() => {
+          setSubmissionsTick((tick) => tick + 1)
+          setSelectedSubmission(null)
+          setView('home')
+        }}
+      />
+    )
   }
 
   return (
@@ -350,9 +418,12 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       detail={
         view === 'detail' && selectedSubmission
           ? {
+              acting: Boolean(detailChrome?.acting),
+              actions: detailChrome?.actions || [],
               requestNo: selectedSubmission.requestNo,
               status: selectedSubmission.status,
               statusClassName: PORTAL_STATUS_TONE[selectedSubmission.status],
+              onAction: (value) => detailActionRef.current(value),
               onBack: () => {
                 setSelectedSubmission(null)
                 setView('home')
@@ -364,6 +435,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         view === 'wizard'
           ? {
               canSubmit: Boolean(wizardChrome?.canSubmit),
+              submitLabel: wizardChrome?.submitLabel,
               submitting: Boolean(wizardChrome?.submitting),
               title:
                 wizardChrome?.title ||

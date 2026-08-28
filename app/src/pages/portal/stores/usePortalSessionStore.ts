@@ -7,6 +7,7 @@ export type PortalAuthUser = {
   entry?: Record<string, unknown>
   itemId?: number
   tenantId?: string
+  userId?: string
   username: string
 }
 

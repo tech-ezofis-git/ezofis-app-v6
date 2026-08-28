@@ -41,6 +41,7 @@ import {
   loadPortalWizard,
   type PortalWizardSource,
 } from '../helpers/portalWizardLoad'
+import { getStartActionLabel } from '../helpers/portalWorkflowAccess'
 import { PortalWizardSkeleton } from './PortalLayoutSkeleton'
 import PortalMetaRow from './PortalMetaRow'
 import PortalWizardChat from './PortalWizardChat'
@@ -65,6 +66,7 @@ type PortalWizardProps = {
   onChromeChange?: (
     chrome: {
       canSubmit: boolean
+      submitLabel: string
       submitting: boolean
       title: string
       onSubmit: () => void
@@ -683,6 +685,7 @@ const PortalWizard = ({
   }
 
   const wizardTitle = source?.workflowName || workflowName || t`New Submission`
+  const submitLabel = source ? getStartActionLabel(source.workflow) : t`Submit`
   const isFormComplete = Boolean(
     source &&
     source.questions
@@ -774,13 +777,14 @@ const PortalWizard = ({
   useEffect(() => {
     onChromeChange?.({
       canSubmit,
+      submitLabel,
       submitting,
       title: wizardTitle,
       onSubmit: () => {
         void handleSubmitRef.current()
       },
     })
-  }, [canSubmit, onChromeChange, submitting, wizardTitle])
+  }, [canSubmit, onChromeChange, submitLabel, submitting, wizardTitle])
 
   useEffect(
     () => () => {
@@ -1136,7 +1140,7 @@ const PortalWizard = ({
                           <Button
                             className='rounded-lg'
                             disabled={!canSubmit}
-                            label={t`Submit`}
+                            label={submitLabel}
                             loading={submitting}
                             suffixIcon='lucide:arrow-right'
                             onClick={() => void handleSubmit()}

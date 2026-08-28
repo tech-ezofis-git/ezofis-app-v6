@@ -1,5 +1,4 @@
 import { useLingui } from '@lingui/react/macro'
-import { useNavigate } from '@tanstack/react-router'
 import {
   BadgeDollarSign,
   ChevronRight,
@@ -15,24 +14,26 @@ import {
   Users,
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
-import Divider from '@/components/base/Divider'
 import ColorPreference from '@/pages/my-account/components/color-preference/ColorPreference'
 import authUserStore from '@/stores/authUserStore'
+import { isPermissionVisible } from '@/utils/sessionPermissions'
 import AuditMonitoring from './components/AuditMonitoring'
 import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
+import FormConfiguration from './components/FormConfiguration'
 import GroupManagement from './components/GroupManagement'
 import ManageUser from './components/ManageUser'
 import PortalConfiguration from './components/PortalConfiguration'
 import RolesPermissions from './components/RolesPermissions'
+import WorkflowConfiguration from './components/WorkflowConfiguration'
 import { createSettingsRootBreadcrumbs } from './helpers/settingsBreadcrumbs'
 import useSettingsTopbar from './hooks/useSettingsTopbar'
 
 type SettingsItem = {
   description: string
-  href?: string
   icon: React.ElementType
   key: string
+  permissionKey?: string
   title: string
 }
 
@@ -41,12 +42,14 @@ const SETTINGS_PAGES = new Set([
   'branding',
   'credit',
   'folder-configuration',
+  'form-configuration',
   'group-management',
   'playground',
   'portal-configuration',
   'roles-permissions',
   'settings',
   'user-management',
+  'workflow-configuration',
 ])
 
 const CONFIGURATION_SETTINGS_KEYS = [
@@ -69,6 +72,12 @@ const PLATFORM_SETTINGS_KEYS = [
   'audit-monitoring',
 ]
 
+const SETTINGS_PAGE_PERMISSIONS: Record<string, string> = {
+  'folder-configuration': 'folder',
+  'form-configuration': 'form',
+  'workflow-configuration': 'workflow',
+}
+
 const pickSettingsItems = (items: SettingsItem[], keys: string[]) =>
   keys
     .map((key) => items.find((item) => item.key === key))
@@ -77,6 +86,9 @@ const pickSettingsItems = (items: SettingsItem[], keys: string[]) =>
 export default function SettingsMain() {
   const session = authUserStore((state) => state.session)
   const isAdmin = session?.role?.toLowerCase() === 'admin'
+  const sessionPermissions = session?.permissionKeys
+  const canOpenSettingsPage = (page: string) =>
+    isPermissionVisible(SETTINGS_PAGE_PERMISSIONS[page], sessionPermissions)
   const [activePage, setActivePage] = useState<string>(() => {
     try {
       const stored = sessionStorage.getItem('ezofis_settings_state')
@@ -135,9 +147,34 @@ export default function SettingsMain() {
   }
 
   if (activePage === 'folder-configuration') {
+    if (!canOpenSettingsPage(activePage)) {
+      return <SettingsLanding onOpenPage={setActivePage} />
+    }
     return (
       <SettingsDetailShell>
         <DmsSettings onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
+  }
+
+  if (activePage === 'form-configuration') {
+    if (!canOpenSettingsPage(activePage)) {
+      return <SettingsLanding onOpenPage={setActivePage} />
+    }
+    return (
+      <SettingsDetailShell>
+        <FormConfiguration onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
+  }
+
+  if (activePage === 'workflow-configuration') {
+    if (!canOpenSettingsPage(activePage)) {
+      return <SettingsLanding onOpenPage={setActivePage} />
+    }
+    return (
+      <SettingsDetailShell>
+        <WorkflowConfiguration onBack={() => setActivePage('settings')} />
       </SettingsDetailShell>
     )
   }
@@ -193,9 +230,11 @@ function SettingsLanding({
   onOpenPage: (page: string) => void
 }) {
   const { i18n, t } = useLingui()
-  const navigate = useNavigate()
   const isAdmin = authUserStore(
     (state) => state.session?.role?.toLowerCase() === 'admin',
+  )
+  const sessionPermissions = authUserStore(
+    (state) => state.session?.permissionKeys,
   )
 
   const settingsItems: SettingsItem[] = useMemo(() => {
@@ -204,20 +243,21 @@ function SettingsLanding({
         description: t`Set up folders with custom fields, storage, security, and versioning.`,
         icon: FolderOpen,
         key: 'folder-configuration',
+        permissionKey: 'folder',
         title: t`Folder Configuration`,
       },
       {
         description: t`Create and manage forms with fields, validation, and data collection.`,
-        href: '/forms',
         icon: FileText,
         key: 'form-configuration',
+        permissionKey: 'form',
         title: t`Form Configuration`,
       },
       {
         description: t`Design and configure automated workflows and process routing.`,
-        href: '/workflows',
         icon: GitFork,
         key: 'workflow-configuration',
+        permissionKey: 'workflow',
         title: t`Workflow Configuration`,
       },
       {
@@ -269,8 +309,11 @@ function SettingsLanding({
         title: t`Audit & Monitoring`,
       },
     ]
-    return isAdmin ? items : items.filter((item) => item.key !== 'branding')
-  }, [i18n.locale, isAdmin, t])
+    return items.filter((item) => {
+      if (!isAdmin && item.key === 'branding') return false
+      return isPermissionVisible(item.permissionKey, sessionPermissions)
+    })
+  }, [i18n.locale, isAdmin, sessionPermissions, t])
 
   const configurationItems = useMemo(
     () => pickSettingsItems(settingsItems, CONFIGURATION_SETTINGS_KEYS),
@@ -292,62 +335,56 @@ function SettingsLanding({
   useSettingsTopbar(rootBreadcrumbs)
 
   const openItem = (item: SettingsItem) => {
-    if (item.href) {
-      void navigate({ to: item.href })
-      return
-    }
     onOpenPage(item.key)
   }
 
   return (
     <div className='flex h-full min-h-0 flex-col overflow-hidden'>
       <main className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--surface)]'>
-        <div className='flex flex-col gap-6 p-4'>
-          <section
-            aria-label={t`Configuration modules`}
-            className='grid grid-cols-1 gap-4 lg:grid-cols-2'
-          >
-            {configurationItems.map((item) => (
-              <SettingsModuleCard
-                item={item}
-                key={item.key}
-                onOpen={openItem}
-              />
-            ))}
-          </section>
-
-          <Divider />
-
-          <section
-            aria-label={t`User access modules`}
-            className='grid grid-cols-1 gap-4 lg:grid-cols-2'
-          >
-            {accessItems.map((item) => (
-              <SettingsModuleCard
-                item={item}
-                key={item.key}
-                onOpen={openItem}
-              />
-            ))}
-          </section>
-
-          <Divider />
-
-          <section
-            aria-label={t`Platform and monitoring`}
-            className='grid grid-cols-1 gap-4 lg:grid-cols-2'
-          >
-            {platformItems.map((item) => (
-              <SettingsModuleCard
-                item={item}
-                key={item.key}
-                onOpen={openItem}
-              />
-            ))}
-          </section>
+        <div className='flex flex-col gap-8 p-4'>
+          <SettingsModuleGroup
+            items={configurationItems}
+            title={t`Configuration`}
+            onOpen={openItem}
+          />
+          <SettingsModuleGroup
+            items={accessItems}
+            title={t`Access Control`}
+            onOpen={openItem}
+          />
+          <SettingsModuleGroup
+            items={platformItems}
+            title={t`Platform Management`}
+            onOpen={openItem}
+          />
         </div>
       </main>
     </div>
+  )
+}
+
+function SettingsModuleGroup({
+  items,
+  onOpen,
+  title,
+}: {
+  items: SettingsItem[]
+  onOpen: (item: SettingsItem) => void
+  title: string
+}) {
+  if (!items.length) return null
+
+  return (
+    <section className='flex flex-col gap-3'>
+      <h2 className='text-[11px] font-semibold tracking-[0.12em] text-primary-9 uppercase'>
+        {title}
+      </h2>
+      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+        {items.map((item) => (
+          <SettingsModuleCard item={item} key={item.key} onOpen={onOpen} />
+        ))}
+      </div>
+    </section>
   )
 }
 

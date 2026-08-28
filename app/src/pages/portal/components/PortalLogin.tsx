@@ -18,6 +18,7 @@ import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
 import SignInForm from '@/pages/sign-in/components/SignInForm'
 import cn from '@/utils/cn'
 import { entryFieldValue, searchPortalEntries } from '../helpers/portalEntries'
+import { userIdFromIdentity } from '../helpers/portalWorkflowAccess'
 import PortalBrandMark from './PortalBrandMark'
 
 type PortalLoginProps = {
@@ -123,6 +124,7 @@ export default function PortalLogin({
                     result.email.split('@')[0],
                   ),
                   tenantId: result.tenantId,
+                  userId: userIdFromIdentity(result.identity),
                   username: result.email,
                 })
               }}

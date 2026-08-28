@@ -4,15 +4,7 @@ import AppLayout from '@/layouts/app/AppLayout'
 import { resolveSignInPath } from '@/lib/branding/session'
 import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
-
-const normalizePermissionKey = (key: string) => {
-  const k = key.toLowerCase().trim()
-  if (k === 'requests') return 'request'
-  if (k === 'forms') return 'form'
-  if (k === 'folders') return 'folder'
-  if (k === 'workflows') return 'workflow'
-  return k
-}
+import { isPermissionVisible } from '@/utils/sessionPermissions'
 
 export const Route = createFileRoute('/_app')({
   component: RouteComponent,
@@ -65,21 +57,12 @@ export const Route = createFileRoute('/_app')({
 
       if (baseRoute) {
         const requiredPermissionKey = routeToPermissionKey[baseRoute]
-        const normalizedTarget = normalizePermissionKey(requiredPermissionKey)
 
-        const permission = sessionPermissions.find(
-          (p) => p.key && normalizePermissionKey(p.key) === normalizedTarget,
-        )
-
-        if (permission && permission.visible === false) {
+        if (!isPermissionVisible(requiredPermissionKey, sessionPermissions)) {
           const firstAllowedRoute =
-            Object.keys(routeToPermissionKey).find((r) => {
-              const k = normalizePermissionKey(routeToPermissionKey[r])
-              const p = sessionPermissions.find(
-                (item) => item.key && normalizePermissionKey(item.key) === k,
-              )
-              return !p || p.visible !== false
-            }) || '/'
+            Object.keys(routeToPermissionKey).find((r) =>
+              isPermissionVisible(routeToPermissionKey[r], sessionPermissions),
+            ) || '/'
 
           if (location.pathname !== firstAllowedRoute) {
             throw redirect({

@@ -8,11 +8,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import { AnimateSlideUp, AnimateStagger } from '@/components/common/animations'
 import cn from '@/utils/cn'
-import { formatDatetime } from '@/utils/dayjs'
-import type {
-  PortalSubmission,
-  PortalSubmissionStatus,
-} from '../helpers/portalSubmissions'
+import type { PortalSubmission } from '../helpers/portalSubmissions'
 import {
   portalWorkflowIcon,
   portalWorkflowKind,
@@ -25,8 +21,10 @@ import {
   PortalSubmissionsTableSkeleton,
   PortalWorkflowCardsSkeleton,
 } from './PortalLayoutSkeleton'
+import PortalSubmissionRow from './PortalSubmissionRow'
 
 type PortalHomeProps = {
+  canCreateSubmission?: boolean
   displayName: string
   loadingSubmissions?: boolean
   loadingWorkflows?: boolean
@@ -40,26 +38,8 @@ type PortalHomeProps = {
   onOpenWorkflow: (workflowId: string) => void
 }
 
-const STATUS_TONE: Record<PortalSubmissionStatus, { className: string }> = {
-  'Action Required': { className: 'bg-orange-3 text-orange-11' },
-  'Approved': { className: 'bg-green-3 text-green-11' },
-  'Pending': { className: 'bg-yellow-3 text-yellow-11' },
-  'Rejected': { className: 'bg-red-3 text-red-11' },
-}
-
-const StatusPill = ({ status }: { status: PortalSubmissionStatus }) => (
-  <span
-    className={cn(
-      'inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-12 font-medium',
-      STATUS_TONE[status].className,
-    )}
-  >
-    <span className='size-1.5 rounded-full bg-current' />
-    {status}
-  </span>
-)
-
 export default function PortalHome({
+  canCreateSubmission = true,
   displayName,
   loadingSubmissions,
   loadingWorkflows,
@@ -103,7 +83,7 @@ export default function PortalHome({
     }
     return {
       actionRequired: submissions.filter(
-        (row) => row.status === 'Action Required' || row.status === 'Rejected',
+        (row) => row.status === 'Action Required',
       ).length,
       approved: submissions.filter((row) => row.status === 'Approved').length,
       pending: submissions.filter((row) => row.status === 'Pending').length,
@@ -113,30 +93,41 @@ export default function PortalHome({
 
   const statCards = [
     {
+      filterId: 'all',
       icon: 'lucide:file-text',
-      iconClass: 'bg-primary-3 text-primary-11',
-      label: t`Total submitted`,
+      iconWrap: 'bg-primary-3 text-primary-11',
+      label: t`Total Submitted`,
       value: String(stats.total),
     },
     {
+      filterId: 'Approved',
       icon: 'lucide:check-circle',
-      iconClass: 'bg-green-3 text-green-11',
+      iconWrap: 'bg-green-3 text-green-11',
       label: t`Approved`,
       value: String(stats.approved),
     },
     {
+      filterId: 'Pending',
       icon: 'lucide:clock',
-      iconClass: 'bg-yellow-3 text-yellow-11',
+      iconWrap: 'bg-yellow-3 text-yellow-11',
       label: t`Pending`,
       value: String(stats.pending),
     },
     {
+      filterId: 'Action Required',
       icon: 'lucide:alert-circle',
-      iconClass: 'bg-orange-3 text-orange-11',
+      iconWrap: 'bg-orange-3 text-orange-11',
       label: t`Action Required`,
       value: String(stats.actionRequired),
     },
   ]
+
+  const applyStatusFilter = (filterId: string) => {
+    const next =
+      statusOptions.find((option) => String(option.id) === filterId) ||
+      statusOptions[0]
+    setStatusFilter(next)
+  }
 
   const filteredWorkflows = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -161,6 +152,10 @@ export default function PortalHome({
         row.status,
         row.amount,
         row.workflowName,
+        row.raw.formEntryId,
+        row.raw.stage,
+        row.raw.createdByEmail,
+        row.raw.transactionCreatedByEmail,
       ]
         .join(' ')
         .toLowerCase()
@@ -169,60 +164,71 @@ export default function PortalHome({
   }, [query, statusFilter, submissions])
 
   return (
-    <div className='flex flex-col gap-5 sm:gap-6'>
+    <div className='flex flex-col gap-[22px]'>
       <AnimateSlideUp className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
         <div className='min-w-0'>
-          <p className='text-12 text-gray-9'>
+          <p className='text-[13px] text-gray-9'>
             {t`Welcome back, ${displayName}.`}
           </p>
-          <h1 className='mt-1 text-xl font-semibold text-gray-13 sm:text-2xl'>
+          <h1 className='mt-0.5 text-[25px] font-bold tracking-tight text-gray-13'>
             {t`My Submissions`}
           </h1>
-          {/* <p className='mt-1 text-13 text-gray-10'>
+          <p className='mt-1 text-[14px] text-gray-10'>
             {t`Track the status of everything you've submitted.`}
-          </p> */}
+          </p>
         </div>
-        <Button
-          className='w-full sm:w-auto'
-          color='primary'
-          icon='lucide:plus'
-          label={t`New Submission`}
-          size='lg'
-          variant='solid'
-          onClick={onNewSubmission}
-        />
+        {canCreateSubmission ? (
+          <Button
+            className='w-full sm:w-auto'
+            color='primary'
+            icon='lucide:plus'
+            label={t`New Submission`}
+            size='lg'
+            variant='solid'
+            onClick={onNewSubmission}
+          />
+        ) : null}
       </AnimateSlideUp>
 
       {loadingWorkflows || (loadingSubmissions && !showingWorkflows) ? (
         <PortalStatCardsSkeleton />
       ) : (
         <AnimateStagger
-          className='grid grid-cols-2 gap-3 lg:grid-cols-4'
+          className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:min-w-0 [&>div]:w-full'
           staggerDelay={0.05}
         >
-          {statCards.map((stat) => (
-            <div
-              className='flex items-center gap-3 rounded-xl border border-gray-4 bg-surface p-3.5 sm:p-4'
-              key={stat.label}
-            >
-              <span
+          {statCards.map((stat) => {
+            const isActive = String(statusFilter.id) === stat.filterId
+            return (
+              <button
+                key={stat.label}
+                type='button'
                 className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                  stat.iconClass,
+                  'flex h-full w-full min-w-0 items-center gap-3.5 rounded-xl border bg-surface px-[18px] py-4 text-left transition',
+                  'hover:border-primary-6 active:scale-[0.99]',
+                  isActive ? 'border-primary-7' : 'border-gray-4',
                 )}
+                onClick={() => applyStatusFilter(stat.filterId)}
               >
-                <Icon className='size-4.5' name={stat.icon} />
-              </span>
-              <div className='min-w-0'>
-                <div className='text-lg font-semibold text-gray-13'>
-                  {stat.value}
+                <span
+                  className={cn(
+                    'flex size-[38px] shrink-0 items-center justify-center rounded-[10px]',
+                    stat.iconWrap,
+                  )}
+                >
+                  <Icon className='size-[18px]' name={stat.icon} />
+                </span>
+                <div className='min-w-0'>
+                  <div className='text-[22px] leading-none font-bold text-gray-13'>
+                    {stat.value}
+                  </div>
+                  <div className='mt-[3px] truncate text-[12.5px] text-gray-10'>
+                    {stat.label}
+                  </div>
                 </div>
-                <div className='truncate text-12 text-gray-10'>
-                  {stat.label}
-                </div>
-              </div>
-            </div>
-          ))}
+              </button>
+            )
+          })}
         </AnimateStagger>
       )}
 
@@ -329,7 +335,7 @@ export default function PortalHome({
         </>
       ) : (
         <AnimateSlideUp
-          className='rounded-xl border border-gray-4 bg-surface p-4 sm:p-5'
+          className='rounded-xl border border-gray-4 bg-surface p-5'
           delay={0.1}
         >
           <div className='mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
@@ -390,68 +396,33 @@ export default function PortalHome({
             <div className='py-12 text-center text-13 text-gray-9'>
               {submissions.length
                 ? t`No submissions match your search.`
-                : t`No submissions yet. Start a new submission to see it here.`}
+                : canCreateSubmission
+                  ? t`No submissions yet. Start a new submission to see it here.`
+                  : t`No submissions yet.`}
             </div>
           ) : (
-            <div className='-mx-4 mt-4 overflow-x-auto sm:mx-0 sm:mt-0'>
-              <table className='w-full min-w-[720px] border-collapse'>
-                <thead>
-                  <tr className='text-left text-11 font-semibold tracking-wide text-gray-9 uppercase'>
-                    <th className='px-4 pb-3'>{t`Submission`}</th>
-                    <th className='px-3 pb-3'>{t`Status`}</th>
-                    <th className='px-3 pb-3'>{t`Submitted`}</th>
-                    <th className='px-3 pb-3 text-right'>{t`Amount`}</th>
-                    <th className='px-4 pb-3' />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSubmissions.map((row, index) => (
-                    <motion.tr
-                      animate={{ opacity: 1, y: 0 }}
-                      className='cursor-pointer border-t border-gray-3 transition hover:bg-gray-2 active:bg-gray-3'
-                      initial={{ opacity: 0, y: 8 }}
-                      key={`${row.workflowId}-${row.id}`}
-                      transition={{
-                        delay: Math.min(index, 12) * 0.03,
-                        duration: 0.3,
-                      }}
-                      onClick={() => onOpenSubmission(row)}
-                    >
-                      <td className='px-4 py-3.5'>
-                        <div className='flex items-center gap-3'>
-                          <span className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-3 text-primary-11'>
-                            <Icon className='size-4' name='lucide:file-text' />
-                          </span>
-                          <div className='min-w-0'>
-                            <div className='truncate text-13 font-semibold text-gray-13'>
-                              {row.title || row.requestNo}
-                            </div>
-                            {row.title && row.title !== row.requestNo ? (
-                              <div className='truncate font-mono text-11 text-gray-9'>
-                                {row.requestNo}
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      </td>
-                      <td className='px-3 py-3.5'>
-                        <StatusPill status={row.status} />
-                      </td>
-                      <td className='px-3 py-3.5 text-13 text-gray-10'>
-                        {row.submittedAt
-                          ? formatDatetime(row.submittedAt, 'D MMM YYYY')
-                          : '—'}
-                      </td>
-                      <td className='px-3 py-3.5 text-right text-13 font-semibold text-gray-13'>
-                        {row.amount}
-                      </td>
-                      <td className='px-4 py-3.5 text-gray-8'>
-                        <Icon className='size-4' name='lucide:chevron-right' />
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className='mt-2'>
+              {filteredSubmissions.map((row, index) => (
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  key={`${row.workflowId}-${row.id}`}
+                  transition={{
+                    delay: Math.min(index, 12) * 0.03,
+                    duration: 0.3,
+                  }}
+                >
+                  <PortalSubmissionRow
+                    submission={row}
+                    workflow={
+                      workflows.find(
+                        (workflow) => workflow.id === row.workflowId,
+                      )?.workflow
+                    }
+                    onOpen={onOpenSubmission}
+                  />
+                </motion.div>
+              ))}
             </div>
           )}
         </AnimateSlideUp>

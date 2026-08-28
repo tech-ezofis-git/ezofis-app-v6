@@ -9,9 +9,12 @@ import PortalBackButton from './PortalBackButton'
 import PortalBrandMark from './PortalBrandMark'
 
 type PortalDetailHeader = {
+  acting?: boolean
+  actions?: { label: string; value: string }[]
   requestNo: string
   status: string
   statusClassName: string
+  onAction?: (value: string) => void
   onBack: () => void
 }
 
@@ -27,6 +30,7 @@ type PortalShellProps = {
 
 type PortalWizardHeader = {
   canSubmit: boolean
+  submitLabel?: string
   submitting: boolean
   title: string
   onCancel: () => void
@@ -75,7 +79,7 @@ export default function PortalShell({
                 <Button
                   className='shrink-0 rounded-lg'
                   disabled={!wizard.canSubmit}
-                  label={t`Submit`}
+                  label={wizard.submitLabel || t`Submit`}
                   loading={wizard.submitting}
                   onClick={wizard.onSubmit}
                 />
@@ -97,17 +101,28 @@ export default function PortalShell({
                     {detail.status}
                   </span>
                 </div>
-                <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
-                  <ThemeSwitcher />
-                  <Button
-                    color='gray'
-                    icon='lucide:log-out'
-                    label={t`Sign out`}
-                    size='sm'
-                    variant='outline'
-                    onClick={onSignOut}
-                  />
-                </div>
+                {detail.actions && detail.actions.length > 0 ? (
+                  <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
+                    {detail.actions.map((action) => {
+                      const label = action.label.toLowerCase()
+                      const color = label.includes('reject')
+                        ? 'red'
+                        : label.includes('approve')
+                          ? 'green'
+                          : 'primary'
+                      return (
+                        <Button
+                          className='rounded-lg'
+                          color={color}
+                          key={action.value}
+                          label={action.label}
+                          loading={Boolean(detail.acting)}
+                          onClick={() => detail.onAction?.(action.value)}
+                        />
+                      )
+                    })}
+                  </div>
+                ) : null}
               </>
             ) : (
               <>

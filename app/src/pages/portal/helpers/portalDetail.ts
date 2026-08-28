@@ -45,7 +45,12 @@ export const submissionInstanceIds = (submission: PortalSubmission) => {
   )
   const processId = textOf(raw.processId) || instanceId
   const activityId = textOf(
-    raw.activityId || raw.activityid || raw.currentActivityId,
+    raw.activityId ||
+      raw.activityid ||
+      raw.currentActivityId ||
+      raw.ActivityId ||
+      raw.stepId ||
+      raw.blockId,
   )
   const repositoryId =
     textOf(raw.repositoryId) || textOf(raw.repositoryid) || undefined

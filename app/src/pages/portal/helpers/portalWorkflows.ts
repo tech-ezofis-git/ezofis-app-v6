@@ -1,7 +1,12 @@
 import type { PortalWorkflowLink } from '@/pages/settings/helpers/portalConfigStorage'
 import workflowsApiV6, {
   createPublishedWorkflowBrowsePayload,
+  type V6WorkflowDetail,
 } from '@/api/v6/workflows'
+import {
+  canCreateFromWorkflow,
+  getStartActionLabel,
+} from './portalWorkflowAccess'
 
 export const PORTAL_WORKFLOW_ICONS = [
   'lucide:file-text',
@@ -39,19 +44,24 @@ export const workflowDescriptionFallback = (name: string) =>
   `View and track submissions for ${name}.`
 
 export type PortalWorkflowSummary = {
+  canCreate: boolean
   completedCount: number
   description: string
   id: string
   inboxCount: number
   name: string
   sentCount: number
+  startActionLabel: string
   total: number
+  workflow: V6WorkflowDetail | null
 }
 
 export const listPortalWorkflowSummaries = async ({
+  userId,
   workflows,
 }: {
   tenantId?: string
+  userId?: string
   workflows: PortalWorkflowLink[]
 }): Promise<PortalWorkflowSummary[]> => {
   if (!workflows.length) return []
@@ -118,18 +128,35 @@ export const listPortalWorkflowSummaries = async ({
 
   const countById = new Map(counts.map((row) => [row.id, row]))
 
+  const details = await Promise.all(
+    workflows.map(async (workflow) => {
+      const id = String(workflow.id)
+      try {
+        const { data } = await workflowsApiV6.getWorkflowById(id)
+        return { data, id }
+      } catch {
+        return { data: null, id }
+      }
+    }),
+  )
+  const detailById = new Map(details.map((row) => [row.id, row.data]))
+
   return workflows.map((workflow) => {
     const id = String(workflow.id)
     const meta = metaById.get(id)
     const count = countById.get(id)
+    const detail = detailById.get(id)
     return {
+      canCreate: detail ? canCreateFromWorkflow(detail, userId) : true,
       completedCount: count?.completedCount || 0,
       description: meta?.description || '',
       id,
       inboxCount: count?.inboxCount || 0,
       name: meta?.name || portalWorkflowLabel(workflow),
       sentCount: count?.sentCount || 0,
+      startActionLabel: detail ? getStartActionLabel(detail) : 'Submit',
       total: count?.total || 0,
+      workflow: detail || null,
     }
   })
 }

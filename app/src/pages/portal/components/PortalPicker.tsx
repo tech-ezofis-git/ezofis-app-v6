@@ -32,6 +32,7 @@ export default function PortalPicker({
   const visibleWorkflows = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return workflows.filter((workflow) => {
+      if (workflow.canCreate === false) return false
       const name = portalWorkflowLabel(workflow).toLowerCase()
       const description = String(workflow.description || '').toLowerCase()
       return !needle || name.includes(needle) || description.includes(needle)
@@ -73,7 +74,9 @@ export default function PortalPicker({
       ) : visibleWorkflows.length === 0 ? (
         <AnimateSlideUp delay={0.1}>
           <div className='rounded-xl border border-gray-4 bg-surface p-10 text-center text-13 text-gray-9'>
-            {t`No workflows are connected to this portal yet.`}
+            {workflows.some((workflow) => workflow.canCreate !== false)
+              ? t`No workflows match your search.`
+              : t`You don't have permission to start a submission for these workflows.`}
           </div>
         </AnimateSlideUp>
       ) : (

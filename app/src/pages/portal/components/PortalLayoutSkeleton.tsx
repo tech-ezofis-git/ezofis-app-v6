@@ -1,16 +1,16 @@
 import Skeleton from '@/components/base/Skeleton'
 
 export const PortalStatCardsSkeleton = () => (
-  <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
+  <div className='grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4 [&>div]:min-w-0 [&>div]:w-full'>
     {[0, 1, 2, 3].map((index) => (
       <div
-        className='flex items-center gap-3 rounded-xl border border-gray-4 bg-surface p-3.5 sm:p-4'
+        className='flex h-full w-full min-w-0 items-center gap-3.5 rounded-xl border border-gray-4 bg-surface px-[18px] py-4'
         key={index}
       >
-        <Skeleton className='size-9 shrink-0 rounded-lg' />
-        <div className='min-w-0 flex-1 space-y-2'>
-          <Skeleton className='h-5 w-10' />
-          <Skeleton className='h-3 w-20' />
+        <Skeleton className='size-[38px] shrink-0 rounded-[10px]' />
+        <div className='min-w-0 flex-1 space-y-1.5'>
+          <Skeleton className='h-[22px] w-10' />
+          <Skeleton className='h-3 w-24' />
         </div>
       </div>
     ))}
@@ -73,30 +73,22 @@ export const PortalWorkflowCardsSkeleton = () => (
 )
 
 export const PortalSubmissionsTableSkeleton = () => (
-  <div className='-mx-4 sm:mx-0'>
-    <div className='flex flex-col'>
-      <div className='flex items-center gap-3 px-4 pb-3'>
-        <Skeleton className='h-3 w-24' />
-        <Skeleton className='ml-auto h-3 w-16' />
-        <Skeleton className='h-3 w-20' />
-        <Skeleton className='h-3 w-16' />
-      </div>
-      {[0, 1, 2, 3, 4].map((index) => (
-        <div
-          className='flex items-center gap-3 border-t border-gray-3 px-4 py-3.5'
-          key={index}
-        >
-          <Skeleton className='size-8 shrink-0 rounded-lg' />
-          <div className='min-w-0 flex-1 space-y-2'>
-            <Skeleton className='h-3.5 w-48 max-w-full' />
-            <Skeleton className='h-3 w-28' />
-          </div>
-          <Skeleton className='h-6 w-20 rounded-full' />
-          <Skeleton className='hidden h-3.5 w-24 sm:block' />
-          <Skeleton className='hidden h-3.5 w-16 sm:block' />
+  <div className='mt-2 flex flex-col'>
+    {[0, 1, 2, 3, 4].map((index) => (
+      <div
+        className='flex items-center gap-3 border-t border-gray-3 py-3.5'
+        key={index}
+      >
+        <Skeleton className='h-4 w-16' />
+        <Skeleton className='h-5 w-36 rounded-md' />
+        <div className='min-w-0 flex-1 space-y-2'>
+          <Skeleton className='h-3 w-2/3 max-w-80' />
+          <Skeleton className='h-3 w-24' />
         </div>
-      ))}
-    </div>
+        <Skeleton className='hidden h-3.5 w-32 sm:block' />
+        <Skeleton className='hidden h-5 w-20 rounded-full sm:block' />
+      </div>
+    ))}
   </div>
 )
 

@@ -36,6 +36,7 @@ import CustomFilter from '@/components/common/CustomFilter'
 import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import PoSetupFlowPage from '@/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage'
+import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
@@ -2012,7 +2013,11 @@ const FormEntriesPage = () => {
             icon='lucide:arrow-left'
             title={t`Back to Forms`}
             variant='ghost'
-            onClick={() => navigate({ to: '/forms' })}
+            onClick={() =>
+              navigate({
+                to: getSettingsReturnPath('form-configuration') ?? '/forms',
+              })
+            }
           />
           <Tabs
             color='primary'

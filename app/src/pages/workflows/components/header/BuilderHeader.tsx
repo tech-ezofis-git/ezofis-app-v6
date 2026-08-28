@@ -5,6 +5,7 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
+import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { exportWorkflow } from '../../utils/exportWorkflow'
 
@@ -105,7 +106,11 @@ const BuilderHeader = () => {
           color='gray'
           icon='lucide:chevron-left'
           variant='ghost'
-          onClick={() => navigate({ to: '/workflows' })}
+          onClick={() =>
+            navigate({
+              to: getSettingsReturnPath('workflow-configuration') ?? '/workflows',
+            })
+          }
         />
         <div className='flex flex-col'>
           <div className='flex items-center gap-2'>
