@@ -1,7 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { Option } from '@/types/option'
-import { uploadForOcr } from '@/api/v6/folder/folder'
+import { uploadForOcr, getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputNumber from '@/components/base/inputs/InputNumber'
@@ -85,6 +86,28 @@ const FieldRenderer = ({
   const general = field?.settings?.general || {}
   const required = isFieldRequired(field)
   const readOnly = viewOnly || isFieldReadOnly(field)
+
+  const isRepositoryMultiSelect =
+    field.type === 'MULTI_SELECT' &&
+    field.settings?.specific?.optionsType === 'REPOSITORY'
+
+  const targetRepoId =
+    field.settings?.specific?.repositoryId || repositoryId || ''
+  const targetRepoField = field.settings?.specific?.repositoryField || ''
+
+  const { data: repositoryFacetOptions = [] } = useQuery({
+    queryKey: ['repositoryItemFacets', targetRepoId, targetRepoField],
+    queryFn: async () => {
+      if (!targetRepoId || !targetRepoField) return []
+      const res = await getRepositoryItemFacets({
+        repositoryId: targetRepoId,
+        fieldName: targetRepoField,
+        limit: 1000,
+      })
+      return (res.data || []).map((f) => ({ id: f.value, name: f.value }))
+    },
+    enabled: isRepositoryMultiSelect && !!targetRepoId && !!targetRepoField,
+  })
 
   const common = {
     disabled: readOnly,
@@ -179,9 +202,22 @@ const FieldRenderer = ({
       )
     }
 
-    case 'MULTIPLE_CHOICE':
-    case 'MULTI_SELECT': {
+    case 'MULTIPLE_CHOICE': {
       const options = getFieldOptions(field)
+      const selectedIds: string[] = Array.isArray(value) ? value : []
+      return (
+        <InputSelectMultiple
+          {...common}
+          options={options}
+          value={options.filter((opt) => selectedIds.includes(opt.id))}
+          onChange={(opts: Option[]) => onChange(opts.map((opt) => opt.id))}
+        />
+      )
+    }
+
+    case 'MULTI_SELECT': {
+      const isRepo = field.settings?.specific?.optionsType === 'REPOSITORY'
+      const options = isRepo ? repositoryFacetOptions : getFieldOptions(field)
       const selectedIds: string[] = Array.isArray(value) ? value : []
       return (
         <InputSelectMultiple

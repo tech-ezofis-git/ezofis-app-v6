@@ -9,8 +9,11 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
-import { uploadForOcr, getRepositorys } from '@/api/v6/folder/folder'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
+import { uploadForOcr, getRepositorys, getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import {
   type Question,
   useFormStore,
@@ -303,6 +306,57 @@ const getFieldOptions = (field: Question): string[] => {
   return options.length > 0 ? options : ['Option A', 'Option B', 'Option C']
 }
 
+const LivePreviewMultiSelect = ({
+  field,
+  value,
+  onChange,
+}: {
+  field: Question
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const specific = field.settings?.specific ?? {}
+  const optionsType = specific.optionsType
+  const repositoryId = specific.repositoryId || ''
+  const repositoryField = specific.repositoryField || ''
+
+  const { data: repoOptions = [] } = useQuery({
+    queryKey: ['livePreviewFacets', repositoryId, repositoryField],
+    queryFn: async () => {
+      if (!repositoryId || !repositoryField) return []
+      const res = await getRepositoryItemFacets({
+        repositoryId,
+        fieldName: repositoryField,
+        limit: 1000,
+      })
+      return (res.data || []).map((f) => ({ id: f.value, name: f.value }))
+    },
+    enabled: optionsType === 'REPOSITORY' && !!repositoryId && !!repositoryField,
+  })
+
+  const rawOptions: Option[] =
+    optionsType === 'REPOSITORY'
+      ? repoOptions
+      : getFieldOptions(field).map((opt) => ({ id: opt, name: opt }))
+
+  const selectedIds: string[] = Array.isArray(value)
+    ? value
+    : value
+      ? [String(value)]
+      : []
+
+  const selectedOptions = rawOptions.filter((opt) => selectedIds.includes(opt.id))
+
+  return (
+    <InputSelectMultiple
+      options={rawOptions}
+      placeholder={field.settings?.general?.placeholder || 'Select options...'}
+      value={selectedOptions}
+      onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
+    />
+  )
+}
+
 const renderPreviewInput = (
   field: Question,
   model: Record<string, any>,
@@ -520,9 +574,16 @@ const renderPreviewInput = (
         />
       )
     }
+    case 'MULTI_SELECT':
+      return (
+        <LivePreviewMultiSelect
+          field={field}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
     case 'SINGLE_CHOICE':
-    case 'MULTIPLE_CHOICE':
-    case 'MULTI_SELECT': {
+    case 'MULTIPLE_CHOICE': {
       const options = getFieldOptions(field)
       const optionsPerLine = field.settings.specific.optionsPerLine || 1
       const selectedList = Array.isArray(fieldValue)

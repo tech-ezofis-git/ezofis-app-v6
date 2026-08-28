@@ -924,6 +924,49 @@ const QuestionCard = ({
                 </p>
               </div>
             </div>
+          ) : (question.type as string) === 'SINGLE_SELECT' ? (
+            <div
+              className={cn(
+                'flex h-11 w-full items-center justify-between rounded-lg border px-4 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <span className='truncate text-[13px] font-medium text-gray-8'>
+                {question.settings.general.placeholder || 'Select an option...'}
+              </span>
+              <Icon
+                className='text-gray-5'
+                height={16}
+                name='lucide:chevron-down'
+                width={16}
+              />
+            </div>
+          ) : (question.type as string) === 'MULTI_SELECT' ? (
+            <div
+              className={cn(
+                'flex h-11 w-full items-center justify-between rounded-lg border px-3 transition-colors',
+                isActive
+                  ? 'border-accent-primary/50 bg-white'
+                  : 'border-gray-2 bg-white group-hover:border-gray-3',
+              )}
+            >
+              <div className='flex items-center gap-1.5 overflow-hidden'>
+                <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
+                  Option 1
+                  <Icon height={12} name='lucide:x' width={12} className='text-gray-7' />
+                </span>
+                <span className='inline-flex items-center gap-1 rounded bg-gray-2 px-2 py-0.5 text-xs font-medium text-gray-11'>
+                  Option 2
+                  <Icon height={12} name='lucide:x' width={12} className='text-gray-7' />
+                </span>
+              </div>
+              <div className='flex items-center gap-1.5 text-gray-5'>
+                <Icon height={14} name='lucide:search' width={14} />
+                <Icon height={16} name='lucide:chevron-down' width={16} />
+              </div>
+            </div>
           ) : (
             <div
               className={cn(

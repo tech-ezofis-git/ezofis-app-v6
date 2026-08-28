@@ -174,9 +174,9 @@ export const ALL_FIELDS: FieldType[] = [
   },
   {
     category: 'popular',
-    description: 'Multi-select options',
-    icon: 'lucide:square-check',
-    label: 'Checkbox',
+    description: 'Searchable dropdown, multiple picks',
+    icon: 'lucide:list-checks',
+    label: 'Multi Select',
     type: 'MULTI_SELECT',
   },
   {

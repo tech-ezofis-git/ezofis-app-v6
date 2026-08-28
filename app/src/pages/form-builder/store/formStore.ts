@@ -220,6 +220,8 @@ export interface Question {
       optionsPerLine?: number
       optionsSource?: string
       optionsType?: string
+      repositoryId?: string
+      repositoryField?: string
       parentDateFieldId?: string
       parentDateOffset?: number
       parentFieldFilterValue?: any

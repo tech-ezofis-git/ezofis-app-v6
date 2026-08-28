@@ -5,7 +5,9 @@ import {
   SegmentedControl,
   Tooltip,
 } from '@mantine/core'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
+import { getRepositoryItemFilterFields, getRepositorys } from '@/api/v6/folder/folder'
 import type { LogicRule, Question } from '@/pages/form-builder/store/formStore'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -37,6 +39,26 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
   const updateQuestion = useFormStore((state) => state.updateQuestion)
   const panels = useFormStore((state) => state.panels)
   const allQuestions = (panels ?? []).flatMap((p) => p.fields ?? [])
+
+  const currentRepoId = activeQuestion.settings.specific.repositoryId || ''
+
+  const { data: repositories = [] } = useQuery({
+    queryKey: ['repositories'],
+    queryFn: async () => {
+      const res = await getRepositorys()
+      return Array.isArray(res.data) ? res.data : []
+    },
+  })
+
+  const { data: repositoryFields = [] } = useQuery({
+    queryKey: ['repositoryItemFilterFields', currentRepoId],
+    queryFn: async () => {
+      if (!currentRepoId) return []
+      const res = await getRepositoryItemFilterFields(currentRepoId)
+      return res.data?.fields || []
+    },
+    enabled: !!currentRepoId,
+  })
 
   const [openSetup, setOpenSetup] = useState(true)
   const [openValidation, setOpenValidation] = useState(false)
@@ -853,34 +875,69 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     />
                   </div>
 
-                  {activeQuestion.settings.specific.optionsType ===
-                    'MASTER_TABLE' && (
-                      <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3'>
-                        <label className='block text-[11px] font-bold text-primary-9 uppercase'>
-                          Dynamic Source Builder
-                        </label>
-                        <div className='grid grid-cols-2 gap-2'>
+                  {(activeQuestion.settings.specific.optionsType ===
+                    'MASTER_TABLE' ||
+                    activeQuestion.settings.specific.optionsType ===
+                    'PREDEFINED') && (
+                      <div className='bg-amber-500/5 border-amber-500/20 rounded-lg border p-3 text-xs font-medium text-amber-700'>
+                        Master Table and Predefined sources require a backend endpoint — coming soon.
+                      </div>
+                    )}
+
+                  {activeQuestion.settings.specific.optionsType === 'REPOSITORY' && (
+                    <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3'>
+                      <label className='block text-[11px] font-bold text-primary-9 uppercase'>
+                        Repository Source Builder
+                      </label>
+                      <div className='space-y-3'>
+                        <div>
+                          <label className='mb-1 block text-xs font-medium text-gray-11'>
+                            Repository
+                          </label>
                           <InputSelect
-                            placeholder='Table'
-                            value={null}
-                            options={[
-                              { id: 't1', name: 'Employees' },
-                              { id: 't2', name: 'Departments' },
-                            ]}
-                            onChange={() => { }}
+                            placeholder='Select Repository'
+                            options={repositories.map((r: any) => ({
+                              id: r.id,
+                              name: r.name || r.title || r.id,
+                            }))}
+                            value={
+                              repositories
+                                .map((r: any) => ({ id: r.id, name: r.name || r.title || r.id }))
+                                .find((r: any) => r.id === activeQuestion.settings.specific.repositoryId) || null
+                            }
+                            onChange={(val) => {
+                              updateNested('specific', {
+                                repositoryId: val?.id || '',
+                                repositoryField: '',
+                              })
+                            }}
                           />
+                        </div>
+                        <div>
+                          <label className='mb-1 block text-xs font-medium text-gray-11'>
+                            Column / Field
+                          </label>
                           <InputSelect
-                            placeholder='Column'
-                            value={null}
-                            options={[
-                              { id: 'c1', name: 'Name' },
-                              { id: 'c2', name: 'Code' },
-                            ]}
-                            onChange={() => { }}
+                            placeholder='Select Column'
+                            options={repositoryFields.map((f: any) => ({
+                              id: f.sqlColumnName || f.name,
+                              name: f.name || f.sqlColumnName,
+                            }))}
+                            value={
+                              repositoryFields
+                                .map((f: any) => ({ id: f.sqlColumnName || f.name, name: f.name || f.sqlColumnName }))
+                                .find((f: any) => f.id === activeQuestion.settings.specific.repositoryField) || null
+                            }
+                            onChange={(val) => {
+                              updateNested('specific', {
+                                repositoryField: val?.id || '',
+                              })
+                            }}
                           />
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
                   {(activeQuestion.settings.specific.optionsType === 'CUSTOM' ||
                     !activeQuestion.settings.specific.optionsType) && (
@@ -966,7 +1023,9 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                             />
                           </div>
 
-                          {activeQuestion.type === 'MULTI_SELECT' && (
+                          {activeQuestion.type === 'MULTI_SELECT' &&
+                            (activeQuestion.settings.specific.optionsType === 'CUSTOM' ||
+                              !activeQuestion.settings.specific.optionsType) && (
                             <>
                               <Divider className='border-dashed border-gray-1' />
 
