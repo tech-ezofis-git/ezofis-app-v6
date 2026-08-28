@@ -28,6 +28,7 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
       clearable,
       description,
       error,
+      format,
       label,
       maxTime,
       minTime,
@@ -80,6 +81,7 @@ const InputTime = forwardRef<HTMLInputElement, Props>(
         classNames={_classNames}
         description={error ? undefined : description}
         error={error}
+        format={format}
         inputWrapperOrder={inputWrapperOrder}
         label={_label}
         max={maxTime}

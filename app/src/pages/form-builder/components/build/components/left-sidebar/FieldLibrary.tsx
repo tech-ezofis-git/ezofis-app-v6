@@ -202,6 +202,13 @@ export const ALL_FIELDS: FieldType[] = [
     label: 'Time',
     type: 'TIME',
   },
+  {
+    category: 'date_time',
+    description: 'Combined date & time picker',
+    icon: 'lucide:calendar-clock',
+    label: 'Date & Time',
+    type: 'DATE_TIME',
+  },
 
   // Templates
   {

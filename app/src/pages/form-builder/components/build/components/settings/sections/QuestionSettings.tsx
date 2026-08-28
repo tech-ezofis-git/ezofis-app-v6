@@ -194,6 +194,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
   const isFullName = activeQuestion.type === 'FULL_NAME'
   const isDate = activeQuestion.type === 'DATE'
   const isTime = activeQuestion.type === 'TIME'
+  const isDateTime = activeQuestion.type === 'DATE_TIME'
   const isSelect = [
     'SINGLE_SELECT',
     'MULTI_SELECT',
@@ -365,7 +366,9 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                   ? 'YYYY-MM-DD'
                   : isTime
                     ? 'HH:MM'
-                    : 'e.g. Type here...'
+                    : isDateTime
+                      ? 'YYYY-MM-DD HH:MM'
+                      : 'e.g. Type here...'
             }
             onBlur={() =>
               updateNested('general', { placeholder: localPlaceholder })
@@ -373,7 +376,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
             onChange={(val: string) => setLocalPlaceholder(val)}
           />
 
-          {!isNumber && !isDate && !isSelect && (
+          {!isNumber && !isDate && !isDateTime && !isSelect && (
             <InputText
               label='Default Value'
               placeholder='No default'
@@ -392,7 +395,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
             <InputSelect
               placeholder='Select width'
               options={
-                isLongText || isNumber || isDate || isTime || isSelect
+                isLongText || isNumber || isDate || isTime || isDateTime || isSelect
                   ? sizeOptions
                   : [
                     { id: 'col-12', name: '100% Full Width' },
@@ -401,7 +404,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                   ]
               }
               value={
-                (isLongText || isNumber || isDate || isTime || isSelect
+                (isLongText || isNumber || isDate || isTime || isDateTime || isSelect
                   ? sizeOptions
                   : [
                     { id: 'col-12', name: '100% Full Width' },
@@ -440,7 +443,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
 
           {showMoreSetup && (
             <div className='animate-in fade-in slide-in-from-top-1 space-y-4 duration-200'>
-              {(isLongText || isNumber || isDate || isTime || isSelect) && (
+              {(isLongText || isNumber || isDate || isTime || isDateTime || isSelect) && (
                 <InputText
                   label='Display Label (Internal)'
                   placeholder='Alternative visual name'
@@ -480,7 +483,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 </div>
               </div>
 
-              {(isLongText || isNumber || isDate || isTime) && (
+              {(isLongText || isNumber || isDate || isTime || isDateTime) && (
                 <InputText
                   label='Tooltip (Hover Text)'
                   placeholder='Explanation on hover'
@@ -496,6 +499,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 isNumber ||
                 isDate ||
                 isTime ||
+                isDateTime ||
                 isSelect) && (
                   <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
                     <div>
@@ -522,7 +526,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
 
               <Divider className='border-gray-1' />
 
-              {(isLongText || isNumber || isDate || isTime || isSelect) && (
+              {(isLongText || isNumber || isDate || isTime || isDateTime || isSelect) && (
                 <div>
                   <label className='mb-2 block text-13 font-medium text-gray-11'>
                     Visibility State
@@ -543,7 +547,12 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 </div>
               )}
 
-              {!isLongText && !isNumber && !isDate && !isTime && !isSelect && (
+              {!isLongText &&
+                !isNumber &&
+                !isDate &&
+                !isTime &&
+                !isDateTime &&
+                !isSelect && (
                 <div className='grid grid-cols-2 gap-2'>
                   <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
                     <div className='text-xs font-bold text-gray-13'>
@@ -580,6 +589,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
       {(isNumber ||
         isDate ||
         isTime ||
+        isDateTime ||
         isSelect ||
         isCurrency ||
         isCalculated ||
@@ -604,22 +614,26 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 ? 'lucide:calendar'
                 : isTime
                   ? 'lucide:clock'
-                  : isSelect
-                    ? 'lucide:list-todo'
-                    : isCurrency
-                      ? 'lucide:banknote'
-                      : isCalculated
-                        ? 'lucide:calculator'
-                        : isCountryCode
-                          ? 'lucide:globe'
-                          : 'lucide:sliders'
+                  : isDateTime
+                    ? 'lucide:calendar-clock'
+                    : isSelect
+                      ? 'lucide:list-todo'
+                      : isCurrency
+                        ? 'lucide:banknote'
+                        : isCalculated
+                          ? 'lucide:calculator'
+                          : isCountryCode
+                            ? 'lucide:globe'
+                            : 'lucide:sliders'
             }
             title={
               isDate
                 ? 'Date Config'
                 : isTime
                   ? 'Time Config'
-                  : isSelect && !isCurrency
+                  : isDateTime
+                    ? 'Date & Time Config'
+                    : isSelect && !isCurrency
                     ? 'Select Config'
                     : isCurrency
                       ? 'Currency Config'
@@ -1411,7 +1425,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 </div>
               )}
 
-              {isDate && (
+              {(isDate || isDateTime) && (
                 <div className='space-y-4'>
                   <div>
                     <label className='mb-2 block text-13 font-medium text-gray-11'>
@@ -1438,11 +1452,11 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     'CUSTOM' && (
                       <div className='bg-gray-50 rounded-lg border border-gray-1 p-3'>
                         <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
-                          Pick Fixed Date
+                          {isDateTime ? 'Pick Fixed Date & Time' : 'Pick Fixed Date'}
                         </label>
                         <input
                           className='w-full rounded border border-gray-1 bg-white px-2 py-1 text-sm outline-none focus:border-primary-8'
-                          type='date'
+                          type={isDateTime ? 'datetime-local' : 'date'}
                           value={
                             activeQuestion.settings.specific.defaultValue || ''
                           }
@@ -2200,6 +2214,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
           isNumber ||
           isDate ||
           isTime ||
+          isDateTime ||
           isSelect ||
           isCurrency ||
           isCalculated ||
@@ -2301,18 +2316,18 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 )}
               </div>
 
-              {(isShortText || isLongText || isNumber || isTime) && (
+              {(isShortText || isLongText || isNumber || isTime || isDateTime) && (
                 <div>
                   <label className='mb-2 block text-13 font-medium text-gray-11'>
                     {isNumber
                       ? 'Number Format'
-                      : isTime
+                      : isTime || isDateTime
                         ? 'Time Format'
                         : 'Validation Type'}
                   </label>
                   <InputSelect
                     options={
-                      isTime
+                      isTime || isDateTime
                         ? timeFormatOptions.map((o) => ({
                           id: o.value,
                           name: o.label,
@@ -2322,12 +2337,12 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     placeholder={
                       isNumber
                         ? 'Select numeric format'
-                        : isTime
+                        : isTime || isDateTime
                           ? 'Select display format'
                           : 'e.g. Email, Alpha...'
                     }
                     value={
-                      isTime
+                      isTime || isDateTime
                         ? timeFormatOptions.find(
                           (o) =>
                             o.value ===
@@ -2353,7 +2368,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                       val &&
                       updateNested(
                         'validation',
-                        isTime
+                        isTime || isDateTime
                           ? { timeFormat: val.id }
                           : { contentRule: val.id },
                       )
@@ -2379,7 +2394,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     }
                   />
                 )}
-              {isDate && (
+              {(isDate || isDateTime) && (
                 <div className='space-y-4'>
                   <div>
                     <label className='mb-2 block text-13 font-medium text-gray-11'>
@@ -2511,14 +2526,14 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     'MIN_TIME' && (
                       <div className='grid grid-cols-2 items-end gap-3'>
                         <NumberInput
-                          label='Max Hours from Now'
+                          label='Hours from Current'
                           placeholder='0'
                           size='xs'
                           value={
-                            activeQuestion.settings.validation.maxTimeOffset || 0
+                            activeQuestion.settings.validation.minTimeOffset || 0
                           }
                           onChange={(v) =>
-                            updateNested('validation', { maxTimeOffset: v })
+                            updateNested('validation', { minTimeOffset: v })
                           }
                         />
                         <div className='pb-2 text-[10px] text-gray-6 italic'>
@@ -2531,14 +2546,14 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                     'MAX_TIME' && (
                       <div className='grid grid-cols-2 items-end gap-3'>
                         <NumberInput
-                          label='Min Hours from Now'
+                          label='Hours from Current'
                           placeholder='0'
                           size='xs'
                           value={
-                            activeQuestion.settings.validation.minTimeOffset || 0
+                            activeQuestion.settings.validation.maxTimeOffset || 0
                           }
                           onChange={(v) =>
-                            updateNested('validation', { minTimeOffset: v })
+                            updateNested('validation', { maxTimeOffset: v })
                           }
                         />
                         <div className='pb-2 text-[10px] text-gray-6 italic'>
@@ -2869,7 +2884,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
 
       {/* 4. DATA LOOKUP SECTION */}
       {!isDivider &&
-        (isLongText || isNumber || isDate || isTime || isSelect) && (
+        (isLongText || isNumber || isDate || isTime || isDateTime || isSelect) && (
           <SettingsSection
             icon='lucide:database'
             isOpen={openLookup}
@@ -2949,10 +2964,10 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                 }
               />
 
-              {(isNumber || isDate || isTime || isSelect) && (
+              {(isNumber || isDate || isTime || isDateTime || isSelect) && (
                 <InputText
                   label={
-                    isDate
+                    isDate || isDateTime
                       ? 'Target Column (Date)'
                       : isTime
                         ? 'Target Column (Time)'
@@ -2961,7 +2976,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
                           : 'Target Column (Number)'
                   }
                   placeholder={
-                    isDate
+                    isDate || isDateTime
                       ? 'e.g. birth_date'
                       : isTime
                         ? 'e.g. checkin_time'
@@ -3028,7 +3043,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
               />
             </div>
 
-            {!isNumber && !isDate && !isSelect && (
+            {!isNumber && !isDate && !isDateTime && !isSelect && (
               <InputText
                 label='Input Mask'
                 placeholder='e.g. (###) ###-####'
@@ -3155,7 +3170,7 @@ const QuestionSettings = ({ activeQuestion: rawQuestion }: QuestionSettingsProps
       </SettingsSection>
 
       {/* 7. LOGIC SECTION */}
-      {!isShortText && !isDate && !isTime && (
+      {!isShortText && !isDate && !isTime && !isDateTime && (
         <SettingsSection
           icon='lucide:split'
           isOpen={openLogic}

@@ -345,7 +345,9 @@ const LivePreviewMultiSelect = ({
       ? [String(value)]
       : []
 
-  const selectedOptions = rawOptions.filter((opt) => selectedIds.includes(opt.id))
+  const selectedOptions = rawOptions.filter((opt) =>
+    selectedIds.includes(String(opt.id)),
+  )
 
   return (
     <InputSelectMultiple
@@ -462,6 +464,15 @@ const renderPreviewInput = (
         <div className='flex items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11'>
           <Icon height={15} name='tabler:clock' width={15} />
           <span>{fieldValue ? String(fieldValue) : 'HH : MM AM/PM'}</span>
+        </div>
+      )
+    case 'DATE_TIME':
+      return (
+        <div className='flex items-center gap-2 rounded-lg border border-gray-3 bg-white p-2 text-xs text-gray-11'>
+          <Icon height={15} name='tabler:calendar-time' width={15} />
+          <span>
+            {fieldValue ? String(fieldValue) : 'YYYY-MM-DD  HH : MM AM/PM'}
+          </span>
         </div>
       )
     case 'TABLE':

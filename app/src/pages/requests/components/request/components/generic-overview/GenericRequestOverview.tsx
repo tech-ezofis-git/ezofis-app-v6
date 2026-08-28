@@ -2,9 +2,15 @@ import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
 import type { RepositoryFieldSchema } from '@/pages/requests/utils/repoFolderMetadata'
-import { getRepositoryById } from '@/api/v6/folder/folder'
+import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
+import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
+import {
+  buildRepoFieldHints,
+  buildRepoMetadata,
+  extractOcrText,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import { setFieldForAttachment } from '@/pages/requests/utils/fieldAttachmentMap'
 import {
@@ -109,6 +115,55 @@ const GenericRequestOverview = ({
       if (!workflowId || !instanceId || !repositoryId) return
       setIsUploading(true)
       try {
+        // Nothing on this instance yet to inherit a folder path from — this
+        // is effectively the same situation as New Request's own first
+        // upload, so follow the exact same two-phase flow (OCR peek, then
+        // uploadWithOcr with metadata pulled from the form's own fields)
+        // and land the result straight on the field's formData value,
+        // instead of creating a standalone instance attachment.
+        if (attachments.length === 0) {
+          const repoFieldHints = buildRepoFieldHints(folderFields)
+          const { data: ocrData, error: ocrError } = await uploadForOcr(
+            String(repositoryId),
+            file,
+            repoFieldHints,
+          )
+          if (ocrError) {
+            console.warn('[uploadForOcr] OCR extraction warning:', ocrError)
+          }
+
+          const { data, error } = await uploadAndIndexApi.uploadWithOcr({
+            fields: repoFieldHints,
+            file,
+            metadata: buildRepoMetadata(
+              folderFields,
+              panels,
+              formModel,
+              file.name,
+            ),
+            ocrFieldList: ocrData?.ocrFieldList,
+            ocrJson: ocrData?.ocrJson,
+            ocrText: extractOcrText(ocrData?.ocrJson),
+            repositoryId: String(repositoryId),
+          })
+
+          if (error || !data) {
+            showToast({
+              message: t`Failed to upload the file.`,
+              variant: 'error',
+            })
+            return
+          }
+
+          onFieldChange(fieldId, {
+            fileId: data.fileId,
+            fileName: file.name,
+            ocrChecked: true,
+            repositoryId: data.repositoryId || repositoryId,
+          })
+          return
+        }
+
         const existingItem = attachments.find((a) => a.itemId)
         const { baseMetadata, deepestField } =
           await planRepositoryFolderMetadata(
@@ -147,10 +202,14 @@ const GenericRequestOverview = ({
     },
     [
       attachments,
+      folderFields,
+      formModel,
       instanceId,
+      panels,
       repositoryId,
       workflowId,
       onAttachmentsChanged,
+      onFieldChange,
       t,
     ],
   )

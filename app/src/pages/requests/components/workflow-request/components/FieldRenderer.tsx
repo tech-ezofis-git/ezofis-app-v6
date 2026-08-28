@@ -5,6 +5,7 @@ import type { Option } from '@/types/option'
 import { uploadForOcr, getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
+import InputDateTime from '@/components/base/inputs/InputDateTime'
 import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
@@ -18,6 +19,7 @@ import {
   getFileIconClasses,
 } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
 import {
+  getDateTimeLimits,
   getFieldOptions,
   getFileExtension,
   isFieldReadOnly,
@@ -182,12 +184,48 @@ const FieldRenderer = ({
     case 'NUMBER':
       return <InputNumber {...common} value={value ?? ''} onChange={onChange} />
 
-    case 'DATE':
-      return <InputDate {...common} value={value ?? null} onChange={onChange} />
-    case 'DATE_TIME':
-      return <InputDate {...common} value={value ?? null} onChange={onChange} />
-    case 'TIME':
-      return <InputTime {...common} value={value ?? null} onChange={onChange} />
+    case 'DATE': {
+      const { minDate, maxDate } = getDateTimeLimits(field)
+      return (
+        <InputDate
+          {...common}
+          maxDate={maxDate}
+          minDate={minDate}
+          value={value ?? null}
+          onChange={onChange}
+        />
+      )
+    }
+    case 'DATE_TIME': {
+      const { minDate, maxDate } = getDateTimeLimits(field)
+      const timeFormat =
+        field.settings?.validation?.timeFormat === '24' ? '24h' : '12h'
+      return (
+        <InputDateTime
+          {...common}
+          format={timeFormat}
+          maxDate={maxDate}
+          minDate={minDate}
+          value={value ?? null}
+          onChange={onChange}
+        />
+      )
+    }
+    case 'TIME': {
+      const { minTime, maxTime } = getDateTimeLimits(field)
+      const timeFormat =
+        field.settings?.validation?.timeFormat === '24' ? '24h' : '12h'
+      return (
+        <InputTime
+          {...common}
+          format={timeFormat}
+          maxTime={maxTime}
+          minTime={minTime}
+          value={value ?? null}
+          onChange={onChange}
+        />
+      )
+    }
 
     case 'SINGLE_CHOICE':
     case 'SINGLE_SELECT': {
@@ -358,14 +396,32 @@ const FieldRenderer = ({
             onFiles={handleFiles}
           />
           {staged && styles && (
-            <div className='mt-2 flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2'>
+            <div
+              className={`mt-2 flex items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 ${
+                staged.fileId && onOpenAttachment
+                  ? 'cursor-pointer transition-all hover:border-primary-5 hover:bg-primary-1/30'
+                  : ''
+              }`}
+              onClick={() =>
+                staged.fileId &&
+                onOpenAttachment?.({
+                  fileName: staged.fileName,
+                  id: staged.fileId,
+                  itemId: staged.fileId,
+                  name: staged.fileName,
+                  repositoryId: staged.repositoryId,
+                })
+              }
+            >
               <div
                 className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${styles.wrap}`}
               >
                 <Icon className='size-4' name={icon} />
               </div>
               <div
-                className='min-w-0 flex-1 truncate text-12 font-semibold text-gray-12'
+                className={`min-w-0 flex-1 truncate text-12 font-semibold text-gray-12 ${
+                  staged.fileId && onOpenAttachment ? 'hover:underline' : ''
+                }`}
                 title={staged.fileName}
               >
                 {staged.fileName}
@@ -375,7 +431,10 @@ const FieldRenderer = ({
                   aria-label={t`Remove file`}
                   className='flex size-6 shrink-0 items-center justify-center rounded-md text-gray-8 transition-all hover:bg-red-2 hover:text-red-9 active:scale-90'
                   type='button'
-                  onClick={() => onChange(null)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onChange(null)
+                  }}
                 >
                   <Icon className='size-3.5' name='tabler:x' />
                 </button>

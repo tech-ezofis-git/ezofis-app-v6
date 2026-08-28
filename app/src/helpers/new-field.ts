@@ -74,6 +74,7 @@ export const getField = (fieldType: string) => {
 
   // Specific tweaks based on type
   const s = baseField.settings.specific as any
+  const v = baseField.settings.validation as any
   switch (fieldType.toUpperCase()) {
     case 'TABLE':
     case 'DYNAMIC_TABLE':
@@ -126,6 +127,20 @@ export const getField = (fieldType: string) => {
       baseField.label = 'Consent'
       s.customOptions = 'I agree to the terms and conditions'
       s.optionsType = 'CUSTOM'
+      break
+    case 'DATE':
+      s.dateDefaultValueType = 'CUSTOM'
+      v.dateLimitType = 'NONE'
+      break
+    case 'TIME':
+      s.timeDefaultValueType = 'CUSTOM'
+      v.timeLimitType = 'NONE'
+      v.timeFormat = '12'
+      break
+    case 'DATE_TIME':
+      s.dateDefaultValueType = 'CUSTOM'
+      v.dateLimitType = 'NONE'
+      v.timeFormat = '12'
       break
   }
 

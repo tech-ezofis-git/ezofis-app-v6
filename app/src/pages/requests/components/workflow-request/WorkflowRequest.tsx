@@ -79,10 +79,13 @@ const WorkflowRequest = ({ workflow, onClose }: Props) => {
   const handleSubmit = async () => {
     const result = await submit()
     if (!result.success) {
+      // A missing-required-field(s) message is guidance, not a failure —
+      // show it as info so it doesn't read like something broke.
+      const isMissingFieldsMessage = missingMandatoryFieldIds.size > 0
       showToast({
         message:
           submitError || t`Failed to start the workflow. Please try again.`,
-        variant: 'error',
+        variant: isMissingFieldsMessage ? 'default' : 'error',
       })
       const firstMissingId = missingMandatoryFieldIds.values().next().value
       if (firstMissingId) {
