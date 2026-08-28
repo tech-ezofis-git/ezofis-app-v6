@@ -33,6 +33,7 @@ export type SignInBranding = {
 
 interface Props {
   branding?: SignInBranding
+  tenantId?: string
   onChangeView: () => void
 }
 
@@ -43,7 +44,11 @@ type TenantOption = {
   value: number | string
 }
 
-const SignInForm = ({ branding, onChangeView }: Props) => {
+const SignInForm = ({
+  branding,
+  tenantId: brandingTenantId,
+  onChangeView,
+}: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
   const isWhiteLabel = useIsWhiteLabel()
@@ -167,7 +172,8 @@ const SignInForm = ({ branding, onChangeView }: Props) => {
       loginType: sType,
     }
 
-    const targetTenantId = tenantId || shareTenantId || undefined
+    const targetTenantId =
+      tenantId || shareTenantId || brandingTenantId || undefined
     const { data, error, status } = await apiRouter.socialLogin(
       payload,
       targetTenantId,
@@ -219,7 +225,8 @@ const SignInForm = ({ branding, onChangeView }: Props) => {
         password,
       }
 
-      const targetTenantId = tenantId || shareTenantId || undefined
+      const targetTenantId =
+        tenantId || shareTenantId || brandingTenantId || undefined
       const { data, error, status } = await apiRouter.login(
         payload,
         targetTenantId,

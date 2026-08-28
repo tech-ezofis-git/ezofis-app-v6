@@ -48,6 +48,7 @@ const BrandedSignInPage = ({ encryptedName }: BrandedSignInPageProps) => {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [branding, setBranding] = useState<BrandingJson | null>(null)
   const [brandName, setBrandName] = useState('')
+  const [tenantId, setTenantId] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -100,6 +101,7 @@ const BrandedSignInPage = ({ encryptedName }: BrandedSignInPageProps) => {
 
       setBrandName(name)
       setBranding(parsed)
+      setTenantId(resolved.tenantId || '')
       applyDocumentBrand(name || 'Sign In', parsed?.favicon)
       setStatus('ready')
     }
@@ -185,6 +187,7 @@ const BrandedSignInPage = ({ encryptedName }: BrandedSignInPageProps) => {
       <main className='flex flex-1 items-center justify-center py-10'>
         <div className='w-105'>
           <SignInForm
+            tenantId={tenantId || undefined}
             branding={{
               favicon: branding?.favicon,
               name: displayName,
