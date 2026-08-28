@@ -220,7 +220,7 @@ const TableFieldRenderer = ({
   }
 
   return (
-    <div className='w-full space-y-2'>
+    <div className='w-full min-w-0 max-w-full space-y-2'>
       <div className='flex items-center justify-between gap-2'>
         <div>
           <label className='block text-13 font-medium text-gray-12'>
@@ -243,7 +243,7 @@ const TableFieldRenderer = ({
         )}
       </div>
 
-      <div className='overflow-x-auto rounded-lg border border-gray-3 bg-white shadow-2xs'>
+      <div className='w-full min-w-0 max-w-full overflow-x-auto rounded-lg border border-gray-3 bg-white shadow-2xs'>
         <Table className='border-collapse'>
           <Thead className='bg-gray-2/60'>
             <Tr className='border-b border-gray-3'>
@@ -258,12 +258,7 @@ const TableFieldRenderer = ({
                     getColumnWidthClass(col.size),
                   )}
                 >
-                  <div className='flex items-center gap-1.5'>
-                    <span className='truncate'>{col.name || 'Column'}</span>
-                    <span className='text-[10px] font-normal text-gray-8 lowercase'>
-                      ({(col.type || 'text').replace('_', ' ')})
-                    </span>
-                  </div>
+                  <span className='truncate'>{col.name || 'Column'}</span>
                 </Th>
               ))}
               {!readOnly && rowsType === 'ON_DEMAND' && (

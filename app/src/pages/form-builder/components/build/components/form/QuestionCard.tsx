@@ -498,9 +498,6 @@ const QuestionCard = ({
                             <span className='truncate font-bold text-gray-8'>
                               {col.name || 'Column'}
                             </span>
-                            <span className='text-[8px] font-medium text-gray-4 lowercase'>
-                              ({col.type?.replace('_', ' ') || 'text'})
-                            </span>
                           </div>
                         ))}
                       </div>

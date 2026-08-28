@@ -178,37 +178,49 @@ const WorkflowFormRenderer = ({
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <div className='-mx-2 flex flex-wrap'>
-                    {visibleFields.map((field: any) => (
-                      <div
-                        className={`${getColumnSizeClass(field.settings?.general?.size)} px-2 pb-4`}
-                        data-field-id={field.id}
-                        key={field.id}
-                      >
-                        <FieldRenderer
-                          fallbackAttachments={attachmentsByField[field.id]}
-                          field={field}
-                          repoFieldHints={repoFieldHints}
-                          repositoryId={repositoryId}
-                          value={formModel[field.id]}
-                          viewOnly={viewOnly || readOnlyFieldIds?.has(field.id)}
-                          error={
-                            hasAttemptedSubmit &&
-                            missingMandatoryFieldIds?.has(field.id)
-                              ? t`This field is required.`
-                              : undefined
-                          }
-                          onChange={(value) => onFieldChange(field.id, value)}
-                          onOcrFieldList={onOcrFieldList}
-                          onOpenAttachment={onOpenAttachment}
-                          onRequestUpload={
-                            onRequestUpload
-                              ? (file) => onRequestUpload(field.id, file)
-                              : undefined
-                          }
-                        />
-                      </div>
-                    ))}
+                  <div className='-mx-2 flex flex-wrap min-w-0 max-w-full'>
+                    {visibleFields.map((field: any) => {
+                      const isTableField =
+                        field.type === 'TABLE' ||
+                        field.type === 'DYNAMIC_TABLE'
+                      const sizeClass = getColumnSizeClass(
+                        isTableField
+                          ? field.settings?.general?.size || 'col-12'
+                          : field.settings?.general?.size,
+                      )
+                      return (
+                        <div
+                          className={`${sizeClass} min-w-0 max-w-full px-2 pb-4`}
+                          data-field-id={field.id}
+                          key={field.id}
+                        >
+                          <FieldRenderer
+                            fallbackAttachments={attachmentsByField[field.id]}
+                            field={field}
+                            repoFieldHints={repoFieldHints}
+                            repositoryId={repositoryId}
+                            value={formModel[field.id]}
+                            viewOnly={
+                              viewOnly || readOnlyFieldIds?.has(field.id)
+                            }
+                            error={
+                              hasAttemptedSubmit &&
+                              missingMandatoryFieldIds?.has(field.id)
+                                ? t`This field is required.`
+                                : undefined
+                            }
+                            onChange={(value) => onFieldChange(field.id, value)}
+                            onOcrFieldList={onOcrFieldList}
+                            onOpenAttachment={onOpenAttachment}
+                            onRequestUpload={
+                              onRequestUpload
+                                ? (file) => onRequestUpload(field.id, file)
+                                : undefined
+                            }
+                          />
+                        </div>
+                      )
+                    })}
                   </div>
                 </Accordion.Panel>
               </Accordion.Item>
