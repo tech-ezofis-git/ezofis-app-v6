@@ -172,7 +172,11 @@ export const applyLoginType = (
           ? 'APPLICATION_LOGIN'
           : 'EMAIL_LOGIN',
     passwordTypes:
-      loginType === 'masterLogin' ? authentication.passwordTypes : 'OTP',
+      loginType === 'applicationLogin'
+        ? 'PASSWORD'
+        : loginType === 'masterLogin'
+          ? authentication.passwordTypes
+          : 'OTP',
     signInType: allowSocial ? authentication.signInType : false,
     socialLogin:
       allowSocial && authentication.signInType

@@ -2,9 +2,11 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 export type PortalAuthUser = {
+  accessToken?: string
   displayName: string
   entry?: Record<string, unknown>
   itemId?: number
+  tenantId?: string
   username: string
 }
 
@@ -38,5 +40,15 @@ const usePortalSessionStore = create<PortalSessionState>()(
     },
   ),
 )
+
+export const getActivePortalAccessToken = () => {
+  if (typeof window === 'undefined') return undefined
+  const match = window.location.pathname.match(/^\/portal\/([^/?#]+)/)
+  if (!match?.[1]) return undefined
+  const token = usePortalSessionStore.getState().sessions[
+    decodeURIComponent(match[1])
+  ]?.accessToken
+  return String(token || '').trim() || undefined
+}
 
 export default usePortalSessionStore

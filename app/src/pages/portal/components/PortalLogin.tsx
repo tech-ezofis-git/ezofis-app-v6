@@ -1,3 +1,5 @@
+import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
+import type { PortalAuthUser } from '../stores/usePortalSessionStore'
 import { useLingui } from '@lingui/react/macro'
 import { useState } from 'react'
 import apiRouter from '@/api/apiRouter'
@@ -7,17 +9,16 @@ import Icon from '@/components/base/icon/Icon'
 import InputPin from '@/components/base/inputs/InputPin'
 import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
-import { AnimateEntrancePop, AnimateFadeIn } from '@/components/common/animations'
+import {
+  AnimateEntrancePop,
+  AnimateFadeIn,
+} from '@/components/common/animations'
 import ThemeSwitcher from '@/layouts/auth/components/ThemeSwitcher'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
-import type { PortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
+import SignInForm from '@/pages/sign-in/components/SignInForm'
 import cn from '@/utils/cn'
+import { entryFieldValue, searchPortalEntries } from '../helpers/portalEntries'
 import PortalBrandMark from './PortalBrandMark'
-import {
-  entryFieldValue,
-  searchPortalEntries,
-} from '../helpers/portalEntries'
-import type { PortalAuthUser } from '../stores/usePortalSessionStore'
 
 type PortalLoginProps = {
   portal: PortalConfig
@@ -26,17 +27,44 @@ type PortalLoginProps = {
 
 const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
+const asRecord = (value: unknown) =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+
+const displayNameFromIdentity = (
+  payload: unknown,
+  fallback: string,
+): string => {
+  const record = asRecord(payload)
+  if (!record) return fallback
+  const nested = asRecord(record.user) || asRecord(record.session)
+  const firstName = String(record.firstName || nested?.firstName || '').trim()
+  const lastName = String(record.lastName || nested?.lastName || '').trim()
+  const fullName = [firstName, lastName].filter(Boolean).join(' ')
+  return (
+    String(
+      record.name ||
+        record.userName ||
+        record.username ||
+        nested?.name ||
+        fullName ||
+        record.email ||
+        nested?.email ||
+        '',
+    ).trim() || fallback
+  )
+}
+
 export default function PortalLogin({
-  onAuthenticated,
   portal,
+  onAuthenticated,
 }: PortalLoginProps) {
   const { t } = useLingui()
   const auth = portal.authentication
   const isMaster = portal.loginType === 'masterLogin'
   const isApplication = portal.loginType === 'applicationLogin'
-  const usesPassword = isMaster
-    ? auth.passwordTypes === 'PASSWORD'
-    : isApplication
+  const usesPassword = isMaster && auth.passwordTypes === 'PASSWORD'
   const [step, setStep] = useState<'credentials' | 'otp'>('credentials')
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
@@ -57,6 +85,57 @@ export default function PortalLogin({
 
   const finishLogin = (user: PortalAuthUser) => {
     onAuthenticated(user)
+  }
+
+  if (isApplication) {
+    const socialProviders = auth.socialLogin.filter(
+      (provider): provider is 'Google' | 'Microsoft' =>
+        provider === 'Google' || provider === 'Microsoft',
+    )
+
+    return (
+      <div className='flex min-h-svh flex-col bg-surface p-6'>
+        <header className='flex items-center justify-between'>
+          <PortalBrandMark branding={portal.branding} fallbackName={brandName} />
+          <ThemeSwitcher />
+        </header>
+
+        <main className='flex flex-1 items-center justify-center py-10'>
+          <div className='w-105'>
+            <SignInForm
+              persistIdentity={false}
+              showForgotPassword={false}
+              showSocial={auth.signInType}
+              tenantId={portal.tenantId || undefined}
+              branding={{
+                favicon: portal.branding?.favicon,
+                name: brandName,
+              }}
+              socialProviders={
+                socialProviders.length > 0 ? socialProviders : undefined
+              }
+              onChangeView={() => undefined}
+              onSignedIn={async (result) => {
+                finishLogin({
+                  accessToken: result.accessToken,
+                  displayName: displayNameFromIdentity(
+                    result.identity,
+                    result.email.split('@')[0],
+                  ),
+                  tenantId: result.tenantId,
+                  username: result.email,
+                })
+              }}
+            />
+          </div>
+        </main>
+
+        <footer className='text-center text-12 text-gray-9'>
+          {t`Powered by`}{' '}
+          <span className='font-semibold text-primary-11'>ezofis</span>
+        </footer>
+      </div>
+    )
   }
 
   const lookupMasterUser = async (username: string) => {
@@ -123,23 +202,6 @@ export default function PortalLogin({
           throw new Error(t`Invalid username or password.`)
         }
         finishLogin(user)
-        return
-      }
-
-      if (isApplication) {
-        if (!password) {
-          setError(t`Please fill the required field: Password`)
-          return
-        }
-        const { error: loginError } = await apiRouter.login(
-          { email: nextIdentifier, password },
-          portal.tenantId || undefined,
-        )
-        if (loginError) throw new Error(String(loginError))
-        finishLogin({
-          displayName: nextIdentifier.split('@')[0],
-          username: nextIdentifier,
-        })
         return
       }
 

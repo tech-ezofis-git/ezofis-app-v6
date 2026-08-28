@@ -163,6 +163,7 @@ export const getTenants = async (email: string) => {
   try {
     const { data, status } = await axiosV6({
       method: 'GET',
+      skipAuthToken: true,
       url: `/auth/tenants?email=${encodeURIComponent(email)}`,
     })
     if (status !== 200) throw new Error('invalid status code')
@@ -177,11 +178,14 @@ export const getTenants = async (email: string) => {
   return response
 }
 
-export const login = async (payload: {
-  email: string
-  password: string
-  tenantId: string
-}) => {
+export const login = async (
+  payload: {
+    email: string
+    password: string
+    tenantId: string
+  },
+  options?: { persistIdentity?: boolean },
+) => {
   const response: any = { data: null, error: '' }
   try {
     const { data, status } = await axiosV6({
@@ -193,6 +197,7 @@ export const login = async (payload: {
         'X-Tenant-Id': payload.tenantId,
       },
       method: 'POST',
+      skipAuthToken: true,
       url: `/auth/ezofis/login`,
     })
 
@@ -203,11 +208,15 @@ export const login = async (payload: {
         ...data,
         tenantId: payload.tenantId,
       }
-      setToLocalStorage(identityWithTenant, 'identity')
-      setToLocalStorage(String(payload.tenantId), 'tenantId', 'STRING')
-      const { setIdentity } = authUserStore.getState()
-      setIdentity(identityWithTenant)
-      response.data = 'Success'
+      if (options?.persistIdentity === false) {
+        response.data = identityWithTenant
+      } else {
+        setToLocalStorage(identityWithTenant, 'identity')
+        setToLocalStorage(String(payload.tenantId), 'tenantId', 'STRING')
+        const { setIdentity } = authUserStore.getState()
+        setIdentity(identityWithTenant)
+        response.data = 'Success'
+      }
     } else {
       response.error = 'No data returned'
     }
@@ -292,11 +301,14 @@ export const getSession = async () => {
   return inFlightUserSession
 }
 
-export const socialLogin = async (payload: {
-  email: string
-  provider: string
-  tenantId: string
-}) => {
+export const socialLogin = async (
+  payload: {
+    email: string
+    provider: string
+    tenantId: string
+  },
+  options?: { persistIdentity?: boolean },
+) => {
   const response: any = { data: null, error: '' }
   try {
     const { data, status } = await axiosV6({
@@ -308,6 +320,7 @@ export const socialLogin = async (payload: {
         'X-Tenant-Id': payload.tenantId,
       },
       method: 'POST',
+      skipAuthToken: true,
       url: `/auth/social/login`,
     })
 
@@ -318,11 +331,15 @@ export const socialLogin = async (payload: {
         ...data,
         tenantId: payload.tenantId,
       }
-      setToLocalStorage(identityWithTenant, 'identity')
-      setToLocalStorage(String(payload.tenantId), 'tenantId', 'STRING')
-      const { setIdentity } = authUserStore.getState()
-      setIdentity(identityWithTenant)
-      response.data = 'Success'
+      if (options?.persistIdentity === false) {
+        response.data = identityWithTenant
+      } else {
+        setToLocalStorage(identityWithTenant, 'identity')
+        setToLocalStorage(String(payload.tenantId), 'tenantId', 'STRING')
+        const { setIdentity } = authUserStore.getState()
+        setIdentity(identityWithTenant)
+        response.data = 'Success'
+      }
     } else {
       response.error = 'No data returned'
     }

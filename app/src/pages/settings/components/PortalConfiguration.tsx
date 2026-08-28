@@ -101,9 +101,9 @@ const LOGIN_TYPE_OPTIONS = [
     value: 'emailOtp' as const,
   },
   {
-    description: 'Validate accounts to application users',
+    description: 'Sign in with application username and password',
     id: 2,
-    name: 'Application Login',
+    name: 'Application Sign in',
     value: 'applicationLogin' as const,
   },
   {
@@ -115,7 +115,7 @@ const LOGIN_TYPE_OPTIONS = [
 ]
 
 const LOGIN_TYPE_LABELS: Record<PortalLoginType, string> = {
-  applicationLogin: 'Application Login',
+  applicationLogin: 'Application Sign in',
   emailOtp: 'Email with OTP',
   masterLogin: 'Master Login',
 }

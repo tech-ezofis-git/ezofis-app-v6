@@ -269,7 +269,10 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     )
   }
 
-  if (!session) {
+  const needsApplicationLogin =
+    portal.loginType === 'applicationLogin' && !session?.accessToken
+
+  if (!session || needsApplicationLogin) {
     return <PortalLogin portal={portal} onAuthenticated={handleAuthenticated} />
   }
 

@@ -4,6 +4,9 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios'
 import { isAuthEntryPath, resolveSignInPath } from '../lib/branding/session'
+import usePortalSessionStore, {
+  getActivePortalAccessToken,
+} from '../pages/portal/stores/usePortalSessionStore'
 import authUserStore from '../stores/authUserStore'
 
 // Dynamic Base URL Resolution based on environment and hostname
@@ -52,12 +55,14 @@ export const axiosV6 = axios.create({
 declare module 'axios' {
   export interface AxiosRequestConfig {
     metadata?: { startTime: Date }
+    skipAuthToken?: boolean
     skipCancellation?: boolean
   }
 }
 
 interface CustomConfig extends InternalAxiosRequestConfig {
   metadata?: { startTime: Date }
+  skipAuthToken?: boolean
   skipCancellation?: boolean
 }
 
@@ -107,11 +112,14 @@ _axios.interceptors.request.use(
 // --- V6 Request Interceptor (Auth Token) ---
 axiosV6.interceptors.request.use(
   (config: CustomConfig) => {
-    const store = authUserStore.getState()
-    const accessToken = store?.identity?.accessToken
+    if (!config.skipAuthToken) {
+      const portalToken = getActivePortalAccessToken()
+      const accessToken =
+        portalToken || authUserStore.getState()?.identity?.accessToken
 
-    if (accessToken) {
-      config.headers.set('Authorization', `Bearer ${accessToken}`)
+      if (accessToken) {
+        config.headers.set('Authorization', `Bearer ${accessToken}`)
+      }
     }
 
     addPendingRequest(config)
@@ -136,14 +144,25 @@ const handleResponseError = (error: AxiosError) => {
   }
 
   if (error.response?.status === 401) {
+    const pathname =
+      globalThis.window === undefined ? '' : window.location.pathname
+    if (pathname.startsWith('/portal')) {
+      const match = pathname.match(/^\/portal\/([^/?#]+)/)
+      if (match?.[1]) {
+        usePortalSessionStore
+          .getState()
+          .clearSession(decodeURIComponent(match[1]))
+      }
+      return Promise.reject(error)
+    }
+
     const store = authUserStore.getState()
     const signInPath = resolveSignInPath()
     store.resetAuthState()
     if (
       globalThis.window !== undefined &&
-      !isAuthEntryPath(window.location.pathname) &&
-      !window.location.pathname.startsWith('/sign-request') &&
-      !window.location.pathname.startsWith('/portal')
+      !isAuthEntryPath(pathname) &&
+      !pathname.startsWith('/sign-request')
     ) {
       window.location.href = signInPath
     }

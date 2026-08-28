@@ -31,14 +31,21 @@ export const verifyMailOTP = async (payload: any) => {
   return await authApiV6.verifyMailOTP(payload)
 }
 
-export const login = async (payload: any, tenantId?: string | number) => {
+export const login = async (
+  payload: any,
+  tenantId?: string | number,
+  options?: { persistIdentity?: boolean },
+) => {
   // If tenantId is already provided (from selection UI), go straight to login
   if (tenantId) {
-    return await authApiV6.login({
-      email: payload.email,
-      password: payload.password,
-      tenantId: String(tenantId),
-    })
+    return await authApiV6.login(
+      {
+        email: payload.email,
+        password: payload.password,
+        tenantId: String(tenantId),
+      },
+      options,
+    )
   }
 
   // Otherwise, first fetch tenants for this email
@@ -65,21 +72,31 @@ export const login = async (payload: any, tenantId?: string | number) => {
   }
 
   // Only one tenant, proceed to login automatically
-  return await authApiV6.login({
-    email: payload.email,
-    password: payload.password,
-    tenantId: tenants[0].tenantId,
-  })
+  return await authApiV6.login(
+    {
+      email: payload.email,
+      password: payload.password,
+      tenantId: tenants[0].tenantId,
+    },
+    options,
+  )
 }
 
-export const socialLogin = async (payload: any, tenantId?: string | number) => {
+export const socialLogin = async (
+  payload: any,
+  tenantId?: string | number,
+  options?: { persistIdentity?: boolean },
+) => {
   // If tenantId is already provided, go straight to social login
   if (tenantId) {
-    return await authApiV6.socialLogin({
-      email: payload.email,
-      provider: (payload.loginType || payload.provider || '').toUpperCase(),
-      tenantId: String(tenantId),
-    })
+    return await authApiV6.socialLogin(
+      {
+        email: payload.email,
+        provider: (payload.loginType || payload.provider || '').toUpperCase(),
+        tenantId: String(tenantId),
+      },
+      options,
+    )
   }
 
   // Otherwise, first fetch tenants for this email
@@ -105,11 +122,14 @@ export const socialLogin = async (payload: any, tenantId?: string | number) => {
   }
 
   // Only one tenant, proceed to social login automatically
-  return await authApiV6.socialLogin({
-    email: payload.email,
-    provider: (payload.loginType || payload.provider || '').toUpperCase(),
-    tenantId: tenants[0].tenantId,
-  })
+  return await authApiV6.socialLogin(
+    {
+      email: payload.email,
+      provider: (payload.loginType || payload.provider || '').toUpperCase(),
+      tenantId: tenants[0].tenantId,
+    },
+    options,
+  )
 }
 
 export const userSession = async () => {

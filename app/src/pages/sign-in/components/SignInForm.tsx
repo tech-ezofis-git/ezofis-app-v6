@@ -26,6 +26,13 @@ import cn from '@/utils/cn'
 import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 import { redirectAfterLogin } from '../utils/redirectAfterLogin'
 
+export type SignedInIdentity = {
+  accessToken: string
+  email: string
+  identity: Record<string, unknown>
+  tenantId?: string
+}
+
 export type SignInBranding = {
   favicon?: string
   name: string
@@ -33,8 +40,36 @@ export type SignInBranding = {
 
 interface Props {
   branding?: SignInBranding
+  persistIdentity?: boolean
+  showForgotPassword?: boolean
+  showSocial?: boolean
+  socialProviders?: Array<'Google' | 'Microsoft'>
   tenantId?: string
   onChangeView: () => void
+  onSignedIn?: (result: SignedInIdentity) => void | Promise<void>
+}
+
+const asIdentityRecord = (value: unknown) =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+
+const extractAccessToken = (payload: unknown): string => {
+  const record = asIdentityRecord(payload)
+  if (!record) return ''
+  const nested =
+    asIdentityRecord(record.identity) ||
+    asIdentityRecord(record.data) ||
+    asIdentityRecord(record.result)
+  const candidates = [
+    record.accessToken,
+    record.token,
+    record.access_token,
+    nested?.accessToken,
+    nested?.token,
+    nested?.access_token,
+  ]
+  return candidates.map((item) => String(item || '').trim()).find(Boolean) || ''
 }
 
 type TenantOption = {
@@ -46,8 +81,13 @@ type TenantOption = {
 
 const SignInForm = ({
   branding,
+  persistIdentity = true,
+  showForgotPassword,
+  showSocial = true,
+  socialProviders,
   tenantId: brandingTenantId,
   onChangeView,
+  onSignedIn,
 }: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
@@ -160,6 +200,34 @@ const SignInForm = ({
     await redirectAfterLogin({ navigate, redirectTo, shareTenantId })
   }
 
+  const completeSignIn = async (
+    data: unknown,
+    signedEmail: string,
+    usedTenantId?: string | number,
+  ) => {
+    if (onSignedIn) {
+      const identity = asIdentityRecord(data) || {}
+      const accessToken = extractAccessToken(data)
+      if (!accessToken) {
+        setError(t`Sign in succeeded but no access token was returned.`)
+        return
+      }
+      showToast({ message: t`Successfully logged in`, variant: 'success' })
+      await onSignedIn({
+        accessToken,
+        email: String(identity.email || signedEmail),
+        identity,
+        tenantId: String(
+          identity.tenantId || usedTenantId || brandingTenantId || '',
+        ),
+      })
+      return
+    }
+
+    showToast({ message: t`Successfully logged in`, variant: 'success' })
+    await handleLoggedNavigation()
+  }
+
   // === EMAIL + PASSWORD LOGIN (with tenant + social support) ===
   const signInSocial = async (
     tenantId?: number | string,
@@ -177,6 +245,7 @@ const SignInForm = ({
     const { data, error, status } = await apiRouter.socialLogin(
       payload,
       targetTenantId,
+      { persistIdentity },
     )
 
     if (error) {
@@ -198,7 +267,7 @@ const SignInForm = ({
     } else {
       setShowTenantListModal(false)
       setTenantList([])
-      await handleLoggedNavigation()
+      await completeSignIn(data, sEmail, targetTenantId)
     }
   }
 
@@ -230,6 +299,7 @@ const SignInForm = ({
       const { data, error, status } = await apiRouter.login(
         payload,
         targetTenantId,
+        { persistIdentity },
       )
 
       if (error) {
@@ -256,10 +326,9 @@ const SignInForm = ({
         setTenantList(mapped)
         setShowTenantListModal(true)
       } else {
-        showToast({ message: t`Successfully logged in`, variant: 'success' })
         setShowTenantListModal(false)
         setTenantList([])
-        await handleLoggedNavigation()
+        await completeSignIn(data, email, targetTenantId)
       }
     } catch (e: any) {
       console.error(e)
@@ -431,6 +500,10 @@ const SignInForm = ({
         isWhiteLabel,
       ) as NavigateOptions['to'],
     })
+
+  const showGoogle = !socialProviders || socialProviders.includes('Google')
+  const showMicrosoft =
+    !socialProviders || socialProviders.includes('Microsoft')
 
   // === derived welcome texts (matches Vue copy) ===
   let welcomeDescription = t`Hi, Welcome!`
@@ -780,7 +853,7 @@ const SignInForm = ({
           </div>
 
           {/* Remember / Forgot (mirrors Vue's conditional forgot; here always on except AD) */}
-          {!checkAdLogin && checkForgot && (
+          {!checkAdLogin && (showForgotPassword ?? checkForgot) && (
             <div
               className={cn(
                 'flex items-center justify-between gap-4',
@@ -815,18 +888,22 @@ const SignInForm = ({
           {error && <Alert className='mt-2' text={error} variant='primary' />}
 
           {/* Social section – Vue used <SocialAuths>, here we expose Google + Microsoft directly */}
-          {!checkAdLogin && (
+          {!checkAdLogin && showSocial && (showGoogle || showMicrosoft) ? (
             <>
               <Divider
                 className={branding ? 'mt-6' : undefined}
                 label={t`Or`}
               />
               <div className={cn(branding ? 'mt-5 space-y-4' : 'space-y-3')}>
-                <GoogleButton onClick={handleGoogleLogin} />
-                <MicrosoftButton onClick={handleMicrosoftLogin} />
+                {showGoogle ? (
+                  <GoogleButton onClick={handleGoogleLogin} />
+                ) : null}
+                {showMicrosoft ? (
+                  <MicrosoftButton onClick={handleMicrosoftLogin} />
+                ) : null}
               </div>
             </>
-          )}
+          ) : null}
         </>
       )}
     </>
