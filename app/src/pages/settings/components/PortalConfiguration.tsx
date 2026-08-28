@@ -1,12 +1,20 @@
-import { createColumnHelper, useReactTable } from '@tanstack/react-table'
-import { MoreHorizontal } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import { msg } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
+import { createColumnHelper, useReactTable } from '@tanstack/react-table'
+import { MoreHorizontal } from 'lucide-react'
+import { AnimatePresence } from 'motion/react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { Option } from '@/types/option'
+import formApi from '@/api/form/form'
+import workflowsApiV6, {
+  createPublishedWorkflowBrowsePayload,
+  mapPublishedBrowseResponseToOptions,
+} from '@/api/v6/workflows'
+import IconButton from '@/components/base/button/IconButton'
+import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
-import IconButton from '@/components/base/button/IconButton'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import InputRadioGroup from '@/components/base/inputs/InputRadioGroup'
 import InputSelect from '@/components/base/inputs/InputSelect'
@@ -17,23 +25,16 @@ import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
 import Pagination from '@/components/base/pagination/Pagination'
 import showToast from '@/components/base/toast/showToast'
-import ConfirmDialog from '@/components/base/ConfirmDialog'
 import { AnimateFadeIn } from '@/components/common/animations'
 import CustomFilter from '@/components/common/CustomFilter'
-import { AnimatePresence } from 'motion/react'
-import formApi from '@/api/form/form'
-import workflowsApiV6, {
-  createPublishedWorkflowBrowsePayload,
-  mapPublishedBrowseResponseToOptions,
-} from '@/api/v6/workflows'
-import type { Option } from '@/types/option'
-import authUserStore from '@/stores/authUserStore'
-import { formatDatetime } from '@/utils/dayjs'
-import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import {
   BRANDING_STORAGE_KEYS,
   readBrandingSession,
 } from '@/lib/branding/session'
+import authUserStore from '@/stores/authUserStore'
+import { formatDatetime } from '@/utils/dayjs'
+import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import type { SettingsOption } from '../helpers/userGroupMappers'
 import {
   applyLoginType,
   deletePortalConfig,
@@ -41,10 +42,10 @@ import {
   getPortalPublicUrl,
   listPortalConfigs,
   nextPortalId,
-  savePortalConfig,
   type PortalBrandingSnapshot,
   type PortalConfig,
   type PortalLoginType,
+  savePortalConfig,
 } from '../helpers/portalConfigStorage'
 import {
   getFieldRequiredError,
@@ -57,7 +58,6 @@ import {
   useSettingsTablePagination,
   useSettingsTableSearch,
 } from '../helpers/settingsDataTable'
-import type { SettingsOption } from '../helpers/userGroupMappers'
 import SettingsFormSection from './SettingsFormSection'
 import SettingsPageHeader from './SettingsPageHeader'
 import SettingsSelectedChips from './SettingsSelectedChips'
@@ -237,15 +237,18 @@ export default function PortalConfiguration({
 }: {
   onBack?: () => void
 }) {
-  const { i18n, t } = useLingui()
+  const { t } = useLingui()
   const session = authUserStore((state) => state.session)
   const storedState = useMemo(() => getStoredState(), [])
 
-  const [portals, setPortals] = useState<PortalConfig[]>(() => listPortalConfigs())
+  const [portals, setPortals] = useState<PortalConfig[]>([])
+  const [isLoadingPortals, setIsLoadingPortals] = useState(true)
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
     storedState?.activeFilters ?? {},
   )
-  const [isSetupOpen, setIsSetupOpen] = useState(storedState?.isSetupOpen ?? false)
+  const [isSetupOpen, setIsSetupOpen] = useState(
+    storedState?.isSetupOpen ?? false,
+  )
   const [editingPortalId, setEditingPortalId] = useState<number | null>(
     storedState?.editingPortalId ?? null,
   )
@@ -289,9 +292,27 @@ export default function PortalConfiguration({
     }
   }, [activeFilters, activeStep, draftPortal, editingPortalId, isSetupOpen])
 
-  const reloadPortals = useCallback(() => {
-    setPortals(listPortalConfigs())
-  }, [])
+  const portalJsonIds = useMemo(
+    () => ({
+      tenantId: session?.tenantId || '',
+      userId: session?.id || '',
+    }),
+    [session?.id, session?.tenantId],
+  )
+
+  const reloadPortals = useCallback(async () => {
+    setIsLoadingPortals(true)
+    const result = await listPortalConfigs(portalJsonIds)
+    setPortals(result.data)
+    setIsLoadingPortals(false)
+    if (result.error) {
+      showToast({ message: result.error, variant: 'error' })
+    }
+  }, [portalJsonIds])
+
+  useEffect(() => {
+    void reloadPortals()
+  }, [reloadPortals])
 
   const filteredPortals = useMemo(() => {
     return portals.filter((portal) => {
@@ -302,7 +323,7 @@ export default function PortalConfiguration({
           if (!matchesCategoryFilterValue(portal.name, value, 'contains')) {
             matches = false
           }
-        } else         if (key === 'login') {
+        } else if (key === 'login') {
           const labels = [
             LOGIN_TYPE_LABELS[portal.loginType],
             ...portal.authentication.socialLogin,
@@ -339,7 +360,7 @@ export default function PortalConfiguration({
     setIsSetupOpen(true)
   }, [])
 
-  const savePortal = () => {
+  const savePortal = async () => {
     setIsSaving(true)
     try {
       const now = new Date().toISOString()
@@ -360,11 +381,13 @@ export default function PortalConfiguration({
           logo: branding.logo || draftPortal.branding?.logo || '',
         },
         createdAt: isEdit ? draftPortal.createdAt || now : now,
-        createdBy: isEdit ? draftPortal.createdBy || session?.id || '1' : session?.id || '1',
+        createdBy: isEdit
+          ? draftPortal.createdBy || session?.id || '1'
+          : session?.id || '1',
         createdByEmail: isEdit
           ? draftPortal.createdByEmail || session?.email || ''
           : session?.email || '',
-        id: isEdit ? Number(editingPortalId) : nextPortalId(),
+        id: isEdit ? Number(editingPortalId) : nextPortalId(portals),
         modifiedAt: isEdit ? now : null,
         modifiedBy: isEdit ? session?.id || '0' : '0',
         modifiedByEmail: isEdit ? session?.email || null : null,
@@ -373,8 +396,12 @@ export default function PortalConfiguration({
         workflowId: draftPortal.workflows[0]?.id || '',
       }
 
-      savePortalConfig(next)
-      reloadPortals()
+      const result = await savePortalConfig(next, portalJsonIds)
+      if (result.error) {
+        showToast({ message: result.error, variant: 'error' })
+        return
+      }
+      await reloadPortals()
       setIsSetupOpen(false)
       showToast({
         message: isEdit
@@ -387,17 +414,21 @@ export default function PortalConfiguration({
     }
   }
 
-  const confirmDeletePortal = () => {
+  const confirmDeletePortal = async () => {
     if (deletingPortalId == null) return
-    deletePortalConfig(deletingPortalId)
-    reloadPortals()
+    const result = await deletePortalConfig(deletingPortalId, portalJsonIds)
+    if (result.error) {
+      showToast({ message: result.error, variant: 'error' })
+      return
+    }
+    await reloadPortals()
     setDeletingPortalId(null)
     showToast({ message: t`Portal deleted successfully`, variant: 'success' })
   }
 
   const copyPortalUrl = useCallback(
     async (id: number | string) => {
-      const url = getPortalPublicUrl(id)
+      const url = getPortalPublicUrl(id, portalJsonIds)
       try {
         await navigator.clipboard.writeText(url)
         showToast({ message: t`Portal URL copied`, variant: 'success' })
@@ -405,10 +436,12 @@ export default function PortalConfiguration({
         showToast({ message: t`Could not copy URL`, variant: 'error' })
       }
     },
-    [t],
+    [portalJsonIds, t],
   )
 
-  const deletingPortal = portals.find((portal) => portal.id === deletingPortalId)
+  const deletingPortal = portals.find(
+    (portal) => portal.id === deletingPortalId,
+  )
 
   const portalColumns = useMemo(
     () => [
@@ -520,17 +553,17 @@ export default function PortalConfiguration({
                   label={t`Copy URL`}
                   onClick={() => void copyPortalUrl(portal.id)}
                 />
-                <MenuItem
+                {/* <MenuItem
                   icon='lucide:external-link'
                   label={t`Open portal`}
                   onClick={() =>
                     window.open(
-                      getPortalPublicUrl(portal.id),
+                      getPortalPublicUrl(portal.id, portalJsonIds),
                       '_blank',
                       'noopener',
                     )
                   }
-                />
+                /> */}
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
@@ -563,16 +596,16 @@ export default function PortalConfiguration({
     ...paginationModel,
     columns: portalColumns,
     data: filteredPortals,
-    getRowId: (row: PortalConfig) => String(row.id),
     state: {
       ...tableSearchOptions.state,
       pagination,
     },
+    getRowId: (row: PortalConfig) => String(row.id),
     onPaginationChange,
   })
 
   const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
-    isReLoading: false,
+    isReLoading: isLoadingPortals,
     table: portalTable,
     onReload: reloadPortals,
   })
@@ -584,12 +617,16 @@ export default function PortalConfiguration({
         draftPortal={draftPortal}
         editingPortalId={editingPortalId}
         isSaving={isSaving}
-        onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
+        publicUrlIds={portalJsonIds}
+        previewPortalId={
+          editingPortalId || draftPortal.id || nextPortalId(portals)
+        }
+        onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={() => setIsSetupOpen(false)}
         onChange={setDraftPortal}
-        onNext={() => setActiveStep((step) => Math.min(step + 1, 3))}
-        onSave={savePortal}
+        onNext={() => setActiveStep((step: number) => Math.min(step + 1, 3))}
+        onSave={() => void savePortal()}
         onStepChange={setActiveStep}
       />
     )
@@ -599,16 +636,16 @@ export default function PortalConfiguration({
     <main className='flex h-full flex-col bg-[var(--surface)]'>
       <ConfirmDialog
         confirmLabel={t`Delete`}
+        opened={deletingPortalId != null}
+        title={t`Delete Portal`}
+        variant='danger'
         description={
           deletingPortal
             ? `Are you sure you want to delete "${deletingPortal.name}"? This action cannot be undone.`
             : 'Are you sure you want to delete this portal? This action cannot be undone.'
         }
-        opened={deletingPortalId != null}
-        title={t`Delete Portal`}
-        variant='danger'
         onCancel={() => setDeletingPortalId(null)}
-        onConfirm={confirmDeletePortal}
+        onConfirm={() => void confirmDeletePortal()}
       />
       <section className='flex min-h-0 flex-1 flex-col'>
         <SettingsPageHeader
@@ -618,6 +655,8 @@ export default function PortalConfiguration({
         />
         <div className='flex flex-1 flex-col overflow-hidden p-4'>
           <CustomFilter
+            activeFilters={activeFilters}
+            customSearchComponent={<TableSearch table={portalTable as never} />}
             actionButtons={[
               {
                 color: 'gray',
@@ -629,12 +668,10 @@ export default function PortalConfiguration({
                 onClick: reloadPortals,
               },
             ]}
-            activeFilters={activeFilters}
             addButton={{
               tooltip: 'Add Portal',
               onClick: openCreatePortal,
             }}
-            customSearchComponent={<TableSearch table={portalTable as never} />}
             filters={[
               {
                 id: 'name',
@@ -644,8 +681,8 @@ export default function PortalConfiguration({
                   .filter(Boolean)
                   .sort((a, b) => a.localeCompare(b))
                   .map((name) => ({ label: name, value: name })),
-                searchPlaceholder: 'Search name...',
                 searchable: true,
+                searchPlaceholder: 'Search name...',
               },
               {
                 id: 'login',
@@ -681,12 +718,14 @@ export default function PortalConfiguration({
                 emptyDescription='Create a portal to configure login methods and connected workflows.'
                 emptyIcon='lucide:app-window'
                 emptyTitle='No portals yet'
-                hideActionBar
-                hideGrouping
+                isLoading={isLoadingPortals}
+                isReLoading={isLoadingPortals}
                 pageSize={pageSize}
                 rowSize={rowSize}
-                stickyHeader
                 table={portalTable}
+                hideActionBar
+                hideGrouping
+                stickyHeader
                 onReload={reloadPortals}
                 onRowSizeChange={onRowSizeChange}
               />
@@ -713,6 +752,8 @@ function PortalSetup({
   draftPortal,
   editingPortalId,
   isSaving,
+  previewPortalId,
+  publicUrlIds,
   onBack,
   onBackToSettings,
   onCancel,
@@ -725,6 +766,8 @@ function PortalSetup({
   draftPortal: PortalConfig
   editingPortalId: number | null
   isSaving: boolean
+  previewPortalId: number
+  publicUrlIds: { tenantId?: string; userId?: string }
   onBack: () => void
   onBackToSettings?: () => void
   onCancel: () => void
@@ -735,7 +778,9 @@ function PortalSetup({
 }) {
   const { i18n, t } = useLingui()
   const [showErrors, setShowErrors] = useState(false)
-  const [formOptions, setFormOptions] = useState<Option[]>(FALLBACK_FORM_OPTIONS)
+  const [formOptions, setFormOptions] = useState<Option[]>(
+    FALLBACK_FORM_OPTIONS,
+  )
   const [formFields, setFormFields] = useState<Option[]>(FALLBACK_FIELD_OPTIONS)
   const [loadingForms, setLoadingForms] = useState(false)
   const [loadingFields, setLoadingFields] = useState(false)
@@ -762,13 +807,13 @@ function PortalSetup({
     [draftPortal.workflows, workflowNameById],
   )
 
-  const portalPublicUrl = getPortalPublicUrl(
-    editingPortalId || draftPortal.id || nextPortalId(),
-  )
+  const portalPublicUrl = getPortalPublicUrl(previewPortalId, publicUrlIds)
 
   const workflowOptions = useMemo(() => {
     const byId = new Map<string, SettingsOption>()
-    loadedWorkflows.forEach((workflow) => byId.set(String(workflow.id), workflow))
+    loadedWorkflows.forEach((workflow) =>
+      byId.set(String(workflow.id), workflow),
+    )
     selectedWorkflows.forEach((workflow) => {
       if (!byId.has(String(workflow.id))) {
         byId.set(String(workflow.id), workflow)
@@ -787,13 +832,12 @@ function PortalSetup({
         )
         if (cancelled) return
 
-        let options: SettingsOption[] =
-          mapPublishedBrowseResponseToOptions(browseRes.data).map(
-            (workflow) => ({
-              id: String(workflow.id),
-              name: workflow.name || String(workflow.id),
-            }),
-          )
+        let options: SettingsOption[] = mapPublishedBrowseResponseToOptions(
+          browseRes.data,
+        ).map((workflow) => ({
+          id: String(workflow.id),
+          name: workflow.name || String(workflow.id),
+        }))
 
         if (options.length === 0) {
           const listRes = await workflowsApiV6.getWorkflows()
@@ -1014,7 +1058,10 @@ function PortalSetup({
     })
   }
 
-  const toggleSocialLogin = (provider: 'Google' | 'Microsoft', checked: boolean) => {
+  const toggleSocialLogin = (
+    provider: 'Google' | 'Microsoft',
+    checked: boolean,
+  ) => {
     const current = draftPortal.authentication.socialLogin
     const next = checked
       ? Array.from(new Set([...current, provider]))
@@ -1057,8 +1104,8 @@ function PortalSetup({
       isSaving={isSaving}
       moduleTitle={msg`Portal Configuration`}
       saveLabel={editingPortalId ? t`Update Portal` : t`Save Portal`}
-      setupTitle={editingPortalId ? msg`Edit Portal` : msg`Create Portal`}
       steps={wizardSteps}
+      setupTitle={editingPortalId ? msg`Edit Portal` : msg`Create Portal`}
       onBack={() => {
         setShowErrors(false)
         onBack()
@@ -1076,15 +1123,17 @@ function PortalSetup({
               <AnimateFadeIn delay={0.1}>
                 <InputText
                   autoFocus={!editingPortalId}
+                  label={t`Portal Name *`}
+                  placeholder={t`e.g. Access2Pay Portal`}
+                  value={draftPortal.name}
                   error={getFieldRequiredError(
                     'Portal Name',
                     showErrors,
                     draftPortal.name,
                   )}
-                  label={t`Portal Name *`}
-                  placeholder={t`e.g. Access2Pay Portal`}
-                  value={draftPortal.name}
-                  onChange={(value) => onChange({ ...draftPortal, name: value })}
+                  onChange={(value) =>
+                    onChange({ ...draftPortal, name: value })
+                  }
                 />
               </AnimateFadeIn>
               <AnimateFadeIn delay={0.15}>
@@ -1107,14 +1156,14 @@ function PortalSetup({
             <SettingsFormSection>
               <AnimateFadeIn delay={0.1}>
                 <InputRadioGroup
+                  label={t`Login type *`}
+                  options={LOGIN_TYPE_OPTIONS}
+                  value={loginTypeToRadioId(draftPortal.loginType)}
                   error={
                     showErrors && !draftPortal.loginType
                       ? t`Please fill the required field: Login type`
                       : undefined
                   }
-                  label={t`Login type *`}
-                  options={LOGIN_TYPE_OPTIONS}
-                  value={loginTypeToRadioId(draftPortal.loginType)}
                   onChange={(value) => setLoginType(radioIdToLoginType(value))}
                 />
               </AnimateFadeIn>
@@ -1123,6 +1172,11 @@ function PortalSetup({
                 <AnimateFadeIn delay={0.15}>
                   <div className='flex flex-col gap-6 md:gap-7'>
                     <InputSelect
+                      label={t`Master Form *`}
+                      loading={loadingForms}
+                      options={formOptions}
+                      placeholder={t`Select master form`}
+                      searchable
                       error={getFieldRequiredError(
                         'Master Form',
                         showErrors,
@@ -1132,11 +1186,6 @@ function PortalSetup({
                           ? draftPortal.authentication.formId
                           : '',
                       )}
-                      label={t`Master Form *`}
-                      loading={loadingForms}
-                      options={formOptions}
-                      placeholder={t`Select master form`}
-                      searchable
                       value={optionFromId(
                         draftPortal.authentication.formId,
                         formOptions,
@@ -1155,16 +1204,16 @@ function PortalSetup({
                       }
                     />
                     <InputSelect
-                      error={getFieldRequiredError(
-                        'Username Field',
-                        showErrors,
-                        draftPortal.authentication.usernameField[0],
-                      )}
                       label={t`Username Field *`}
                       loading={loadingFields}
                       options={formFields}
                       placeholder={t`Select username / email field`}
                       searchable
+                      error={getFieldRequiredError(
+                        'Username Field',
+                        showErrors,
+                        draftPortal.authentication.usernameField[0],
+                      )}
                       value={optionFromId(
                         draftPortal.authentication.usernameField[0],
                         formFields,
@@ -1182,16 +1231,16 @@ function PortalSetup({
                       }
                     />
                     <InputSelect
-                      error={getFieldRequiredError(
-                        'First Name Field',
-                        showErrors,
-                        draftPortal.authentication.firstnameField,
-                      )}
                       label={t`First Name Field *`}
                       loading={loadingFields}
                       options={formFields}
                       placeholder={t`Select first name field`}
                       searchable
+                      error={getFieldRequiredError(
+                        'First Name Field',
+                        showErrors,
+                        draftPortal.authentication.firstnameField,
+                      )}
                       value={optionFromId(
                         draftPortal.authentication.firstnameField,
                         formFields,
@@ -1201,9 +1250,7 @@ function PortalSetup({
                           ...draftPortal,
                           authentication: {
                             ...draftPortal.authentication,
-                            firstnameField: selected
-                              ? String(selected.id)
-                              : '',
+                            firstnameField: selected ? String(selected.id) : '',
                           },
                         })
                       }
@@ -1245,16 +1292,16 @@ function PortalSetup({
                     />
                     {draftPortal.authentication.passwordTypes === 'PASSWORD' ? (
                       <InputSelect
-                        error={getFieldRequiredError(
-                          'Password Field',
-                          showErrors,
-                          draftPortal.authentication.passwordField,
-                        )}
                         label={t`Password Field *`}
                         loading={loadingFields}
                         options={formFields}
                         placeholder={t`Select password field`}
                         searchable
+                        error={getFieldRequiredError(
+                          'Password Field',
+                          showErrors,
+                          draftPortal.authentication.passwordField,
+                        )}
                         value={optionFromId(
                           draftPortal.authentication.passwordField,
                           formFields,
@@ -1290,19 +1337,19 @@ function PortalSetup({
                     {draftPortal.authentication.signInType ? (
                       <div className='flex flex-col gap-3 pl-7'>
                         <InputCheckbox
+                          label={t`Google`}
                           checked={draftPortal.authentication.socialLogin.includes(
                             'Google',
                           )}
-                          label={t`Google`}
                           onChange={(checked) =>
                             toggleSocialLogin('Google', Boolean(checked))
                           }
                         />
                         <InputCheckbox
+                          label={t`Microsoft`}
                           checked={draftPortal.authentication.socialLogin.includes(
                             'Microsoft',
                           )}
-                          label={t`Microsoft`}
                           onChange={(checked) =>
                             toggleSocialLogin('Microsoft', Boolean(checked))
                           }
@@ -1322,18 +1369,18 @@ function PortalSetup({
               <AnimateFadeIn delay={0.1}>
                 <div className='flex flex-col gap-2'>
                   <InputSelectMultiple
+                    label={t`Workflows *`}
+                    loading={loadingWorkflows}
+                    options={workflowOptions}
+                    placeholder={t`Search and select workflows...`}
+                    value={selectedWorkflows}
                     clearable
+                    searchable
                     error={
                       showErrors && !draftPortal.workflows.length
                         ? 'Please fill the required field: Workflow'
                         : undefined
                     }
-                    label={t`Workflows *`}
-                    loading={loadingWorkflows}
-                    options={workflowOptions}
-                    placeholder={t`Search and select workflows...`}
-                    searchable
-                    value={selectedWorkflows}
                     onChange={(value) => {
                       const next = (value || []) as SettingsOption[]
                       onChange({
@@ -1486,9 +1533,9 @@ function PortalSetup({
                   <div className='mt-6'>
                     <InputText
                       label={t`Portal URL`}
-                      readOnly
                       rightSectionPointerEvents='auto'
                       value={portalPublicUrl}
+                      readOnly
                       rightSection={
                         <IconButton
                           ariaLabel={t`Copy URL`}
@@ -1530,15 +1577,6 @@ function PortalSetup({
   )
 }
 
-function SummaryItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className='min-w-0'>
-      <div className='text-xs font-medium text-gray-11'>{label}</div>
-      <div className='mt-1 break-words text-sm text-gray-13'>{value || '—'}</div>
-    </div>
-  )
-}
-
 function SummaryChipList({ items }: { items: SettingsOption[] }) {
   if (!items.length) {
     return <span className='text-sm text-gray-10'>—</span>
@@ -1554,6 +1592,17 @@ function SummaryChipList({ items }: { items: SettingsOption[] }) {
           <span className='truncate'>{item.name}</span>
         </span>
       ))}
+    </div>
+  )
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className='min-w-0'>
+      <div className='text-xs font-medium text-gray-11'>{label}</div>
+      <div className='mt-1 text-sm break-words text-gray-13'>
+        {value || '—'}
+      </div>
     </div>
   )
 }

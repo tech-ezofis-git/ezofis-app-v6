@@ -12,11 +12,13 @@ export type SaveWizardDraftPayload = {
 export type WizardDraftKind = 'folder' | 'user'
 
 export type WizardDraftRecord = {
+  createdAtUtc?: string
   currentStep?: number
   currentStepKey?: string
   draftJson?: string
   id?: string
   isCompleted?: boolean
+  modifiedAtUtc?: string
   tenantId?: string
   userId?: string
 }
@@ -24,12 +26,6 @@ export type WizardDraftRecord = {
 const DRAFT_BASE: Record<WizardDraftKind, string> = {
   folder: '/folder-creation/drafts',
   user: '/user-creation/drafts',
-}
-
-const tenantHeaders = () => {
-  const store = authUserStore.getState()
-  const tenantId = store.session?.tenantId || store.identity?.tenantId || ''
-  return tenantId ? { 'X-Tenant-Id': tenantId } : undefined
 }
 
 const resolveIds = () => {
@@ -40,51 +36,101 @@ const resolveIds = () => {
   }
 }
 
+const asString = (value: unknown) =>
+  typeof value === 'string' && value.trim() ? value.trim() : ''
+
+const parseStepNumber = (value: unknown) => {
+  const step = Number(value)
+  return Number.isFinite(step) && step >= 1 ? step : undefined
+}
+
+const draftRequestHeaders = () => {
+  const { tenantId, userId } = resolveIds()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (tenantId) headers['X-Tenant-Id'] = tenantId
+  if (userId) {
+    headers['X-User-Id'] = userId
+    headers.userId = userId
+  }
+  return headers
+}
+
 const asRecord = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null
 
 export const unwrapWizardDraft = (data: unknown): WizardDraftRecord | null => {
-  if (!data) return null
-  if (Array.isArray(data)) return unwrapWizardDraft(data[0])
+  const list = unwrapWizardDraftList(data)
+  return list[0] || null
+}
+
+export const unwrapWizardDraftList = (data: unknown): WizardDraftRecord[] => {
+  if (!data) return []
+  if (Array.isArray(data)) {
+    return data.flatMap((item) => unwrapWizardDraftList(item))
+  }
 
   const record = asRecord(data)
-  if (!record) return null
+  if (!record) return []
 
-  const nested = record.data ?? record.result ?? record.payload ?? record.draft
-  if (nested && nested !== record) {
-    const inner = unwrapWizardDraft(nested)
-    if (inner?.id || inner?.draftJson) return inner
+  const nested =
+    record.data ??
+    record.result ??
+    record.payload ??
+    record.drafts ??
+    record.draft
+  if (Array.isArray(nested)) {
+    return nested.flatMap((item) => unwrapWizardDraftList(item))
+  }
+  if (nested && nested !== record && typeof nested === 'object') {
+    const inner = unwrapWizardDraftList(nested)
+    if (inner.length) return inner
   }
 
   const id =
-    (typeof record.id === 'string' && record.id) ||
-    (typeof record.draftId === 'string' && record.draftId) ||
-    ''
+    asString(record.id) ||
+    asString(record.draftId) ||
+    asString(record.Id) ||
+    asString(record.DraftId)
 
+  const rawJson = record.draftJson ?? record.DraftJson
   const draftJson =
-    typeof record.draftJson === 'string'
-      ? record.draftJson
-      : record.draftJson && typeof record.draftJson === 'object'
-        ? JSON.stringify(record.draftJson)
+    typeof rawJson === 'string'
+      ? rawJson
+      : rawJson && typeof rawJson === 'object'
+        ? JSON.stringify(rawJson)
         : undefined
 
-  if (!id && !draftJson) return null
+  if (!id && !draftJson) return []
 
-  return {
-    currentStep:
-      typeof record.currentStep === 'number' ? record.currentStep : undefined,
-    currentStepKey:
-      typeof record.currentStepKey === 'string'
-        ? record.currentStepKey
-        : undefined,
-    draftJson,
-    id: id || undefined,
-    isCompleted: Boolean(record.isCompleted),
-    tenantId: typeof record.tenantId === 'string' ? record.tenantId : undefined,
-    userId: typeof record.userId === 'string' ? record.userId : undefined,
-  }
+  const isCompleted = record.isCompleted ?? record.IsCompleted
+
+  return [
+    {
+      createdAtUtc:
+        asString(record.createdAtUtc) ||
+        asString(record.CreatedAtUtc) ||
+        undefined,
+      currentStep: parseStepNumber(record.currentStep ?? record.CurrentStep),
+      currentStepKey:
+        asString(record.currentStepKey) ||
+        asString(record.CurrentStepKey) ||
+        undefined,
+      draftJson,
+      id: id || undefined,
+      isCompleted: Boolean(isCompleted),
+      modifiedAtUtc:
+        asString(record.modifiedAtUtc) ||
+        asString(record.ModifiedAtUtc) ||
+        undefined,
+      tenantId:
+        asString(record.tenantId) || asString(record.TenantId) || undefined,
+      userId: asString(record.userId) || asString(record.UserId) || undefined,
+    },
+  ]
 }
 
 export const getActiveWizardDraft = async (kind: WizardDraftKind) => {
@@ -100,10 +146,12 @@ export const getActiveWizardDraft = async (kind: WizardDraftKind) => {
 
   try {
     const { data, status } = await axiosV6({
-      headers: tenantHeaders(),
+      headers: draftRequestHeaders(),
       method: 'GET',
       skipCancellation: true,
       url: DRAFT_BASE[kind],
+      validateStatus: (nextStatus: number) =>
+        nextStatus === 404 || (nextStatus >= 200 && nextStatus < 300),
     })
 
     if (status === 404) {
@@ -132,6 +180,64 @@ export const getActiveWizardDraft = async (kind: WizardDraftKind) => {
   return response
 }
 
+export const getWizardDraftById = async (
+  kind: WizardDraftKind,
+  draftId: string,
+) => {
+  const response: {
+    data: WizardDraftRecord | null
+    error: string
+    notFound: boolean
+  } = {
+    data: null,
+    error: '',
+    notFound: false,
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      headers: draftRequestHeaders(),
+      method: 'GET',
+      skipCancellation: true,
+      url: `${DRAFT_BASE[kind]}/${encodeURIComponent(draftId)}`,
+      validateStatus: (nextStatus: number) =>
+        nextStatus === 404 || (nextStatus >= 200 && nextStatus < 300),
+    })
+
+    if (status === 404) {
+      response.notFound = true
+      return response
+    }
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    response.data = unwrapWizardDraft(data)
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: unknown; status?: number } }
+    if (err?.response?.status === 404) {
+      response.notFound = true
+      return response
+    }
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      err?.response?.data,
+      'Failed to load draft',
+    )
+  }
+
+  return response
+}
+
+export const listWizardDrafts = async (kind: WizardDraftKind) => {
+  const active = await getActiveWizardDraft(kind)
+  return {
+    data: active.data && !active.data.isCompleted ? [active.data] : [],
+    error: active.error,
+  }
+}
+
 export const saveWizardDraft = async (
   kind: WizardDraftKind,
   payload: SaveWizardDraftPayload,
@@ -148,11 +254,14 @@ export const saveWizardDraft = async (
         currentStep: payload.currentStep,
         currentStepKey: payload.currentStepKey,
         draftId: payload.draftId || null,
-        draftJson: payload.draftJson,
+        draftJson:
+          typeof payload.draftJson === 'string'
+            ? payload.draftJson
+            : JSON.stringify(payload.draftJson ?? {}),
         tenantId: ids.tenantId,
         userId: ids.userId,
       },
-      headers: tenantHeaders(),
+      headers: draftRequestHeaders(),
       method: 'PUT',
       skipCancellation: true,
       url: DRAFT_BASE[kind],
@@ -183,7 +292,7 @@ export const completeWizardDraft = async (
 
   try {
     await axiosV6({
-      headers: tenantHeaders(),
+      headers: draftRequestHeaders(),
       method: 'POST',
       skipCancellation: true,
       url: `${DRAFT_BASE[kind]}/${encodeURIComponent(draftId)}/complete`,
@@ -210,7 +319,7 @@ export const deleteWizardDraft = async (
 
   try {
     await axiosV6({
-      headers: tenantHeaders(),
+      headers: draftRequestHeaders(),
       method: 'DELETE',
       skipCancellation: true,
       url: `${DRAFT_BASE[kind]}/${encodeURIComponent(draftId)}`,

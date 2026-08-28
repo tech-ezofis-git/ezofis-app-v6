@@ -8,11 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {
-  deleteWizardDraft,
-  getActiveWizardDraft,
-  saveWizardDraft,
-} from '@/api/v6/wizardDrafts'
+import { getActiveWizardDraft, saveWizardDraft } from '@/api/v6/wizardDrafts'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
 import Button from '@/components/base/button/Button'
@@ -873,9 +869,6 @@ export default function AiFolderBuilder({
   const skipNextPersistRef = useRef(false)
 
   const handleBack = useCallback(() => {
-    const draftId = folderDraftIdRef.current
-    folderDraftIdRef.current = null
-    if (draftId) void deleteWizardDraft('folder', draftId)
     onBack()
   }, [onBack])
 
@@ -887,10 +880,6 @@ export default function AiFolderBuilder({
         { label: 'AI Folder Builder' },
       ],
       onNavigate: (key: string) => {
-        const draftId = folderDraftIdRef.current
-        folderDraftIdRef.current = null
-        if (draftId) void deleteWizardDraft('folder', draftId)
-
         if (key === 'settings') {
           if (onBackToSettings) {
             onBackToSettings()
@@ -1103,15 +1092,16 @@ export default function AiFolderBuilder({
     let cancelled = false
 
     void (async () => {
-      const { data } = await getActiveWizardDraft('folder')
+      const { data, notFound } = await getActiveWizardDraft('folder')
       if (cancelled) return
 
-      folderDraftIdRef.current = data?.id ?? null
+      folderDraftIdRef.current =
+        !notFound && data?.id && !data.isCompleted ? data.id : null
 
-      if (data?.draftJson) {
+      if (!notFound && data?.draftJson && !data.isCompleted) {
         const snap = hydrateFolderFromDraft(data.draftJson)
 
-        if (snap.folderName) {
+        if (snap.folderName && !snap.editingRepositoryId) {
           greetingInitialized.current = true
           skipNextPersistRef.current = true
           setDraft({

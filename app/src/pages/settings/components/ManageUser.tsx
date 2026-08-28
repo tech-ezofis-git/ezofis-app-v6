@@ -27,7 +27,9 @@ import {
   completeWizardDraft,
   deleteWizardDraft,
   getActiveWizardDraft,
+  getWizardDraftById,
   saveWizardDraft,
+  type WizardDraftRecord,
 } from '@/api/v6/wizardDrafts'
 import ConfirmDialog from '@/components/base/ConfirmDialog'
 import TableExport from '@/components/base/data-table/actions/TableExport'
@@ -112,7 +114,7 @@ type Step = {
 
 type StepKey = 'login' | 'business' | 'groups' | 'authentication' | 'review'
 
-type UserStatus = 'active' | 'inactive' | 'pending'
+type UserStatus = 'active' | 'inactive' | 'pending' | 'draft'
 
 function getStoredState() {
   try {
@@ -244,6 +246,38 @@ const emptyUser: DraftUser = {
   role: '',
   status: 'active',
   username: '',
+}
+
+const WIZARD_DRAFT_ROW_PREFIX = 'draft:'
+
+const isWizardDraftUser = (
+  user: Pick<AppUser, 'id'> & { wizardDraftId?: string },
+) =>
+  Boolean(
+    user.wizardDraftId && String(user.id).startsWith(WIZARD_DRAFT_ROW_PREFIX),
+  )
+
+const mapUserDraftToRow = (draft: WizardDraftRecord): AppUser | null => {
+  if (!draft.id || draft.isCompleted || !draft.draftJson) return null
+
+  const hydrated = hydrateUserFromDraft(draft.draftJson, emptyUser)
+  const existingId =
+    hydrated.editingUserId == null || hydrated.editingUserId === ''
+      ? ''
+      : String(hydrated.editingUserId)
+  const {
+    password: _password,
+    resetPassword: _resetPassword,
+    ...user
+  } = hydrated.user
+
+  return {
+    ...user,
+    created: draft.createdAtUtc || user.created || '',
+    id: existingId || `${WIZARD_DRAFT_ROW_PREFIX}${draft.id}`,
+    status: 'draft',
+    wizardDraftId: draft.id,
+  }
 }
 
 const departments = ['Administration', 'Finance', 'IT', 'Legal', 'Procurement']
@@ -454,6 +488,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   )
   const [isDeletingUser, setIsDeletingUser] = useState(false)
   const userDraftIdRef = useRef<string | null>(null)
+  const userDraftsByIdRef = useRef<Map<string, WizardDraftRecord>>(new Map())
   const draftUserRef = useRef(draftUser)
   draftUserRef.current = draftUser
 
@@ -528,14 +563,55 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         return
       }
 
-      setUsers(
-        applyGroupMembershipsToUsers(
-          Array.isArray(response.data) && response.data.length
-            ? mapApiUsersToSettingsUsers(response.data)
-            : [],
-          settingsGroupsRef.current,
-        ),
+      const rows = applyGroupMembershipsToUsers(
+        Array.isArray(response.data) && response.data.length
+          ? mapApiUsersToSettingsUsers(response.data)
+          : [],
+        settingsGroupsRef.current,
       )
+      setUsers(rows)
+
+      try {
+        const activeDraft = await getActiveWizardDraft('user')
+        if (requestId !== loadUsersRequestIdRef.current) return
+        if (
+          activeDraft.notFound ||
+          activeDraft.error ||
+          !activeDraft.data?.draftJson ||
+          activeDraft.data.isCompleted
+        ) {
+          userDraftsByIdRef.current = new Map()
+          return
+        }
+
+        const draft = activeDraft.data
+        const draftMap = new Map<string, WizardDraftRecord>()
+        if (draft.id) draftMap.set(draft.id, draft)
+
+        const draftRow = mapUserDraftToRow(draft)
+        const merged = [...rows]
+
+        if (draftRow) {
+          const existingIndex = merged.findIndex(
+            (row) => String(row.id) === String(draftRow.id),
+          )
+          if (existingIndex >= 0) {
+            merged[existingIndex] = {
+              ...merged[existingIndex],
+              ...draftRow,
+              status: 'draft',
+              wizardDraftId: draft.id,
+            }
+          } else {
+            merged.unshift(draftRow)
+          }
+        }
+
+        userDraftsByIdRef.current = draftMap
+        setUsers(merged)
+      } catch {
+        userDraftsByIdRef.current = new Map()
+      }
     } finally {
       if (requestId === loadUsersRequestIdRef.current) {
         setIsLoadingUsers(false)
@@ -626,6 +702,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     async (stepIndex: number) => {
       const current = draftUserRef.current
       const json = buildUserDraftJson(current, {
+        confirmed: stepIndex >= 4,
         editingUserId,
       })
       const { data, error } = await saveWizardDraft('user', {
@@ -657,8 +734,12 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   }, [])
 
   const discardUserWizardDraft = useCallback(async () => {
-    const draftId = userDraftIdRef.current
+    let draftId = userDraftIdRef.current
     userDraftIdRef.current = null
+    if (!draftId) {
+      const { data } = await getActiveWizardDraft('user')
+      draftId = data?.id ?? null
+    }
     if (!draftId) return
     await deleteWizardDraft('user', draftId)
   }, [])
@@ -683,10 +764,11 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setEditingUserId(null)
     setOriginalUser(null)
 
-    const { data } = await getActiveWizardDraft('user')
-    userDraftIdRef.current = data?.id ?? null
+    const { data, notFound } = await getActiveWizardDraft('user')
+    userDraftIdRef.current =
+      !notFound && data?.id && !data.isCompleted ? data.id : null
 
-    if (data?.draftJson) {
+    if (!notFound && data?.draftJson && !data.isCompleted) {
       const hydrated = hydrateUserFromDraft(data.draftJson, emptyUser)
 
       if (hydrated.editingUserId == null) {
@@ -712,6 +794,37 @@ export default function ManageUser({ onBack }: ManageUserProps) {
   }
 
   const openEditUser = async (user: AppUser) => {
+    if (isWizardDraftUser(user) && user.wizardDraftId) {
+      const cached = userDraftsByIdRef.current.get(user.wizardDraftId)
+      const byId = cached
+        ? { data: cached }
+        : await getWizardDraftById('user', user.wizardDraftId)
+      const draft = byId.data || (await getActiveWizardDraft('user')).data
+
+      if (!draft?.draftJson || draft.isCompleted) {
+        showToast({
+          message: 'Failed to load user draft.',
+          variant: 'error',
+        })
+        return
+      }
+
+      userDraftIdRef.current = draft.id ?? user.wizardDraftId
+      const hydrated = hydrateUserFromDraft(draft.draftJson, emptyUser)
+      setEditingUserId(null)
+      setOriginalUser(null)
+      setDraftUser({
+        ...hydrated.user,
+        id: Date.now(),
+        password: '',
+      })
+      setActiveStep(
+        userStepIndexFromDraft(draft.currentStep, draft.currentStepKey),
+      )
+      setIsSetupOpen(true)
+      return
+    }
+
     const clearPlaceholder = (value: string) => {
       const trimmed = String(value || '').trim()
       return !trimmed || trimmed === '—' ? '' : trimmed
@@ -810,6 +923,24 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     setIsDeletingUser(true)
     setIsLoadingUsers(true)
     try {
+      const deleting = users.find((user) => user.id === deletingUserId)
+
+      if (deleting && isWizardDraftUser(deleting) && deleting.wizardDraftId) {
+        const result = await deleteWizardDraft('user', deleting.wizardDraftId)
+        if (result.error) {
+          showToast({ message: result.error, variant: 'error' })
+          return
+        }
+
+        showToast({
+          message: 'User draft deleted successfully',
+          variant: 'success',
+        })
+        setDeletingUserId(null)
+        await loadUsers()
+        return
+      }
+
       const response = await deleteUserApi(String(deletingUserId))
 
       if (response.error) {
@@ -903,6 +1034,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         await finishUserWizardDraft()
         setOriginalUser(null)
         setIsSetupOpen(false)
+        await loadUsers()
       } finally {
         setIsSaving(false)
       }
@@ -957,6 +1089,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
       showToast({ message: 'User created successfully', variant: 'success' })
       await finishUserWizardDraft()
       setIsSetupOpen(false)
+      await loadUsers()
     } finally {
       setIsSaving(false)
     }
@@ -1283,8 +1416,20 @@ export default function ManageUser({ onBack }: ManageUserProps) {
     () =>
       Array.from(
         new Set(users.map((u) => String(u.status)).filter(Boolean)),
-      ).map((r) => ({ label: r, value: r })),
-    [users],
+      ).map((status) => ({
+        label:
+          status === 'draft'
+            ? t`Draft`
+            : status === 'pending'
+              ? t`Pending`
+              : status === 'inactive'
+                ? t`Inactive`
+                : status === 'active'
+                  ? t`Active`
+                  : status,
+        value: status,
+      })),
+    [t, users],
   )
   const businessUnitOptions = useMemo(
     () =>
@@ -1349,14 +1494,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         managerOptions={managerOptions}
         roleOptions={apiRoleOptions}
         onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
-        onBackToSettings={() => {
-          void discardUserWizardDraft()
-          onBack?.()
-        }}
+        onBackToSettings={onBack}
         onCancel={() => {
-          void discardUserWizardDraft()
-          setOriginalUser(null)
-          setIsSetupOpen(false)
+          void (async () => {
+            await discardUserWizardDraft()
+            setOriginalUser(null)
+            setIsSetupOpen(false)
+            await loadUsers()
+          })()
         }}
         onChange={setDraftUser}
         onNext={() => {
@@ -2450,7 +2595,7 @@ function StatusBadge({ status }: { status: UserStatus }) {
   const className =
     status === 'active'
       ? 'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]'
-      : status === 'pending'
+      : status === 'pending' || status === 'draft'
         ? 'border-[var(--orange-5)] bg-[var(--orange-2)] text-[var(--orange-11)]'
         : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]'
 
@@ -2459,7 +2604,9 @@ function StatusBadge({ status }: { status: UserStatus }) {
       ? t`Active`
       : status === 'pending'
         ? t`Pending`
-        : t`Inactive`
+        : status === 'draft'
+          ? t`Draft`
+          : t`Inactive`
 
   return (
     <span

@@ -1,4 +1,9 @@
-export const PORTAL_CONFIG_STORAGE_KEY = 'ezofis_portal_configurations'
+import {
+  createPortalJson,
+  getPortalJson,
+  type PortalJsonIds,
+  updatePortalJson,
+} from '@/api/v6/portalJson'
 
 export type PortalAuthentication = {
   firstnameField: string
@@ -120,49 +125,6 @@ export const emptyPortalConfig = (): PortalConfig => ({
   workflowId: '',
   workflows: [],
 })
-
-const SEED_PORTAL: PortalConfig = {
-  authentication: {
-    firstnameField: '',
-    formId: 0,
-    loginType: 'EMAIL_LOGIN',
-    mailContent: { ...emptyMail },
-    mailSubject: { ...emptyMail },
-    noSignInValue: false,
-    notification: false,
-    passwordField: '',
-    passwordTypes: 'OTP',
-    signInType: false,
-    socialLogin: [],
-    usernameField: [],
-  },
-  createdAt: '2026-06-04T04:19:41.41Z',
-  createdBy: '1',
-  createdByEmail: 'seth@ezofis.com',
-  description: '',
-  displayValues: '',
-  howItWorks: [],
-  id: 69,
-  isDeleted: false,
-  loginType: 'emailOtp',
-  modifiedAt: null,
-  modifiedBy: '0',
-  modifiedByEmail: null,
-  name: 'Access2Pay Portal',
-  superUser: '',
-  workflow: 'ACCESS2PAY_WF',
-  workflowId: 104,
-  workflows: [
-    {
-      category: [],
-      categoryFieldId: '',
-      categoryFieldMasterSync: [],
-      id: 104,
-      name: 'ACCESS2PAY_WF',
-      processInfo: [],
-    },
-  ],
-}
 
 const parseJson = (raw: unknown) => {
   if (!raw) return {}
@@ -355,34 +317,86 @@ export const toStoredPortalRecord = (
   }
 }
 
-const readRawList = (): StoredPortalRecord[] => {
-  if (typeof window === 'undefined') return []
+const parseStoredRecords = (portalJson: string): StoredPortalRecord[] => {
+  if (!portalJson) return []
   try {
-    const stored = localStorage.getItem(PORTAL_CONFIG_STORAGE_KEY)
-    if (!stored) return []
-    const parsed = JSON.parse(stored) as unknown
-    return Array.isArray(parsed) ? (parsed as StoredPortalRecord[]) : []
+    const parsed = JSON.parse(portalJson) as unknown
+    if (Array.isArray(parsed)) return parsed as StoredPortalRecord[]
+    if (parsed && typeof parsed === 'object') {
+      const record = parsed as Record<string, unknown>
+      if (Array.isArray(record.portals)) {
+        return record.portals as StoredPortalRecord[]
+      }
+      if (Array.isArray(record.records)) {
+        return record.records as StoredPortalRecord[]
+      }
+      if (
+        'contentJson' in record ||
+        'settingsJson' in record ||
+        'id' in record
+      ) {
+        return [parsed as StoredPortalRecord]
+      }
+    }
   } catch {
     return []
   }
+  return []
 }
 
-const writeRawList = (records: StoredPortalRecord[]) => {
-  localStorage.setItem(PORTAL_CONFIG_STORAGE_KEY, JSON.stringify(records))
+const toPortalConfigs = (records: StoredPortalRecord[]) =>
+  records.map(mapStoredRecord).filter((portal) => !portal.isDeleted)
+
+let remoteRecordExists = false
+
+const persistRecords = async (
+  records: StoredPortalRecord[],
+  ids?: PortalJsonIds,
+) => {
+  const portalJson = JSON.stringify(records)
+  const result = remoteRecordExists
+    ? await updatePortalJson(portalJson, ids)
+    : await createPortalJson(portalJson, ids)
+
+  if (!result.error) remoteRecordExists = true
+  return result
 }
 
-export const listPortalConfigs = (): PortalConfig[] => {
-  const records = readRawList()
-  if (!records.length) {
-    writeRawList([toStoredPortalRecord(SEED_PORTAL)])
-    return [SEED_PORTAL]
+export const listPortalConfigs = async (ids?: PortalJsonIds) => {
+  const response: { data: PortalConfig[]; error: string } = {
+    data: [],
+    error: '',
   }
 
-  return records.map(mapStoredRecord).filter((portal) => !portal.isDeleted)
+  const result = await getPortalJson(ids)
+  if (result.error) {
+    response.error = result.error
+    return response
+  }
+
+  if (result.notFound) {
+    remoteRecordExists = false
+    return response
+  }
+
+  const records = parseStoredRecords(result.data?.portalJson || '')
+  remoteRecordExists = true
+  response.data = toPortalConfigs(records)
+  return response
 }
 
-export const savePortalConfig = (portal: PortalConfig) => {
-  const records = readRawList()
+export const savePortalConfig = async (
+  portal: PortalConfig,
+  ids?: PortalJsonIds,
+) => {
+  const listedResult = await getPortalJson(ids)
+  if (listedResult.error) return { error: listedResult.error }
+
+  const records = listedResult.notFound
+    ? []
+    : parseStoredRecords(listedResult.data?.portalJson || '')
+  remoteRecordExists = !listedResult.notFound
+
   const nextRecord = toStoredPortalRecord(portal)
   const index = records.findIndex((item) => Number(item.id) === portal.id)
 
@@ -392,40 +406,62 @@ export const savePortalConfig = (portal: PortalConfig) => {
     records.unshift(nextRecord)
   }
 
-  writeRawList(records)
-  console.log('[portal settings] localStorage key:', PORTAL_CONFIG_STORAGE_KEY)
-  console.log('[portal settings] saved record:', nextRecord)
-  console.log(
-    '[portal settings] full localStorage JSON (paste this later):',
-    JSON.stringify(records, null, 2),
-  )
-  return portal
+  const persisted = await persistRecords(records, ids)
+  return { error: persisted.error }
 }
 
-export const deletePortalConfig = (id: number | string) => {
-  const records = readRawList()
+export const deletePortalConfig = async (
+  id: number | string,
+  ids?: PortalJsonIds,
+) => {
+  const listedResult = await getPortalJson(ids)
+  if (listedResult.error) return { error: listedResult.error }
+
+  const records = listedResult.notFound
+    ? []
+    : parseStoredRecords(listedResult.data?.portalJson || '')
+  remoteRecordExists = !listedResult.notFound
+
   const next = records.filter((item) => Number(item.id) !== Number(id))
-  writeRawList(next)
+  if (next.length === records.length) return { error: '' }
+
+  const persisted = await persistRecords(next, ids)
+  return { error: persisted.error }
 }
 
-export const nextPortalId = () => {
-  const records = readRawList()
-  const maxId = records.reduce(
+export const nextPortalId = (portals: Array<{ id?: number }> = []) => {
+  const maxId = portals.reduce(
     (max, item) => Math.max(max, Number(item.id) || 0),
-    69,
+    0,
   )
   return maxId + 1
 }
 
-export const getPortalConfig = (id: string | number): PortalConfig | null => {
-  const match = listPortalConfigs().find(
-    (portal) => String(portal.id) === String(id),
-  )
-  return match || null
+export const getPortalConfig = async (
+  id: string | number,
+  ids?: PortalJsonIds,
+) => {
+  const listed = await listPortalConfigs(ids)
+  if (listed.error) {
+    return { data: null as PortalConfig | null, error: listed.error }
+  }
+
+  const match =
+    listed.data.find((portal) => String(portal.id) === String(id)) || null
+  return { data: match, error: '' }
 }
 
-export const getPortalPublicUrl = (id: string | number) => {
+export const getPortalPublicUrl = (
+  id: string | number,
+  ids?: PortalJsonIds,
+) => {
   const path = `/portal/${id}`
-  if (typeof window === 'undefined') return path
-  return `${window.location.origin}${path}`
+  const params = new URLSearchParams()
+  if (ids?.tenantId) params.set('tenantId', ids.tenantId)
+  if (ids?.userId) params.set('userId', ids.userId)
+  const query = params.toString()
+  const suffix = query ? `?${query}` : ''
+
+  if (typeof window === 'undefined') return `${path}${suffix}`
+  return `${window.location.origin}${path}${suffix}`
 }

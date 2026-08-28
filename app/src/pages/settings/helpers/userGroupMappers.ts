@@ -40,8 +40,9 @@ export type SettingsUser = {
   passwordExpiryDays: number
   phoneNumber: string
   role: string
-  status: 'active' | 'inactive' | 'pending'
+  status: 'active' | 'inactive' | 'pending' | 'draft'
   username: string
+  wizardDraftId?: string
 }
 
 const toArray = (value: unknown): any[] => {
@@ -80,6 +81,7 @@ const normalizeStatus = (value: unknown): SettingsUser['status'] => {
     return 'inactive'
   }
   if (text === 'pending') return 'pending'
+  if (text === 'draft') return 'draft'
   return 'active'
 }
 

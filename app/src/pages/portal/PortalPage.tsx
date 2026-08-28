@@ -2,7 +2,10 @@ import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideUp } from '@/components/common/animations'
-import { getPortalConfig } from '@/pages/settings/helpers/portalConfigStorage'
+import {
+  getPortalConfig,
+  type PortalConfig,
+} from '@/pages/settings/helpers/portalConfigStorage'
 import PortalDetail from './components/PortalDetail'
 import PortalHome from './components/PortalHome'
 import PortalLogin from './components/PortalLogin'
@@ -30,19 +33,29 @@ type PortalPageProps = {
 
 type PortalView = 'detail' | 'home' | 'picker' | 'wizard'
 
+const readPortalJsonIdsFromUrl = () => {
+  if (typeof window === 'undefined') return {}
+  const params = new URLSearchParams(window.location.search)
+  const tenantId = params.get('tenantId') || undefined
+  const userId = params.get('userId') || undefined
+  return {
+    tenantId: tenantId || undefined,
+    userId: userId || undefined,
+  }
+}
+
 const PortalPage = ({ portalId }: PortalPageProps) => {
   const { t } = useLingui()
   const session = usePortalSessionStore((state) => state.sessions[portalId])
   const setSession = usePortalSessionStore((state) => state.setSession)
   const clearSession = usePortalSessionStore((state) => state.clearSession)
 
-  const portal = useMemo(() => getPortalConfig(portalId), [portalId])
+  const [portal, setPortal] = useState<PortalConfig | null>(null)
+  const [loadingPortal, setLoadingPortal] = useState(true)
   const hasMultipleWorkflows = (portal?.workflows.length || 0) > 1
   const [view, setView] = useState<PortalView>('home')
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(
-    !hasMultipleWorkflows && portal?.workflows[0]
-      ? String(portal.workflows[0].id)
-      : null,
+    null,
   )
   const [submissions, setSubmissions] = useState<PortalSubmission[]>([])
   const [loadingSubmissions, setLoadingSubmissions] = useState(false)
@@ -95,6 +108,36 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       ) || null,
     [portal, selectedWorkflowId],
   )
+
+  useEffect(() => {
+    let cancelled = false
+    setLoadingPortal(true)
+    setPortal(null)
+
+    void getPortalConfig(portalId, readPortalJsonIdsFromUrl())
+      .then((result) => {
+        if (cancelled) return
+        setPortal(result.data)
+        if (result.data) {
+          const multiple = result.data.workflows.length > 1
+          setSelectedWorkflowId(
+            !multiple && result.data.workflows[0]
+              ? String(result.data.workflows[0].id)
+              : null,
+          )
+        }
+        if (result.error) {
+          showToast({ message: result.error, variant: 'error' })
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPortal(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [portalId])
 
   useEffect(() => {
     if (!portal) return
@@ -202,6 +245,17 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     setSelectedSubmission(null)
     setSubmissions([])
     setView('home')
+  }
+
+  if (loadingPortal) {
+    return (
+      <div className='flex min-h-svh flex-col items-center justify-center gap-2 bg-surface px-6 text-center'>
+        <p className='text-15 font-semibold text-gray-13'>{t`Loading portal`}</p>
+        <p className='max-w-sm text-13 text-gray-10'>
+          {t`Fetching the latest portal configuration.`}
+        </p>
+      </div>
+    )
   }
 
   if (!portal) {

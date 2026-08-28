@@ -46,7 +46,7 @@ export const parseDraftJson = (raw: unknown): Record<string, unknown> => {
 
 export const buildUserDraftJson = (
   user: DraftSettingsUser,
-  extras?: { editingUserId?: string | number | null },
+  extras?: { confirmed?: boolean; editingUserId?: string | number | null },
 ) => {
   const safeUser = omitPasswordFields(
     user as unknown as Record<string, unknown>,
@@ -56,7 +56,7 @@ export const buildUserDraftJson = (
     authentication: {
       accountExpiryDate: user.accountExpiryDate,
       forcePasswordReset: user.forcePasswordReset,
-      mfaEnabled: user.mfaEnabled,
+      mfaEnabled: Boolean(user.mfaEnabled),
       mfaMethods: user.mfaMethods,
       passwordExpiryDays: user.passwordExpiryDays,
     },
@@ -85,7 +85,7 @@ export const buildUserDraftJson = (
       username: user.username,
     },
     review: {
-      confirmed: false,
+      confirmed: Boolean(extras?.confirmed),
     },
   }
 }
@@ -114,6 +114,11 @@ export const hydrateUserFromDraft = (
   const user: DraftSettingsUser = {
     ...fallback,
     ...(form as Partial<DraftSettingsUser>),
+    accountExpiryDate: String(
+      form.accountExpiryDate ||
+        auth.accountExpiryDate ||
+        fallback.accountExpiryDate,
+    ),
     businessUnit: String(
       form.businessUnit || business.businessUnitId || fallback.businessUnit,
     ),
@@ -126,6 +131,11 @@ export const hydrateUserFromDraft = (
     email: String(form.email || login.email || fallback.email),
     employeeId: String(form.employeeId || business.employeeId || ''),
     firstName: String(form.firstName || login.firstName || fallback.firstName),
+    forcePasswordReset: Boolean(
+      form.forcePasswordReset ??
+      auth.forcePasswordReset ??
+      fallback.forcePasswordReset,
+    ),
     groups: groupIds,
     jobTitle: String(form.jobTitle || business.jobTitle || ''),
     lastName: String(form.lastName || login.lastName || fallback.lastName),
@@ -146,6 +156,11 @@ export const hydrateUserFromDraft = (
         ? (auth.mfaMethods as string[])
         : fallback.mfaMethods,
     password: '',
+    passwordExpiryDays: Number(
+      form.passwordExpiryDays ??
+        auth.passwordExpiryDays ??
+        fallback.passwordExpiryDays,
+    ),
     phoneNumber: String(
       form.phoneNumber || login.phoneNumber || fallback.phoneNumber,
     ),
@@ -190,14 +205,37 @@ export type FolderWizardSnapshot = {
   versioning: string
 }
 
+const STORAGE_CODE_TO_OPTION_ID: Record<string, string> = {
+  AZURE: 'Azure',
+  EZOFIS: 'EZOFIS Drive',
+  GOOGLE_DRIVE: 'Google Drive',
+  ONE_DRIVE: 'One Drive',
+}
+
+export const toStorageProviderCode = (storage: string) => {
+  const normalized = String(storage || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '_')
+  if (normalized.includes('ONE_DRIVE') || normalized === 'ONEDRIVE') {
+    return 'ONE_DRIVE'
+  }
+  if (normalized.includes('GOOGLE')) return 'GOOGLE_DRIVE'
+  if (normalized.includes('AZURE')) return 'AZURE'
+  return 'EZOFIS'
+}
+
+const toStorageOptionId = (value: string) => {
+  const code = toStorageProviderCode(value)
+  return STORAGE_CODE_TO_OPTION_ID[code] || 'EZOFIS Drive'
+}
+
 export const buildFolderDraftJson = (snapshot: FolderWizardSnapshot) => ({
+  editingRepositoryId: snapshot.editingRepositoryId ?? null,
   fields: (snapshot.fields || []).map((field) => ({
     folder: Boolean(field.includeInFolderStructure ?? field.folder),
     iconKey: field.iconKey,
     id: field.id,
-    includeInFolderStructure: Boolean(
-      field.includeInFolderStructure ?? field.folder,
-    ),
     level: field.level,
     mandatory: Boolean(field.isMandatory ?? field.mandatory),
     name: field.fieldName || field.name || '',
@@ -208,21 +246,23 @@ export const buildFolderDraftJson = (snapshot: FolderWizardSnapshot) => ({
     description: snapshot.description,
     name: snapshot.folderName,
   },
-  form: snapshot,
   integrations: {
     erp:
       !snapshot.integrations || snapshot.integrations === 'None'
         ? null
         : snapshot.integrations,
-    label: snapshot.integrations || null,
     syncMapping: [],
   },
   source: snapshot.source || 'manual',
   storage: {
+    storageConnectorId: snapshot.storageConnectorId ?? null,
+    storageConnectorLabel: snapshot.storageConnectorLabel ?? null,
     storageDrive: snapshot.storageDrive ?? null,
-    storageProviderCode: snapshot.storage,
+    storageOptionId: snapshot.storage,
+    storageProviderCode: toStorageProviderCode(snapshot.storage),
   },
   versioning: {
+    displayMode: snapshot.displayMode,
     strategy: snapshot.versioning,
   },
 })
@@ -260,19 +300,37 @@ export const hydrateFolderFromDraft = (
 
   return {
     description: String(form.description || details.description || ''),
-    displayMode: form.displayMode,
-    editingRepositoryId: form.editingRepositoryId ?? null,
+    displayMode:
+      String(form.displayMode || versioning.displayMode || '') || undefined,
+    editingRepositoryId: (() => {
+      const value = form.editingRepositoryId ?? parsed.editingRepositoryId
+      if (value == null || value === '') return null
+      return String(value)
+    })(),
     fields,
     folderName: String(form.folderName || details.name || ''),
     integrations: String(
       form.integrations || integrations.label || integrations.erp || '',
     ),
     source: form.source || (parsed.source as FolderWizardSnapshot['source']),
-    storage: String(
-      form.storage || storage.storageProviderCode || 'EZOFIS Drive',
+    storage: toStorageOptionId(
+      String(
+        form.storage ||
+          storage.storageOptionId ||
+          storage.storageProviderCode ||
+          'EZOFIS',
+      ),
     ),
-    storageConnectorId: form.storageConnectorId ?? null,
-    storageConnectorLabel: form.storageConnectorLabel ?? null,
+    storageConnectorId:
+      form.storageConnectorId ??
+      (typeof storage.storageConnectorId === 'string'
+        ? storage.storageConnectorId
+        : null),
+    storageConnectorLabel:
+      form.storageConnectorLabel ??
+      (typeof storage.storageConnectorLabel === 'string'
+        ? storage.storageConnectorLabel
+        : null),
     storageDrive:
       form.storageDrive ??
       (typeof storage.storageDrive === 'string' ? storage.storageDrive : null),

@@ -66,18 +66,6 @@ const Sidebar = () => {
     {
       items: [
         {
-          icon: 'lucide:workflow',
-          label: t`Workflows`,
-          permissionKey: 'workflow',
-          route: '/workflows',
-        },
-        {
-          icon: 'lucide:clipboard-list',
-          label: t`Forms`,
-          permissionKey: 'form',
-          route: '/forms',
-        },
-        {
           icon: 'lucide:settings',
           label: t`Settings`,
           permissionKey: 'settings',

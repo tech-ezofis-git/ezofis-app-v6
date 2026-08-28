@@ -259,7 +259,8 @@ export default function Attachments({
   processId,
   repositoryId,
   selectedItem,
-  showRelatedFinder = true,
+  // Hidden for now; pass showRelatedFinder={true} to restore Find related documents.
+  showRelatedFinder = false,
   workflowId,
   onOpenHistory,
   onOpenMailShare,

@@ -197,6 +197,7 @@ export const getRepositorys = async () => {
   try {
     const { data, status } = await axiosV6({
       method: 'GET',
+      skipCancellation: true,
       url: `/repositories`,
     })
 

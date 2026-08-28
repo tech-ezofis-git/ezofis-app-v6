@@ -34,7 +34,9 @@ import {
   completeWizardDraft,
   deleteWizardDraft,
   getActiveWizardDraft,
+  getWizardDraftById,
   saveWizardDraft,
+  type WizardDraftRecord,
 } from '@/api/v6/wizardDrafts'
 import GoogleDriveLogo from '@/assets/brands/googledrive.svg'
 import OneDriveLogo from '@/assets/brands/onedrive.svg'
@@ -83,6 +85,7 @@ import {
   folderStepKey,
   type FolderWizardSnapshot,
   hydrateFolderFromDraft,
+  toStorageProviderCode,
 } from '../../helpers/wizardDraftState'
 import SettingsFormSection from '../SettingsFormSection'
 import SettingsPageHeader, {
@@ -134,9 +137,10 @@ type RepositoryRow = {
   name: string
   status: RepositoryStatus
   storage: string
+  wizardDraftId?: string
 }
 
-type RepositoryStatus = 'active' | 'archived'
+type RepositoryStatus = 'active' | 'archived' | 'draft'
 
 type SelectOption = {
   description?: string
@@ -168,13 +172,26 @@ const extractRepositories = (
   payload: unknown,
 ): Array<Record<string, unknown>> => {
   if (!payload) return []
-  if (Array.isArray(payload)) return payload
+  if (typeof payload === 'string') {
+    try {
+      return extractRepositories(JSON.parse(payload) as unknown)
+    } catch {
+      return []
+    }
+  }
+  if (Array.isArray(payload)) return payload as Array<Record<string, unknown>>
 
   if (typeof payload === 'object') {
     const record = payload as Record<string, unknown>
     for (const key of ['data', 'payload', 'value', 'items', 'repositories']) {
       const inner = record[key]
-      if (Array.isArray(inner)) return inner
+      if (Array.isArray(inner) && inner.length > 0) {
+        return inner as Array<Record<string, unknown>>
+      }
+    }
+    for (const key of ['data', 'payload', 'value', 'items', 'repositories']) {
+      const inner = record[key]
+      if (Array.isArray(inner)) return inner as Array<Record<string, unknown>>
     }
   }
 
@@ -213,24 +230,60 @@ const getRepositoryDocumentCount = (repository: Record<string, unknown>) => {
 const getRepositoryStatus = (
   repository: Record<string, unknown>,
 ): RepositoryStatus => {
-  const status = String(
-    repository.status || repository.repositoryStatus || '',
-  ).toLowerCase()
+  const raw =
+    repository.status ?? repository.repositoryStatus ?? repository.state
+  const status = String(raw ?? '')
+    .toLowerCase()
+    .trim()
 
-  if (status === 'archived' || repository.isArchived === true) {
+  if (
+    status === 'archived' ||
+    status === '2' ||
+    repository.isArchived === true
+  ) {
     return 'archived'
+  }
+
+  if (
+    status === 'draft' ||
+    status === '0' ||
+    status === 'pending' ||
+    status === 'inactive' ||
+    repository.isDraft === true ||
+    (status === '' && repository.isPublished === false)
+  ) {
+    return 'draft'
   }
 
   return 'active'
 }
 
+const WIZARD_DRAFT_ROW_PREFIX = 'draft:'
+
+const isWizardDraftRow = (
+  repository: Pick<RepositoryRow, 'id' | 'wizardDraftId'>,
+) =>
+  Boolean(
+    repository.wizardDraftId &&
+      String(repository.id).startsWith(WIZARD_DRAFT_ROW_PREFIX),
+  )
+
 const mapRepositoryToRow = (
   repository: Record<string, unknown>,
 ): RepositoryRow | null => {
-  const id = String(repository.id || repository.repositoryId || '').trim()
-  const name = String(repository.name || repository.title || '').trim()
+  const id = String(
+    repository.id ||
+      repository.repositoryId ||
+      repository.Id ||
+      repository.RepositoryId ||
+      '',
+  ).trim()
+  const name = String(
+    repository.name || repository.title || repository.Name || '',
+  ).trim()
 
-  if (!id || !name) return null
+  if (!id) return null
+  const displayName = name || 'Untitled folder'
 
   const storageCode = repository.storageProviderCode
     ? String(repository.storageProviderCode)
@@ -254,9 +307,32 @@ const mapRepositoryToRow = (
     description: String(repository.description || '').trim(),
     documents: getRepositoryDocumentCount(repository),
     id,
-    name,
+    name: displayName,
     status: getRepositoryStatus(repository),
     storage: formatStorageLabel(storageCode),
+  }
+}
+
+const mapWizardDraftToRow = (
+  draft: WizardDraftRecord,
+  fallbackCreatedBy: string,
+): RepositoryRow | null => {
+  if (!draft.id || draft.isCompleted || !draft.draftJson) return null
+
+  const hydrated = hydrateFolderFromDraft(draft.draftJson)
+  const existingId = String(hydrated.editingRepositoryId || '').trim()
+  const name = String(hydrated.folderName || '').trim() || 'Untitled folder'
+
+  return {
+    createdAt: draft.createdAtUtc || '',
+    createdBy: fallbackCreatedBy,
+    description: String(hydrated.description || '').trim(),
+    documents: 0,
+    id: existingId || `${WIZARD_DRAFT_ROW_PREFIX}${draft.id}`,
+    name,
+    status: 'draft',
+    storage: formatStorageLabel(toStorageProviderCode(hydrated.storage || '')),
+    wizardDraftId: draft.id,
   }
 }
 
@@ -740,6 +816,7 @@ export default function DmsFolderConfiguration({
     storedState?.activeFilters ?? {},
   )
   const folderDraftIdRef = useRef<string | null>(null)
+  const folderDraftsByIdRef = useRef<Map<string, WizardDraftRecord>>(new Map())
 
   const persistFolderWizardDraft = useCallback(
     async (currentStep: number, snapshot: FolderWizardSnapshot) => {
@@ -772,8 +849,12 @@ export default function DmsFolderConfiguration({
   }, [])
 
   const discardFolderWizardDraft = useCallback(async () => {
-    const draftId = folderDraftIdRef.current
+    let draftId = folderDraftIdRef.current
     folderDraftIdRef.current = null
+    if (!draftId) {
+      const { data } = await getActiveWizardDraft('folder')
+      draftId = data?.id ?? null
+    }
     if (!draftId) return
     await deleteWizardDraft('folder', draftId)
   }, [])
@@ -1010,6 +1091,7 @@ export default function DmsFolderConfiguration({
 
   const statusOptions = [
     { label: t`Active`, value: 'active' },
+    { label: t`Draft`, value: 'draft' },
     { label: t`Archived`, value: 'archived' },
   ]
 
@@ -1020,6 +1102,37 @@ export default function DmsFolderConfiguration({
       setIsLoadingEditRepository(true)
 
       try {
+        if (isWizardDraftRow(repository) && repository.wizardDraftId) {
+          const cached = folderDraftsByIdRef.current.get(
+            repository.wizardDraftId,
+          )
+          const byId = cached
+            ? { data: cached }
+            : await getWizardDraftById('folder', repository.wizardDraftId)
+          const draft = byId.data || (await getActiveWizardDraft('folder')).data
+
+          if (!draft?.draftJson) {
+            showToast({
+              message: 'Failed to load folder draft.',
+              variant: 'error',
+            })
+            return
+          }
+
+          folderDraftIdRef.current = draft.id ?? repository.wizardDraftId
+          const hydrated = hydrateFolderFromDraft(draft.draftJson)
+          setEditingRepositoryId(
+            String(hydrated.editingRepositoryId || '') || null,
+          )
+          applyFolderDraftSnapshot(
+            hydrated,
+            draft.currentStep,
+            draft.currentStepKey,
+          )
+          setShowWizard(true)
+          return
+        }
+
         const response = await getRepositoryById(repository.id)
 
         if (response.canceled) return
@@ -1078,11 +1191,14 @@ export default function DmsFolderConfiguration({
         setStep(1)
         setShowWizard(true)
 
-        const draft = await getActiveWizardDraft('folder')
-        folderDraftIdRef.current = draft.data?.id ?? null
-        if (!draft.data?.draftJson) return
+        const draft =
+          (repository.wizardDraftId
+            ? folderDraftsByIdRef.current.get(repository.wizardDraftId)
+            : undefined) || (await getActiveWizardDraft('folder')).data
+        folderDraftIdRef.current = draft?.id ?? repository.wizardDraftId ?? null
+        if (!draft?.draftJson) return
 
-        const hydrated = hydrateFolderFromDraft(draft.data.draftJson)
+        const hydrated = hydrateFolderFromDraft(draft.draftJson)
         if (
           String(hydrated.editingRepositoryId || '') !==
           String(details.id || repository.id)
@@ -1092,8 +1208,8 @@ export default function DmsFolderConfiguration({
 
         applyFolderDraftSnapshot(
           hydrated,
-          draft.data.currentStep,
-          draft.data.currentStepKey,
+          draft.currentStep,
+          draft.currentStepKey,
         )
       } finally {
         setIsLoadingEditRepository(false)
@@ -1141,6 +1257,49 @@ export default function DmsFolderConfiguration({
         )
 
       setRepositories(rows)
+
+      try {
+        const activeDraft = await getActiveWizardDraft('folder')
+        if (requestId !== loadRepositoriesRequestIdRef.current) return
+        if (
+          activeDraft.notFound ||
+          activeDraft.error ||
+          !activeDraft.data?.draftJson ||
+          activeDraft.data.isCompleted
+        ) {
+          folderDraftsByIdRef.current = new Map()
+          return
+        }
+
+        const draft = activeDraft.data
+        const draftMap = new Map<string, WizardDraftRecord>()
+        if (draft.id) draftMap.set(draft.id, draft)
+
+        const session = authUserStore.getState().session
+        const createdBy = String(session?.email || session?.name || '').trim()
+        const draftRow = mapWizardDraftToRow(draft, createdBy)
+        const merged = [...rows]
+
+        if (draftRow) {
+          const existingIndex = merged.findIndex(
+            (row) => String(row.id) === String(draftRow.id),
+          )
+          if (existingIndex >= 0) {
+            merged[existingIndex] = {
+              ...merged[existingIndex],
+              status: 'draft',
+              wizardDraftId: draft.id,
+            }
+          } else {
+            merged.unshift(draftRow)
+          }
+        }
+
+        folderDraftsByIdRef.current = draftMap
+        setRepositories(merged)
+      } catch {
+        folderDraftsByIdRef.current = new Map()
+      }
     } finally {
       if (requestId === loadRepositoriesRequestIdRef.current) {
         setIsLoadingRepositories(false)
@@ -1172,19 +1331,34 @@ export default function DmsFolderConfiguration({
   const confirmDeleteRepository = useCallback(async () => {
     if (!deletingRepositoryId) return
 
+    const deleting = repositories.find(
+      (repository) => repository.id === deletingRepositoryId,
+    )
+
     setIsDeletingRepository(true)
     try {
-      const response = await deleteRepository(deletingRepositoryId)
+      if (deleting && isWizardDraftRow(deleting) && deleting.wizardDraftId) {
+        const result = await deleteWizardDraft('folder', deleting.wizardDraftId)
+        if (result.error) {
+          showToast({
+            message: result.error,
+            variant: 'error',
+          })
+          return
+        }
+      } else {
+        const response = await deleteRepository(deletingRepositoryId)
 
-      if (response.error) {
-        showToast({
-          message:
-            typeof response.error === 'string'
-              ? response.error
-              : 'Failed to delete folder',
-          variant: 'error',
-        })
-        return
+        if (response.error) {
+          showToast({
+            message:
+              typeof response.error === 'string'
+                ? response.error
+                : 'Failed to delete folder',
+            variant: 'error',
+          })
+          return
+        }
       }
 
       showToast({ message: 'Folder deleted successfully.', variant: 'success' })
@@ -1193,7 +1367,7 @@ export default function DmsFolderConfiguration({
     } finally {
       setIsDeletingRepository(false)
     }
-  }, [deletingRepositoryId, loadRepositories])
+  }, [deletingRepositoryId, loadRepositories, repositories])
 
   const resetWizardUi = () => {
     setShowWizard(false)
@@ -1208,8 +1382,11 @@ export default function DmsFolderConfiguration({
   }
 
   const closeWizard = () => {
-    void discardFolderWizardDraft()
-    resetWizardUi()
+    void (async () => {
+      await discardFolderWizardDraft()
+      resetWizardUi()
+      await loadRepositories()
+    })()
   }
 
   const openManualBuilder = async () => {
@@ -1227,10 +1404,11 @@ export default function DmsFolderConfiguration({
     setDisplayMode('Show Latest Version Only')
     setStep(1)
 
-    const { data } = await getActiveWizardDraft('folder')
-    folderDraftIdRef.current = data?.id ?? null
+    const { data, notFound } = await getActiveWizardDraft('folder')
+    folderDraftIdRef.current =
+      !notFound && data?.id && !data.isCompleted ? data.id : null
 
-    if (data?.draftJson) {
+    if (!notFound && data?.draftJson && !data.isCompleted) {
       const hydrated = hydrateFolderFromDraft(data.draftJson)
       if (!hydrated.editingRepositoryId) {
         applyFolderDraftSnapshot(
@@ -1346,8 +1524,8 @@ export default function DmsFolderConfiguration({
         message: 'Folder created successfully.',
         variant: 'success',
       })
-      await loadRepositories()
       await finishFolderWizardDraft()
+      await loadRepositories()
       resetWizardUi()
     } catch (error: any) {
       showToast({
@@ -1791,8 +1969,8 @@ export default function DmsFolderConfiguration({
           : 'Folder created successfully.',
         variant: 'success',
       })
-      await loadRepositories()
       await finishFolderWizardDraft()
+      await loadRepositories()
       resetWizardUi()
     } finally {
       setIsSavingRepository(false)
@@ -1855,8 +2033,8 @@ export default function DmsFolderConfiguration({
       <AiFolderBuilder
         onApply={handleAiBuilderApply}
         onBack={() => {
-          void discardFolderWizardDraft()
           setShowAiBuilder(false)
+          void loadRepositories()
         }}
         onBackToSettings={onBack}
       />
@@ -1876,10 +2054,7 @@ export default function DmsFolderConfiguration({
         steps={formattedWizardSteps}
         setupTitle={editingRepositoryId ? 'Edit Folder' : 'Create Folder'}
         onBack={goBack}
-        onBackToSettings={() => {
-          void discardFolderWizardDraft()
-          onBack?.()
-        }}
+        onBackToSettings={onBack}
         onCancel={closeWizard}
         onNext={goNext}
         onSave={() => {
@@ -3160,16 +3335,19 @@ function useRepositoryTable(
         cell: ({ getValue }) => {
           const status = getValue()
           const isActive = status === 'active'
+          const isDraft = status === 'draft'
           return (
             <span
               className={[
                 'inline-flex items-center rounded-[10px] border px-2.5 py-0.5 text-xs font-normal capitalize',
                 isActive
                   ? 'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]'
-                  : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
+                  : isDraft
+                    ? 'border-[var(--orange-5)] bg-[var(--orange-2)] text-[var(--orange-11)]'
+                    : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
               ].join(' ')}
             >
-              {isActive ? t`Active` : t`Archived`}
+              {isActive ? t`Active` : isDraft ? t`Draft` : t`Archived`}
             </span>
           )
         },
@@ -3234,11 +3412,13 @@ function useRepositoryTable(
                   label={t`Edit`}
                   onClick={() => onEditRepository(repository)}
                 />
-                <MenuItem
-                  icon='lucide:shield'
-                  label={t`Security`}
-                  onClick={() => onSecurityRepository(repository)}
-                />
+                {isWizardDraftRow(repository) ? null : (
+                  <MenuItem
+                    icon='lucide:shield'
+                    label={t`Security`}
+                    onClick={() => onSecurityRepository(repository)}
+                  />
+                )}
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
