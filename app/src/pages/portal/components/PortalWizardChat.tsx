@@ -52,7 +52,7 @@ const PortalWizardChat = ({
     const seeded: ChatMessage[] = []
     let nextQuestion: PortalFormQuestion | null = null
 
-    panel.questions.forEach((question) => {
+    for (const question of panel.questions) {
       const value = answers[question.id]
       if (isQuestionVisited(value)) {
         const skipped = !isAnswerFilled(value)
@@ -69,10 +69,10 @@ const PortalWizardChat = ({
           skipped,
           text: skipped ? t`Skipped` : formatAnswer(value),
         })
-        return
+        continue
       }
       if (!nextQuestion) nextQuestion = question
-    })
+    }
 
     if (nextQuestion) {
       seeded.push({

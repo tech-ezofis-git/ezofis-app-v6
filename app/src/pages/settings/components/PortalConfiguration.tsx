@@ -211,7 +211,7 @@ const extractFormFields = (formJson: unknown): Option[] => {
         : []
 
   return rawFields
-    .map((field) => {
+    .map((field): Option | null => {
       const row = field as Record<string, unknown>
       const id = String(row.id || row.key || row.name || '')
       const name = String(row.label || row.title || row.name || row.id || '')
@@ -584,11 +584,11 @@ export default function PortalConfiguration({
         draftPortal={draftPortal}
         editingPortalId={editingPortalId}
         isSaving={isSaving}
-        onBack={() => setActiveStep((step) => Math.max(step - 1, 0))}
+        onBack={() => setActiveStep((step: number) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={() => setIsSetupOpen(false)}
         onChange={setDraftPortal}
-        onNext={() => setActiveStep((step) => Math.min(step + 1, 3))}
+        onNext={() => setActiveStep((step: number) => Math.min(step + 1, 3))}
         onSave={savePortal}
         onStepChange={setActiveStep}
       />
@@ -683,6 +683,7 @@ export default function PortalConfiguration({
                 emptyTitle='No portals yet'
                 hideActionBar
                 hideGrouping
+                isReLoading={false}
                 pageSize={pageSize}
                 rowSize={rowSize}
                 stickyHeader
