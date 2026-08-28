@@ -12,6 +12,7 @@ import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import InputTime from '@/components/base/inputs/InputTime'
 import showToast from '@/components/base/toast/showToast'
+import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
 import {
   getFileIcon,
   getFileIconClasses,
@@ -28,12 +29,12 @@ interface Props {
   field: any
   repositoryId: string | undefined
   value: any
+  error?: string
   // Already-submitted instance attachments to show below this field when it
   // has no value of its own — see WorkflowFormRenderer's soleFileFieldId for
   // why this is only ever populated for an unambiguous single-file-field
   // form.
   fallbackAttachments?: any[]
-  error?: string
   repoFieldHints?: string[]
   viewOnly?: boolean
   onChange: (value: any) => void
@@ -149,6 +150,18 @@ const FieldRenderer = ({
     case 'COUNTER':
     case 'NUMBER':
       return <InputNumber {...common} value={value ?? ''} onChange={onChange} />
+
+    case 'CALCULATED':
+      return (
+        <CalculatedFieldInput
+          error={error}
+          hideLabel={general.hideLabel}
+          label={field.label}
+          required={required}
+          tooltip={general.tooltip}
+          value={value}
+        />
+      )
 
     case 'DATE':
       return <InputDate {...common} value={value ?? null} onChange={onChange} />
@@ -266,7 +279,10 @@ const FieldRenderer = ({
         setIsUploading(false)
 
         if (error || !data) {
-          console.warn('[uploadForOcr] OCR extraction warning:', error || 'OCR data unavailable')
+          console.warn(
+            '[uploadForOcr] OCR extraction warning:',
+            error || 'OCR data unavailable',
+          )
           onChange({ ...fileEntry, ocrChecked: true })
           return
         }

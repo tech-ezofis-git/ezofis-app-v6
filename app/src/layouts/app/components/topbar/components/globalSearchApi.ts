@@ -16,10 +16,15 @@ export type GlobalSearchHit = {
   description?: string
   id: GlobalSearchHitId
   ifileName?: string
+  matchFields?: string[]
   matchSource?: string
+  matchValue?: string
+  matchedFields?: string[]
+  matchedValue?: string
   modifiedDateandtime?: string
   name?: string
   requestNo?: string
+  snippet?: string
   type: string
 }
 

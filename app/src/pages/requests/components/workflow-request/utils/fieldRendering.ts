@@ -25,6 +25,7 @@ export const isFieldHidden = (field: any): boolean =>
   field?.settings?.general?.visibility === 'HIDDEN'
 
 export const isFieldReadOnly = (field: any): boolean =>
+  field?.type === 'CALCULATED' ||
   Boolean(field?.settings?.general?.readOnly) ||
   field?.settings?.general?.visibility === 'READ_ONLY'
 
@@ -84,6 +85,7 @@ export const SUPPORTED_TYPES = new Set([
   'NUMBER',
   'CURRENCY_AMOUNT',
   'COUNTER',
+  'CALCULATED',
   'DATE',
   'TIME',
   'DATE_TIME',
@@ -263,7 +265,8 @@ export const getMissingMandatoryFields = (
   descriptors
     .filter(
       (d) =>
-        d.repoField.isMandatory && isValueEmpty(getRepoFieldValue(d, formModel)),
+        d.repoField.isMandatory &&
+        isValueEmpty(getRepoFieldValue(d, formModel)),
     )
     .map((d) => d.repoField.name!)
 
@@ -316,7 +319,10 @@ export const buildRepoMetadata = (
   fileName?: string,
 ): Record<string, string> => {
   const metadata: Record<string, string> = {}
-  for (const descriptor of buildRepoFieldDescriptors(repositoryFields, panels)) {
+  for (const descriptor of buildRepoFieldDescriptors(
+    repositoryFields,
+    panels,
+  )) {
     const name = descriptor.repoField.name!
     const value = stringifyFieldValue(getRepoFieldValue(descriptor, formModel))
 

@@ -2,6 +2,7 @@ import type React from 'react'
 import { Card, Rating, Tooltip } from '@mantine/core'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import { formatFormulaExpression } from '@/pages/form-builder/helpers/formula'
 import {
   type Question,
   useFormStore,
@@ -68,8 +69,8 @@ const QuestionCard = ({
       className={cn(
         'group relative overflow-visible rounded-xl border font-inter transition-all duration-200',
         isLocked
-          ? 'bg-gray-2/40 cursor-not-allowed border-gray-3 opacity-90'
-          : 'hover:bg-gray-1/60 cursor-pointer',
+          ? 'cursor-not-allowed border-gray-3 bg-gray-2/40 opacity-90'
+          : 'cursor-pointer hover:bg-gray-1/60',
         isActive
           ? 'border-primary-9 bg-primary-3/30 shadow-xs ring-1 ring-primary-9'
           : 'border-gray-3 bg-white hover:border-gray-4 hover:shadow-2xs',
@@ -87,6 +88,7 @@ const QuestionCard = ({
             <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-3 text-primary-9 shadow-2xs'>
               <Icon
                 height={15}
+                width={15}
                 name={
                   question.type === 'FULL_NAME'
                     ? 'lucide:user'
@@ -112,13 +114,14 @@ const QuestionCard = ({
                                     ? 'lucide:calendar'
                                     : 'mdi:form-textbox'
                 }
-                width={15}
               />
             </div>
 
             <div className='truncate text-sm font-semibold text-gray-12'>
               {question.label || 'Untitled Field'}
-              {isRequired && <span className='ml-1 font-bold text-red-11'>*</span>}
+              {isRequired && (
+                <span className='ml-1 font-bold text-red-11'>*</span>
+              )}
             </div>
 
             {hasLogic && (
@@ -150,20 +153,25 @@ const QuestionCard = ({
                       <div
                         className='absolute top-0.5 bottom-0.5 rounded-full bg-white shadow-sm transition-all duration-300 ease-out'
                         style={{
-                          width: `calc(${100 / sizeOptions.length}% - 2px)`,
                           left: `calc(${(activeIndex * 100) / sizeOptions.length}% + 1px)`,
+                          width: `calc(${100 / sizeOptions.length}% - 2px)`,
                         }}
                       />
                       {sizeOptions.map((w, i) => (
-                        <Tooltip key={w.value} label={w.label} position='top' withArrow>
+                        <Tooltip
+                          key={w.value}
+                          label={w.label}
+                          position='top'
+                          withArrow
+                        >
                           <button
+                            type='button'
                             className={cn(
                               'relative z-10 flex h-6 min-w-9 cursor-pointer items-center justify-center rounded-full px-1.5 text-[10px] font-bold tracking-tight transition-colors duration-300',
                               i === activeIndex
                                 ? 'text-primary-9'
                                 : 'text-gray-6 hover:text-gray-9',
                             )}
-                            type='button'
                             onClick={(e) => {
                               e.stopPropagation()
                               onUpdate({
@@ -677,23 +685,26 @@ const QuestionCard = ({
           ) : question.type === 'CALCULATED' ? (
             <div
               className={cn(
-                'bg-gray-50/50 flex h-11 w-full items-center justify-between rounded-lg border px-4 font-inter transition-colors',
+                'flex h-11 w-full items-center justify-between rounded-lg border bg-surface-secondary px-4 font-inter transition-colors',
                 isActive
                   ? 'border-accent-primary/50'
                   : 'border-gray-2 group-hover:border-gray-3',
               )}
             >
-              <span className='text-[13px] font-medium text-gray-8 italic'>
-                Auto-calculated result
+              <span className='truncate text-[13px] font-medium text-gray-8 italic'>
+                {formatFormulaExpression(
+                  question.settings.specific.formulaTokens,
+                  allQuestions,
+                ) || 'Auto-calculated result'}
               </span>
-              <div className='bg-amber-50 border-amber-200/50 flex items-center gap-1.5 rounded border px-2 py-0.5'>
+              <div className='flex shrink-0 items-center gap-1.5 rounded border border-accent-soft/30 bg-accent-soft/20 px-2 py-0.5'>
                 <Icon
-                  className='text-amber-600'
+                  className='text-accent-primary'
                   height={12}
                   name='lucide:calculator'
                   width={12}
                 />
-                <span className='text-amber-700 text-[10px] font-bold tracking-tight uppercase'>
+                <span className='text-[10px] font-bold tracking-tight text-accent-primary uppercase'>
                   fx
                 </span>
               </div>

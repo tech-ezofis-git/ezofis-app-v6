@@ -127,6 +127,12 @@ export const getField = (fieldType: string) => {
       s.customOptions = 'I agree to the terms and conditions'
       s.optionsType = 'CUSTOM'
       break
+    case 'CALCULATED':
+      s.formulaTokens = []
+      baseField.settings.general.readOnly = true
+      baseField.settings.general.visibility = 'READ_ONLY'
+      baseField.settings.validation.isCalculationEnabled = true
+      break
   }
 
   return baseField

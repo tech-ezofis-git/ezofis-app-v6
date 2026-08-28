@@ -9,8 +9,10 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
+import { getRepositorys, uploadForOcr } from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
-import { uploadForOcr, getRepositorys } from '@/api/v6/folder/folder'
+import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import {
   type Question,
   useFormStore,
@@ -24,7 +26,9 @@ const LivePreview = () => {
     'desktop',
   )
   const [previewModel, setPreviewModel] = useState<Record<string, any>>({})
-  const [extractingFieldId, setExtractingFieldId] = useState<string | null>(null)
+  const [extractingFieldId, setExtractingFieldId] = useState<string | null>(
+    null,
+  )
   const [repositories, setRepositories] = useState<any[]>([])
   const [selectedRepoId, setSelectedRepoId] = useState<string>('')
 
@@ -32,7 +36,12 @@ const LivePreview = () => {
   useEffect(() => {
     let cancelled = false
     getRepositorys().then((res) => {
-      if (!cancelled && res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (
+        !cancelled &&
+        res.data &&
+        Array.isArray(res.data) &&
+        res.data.length > 0
+      ) {
         setRepositories(res.data)
         setSelectedRepoId(res.data[0].id)
       }
@@ -51,10 +60,18 @@ const LivePreview = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [setIsPreviewOpen])
 
+  useEffect(() => {
+    if (isPreviewOpen) {
+      setPreviewModel((prev) => applyCalculatedFields(panels, prev))
+    }
+  }, [isPreviewOpen, panels])
+
   if (!isPreviewOpen) return null
 
   const handleFieldValueChange = (fieldId: string, value: any) => {
-    setPreviewModel((prev) => ({ ...prev, [fieldId]: value }))
+    setPreviewModel((prev) =>
+      applyCalculatedFields(panels, { ...prev, [fieldId]: value }),
+    )
   }
 
   const handleOcrFileSelect = async (file: File, field: Question) => {
@@ -80,7 +97,8 @@ const LivePreview = () => {
         .filter((f) => f.label)
         .map((f) => `${f.label},${f.type || 'SHORT_TEXT'}`)
 
-      const repoIdToUse = selectedRepoId || (repositories[0]?.id ?? 'default-repo')
+      const repoIdToUse =
+        selectedRepoId || (repositories[0]?.id ?? 'default-repo')
 
       const { data, error } = await uploadForOcr(repoIdToUse, file, fieldHints)
 
@@ -94,7 +112,10 @@ const LivePreview = () => {
             if (!item?.name || !item.value) continue
             const targetName = item.name.trim().toLowerCase()
             for (const targetField of assignedFields) {
-              if (targetField.label && targetField.label.trim().toLowerCase() === targetName) {
+              if (
+                targetField.label &&
+                targetField.label.trim().toLowerCase() === targetName
+              ) {
                 extraPatch[targetField.id] = item.value
               }
             }
@@ -105,24 +126,31 @@ const LivePreview = () => {
         const restrictedPatch: Record<string, string> = {}
         for (const id of assignedFieldIds) {
           if (extraPatch[id] !== undefined) restrictedPatch[id] = extraPatch[id]
-          else if (ocrPatch[id] !== undefined) restrictedPatch[id] = ocrPatch[id]
+          else if (ocrPatch[id] !== undefined)
+            restrictedPatch[id] = ocrPatch[id]
         }
 
         const mergedPatch = { ...restrictedPatch, [fieldId]: file.name }
-        setPreviewModel((prev) => ({ ...prev, ...mergedPatch }))
+        setPreviewModel((prev) =>
+          applyCalculatedFields(panels, { ...prev, ...mergedPatch }),
+        )
       } else {
-        setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+        setPreviewModel((prev) =>
+          applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+        )
       }
     } catch (err: any) {
       console.error('OCR Extraction error:', err)
-      setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
+      setPreviewModel((prev) =>
+        applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+      )
     } finally {
       setExtractingFieldId(null)
     }
   }
 
   return (
-    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 backdrop-blur-sm font-inter duration-300'>
+    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 font-inter backdrop-blur-sm duration-300'>
       {/* Header Control Bar */}
       <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6 shadow-2xs'>
         <div className='flex items-center gap-3'>
@@ -130,20 +158,26 @@ const LivePreview = () => {
             <Icon height={18} name='tabler:eye' width={18} />
           </div>
           <div className='flex flex-col'>
-            <span className='text-sm font-bold text-gray-12'>Form Live Preview</span>
-            <span className='text-xs text-gray-10'>{name || 'Untitled Form'}</span>
+            <span className='text-sm font-bold text-gray-12'>
+              Form Live Preview
+            </span>
+            <span className='text-xs text-gray-10'>
+              {name || 'Untitled Form'}
+            </span>
           </div>
         </div>
 
         <div className='flex items-center gap-3'>
           {Object.keys(previewModel).length > 0 && (
             <Button
-              className='h-9 rounded-xl font-medium cursor-pointer'
+              className='h-9 cursor-pointer rounded-xl font-medium'
               color='gray'
-              leftSection={<Icon height={14} name='lucide:rotate-ccw' width={14} />}
               size='sm'
               variant='outline'
-              onClick={() => setPreviewModel({})}
+              leftSection={
+                <Icon height={14} name='lucide:rotate-ccw' width={14} />
+              }
+              onClick={() => setPreviewModel(applyCalculatedFields(panels, {}))}
             >
               Clear Values
             </Button>
@@ -159,15 +193,21 @@ const LivePreview = () => {
             }}
             data={[
               {
-                label: <Icon height={14} name='tabler:device-desktop' width={14} />,
+                label: (
+                  <Icon height={14} name='tabler:device-desktop' width={14} />
+                ),
                 value: 'desktop',
               },
               {
-                label: <Icon height={14} name='tabler:device-tablet' width={14} />,
+                label: (
+                  <Icon height={14} name='tabler:device-tablet' width={14} />
+                ),
                 value: 'tablet',
               },
               {
-                label: <Icon height={14} name='tabler:device-mobile' width={14} />,
+                label: (
+                  <Icon height={14} name='tabler:device-mobile' width={14} />
+                ),
                 value: 'mobile',
               },
             ]}
@@ -177,7 +217,7 @@ const LivePreview = () => {
           <div className='h-6 w-px bg-gray-3' />
 
           <Button
-            className='h-9 rounded-xl px-4 hover:bg-gray-2 text-gray-12 cursor-pointer'
+            className='h-9 cursor-pointer rounded-xl px-4 text-gray-12 hover:bg-gray-2'
             color='gray'
             leftSection={<Icon height={16} name='tabler:x' width={16} />}
             size='sm'
@@ -190,7 +230,7 @@ const LivePreview = () => {
       </div>
 
       {/* Single Scrollable Full-Form Preview Container */}
-      <div className='relative flex flex-1 items-center justify-center overflow-hidden p-4 sm:p-6 bg-gray-2/40'>
+      <div className='relative flex flex-1 items-center justify-center overflow-hidden bg-gray-2/40 p-4 sm:p-6'>
         <div
           className={cn(
             'relative flex h-full max-h-[880px] w-full flex-col overflow-hidden rounded-2xl border border-gray-3 bg-white shadow-xl transition-all duration-300',
@@ -200,8 +240,9 @@ const LivePreview = () => {
           )}
         >
           {/* Scrollable Form Content */}
-          <div className='custom-scrollbar flex-1 overflow-y-auto p-6 sm:p-8 space-y-6'>
-            {panels.length === 0 || panels.every((p) => p.fields.length === 0) ? (
+          <div className='custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6 sm:p-8'>
+            {panels.length === 0 ||
+            panels.every((p) => p.fields.length === 0) ? (
               <div className='py-24 text-center text-gray-10'>
                 <Icon
                   className='mx-auto mb-3 text-gray-8 opacity-60'
@@ -213,14 +254,15 @@ const LivePreview = () => {
                   No fields added to this form yet.
                 </div>
                 <div className='mt-1 text-xs text-gray-9'>
-                  Add sections and fields in the Form Builder to preview them here.
+                  Add sections and fields in the Form Builder to preview them
+                  here.
                 </div>
               </div>
             ) : (
               panels.map((panel, idx) => (
                 <div
+                  className='space-y-4 rounded-xl border border-gray-3 bg-white p-5 shadow-2xs'
                   key={panel.id}
-                  className='rounded-xl border border-gray-3 bg-white p-5 shadow-2xs space-y-4'
                 >
                   {/* Section Title & Description Header */}
                   <div className='border-b border-gray-3 pb-3'>
@@ -242,14 +284,14 @@ const LivePreview = () => {
                         className={cn(
                           'col-span-12',
                           deviceType !== 'mobile' &&
-                          field.settings.general.size === 'col-6' &&
-                          'md:col-span-6',
+                            field.settings.general.size === 'col-6' &&
+                            'md:col-span-6',
                           deviceType !== 'mobile' &&
-                          field.settings.general.size === 'col-4' &&
-                          'md:col-span-4',
+                            field.settings.general.size === 'col-4' &&
+                            'md:col-span-4',
                           deviceType !== 'mobile' &&
-                          field.settings.general.size === 'col-3' &&
-                          'md:col-span-3',
+                            field.settings.general.size === 'col-3' &&
+                            'md:col-span-3',
                         )}
                       >
                         {!field.settings.general.hideLabel && (
@@ -258,10 +300,10 @@ const LivePreview = () => {
                               {field.label || 'Untitled Question'}
                               {field.settings.validation.fieldRule ===
                                 'REQUIRED' && (
-                                  <span className='ml-1 font-bold text-red-11'>
-                                    *
-                                  </span>
-                                )}
+                                <span className='ml-1 font-bold text-red-11'>
+                                  *
+                                </span>
+                              )}
                             </label>
                           </div>
                         )}
@@ -325,11 +367,26 @@ const renderPreviewInput = (
       return (
         <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-white'>
           <div className='flex gap-2 border-b border-gray-3 bg-gray-2/60 p-2'>
-            <Icon className='text-gray-10' height={14} name='tabler:bold' width={14} />
-            <Icon className='text-gray-10' height={14} name='tabler:italic' width={14} />
-            <Icon className='text-gray-10' height={14} name='tabler:list' width={14} />
+            <Icon
+              className='text-gray-10'
+              height={14}
+              name='tabler:bold'
+              width={14}
+            />
+            <Icon
+              className='text-gray-10'
+              height={14}
+              name='tabler:italic'
+              width={14}
+            />
+            <Icon
+              className='text-gray-10'
+              height={14}
+              name='tabler:list'
+              width={14}
+            />
           </div>
-          <div className='p-3 text-xs italic text-gray-9'>
+          <div className='p-3 text-xs text-gray-9 italic'>
             {fieldValue ? String(fieldValue) : 'Rich text content editor...'}
           </div>
         </div>
@@ -423,8 +480,8 @@ const renderPreviewInput = (
               <tr>
                 {columns.map((col: any) => (
                   <th
-                    key={col.id}
                     className='p-2.5 font-bold whitespace-nowrap text-gray-12'
+                    key={col.id}
                   >
                     {col.label}
                   </th>
@@ -453,6 +510,7 @@ const renderPreviewInput = (
     case 'EMAIL':
     case 'PHONE_NUMBER':
     case 'NUMBER':
+    case 'COUNTER':
     case 'CURRENCY_AMOUNT':
     case 'ADDRESS':
     case 'FULL_NAME':
@@ -462,7 +520,8 @@ const renderPreviewInput = (
           value={String(fieldValue)}
           variant='default'
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
@@ -470,28 +529,33 @@ const renderPreviewInput = (
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
+    case 'CALCULATED':
+      return (
+        <CalculatedFieldInput hideLabel value={fieldValue} />
+      )
     case 'LONG_TEXT':
       return (
         <textarea
-          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-white p-2.5 text-xs text-gray-12 transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3 shadow-2xs'
+          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-white p-2.5 text-xs text-gray-12 shadow-2xs transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+          value={String(fieldValue)}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
-          value={String(fieldValue)}
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
     case 'DATE':
       return (
         <TextInput
+          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
+          placeholder='YYYY-MM-DD or MM/DD/YYYY'
           size='sm'
           value={String(fieldValue)}
           variant='default'
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
-          placeholder='YYYY-MM-DD or MM/DD/YYYY'
-          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
           onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
@@ -514,7 +578,8 @@ const renderPreviewInput = (
           size='sm'
           value={String(fieldValue) || null}
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           onChange={(val) => onChange(field.id, val)}
         />
@@ -574,8 +639,12 @@ const renderPreviewInput = (
                   {isSelected && (
                     <Icon
                       height={10}
-                      name={field.type === 'SINGLE_CHOICE' ? 'lucide:circle' : 'lucide:check'}
                       width={10}
+                      name={
+                        field.type === 'SINGLE_CHOICE'
+                          ? 'lucide:circle'
+                          : 'lucide:check'
+                      }
                     />
                   )}
                 </div>
@@ -593,7 +662,8 @@ const renderPreviewInput = (
           value={String(fieldValue)}
           variant='default'
           classNames={{
-            input: 'bg-white border-gray-3 text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'

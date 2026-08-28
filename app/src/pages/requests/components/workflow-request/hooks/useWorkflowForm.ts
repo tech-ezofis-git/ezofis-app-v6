@@ -5,6 +5,7 @@ import { uploadForOcr } from '@/api/v6/folder/folder'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6 from '@/api/v6/workflows'
 import folderApi from '@/pages/folders/api/folderApi'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import type { AttachmentEntry } from '../components/AttachmentsPanel'
 import type { LocalComment } from '../components/CommentsPanel'
 import { buildStartWorkflowPayload } from '../utils/buildStartWorkflowPayload'
@@ -89,7 +90,7 @@ export const useWorkflowForm = (workflow: any) => {
       }
 
       setForm(data)
-      setFormModel({})
+      setFormModel(applyCalculatedFields(data?.formJson?.panels || [], {}))
       setIsLoadingForm(false)
     }
 
@@ -199,7 +200,7 @@ export const useWorkflowForm = (workflow: any) => {
         next[descriptor.fieldId] = value
         if (descriptor.matchedFieldId) next[descriptor.matchedFieldId] = value
       }
-      return next
+      return applyCalculatedFields(panels, next)
     })
   }
 
@@ -212,7 +213,9 @@ export const useWorkflowForm = (workflow: any) => {
   ) => {
     const ocrPatch = mapOcrFieldsToModel(panels, ocrFieldList)
     if (Object.keys(ocrPatch).length > 0) {
-      setFormModel((prev) => ({ ...ocrPatch, ...prev }))
+      setFormModel((prev) =>
+        applyCalculatedFields(panels, { ...ocrPatch, ...prev }),
+      )
     }
   }
 

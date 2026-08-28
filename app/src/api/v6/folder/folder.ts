@@ -870,6 +870,8 @@ export type RelatedDocumentItem = {
   matchedFields?: string[]
   matchScore?: number
   poNumber?: string | null
+  relatedItemId?: string
+  relatedRepositoryId?: string
   repositoryId: string
   repositoryName?: string | null
   supplier?: string | null
@@ -886,8 +888,83 @@ export type RelatedDocumentsResponse = {
   totalCount?: number
 }
 
-/** Folder-structure related docs (Related Docs tab). One call searches all repos. */
-export const getRepositoryItemRelated = async (payload: {
+export type RelatedSavedLinkItem = {
+  fileName?: string
+  itemId: string
+  matchScore?: number
+  repositoryId: string
+  repositoryName?: string
+}
+
+const extractRelatedList = (payload: unknown): any[] => {
+  const unwrapped = unwrap(payload)
+  if (Array.isArray(unwrapped)) return unwrapped
+  if (!unwrapped || typeof unwrapped !== 'object') return []
+  const record = unwrapped as Record<string, unknown>
+  if (Array.isArray(record.items)) return record.items
+  if (Array.isArray(record.data)) return record.data
+  const items = record.items as Record<string, unknown> | undefined
+  if (items && Array.isArray(items.data)) return items.data
+  const data = record.data as Record<string, unknown> | undefined
+  if (data && Array.isArray(data.items)) return data.items
+  if (data && Array.isArray(data.data)) return data.data
+  return []
+}
+
+const mapRelatedSavedRow = (row: any): RelatedDocumentItem | null => {
+  const relatedItemId = String(
+    row?.relatedItemId || row?.itemId || row?.id || '',
+  ).trim()
+  const relatedRepositoryId = String(
+    row?.relatedRepositoryId || row?.repositoryId || '',
+  ).trim()
+  if (!relatedItemId || !relatedRepositoryId) return null
+  return {
+    createdAtUtc: row?.createdAtUtc ?? null,
+    documentType: row?.documentType ?? null,
+    fileName: row?.fileName ?? null,
+    fileSize: row?.fileSize ?? null,
+    fileType: row?.fileType ?? null,
+    id: relatedItemId,
+    invoiceNumber: row?.invoiceNumber ?? null,
+    matchCount: row?.matchCount,
+    matchedFields: Array.isArray(row?.matchedFields) ? row.matchedFields : [],
+    matchScore:
+      typeof row?.matchScore === 'number' ? row.matchScore : undefined,
+    poNumber: row?.poNumber ?? null,
+    relatedItemId,
+    relatedRepositoryId,
+    repositoryId: relatedRepositoryId,
+    repositoryName: row?.repositoryName ?? null,
+    supplier: row?.supplier ?? null,
+  }
+}
+
+const toRelatedDocumentsResponse = (
+  payload: unknown,
+  fallback: { page: number; pageSize: number },
+): RelatedDocumentsResponse => {
+  const rows = extractRelatedList(payload)
+    .map(mapRelatedSavedRow)
+    .filter((row): row is RelatedDocumentItem => Boolean(row))
+  const record =
+    payload && typeof payload === 'object'
+      ? (payload as Record<string, unknown>)
+      : {}
+  return {
+    data: rows,
+    match: (record.match as Record<string, string>) || {},
+    matchFields: Array.isArray(record.matchFields) ? record.matchFields : [],
+    page: Number(record.page || fallback.page),
+    pageSize: Number(record.pageSize || fallback.pageSize),
+    sourceItemId: record.sourceItemId as string | undefined,
+    sourceRepositoryId: record.sourceRepositoryId as string | undefined,
+    totalCount: Number(record.totalCount || rows.length || 0),
+  }
+}
+
+/** Linked/saved related docs shown on the Related Documents tab. */
+export const getRepositoryItemRelatedSaved = async (payload: {
   itemId: string
   page?: number
   pageSize?: number
@@ -898,25 +975,91 @@ export const getRepositoryItemRelated = async (payload: {
     error: unknown
   } = { data: null, error: '' }
 
+  const page = payload.page ?? 1
+  const pageSize = payload.pageSize ?? 50
+
   try {
     const { data, status } = await axiosV6({
       method: 'GET',
       params: {
-        page: payload.page ?? 1,
-        pageSize: payload.pageSize ?? 50,
+        page,
+        pageSize,
       },
-      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/related`,
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/related-saved`,
     })
 
     if (status !== 200) throw 'invalid status code'
-    response.data = unwrap(data) as RelatedDocumentsResponse
+    response.data = toRelatedDocumentsResponse(unwrap(data), { page, pageSize })
   } catch (e: any) {
     console.error(e)
-    response.error = e?.response?.data || 'error fetching related documents'
+    response.error = e?.response?.data || 'error fetching saved related documents'
   }
 
   return response
 }
+
+/** Persist documents added from Find related documents. */
+export const saveRepositoryItemRelated = async (payload: {
+  itemId: string
+  items: RelatedSavedLinkItem[]
+  repositoryId: string
+}) => {
+  const response: {
+    data: RelatedDocumentsResponse | null
+    error: unknown
+  } = { data: null, error: '' }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: {
+        items: payload.items,
+      },
+      method: 'POST',
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/related-saved`,
+    })
+
+    if (![200, 201, 202, 204].includes(status)) throw 'invalid status code'
+    response.data = toRelatedDocumentsResponse(unwrap(data), {
+      page: 1,
+      pageSize: payload.items.length || 50,
+    })
+  } catch (e: any) {
+    console.error(e)
+    response.error = e?.response?.data || 'error saving related documents'
+  }
+
+  return response
+}
+
+/** Unlink a saved related document from the open file. */
+export const deleteRepositoryItemRelatedSaved = async (payload: {
+  itemId: string
+  relatedItemId: string
+  relatedRepositoryId: string
+  repositoryId: string
+}) => {
+  const response: { data: unknown; error: unknown } = { data: null, error: '' }
+
+  try {
+    const { data, status } = await axiosV6({
+      method: 'DELETE',
+      params: {
+        relatedItemId: payload.relatedItemId,
+        relatedRepositoryId: payload.relatedRepositoryId,
+      },
+      url: `/repositories/${payload.repositoryId}/items/${payload.itemId}/related-saved`,
+    })
+
+    if (![200, 201, 202, 204].includes(status)) throw 'invalid status code'
+    response.data = unwrap(data)
+  } catch (e: any) {
+    console.error(e)
+    response.error = e?.response?.data || 'error removing related document'
+  }
+
+  return response
+}
+
 
 export const addRepositoryItemComment = async (payload: {
   body: string
@@ -1185,7 +1328,10 @@ export const getRepositoryItemAiSummary = async (payload: {
 }
   ; (authApiV6 as any).getRepositoryItemTimeline = getRepositoryItemTimeline
   ; (authApiV6 as any).getRepositoryItemComments = getRepositoryItemComments
-  ; (authApiV6 as any).getRepositoryItemRelated = getRepositoryItemRelated
+  ; (authApiV6 as any).getRepositoryItemRelatedSaved = getRepositoryItemRelatedSaved
+  ; (authApiV6 as any).saveRepositoryItemRelated = saveRepositoryItemRelated
+  ; (authApiV6 as any).deleteRepositoryItemRelatedSaved =
+    deleteRepositoryItemRelatedSaved
   ; (authApiV6 as any).addRepositoryItemComment = addRepositoryItemComment
   ; (authApiV6 as any).getRepositoryItemAiSummary = getRepositoryItemAiSummary
   ; (authApiV6 as any).uploadForOcr = uploadForOcr

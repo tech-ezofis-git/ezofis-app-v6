@@ -6,6 +6,7 @@ import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import { workflowsApiV6 } from '@/api/v6/workflows'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   fetchGlobalSearch,
@@ -13,16 +14,9 @@ import {
   getSearchHitTitle,
   type GlobalSearchHit,
 } from '@/layouts/app/components/topbar/components/globalSearchApi'
-import {
-  FileText,
-  FileSpreadsheet,
-  FileImage,
-  FileArchive,
-  FileCode,
-  File as FileIcon,
-} from 'lucide-react'
 import cn from '@/utils/cn'
 import { formatUtcToLocalDate, parseUtcDate } from '@/utils/utcDate'
+import HoverExpandableText from '@/pages/requests/components/HoverExpandableText'
 import { getFileIcon, getFileIconClasses } from '../attachment/Attachments'
 
 type CustomChip = {
@@ -37,9 +31,14 @@ type FolderItem = {
   name: string
 }
 
+type MatchReason = {
+  icon: string
+  value: string
+}
+
 type ScoredHit = GlobalSearchHit & {
   pct: number
-  reasons: string[]
+  reasons: MatchReason[]
 }
 
 type Props = {
@@ -55,10 +54,10 @@ type Props = {
   supplierName?: string
   workflowId?: number
   onAttached?: () => void
-  onLinkDocument?: (hit: GlobalSearchHit) => void
+  onLinkDocument?: (hit: GlobalSearchHit) => void | Promise<void>
 }
 
-const RESULTS_PREVIEW_COUNT = 4
+const RESULTS_PREVIEW_COUNT = 3
 const RECENT_WINDOW_MS = 90 * 24 * 60 * 60 * 1000
 
 const hitKey = (hit: GlobalSearchHit): string =>
@@ -73,6 +72,76 @@ const getFileExtLabel = (title: string): string => {
   return 'PDF'
 }
 
+const resolveMatchSource = (hit: GlobalSearchHit): string => {
+  const extra = hit as GlobalSearchHit & Record<string, unknown>
+  return String(
+    hit.matchSource || extra.match_source || extra.MatchSource || '',
+  )
+    .toLowerCase()
+    .trim()
+}
+
+const getMatchSourceIcon = (source?: string): string => {
+  const key = String(source || '')
+    .toLowerCase()
+    .trim()
+  const iconBySource: Record<string, string> = {
+    attachment: 'tabler:paperclip',
+    comment: 'tabler:message-circle',
+    content: 'tabler:file-text',
+    design: 'tabler:forms',
+    field: 'tabler:tag',
+    fields: 'tabler:tag',
+    file: 'tabler:file',
+    filename: 'tabler:file',
+    folder: 'tabler:folder',
+    form: 'tabler:forms',
+    lineitem: 'tabler:list-details',
+    metadata: 'tabler:tag',
+    name: 'tabler:file',
+    ocr: 'tabler:file-text',
+    repository: 'tabler:folder',
+    tag: 'tabler:tag',
+    tags: 'tabler:tag',
+    text: 'tabler:file-text',
+  }
+  return iconBySource[key] || 'tabler:tag'
+}
+
+const formatMatchSourceLabel = (source?: string): string => {
+  const raw = String(source || '').trim()
+  if (!raw) return ''
+  return raw.charAt(0).toUpperCase() + raw.slice(1)
+}
+
+const collectMatchValues = (hit: GlobalSearchHit): string[] => {
+  const values: string[] = []
+  const push = (raw: unknown) => {
+    if (raw == null) return
+    const text = String(raw).trim()
+    if (!text) return
+    const exists = values.some((v) => v.toLowerCase() === text.toLowerCase())
+    if (!exists) values.push(text)
+  }
+
+  const extra = hit as GlobalSearchHit & Record<string, unknown>
+  push(hit.matchValue)
+  push(hit.matchedValue)
+  push(hit.snippet)
+  push(extra.matchedText)
+  push(extra.matchText)
+  push(extra.highlight)
+  if (Array.isArray(hit.matchedFields)) hit.matchedFields.forEach(push)
+  if (Array.isArray(hit.matchFields)) hit.matchFields.forEach(push)
+
+  const title = getSearchHitTitle(hit)
+  if (hit.description?.trim() && hit.description.trim() !== title) {
+    push(hit.description)
+  }
+
+  return values
+}
+
 const renderResultFileIcon = (title: string) => {
   const parts = title.split('.')
   const ext = (parts.length > 1 ? parts.pop()?.toLowerCase() || 'pdf' : 'pdf').trim()
@@ -82,7 +151,7 @@ const renderResultFileIcon = (title: string) => {
   return (
     <div
       className={cn(
-        'flex size-7 shrink-0 items-center justify-center rounded-lg mt-0.5',
+        'flex size-7 shrink-0 items-center justify-center rounded-lg',
         styles.wrap,
       )}
     >
@@ -139,6 +208,7 @@ const RelatedDocumentsFinder = ({
 
   const [attachingKey, setAttachingKey] = useState<string | null>(null)
   const [localAttached, setLocalAttached] = useState<Set<string>>(new Set())
+  const prevAttachedIdsRef = useRef(attachedIds)
 
   const keywordRef = useRef<HTMLInputElement>(null)
   const folderDropdownRef = useRef<HTMLDivElement>(null)
@@ -169,6 +239,24 @@ const RelatedDocumentsFinder = ({
       document.removeEventListener('mousedown', handleOutsideClick, true)
     }
   }, [])
+
+  useEffect(() => {
+    const prev = prevAttachedIdsRef.current
+    prevAttachedIdsRef.current = attachedIds
+    const removed: string[] = []
+    prev.forEach((itemId) => {
+      if (!attachedIds.has(itemId)) removed.push(itemId)
+    })
+    if (removed.length === 0) return
+    setLocalAttached((local) => {
+      let changed = false
+      const next = new Set(local)
+      for (const itemId of removed) {
+        if (next.delete(itemId)) changed = true
+      }
+      return changed ? next : local
+    })
+  }, [attachedIds])
 
   const availableFolders: FolderItem[] = useMemo(() => {
     if (repositories.length > 0) {
@@ -428,7 +516,16 @@ const RelatedDocumentsFinder = ({
   const scoredResults: ScoredHit[] = useMemo(() => {
     const isRecentOnly = activeSeedKeys.has('recent')
 
+    const openItemId = String(documentId || '').trim()
+
     const filtered = results.filter((hit) => {
+      const hitItemId = String(hit.id?.itemId || '').trim()
+      if (openItemId && hitItemId && hitItemId === openItemId) {
+        return false
+      }
+      if (hitItemId && attachedIds.has(hitItemId)) {
+        return false
+      }
       if (
         selectedFolders.length > 0 &&
         hit.name &&
@@ -448,15 +545,27 @@ const RelatedDocumentsFinder = ({
     return filtered
       .map((hit) => {
         const title = getSearchHitTitle(hit).toLowerCase()
-        const reasons: string[] = []
+        const reasons: MatchReason[] = []
+        const matchSource = resolveMatchSource(hit)
+        const matchIcon = getMatchSourceIcon(matchSource)
         let score = 0
+
+        const pushReason = (value: string, icon = matchIcon) => {
+          const text = String(value || '').trim()
+          if (!text) return
+          const exists = reasons.some(
+            (reason) => reason.value.toLowerCase() === text.toLowerCase(),
+          )
+          if (exists) return
+          reasons.push({ icon, value: text })
+        }
 
         if (
           poNumber &&
           activeSeedKeys.has('po') &&
           title.includes(poNumber.toLowerCase())
         ) {
-          reasons.push(poNumber)
+          pushReason(poNumber)
           score += 45
         }
         if (
@@ -464,7 +573,7 @@ const RelatedDocumentsFinder = ({
           activeSeedKeys.has('vendor') &&
           title.includes(supplierName.toLowerCase())
         ) {
-          reasons.push(supplierName)
+          pushReason(supplierName)
           score += 22
         }
         if (
@@ -472,20 +581,25 @@ const RelatedDocumentsFinder = ({
           activeSeedKeys.has('amount') &&
           title.includes(invoiceAmount.toLowerCase())
         ) {
-          reasons.push(`$${invoiceAmount}`)
+          pushReason(`$${invoiceAmount}`)
           score += 18
         }
-        if (hit.matchSource) {
-          reasons.push(t`Found in ${hit.matchSource}`)
+
+        collectMatchValues(hit).forEach((value) => pushReason(value))
+
+        if (matchSource) {
+          if (reasons.length === 0) {
+            pushReason(formatMatchSourceLabel(matchSource))
+          }
           score += 15
         }
+
         if (hit.name) {
-          reasons.push(t`Folder: ${hit.name}`)
           score += 8
         }
 
         if (reasons.length === 0) {
-          reasons.push(t`Matched search criteria`)
+          pushReason(t`Matched search criteria`, 'tabler:search')
           score += 10
         }
 
@@ -493,7 +607,17 @@ const RelatedDocumentsFinder = ({
         return { ...hit, pct, reasons }
       })
       .sort((a, b) => b.pct - a.pct)
-  }, [results, selectedFolders, activeSeedKeys, poNumber, supplierName, invoiceAmount, t])
+  }, [
+    results,
+    selectedFolders,
+    activeSeedKeys,
+    poNumber,
+    supplierName,
+    invoiceAmount,
+    documentId,
+    attachedIds,
+    t,
+  ])
 
   const visibleResults = showAll
     ? scoredResults
@@ -516,12 +640,25 @@ const RelatedDocumentsFinder = ({
     const title = getSearchHitTitle(hit)
 
     if (onLinkDocument) {
-      setLocalAttached((prev) => new Set(prev).add(key))
-      onLinkDocument(hit)
-      showToast({
-        message: t`Linked ${title} to this document`,
-        variant: 'success',
-      })
+      setAttachingKey(key)
+      try {
+        await onLinkDocument(hit)
+        setLocalAttached((prev) => new Set(prev).add(key))
+        showToast({
+          message: t`Linked ${title} to this document`,
+          variant: 'success',
+        })
+      } catch (err) {
+        showToast({
+          message:
+            err instanceof Error
+              ? err.message
+              : t`Failed to add to related documents.`,
+          variant: 'error',
+        })
+      } finally {
+        setAttachingKey(null)
+      }
       return
     }
 
@@ -971,7 +1108,7 @@ const RelatedDocumentsFinder = ({
 
           {/* Results List / Grid matching attachment-section-final HTML sample */}
           {(searched || loading) && (
-            <div className='mt-3 border-t border-[var(--gray-3)] bg-[var(--pane)] p-2.5 pb-0.5 rounded-xl'>
+            <div className='mt-3 overflow-visible rounded-xl border border-[var(--gray-4)] bg-[var(--pane)] p-2.5'>
             {loading ? (
               <div className='flex flex-col items-center justify-center gap-2 py-6 text-[var(--gray-9)] text-xs'>
                 <AiBrandIcon className='size-5 animate-pulse' />
@@ -1015,7 +1152,7 @@ const RelatedDocumentsFinder = ({
                       <div
                         key={key + idx}
                         className={cn(
-                          'animate-in fade-in slide-in-from-bottom-2 fill-mode-both flex items-start gap-2.5 rounded-lg border border-[var(--gray-3)] bg-surface p-2.5 shadow-xs transition-all duration-300',
+                          'animate-in fade-in slide-in-from-bottom-2 fill-mode-both overflow-visible rounded-lg border border-[var(--gray-4)] bg-surface p-2.5 shadow-xs transition-all duration-300',
                           attached
                             ? 'opacity-55'
                             : 'hover:border-[var(--primary-4)] hover:shadow-xs',
@@ -1024,68 +1161,110 @@ const RelatedDocumentsFinder = ({
                           animationDelay: `${Math.min(idx, 12) * 40}ms`,
                         }}
                       >
-                        {/* PDF / File Icon */}
-                        {renderResultFileIcon(title)}
-
-                        <div className='min-w-0 flex-1'>
-                          {/* Title (.mn) */}
-                          <div
-                            className='truncate text-xs font-semibold text-[var(--primary-9)] hover:underline cursor-pointer'
-                            title={title}
-                          >
-                            {title}
-                          </div>
-                          {/* Folder (.mf) */}
-                          {folderName && (
-                            <div className='mt-1 flex items-center gap-1 text-[11px] font-medium text-[var(--primary-9)] truncate'>
-                              <Icon
-                                className='h-3 w-3 shrink-0 text-[var(--primary-9)]'
-                                name='tabler:folder'
+                        <div className='flex min-w-0 items-center gap-2.5'>
+                          <div className='flex min-w-0 flex-1 items-center gap-2.5'>
+                            {renderResultFileIcon(title)}
+                            <div className='flex h-7 min-w-0 flex-1 items-center'>
+                              <HoverExpandableText
+                                className='cursor-pointer text-xs font-semibold leading-none text-[var(--primary-9)] hover:underline'
+                                expandStyle='inline'
+                                maxLines={1}
+                                normalMaxWidthClass='w-full max-w-full'
+                                text={title}
                               />
-                              <span className='truncate'>{folderName}</span>
                             </div>
-                          )}
-                          {/* Why/reasons line (.mw) */}
-                          {hit.reasons.length > 0 && (
-                            <div
-                              className='mt-1 truncate text-[10.5px] text-[var(--gray-9)]'
-                              title={hit.reasons.join(' · ')}
+                          </div>
+                          <span className='shrink-0 text-[11.5px] font-medium leading-none text-[var(--gray-10)]'>
+                            {hit.pct}%
+                          </span>
+                          {attached ? (
+                            <Tooltip
+                              content={t`Already added to related`}
+                              position='top'
                             >
-                              {hit.reasons.join(' · ')}
-                            </div>
+                              <span
+                                className='flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--green-9)]'
+                                aria-label={t`Already added to related`}
+                              >
+                                <Icon
+                                  className='size-4 text-[var(--green-9)]'
+                                  name='tabler:check'
+                                />
+                              </span>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip
+                              content={t`Add to related`}
+                              position='top'
+                            >
+                              <button
+                                disabled={attaching}
+                                type='button'
+                                aria-label={t`Add to related`}
+                                className='flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--primary-9)] transition-all hover:bg-[var(--primary-2)] active:scale-90'
+                                onClick={() => void handleLinkHit(hit)}
+                              >
+                                {attaching ? (
+                                  <Icon
+                                    className='size-3.5 animate-spin'
+                                    name='tabler:loader-2'
+                                  />
+                                ) : (
+                                  <Icon
+                                    className='size-4 text-[var(--primary-9)]'
+                                    name='tabler:link'
+                                  />
+                                )}
+                              </button>
+                            </Tooltip>
                           )}
                         </div>
 
-                        {/* Score percentage (.pct) */}
-                        <span className='shrink-0 text-[11.5px] text-[var(--gray-10)] pt-0.5 font-medium'>
-                          {hit.pct}%
-                        </span>
-
-                        {/* Action button (Link Icon) */}
-                        {attached ? (
-                          <span
-                            className='flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--green-9)] font-bold text-xs'
-                            title={t`Already in attachments`}
-                          >
-                            <Icon className='h-4 w-4 text-[var(--green-9)]' name='tabler:check' />
-                          </span>
-                        ) : (
-                          <button
-                            disabled={attaching}
-                            type='button'
-                            className='flex size-6 shrink-0 items-center justify-center rounded-md text-[var(--primary-9)] transition-all hover:bg-[var(--primary-2)] active:scale-90'
-                            title={t`Link document`}
-                            onClick={() => void handleLinkHit(hit)}
-                          >
-                            {attaching ? (
+                        {folderName && (
+                          <div className='mt-1 flex min-w-0 items-center gap-1.5 ps-[2.375rem]'>
+                            <span className='inline-flex size-3.5 shrink-0 items-center justify-center'>
                               <Icon
-                                className='h-3.5 w-3.5 animate-spin'
-                                name='tabler:loader-2'
+                                className='block size-3.5 text-[var(--primary-9)]'
+                                name='tabler:folder'
                               />
-                            ) : (
-                              <Icon className='h-4 w-4 text-[var(--primary-9)]' name='tabler:link' />
-                            )}
-                          </button>
+                            </span>
+                            <div className='flex min-w-0 flex-1 items-center'>
+                              <HoverExpandableText
+                                className='text-[11px] font-medium leading-none text-[var(--primary-9)]'
+                                expandStyle='inline'
+                                maxLines={1}
+                                normalMaxWidthClass='w-full max-w-full'
+                                text={folderName}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {hit.reasons.length > 0 && (
+                          <div className='mt-1 flex min-w-0 flex-col gap-1 ps-[2.375rem]'>
+                            {hit.reasons.map((reason, reasonIdx) => (
+                              <div
+                                className='flex min-w-0 items-center gap-1.5'
+                                key={`${key}-match-${reasonIdx}`}
+                              >
+                                <span className='inline-flex size-3.5 shrink-0 items-center justify-center'>
+                                  <Icon
+                                    className='block size-3.5 text-[var(--gray-9)]'
+                                    name={reason.icon}
+                                  />
+                                </span>
+                                <div className='flex min-w-0 flex-1 items-center'>
+                                  <HoverExpandableText
+                                    className='text-[11px] leading-none text-[var(--gray-9)]'
+                                    expandStyle='inline'
+                                    maxLines={1}
+                                    normalMaxWidthClass='w-full max-w-full'
+                                    text={reason.value}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     )
