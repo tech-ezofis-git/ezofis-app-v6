@@ -577,7 +577,9 @@ export default function Attachments({
           poNumber={poNumber}
           repositoryId={repositoryId}
           supplierName={supplierName}
-          workflowId={workflowId}
+          workflowId={
+            workflowId != null ? Number(workflowId) || undefined : undefined
+          }
           onAttached={refetch}
         />
       ) : null}
