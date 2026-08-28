@@ -17,6 +17,7 @@ export interface StagedFile {
   fieldId?: string
   fieldName?: string
   itemId?: string
+  jsonId?: string
 }
 
 const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
@@ -61,6 +62,7 @@ export const buildStartWorkflowPayload = (
             fileId: value.fileId,
             fileName: value.fileName,
             itemId: value.fileId,
+            jsonId: field.id,
             repositoryId: value.repositoryId,
           })
         }

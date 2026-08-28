@@ -263,6 +263,7 @@ export interface StartWorkflowJsonPayload {
     fieldName?: string
     fileName?: string
     itemId?: string
+    jsonId?: string
   }[]
 }
 
