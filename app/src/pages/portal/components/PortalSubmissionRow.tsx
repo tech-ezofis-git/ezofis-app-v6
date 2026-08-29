@@ -52,7 +52,7 @@ const asRecord = (value: unknown) =>
     ? (value as Record<string, unknown>)
     : null
 
-const toListRow = (submission: PortalSubmission) => {
+const toListRow = (submission: PortalSubmission): Record<string, any> => {
   const { activityId } = submissionInstanceIds(submission)
   const raw = submission.raw
   return {
