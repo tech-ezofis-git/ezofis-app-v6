@@ -1,14 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
-import PortalPage from '@/pages/portal/PortalPage'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/portal/$portalId')({
-  component: RouteComponent,
-  staticData: {
-    pageTitle: 'Portal',
+  beforeLoad: ({ location, params }) => {
+    throw redirect({
+      href: `/portals/${encodeURIComponent(params.portalId)}${location.searchStr}`,
+      replace: true,
+    })
   },
 })
-
-function RouteComponent() {
-  const { portalId } = Route.useParams()
-  return <PortalPage portalId={portalId} />
-}

@@ -42,13 +42,18 @@ const usePortalSessionStore = create<PortalSessionState>()(
   ),
 )
 
+const PUBLIC_PORTAL_ID_RE = /^\/portals\/([^/?#]+)/
+
+export const getPortalIdFromPathname = (pathname: string) => {
+  const match = pathname.match(PUBLIC_PORTAL_ID_RE)
+  return match?.[1] ? decodeURIComponent(match[1]) : undefined
+}
+
 export const getActivePortalAccessToken = () => {
   if (typeof window === 'undefined') return undefined
-  const match = window.location.pathname.match(/^\/portal\/([^/?#]+)/)
-  if (!match?.[1]) return undefined
-  const token = usePortalSessionStore.getState().sessions[
-    decodeURIComponent(match[1])
-  ]?.accessToken
+  const portalId = getPortalIdFromPathname(window.location.pathname)
+  if (!portalId) return undefined
+  const token = usePortalSessionStore.getState().sessions[portalId]?.accessToken
   return String(token || '').trim() || undefined
 }
 

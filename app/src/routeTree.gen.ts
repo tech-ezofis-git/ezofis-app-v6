@@ -69,6 +69,7 @@ import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
 import { Route as StoriesAccordionRouteImport } from './routes/stories/accordion'
 import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
 import { Route as SignRequestSplatRouteImport } from './routes/sign-request/$'
+import { Route as PortalsPortalIdRouteImport } from './routes/portals_.$portalId'
 import { Route as PortalPortalIdRouteImport } from './routes/portal/$portalId'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
 import { Route as FormBuilderFormIdRouteImport } from './routes/form-builder/$formId'
@@ -400,6 +401,11 @@ const SignRequestSplatRoute = SignRequestSplatRouteImport.update({
   path: '/sign-request/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalsPortalIdRoute = PortalsPortalIdRouteImport.update({
+  id: '/portals_/$portalId',
+  path: '/portals/$portalId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortalPortalIdRoute = PortalPortalIdRouteImport.update({
   id: '/portal/$portalId',
   path: '/portal/$portalId',
@@ -566,6 +572,7 @@ export interface FileRoutesByFullPath {
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/portal/$portalId': typeof PortalPortalIdRoute
+  '/portals/$portalId': typeof PortalsPortalIdRoute
   '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
@@ -653,6 +660,7 @@ export interface FileRoutesByTo {
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/portal/$portalId': typeof PortalPortalIdRoute
+  '/portals/$portalId': typeof PortalsPortalIdRoute
   '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
@@ -744,6 +752,7 @@ export interface FileRoutesById {
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
   '/portal/$portalId': typeof PortalPortalIdRoute
+  '/portals_/$portalId': typeof PortalsPortalIdRoute
   '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
@@ -834,6 +843,7 @@ export interface FileRouteTypes {
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/portal/$portalId'
+    | '/portals/$portalId'
     | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
@@ -921,6 +931,7 @@ export interface FileRouteTypes {
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/portal/$portalId'
+    | '/portals/$portalId'
     | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
@@ -1011,6 +1022,7 @@ export interface FileRouteTypes {
     | '/form-builder/$formId'
     | '/on-boarding/$token'
     | '/portal/$portalId'
+    | '/portals_/$portalId'
     | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
@@ -1087,6 +1099,7 @@ export interface RootRouteChildren {
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
   PortalPortalIdRoute: typeof PortalPortalIdRoute
+  PortalsPortalIdRoute: typeof PortalsPortalIdRoute
   SignRequestSplatRoute: typeof SignRequestSplatRoute
   WorkflowBuilderWorkflowIdRoute: typeof WorkflowBuilderWorkflowIdRoute
   FormBuilderIndexRoute: typeof FormBuilderIndexRoute
@@ -1515,6 +1528,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignRequestSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portals_/$portalId': {
+      id: '/portals_/$portalId'
+      path: '/portals/$portalId'
+      fullPath: '/portals/$portalId'
+      preLoaderRoute: typeof PortalsPortalIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portal/$portalId': {
       id: '/portal/$portalId'
       path: '/portal/$portalId'
@@ -1913,6 +1933,7 @@ const rootRouteChildren: RootRouteChildren = {
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
   PortalPortalIdRoute: PortalPortalIdRoute,
+  PortalsPortalIdRoute: PortalsPortalIdRoute,
   SignRequestSplatRoute: SignRequestSplatRoute,
   WorkflowBuilderWorkflowIdRoute: WorkflowBuilderWorkflowIdRoute,
   FormBuilderIndexRoute: FormBuilderIndexRoute,

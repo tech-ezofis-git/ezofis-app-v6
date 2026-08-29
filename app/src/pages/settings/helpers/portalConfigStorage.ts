@@ -459,7 +459,7 @@ export const getPortalPublicUrl = (
   id: string | number,
   ids?: PortalJsonIds,
 ) => {
-  const path = `/portal/${id}`
+  const path = `/portals/${id}`
   const params = new URLSearchParams()
   if (ids?.tenantId) params.set('tenantId', ids.tenantId)
   if (ids?.userId) params.set('userId', ids.userId)

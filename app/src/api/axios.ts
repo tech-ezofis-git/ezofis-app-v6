@@ -6,6 +6,7 @@ import axios, {
 import { isAuthEntryPath, resolveSignInPath } from '../lib/branding/session'
 import usePortalSessionStore, {
   getActivePortalAccessToken,
+  getPortalIdFromPathname,
 } from '../pages/portal/stores/usePortalSessionStore'
 import authUserStore from '../stores/authUserStore'
 
@@ -146,13 +147,9 @@ const handleResponseError = (error: AxiosError) => {
   if (error.response?.status === 401) {
     const pathname =
       globalThis.window === undefined ? '' : window.location.pathname
-    if (pathname.startsWith('/portal')) {
-      const match = pathname.match(/^\/portal\/([^/?#]+)/)
-      if (match?.[1]) {
-        usePortalSessionStore
-          .getState()
-          .clearSession(decodeURIComponent(match[1]))
-      }
+    const portalId = getPortalIdFromPathname(pathname)
+    if (portalId) {
+      usePortalSessionStore.getState().clearSession(portalId)
       return Promise.reject(error)
     }
 
