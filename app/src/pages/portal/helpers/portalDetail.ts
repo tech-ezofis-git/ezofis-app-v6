@@ -199,6 +199,7 @@ export const buildDetailFormModel = (
   return model
 }
 
+export const PORTAL_SECTION_DOCUMENT = 'portal-section-document'
 export const PORTAL_SECTION_ATTACHMENTS = 'portal-section-attachments'
 export const PORTAL_SECTION_HISTORY = 'portal-section-history'
 

@@ -1,4 +1,4 @@
-import { useLingui } from '@lingui/react/macro'
+import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 import type { PortalNavSection } from '../helpers/portalDetail'
 
@@ -13,32 +13,33 @@ export default function PortalPanelNav({
   sections,
   onSelect,
 }: PortalPanelNavProps) {
-  const { t } = useLingui()
-
   if (!sections.length) return null
+
+  const activeIndex = Math.max(
+    0,
+    sections.findIndex((section) => section.id === activeId),
+  )
 
   return (
     <nav className='flex h-full min-h-0 flex-col bg-surface'>
-      <div className='shrink-0 border-b border-gray-3 px-5 py-4'>
-        <div className='text-15 font-semibold text-gray-13'>{t`Form Sections`}</div>
-      </div>
       <div className='min-h-0 flex-1 overflow-y-auto px-3 py-4'>
         <div className='relative'>
           {sections.length > 1 && (
             <span
-              className='pointer-events-none absolute top-7 bottom-7 left-[26px] z-0 w-px bg-gray-4'
+              className='pointer-events-none absolute top-7 bottom-7 left-[26px] z-0 w-px bg-gray-5'
               aria-hidden
             />
           )}
-          <ol className='relative flex flex-col gap-3'>
+          <ol className='relative flex flex-col'>
             {sections.map((section, index) => {
               const selected = section.id === activeId
+              const completed = index < activeIndex
 
               return (
                 <li key={section.id}>
                   <button
                     type='button'
-                    className='relative z-10 flex w-full items-center gap-3 rounded-xl px-2.5 py-3 text-left transition-all duration-200 hover:bg-gray-2 active:scale-98'
+                    className='relative z-10 flex w-full items-center gap-3 px-2.5 py-3 text-left transition-all duration-200 hover:opacity-80 active:scale-98'
                     onClick={() => onSelect(section.id)}
                   >
                     <span
@@ -46,10 +47,16 @@ export default function PortalPanelNav({
                         'relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full text-12 font-semibold transition-all',
                         selected
                           ? 'bg-primary-9 text-white'
-                          : 'border border-gray-5 bg-surface text-gray-9',
+                          : completed
+                            ? 'bg-green-9 text-white'
+                            : 'border border-gray-5 bg-surface text-gray-9',
                       )}
                     >
-                      {index + 1}
+                      {completed ? (
+                        <Icon className='size-4' name='lucide:check' />
+                      ) : (
+                        index + 1
+                      )}
                     </span>
                     <span
                       className={cn(

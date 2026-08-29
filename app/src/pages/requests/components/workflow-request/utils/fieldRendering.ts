@@ -432,7 +432,14 @@ export const buildRepoFieldHints = (
 const hintFieldName = (hint: string): string =>
   (hint.split(',')[0] || '').trim()
 
-const normalizeName = (s: string) => s.trim().toLowerCase()
+// Form labels and folder/OCR names must match case-insensitively. Strip
+// asterisks and extra whitespace so "Customer *" still matches "Customer".
+const normalizeName = (s: string) =>
+  s
+    .replace(/\*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
 
 // FILE_UPLOAD "Auto-fill from Document" targets, same "Name,TYPE" shape as
 // repository OCR hints so uploadForOcr can extract both in one pass.
@@ -498,9 +505,14 @@ export const findFormFieldIdByName = (
   name: string,
 ): string | undefined => {
   const target = normalizeName(name)
+  if (!target) return undefined
   for (const panel of panels || []) {
     for (const field of panel.fields || []) {
-      if (field.label && normalizeName(field.label) === target) return field.id
+      const candidates = [field.label, field.name, field.title]
+      if (!candidates.some((label) => label && normalizeName(label) === target)) {
+        continue
+      }
+      return field.id || field.jsonId
     }
   }
   return undefined

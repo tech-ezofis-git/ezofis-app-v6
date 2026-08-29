@@ -1,11 +1,14 @@
 import type { Option } from '@/types/option'
 import {
+  buildSyntheticField,
   getFieldOptions,
   isFieldHidden,
   isFieldRequired,
   mapOcrFieldsToModel,
   PRESENTATIONAL_TYPES,
+  type RepoFieldDescriptor,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import { isFilenameField } from '@/pages/requests/utils/repoFolderMetadata'
 
 const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
 
@@ -429,9 +432,21 @@ export const mergeExtractedAnswers = (
     const question = questions.find((item) => questionMatchesKey(item, key))
     if (!question) return
     next[question.id] = value
+    if (question.field.id) next[String(question.field.id)] = value
+    if (question.field.jsonId) next[String(question.field.jsonId)] = value
   })
 
   return next
+}
+
+const assignQuestionValue = (
+  next: AnswerMap,
+  question: PortalFormQuestion,
+  value: unknown,
+) => {
+  next[question.id] = value
+  if (question.field.id) next[String(question.field.id)] = value
+  if (question.field.jsonId) next[String(question.field.jsonId)] = value
 }
 
 export const applyOcrFieldListToAnswers = (
@@ -459,9 +474,86 @@ export const applyOcrFieldListToAnswers = (
       patch[question.id] ||
       (question.field.id ? patch[String(question.field.id)] : undefined) ||
       (question.field.jsonId ? patch[String(question.field.jsonId)] : undefined)
-    if (fromPatch !== undefined) next[question.id] = fromPatch
+    if (fromPatch !== undefined) assignQuestionValue(next, question, fromPatch)
+
+    const ocrMatch = (ocrFieldList || []).find((item) => {
+      if (!item?.name || item.value == null || String(item.value).trim() === '')
+        return false
+      return (
+        questionMatchesKey(question, item.name) ||
+        normalizeMatchKey(question.label) === normalizeMatchKey(item.name)
+      )
+    })
+    if (ocrMatch?.value != null) assignQuestionValue(next, question, ocrMatch.value)
   })
   return next
+}
+
+const withRequiredRule = (field: FormControl): FormControl => {
+  const settings = asRecord(field.settings)
+  const validation = asRecord(settings.validation)
+  if (validation.fieldRule === 'REQUIRED') return field
+  return {
+    ...field,
+    settings: {
+      ...settings,
+      validation: {
+        ...validation,
+        fieldRule: 'REQUIRED',
+      },
+    },
+  }
+}
+
+// Folder-mandatory fields belong on the form: mark matching form fields as
+// required, and append unmatched mandatory folder fields to the first panel.
+export const applyRepoMandatoryToFormPanels = (
+  panels: FormPanel[],
+  descriptors: RepoFieldDescriptor[],
+): FormPanel[] => {
+  const mandatoryMatchedIds = new Set(
+    descriptors
+      .filter((item) => item.repoField.isMandatory && item.matchedFieldId)
+      .flatMap((item) => [String(item.matchedFieldId)]),
+  )
+
+  const next = (panels || []).map((panel) => ({
+    ...panel,
+    fields: (panel.fields || []).map((field) => {
+      const fieldId = String(field.id || '')
+      const jsonId = String(field.jsonId || '')
+      if (
+        !mandatoryMatchedIds.has(fieldId) &&
+        !mandatoryMatchedIds.has(jsonId)
+      ) {
+        return field
+      }
+      return withRequiredRule(field)
+    }),
+  }))
+
+  const extraFields = descriptors
+    .filter((item) => {
+      if (item.matchedFieldId || !item.repoField.isMandatory) return false
+      if (FILE_FIELD_TYPES.has(String(item.repoField.dataType || ''))) {
+        return false
+      }
+      return !isFilenameField({
+        name: item.repoField.name || '',
+        sqlColumnName: item.repoField.sqlColumnName || '',
+      })
+    })
+    .map((item) => buildSyntheticField(item.repoField) as FormControl)
+
+  if (!extraFields.length) return next
+  if (!next.length) {
+    return [{ fields: extraFields, settings: { title: 'Details' } }]
+  }
+  return next.map((panel, index) =>
+    index === 0
+      ? { ...panel, fields: [...(panel.fields || []), ...extraFields] }
+      : panel,
+  )
 }
 
 export const buildPortalFormModel = (

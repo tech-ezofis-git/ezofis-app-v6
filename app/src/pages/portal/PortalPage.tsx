@@ -388,6 +388,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       <PortalWizard
         workflowId={selectedWorkflowId}
         workflowName={selectedWorkflowName}
+        onCancel={() => setView('home')}
         onChromeChange={handleWizardChromeChange}
         onSubmitted={() => {
           setSubmissionsTick((tick) => tick + 1)
@@ -413,7 +414,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
   return (
     <PortalShell
       email={session.username}
-      fill={view === 'detail'}
+      fill={view === 'detail' || view === 'wizard'}
       portal={portal}
       detail={
         view === 'detail' && selectedSubmission
@@ -463,7 +464,9 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
       <AnimateSlideUp
         key={view}
         className={
-          view === 'detail' ? 'flex h-full min-h-0 flex-1 flex-col' : undefined
+          view === 'detail' || view === 'wizard'
+            ? 'flex h-full min-h-0 flex-1 flex-col'
+            : undefined
         }
       >
         {content}

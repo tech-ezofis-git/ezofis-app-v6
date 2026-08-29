@@ -30,6 +30,8 @@ interface Props {
   // right pane), where a second height:100% ScrollArea would otherwise
   // fight the outer container for scroll ownership.
   disableOwnScroll?: boolean
+  exclusive?: boolean
+  getPanelValue?: (panel: any, index: number) => string
   hasAttemptedSubmit?: boolean
   // Field ids hidden from the current acting user by the current stage's
   // Security & Form Access settings (formVisibilityAccess / formSecureControls).
@@ -45,7 +47,9 @@ interface Props {
   repoFieldHints?: string[]
   repositoryId?: string
   viewOnly?: boolean
+  openValue?: string | null
   onFieldChange: (fieldId: string, value: any) => void
+  onOpenChange?: (value: string | null) => void
   onOcrFieldList?: (
     list: { name?: string; value?: string }[] | undefined,
   ) => void
@@ -64,11 +68,14 @@ const FILE_FIELD_TYPES = new Set(['FILE_UPLOAD', 'IMAGE_UPLOAD'])
 const WorkflowFormRenderer = ({
   attachments,
   disableOwnScroll,
+  exclusive,
   formModel,
+  getPanelValue,
   hasAttemptedSubmit,
   hiddenFieldIds,
   instanceId,
   missingMandatoryFieldIds,
+  openValue,
   panels,
   preparePhase,
   preparingFieldId,
@@ -77,6 +84,7 @@ const WorkflowFormRenderer = ({
   repositoryId,
   viewOnly,
   onFieldChange,
+  onOpenChange,
   onOcrFieldList,
   onOpenAttachment,
   onRequestUpload,
@@ -125,14 +133,22 @@ const WorkflowFormRenderer = ({
     return grouped
   }, [attachments, firstFileFieldId, instanceId])
 
+  const resolvePanelValue = (panel: any, index: number) =>
+    getPanelValue?.(panel, index) || `panel-${index}`
+
   const content = (
     <div className='w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'>
       <AnimateFadeIn delay={0.1}>
         <Accordion
-          defaultValue={panels.map((_, idx) => `panel-${idx}`)}
+          defaultValue={
+            exclusive
+              ? undefined
+              : panels.map((panel, idx) => resolvePanelValue(panel, idx))
+          }
+          multiple={!exclusive}
           radius='md'
+          value={exclusive ? openValue || null : undefined}
           variant='separated'
-          multiple
           classNames={{
             chevron: 'text-gray-10',
             content: 'p-0',
@@ -140,6 +156,10 @@ const WorkflowFormRenderer = ({
             item: 'mb-3 min-w-0 overflow-hidden rounded-xl border border-gray-3 bg-gray-0 shadow-2xs transition-shadow hover:shadow-sm',
             label: 'text-14 font-bold tracking-tight text-gray-13',
             panel: 'min-w-0 overflow-hidden px-6 pt-2 pb-6',
+          }}
+          onChange={(value) => {
+            if (!exclusive) return
+            onOpenChange?.(typeof value === 'string' ? value : null)
           }}
         >
           {panels.map((panel: any, panelIndex: number) => {
@@ -153,12 +173,21 @@ const WorkflowFormRenderer = ({
             const completedCount = requiredFields.filter((field: any) =>
               isFieldFilled(field, formModel[field.id]),
             ).length
+            const panelValue = resolvePanelValue(panel, panelIndex)
 
             return (
               <Accordion.Item
+                className='scroll-mt-3'
+                data-portal-section={panelValue}
                 key={panel.id || panelIndex}
-                value={`panel-${panelIndex}`}
+                value={panelValue}
               >
+                <span
+                  aria-hidden
+                  className='block h-px'
+                  data-portal-section={panelValue}
+                  id={panelValue}
+                />
                 <Accordion.Control>
                   <div className='flex items-center justify-between gap-3'>
                     <div className='flex items-center gap-3'>

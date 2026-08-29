@@ -3,11 +3,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import History from '@/pages/requests/components/request/components/sections/history/History'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import {
   buildDetailFormModel,
   buildPortalNavSections,
+  formPanelSectionId,
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_HISTORY,
   submissionInstanceIds,
@@ -22,6 +22,8 @@ import {
   getWorkflowRuleActions,
   isAssignedToUser,
 } from '../helpers/portalWorkflowAccess'
+import { usePortalSectionSpy } from '../hooks/usePortalSectionSpy'
+import PortalActivity from './PortalActivity'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
 import PortalPanelNav from './PortalPanelNav'
 import PortalSubmissionDetails from './PortalSubmissionDetails'
@@ -49,10 +51,10 @@ export default function PortalDetail({
   const [source, setSource] = useState<PortalWizardSource | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeId, setActiveId] = useState('')
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set())
   const [formModel, setFormModel] = useState<Record<string, any>>({})
   const [acting, setActing] = useState(false)
-  const scrollRef = useRef<HTMLElement | null>(null)
-  const clickingRef = useRef(false)
+  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
   const isInbox = submission.source === 'inbox'
 
   const { activityId, instanceId, processId, repositoryId } = useMemo(
@@ -100,64 +102,55 @@ export default function PortalDetail({
     () =>
       buildPortalNavSections(panels, {
         attachments: t`Attachments`,
-        history: t`History`,
+        history: t`Activity`,
       }),
     [panels, t],
   )
+  const sectionIds = useMemo(
+    () => sections.map((section) => section.id),
+    [sections],
+  )
 
   useEffect(() => {
-    if (!activeId && sections[0]) setActiveId(sections[0].id)
-  }, [activeId, sections])
-
-  useEffect(() => {
-    const root = scrollRef.current
-    if (!root || loading || !sections.length) return
-
-    const nodes = sections
-      .map((section) => root.querySelector(`#${CSS.escape(section.id)}`))
-      .filter((node): node is Element => Boolean(node))
-
-    if (!nodes.length) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (clickingRef.current) return
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort(
-            (left, right) =>
-              left.boundingClientRect.top - right.boundingClientRect.top,
+    if (!sections[0]) return
+    setActiveId((current) => current || sections[0].id)
+    setOpenIds((current) => {
+      if (current.size > 0) return current
+      return new Set(
+        sections
+          .filter(
+            (section) =>
+              section.id !== PORTAL_SECTION_ATTACHMENTS &&
+              section.id !== PORTAL_SECTION_HISTORY,
           )
-        const nextId = visible[0]?.target.id
-        if (nextId) setActiveId(nextId)
-      },
-      {
-        root,
-        rootMargin: '0px 0px -60% 0px',
-        threshold: [0.1, 0.25, 0.5],
-      },
-    )
+          .map((section) => section.id),
+      )
+    })
+  }, [sections])
 
-    nodes.forEach((node) => observer.observe(node))
-    return () => observer.disconnect()
-  }, [loading, sections])
+  const { scrollToSection } = usePortalSectionSpy(
+    scrollEl,
+    sectionIds,
+    (id) => setActiveId((current) => (current === id ? current : id)),
+  )
 
-  const scrollToSection = (id: string) => {
-    const root = scrollRef.current
-    const target = root?.querySelector(`#${CSS.escape(id)}`)
-    if (!root || !(target instanceof HTMLElement)) return
+  const selectSection = (id: string) => {
+    setOpenIds((current) => {
+      const next = new Set(current)
+      next.add(id)
+      return next
+    })
+    scrollToSection(id)
+  }
 
-    clickingRef.current = true
+  const toggleSection = (id: string) => {
     setActiveId(id)
-    const nextTop =
-      root.scrollTop +
-      target.getBoundingClientRect().top -
-      root.getBoundingClientRect().top -
-      8
-    root.scrollTo({ behavior: 'smooth', top: nextTop })
-    window.setTimeout(() => {
-      clickingRef.current = false
-    }, 700)
+    setOpenIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const currentActivityId = activityId
@@ -311,43 +304,49 @@ export default function PortalDetail({
 
   return (
     <div className='flex h-full min-h-0'>
-      <aside className='hidden h-full min-h-0 w-72 shrink-0 overflow-hidden border-r border-gray-4 bg-surface lg:flex lg:flex-col xl:w-80'>
+      <aside className='hidden h-full min-h-0 w-72 shrink-0 overflow-hidden border-r border-gray-4 bg-surface md:flex md:flex-col xl:w-80'>
         <PortalPanelNav
           activeId={activeId}
           sections={sections}
-          onSelect={scrollToSection}
+          onSelect={selectSection}
         />
       </aside>
 
       <section
-        className='min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5'
-        ref={scrollRef}
+        className='h-full min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5'
+        ref={setScrollEl}
       >
-        <div className='mb-4 lg:hidden'>
+        <div className='sticky top-0 z-10 mb-4 bg-gray-2 md:hidden'>
           <PortalPanelNav
             activeId={activeId}
             sections={sections}
-            onSelect={scrollToSection}
+            onSelect={selectSection}
           />
         </div>
 
         {panels.length > 0 ? (
           isInbox ? (
-            <div className='rounded-xl border border-gray-4 bg-surface p-4 shadow-sm sm:p-5'>
-              <WorkflowFormRenderer
-                disableOwnScroll
-                formModel={formModel}
-                instanceId={instanceId}
-                panels={panels}
-                readOnlyFieldIds={readOnlyFieldIds}
-                repositoryId={resolvedRepositoryId}
-                onFieldChange={(fieldId, value) =>
-                  setFormModel((prev) => ({ ...prev, [fieldId]: value }))
-                }
-              />
-            </div>
+            <WorkflowFormRenderer
+              disableOwnScroll
+              formModel={formModel}
+              instanceId={instanceId}
+              panels={panels}
+              readOnlyFieldIds={readOnlyFieldIds}
+              repositoryId={resolvedRepositoryId}
+              getPanelValue={(panel, index) =>
+                formPanelSectionId(panel, index)
+              }
+              onFieldChange={(fieldId, value) =>
+                setFormModel((prev) => ({ ...prev, [fieldId]: value }))
+              }
+            />
           ) : (
-            <PortalSubmissionDetails formModel={formModel} panels={panels} />
+            <PortalSubmissionDetails
+              formModel={formModel}
+              openIds={openIds}
+              panels={panels}
+              onToggle={toggleSection}
+            />
           )
         ) : (
           <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>
@@ -379,9 +378,9 @@ export default function PortalDetail({
           id={PORTAL_SECTION_HISTORY}
         >
           <div className='mb-3 text-15 font-semibold text-gray-13'>
-            {t`History`}
+            {t`Activity`}
           </div>
-          <History
+          <PortalActivity
             instanceId={instanceId}
             processId={processId}
             workflowId={submission.workflowId}
