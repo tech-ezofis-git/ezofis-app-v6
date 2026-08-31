@@ -15,6 +15,7 @@ import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
 import { useAttachments } from '../../hooks/useAttachments'
+import { useComments } from '../../hooks/useComments'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
 import {
@@ -875,6 +876,16 @@ const Request = ({
     selectedItem?.workflowInstanceId || selectedItem?.processId
   const { data: genericAttachments, refetch: refetchGenericAttachments } =
     useAttachments(
+      resolvedWorkflowId,
+      genericInstanceId,
+      isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
+    )
+
+  // Same idea as genericAttachments above - keep the header's comment
+  // count and the Comments panel reading from the same live list instead
+  // of the stale selectedItem.commentsCount from the list row.
+  const { data: genericComments, refetch: refetchGenericComments } =
+    useComments(
       resolvedWorkflowId,
       genericInstanceId,
       isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
@@ -1889,7 +1900,11 @@ const Request = ({
           agentData={currentAgentData}
           assigneeLabel={assigneeLabel}
           approveLoading={submitting}
-          commentsCount={selectedItem?.commentsCount || 0}
+          commentsCount={
+            isGenericWorkflow
+              ? genericComments.length
+              : selectedItem?.commentsCount || 0
+          }
           currency={currency}
           enableAIInsights={true}
           hideActions={hideActions}
@@ -2029,6 +2044,7 @@ const Request = ({
                     ? currentBlockSettings.checklistItems
                     : []
                 }
+                comments={genericComments}
                 documentRequired={!!currentBlockSettings.documentRequired}
                 formModel={genericFormModel}
                 rawWorkflowData={rawWorkflowData}
@@ -2039,6 +2055,7 @@ const Request = ({
                 viewOnly={requestListTab !== 'Inbox'}
                 setRightView={setRightView}
                 onAttachmentsChanged={refetchGenericAttachments}
+                onCommentsChanged={refetchGenericComments}
                 onChecklistToggle={(id, checked) =>
                   setChecklistChecked((prev) => ({ ...prev, [id]: checked }))
                 }

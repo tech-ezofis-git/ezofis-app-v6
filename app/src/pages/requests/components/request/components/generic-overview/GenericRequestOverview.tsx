@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AttachmentItem } from '@/pages/requests/hooks/useAttachments'
+import type { CommentItem } from '@/pages/requests/hooks/useComments'
 import { getRepositoryById, uploadForOcr } from '@/api/v6/folder/folder'
 import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import IconButton from '@/components/base/button/IconButton'
@@ -114,6 +115,9 @@ interface Props {
   // owned/gated by Request.tsx before it lets the action buttons submit.
   checklistChecked?: Record<string, boolean>
   checklistItems?: ChecklistItem[]
+  // Fetched once at the Request level, same reasoning as attachments above
+  // — keeps the header's comment count and this panel in sync.
+  comments?: CommentItem[]
   documentRequired?: boolean
   signatureConfirmed?: boolean
   userSignatureRequired?: boolean
@@ -124,6 +128,7 @@ interface Props {
   ) => void
   onAttachmentsChanged?: () => void
   onChecklistToggle?: (id: string, checked: boolean) => void
+  onCommentsChanged?: () => Promise<void>
   onFieldChange: (fieldId: string, value: any) => void
   onSignatureToggle?: (confirmed: boolean) => void
 }
@@ -139,6 +144,7 @@ const GenericRequestOverview = ({
   attachments,
   checklistChecked = {},
   checklistItems = [],
+  comments = [],
   documentRequired = false,
   formModel,
   rawWorkflowData,
@@ -150,6 +156,7 @@ const GenericRequestOverview = ({
   setRightView,
   onAttachmentsChanged,
   onChecklistToggle,
+  onCommentsChanged,
   onFieldChange,
   onSignatureToggle,
 }: Props) => {
@@ -591,8 +598,10 @@ const GenericRequestOverview = ({
             ))}
           {rightView === 'comments' && (
             <Comments
+              comments={comments}
               instanceId={instanceId}
               processId={processId}
+              refetch={onCommentsChanged}
               workflowId={workflowId}
               enabled
               onClose={() => setRightView('overview')}
