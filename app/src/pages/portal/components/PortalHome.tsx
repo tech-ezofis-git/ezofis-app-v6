@@ -9,7 +9,10 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import { AnimateSlideUp, AnimateStagger } from '@/components/common/animations'
 import cn from '@/utils/cn'
-import type { PortalSubmission } from '../helpers/portalSubmissions'
+import {
+  parseSubmissionFormData,
+  type PortalSubmission,
+} from '../helpers/portalSubmissions'
 import {
   portalWorkflowIcon,
   portalWorkflowKind,
@@ -23,6 +26,17 @@ import {
   PortalWorkflowCardsSkeleton,
 } from './PortalLayoutSkeleton'
 import PortalSubmissionRow from './PortalSubmissionRow'
+
+const flattenSearchableText = (value: unknown): string => {
+  if (value == null || value === '') return ''
+  if (Array.isArray(value)) return value.map(flattenSearchableText).join(' ')
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>)
+      .map(flattenSearchableText)
+      .join(' ')
+  }
+  return String(value)
+}
 
 type PortalHomeProps = {
   canCreateSubmission?: boolean
@@ -160,7 +174,7 @@ export default function PortalHome({
     return submissions.filter((row) => {
       if (statusId !== 'all' && row.status !== statusId) return false
       if (!needle) return true
-      return [
+      const summaryMatch = [
         row.title,
         row.requestNo,
         row.status,
@@ -172,6 +186,10 @@ export default function PortalHome({
         row.raw.transactionCreatedByEmail,
       ]
         .join(' ')
+        .toLowerCase()
+        .includes(needle)
+      if (summaryMatch) return true
+      return flattenSearchableText(parseSubmissionFormData(row.raw))
         .toLowerCase()
         .includes(needle)
     })
