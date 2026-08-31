@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { getRepositoryItemFacets } from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
@@ -89,6 +89,39 @@ const mapExternalRowsToTableColumns = (
     })
     return mapped
   })
+}
+
+// Calculated columns can reference OTHER calculated columns in the same row
+// (e.g. "Total" = "Amount" + "Tax" where "Amount" is itself Quantity × Rate).
+// Resolves them together with repeated passes until nothing changes anymore,
+// so a calculated cell's value is visible to any other formula that
+// references it — matching the same fixed-point approach the top-level
+// CALCULATED field type already uses (helpers/formula.ts's
+// applyCalculatedFields), just scoped to one table row instead of the whole
+// form's values.
+const resolveCalculatedRow = (
+  row: Record<string, any>,
+  tableColumns: TableColumn[],
+): Record<string, any> => {
+  const next = { ...row }
+  const calculatedColumns = tableColumns.filter((c) => c.type === 'CALCULATED')
+  if (calculatedColumns.length === 0) return next
+
+  for (let pass = 0; pass <= calculatedColumns.length; pass += 1) {
+    let changed = false
+    for (const col of calculatedColumns) {
+      const tokens = col.settings?.specific?.formulaTokens
+      if (!tokens?.length) continue
+      const result = evaluateFormula(tokens as any, next)
+      const formatted = result === null ? '' : result
+      if (next[col.id] !== formatted) {
+        next[col.id] = formatted
+        changed = true
+      }
+    }
+    if (!changed) break
+  }
+  return next
 }
 
 const getColumnWidthClass = (size?: string) => {
@@ -348,12 +381,24 @@ const TableFieldRenderer = ({
     },
   })
 
-  const getCalculatedValue = (col: TableColumn, row: Record<string, any>) => {
-    const tokens = col.settings?.specific?.formulaTokens
-    if (!tokens?.length) return ''
-    const result = evaluateFormula(tokens as any, row)
-    return result === null ? '' : result
-  }
+  const resolvedRows = rows.map((row) =>
+    resolveCalculatedRow(row, tableColumns),
+  )
+
+  // Calculated cells are computed for display above, but a submitted row
+  // should carry those values too (so exports/reports/other calculated
+  // fields referencing this table see them) — sync them back once they
+  // settle. Guarded by a content comparison so this only fires when a
+  // calculated value actually changed, not on every render.
+  useEffect(() => {
+    const hasCalculated = tableColumns.some((c) => c.type === 'CALCULATED')
+    if (!hasCalculated) return
+    const changed = resolvedRows.some(
+      (resolved, i) => JSON.stringify(resolved) !== JSON.stringify(rows[i]),
+    )
+    if (changed) onChange(resolvedRows)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(resolvedRows)])
 
   const handleCellChange = (rowIndex: number, colId: string, cellVal: any) => {
     const next = rows.map((r, i) => {
@@ -622,6 +667,7 @@ const TableFieldRenderer = ({
             {rows.map((row, rowIndex) => {
               const rowId = row._rowId || `row-${rowIndex}`
               const isSelected = selectedRowIds.has(rowId)
+              const resolvedRow = resolvedRows[rowIndex] || row
               return (
                 <Tr
                   className='border-b border-gray-2 transition-colors last:border-0 hover:bg-gray-1/40'
@@ -646,9 +692,7 @@ const TableFieldRenderer = ({
                     <Td className='p-1.5 align-middle' key={col.id}>
                       {renderCellInput(
                         col,
-                        col.type === 'CALCULATED'
-                          ? getCalculatedValue(col, row)
-                          : row[col.id],
+                        resolvedRow[col.id],
                         (cellVal) =>
                           handleCellChange(rowIndex, col.id, cellVal),
                         readOnly,

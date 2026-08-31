@@ -400,7 +400,7 @@ msgstr "الصيغ المقبولة: CSV، XLSX"
 #: src/pages/settings/components/RolesPermissions.tsx:683
 #: src/pages/settings/components/RolesPermissions.tsx:1345
 msgid "Access"
-msgstr "Access"
+msgstr "وصول"
 
 #: src/pages/settings/SettingsMain.tsx:365
 msgid "Access Control"
@@ -580,7 +580,7 @@ msgstr "إضافة قاعدة المستند"
 
 #: src/pages/forms/FormEntriesPage.tsx:2036
 msgid "Add Entry"
-msgstr "Add Entry"
+msgstr "إضافة إدخال"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:70
 msgid "Add every row from this file as new entries. Matching PO numbers may be added as duplicates."
@@ -899,7 +899,7 @@ msgstr "المبلغ"
 #. placeholder {0}: amountLabels[val] || val
 #: src/pages/requests/components/QuickFilters.tsx:223
 msgid "Amount: {0}"
-msgstr "Amount: {0}"
+msgstr "المبلغ: {0}"
 
 #. placeholder {0}: e.message || e
 #: src/pages/requests/components/request/Request.tsx:1646
@@ -1084,7 +1084,7 @@ msgstr "متوسط تأخير المعتمدين عبر الأسابيع"
 
 #: src/pages/settings/components/credits/Credits.tsx:70
 msgid "April"
-msgstr "April"
+msgstr "أبريل"
 
 #: src/pages/settings/components/Folders/retentionMockData.ts:89
 msgid "Archive"
@@ -1097,7 +1097,7 @@ msgstr "مؤرشف"
 
 #: src/pages/forms/FormsPage.tsx:505
 msgid "Are you sure you want to delete"
-msgstr "Are you sure you want to delete"
+msgstr "هل أنت متأكد أنك تريد الحذف"
 
 #. placeholder {0}: `${deletingUser.firstName} ${deletingUser.lastName}`.trim() || deletingUser.email
 #. placeholder {0}: deletingGroup.name
@@ -1132,11 +1132,11 @@ msgstr "هل أنت متأكد أنك تريد حذف هذا المستخدم؟ 
 
 #: src/pages/forms/FormEntriesPage.tsx:2061
 msgid "Are you sure you want to move"
-msgstr "Are you sure you want to move"
+msgstr "هل أنت متأكد أنك تريد التحرك"
 
 #: src/pages/forms/FormEntriesPage.tsx:2069
 msgid "Are you sure you want to permanently delete"
-msgstr "Are you sure you want to permanently delete"
+msgstr "هل أنت متأكد أنك تريد الحذف نهائيًا"
 
 #: src/layouts/app/components/topbar/Topbar.tsx:36
 #: src/layouts/app/components/topbar/Topbar.tsx:39
@@ -1161,7 +1161,7 @@ msgstr "تعيين مجموعات وصول المستخدم"
 
 #: src/pages/settings/components/RolesPermissions.tsx:2023
 msgid "Assign users to roles once users are available in the platform."
-msgstr "Assign users to roles once users are available in the platform."
+msgstr "قم بتعيين المستخدمين للأدوار بمجرد توفر المستخدمين في النظام الأساسي."
 
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:385
 msgid "Assigned Users & Groups"
@@ -1240,7 +1240,7 @@ msgstr "مسار التدقيق"
 
 #: src/pages/settings/components/credits/Credits.tsx:74
 msgid "August"
-msgstr "August"
+msgstr "أغسطس"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:138
 #: src/pages/settings/components/ManageUser.tsx:148
@@ -1482,7 +1482,7 @@ msgstr "تصفح"
 
 #: src/pages/forms/FormEntriesPage.tsx:2027
 msgid "Browse"
-msgstr "Browse"
+msgstr "تصفح"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:621
 msgid "browse files"
@@ -1689,7 +1689,7 @@ msgstr "تغيير اللغة"
 
 #: src/pages/settings/components/RolesPermissions.tsx:1972
 msgid "Change Role"
-msgstr "Change Role"
+msgstr "تغيير الدور"
 
 #: src/layouts/auth/components/ThemeSwitcher.tsx:18
 msgid "Change theme"
@@ -2460,7 +2460,7 @@ msgstr "ملف CSV"
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:175
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:485
 msgid "Currencies"
-msgstr "Currencies"
+msgstr "العملات"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:61
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:229
@@ -2472,7 +2472,7 @@ msgstr "العملة"
 #: src/pages/settings/components/RolesPermissions.tsx:1959
 #: src/pages/settings/components/RolesPermissions.tsx:1961
 msgid "Current Role"
-msgstr "Current Role"
+msgstr "الدور الحالي"
 
 #: src/pages/folders/components/DocumentsListView.tsx:441
 #: src/pages/folders/components/FolderTable.tsx:712
@@ -2500,7 +2500,7 @@ msgstr "تكوين البريد الإلكتروني المخصص (IMAP)"
 #: src/pages/requests/components/InboxList.tsx:1219
 #: src/pages/requests/components/InboxList.tsx:1289
 msgid "Custom Range"
-msgstr "Custom Range"
+msgstr "نطاق مخصص"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:904
 msgid "Customize Design"
@@ -2559,7 +2559,7 @@ msgstr "تم حفظ لوحة التحكم وتنشيطها لـ {repositoryName}
 
 #: src/pages/settings/components/AuditMonitoring.tsx:142
 msgid "Data Access"
-msgstr "Data Access"
+msgstr "الوصول إلى البيانات"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:805
 msgid "Data Destination"
@@ -2604,7 +2604,7 @@ msgstr "أيام"
 
 #: src/pages/settings/components/credits/Credits.tsx:78
 msgid "December"
-msgstr "December"
+msgstr "ديسمبر"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:917
 msgid "Decide how document revisions are tracked when files are updated."
@@ -2689,7 +2689,7 @@ msgstr "حذف القائمة"
 #: src/pages/forms/FormEntriesPage.tsx:1320
 #: src/pages/forms/FormEntriesPage.tsx:2104
 msgid "Delete Permanently"
-msgstr "Delete Permanently"
+msgstr "حذف نهائيا"
 
 #: src/pages/settings/components/PortalConfiguration.tsx:641
 msgid "Delete Portal"
@@ -2729,7 +2729,7 @@ msgstr "حذف المستخدم"
 
 #: src/pages/forms/FormsPage.tsx:538
 msgid "Deleting form..."
-msgstr "Deleting form..."
+msgstr "جارٍ حذف النموذج..."
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:133
 msgid "Demo data selected. This data will be used for invoice processing."
@@ -3187,15 +3187,15 @@ msgstr "تاريخ الاستحقاق"
 
 #: src/pages/requests/components/InboxList.tsx:1215
 msgid "Due in Next 1 Month"
-msgstr "Due in Next 1 Month"
+msgstr "مستحق في الشهر 1 القادم"
 
 #: src/pages/requests/components/InboxList.tsx:1213
 msgid "Due in Next 15 Days"
-msgstr "Due in Next 15 Days"
+msgstr "مستحق خلال الـ 15 يومًا القادمة"
 
 #: src/pages/requests/components/InboxList.tsx:1211
 msgid "Due in Next 7 Days"
-msgstr "Due in Next 7 Days"
+msgstr "مستحق في الأيام السبعة القادمة"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:134
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1881
@@ -3473,7 +3473,7 @@ msgstr "فارغ"
 #: src/pages/forms/FormEntriesPage.tsx:1240
 #: src/pages/forms/FormEntriesPage.tsx:1250
 msgid "Empty form field"
-msgstr "Empty form field"
+msgstr "حقل نموذج فارغ"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:666
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1345
@@ -3806,7 +3806,7 @@ msgstr "جاري الاستخراج..."
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:937
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:994
 msgid "EZOFIS Drive"
-msgstr "EZOFIS Drive"
+msgstr "محرك إزوفيس"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:787
 msgid "EZOFIS Fields"
@@ -4002,7 +4002,7 @@ msgstr "فبراير – يوليو 2026"
 
 #: src/pages/settings/components/credits/Credits.tsx:68
 msgid "February"
-msgstr "February"
+msgstr "فبراير"
 
 #: src/pages/sign-in/BrandedSignInPage.tsx:160
 msgid "Fetching Details.."
@@ -4158,7 +4158,7 @@ msgstr "جاري إنهاء النتائج..."
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:135
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:447
 msgid "Financial Year"
-msgstr "Financial Year"
+msgstr "السنة المالية"
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:748
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:773
@@ -4188,7 +4188,7 @@ msgstr "أمر ثابت"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:770
 msgid "Flat"
-msgstr "Flat"
+msgstr "مستوي"
 
 #: src/pages/folders/components/FolderSharePopover.tsx:180
 #: src/pages/folders/components/SignRequestAssignForm.tsx:55
@@ -4501,7 +4501,7 @@ msgstr "الانتقال إلى الوارد"
 #: src/pages/settings/components/ManageUser.tsx:357
 #: src/pages/settings/components/PortalConfiguration.tsx:1341
 msgid "Google"
-msgstr "Google"
+msgstr "جوجل"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:420
 msgid "Google cloud"
@@ -4511,7 +4511,7 @@ msgstr "سحابة جوجل"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:939
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:995
 msgid "Google Drive"
-msgstr "Google Drive"
+msgstr "جوجل درايف"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:180
 #: src/pages/sign-in/components/SignInForm.tsx:427
@@ -4960,7 +4960,7 @@ msgstr "اندماج"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2343
 #: src/pages/settings/components/Folders/DmsSettings.tsx:345
 msgid "Integrations"
-msgstr "Integrations"
+msgstr "التكامل"
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:453
 msgid "INTELLIGENCE"
@@ -5169,7 +5169,7 @@ msgstr "وصف البند"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1906
 #: src/pages/forms/FormEntriesPage.tsx:1217
 msgid "items"
-msgstr "items"
+msgstr "أغراض"
 
 #: src/components/base/pagination/Pagination.tsx:30
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:23
@@ -5179,7 +5179,7 @@ msgstr "العناصر"
 
 #: src/pages/settings/components/credits/Credits.tsx:67
 msgid "January"
-msgstr "January"
+msgstr "يناير"
 
 #: src/pages/settings/components/ManageUser.tsx:1593
 #: src/pages/settings/components/ManageUser.tsx:1856
@@ -5197,11 +5197,11 @@ msgstr "تم نسخ JSON إلى الحافظة."
 
 #: src/pages/settings/components/credits/Credits.tsx:73
 msgid "July"
-msgstr "July"
+msgstr "يوليو"
 
 #: src/pages/settings/components/credits/Credits.tsx:72
 msgid "June"
-msgstr "June"
+msgstr "يونيو"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:335
 #~ msgid "Just 3 suppliers account for 19% of unpaid liabilities, led by Harbor Point Consulting at $686.5K."
@@ -5285,11 +5285,11 @@ msgstr "آخر 90 يومًا"
 
 #: src/pages/requests/components/Table.tsx:86
 msgid "Last Action At"
-msgstr "Last Action At"
+msgstr "الإجراء الأخير في"
 
 #: src/pages/requests/components/Table.tsx:81
 msgid "Last Action By"
-msgstr "Last Action By"
+msgstr "الإجراء الأخير بواسطة"
 
 #: src/pages/settings/components/Folders/retentionMockData.ts:60
 msgid "Last Activity Date"
@@ -5306,7 +5306,7 @@ msgstr "الشهر الماضي"
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:133
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:445
 msgid "Last month"
-msgstr "Last month"
+msgstr "الشهر الماضي"
 
 #: src/pages/settings/components/ManageUser.tsx:2263
 #: src/pages/settings/components/ManageUser.tsx:2268
@@ -5760,7 +5760,7 @@ msgstr "ملخص الربط"
 
 #: src/pages/settings/components/credits/Credits.tsx:69
 msgid "March"
-msgstr "March"
+msgstr "يمشي"
 
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/MarkAll.tsx:13
 msgid "Mark all as read"
@@ -5910,7 +5910,7 @@ msgstr "الحد الأقصى لحجم الملف 5 ميجابايت."
 
 #: src/pages/settings/components/credits/Credits.tsx:71
 msgid "May"
-msgstr "May"
+msgstr "يمكن"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:998
 msgid "Medium"
@@ -6022,7 +6022,7 @@ msgstr "طريقة وزارة الخارجية"
 #: src/pages/settings/components/ManageUser.tsx:358
 #: src/pages/settings/components/PortalConfiguration.tsx:1350
 msgid "Microsoft"
-msgstr "Microsoft"
+msgstr "مايكروسوفت"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:391
 msgid "Microsoft 365 authentication"
@@ -6038,7 +6038,7 @@ msgstr "سحابة مايكروسوفت"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:985
 msgid "Microsoft Dynamics"
-msgstr "Microsoft Dynamics"
+msgstr "مايكروسوفت ديناميات"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:400
 msgid "Microsoft OneDrive"
@@ -6078,14 +6078,14 @@ msgstr "معاينة الجوال"
 #: src/pages/forms/FormsPage.tsx:249
 #: src/pages/workflows/components/Table.tsx:101
 msgid "Modified At"
-msgstr "Modified At"
+msgstr "تم التعديل في"
 
 #: src/pages/forms/FormsPage.tsx:242
 #: src/pages/forms/FormsPage.tsx:619
 #: src/pages/workflows/components/Table.tsx:94
 #: src/pages/workflows/components/Table.tsx:467
 msgid "Modified By"
-msgstr "Modified By"
+msgstr "تم التعديل بواسطة"
 
 #: src/pages/forms/FormsPage.tsx:630
 #: src/pages/workflows/components/Table.tsx:478
@@ -6158,7 +6158,7 @@ msgstr "أكثر من"
 
 #: src/pages/forms/FormEntriesPage.tsx:2055
 msgid "Move Entry to Trash"
-msgstr "Move Entry to Trash"
+msgstr "نقل الإدخال إلى سلة المهملات"
 
 #: src/pages/settings/components/Folders/retentionMockData.ts:86
 msgid "Move matched documents out of active storage into the archive."
@@ -6167,7 +6167,7 @@ msgstr "انقل المستندات المطابقة من التخزين الن�
 #: src/pages/forms/FormEntriesPage.tsx:1303
 #: src/pages/forms/FormEntriesPage.tsx:2103
 msgid "Move to Trash"
-msgstr "Move to Trash"
+msgstr "الانتقال إلى سلة المهملات"
 
 #: src/pages/settings/components/ManageUser.tsx:1699
 msgid "Multi-Factor Authentication"
@@ -6363,7 +6363,7 @@ msgstr "لا توجد شروط إضافية — المشغل وحده هو ال�
 
 #: src/pages/settings/components/AuditMonitoring.tsx:225
 msgid "No audit events or monitoring logs available."
-msgstr "No audit events or monitoring logs available."
+msgstr "لا توجد أحداث تدقيق أو سجلات مراقبة متاحة."
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:360
 msgid "No column mapped"
@@ -6514,7 +6514,7 @@ msgstr "لم يتم استخراج أي حقائق أساسية."
 
 #: src/pages/settings/components/AuditMonitoring.tsx:227
 msgid "No logs found"
-msgstr "No logs found"
+msgstr "لم يتم العثور على سجلات"
 
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:440
 msgid "No matching columns found — CSV/Excel headers must match table column names."
@@ -6620,7 +6620,7 @@ msgstr "لا توجد نتائج لـ «{debouncedQuery}»."
 #: src/pages/requests/components/QuickFilters.tsx:295
 #: src/pages/requests/components/QuickFilters.tsx:339
 msgid "No results found"
-msgstr "No results found"
+msgstr "لم يتم العثور على نتائج"
 
 #: src/pages/settings/components/Folders/FolderRetention.tsx:252
 msgid "No Retention Policies"
@@ -6684,7 +6684,7 @@ msgstr "لا تتوفر رؤية واضحة لاتجاهات الموردين."
 
 #: src/pages/requests/components/QuickFilters.tsx:382
 msgid "No suppliers found"
-msgstr "No suppliers found"
+msgstr "لم يتم العثور على الموردين"
 
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:482
 msgid "No table columns configured."
@@ -6704,7 +6704,7 @@ msgstr "لا يوجد حساب طرف ثالث مطلوب"
 
 #: src/pages/settings/components/credits/Credits.tsx:1339
 msgid "No timeline data for this period."
-msgstr "No timeline data for this period."
+msgstr "لا توجد بيانات الجدول الزمني لهذه الفترة."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2213
 msgid "No timeline found"
@@ -6720,7 +6720,7 @@ msgstr "لم يتم العثور على أعمدة تم تحميلها."
 
 #: src/pages/settings/components/RolesPermissions.tsx:2025
 msgid "No user assignments yet"
-msgstr "No user assignments yet"
+msgstr "لا يوجد تعيينات للمستخدم حتى الآن"
 
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:434
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:588
@@ -6823,7 +6823,7 @@ msgstr "أعلمني عند الوصول"
 
 #: src/pages/settings/components/credits/Credits.tsx:77
 msgid "November"
-msgstr "November"
+msgstr "نوفمبر"
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:11
 msgid "Number"
@@ -6851,7 +6851,7 @@ msgstr "فشل استخراج OCR: {detail}"
 
 #: src/pages/settings/components/credits/Credits.tsx:76
 msgid "October"
-msgstr "October"
+msgstr "أكتوبر"
 
 #: src/pages/portal/components/PortalHome.tsx:362
 msgid "of"
@@ -6890,7 +6890,7 @@ msgstr "بمجرد تفعيلها."
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:938
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:996
 msgid "OneDrive"
-msgstr "OneDrive"
+msgstr "ون درايف"
 
 #: src/pages/folders/components/FolderTable.tsx:1194
 #: src/pages/portal/components/PortalHome.tsx:323
@@ -6986,7 +6986,7 @@ msgstr "أو اكتب تكاملاً…"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:984
 msgid "Oracle ERP"
-msgstr "Oracle ERP"
+msgstr "أوراكل لتخطيط موارد المؤسسات"
 
 #: src/pages/settings/components/Menus.tsx:382
 msgid "Order"
@@ -7194,11 +7194,11 @@ msgstr "تحقق مثالي من أمر الشراء."
 
 #: src/pages/settings/components/Folders/retentionMockData.ts:103
 msgid "Permanent Delete"
-msgstr "Permanent Delete"
+msgstr "الحذف الدائم"
 
 #: src/pages/forms/FormEntriesPage.tsx:2056
 msgid "Permanently Delete Entry"
-msgstr "Permanently Delete Entry"
+msgstr "حذف الإدخال نهائيًا"
 
 #: src/pages/settings/components/Folders/retentionMockData.ts:100
 msgid "Permanently remove matched documents. This cannot be undone."
@@ -7268,11 +7268,11 @@ msgstr "مكان التوقيع"
 
 #: src/pages/forms/FormEntriesPage.tsx:1236
 msgid "Placeholder Column 1"
-msgstr "Placeholder Column 1"
+msgstr "العمود النائب 1"
 
 #: src/pages/forms/FormEntriesPage.tsx:1246
 msgid "Placeholder Column 2"
-msgstr "Placeholder Column 2"
+msgstr "العمود النائب 2"
 
 #: src/pages/settings/SettingsMain.tsx:341
 #~ msgid "Platform and monitoring"
@@ -7469,7 +7469,7 @@ msgstr "رقم طلب الشراء"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:513
 #: src/pages/requests/components/QuickFilters.tsx:309
 msgid "PO Amount"
-msgstr "PO Amount"
+msgstr "مبلغ أمر الشراء"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:31
 msgid "PO Import"
@@ -7853,7 +7853,7 @@ msgstr "تناقض في سطر الكمية."
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:134
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:446
 msgid "Quarter"
-msgstr "Quarter"
+msgstr "ربع"
 
 #: src/pages/settings/components/credits/Credits.tsx:61
 msgid "Quarterly"
@@ -7882,13 +7882,13 @@ msgstr "تجربة سريعة"
 
 #: src/pages/requests/components/Table.tsx:74
 msgid "Raised At"
-msgstr "Raised At"
+msgstr "مرفوع عند"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1367
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1539
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
-msgstr "Raised By"
+msgstr "مرفوع بواسطة"
 
 #: src/pages/requests/components/request/components/Header.tsx:574
 msgid "Raised Date"
@@ -7984,7 +7984,7 @@ msgstr "تحديث"
 
 #: src/pages/settings/components/credits/Credits.tsx:575
 msgid "Refresh credit usage"
-msgstr "Refresh credit usage"
+msgstr "تحديث استخدام الائتمان"
 
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:237
 msgid "Refresh Preview"
@@ -7993,7 +7993,7 @@ msgstr "تحديث المعاينة"
 #: src/pages/folders/components/FolderFilterBar.tsx:708
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 msgid "Refreshing..."
-msgstr "Refreshing..."
+msgstr "منعش..."
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2001
 msgid "Regenerate"
@@ -8304,7 +8304,7 @@ msgstr "إعادة محاولة الاستيراد"
 
 #: src/pages/forms/FormEntriesPage.tsx:1478
 msgid "Retry Loading"
-msgstr "Retry Loading"
+msgstr "أعد محاولة التحميل"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:929
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:22
@@ -8558,7 +8558,7 @@ msgstr "حفظ وتجديد الحقول"
 
 #: src/pages/settings/components/RolesPermissions.tsx:2043
 msgid "Save Assignments"
-msgstr "Save Assignments"
+msgstr "حفظ الواجبات"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:604
 msgid "Save Branding"
@@ -8568,7 +8568,7 @@ msgstr "حفظ العلامة التجارية"
 #: src/pages/forms/FormEntriesPage.tsx:401
 #: src/pages/forms/FormEntriesPage.tsx:1995
 msgid "Save Changes"
-msgstr "Save Changes"
+msgstr "حفظ التغييرات"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:911
 msgid "Save Dashboard"
@@ -9120,7 +9120,7 @@ msgstr "حدد حقل كلمة المرور"
 #: src/pages/settings/components/ManageUser.tsx:1845
 #: src/pages/settings/components/RolesPermissions.tsx:1791
 msgid "Select role"
-msgstr "Select role"
+msgstr "حدد الدور"
 
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:629
 msgid "Select row"
@@ -9244,7 +9244,7 @@ msgstr "المرسل ({sentCount})"
 
 #: src/pages/settings/components/credits/Credits.tsx:75
 msgid "September"
-msgstr "September"
+msgstr "سبتمبر"
 
 #: src/pages/folders/components/FolderSharePopover.tsx:170
 #: src/pages/folders/components/SignRequestAssignForm.tsx:56
@@ -9719,12 +9719,12 @@ msgstr "الحالة"
 
 #: src/pages/requests/components/QuickFilters.tsx:215
 msgid "Status: {val}"
-msgstr "Status: {val}"
+msgstr "الحالة: {val}"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:163
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:473
 msgid "Statuses"
-msgstr "Statuses"
+msgstr "الحالات"
 
 #: src/pages/portal/components/PortalWizard.tsx:868
 #~ msgid "Step {currentStep} of {totalSteps}"
@@ -9956,12 +9956,12 @@ msgstr "تم التحقق من المورد"
 
 #: src/pages/requests/components/QuickFilters.tsx:225
 msgid "Supplier: {val}"
-msgstr "Supplier: {val}"
+msgstr "المورد: {val}"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:152
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:463
 msgid "Suppliers"
-msgstr "Suppliers"
+msgstr "الموردين"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2484
 msgid "Suppliers to Chase"
@@ -10148,7 +10148,7 @@ msgstr "تتوافق هذه المستندات حاليًا مع القاعدة 
 #: src/pages/forms/FormEntriesPage.tsx:2073
 #: src/pages/forms/FormsPage.tsx:513
 msgid "This action is permanent and cannot be undone."
-msgstr "This action is permanent and cannot be undone."
+msgstr "هذا الإجراء دائم ولا يمكن التراجع عنه."
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1310
 msgid "This area is already signed."
@@ -10189,7 +10189,7 @@ msgstr "يستغرق الأمر وقتاً أطول قليلاً. يمكنك ا�
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:132
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:444
 msgid "This month"
-msgstr "This month"
+msgstr "هذا الشهر"
 
 #: src/pages/portal/components/PortalLogin.tsx:147
 msgid "This portal is missing a master form or username field."
@@ -10226,7 +10226,7 @@ msgstr "رابط طلب التوقيع هذا غير صالح."
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:131
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:443
 msgid "This week"
-msgstr "This week"
+msgstr "هذا الاسبوع"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:176
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:203
@@ -10264,7 +10264,7 @@ msgstr "الوقت المنقضي من الإجراء الأخير"
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:128
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:440
 msgid "Timeframe"
-msgstr "Timeframe"
+msgstr "الإطار الزمني"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1441
 msgid "Timeline"
@@ -10281,7 +10281,7 @@ msgstr "للبدء: ما اسم هذا الممجلد؟ استخدم اسماً 
 
 #: src/pages/forms/FormEntriesPage.tsx:2065
 msgid "to Trash?"
-msgstr "to Trash?"
+msgstr "إلى سلة المهملات؟"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:130
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:442
@@ -10386,7 +10386,7 @@ msgstr "تتبع حالة كل ما قدمته."
 
 #: src/pages/settings/components/AuditMonitoring.tsx:178
 msgid "Track user activity, configuration changes, and security events across the platform."
-msgstr "Track user activity, configuration changes, and security events across the platform."
+msgstr "تتبع نشاط المستخدم وتغييرات التكوين والأحداث الأمنية عبر النظام الأساسي."
 
 #: src/pages/settings/components/credits/Credits.tsx:882
 msgid "Transaction Activity"
@@ -10947,7 +10947,7 @@ msgstr "تم حذف مسودة المستخدم بنجاح"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:208
 msgid "User Email"
-msgstr "User Email"
+msgstr "البريد الإلكتروني للمستخدم"
 
 #: src/pages/sign-in/components/SignInForm.tsx:233
 #~ msgid "User found with multiple tenants"
@@ -11129,7 +11129,7 @@ msgstr "استراتيجية الإصدار"
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:20
 #: src/pages/settings/components/Folders/DmsSettings.tsx:344
 msgid "Versioning"
-msgstr "Versioning"
+msgstr "الإصدار"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1705
 msgid "Versioning strategy saved. Do you require an ERP or system integration, or should integrations be configured later?"
@@ -11170,7 +11170,7 @@ msgstr "وضع العرض"
 
 #: src/pages/settings/components/credits/Credits.tsx:1311
 msgid "vs last period"
-msgstr "vs last period"
+msgstr "مقابل الفترة الماضية"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1520
 msgid "Wait for Balance"

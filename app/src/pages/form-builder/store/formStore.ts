@@ -266,7 +266,7 @@ export interface Question {
           specific?: {
             customOptions?: string
             formulaTokens?: Array<{
-              type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION'
+              type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR' | 'TABLE_SUM'
               value: string
             }>
             placeholder?: string

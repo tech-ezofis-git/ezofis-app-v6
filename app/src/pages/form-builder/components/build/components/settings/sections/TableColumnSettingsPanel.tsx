@@ -4,11 +4,11 @@ import type {
   QuestionType,
 } from '@/pages/form-builder/store/formStore'
 import { getRepositoryItemFilterFields } from '@/api/v6/folder/folder'
-import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
+import FormulaBuilder from './FormulaBuilder'
 
 export type TableColumn = NonNullable<
   Question['settings']['specific']['tableColumns']
@@ -30,18 +30,22 @@ const OPTIONS_COLUMN_TYPES: QuestionType[] = [
   'MULTIPLE_CHOICE',
 ]
 
-const NUMERIC_COLUMN_TYPES: QuestionType[] = [
-  'NUMBER',
-  'COUNTER',
-  'CURRENCY_AMOUNT',
-]
-
-const OPERATORS: { label: string; value: string }[] = [
-  { label: '+', value: '+' },
-  { label: '−', value: '-' },
-  { label: '×', value: '*' },
-  { label: '÷', value: '/' },
-]
+// Builds a minimal Question-shaped stand-in so the shared FormulaBuilder
+// (designed for top-level fields) can be reused as-is for a table column —
+// it only ever reads id/label/type/settings.specific.formulaTokens off what
+// it's given.
+const toPseudoQuestion = (col: TableColumn): Question =>
+  ({
+    id: col.id,
+    label: col.name,
+    type: col.type,
+    settings: {
+      general: { hideLabel: false, size: 'col-6', visibility: 'NORMAL' },
+      lookupSettings: {},
+      specific: { formulaTokens: col.settings?.specific?.formulaTokens || [] },
+      validation: { fieldRule: 'OPTIONAL' },
+    },
+  }) as unknown as Question
 
 const TableColumnSettingsPanel = ({
   column,
@@ -68,21 +72,8 @@ const TableColumnSettingsPanel = ({
     },
   })
 
-  const formulaTokens = column.settings?.specific?.formulaTokens || []
-  const numericSiblings = siblingColumns.filter((c) =>
-    NUMERIC_COLUMN_TYPES.includes(c.type),
-  )
-
-  const setFormulaTokens = (tokens: typeof formulaTokens) =>
-    onUpdate({ specific: { formulaTokens: tokens } })
-
-  const appendToken = (token: {
-    type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION'
-    value: string
-  }) => setFormulaTokens([...formulaTokens, token])
-
-  const removeToken = (index: number) =>
-    setFormulaTokens(formulaTokens.filter((_, i) => i !== index))
+  const pseudoQuestion = toPseudoQuestion(column)
+  const pseudoSiblingFields = siblingColumns.map(toPseudoQuestion)
 
   return (
     <div className='animate-in fade-in slide-in-from-top-1 space-y-3 duration-200'>
@@ -166,55 +157,11 @@ const TableColumnSettingsPanel = ({
           <label className='block text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
             Formula (uses this row's other columns)
           </label>
-          <div className='flex min-h-[36px] flex-wrap gap-1.5 rounded-lg border border-gray-3 bg-white p-2'>
-            {formulaTokens.length === 0 && (
-              <span className='self-center text-[11px] text-gray-7 italic'>
-                Add columns and operators to build a formula
-              </span>
-            )}
-            {formulaTokens.map((token, index) => (
-              <div
-                className='flex items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-1 text-[11px] font-bold text-gray-12'
-                key={`${token.type}-${token.value}-${index}`}
-              >
-                {token.type === 'FIELD'
-                  ? siblingColumns.find((c) => c.id === token.value)?.name ||
-                    'Deleted column'
-                  : token.value}
-                <button
-                  className='text-gray-8 hover:text-error-main'
-                  type='button'
-                  onClick={() => removeToken(index)}
-                >
-                  <Icon height={10} name='lucide:x' width={10} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className='grid grid-cols-4 gap-1.5'>
-            {OPERATORS.map((op) => (
-              <button
-                className='h-7 rounded-md border border-gray-3 bg-white text-12 font-bold text-gray-12 hover:border-accent-primary hover:text-accent-primary'
-                key={op.value}
-                type='button'
-                onClick={() =>
-                  appendToken({ type: 'OPERATOR', value: op.value })
-                }
-              >
-                {op.label}
-              </button>
-            ))}
-          </div>
-          <InputSelect
-            options={numericSiblings.map((c) => ({ id: c.id, name: c.name }))}
-            value={null}
-            placeholder={
-              numericSiblings.length
-                ? 'Add a column'
-                : 'No number/currency/counter columns yet'
-            }
-            onChange={(opt) =>
-              opt && appendToken({ type: 'FIELD', value: String(opt.id) })
+          <FormulaBuilder
+            activeQuestion={pseudoQuestion}
+            fields={pseudoSiblingFields}
+            onChange={(tokens) =>
+              onUpdate({ specific: { formulaTokens: tokens } })
             }
           />
         </div>

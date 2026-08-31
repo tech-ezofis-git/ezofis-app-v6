@@ -77,6 +77,7 @@ type PortalWizardProps = {
   onChromeChange?: (
     chrome: {
       canSubmit: boolean
+      stageLabel?: string
       submitLabel: string
       submitting: boolean
       title: string
