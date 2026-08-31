@@ -251,6 +251,13 @@ export interface Question {
         name: string
         size: 'SMALL' | 'MEDIUM' | 'LARGE'
         type: QuestionType
+        settings?: {
+          validation?: { fieldRule?: 'OPTIONAL' | 'REQUIRED' }
+          specific?: {
+            placeholder?: string
+            customOptions?: string
+          }
+        }
       }>
       timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
       uniqueCheck?: boolean

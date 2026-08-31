@@ -1,3 +1,5 @@
+import { t as staticT } from '@lingui/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence } from 'motion/react'
 import {
@@ -41,36 +43,36 @@ type Permission = {
 
 const STEPPER_ITEMS = [
   {
-    description: 'Select target access',
+    description: staticT`Select target access`,
     icon: 'tabler:users',
     id: 0,
-    label: 'Users & Groups',
+    label: staticT`Users & Groups`,
   },
   {
-    description: 'Set access privileges',
+    description: staticT`Set access privileges`,
     icon: 'tabler:shield',
     id: 1,
-    label: 'Permissions',
+    label: staticT`Permissions`,
   },
   {
-    description: 'Review and save policy',
+    description: staticT`Review and save policy`,
     icon: 'tabler:check',
     id: 2,
-    label: 'Review & Save',
+    label: staticT`Review & Save`,
   },
 ]
 
 const DEFAULT_PERMISSIONS: Permission[] = [
-  { id: 'view', name: 'View', description: 'Open folder and files', enabled: true },
-  { id: 'upload', name: 'Upload', description: 'Upload new files', enabled: false },
-  { id: 'download', name: 'Download', description: 'Download documents', enabled: false },
-  { id: 'print', name: 'Print', description: 'Print documents', enabled: false },
-  { id: 'delete', name: 'Delete', description: 'Delete files or folders', enabled: false },
-  { id: 'editMetadata', name: 'Edit Metadata', description: 'Modify metadata fields', enabled: false },
-  { id: 'editDocument', name: 'Edit Document', description: 'Modify document content', enabled: false },
-  { id: 'checkOut', name: 'Check Out', description: 'Lock document for editing', enabled: false },
-  { id: 'checkIn', name: 'Check In', description: 'Complete editing session', enabled: false },
-  { id: 'sendForSignature', name: 'Send for Signature', description: 'Create signature request', enabled: false },
+  { id: 'view', name: staticT`View`, description: staticT`Open folder and files`, enabled: true },
+  { id: 'upload', name: staticT`Upload`, description: staticT`Upload new files`, enabled: false },
+  { id: 'download', name: staticT`Download`, description: staticT`Download documents`, enabled: false },
+  { id: 'print', name: staticT`Print`, description: staticT`Print documents`, enabled: false },
+  { id: 'delete', name: staticT`Delete`, description: staticT`Delete files or folders`, enabled: false },
+  { id: 'editMetadata', name: staticT`Edit Metadata`, description: staticT`Modify metadata fields`, enabled: false },
+  { id: 'editDocument', name: staticT`Edit Document`, description: staticT`Modify document content`, enabled: false },
+  { id: 'checkOut', name: staticT`Check Out`, description: staticT`Lock document for editing`, enabled: false },
+  { id: 'checkIn', name: staticT`Check In`, description: staticT`Complete editing session`, enabled: false },
+  { id: 'sendForSignature', name: staticT`Send for Signature`, description: staticT`Create signature request`, enabled: false },
 ]
 
 const PERMISSION_ICON_MAP: Record<keyof FolderPermissionFlags, string> = {
@@ -146,6 +148,7 @@ export default function FolderSecurityPolicyWizard({
   onSaveSuccess?: () => void
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const [step, setStep] = useState<Step>(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -384,7 +387,7 @@ export default function FolderSecurityPolicyWizard({
 
     setShowSelectionError(true)
     showToast({
-      message: 'Select at least one user or group to continue.',
+      message: t`Select at least one user or group to continue.`,
       variant: 'error',
     })
     return false
@@ -419,7 +422,7 @@ export default function FolderSecurityPolicyWizard({
 
   const savePolicy = async () => {
     if (selectedPrincipals.length === 0) {
-      showToast({ message: 'Select at least one user or group for this policy.', variant: 'error' })
+      showToast({ message: t`Select at least one user or group for this policy.`, variant: 'error' })
       setStep(0)
       return
     }
@@ -467,14 +470,14 @@ export default function FolderSecurityPolicyWizard({
 
     if (res.status === 403) {
       showToast({
-        message: 'You do not have access. Admin privileges are required to save security policies.',
+        message: t`You do not have access. Admin privileges are required to save security policies.`,
         variant: 'error',
       })
       return
     }
 
     if (res.status === 401) {
-      showToast({ message: 'Authentication required. Please log in again.', variant: 'error' })
+      showToast({ message: t`Authentication required. Please log in again.`, variant: 'error' })
       return
     }
 
@@ -483,7 +486,7 @@ export default function FolderSecurityPolicyWizard({
       return
     }
 
-    showToast({ message: 'Folder security policy saved successfully.', variant: 'success' })
+    showToast({ message: t`Folder security policy saved successfully.`, variant: 'success' })
     if (onSaveSuccess) onSaveSuccess()
     onClose()
   }
@@ -503,7 +506,7 @@ export default function FolderSecurityPolicyWizard({
       return (
         <div className="rounded-lg border border-[var(--red-4)] bg-[var(--red-2)] p-4 text-center text-[var(--red-11)]">
           <Icon name="tabler:alert-circle" className="mx-auto mb-1.5 text-[var(--red-9)] size-6" />
-          <h4 className="text-sm font-semibold">Access Restricted</h4>
+          <h4 className="text-sm font-semibold">{t`Access Restricted`}</h4>
           <p className="mt-0.5 text-xs">{accessError}</p>
         </div>
       )
@@ -516,10 +519,10 @@ export default function FolderSecurityPolicyWizard({
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Policy'}
+                  {editingIndex != null ? t`Edit Folder Security Policy` : t`Folder Security Policy`}
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
-                  Select at least one user or group who will receive access permissions for this folder.
+                  {t`Select at least one user or group who will receive access permissions for this folder.`}
                 </p>
               </div>
 
@@ -528,7 +531,7 @@ export default function FolderSecurityPolicyWizard({
               <div className="space-y-4">
                 {showSelectionError && selectedPrincipals.length === 0 ? (
                   <Alert
-                    text="Select at least one user or group to continue."
+                    text={t`Select at least one user or group to continue.`}
                     variant="red"
                   />
                 ) : null}
@@ -536,14 +539,14 @@ export default function FolderSecurityPolicyWizard({
                 <div className="space-y-3">
                   <InputSelectMultiple
                     clearable
-                    label="Select Users"
+                    label={t`Select Users`}
                     options={userDropdownOptions}
-                    placeholder={isLoading ? 'Loading users...' : 'Search and select users...'}
+                    placeholder={isLoading ? t`Loading users...` : t`Search and select users...`}
                     searchable
                     value={
                       allUsersSelected
                         ? [
-                            { id: SELECT_ALL_OPTION_ID, name: 'All' },
+                            { id: SELECT_ALL_OPTION_ID, name: t`All` },
                             ...selectedUsers.map((p) => ({ id: p.id, name: p.name })),
                           ]
                         : selectedUsers.map((p) => ({ id: p.id, name: p.name }))
@@ -561,14 +564,14 @@ export default function FolderSecurityPolicyWizard({
                 <div className="space-y-3">
                   <InputSelectMultiple
                     clearable
-                    label="Select Groups"
+                    label={t`Select Groups`}
                     options={groupDropdownOptions}
-                    placeholder={isLoading ? 'Loading groups...' : 'Search and select groups...'}
+                    placeholder={isLoading ? t`Loading groups...` : t`Search and select groups...`}
                     searchable
                     value={
                       allGroupsSelected
                         ? [
-                            { id: SELECT_ALL_OPTION_ID, name: 'All' },
+                            { id: SELECT_ALL_OPTION_ID, name: t`All` },
                             ...selectedGroups.map((p) => ({ id: p.id, name: p.name })),
                           ]
                         : selectedGroups.map((p) => ({ id: p.id, name: p.name }))
@@ -592,10 +595,10 @@ export default function FolderSecurityPolicyWizard({
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  Configure permissions
+                  {t`Configure permissions`}
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
-                  Enable or disable granular action privileges for selected users and groups.
+                  {t`Enable or disable granular action privileges for selected users and groups.`}
                 </p>
               </div>
 
@@ -603,9 +606,9 @@ export default function FolderSecurityPolicyWizard({
 
               <div className="rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs overflow-hidden">
                 <div className="px-4 py-2.5 bg-surface-muted border-b border-[var(--border-default)] flex justify-between items-center">
-                  <span className="text-xs font-semibold text-gray-13">Permissions Matrix</span>
+                  <span className="text-xs font-semibold text-gray-13">{t`Permissions Matrix`}</span>
                   <SettingsSearchInput
-                    placeholder="Search permissions..."
+                    placeholder={t`Search permissions...`}
                     value={permissionSearch}
                     onChange={setPermissionSearch}
                   />
@@ -617,7 +620,7 @@ export default function FolderSecurityPolicyWizard({
                       p.name.toLowerCase().includes(permissionSearch.toLowerCase()) ||
                       p.description.toLowerCase().includes(permissionSearch.toLowerCase()),
                   ).length === 0 ? (
-                    <div className="p-4 text-center text-xs text-gray-10">No matching permissions found</div>
+                    <div className="p-4 text-center text-xs text-gray-10">{t`No matching permissions found`}</div>
                   ) : (
                     permissions.filter(
                       (p) =>
@@ -632,7 +635,7 @@ export default function FolderSecurityPolicyWizard({
                         <div className="flex justify-center items-center">
                           {p.id === 'view' ? (
                             <span className="inline-flex bg-primary-3 text-primary-11 px-2 py-0.5 rounded-full text-[9px] font-semibold tracking-wide align-middle">
-                              Mandatory
+                              {t`Mandatory`}
                             </span>
                           ) : (
                             <button
@@ -659,14 +662,14 @@ export default function FolderSecurityPolicyWizard({
 
                 <div className="px-4 py-2 bg-surface-muted border-t border-[var(--border-default)] flex items-center justify-between text-xs">
                   <span className="text-gray-10 font-medium">
-                    {permissions.filter((p) => p.enabled).length} of {permissions.length} permissions enabled
+                    {t`${permissions.filter((p) => p.enabled).length} of ${permissions.length} permissions enabled`}
                   </span>
                   <button
                     type="button"
                     onClick={toggleAllPermissions}
                     className="text-primary-9 font-semibold hover:text-primary-10 transition"
                   >
-                    {permissions.filter((p) => p.enabled).length === permissions.length ? 'Deselect All' : 'Select All'}
+                    {permissions.filter((p) => p.enabled).length === permissions.length ? t`Deselect All` : t`Select All`}
                   </button>
                 </div>
               </div>
@@ -679,10 +682,10 @@ export default function FolderSecurityPolicyWizard({
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  Review & Save Policy
+                  {t`Review & Save Policy`}
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
-                  Verify policy details before saving restrictions.
+                  {t`Verify policy details before saving restrictions.`}
                 </p>
               </div>
 
@@ -691,21 +694,21 @@ export default function FolderSecurityPolicyWizard({
               {/* Compact 3-Column Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-                  <div className="text-[11px] font-medium text-gray-11">Repository</div>
+                  <div className="text-[11px] font-medium text-gray-11">{t`Repository`}</div>
                   <div className="text-13 font-semibold text-gray-13 truncate mt-0.5 flex items-center gap-1.5">
                     <Icon name="tabler:folder" className="size-3.5 text-primary-9" /> {folderName}
                   </div>
                 </div>
 
                 <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-                  <div className="text-[11px] font-medium text-gray-11">Users & Groups</div>
+                  <div className="text-[11px] font-medium text-gray-11">{t`Users & Groups`}</div>
                   <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
                     <Icon name="tabler:users" className="size-3.5 text-primary-9" /> {selectedPrincipals.length}
                   </div>
                 </div>
 
                 <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-                  <div className="text-[11px] font-medium text-gray-11">Permissions</div>
+                  <div className="text-[11px] font-medium text-gray-11">{t`Permissions`}</div>
                   <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
                     <Icon name="tabler:lock" className="size-3.5 text-primary-9" /> {permissions.filter((p) => p.enabled).length}
                   </div>
@@ -715,7 +718,7 @@ export default function FolderSecurityPolicyWizard({
               {/* Users & Groups with Initials Avatars */}
               <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-2xs space-y-2">
                 <div className="text-xs font-semibold text-gray-12 flex items-center justify-between">
-                  <span>Assigned Users & Groups ({selectedPrincipals.length})</span>
+                  <span>{t`Assigned Users & Groups (${selectedPrincipals.length})`}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {selectedPrincipals.map((p) => {
@@ -734,7 +737,7 @@ export default function FolderSecurityPolicyWizard({
                     )
                   })}
                   {selectedPrincipals.length === 0 && (
-                    <span className="text-xs italic text-gray-10">No users or groups selected</span>
+                    <span className="text-xs italic text-gray-10">{t`No users or groups selected`}</span>
                   )}
                 </div>
               </div>
@@ -742,7 +745,7 @@ export default function FolderSecurityPolicyWizard({
               {/* Granted Permissions as Chips with Icons */}
               <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3.5 shadow-2xs space-y-2.5">
                 <div className="text-xs font-semibold text-gray-12">
-                  Granted Permissions ({permissions.filter((p) => p.enabled).length})
+                  {t`Granted Permissions (${permissions.filter((p) => p.enabled).length})`}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {permissions.filter((p) => p.enabled).map((p) => (
@@ -752,7 +755,7 @@ export default function FolderSecurityPolicyWizard({
                     </span>
                   ))}
                   {permissions.filter((p) => p.enabled).length === 0 && (
-                    <span className="text-xs italic text-gray-10">No permissions granted</span>
+                    <span className="text-xs italic text-gray-10">{t`No permissions granted`}</span>
                   )}
                 </div>
               </div>
@@ -769,7 +772,7 @@ export default function FolderSecurityPolicyWizard({
       <div className="mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3.5 md:px-8">
         <div className="flex items-center gap-3">
           <IconButton
-            ariaLabel="Back"
+            ariaLabel={t`Back`}
             color="gray"
             icon="lucide:arrow-left"
             size="sm"
@@ -778,10 +781,10 @@ export default function FolderSecurityPolicyWizard({
           />
           <div className="flex flex-col gap-0.5">
             <h2 className="text-15 font-semibold tracking-tight text-gray-13">
-              {editingIndex != null ? 'Edit Folder Security Policy' : 'Folder Security Setup'} — {folderName}
+              {editingIndex != null ? t`Edit Folder Security Policy` : t`Folder Security Setup`} — {folderName}
             </h2>
             <p className="text-xs text-gray-11">
-              Configure access policies and privileges for folder &quot;{folderName}&quot;
+              {t`Configure access policies and privileges for folder "${folderName}"`}
             </p>
           </div>
         </div>
@@ -811,7 +814,7 @@ export default function FolderSecurityPolicyWizard({
                   color="gray"
                   disabled={Boolean(accessError) || isLoading}
                   icon="lucide:arrow-left"
-                  label="Back"
+                  label={t`Back`}
                   size="sm"
                   variant="outline"
                   onClick={() => goToStep((step - 1) as Step)}
@@ -823,7 +826,7 @@ export default function FolderSecurityPolicyWizard({
               {step === 2 ? (
                 <Button
                   disabled={isSaving || Boolean(accessError) || isLoading}
-                  label={isSaving ? 'Saving...' : 'Save Policy'}
+                  label={isSaving ? t`Saving...` : t`Save Policy`}
                   loading={isSaving}
                   size="sm"
                   suffixIcon="tabler:arrow-right"
@@ -834,7 +837,7 @@ export default function FolderSecurityPolicyWizard({
               ) : (
                 <Button
                   disabled={Boolean(accessError) || isLoading}
-                  label="Continue"
+                  label={t`Continue`}
                   size="sm"
                   suffixIcon="tabler:arrow-right"
                   onClick={() => {

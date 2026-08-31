@@ -17,10 +17,11 @@ import {
   planRepositoryFolderMetadata,
   uploadInstanceAttachment,
 } from '@/pages/requests/utils/instanceAttachmentUpload'
+import { toUploadMetadata } from '@/pages/requests/utils/repoFolderMetadata'
 import authUserStore from '@/stores/authUserStore'
 import { formatUtcToLocalDate } from '@/utils/utcDate'
+import AttachmentSplitView from '../../generic-overview/AttachmentSplitView'
 import RelatedDocumentsFinder from '../overview/RelatedDocumentsFinder'
-import FolderFieldPrompt from './FolderFieldPrompt'
 
 type FileLike = AttachmentItem
 
@@ -286,13 +287,15 @@ export default function Attachments({
 
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  // The repository field the uploader still needs to supply (the deepest
-  // level of the folder hierarchy — see repoFolderMetadata.ts) before the
-  // selected file can actually be posted.
+  // A locally-picked file awaiting the indexing split-view — shown whenever
+  // the repository defines folder-structure fields, so the uploader can
+  // review inherited values and fill any missing/mandatory ones before the
+  // file is actually posted. Same split-view the Overview form-field
+  // upload uses.
   const [pendingUpload, setPendingUpload] = useState<{
     baseMetadata: Record<string, string>
-    deepestField: RepositoryFieldSchema
     file: File
+    folderFields: RepositoryFieldSchema[]
   } | null>(null)
 
   const attachedIds = useMemo(() => {
@@ -505,7 +508,7 @@ export default function Attachments({
       // field that actually varies per document — see
       // repoFolderMetadata.ts). Only that field needs asking about.
       const existingItem = files.find((f) => f.itemId)
-      const { baseMetadata, deepestField } = await planRepositoryFolderMetadata(
+      const { baseMetadata, folderFields } = await planRepositoryFolderMetadata(
         String(repositoryId),
         existingItem
           ? {
@@ -515,9 +518,9 @@ export default function Attachments({
           : undefined,
       )
 
-      if (deepestField) {
+      if (folderFields.length > 0) {
         setIsUploading(false)
-        setPendingUpload({ baseMetadata, deepestField, file })
+        setPendingUpload({ baseMetadata, file, folderFields })
         return
       }
 
@@ -526,6 +529,12 @@ export default function Attachments({
       console.error('Error preparing upload:', err)
       setIsUploading(false)
     }
+  }
+
+  const handleConfirmUpload = async (values: Record<string, string>) => {
+    if (!pendingUpload) return
+    const metadata = toUploadMetadata(pendingUpload.folderFields, values)
+    await performUpload(pendingUpload.file, metadata)
   }
 
   const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
@@ -561,6 +570,31 @@ export default function Attachments({
       const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
       window.open(url, '_blank')
     }
+  }
+
+  if (pendingUpload) {
+    // Attachments is embedded in narrow containers (a 380px side panel, a
+    // portal detail column, ...), too tight for a document preview +
+    // indexing form. Escape to a full-page takeover, same as the Overview
+    // form-field upload's indexing step, regardless of where this instance
+    // is mounted.
+    return (
+      <div className='fixed inset-0 z-[100] flex h-full min-h-0 w-full flex-col bg-surface font-sans'>
+        <AttachmentSplitView
+          file={pendingUpload.file}
+          folderFields={pendingUpload.folderFields}
+          isSubmitting={isUploading}
+          metadata={pendingUpload.baseMetadata}
+          repositoryId={repositoryId}
+          title={pendingUpload.file.name}
+          onClose={() => {
+            setPendingUpload(null)
+            if (fileInputRef.current) fileInputRef.current.value = ''
+          }}
+          onConfirm={handleConfirmUpload}
+        />
+      </div>
+    )
   }
 
   return (
@@ -645,30 +679,12 @@ export default function Attachments({
         </div>
       )}
 
-      {pendingUpload && (
-        <FolderFieldPrompt
-          field={pendingUpload.deepestField}
-          fileName={pendingUpload.file.name}
-          isSubmitting={isUploading}
-          onCancel={() => {
-            setPendingUpload(null)
-            if (fileInputRef.current) fileInputRef.current.value = ''
-          }}
-          onConfirm={(value) =>
-            performUpload(pendingUpload.file, {
-              ...pendingUpload.baseMetadata,
-              [pendingUpload.deepestField.sqlColumnName]: value,
-            })
-          }
-        />
-      )}
-
       {/* List */}
       <div className='flex flex-col gap-2'>
         {isLoading && files.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
             <Icon className='mb-2 size-6 animate-spin' name='tabler:loader' />
-            <span className='text-12'>Loading attachments...</span>
+            <span className='text-12'>{t`Loading attachments...`}</span>
           </div>
         ) : files.length === 0 ? (
           !canUpload && (

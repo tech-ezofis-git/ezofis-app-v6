@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
@@ -849,6 +850,7 @@ const Request = ({
   onNext?: () => void
   onPrev?: () => void
 }) => {
+  const { t } = useLingui()
   const {
     activeTabValue,
     closeRequest,
@@ -1415,21 +1417,21 @@ const Request = ({
     )
     if (missingChecklistItem) {
       showToast({
-        message: `Please complete the checklist item "${missingChecklistItem.label}" before proceeding.`,
+        message: t`Please complete the checklist item "${missingChecklistItem.label}" before proceeding.`,
         variant: 'error',
       })
       return
     }
     if (currentBlockSettings.documentRequired && genericAttachments.length === 0) {
       showToast({
-        message: 'At least one attachment is required before proceeding.',
+        message: t`At least one attachment is required before proceeding.`,
         variant: 'error',
       })
       return
     }
     if (currentBlockSettings.userSignature && !signatureConfirmed) {
       showToast({
-        message: 'Please confirm your signature before proceeding.',
+        message: t`Please confirm your signature before proceeding.`,
         variant: 'error',
       })
       return
@@ -1447,7 +1449,7 @@ const Request = ({
       })
       if (missingField) {
         showToast({
-          message: 'Please fill all mandatory fields before proceeding.',
+          message: t`Please fill all mandatory fields before proceeding.`,
           variant: 'error',
         })
         return
@@ -1543,7 +1545,7 @@ const Request = ({
 
       if (response?.error) {
         showToast({
-          message: `Failed to proceed request: ${response.error}`,
+          message: t`Failed to proceed request: ${response.error}`,
           variant: 'error',
         })
         return
@@ -1555,8 +1557,8 @@ const Request = ({
       showToast({
         message:
           action.toLowerCase() === 'submit'
-            ? 'Request submitted successfully'
-            : `Request action "${action}" completed successfully`,
+            ? t`Request submitted successfully`
+            : t`Request action "${action}" completed successfully`,
         variant: 'success',
       })
 
@@ -1613,8 +1615,8 @@ const Request = ({
         showToast({
           message:
             action === 'Save'
-              ? `Failed to save request: ${response.error}`
-              : `Failed to submit request: ${response.error}`,
+              ? t`Failed to save request: ${response.error}`
+              : t`Failed to submit request: ${response.error}`,
           variant: 'error',
         })
         return
@@ -1623,8 +1625,8 @@ const Request = ({
       showToast({
         message:
           action === 'Save'
-            ? 'Request saved successfully'
-            : 'Request submitted successfully',
+            ? t`Request saved successfully`
+            : t`Request submitted successfully`,
         variant: 'success',
       })
 
@@ -1641,7 +1643,7 @@ const Request = ({
     } catch (e: any) {
       console.error(e)
       showToast({
-        message: `An error occurred: ${e.message || e}`,
+        message: t`An error occurred: ${e.message || e}`,
         variant: 'error',
       })
     } finally {
@@ -1861,7 +1863,7 @@ const Request = ({
 
     if (!instanceId) {
       showToast({
-        message: 'No instance ID available to share',
+        message: t`No instance ID available to share`,
         variant: 'error',
       })
       return false
@@ -1881,11 +1883,11 @@ const Request = ({
           ),
         )
       }
-      showToast({ message: 'Request shared successfully', variant: 'success' })
+      showToast({ message: t`Request shared successfully`, variant: 'success' })
       return true
     } catch (error) {
       console.error('Failed to share:', error)
-      showToast({ message: 'Failed to share request', variant: 'error' })
+      showToast({ message: t`Failed to share request`, variant: 'error' })
       return false
     }
   }

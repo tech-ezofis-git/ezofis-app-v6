@@ -15,10 +15,12 @@ export interface RepositoryFolderPlan {
   // under this instance (keyed by sqlColumnName). The indexing page shows
   // these as editable defaults — empty ones still need to be collected.
   baseMetadata: Record<string, string>
-  // The most specific folder-structure field — used by the Attachments
-  // sidebar's single-field prompt. The form-upload indexing page edits
-  // every field instead.
+  // The most specific folder-structure field.
   deepestField: RepositoryFieldSchema | null
+  // Every folder-structure field of the repository, in level order — used
+  // by the indexing split-view so the uploader can review/fill all of them,
+  // not just the deepest one.
+  folderFields: RepositoryFieldSchema[]
 }
 
 // Reads the repository's field schema and, when it defines a folder
@@ -45,7 +47,7 @@ export const planRepositoryFolderMetadata = async (
     baseMetadata = extractExistingFolderMetadata(workspace, folderFields)
   }
 
-  return { baseMetadata, deepestField }
+  return { baseMetadata, deepestField, folderFields }
 }
 
 // Posts a single file to an instance's attachments, same endpoint/shape

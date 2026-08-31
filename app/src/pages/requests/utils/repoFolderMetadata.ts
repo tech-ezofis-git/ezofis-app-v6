@@ -123,6 +123,25 @@ export const isFilenameField = (
   )
 }
 
+// Flattens the indexing form's values (keyed by sqlColumnName) into the
+// metadata payload the upload endpoint expects — duplicated under both
+// sqlColumnName and name since existing repository items were indexed under
+// either key depending on when they were filed.
+export const toUploadMetadata = (
+  folderFields: RepositoryFieldSchema[],
+  values: Record<string, string>,
+): Record<string, string> => {
+  const next: Record<string, string> = {}
+  for (const field of folderFields) {
+    const value = String(
+      values[field.sqlColumnName] || values[field.name] || '',
+    ).trim()
+    next[field.sqlColumnName] = value
+    if (field.name) next[field.name] = value
+  }
+  return next
+}
+
 export const applyFilenamePreFill = (
   values: Record<string, string>,
   folderFields: RepositoryFieldSchema[],

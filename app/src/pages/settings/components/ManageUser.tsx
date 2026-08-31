@@ -1,4 +1,5 @@
 import { msg } from '@lingui/core/macro'
+import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import dayjs from 'dayjs'
@@ -293,19 +294,19 @@ const mfaMethodOptions = [
   {
     icon: Mail,
     iconClassName: 'text-[var(--blue-9)]',
-    title: 'Email OTP',
+    title: staticT`Email OTP`,
     value: 'Email OTP',
   },
   {
     icon: Smartphone,
     iconClassName: 'text-[var(--green-9)]',
-    title: 'Mobile OTP',
+    title: staticT`Mobile OTP`,
     value: 'Mobile OTP',
   },
   {
     icon: ShieldCheck,
     iconClassName: 'text-[var(--orange-9)]',
-    title: 'Authenticator App',
+    title: staticT`Authenticator App`,
     value: 'Authenticator App',
   },
 ] as const
@@ -803,7 +804,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
       if (!draft?.draftJson || draft.isCompleted) {
         showToast({
-          message: 'Failed to load user draft.',
+          message: t`Failed to load user draft.`,
           variant: 'error',
         })
         return
@@ -933,7 +934,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         }
 
         showToast({
-          message: 'User draft deleted successfully',
+          message: t`User draft deleted successfully`,
           variant: 'success',
         })
         setDeletingUserId(null)
@@ -948,7 +949,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         return
       }
 
-      showToast({ message: 'User deleted successfully', variant: 'success' })
+      showToast({ message: t`User deleted successfully`, variant: 'success' })
       setDeletingUserId(null)
       await loadUsers()
     } finally {
@@ -992,7 +993,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
 
     if (editingUserId) {
       if (!originalUser) {
-        showToast({ message: 'Unable to update user', variant: 'error' })
+        showToast({ message: t`Unable to update user`, variant: 'error' })
         return
       }
 
@@ -1030,7 +1031,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           )
         }
 
-        showToast({ message: 'User updated successfully', variant: 'success' })
+        showToast({ message: t`User updated successfully`, variant: 'success' })
         await finishUserWizardDraft()
         setOriginalUser(null)
         setIsSetupOpen(false)
@@ -1086,7 +1087,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         )
       }
 
-      showToast({ message: 'User created successfully', variant: 'success' })
+      showToast({ message: t`User created successfully`, variant: 'success' })
       await finishUserWizardDraft()
       setIsSetupOpen(false)
       await loadUsers()
@@ -1160,7 +1161,7 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         enableSorting: false,
         header: t`Department`,
         id: 'department',
-        meta: { ...settingsHeaderMeta.start, label: 'Department' },
+        meta: { ...settingsHeaderMeta.start, label: t`Department` },
         minSize: 40,
         size: 120,
         cell: ({ getValue }) => {
@@ -1530,8 +1531,8 @@ export default function ManageUser({ onBack }: ManageUserProps) {
         variant='danger'
         description={
           deletingUser
-            ? `Are you sure you want to delete "${`${deletingUser.firstName} ${deletingUser.lastName}`.trim() || deletingUser.email}"? This action cannot be undone.`
-            : 'Are you sure you want to delete this user? This action cannot be undone.'
+            ? t`Are you sure you want to delete "${`${deletingUser.firstName} ${deletingUser.lastName}`.trim() || deletingUser.email}"? This action cannot be undone.`
+            : t`Are you sure you want to delete this user? This action cannot be undone.`
         }
         onCancel={cancelDeleteUser}
         onConfirm={() => {
@@ -1552,13 +1553,13 @@ export default function ManageUser({ onBack }: ManageUserProps) {
                 icon: 'tabler:refresh',
                 id: 'refresh',
                 isIconButton: true,
-                tooltip: 'Refresh',
+                tooltip: t`Refresh`,
                 variant: 'outline',
                 onClick: loadUsers,
               },
             ]}
             addButton={{
-              tooltip: 'Add User',
+              tooltip: t`Add User`,
               onClick: openAddUser,
             }}
             filters={[
@@ -1567,14 +1568,14 @@ export default function ManageUser({ onBack }: ManageUserProps) {
                 label: t`Name`,
                 options: nameOptions,
                 searchable: true,
-                searchPlaceholder: 'Search name...',
+                searchPlaceholder: t`Search name...`,
               },
               {
                 id: 'email',
                 label: t`Email`,
                 options: emailOptions,
                 searchable: true,
-                searchPlaceholder: 'Search email...',
+                searchPlaceholder: t`Search email...`,
               },
               { id: 'role', label: t`Role`, options: roleOptions },
               { id: 'status', label: t`Status`, options: statusOptions },
@@ -1582,38 +1583,38 @@ export default function ManageUser({ onBack }: ManageUserProps) {
             moreFilters={[
               {
                 id: 'department',
-                label: 'Department',
+                label: t`Department`,
                 options: departmentOptions,
                 searchable: true,
-                searchPlaceholder: 'Search department...',
+                searchPlaceholder: t`Search department...`,
               },
               {
                 id: 'jobTitle',
-                label: 'Job Title',
+                label: t`Job Title`,
                 options: jobTitleFilterOptions,
                 searchable: true,
-                searchPlaceholder: 'Search job title...',
+                searchPlaceholder: t`Search job title...`,
               },
               {
                 id: 'businessUnit',
-                label: 'Business Unit',
+                label: t`Business Unit`,
                 options: businessUnitOptions,
                 searchable: true,
-                searchPlaceholder: 'Search business unit...',
+                searchPlaceholder: t`Search business unit...`,
               },
               {
                 id: 'location',
-                label: 'Location',
+                label: t`Location`,
                 options: locationFilterOptions,
                 searchable: true,
-                searchPlaceholder: 'Search location...',
+                searchPlaceholder: t`Search location...`,
               },
               {
                 id: 'manager',
-                label: 'Manager',
+                label: t`Manager`,
                 options: managerFilterOptions,
                 searchable: true,
-                searchPlaceholder: 'Search manager...',
+                searchPlaceholder: t`Search manager...`,
               },
               {
                 id: 'loginType',
@@ -1639,9 +1640,9 @@ export default function ManageUser({ onBack }: ManageUserProps) {
           <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
-                emptyDescription='Add a user to grant access to the platform and assign folder permissions.'
+                emptyDescription={t`Add a user to grant access to the platform and assign folder permissions.`}
                 emptyIcon='lucide:users'
-                emptyTitle='No users yet'
+                emptyTitle={t`No users yet`}
                 isLoading={isLoadingUsers}
                 isReLoading={isLoadingUsers}
                 pageSize={pageSize}

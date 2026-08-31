@@ -16,29 +16,29 @@ const PropertiesCards = ({ data }: Props) => {
   const decision =
     data?.decision ||
     (score >= 90
-      ? 'APPROVED'
+      ? t`APPROVED`
       : score >= 70
-        ? 'PARTIALLY APPROVED'
-        : 'REVIEW REQUIRED')
+        ? t`PARTIALLY APPROVED`
+        : t`REVIEW REQUIRED`)
 
   const fields = [
-    { label: 'Vendor', value: data?.vendor_name || '-' },
-    { label: 'Invoice #', value: data?.invoice_number || data?.reqNo || '-' },
-    { label: 'PO #', value: data?.po_number || '-' },
+    { label: t`Vendor`, value: data?.vendor_name || '-' },
+    { label: t`Invoice #`, value: data?.invoice_number || data?.reqNo || '-' },
+    { label: t`PO #`, value: data?.po_number || '-' },
     {
-      label: 'Invoice Date',
+      label: t`Invoice Date`,
       value: paymentTerms.invoice_date
         ? formatDatetime(paymentTerms.invoice_date)
         : '-',
     },
     {
-      label: 'Due Date',
+      label: t`Due Date`,
       value: paymentTerms.due_date
         ? formatDatetime(paymentTerms.due_date)
         : '-',
     },
     {
-      label: 'Total Amount',
+      label: t`Total Amount`,
       value: data?.total_amount
         ? `$${Number(data.total_amount).toLocaleString()}`
         : '-',

@@ -149,10 +149,10 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                 <table className='w-full text-left'>
                   <thead className='border-b border-[var(--gray-3)]'>
                     <tr>
-                      <th className='py-2'>Description</th>
-                      <th className='py-2'>Qty</th>
-                      <th className='py-2'>Rate</th>
-                      <th className='py-2'>Amount</th>
+                      <th className='py-2'>{t`Description`}</th>
+                      <th className='py-2'>{t`Qty`}</th>
+                      <th className='py-2'>{t`Rate`}</th>
+                      <th className='py-2'>{t`Amount`}</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-[var(--gray-2)]'>
@@ -169,15 +169,15 @@ const SummaryScreen = ({ data }: SummaryScreenProps) => {
                 <div className='mt-8 flex justify-end border-t border-[var(--gray-3)] pt-4'>
                   <div className='w-48 space-y-2'>
                     <div className='flex justify-between'>
-                      <span>Subtotal</span>
+                      <span>{t`Subtotal`}</span>
                       <span>${data.subtotal.toFixed(2)}</span>
                     </div>
                     <div className='flex justify-between'>
-                      <span>Tax</span>
+                      <span>{t`Tax`}</span>
                       <span>${data.tax.toFixed(2)}</span>
                     </div>
                     <div className='flex justify-between text-lg font-bold'>
-                      <span>Total</span>
+                      <span>{t`Total`}</span>
                       <span>${data.total.toFixed(2)}</span>
                     </div>
                   </div>

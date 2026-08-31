@@ -1,4 +1,5 @@
 // import SummaryMetric from './SummaryMetric'
+import { useLingui } from '@lingui/react/macro'
 import { type Table as TanstackTable } from '@tanstack/react-table'
 import dayjs from 'dayjs'
 // ✅ Motion
@@ -1324,6 +1325,7 @@ const GridView = <TData,>({
   onRowClick,
   onRowSizeChange: _onRowSizeChange,
 }: GridViewProps<TData>) => {
+  const { t } = useLingui()
   const [selectedFile, setSelectedFile] = useState<any>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string | number>>(
     new Set(),
@@ -1367,11 +1369,11 @@ const GridView = <TData,>({
     }
 
     const firstAction = getProceedAction(selectedItems[0], rawWorkflowData)
-    const refAction = firstAction || { label: 'No action', value: 'none' }
+    const refAction = firstAction || { label: t`No action`, value: 'none' }
 
     for (let i = 1; i < selectedItems.length; i++) {
       const currentAct = getProceedAction(selectedItems[i], rawWorkflowData)
-      const currentAction = currentAct || { label: 'No action', value: 'none' }
+      const currentAction = currentAct || { label: t`No action`, value: 'none' }
       if (currentAction.value !== refAction.value) {
         return {
           action: firstAction,
@@ -1534,7 +1536,7 @@ const GridView = <TData,>({
                 initial={{ opacity: 0, x: 20 }}
               >
                 <span className='animate-pulse rounded-md border border-[var(--primary-3)] bg-[var(--primary-2)] px-2.5 py-1 text-[12px] font-semibold text-[var(--primary-11)]'>
-                  {selectedIds.size} Selected
+                  {t`${selectedIds.size} Selected`}
                 </span>
 
                 {activeTab === 'Processed' ? (
@@ -1543,7 +1545,7 @@ const GridView = <TData,>({
                     type='button'
                     onClick={() => {
                       showToast({
-                        message: `Bulk marked ${selectedIds.size} requests as Paid successfully!`,
+                        message: t`Bulk marked ${selectedIds.size} requests as Paid successfully!`,
                         variant: 'success',
                       })
                       exitSelectionMode()
@@ -1553,7 +1555,7 @@ const GridView = <TData,>({
                       className='size-4 text-[var(--green-9)]'
                       name='tabler:circle-check'
                     />
-                    Mark as Paid
+                    {t`Mark as Paid`}
                   </button>
                 ) : (
                   <>
@@ -1566,7 +1568,7 @@ const GridView = <TData,>({
                               type='button'
                               onClick={() => {
                                 showToast({
-                                  message: `Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
+                                  message: t`Bulk action "${actionValidation.action.label}" applied to ${selectedIds.size} requests successfully!`,
                                   variant: 'success',
                                 })
                                 exitSelectionMode()

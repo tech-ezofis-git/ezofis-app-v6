@@ -1,4 +1,5 @@
 // @/pages/requests/components/request/components/sections/history/History.tsx
+import { t } from '@lingui/macro'
 import Icon from '@/components/base/icon/Icon'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
 import cn from '@/utils/cn'
@@ -121,7 +122,7 @@ const getTitle = (h: HistoryRow) => {
     stageLc.includes('ingest') ||
     statusLc.includes('ingest')
   ) {
-    return 'Document ingested via email'
+    return t`Document ingested via email`
   }
 
   // 2. OCR extraction
@@ -151,7 +152,7 @@ const getTitle = (h: HistoryRow) => {
     if (!confidenceText) {
       confidenceText = ' — 98% confidence' // default or fallback
     }
-    return `OCR extraction complete${confidenceText}`
+    return t`OCR extraction complete${confidenceText}`
   }
 
   // 3. Metadata validated / Duplicate check
@@ -161,7 +162,7 @@ const getTitle = (h: HistoryRow) => {
     statusLc.includes('validate') ||
     statusLc.includes('duplicate')
   ) {
-    return 'Metadata validated, no duplicates found'
+    return t`Metadata validated, no duplicates found`
   }
 
   // 4. Approval / Grant
@@ -172,20 +173,20 @@ const getTitle = (h: HistoryRow) => {
     statusLc.includes('grant')
   ) {
     if (stageLc.includes('l1')) {
-      return 'L1 Approval granted'
+      return t`L1 Approval granted`
     } else if (stageLc.includes('l2')) {
-      return 'L2 Approval granted'
+      return t`L2 Approval granted`
     }
-    return `${stage || 'Approval'} granted`
+    return t`${stage || t`Approval`} granted`
   }
 
   // 5. Escalated
   if (statusLc.includes('escalat') || stageLc.includes('escalat')) {
     let target = ''
     if (stageLc.includes('l2') || statusLc.includes('l2'))
-      target = 'L2 Approval'
+      target = t`L2 Approval`
     else if (stageLc.includes('l3') || statusLc.includes('l3'))
-      target = 'L3 Approval'
+      target = t`L3 Approval`
 
     let assignee = ''
     const actor = pickActor(h)
@@ -196,16 +197,16 @@ const getTitle = (h: HistoryRow) => {
     }
 
     if (target) {
-      return `Escalated to ${target}${assignee}`
+      return t`Escalated to ${target}${assignee}`
     }
-    return `Escalated${assignee}`
+    return t`Escalated${assignee}`
   }
 
   // Fallback: Use h.stage or h.status / h.action
   if (stage && status) {
     return `${stage} — ${status}`
   }
-  return stage || status || h.action || 'Stage processed'
+  return stage || status || h.action || t`Stage processed`
 }
 
 export default function History({
@@ -228,7 +229,7 @@ export default function History({
           name='tabler:loader-2'
         />
         <div className='text-[11px] font-medium text-gray-10'>
-          Loading history...
+          {t`Loading history...`}
         </div>
       </div>
     )
@@ -238,7 +239,7 @@ export default function History({
 
     return (
       <div className='p-4 text-center text-xs font-semibold text-red-9'>
-        Failed to load history.
+        {t`Failed to load history.`}
       </div>
     )
   }
@@ -250,7 +251,7 @@ export default function History({
           className='mx-auto mb-2 size-8 opacity-50'
           name='tabler:history-off'
         />
-        <div className='text-xs'>No history found</div>
+        <div className='text-xs'>{t`No history found`}</div>
       </div>
     )
   }
@@ -318,19 +319,19 @@ export default function History({
               if (descLower.includes('review: matched')) {
                 matchBadge = {
                   color: 'border-green-3 bg-green-1 text-green-9',
-                  label: 'Matched',
+                  label: t`Matched`,
                 }
                 // if (descLower.trim() === 'review: matched') showDesc = false
               } else if (descLower.includes('partially matched')) {
                 matchBadge = {
                   color: 'border-orange-3 bg-orange-1 text-orange-9',
-                  label: 'Partially Matched',
+                  label: t`Partially Matched`,
                 }
                 // if (descLower.trim() === 'review: partially matched') showDesc = false
               } else if (descLower.includes('not matched')) {
                 matchBadge = {
                   color: 'border-red-3 bg-red-1 text-red-9',
-                  label: 'Not Matched',
+                  label: t`Not Matched`,
                 }
                 // if (descLower.trim() === 'review: not matched') showDesc = false
               }

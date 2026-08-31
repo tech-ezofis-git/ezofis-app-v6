@@ -1,4 +1,4 @@
-import { msg } from '@lingui/core/macro'
+import { msg, t as staticT } from '@lingui/core/macro'
 import { useLingui } from '@lingui/react/macro'
 import {
   Combobox as MantineCombobox,
@@ -338,11 +338,11 @@ const mapWizardDraftToRow = (
 }
 
 const wizardSteps: WizardStepItem[] = [
-  { description: 'Name & description', id: 1, title: 'Folder Details' },
-  { description: 'Metadata fields', id: 2, title: 'Fields' },
-  { description: 'Storage provider', id: 3, title: 'Storage' },
-  { description: 'Version strategy', id: 4, title: 'Versioning' },
-  { description: 'ERP & sync mapping', id: 5, title: 'Integrations' },
+  { description: staticT`Name & description`, id: 1, title: staticT`Folder Details` },
+  { description: staticT`Metadata fields`, id: 2, title: staticT`Fields` },
+  { description: staticT`Storage provider`, id: 3, title: staticT`Storage` },
+  { description: staticT`Version strategy`, id: 4, title: staticT`Versioning` },
+  { description: staticT`ERP & sync mapping`, id: 5, title: staticT`Integrations` },
 ]
 
 type StorageOption = {
@@ -369,73 +369,71 @@ const isCloudStorageOption = (
 const storageOptions: StorageOption[] = [
   {
     comingSoon: false,
-    description:
-      'Default storage option provided with your account for immediate access.',
+    description: staticT`Default storage option provided with your account for immediate access.`,
     features: [
-      'Enterprise-grade encryption at rest',
-      'No third-party account required',
-      'Automatic backups and versioning support',
+      staticT`Enterprise-grade encryption at rest`,
+      staticT`No third-party account required`,
+      staticT`Automatic backups and versioning support`,
     ],
     id: 'EZOFIS Drive',
     logo: StorageLogo,
-    status: 'Ready to use',
+    status: staticT`Ready to use`,
     storageProviderCode: 'EZOFIS',
-    subtitle: 'Built-in secure storage',
-    title: 'Use secure cloud storage',
-    type: 'Built-in provider',
+    subtitle: staticT`Built-in secure storage`,
+    title: staticT`Use secure cloud storage`,
+    type: staticT`Built-in provider`,
   },
   {
     comingSoon: false,
     connectorType: 'ONE_DRIVE',
-    description: 'Store folder documents in Microsoft OneDrive.',
+    description: staticT`Store folder documents in Microsoft OneDrive.`,
     features: [
-      'Microsoft 365 authentication',
-      'Sync with existing OneDrive folders',
-      'Enterprise sharing policies supported',
+      staticT`Microsoft 365 authentication`,
+      staticT`Sync with existing OneDrive folders`,
+      staticT`Enterprise sharing policies supported`,
     ],
     id: 'One Drive',
     logo: OneDriveLogo,
     oauthProvider: 'onedrive',
-    status: 'Connect required',
+    status: staticT`Connect required`,
     storageProviderCode: 'ONE_DRIVE',
-    subtitle: 'Microsoft OneDrive',
+    subtitle: staticT`Microsoft OneDrive`,
     title: 'OneDrive',
-    type: 'Microsoft cloud',
+    type: staticT`Microsoft cloud`,
   },
   {
     comingSoon: false,
     connectorType: 'GOOGLE_DRIVE',
-    description: 'Store folder documents in Google Drive.',
+    description: staticT`Store folder documents in Google Drive.`,
     features: [
-      'Google Workspace sign-in',
-      'Shared drive compatibility',
-      'Automatic file metadata sync',
+      staticT`Google Workspace sign-in`,
+      staticT`Shared drive compatibility`,
+      staticT`Automatic file metadata sync`,
     ],
     id: 'Google Drive',
     logo: GoogleDriveLogo,
     oauthProvider: 'google',
-    status: 'Connect required',
+    status: staticT`Connect required`,
     storageProviderCode: 'GOOGLE_DRIVE',
-    subtitle: 'Google Workspace',
+    subtitle: staticT`Google Workspace`,
     title: 'Google Drive',
-    type: 'Google cloud',
+    type: staticT`Google cloud`,
   },
   {
     comingSoon: true,
-    description:
-      'Azure Blob storage integration for organizations using Microsoft Azure.',
+    description: staticT`Azure Blob storage integration for organizations using Microsoft Azure.`,
     features: [
-      'Azure AD authentication',
-      'Blob container mapping',
-      'Regional data residency options',
+      staticT`Azure AD authentication`,
+      staticT`Blob container mapping`,
+      staticT`Regional data residency options`,
     ],
     icon: 'logos:microsoft-azure',
     id: 'Azure Drive',
-    status: 'Coming soon',
+    status: staticT`Coming soon`,
     storageProviderCode: 'AZURE',
-    subtitle: 'Coming Soon',
+    subtitle: staticT`Coming Soon`,
     title: 'Azure Drive',
-    type: 'Microsoft Azure',
+    type: staticT`Microsoft Azure`,
   },
 ]
 
@@ -443,62 +441,62 @@ const versionOptions = [
   {
     id: 'Replace Existing',
     sample: 'Invoice.pdf → Invoice.pdf',
-    subtitle: 'New uploads replace the existing file',
-    title: 'Replace Existing',
+    subtitle: staticT`New uploads replace the existing file`,
+    title: staticT`Replace Existing`,
   },
   {
     id: 'Timestamp Version',
     sample: 'Invoice.pdf → Invoice_20260101_1000.pdf',
-    subtitle: 'Append timestamp to each version',
-    title: 'Timestamp Version',
+    subtitle: staticT`Append timestamp to each version`,
+    title: staticT`Timestamp Version`,
   },
   {
     id: 'Incremental Version',
     sample: 'Invoice.pdf → Invoice_1.pdf → Invoice_2.pdf',
-    subtitle: 'Auto-increment version number',
-    title: 'Incremental Version',
+    subtitle: staticT`Auto-increment version number`,
+    title: staticT`Incremental Version`,
   },
 ]
 
 const integrations = [
   {
-    description: 'Configure ERP or system integrations later.',
+    description: staticT`Configure ERP or system integrations later.`,
     icon: 'tabler:clock',
     id: 'None',
-    title: 'Skip for now',
+    title: staticT`Skip for now`,
   },
   {
-    description: 'Sync Master Form data with corresponding folder fields.',
+    description: staticT`Sync Master Form data with corresponding folder fields.`,
     icon: 'tabler:file-description',
     id: 'MasterForm',
-    title: 'Master Form Sync',
+    title: staticT`Master Form Sync`,
   },
   {
-    description: 'Sync folder documents and metadata with SAP ERP.',
+    description: staticT`Sync folder documents and metadata with SAP ERP.`,
     icon: 'tabler:building-warehouse',
     id: 'SAP',
     title: 'SAP',
   },
   {
-    description: 'Connect Oracle ERP for invoice and master data sync.',
+    description: staticT`Connect Oracle ERP for invoice and master data sync.`,
     icon: 'tabler:database',
     id: 'Oracle ERP',
     title: 'Oracle ERP',
   },
   {
-    description: 'Integrate with Microsoft Dynamics for finance workflows.',
+    description: staticT`Integrate with Microsoft Dynamics for finance workflows.`,
     icon: 'tabler:brand-windows',
     id: 'Microsoft Dynamics',
     title: 'Microsoft Dynamics',
   },
   {
-    description: 'Link QuickBooks for accounting and payment updates.',
+    description: staticT`Link QuickBooks for accounting and payment updates.`,
     icon: 'tabler:receipt-2',
     id: 'QuickBooks',
     title: 'QuickBooks',
   },
   {
-    description: 'Use a custom API endpoint for your own systems.',
+    description: staticT`Use a custom API endpoint for your own systems.`,
     icon: 'tabler:api',
     id: 'Custom API',
     title: 'Custom API',
@@ -1114,7 +1112,7 @@ export default function DmsFolderConfiguration({
 
           if (!draft?.draftJson) {
             showToast({
-              message: 'Failed to load folder draft.',
+              message: t`Failed to load folder draft.`,
               variant: 'error',
             })
             return
@@ -1143,7 +1141,7 @@ export default function DmsFolderConfiguration({
             message:
               typeof response.error === 'string'
                 ? response.error
-                : 'Failed to load folder details.',
+                : t`Failed to load folder details.`,
             variant: 'error',
           })
           return
@@ -1355,14 +1353,14 @@ export default function DmsFolderConfiguration({
             message:
               typeof response.error === 'string'
                 ? response.error
-                : 'Failed to delete folder',
+                : t`Failed to delete folder`,
             variant: 'error',
           })
           return
         }
       }
 
-      showToast({ message: 'Folder deleted successfully.', variant: 'success' })
+      showToast({ message: t`Folder deleted successfully.`, variant: 'success' })
       setDeletingRepositoryId(null)
       await loadRepositories()
     } finally {
@@ -1446,7 +1444,7 @@ export default function DmsFolderConfiguration({
   }) => {
     const trimmedName = payload.folderName.trim()
     if (!trimmedName) {
-      showToast({ message: 'Folder name is required.', variant: 'error' })
+      showToast({ message: t`Folder name is required.`, variant: 'error' })
       return
     }
 
@@ -1515,14 +1513,14 @@ export default function DmsFolderConfiguration({
 
       if (response.error) {
         showToast({
-          message: `Failed to create folder: ${response.error}`,
+          message: t`Failed to create folder: ${response.error}`,
           variant: 'error',
         })
         return
       }
 
       showToast({
-        message: 'Folder created successfully.',
+        message: t`Folder created successfully.`,
         variant: 'success',
       })
       await finishFolderWizardDraft()
@@ -1530,7 +1528,7 @@ export default function DmsFolderConfiguration({
       resetWizardUi()
     } catch (error: any) {
       showToast({
-        message: `Failed to create folder: ${error?.message || 'Unknown error'}`,
+        message: t`Failed to create folder: ${error?.message || t`Unknown error`}`,
         variant: 'error',
       })
     } finally {
@@ -1587,7 +1585,7 @@ export default function DmsFolderConfiguration({
   const handleCreateRepository = async () => {
     const trimmedName = folderName.trim()
     if (!trimmedName) {
-      showToast({ message: 'Folder name is required.', variant: 'error' })
+      showToast({ message: t`Folder name is required.`, variant: 'error' })
       setStep(1)
       return
     }
@@ -1668,7 +1666,7 @@ export default function DmsFolderConfiguration({
 
         if (!masterFormFile) {
           showToast({
-            message: 'Please upload an Excel file for the Master Form.',
+            message: t`Please upload an Excel file for the Master Form.`,
             variant: 'error',
           })
           return
@@ -1829,7 +1827,7 @@ export default function DmsFolderConfiguration({
         const formRes = await formApi.createForm(formPayload)
         if (formRes.error) {
           showToast({
-            message: `Failed to create Master Form: ${formRes.error}`,
+            message: t`Failed to create Master Form: ${formRes.error}`,
             variant: 'error',
           })
           return
@@ -1842,7 +1840,7 @@ export default function DmsFolderConfiguration({
             : formIdRaw?.id || formIdRaw?.formId || formIdRaw?.data || ''
         if (!formId) {
           showToast({
-            message: 'Master Form created but no form ID was returned.',
+            message: t`Master Form created but no form ID was returned.`,
             variant: 'error',
           })
           return
@@ -1886,8 +1884,7 @@ export default function DmsFolderConfiguration({
         console.log('masterFormFile', masterFormFile)
         if (masterFormFile) {
           showToast({
-            message:
-              'Uploading master file to process entries in the background...',
+            message: t`Uploading master file to process entries in the background...`,
             variant: 'default',
           })
           console.log('upload master file api called')
@@ -1900,20 +1897,19 @@ export default function DmsFolderConfiguration({
             if (uploadRes.error) {
               console.error('Failed to upload master file', uploadRes.error)
               showToast({
-                message: `Failed to enqueue background import: ${uploadRes.error}`,
+                message: t`Failed to enqueue background import: ${uploadRes.error}`,
                 variant: 'warning',
               })
             } else {
               showToast({
-                message:
-                  'Master file queued for background import successfully.',
+                message: t`Master file queued for background import successfully.`,
                 variant: 'success',
               })
             }
           } catch (entryError) {
             console.error('Failed to upload master file', entryError)
             showToast({
-              message: 'Failed to upload master file to the server',
+              message: t`Failed to upload master file to the server`,
               variant: 'warning',
             })
           }
@@ -1957,8 +1953,8 @@ export default function DmsFolderConfiguration({
       if (response.error) {
         showToast({
           message: isEditing
-            ? `Failed to update folder: ${response.error}`
-            : `Failed to create folder: ${response.error}`,
+            ? t`Failed to update folder: ${response.error}`
+            : t`Failed to create folder: ${response.error}`,
           variant: 'error',
         })
         return
@@ -1966,8 +1962,8 @@ export default function DmsFolderConfiguration({
 
       showToast({
         message: isEditing
-          ? 'Folder updated successfully.'
-          : 'Folder created successfully.',
+          ? t`Folder updated successfully.`
+          : t`Folder created successfully.`,
         variant: 'success',
       })
       await finishFolderWizardDraft()
@@ -2137,7 +2133,7 @@ export default function DmsFolderConfiguration({
                 icon: 'tabler:refresh',
                 id: 'refresh',
                 isIconButton: true,
-                tooltip: 'Refresh',
+                tooltip: t`Refresh`,
                 variant: 'outline',
                 onClick: loadRepositories,
               },
@@ -2148,42 +2144,42 @@ export default function DmsFolderConfiguration({
             filters={[
               {
                 id: 'name',
-                label: 'Folder',
+                label: t`Folder`,
                 options: folderNameOptions,
                 searchable: true,
-                searchPlaceholder: 'Search folder...',
+                searchPlaceholder: t`Search folder...`,
               },
               {
                 id: 'storage',
-                label: 'Storage',
+                label: t`Storage`,
                 options: storageFilterOptions,
               },
-              { id: 'status', label: 'Status', options: statusOptions },
+              { id: 'status', label: t`Status`, options: statusOptions },
             ]}
             moreFilters={[
               {
                 id: 'description',
-                label: 'Description',
+                label: t`Description`,
                 options: descriptionOptions,
                 searchable: true,
-                searchPlaceholder: 'Search description...',
+                searchPlaceholder: t`Search description...`,
               },
               {
                 id: 'documents',
-                label: 'Documents',
+                label: t`Documents`,
                 options: documentCountOptions,
               },
               {
                 id: 'createdAt',
-                label: 'Created',
+                label: t`Created`,
                 options: createdAtOptions,
               },
               {
                 id: 'createdBy',
-                label: 'Created By',
+                label: t`Created By`,
                 options: createdByOptions,
                 searchable: true,
-                searchPlaceholder: 'Search created by...',
+                searchPlaceholder: t`Search created by...`,
               },
             ]}
             showReset={
@@ -3628,7 +3624,7 @@ function WizardContent({
       setMasterFormTitle(fileNameWithoutExt)
     } catch (e) {
       setMasterFormUploadState('error')
-      showToast({ message: 'Failed to parse Excel file', variant: 'error' })
+      showToast({ message: t`Failed to parse Excel file`, variant: 'error' })
     }
   }
 
@@ -4087,11 +4083,11 @@ function WizardContent({
                   <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_200px] md:items-end'>
                     <div>
                       <label className='mb-2 block text-13 font-medium text-gray-11'>
-                        Field Name
+                        {t`Field Name`}
                       </label>
                       <FieldNameWithIconInput
                         iconKey={String(newFieldIcon?.value || 'folder')}
-                        placeholder='e.g. Cost Center'
+                        placeholder={t`e.g. Cost Center`}
                         showIconPicker={newIsFolder}
                         size='md'
                         value={newFieldName}
@@ -4106,10 +4102,10 @@ function WizardContent({
                     </div>
 
                     <InputSelect
-                      label='Type'
+                      label={t`Type`}
                       options={fieldTypeOptions}
-                      placeholder='Field type'
-                      searchPlaceholder='Search type'
+                      placeholder={t`Field type`}
+                      searchPlaceholder={t`Search type`}
                       width='target'
                       searchable
                       value={
@@ -4131,11 +4127,11 @@ function WizardContent({
                   ) && (
                     <div className='flex flex-col gap-2'>
                       <label className='text-13 font-medium text-gray-11'>
-                        Options
+                        {t`Options`}
                       </label>
                       <TagsInput
                         data={[]}
-                        placeholder='Type an option and press Enter'
+                        placeholder={t`Type an option and press Enter`}
                         value={newFieldOptions}
                         clearable
                         onChange={setNewFieldOptions}
@@ -4691,8 +4687,8 @@ function WizardContent({
                       <AnimateFadeIn delay={0.1}>
                         <div className='mb-6 max-w-md'>
                           <InputSelectMultiple
-                            label='Select Forms'
-                            placeholder='Select forms...'
+                            label={t`Select Forms`}
+                            placeholder={t`Select forms...`}
                             searchable
                             options={(formsList ?? []).map((f) => ({
                               id: f.id,

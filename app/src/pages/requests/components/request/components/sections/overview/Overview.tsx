@@ -1,3 +1,4 @@
+import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
 import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import { searchPlugin } from '@react-pdf-viewer/search'
@@ -968,6 +969,7 @@ const FormCard = ({
   onChange,
   onFocus,
 }: any) => {
+  const { t } = useLingui()
   const [isEditing, setIsEditing] = useState(false)
   const [localValue, setLocalValue] = useState(value)
   const [userEdited, setUserEdited] = useState(false)
@@ -1033,13 +1035,13 @@ const FormCard = ({
       return (
         <span
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--orange-3)] bg-[var(--orange-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--orange-10)]'
-          title='Source: Manual Entry'
+          title={t`Source: Manual Entry`}
         >
           <Icon
             className='h-2.5 w-2.5 text-[var(--orange-9)]'
             name='lucide:pencil'
           />
-          <span>Manual</span>
+          <span>{t`Manual`}</span>
         </span>
       )
     }
@@ -1047,13 +1049,13 @@ const FormCard = ({
       return (
         <span
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-3)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--blue-10)]'
-          title='Source: PO Master (ERP/Excel Data)'
+          title={t`Source: PO Master (ERP/Excel Data)`}
         >
           <Icon
             className='h-2.5 w-2.5 text-[var(--blue-9)]'
             name='lucide:database'
           />
-          <span>PO Master</span>
+          <span>{t`PO Master`}</span>
         </span>
       )
     }
@@ -1339,7 +1341,7 @@ const FormCard = ({
                     variant='outline-purple'
                   />
                   <span className='shrink-0 font-semibold text-[var(--primary-9)]'>
-                    {isUsingPo ? 'Invoice' : 'PO Master'}
+                    {isUsingPo ? t`Invoice` : t`PO Master`}
                   </span>
                   <span className='shrink-0 text-[var(--primary-9)]/60'>·</span>
                   <span className='truncate font-bold text-[var(--gray-13)]'>
@@ -1507,7 +1509,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--red-1)]/50',
       chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
       icon: 'tabler:x',
-      label: 'Reject Transaction',
+      label: staticT`Reject Transaction`,
     }
   }
   if (r.includes('WAIT')) {
@@ -1515,7 +1517,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--blue-1)]/50',
       chip: 'border border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]',
       icon: 'tabler:hourglass-high',
-      label: 'Wait for Balance',
+      label: staticT`Wait for Balance`,
     }
   }
   if (r.includes('CONTACT')) {
@@ -1523,7 +1525,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--purple-1)]/50',
       chip: 'border border-[var(--purple-3)] bg-[var(--purple-1)] text-[var(--purple-9)]',
       icon: 'tabler:message-circle',
-      label: 'Contact Vendor',
+      label: staticT`Contact Vendor`,
     }
   }
   if (r.includes('CANCEL')) {
@@ -1531,7 +1533,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--red-1)]/50',
       chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
       icon: 'tabler:ban',
-      label: 'Cancel Remaining',
+      label: staticT`Cancel Remaining`,
     }
   }
   return {

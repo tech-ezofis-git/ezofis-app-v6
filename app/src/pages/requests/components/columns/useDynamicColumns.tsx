@@ -1,3 +1,4 @@
+import { t } from '@lingui/macro'
 import dayjs from 'dayjs'
 import React, { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -1298,7 +1299,7 @@ const getBaseColumns = (
   const columns: Column[] = [
     {
       id: 'requestNo',
-      label: isAccountsPayable ? 'Invoice Number' : 'Request No',
+      label: isAccountsPayable ? t`Invoice Number` : t`Request No`,
       size: 260,
       renderCell: (row: any, index = 0) => (
         <div className='flex min-w-0 items-center gap-3'>
@@ -1347,7 +1348,7 @@ const getBaseColumns = (
     columns.push(
       {
         id: 'status',
-        label: 'Current Stage',
+        label: t`Current Stage`,
         size: 220,
         renderCell: (row: any) => {
           const { currentLabel, isTerminal, previousLabel } =
@@ -1363,7 +1364,7 @@ const getBaseColumns = (
       },
       {
         id: 'raisedBy',
-        label: 'Raised By',
+        label: t`Raised By`,
         size: 180,
         renderCell: (row: any) => (
           <HoverExpandableText
@@ -1384,7 +1385,7 @@ const getBaseColumns = (
       },
       {
         id: 'lastActionAt',
-        label: 'Time Running',
+        label: t`Time Running`,
         size: 160,
         renderCell: (row: any) => {
           const lastActionAt =
@@ -1535,7 +1536,7 @@ const getBaseColumns = (
     },
     {
       id: 'raisedBy',
-      label: 'Raised By',
+      label: t`Raised By`,
       size: 200,
       renderCell: (row: any) => {
         const supplierName =
@@ -1543,11 +1544,11 @@ const getBaseColumns = (
           row?.vendor ||
           row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
           row?.raisedBy ||
-          'Unknown Supplier'
+          t`Unknown Supplier`
         return (
           <HoverExpandableText
             className='text-[13px] font-medium text-[var(--gray-11)]'
-            fallbackText='Unknown Supplier'
+            fallbackText={t`Unknown Supplier`}
             normalMaxWidthClass='max-w-[180px]'
             text={supplierName}
           />
@@ -1556,7 +1557,7 @@ const getBaseColumns = (
     },
     {
       id: 'glCodeCategory',
-      label: 'GL & Category',
+      label: t`GL & Category`,
       size: 220,
       renderCell: (row: any) => {
         const glNumber = findGLNumber(row)
@@ -1587,7 +1588,7 @@ const getBaseColumns = (
   if (activeTab !== 'Processed') {
     columns.push({
       id: 'aiInsight',
-      label: 'AI Insight',
+      label: t`AI Insight`,
       size: 260,
       renderCell: (_row: any) => {
         const agentData =
@@ -1600,7 +1601,7 @@ const getBaseColumns = (
         if (!aiInsight) {
           return (
             <span className='text-[13px] font-semibold text-[var(--gray-9)]'>
-              N/A
+              {t`N/A`}
             </span>
           )
         }
@@ -1626,7 +1627,7 @@ const getBaseColumns = (
   columns.push(
     {
       id: 'poNumber',
-      label: 'PO Number',
+      label: t`PO Number`,
       size: 160,
       renderCell: (row: any) => {
         const poNum = extractPONumber(row)
@@ -1640,7 +1641,7 @@ const getBaseColumns = (
     },
     {
       id: 'termsDueDate',
-      label: 'Due & Terms',
+      label: t`Due & Terms`,
       size: 120,
       renderCell: (row: any) => {
         const terms = extractPaymentTerms(row)
@@ -1667,7 +1668,7 @@ const getBaseColumns = (
     },
     {
       id: 'amount',
-      label: 'Total Value',
+      label: t`Total Value`,
       size: 110,
       renderCell: (row: any) => {
         const amtStr = findInvoiceAmount(row)
@@ -1681,7 +1682,7 @@ const getBaseColumns = (
               })}`
             ) : (
               <span className='text-[13px] font-semibold text-[var(--gray-9)]'>
-                N/A
+                {t`N/A`}
               </span>
             )}
           </span>
@@ -1690,7 +1691,7 @@ const getBaseColumns = (
     },
     {
       id: 'invoiceDate',
-      label: 'Invoice Date',
+      label: t`Invoice Date`,
       size: 140,
       renderCell: (row: any) => {
         const rawDate = extractInvoiceDate(row)
@@ -1810,7 +1811,7 @@ function makeActionsColumn(
     hideHeader: true,
     id: 'actions',
     isDisplayColumn: true,
-    label: 'Actions',
+    label: t`Actions`,
     size: 80,
     renderCell: (row: any) => {
       const attachmentCount = Number(row?.attachmentCount ?? 0)

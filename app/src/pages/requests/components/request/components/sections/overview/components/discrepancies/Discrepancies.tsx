@@ -17,9 +17,9 @@ const Discrepancies = ({ data }: Props) => {
     if (data?.invoice_errors?.errors) {
       data.invoice_errors.errors.forEach((err: any) => {
         list.push({
-          description: `${err.field}: ${err.detail}`,
+          description: t`${err.field}: ${err.detail}`,
           severity: 'high', // Assuming errors are always high
-          title: 'Invoice Error',
+          title: t`Invoice Error`,
         })
       })
     }
@@ -28,9 +28,9 @@ const Discrepancies = ({ data }: Props) => {
     if (data?.back_order?.missing_qty_by_item) {
       data.back_order.missing_qty_by_item.forEach((item: any) => {
         list.push({
-          description: `Line ${item.po_line_id}: Invoice Qty ${item.invoice_qty} vs PO Qty ${item.po_qty}. Remaining: ${item.remaining}`,
+          description: t`Line ${item.po_line_id}: Invoice Qty ${item.invoice_qty} vs PO Qty ${item.po_qty}. Remaining: ${item.remaining}`,
           severity: 'medium',
-          title: 'Back Order Detected',
+          title: t`Back Order Detected`,
         })
       })
     }
@@ -39,9 +39,9 @@ const Discrepancies = ({ data }: Props) => {
     if (data?.supplier_validation?.mismatch) {
       data.supplier_validation.mismatch.forEach((mismatch: any) => {
         list.push({
-          description: `${mismatch.field}: ${mismatch.detail}`,
+          description: t`${mismatch.field}: ${mismatch.detail}`,
           severity: 'high',
-          title: 'Supplier Mismatch',
+          title: t`Supplier Mismatch`,
         })
       })
     }

@@ -1,3 +1,5 @@
+import { t as staticT } from '@lingui/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence } from 'motion/react'
 import {
@@ -50,50 +52,50 @@ type Principal = {
 
 const STEPPER_ITEMS = [
   {
-    description: 'Define document rules',
+    description: staticT`Define document rules`,
     icon: 'tabler:adjustments',
     id: 0,
-    label: 'Document Rules',
+    label: staticT`Document Rules`,
   },
   {
-    description: 'Assign target users or groups',
+    description: staticT`Assign target users or groups`,
     icon: 'tabler:users',
     id: 1,
-    label: 'Target Users',
+    label: staticT`Target Users`,
   },
   {
-    description: 'Review and save rules',
+    description: staticT`Review and save rules`,
     icon: 'tabler:check',
     id: 2,
-    label: 'Review & Save',
+    label: staticT`Review & Save`,
   },
 ]
 
 const OPERATOR_OPTIONS = [
-  { id: 'equals', name: 'Equals' },
-  { id: 'notequals', name: 'Not Equals' },
-  { id: 'contains', name: 'Contains' },
-  { id: 'startswith', name: 'Starts With' },
-  { id: 'endswith', name: 'Ends With' },
-  { id: 'greaterthan', name: 'Greater Than' },
-  { id: 'lessthan', name: 'Less Than' },
-  { id: 'between', name: 'Between' },
-  { id: 'isempty', name: 'Is Empty' },
-  { id: 'isnotempty', name: 'Is Not Empty' },
+  { id: 'equals', name: staticT`Equals` },
+  { id: 'notequals', name: staticT`Not Equals` },
+  { id: 'contains', name: staticT`Contains` },
+  { id: 'startswith', name: staticT`Starts With` },
+  { id: 'endswith', name: staticT`Ends With` },
+  { id: 'greaterthan', name: staticT`Greater Than` },
+  { id: 'lessthan', name: staticT`Less Than` },
+  { id: 'between', name: staticT`Between` },
+  { id: 'isempty', name: staticT`Is Empty` },
+  { id: 'isnotempty', name: staticT`Is Not Empty` },
 ]
 
 const formatOperatorLabel = (op: string) => {
   const normalized = String(op || '').toLowerCase()
-  if (normalized === 'notequals' || normalized === 'ne' || normalized === '!=') return 'Not Equals'
-  if (normalized === 'contains') return 'Contains'
-  if (normalized === 'startswith' || normalized === 'starts_with') return 'Starts With'
-  if (normalized === 'endswith' || normalized === 'ends_with') return 'Ends With'
-  if (normalized === 'greaterthan' || normalized === 'gt' || normalized === '>') return 'Greater Than'
-  if (normalized === 'lessthan' || normalized === 'lt' || normalized === '<') return 'Less Than'
-  if (normalized === 'between') return 'Between'
-  if (normalized === 'isempty' || normalized === 'empty') return 'Is Empty'
-  if (normalized === 'isnotempty' || normalized === 'notempty') return 'Is Not Empty'
-  return 'Equals'
+  if (normalized === 'notequals' || normalized === 'ne' || normalized === '!=') return staticT`Not Equals`
+  if (normalized === 'contains') return staticT`Contains`
+  if (normalized === 'startswith' || normalized === 'starts_with') return staticT`Starts With`
+  if (normalized === 'endswith' || normalized === 'ends_with') return staticT`Ends With`
+  if (normalized === 'greaterthan' || normalized === 'gt' || normalized === '>') return staticT`Greater Than`
+  if (normalized === 'lessthan' || normalized === 'lt' || normalized === '<') return staticT`Less Than`
+  if (normalized === 'between') return staticT`Between`
+  if (normalized === 'isempty' || normalized === 'empty') return staticT`Is Empty`
+  if (normalized === 'isnotempty' || normalized === 'notempty') return staticT`Is Not Empty`
+  return staticT`Equals`
 }
 
 const normalizeOperatorCode = (opLabelOrCode: string) => {
@@ -168,6 +170,7 @@ export default function DocumentSecurityRuleWizard({
   onSaveSuccess?: () => void
   onClose: () => void
 }) {
+  const { t } = useLingui()
   const [step, setStep] = useState<Step>(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -325,7 +328,7 @@ export default function DocumentSecurityRuleWizard({
 
   const deleteRule = (ruleId: string) => {
     if (rules.length === 1) {
-      showToast({ message: 'At least one rule is required.', variant: 'error' })
+      showToast({ message: t`At least one rule is required.`, variant: 'error' })
       return
     }
     setRules((prev) => prev.filter((r) => r.id !== ruleId))
@@ -392,7 +395,7 @@ export default function DocumentSecurityRuleWizard({
 
   const saveRule = async () => {
     if (selectedPrincipals.length === 0) {
-      showToast({ message: 'Select at least one user or group for target assignment.', variant: 'error' })
+      showToast({ message: t`Select at least one user or group for target assignment.`, variant: 'error' })
       setStep(1)
       return
     }
@@ -400,13 +403,13 @@ export default function DocumentSecurityRuleWizard({
     for (let i = 0; i < rules.length; i++) {
       const r = rules[i]
       if (!r.conditions || r.conditions.length === 0) {
-        showToast({ message: `Rule ${i + 1} must have at least one condition.`, variant: 'error' })
+        showToast({ message: t`Rule ${i + 1} must have at least one condition.`, variant: 'error' })
         setStep(0)
         return
       }
       const emptyCond = r.conditions.find((c) => !c.field || !c.field.trim())
       if (emptyCond) {
-        showToast({ message: `Rule ${i + 1} contains an empty field selection. Select a field name.`, variant: 'error' })
+        showToast({ message: t`Rule ${i + 1} contains an empty field selection. Select a field name.`, variant: 'error' })
         setStep(0)
         return
       }
@@ -445,14 +448,14 @@ export default function DocumentSecurityRuleWizard({
 
     if (res.status === 403) {
       showToast({
-        message: 'You do not have access. Admin privileges are required to save document security rules.',
+        message: t`You do not have access. Admin privileges are required to save document security rules.`,
         variant: 'error',
       })
       return
     }
 
     if (res.status === 401) {
-      showToast({ message: 'Authentication required. Please log in again.', variant: 'error' })
+      showToast({ message: t`Authentication required. Please log in again.`, variant: 'error' })
       return
     }
 
@@ -461,7 +464,7 @@ export default function DocumentSecurityRuleWizard({
       return
     }
 
-    showToast({ message: 'Document security rules saved successfully.', variant: 'success' })
+    showToast({ message: t`Document security rules saved successfully.`, variant: 'success' })
     if (onSaveSuccess) onSaveSuccess()
     onClose()
   }
@@ -474,7 +477,7 @@ export default function DocumentSecurityRuleWizard({
     if (nextStep > 0 && nextStep > step) {
       if (nextStep === 2 && selectedPrincipals.length === 0) {
         showToast({
-          message: 'Select at least one user or group for target assignment.',
+          message: t`Select at least one user or group for target assignment.`,
           variant: 'error',
         })
         setStep(1)
@@ -501,7 +504,7 @@ export default function DocumentSecurityRuleWizard({
       return (
         <div className="rounded-lg border border-[var(--red-4)] bg-[var(--red-2)] p-4 text-center text-[var(--red-11)]">
           <Icon name="tabler:alert-circle" className="mx-auto mb-1.5 text-[var(--red-9)] size-6" />
-          <h4 className="text-sm font-semibold">Access Restricted</h4>
+          <h4 className="text-sm font-semibold">{t`Access Restricted`}</h4>
           <p className="mt-0.5 text-xs">{accessError}</p>
         </div>
       )
@@ -514,10 +517,10 @@ export default function DocumentSecurityRuleWizard({
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  {editingIndex != null ? 'Edit document security rule' : 'Set up document security rules'}
+                  {editingIndex != null ? t`Edit document security rule` : t`Set up document security rules`}
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
-                  Control document-level access by evaluating metadata fields.
+                  {t`Control document-level access by evaluating metadata fields.`}
                 </p>
               </div>
 
@@ -544,10 +547,10 @@ export default function DocumentSecurityRuleWizard({
                     <Icon name="tabler:eye" className={cn('size-4 mt-0.5 shrink-0', effectAction === 'grant' ? 'text-primary-9' : 'text-gray-10')} />
                     <div>
                       <div className={cn('text-xs font-semibold', effectAction === 'grant' ? 'text-primary-11' : 'text-gray-13')}>
-                        Show Documents
+                        {t`Show Documents`}
                       </div>
                       <div className="text-[11px] text-gray-10 mt-0.5">
-                        Show matching documents to target users.
+                        {t`Show matching documents to target users.`}
                       </div>
                     </div>
                   </button>
@@ -570,10 +573,10 @@ export default function DocumentSecurityRuleWizard({
                     <Icon name="tabler:eye-off" className={cn('size-4 mt-0.5 shrink-0', effectAction === 'hide' ? 'text-primary-9' : 'text-gray-10')} />
                     <div>
                       <div className={cn('text-xs font-semibold', effectAction === 'hide' ? 'text-primary-11' : 'text-gray-13')}>
-                        Hide Documents
+                        {t`Hide Documents`}
                       </div>
                       <div className="text-[11px] text-gray-10 mt-0.5">
-                        Hide matching documents from target users.
+                        {t`Hide matching documents from target users.`}
                       </div>
                     </div>
                   </button>
@@ -600,13 +603,13 @@ export default function DocumentSecurityRuleWizard({
                     <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2.5">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-13">
                         <Icon name="tabler:adjustments" className="size-3.5 text-primary-9" />
-                        Document Rule {rIndex + 1}
+                        {t`Document Rule ${rIndex + 1}`}
                       </div>
                       <div className="flex items-center gap-2.5">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-medium text-gray-10">Match:</span>
+                          <span className="text-[10px] font-medium text-gray-10">{t`Match:`}</span>
                           <div className="flex items-center bg-gray-3 p-0.5 rounded-md text-[11px] font-medium">
-                            <Tooltip content="Match ALL conditions (AND logic)" position="top">
+                            <Tooltip content={t`Match ALL conditions (AND logic)`} position="top">
                               <button
                                 type="button"
                                 onClick={() => toggleMatchType(rule.id, 'all')}
@@ -617,11 +620,11 @@ export default function DocumentSecurityRuleWizard({
                                     : 'text-gray-11 hover:text-gray-12',
                                 )}
                               >
-                                All
+                                {t`All`}
                               </button>
                             </Tooltip>
 
-                            <Tooltip content="Match ANY condition (OR logic)" position="top">
+                            <Tooltip content={t`Match ANY condition (OR logic)`} position="top">
                               <button
                                 type="button"
                                 onClick={() => toggleMatchType(rule.id, 'any')}
@@ -632,7 +635,7 @@ export default function DocumentSecurityRuleWizard({
                                     : 'text-gray-11 hover:text-gray-12',
                                 )}
                               >
-                                Any
+                                {t`Any`}
                               </button>
                             </Tooltip>
                           </div>
@@ -642,7 +645,7 @@ export default function DocumentSecurityRuleWizard({
                             type="button"
                             onClick={() => deleteRule(rule.id)}
                             className="text-gray-9 hover:text-red-500 transition p-1"
-                            title="Delete Rule"
+                            title={t`Delete Rule`}
                           >
                             <Icon name="tabler:trash" className="size-3.5" />
                           </button>
@@ -656,9 +659,9 @@ export default function DocumentSecurityRuleWizard({
                           <div className="flex-1 min-w-0">
                             <InputSelect
                               options={fieldSelectOptions}
-                              placeholder="Select field..."
+                              placeholder={t`Select field...`}
                               searchable
-                              searchPlaceholder="Search fields..."
+                              searchPlaceholder={t`Search fields...`}
                               value={cond.field ? { id: cond.field, name: cond.field } : null}
                               onChange={(option) => updateCondition(rule.id, cond.id, 'field', option?.name || '')}
                             />
@@ -667,7 +670,7 @@ export default function DocumentSecurityRuleWizard({
                           <div className="w-36 shrink-0">
                             <InputSelect
                               options={OPERATOR_OPTIONS}
-                              placeholder="Equals"
+                              placeholder={t`Equals`}
                               value={OPERATOR_OPTIONS.find((op) => op.id === normalizeOperatorCode(cond.operator)) || OPERATOR_OPTIONS[0]}
                               onChange={(option) => updateCondition(rule.id, cond.id, 'operator', String(option?.id || 'equals'))}
                             />
@@ -676,11 +679,11 @@ export default function DocumentSecurityRuleWizard({
                           <div className="flex-1 min-w-0">
                             {cond.operator === 'isempty' || cond.operator === 'isnotempty' ? (
                               <div className="h-9 rounded-md border border-[var(--border-default)] bg-surface-muted px-3 py-2 text-xs text-gray-10 italic">
-                                N/A (No value needed)
+                                {t`N/A (No value needed)`}
                               </div>
                             ) : (
                               <InputText
-                                placeholder="Value..."
+                                placeholder={t`Value...`}
                                 value={cond.value}
                                 onChange={(val) => updateCondition(rule.id, cond.id, 'value', val)}
                               />
@@ -704,13 +707,13 @@ export default function DocumentSecurityRuleWizard({
                       <div className="flex items-center justify-between rounded-md border border-[var(--border-default)] bg-surface-muted px-2.5 py-1.5 text-xs font-medium text-gray-11 transition">
                         <div className="flex items-center gap-1.5">
                           <Icon name="tabler:alert-triangle" className="size-3.5 shrink-0 text-amber-500" />
-                          <span>Multiple conditions set on field ({duplicateFields.join(', ')}).</span>
+                          <span>{t`Multiple conditions set on field (${duplicateFields.join(', ')}).`}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setDismissedWarnings((prev) => ({ ...prev, [warnKey]: true }))}
                           className="text-gray-9 hover:text-gray-12 p-0.5 transition rounded"
-                          title="Dismiss"
+                          title={t`Dismiss`}
                         >
                           <Icon name="tabler:x" className="size-3.5" />
                         </button>
@@ -722,7 +725,7 @@ export default function DocumentSecurityRuleWizard({
                       onClick={() => addCondition(rule.id)}
                       className="inline-flex items-center gap-1 text-xs font-medium text-primary-9 hover:text-primary-10 transition pt-0.5"
                     >
-                      <Icon name="tabler:plus" className="size-3.5" /> Add condition
+                      <Icon name="tabler:plus" className="size-3.5" /> {t`Add condition`}
                     </button>
                   </div>
                 )
@@ -733,7 +736,7 @@ export default function DocumentSecurityRuleWizard({
                 onClick={addRule}
                 className="w-full py-2.5 rounded-lg border border-dashed border-primary-8 bg-primary-2 text-primary-9 hover:bg-primary-3 text-xs font-semibold transition flex items-center justify-center gap-1.5"
               >
-                <Icon name="tabler:plus" className="size-3.5" /> Add Document Rule
+                <Icon name="tabler:plus" className="size-3.5" /> {t`Add Document Rule`}
               </button>
             </div>
           </AnimateSlideUp>
@@ -744,10 +747,10 @@ export default function DocumentSecurityRuleWizard({
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  Target Users & Groups
+                  {t`Target Users & Groups`}
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
-                  Select users or groups who will be subject to this document security rule ({effectAction === 'hide' ? 'Hide Documents' : 'Show Documents'}).
+                  {t`Select users or groups who will be subject to this document security rule (${effectAction === 'hide' ? t`Hide Documents` : t`Show Documents`}).`}
                 </p>
               </div>
 
@@ -756,9 +759,9 @@ export default function DocumentSecurityRuleWizard({
               <div className="space-y-3">
                 <InputSelectMultiple
                   className="bg-surface"
-                  label="Select Users & Groups *"
+                  label={t`Select Users & Groups *`}
                   options={principalOptions}
-                  placeholder={isLoading ? 'Loading users & groups...' : 'Select users or groups...'}
+                  placeholder={isLoading ? t`Loading users & groups...` : t`Select users or groups...`}
                   value={selectedPrincipals.map((p) => ({ id: p.id, name: p.name }))}
                   onChange={(value) => onSelectedPrincipalsChange(value as any[])}
                 />
@@ -769,7 +772,7 @@ export default function DocumentSecurityRuleWizard({
 
                 {selectedPrincipals.length > 0 ? (
                   <Alert
-                    text={`${selectedPrincipals.length} target user/group(s) assigned. Click Continue to review and save rules.`}
+                    text={t`${selectedPrincipals.length} target user/group(s) assigned. Click Continue to review and save rules.`}
                     variant="green"
                   />
                 ) : null}
@@ -783,10 +786,10 @@ export default function DocumentSecurityRuleWizard({
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-15 font-semibold text-gray-13">
-                  Review & Save Document Security Rules
+                  {t`Review & Save Document Security Rules`}
                 </h2>
                 <p className="mt-0.5 text-xs text-gray-11">
-                  Verify your security rules before applying settings.
+                  {t`Verify your security rules before applying settings.`}
                 </p>
               </div>
 
@@ -795,23 +798,23 @@ export default function DocumentSecurityRuleWizard({
               {/* Compact 3-Column Summary Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-                  <div className="text-[11px] font-medium text-gray-11">Repository</div>
+                  <div className="text-[11px] font-medium text-gray-11">{t`Repository`}</div>
                   <div className="text-13 font-semibold text-gray-13 truncate mt-0.5 flex items-center gap-1.5">
                     <Icon name="tabler:folder" className="size-3.5 text-primary-9" /> {folderName}
                   </div>
                 </div>
 
                 <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-                  <div className="text-[11px] font-medium text-gray-11">Target Users & Groups</div>
+                  <div className="text-[11px] font-medium text-gray-11">{t`Target Users & Groups`}</div>
                   <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
                     <Icon name="tabler:users" className="size-3.5 text-primary-9" /> {selectedPrincipals.length}
                   </div>
                 </div>
 
                 <div className="rounded-lg border border-[var(--border-default)] bg-surface px-3 py-2.5 shadow-2xs">
-                  <div className="text-[11px] font-medium text-gray-11">Rule Action</div>
+                  <div className="text-[11px] font-medium text-gray-11">{t`Rule Action`}</div>
                   <div className="text-13 font-semibold text-gray-13 mt-0.5 flex items-center gap-1.5">
-                    <Icon name={effectAction === 'hide' ? 'tabler:eye-off' : 'tabler:eye'} className="size-3.5 text-primary-9" /> {effectAction === 'hide' ? 'Hide Documents' : 'Show Documents'}
+                    <Icon name={effectAction === 'hide' ? 'tabler:eye-off' : 'tabler:eye'} className="size-3.5 text-primary-9" /> {effectAction === 'hide' ? t`Hide Documents` : t`Show Documents`}
                   </div>
                 </div>
               </div>
@@ -820,7 +823,7 @@ export default function DocumentSecurityRuleWizard({
               <div className="rounded-lg border border-[var(--border-default)] bg-surface p-3 shadow-2xs space-y-2">
                 <div className="text-xs font-semibold text-gray-12 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <Icon name="tabler:users" className="size-3.5 text-primary-9" /> Target Users ({selectedPrincipals.length})
+                    <Icon name="tabler:users" className="size-3.5 text-primary-9" /> {t`Target Users (${selectedPrincipals.length})`}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -840,7 +843,7 @@ export default function DocumentSecurityRuleWizard({
                     )
                   })}
                   {selectedPrincipals.length === 0 && (
-                    <span className="text-xs italic text-gray-10">No target users assigned</span>
+                    <span className="text-xs italic text-gray-10">{t`No target users assigned`}</span>
                   )}
                 </div>
               </div>
@@ -850,16 +853,16 @@ export default function DocumentSecurityRuleWizard({
                 <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-2.5">
                   <div className="text-xs font-semibold text-gray-12 flex items-center gap-1.5">
                     <Icon name="tabler:shield" className="size-3.5 text-primary-9" />
-                    How Documents Will Be Protected
+                    {t`How Documents Will Be Protected`}
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-md border border-primary-4 bg-primary-2 px-2 py-0.5 text-[11px] font-semibold text-primary-11">
                     {effectAction === 'hide' ? (
                       <>
-                        <Icon name="tabler:eye-off" className="size-3 text-primary-9" /> Hide Documents
+                        <Icon name="tabler:eye-off" className="size-3 text-primary-9" /> {t`Hide Documents`}
                       </>
                     ) : (
                       <>
-                        <Icon name="tabler:eye" className="size-3 text-primary-9" /> Show Documents
+                        <Icon name="tabler:eye" className="size-3 text-primary-9" /> {t`Show Documents`}
                       </>
                     )}
                   </span>
@@ -868,8 +871,8 @@ export default function DocumentSecurityRuleWizard({
                 <div className="space-y-2">
                   {rules.map((rule) => {
                     const matchText = rule.matchType === 'all'
-                      ? 'All conditions must match'
-                      : 'Any condition can match'
+                      ? t`All conditions must match`
+                      : t`Any condition can match`
 
                     return (
                       <div key={rule.id} className="rounded-md border border-[var(--border-default)] bg-surface-muted p-2.5 space-y-2">
@@ -880,7 +883,7 @@ export default function DocumentSecurityRuleWizard({
                             ) : (
                               <Icon name="tabler:eye" className="size-3.5 text-primary-9" />
                             )}
-                            Documents will be {effectAction === 'hide' ? 'hidden' : 'shown'} when:
+                            {effectAction === 'hide' ? t`Documents will be hidden when:` : t`Documents will be shown when:`}
                           </span>
                           <span className="text-[10px] font-semibold text-primary-11 bg-primary-3 px-2 py-0.5 rounded">
                             {matchText}
@@ -890,13 +893,13 @@ export default function DocumentSecurityRuleWizard({
                         <div className="space-y-1 pl-1.5">
                           {rule.conditions.map((c) => {
                             const opText = formatOperatorLabel(c.operator)
-                            const valText = c.value ? `"${c.value}"` : 'any value'
+                            const valText = c.value ? `"${c.value}"` : t`any value`
 
                             return (
                               <div key={c.id} className="flex items-center gap-1.5 text-xs text-gray-12 font-normal">
                                 <Icon name="tabler:check" className="size-3.5 text-green-9 shrink-0" />
                                 <span>
-                                  <strong className="font-semibold text-gray-13">{c.field || 'Field'}</strong> {opText} <strong className="font-semibold text-primary-11">{valText}</strong>
+                                  <strong className="font-semibold text-gray-13">{c.field || t`Field`}</strong> {opText} <strong className="font-semibold text-primary-11">{valText}</strong>
                                 </span>
                               </div>
                             )
@@ -920,7 +923,7 @@ export default function DocumentSecurityRuleWizard({
       <div className="mb-2 flex items-center justify-between border-b border-[var(--border-default)] px-6 py-3.5 md:px-8">
         <div className="flex items-center gap-3">
           <IconButton
-            ariaLabel="Back"
+            ariaLabel={t`Back`}
             color="gray"
             icon="lucide:arrow-left"
             size="sm"
@@ -929,10 +932,10 @@ export default function DocumentSecurityRuleWizard({
           />
           <div className="flex flex-col gap-0.5">
             <h2 className="text-15 font-semibold tracking-tight text-gray-13">
-              {editingIndex != null ? 'Edit Document Security Rule' : 'Document Security Setup'} — {folderName}
+              {editingIndex != null ? t`Edit Document Security Rule` : t`Document Security Setup`} — {folderName}
             </h2>
             <p className="text-xs text-gray-11">
-              Configure metadata-based document security rules for folder &quot;{folderName}&quot;
+              {t`Configure metadata-based document security rules for folder "${folderName}"`}
             </p>
           </div>
         </div>
@@ -961,7 +964,7 @@ export default function DocumentSecurityRuleWizard({
                 color="gray"
                 disabled={step === 0 || Boolean(accessError) || isLoading}
                 icon="lucide:arrow-left"
-                label="Back"
+                label={t`Back`}
                 size="sm"
                 variant="outline"
                 onClick={() => goToStep((step - 1) as Step)}
@@ -970,7 +973,7 @@ export default function DocumentSecurityRuleWizard({
               {step === 2 ? (
                 <Button
                   disabled={isSaving || Boolean(accessError) || isLoading}
-                  label={isSaving ? 'Saving...' : 'Save Rules'}
+                  label={isSaving ? t`Saving...` : t`Save Rules`}
                   loading={isSaving}
                   size="sm"
                   suffixIcon="tabler:arrow-right"
@@ -981,7 +984,7 @@ export default function DocumentSecurityRuleWizard({
               ) : (
                 <Button
                   disabled={Boolean(accessError) || isLoading}
-                  label="Continue"
+                  label={t`Continue`}
                   size="sm"
                   suffixIcon="tabler:arrow-right"
                   onClick={() => goToStep((step + 1) as Step)}

@@ -18,7 +18,7 @@ const LineItemsCards = ({ data }: Props) => {
       const poQty = line?.Quantity?.['PO Value']
       const invPrice = line?.['Unit Price']?.['Invoice Value']
       const poPrice = line?.['Unit Price']?.['PO Value']
-      const desc = line?.Description?.['Invoice Value'] || 'Unknown Item'
+      const desc = line?.Description?.['Invoice Value'] || t`Unknown Item`
       const score = Number(line?.['Line Score'] || 0)
 
       return {
@@ -50,7 +50,7 @@ const LineItemsCards = ({ data }: Props) => {
             <div className='mb-2 flex items-center justify-between'>
               <div className='min-w-0'>
                 <div className='text-xs font-semibold text-gray-11'>
-                  Line #{item.id}
+                  {t`Line #${item.id}`}
                 </div>
                 <div className='truncate text-sm font-semibold text-gray-13'>
                   {item.desc}
@@ -77,7 +77,7 @@ const LineItemsCards = ({ data }: Props) => {
                   item.invQty !== item.poQty && 'font-semibold text-red-11',
                 )}
               >
-                <div className='text-[11px] text-gray-11'>Quantity</div>
+                <div className='text-[11px] text-gray-11'>{t`Quantity`}</div>
                 {item.invQty} / {item.poQty}
               </div>
 
@@ -86,12 +86,12 @@ const LineItemsCards = ({ data }: Props) => {
                   item.invPrice !== item.poPrice && 'font-semibold text-red-11',
                 )}
               >
-                <div className='text-[11px] text-gray-11'>Unit Price</div>
+                <div className='text-[11px] text-gray-11'>{t`Unit Price`}</div>
                 {item.invPrice} / {item.poPrice}
               </div>
 
               <div className='text-right'>
-                <div className='text-[11px] text-gray-11'>Match Score</div>
+                <div className='text-[11px] text-gray-11'>{t`Match Score`}</div>
                 <span
                   className={cn('font-bold', {
                     'text-green-11': item.score >= 90,

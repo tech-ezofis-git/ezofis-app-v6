@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { t as staticT } from '@lingui/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import Icon from '@/components/base/icon/Icon'
@@ -12,12 +14,12 @@ export const SETUP_STEPS: Array<{
   icon: string
   title: string
 }> = [
-    { id: 1, icon: 'lucide:folder', title: 'Folder Details' },
-    { id: 2, icon: 'lucide:hard-drive', title: 'Storage' },
-    { id: 3, icon: 'lucide:table', title: 'Metadata' },
-    { id: 4, icon: 'lucide:git-branch', title: 'Versioning' },
-    { id: 5, icon: 'lucide:plug', title: 'Integration' },
-    { id: 6, icon: 'lucide:check-circle-2', title: 'Review' },
+    { id: 1, icon: 'lucide:folder', title: staticT`Folder Details` },
+    { id: 2, icon: 'lucide:hard-drive', title: staticT`Storage` },
+    { id: 3, icon: 'lucide:table', title: staticT`Metadata` },
+    { id: 4, icon: 'lucide:git-branch', title: staticT`Versioning` },
+    { id: 5, icon: 'lucide:plug', title: staticT`Integration` },
+    { id: 6, icon: 'lucide:check-circle-2', title: staticT`Review` },
   ]
 
 export function FolderCreationHeader({
@@ -27,6 +29,8 @@ export function FolderCreationHeader({
   draftSaved?: boolean
   onSaveExit: () => void
 }) {
+  const { t } = useLingui()
+
   return (
     <header className='shrink-0 border-b border-border-default bg-surface-primary px-5 py-3'>
       <div className='mx-auto flex max-w-[1200px] items-center justify-between gap-3'>
@@ -37,7 +41,7 @@ export function FolderCreationHeader({
             src='/favicon.svg'
           />
           <p className='text-[14px] font-semibold text-primary'>
-            Folder Creator
+            {t`Folder Creator`}
           </p>
         </div>
         <div className='flex items-center gap-3'>
@@ -47,7 +51,7 @@ export function FolderCreationHeader({
                 className='size-3.5 text-[var(--green-9)]'
                 name='lucide:check'
               />
-              Draft saved
+              {t`Draft saved`}
             </span>
           ) : null}
           <button
@@ -55,7 +59,7 @@ export function FolderCreationHeader({
             type='button'
             onClick={onSaveExit}
           >
-            Save & Exit
+            {t`Save & Exit`}
           </button>
         </div>
       </div>
@@ -164,6 +168,7 @@ export function StepCarousel({
   canGoNext?: boolean
   onNext?: () => void
 }) {
+  const { t } = useLingui()
   const reduceMotion = useReducedMotion()
   const currentIndex = SETUP_STEPS.findIndex((step) => step.id === currentStep)
   const prevIndexRef = useRef(currentIndex)
@@ -195,7 +200,7 @@ export function StepCarousel({
       <div className='relative flex min-h-0 flex-1 items-stretch justify-center'>
         {canGoPrev ? (
           <button
-            aria-label='Previous step'
+            aria-label={t`Previous step`}
             className='absolute top-1/2 left-1 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border-default bg-surface-primary/90 text-primary shadow-md backdrop-blur transition hover:scale-105 hover:bg-surface-primary sm:left-3 sm:size-11'
             type='button'
             onClick={() => prevStep && onGoToStep(prevStep.id)}
@@ -206,7 +211,7 @@ export function StepCarousel({
 
         {nextStep ? (
           <button
-            aria-label='Next step'
+            aria-label={t`Next step`}
             className='absolute top-1/2 right-1 z-20 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-border-default bg-surface-primary/90 text-primary shadow-md backdrop-blur transition hover:scale-105 hover:bg-surface-primary disabled:cursor-not-allowed disabled:opacity-35 sm:right-3 sm:size-11'
             disabled={!canGoNext}
             type='button'
@@ -294,7 +299,7 @@ export function StepCarousel({
           return (
             <button
               aria-current={active ? 'step' : undefined}
-              aria-label={`Go to ${step.title}`}
+              aria-label={t`Go to ${step.title}`}
               className={cn(
                 'h-1.5 rounded-full transition-all duration-300',
                 active
@@ -334,22 +339,23 @@ function CarouselPeekCard({
   title: string
   onClick: () => void
 }) {
+  const { t } = useLingui()
   const reduceMotion = useReducedMotion()
   const meta = summary.stats?.slice(0, 2) || []
   const statusLabel = completed
-    ? 'Done'
+    ? t`Done`
     : locked
-      ? 'Up next'
+      ? t`Up next`
       : side === 'right'
-        ? 'Next'
-        : 'Preview'
+        ? t`Next`
+        : t`Preview`
   const ctaLabel = completed
-    ? 'Edit'
+    ? t`Edit`
     : locked
-      ? 'Locked'
+      ? t`Locked`
       : side === 'right'
-        ? 'Continue'
-        : 'Open'
+        ? t`Continue`
+        : t`Open`
 
   return (
     <motion.button
@@ -624,13 +630,15 @@ export function HiddenScrollRow({
 
 export function CompactNextButton({
   disabled,
-  label = 'Next >>',
+  label,
   onClick,
 }: {
   disabled?: boolean
   label?: string
   onClick?: () => void
 }) {
+  const { t } = useLingui()
+
   return (
     <button
       className='inline-flex items-center gap-1 text-[12px] font-semibold text-secondary transition hover:text-accent-primary hover:underline disabled:cursor-not-allowed disabled:opacity-40 disabled:no-underline'
@@ -638,7 +646,7 @@ export function CompactNextButton({
       type='button'
       onClick={onClick}
     >
-      {label}
+      {label ?? t`Next >>`}
     </button>
   )
 }

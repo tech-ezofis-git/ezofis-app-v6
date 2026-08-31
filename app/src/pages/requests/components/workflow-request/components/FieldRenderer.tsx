@@ -97,6 +97,7 @@ const ChoiceRadioGroupField = ({
   value,
   onChange,
 }: ChoiceFieldProps) => {
+  const { t } = useLingui()
   const general = field?.settings?.general || {}
   const specific = field?.settings?.specific || {}
   const [customList, setCustomList] = useState<string[]>([])
@@ -143,10 +144,10 @@ const ChoiceRadioGroupField = ({
                   onChange(randomOpt)
                 }
               }}
-              title='Scan QR code to select'
+              title={t`Scan QR code to select`}
             >
               <Icon height={12} name='lucide:qr-code' width={12} />
-              <span>Scan QR</span>
+              <span>{t`Scan QR`}</span>
             </button>
           )}
         </div>
@@ -223,7 +224,7 @@ const ChoiceRadioGroupField = ({
                   <input
                     type='text'
                     className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
-                    placeholder='Type custom option...'
+                    placeholder={t`Type custom option...`}
                     value={newOptionText}
                     autoFocus
                     onChange={(e) => setNewOptionText(e.target.value)}
@@ -237,7 +238,7 @@ const ChoiceRadioGroupField = ({
                     className='h-8 rounded-lg cursor-pointer'
                     onClick={handleAddCustom}
                   >
-                    Add
+                    {t`Add`}
                   </Button>
                   <Button
                     size='xs'
@@ -246,7 +247,7 @@ const ChoiceRadioGroupField = ({
                     className='h-8 rounded-lg cursor-pointer'
                     onClick={() => setIsAddingOption(false)}
                   >
-                    Cancel
+                    {t`Cancel`}
                   </Button>
                 </div>
               ) : (
@@ -256,7 +257,7 @@ const ChoiceRadioGroupField = ({
                   onClick={() => setIsAddingOption(true)}
                 >
                   <Icon height={12} name='lucide:plus' width={12} />
-                  <span>Add custom option</span>
+                  <span>{t`Add custom option`}</span>
                 </button>
               )}
             </div>
@@ -276,6 +277,7 @@ const ChoiceCheckboxGroupField = ({
   value,
   onChange,
 }: ChoiceFieldProps) => {
+  const { t } = useLingui()
   const general = field?.settings?.general || {}
   const specific = field?.settings?.specific || {}
   const validation = field?.settings?.validation || {}
@@ -416,7 +418,7 @@ const ChoiceCheckboxGroupField = ({
                   <input
                     type='text'
                     className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
-                    placeholder='Type custom option...'
+                    placeholder={t`Type custom option...`}
                     value={newOptionText}
                     autoFocus
                     onChange={(e) => setNewOptionText(e.target.value)}
@@ -430,7 +432,7 @@ const ChoiceCheckboxGroupField = ({
                     className='h-8 rounded-lg cursor-pointer'
                     onClick={handleAddCustom}
                   >
-                    Add
+                    {t`Add`}
                   </Button>
                   <Button
                     size='xs'
@@ -439,7 +441,7 @@ const ChoiceCheckboxGroupField = ({
                     className='h-8 rounded-lg cursor-pointer'
                     onClick={() => setIsAddingOption(false)}
                   >
-                    Cancel
+                    {t`Cancel`}
                   </Button>
                 </div>
               ) : (
@@ -449,7 +451,7 @@ const ChoiceCheckboxGroupField = ({
                   onClick={() => setIsAddingOption(true)}
                 >
                   <Icon height={12} name='lucide:plus' width={12} />
-                  <span>Add custom option</span>
+                  <span>{t`Add custom option`}</span>
                 </button>
               )}
             </div>
@@ -460,7 +462,7 @@ const ChoiceCheckboxGroupField = ({
         validation.requiredValidation === 'ALL' && (
           <div className='flex items-center gap-1 pt-0.5 text-[11px] font-medium text-amber-7'>
             <Icon height={12} name='lucide:alert-circle' width={12} />
-            <span>All options must be checked to fulfill requirements.</span>
+            <span>{t`All options must be checked to fulfill requirements.`}</span>
           </div>
         )}
 
