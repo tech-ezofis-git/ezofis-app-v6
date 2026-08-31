@@ -1221,6 +1221,40 @@ const Request = ({
     {},
   )
 
+  const resolvedRequestNo = useMemo(() => {
+    return isGenericWorkflow
+      ? selectedItem?.formEntryId
+        ? `REQ-${selectedItem.formEntryId}`
+        : selectedItem?.referenceNumber ||
+        selectedItem?.requestNo ||
+        'REQ - ...'
+      : formModel?.['Invoice Number'] ||
+      formModel?.['Invoice No'] ||
+      formModel?.['invoice_number'] ||
+      formModel?.['invoice_no'] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+      'Invoice No'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+      'invoice_no'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+      'Invoice Number'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+      'invoice_number'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+      'invoice_num'
+      ] ||
+      currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
+      selectedItem?.reqNo ||
+      selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
+      selectedItem?.invoiceNumber ||
+      selectedItem?.requestNo ||
+      'REQ - ...'
+  }, [isGenericWorkflow, selectedItem, formModel, currentAgentData])
+
   useEffect(() => {
     if (!isGenericWorkflow) return
     const activeItem = request || selectedItem
@@ -1557,8 +1591,8 @@ const Request = ({
       showToast({
         message:
           action.toLowerCase() === 'submit'
-            ? t`Request submitted successfully`
-            : t`Request action "${action}" completed successfully`,
+            ? t`Request ${resolvedRequestNo} submitted successfully`
+            : t`Request ${resolvedRequestNo} action "${action}" completed successfully`,
         variant: 'success',
       })
 
@@ -1966,39 +2000,7 @@ const Request = ({
             request?.userName ||
             authUserStore.getState().session?.name
           }
-          requestNo={
-            isGenericWorkflow
-              ? selectedItem?.formEntryId
-                ? `REQ-${selectedItem.formEntryId}`
-                : selectedItem?.referenceNumber ||
-                selectedItem?.requestNo ||
-                'REQ - ...'
-              : formModel?.['Invoice Number'] ||
-              formModel?.['Invoice No'] ||
-              formModel?.['invoice_number'] ||
-              formModel?.['invoice_no'] ||
-              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice No'
-              ] ||
-              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_no'
-              ] ||
-              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'Invoice Number'
-              ] ||
-              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_number'
-              ] ||
-              currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-              'invoice_num'
-              ] ||
-              currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
-              selectedItem?.reqNo ||
-              selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
-              selectedItem?.invoiceNumber ||
-              selectedItem?.requestNo ||
-              'REQ - ...'
-          }
+          requestNo={resolvedRequestNo}
           stage={
             // `lastActionStageName` is the stage the request came FROM (the
             // last completed action), not where it currently sits — so it

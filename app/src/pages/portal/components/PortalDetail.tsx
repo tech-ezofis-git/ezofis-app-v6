@@ -260,8 +260,8 @@ export default function PortalDetail({
       showToast({
         message:
           action.toLowerCase() === 'submit'
-            ? t`Request submitted successfully`
-            : t`Request action "${action}" completed successfully`,
+            ? t`Request ${submission.requestNo} submitted successfully`
+            : t`Request ${submission.requestNo} action "${action}" completed successfully`,
         variant: 'success',
       })
       onMoved?.()
