@@ -65,8 +65,12 @@ const IconButton = forwardRef<HTMLButtonElement, Props>(
         {children}
         {icon && (
           <Icon
-            className={cn(loading && 'animate-spin', iconClass)}
-            name={loading ? 'fa:spinner' : icon}
+            className={cn(
+              (loading || iconClass?.includes('animate-spin')) &&
+                'animate-spin',
+              iconClass,
+            )}
+            name={loading && !iconClass?.includes('animate-spin') ? 'fa:spinner' : icon}
           />
         )}
       </button>

@@ -93,10 +93,9 @@ msgstr "{0} accordé"
 msgid "{0} invites sent"
 msgstr "{0} invitations envoyées"
 
-#. placeholder {0}: ocrLineItems?.length
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:574
-msgid "{0} line item(s) found in the uploaded document."
-msgstr "{0} élément(s) de campagne trouvé(s) dans le document téléchargé."
+#~ msgid "{0} line item(s) found in the uploaded document."
+#~ msgstr "{0} élément(s) de campagne trouvé(s) dans le document téléchargé."
 
 #. placeholder {0}: data.lineItems.length
 #. placeholder {1}: data.lineItems.length
@@ -177,6 +176,10 @@ msgstr "{0} : {1}"
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:191
 msgid "{activeCard}"
 msgstr "{activeCard}"
+
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:622
+msgid "{count} line item(s) found in the uploaded document."
+msgstr ""
 
 #. placeholder {0}: box.assigneeName
 #: src/pages/folders/components/DocumentSigningPage.tsx:1226
@@ -470,8 +473,8 @@ msgstr "Comptes débiteurs"
 msgid "Action"
 msgstr "Action"
 
-#: src/pages/portal/components/PortalHome.tsx:63
-#: src/pages/portal/components/PortalHome.tsx:120
+#: src/pages/portal/components/PortalHome.tsx:77
+#: src/pages/portal/components/PortalHome.tsx:134
 msgid "Action Required"
 msgstr "Action requise"
 
@@ -480,7 +483,7 @@ msgstr "Action requise"
 #: src/pages/forms/FormsPage.tsx:263
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1814
 #: src/pages/requests/components/Table.tsx:96
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:612
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:661
 #: src/pages/settings/components/Menus.tsx:414
 #: src/pages/workflows/components/Table.tsx:115
 msgid "Actions"
@@ -518,9 +521,9 @@ msgstr "Annuaire actif"
 #~ msgid "Active Suppliers"
 #~ msgstr ""
 
-#: src/pages/portal/components/PortalDetail.tsx:105
-#: src/pages/portal/components/PortalDetail.tsx:381
-#: src/pages/portal/components/PortalWizard.tsx:169
+#: src/pages/portal/components/PortalDetail.tsx:109
+#: src/pages/portal/components/PortalDetail.tsx:403
+#: src/pages/portal/components/PortalWizard.tsx:280
 #: src/pages/settings/components/credits/Credits.tsx:447
 #: src/pages/settings/components/credits/Credits.tsx:448
 #: src/pages/settings/components/credits/Credits.tsx:925
@@ -550,8 +553,8 @@ msgstr "Réel vs projeté"
 msgid "Add"
 msgstr "Ajouter"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:683
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:723
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:681
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:721
 msgid "Add \"{query}\""
 msgstr "Ajoutez \"{query}\""
 
@@ -671,7 +674,7 @@ msgstr "Ajouter une stratégie"
 msgid "Add Portal"
 msgstr "Ajouter un portail"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:552
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:598
 msgid "Add Row"
 msgstr "Ajouter une ligne"
 
@@ -800,8 +803,8 @@ msgid "AI summary regenerated."
 msgstr "Résumé de l'IA régénéré."
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:203
-msgid "AI-Assisted"
-msgstr "Assisté par l'IA"
+#~ msgid "AI-Assisted"
+#~ msgstr "Assisté par l'IA"
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:805
 msgid "AI-assisted lifecycle rules for folder \"{folderName}\""
@@ -845,7 +848,7 @@ msgstr "Alignement des en-têtes CSV/XLSX avec le schéma de mappage de la base 
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
-#: src/pages/requests/components/InboxList.tsx:1872
+#: src/pages/requests/components/InboxList.tsx:1884
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:623
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:547
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:620
@@ -874,12 +877,12 @@ msgstr "Toutes les options doivent être cochées pour répondre aux exigences."
 msgid "All search results for “{searchLabel}”"
 msgstr "Tous les résultats de recherche pour « {searchLabel} »"
 
-#: src/pages/portal/components/PortalHome.tsx:60
-#: src/pages/portal/components/PortalHome.tsx:382
+#: src/pages/portal/components/PortalHome.tsx:74
+#: src/pages/portal/components/PortalHome.tsx:396
 msgid "All Status"
 msgstr "Tous les statuts"
 
-#: src/pages/portal/components/PortalHome.tsx:359
+#: src/pages/portal/components/PortalHome.tsx:373
 msgid "All Submissions"
 msgstr "Toutes les soumissions"
 
@@ -942,8 +945,8 @@ msgstr "ANALYTIQUE"
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:191
 #: src/pages/portal/components/PortalDocumentUpload.tsx:245
-msgid "Analyze Document"
-msgstr "Analyser un document"
+#~ msgid "Analyze Document"
+#~ msgstr "Analyser un document"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:211
 msgid "Analyzing Columns..."
@@ -1092,8 +1095,8 @@ msgstr "Carte thermique des délais d’approbation"
 #~ msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2430
-#: src/pages/portal/components/PortalHome.tsx:61
-#: src/pages/portal/components/PortalHome.tsx:106
+#: src/pages/portal/components/PortalHome.tsx:75
+#: src/pages/portal/components/PortalHome.tsx:120
 #: src/pages/requests/components/QuickFilters.tsx:88
 #: src/pages/requests/utils/localizeRequestUi.ts:23
 msgid "Approved"
@@ -1237,17 +1240,18 @@ msgstr "Joindre un fichier (facultatif)..."
 #~ msgid "Attach to invoice"
 #~ msgstr ""
 
+#: src/pages/portal/components/PortalDetail.tsx:317
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:621
 msgid "Attachment"
 msgstr "Pièce jointe"
 
-#: src/pages/portal/components/PortalDetail.tsx:104
-#: src/pages/portal/components/PortalDetail.tsx:362
-#: src/pages/portal/components/PortalWizard.tsx:168
-#: src/pages/portal/components/PortalWizard.tsx:1094
+#: src/pages/portal/components/PortalDetail.tsx:108
+#: src/pages/portal/components/PortalDetail.tsx:383
+#: src/pages/portal/components/PortalWizard.tsx:279
+#: src/pages/portal/components/PortalWizard.tsx:1139
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:618
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3496
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
@@ -1366,8 +1370,8 @@ msgstr "Intégration du stockage Azure Blob pour les organisations utilisant Mic
 #: src/pages/folders/components/Upload/Upload.tsx:1595
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/portal/components/PortalBackButton.tsx:20
-#: src/pages/portal/components/PortalShell.tsx:103
-#: src/pages/portal/components/PortalShell.tsx:128
+#: src/pages/portal/components/PortalShell.tsx:104
+#: src/pages/portal/components/PortalShell.tsx:135
 #: src/pages/requests/components/request/components/generic-overview/AttachmentPreviewPanel.tsx:36
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
@@ -1423,7 +1427,7 @@ msgstr "Retour à l'avis"
 msgid "Back to Sign In"
 msgstr "Retour à la connexion"
 
-#: src/pages/portal/components/PortalHome.tsx:354
+#: src/pages/portal/components/PortalHome.tsx:368
 msgid "Back to workflows"
 msgstr "Retour aux flux de travail"
 
@@ -1435,7 +1439,7 @@ msgstr "Commande en souffrance"
 msgid "Barcode"
 msgstr "Code-barres"
 
-#: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:28
+#: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:29
 msgid "Barcode/QR scanning isn't supported in this browser."
 msgstr "La numérisation de codes-barres/QR n'est pas prise en charge dans ce navigateur."
 
@@ -1603,7 +1607,7 @@ msgstr "Par fournisseur/vendeur"
 msgid "Calculated"
 msgstr "Calculé"
 
-#: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:67
+#: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:68
 msgid "Camera access was denied or is unavailable."
 msgstr "L'accès à la caméra a été refusé ou n'est pas disponible."
 
@@ -1615,8 +1619,8 @@ msgstr "Peut modifier"
 msgid "Can View"
 msgstr "Peut voir"
 
-#: src/pages/portal/components/PortalWizard.tsx:707
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:853
+#: src/pages/portal/components/PortalWizard.tsx:739
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:855
 msgid "Can't upload: this workflow has no repository configured."
 msgstr "Impossible de télécharger : ce workflow n'a aucun référentiel configuré."
 
@@ -1631,7 +1635,6 @@ msgstr "Impossible de télécharger : ce workflow n'a aucun référentiel confi
 #: src/pages/forms/FormEntriesPage.tsx:2086
 #: src/pages/forms/FormsPage.tsx:525
 #: src/pages/my-account/components/profile/Profile.tsx:20
-#: src/pages/portal/components/PortalDocumentUpload.tsx:227
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:221
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
@@ -1757,8 +1760,8 @@ msgid "Checkbox/OMR"
 msgstr "Case à cocher/OMR"
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:53
-msgid "Checking for duplicates..."
-msgstr "Vérification des doublons..."
+#~ msgid "Checking for duplicates..."
+#~ msgstr "Vérification des doublons..."
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:242
 msgid "Choose a destination action and how to build the rule to continue."
@@ -1768,7 +1771,7 @@ msgstr "Choisissez une action de destination et comment créer la règle pour co
 msgid "Choose a signature first, then tap your sign area."
 msgstr "Choisissez d’abord une signature, puis appuyez sur votre zone de signature."
 
-#: src/pages/portal/components/PortalHome.tsx:246
+#: src/pages/portal/components/PortalHome.tsx:260
 msgid "Choose a workflow to view its submissions."
 msgstr "Choisissez un workflow pour afficher ses soumissions."
 
@@ -1891,7 +1894,7 @@ msgstr "Cliquez pour marquer l'emplacement du signataire"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:546
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:633
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:719
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:189
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:790
 msgid "Close"
@@ -1968,8 +1971,8 @@ msgid "Comments"
 msgstr "Commentaires"
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:140
-msgid "complete"
-msgstr "complet"
+#~ msgid "complete"
+#~ msgstr "complet"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:153
 msgid "Complete"
@@ -2295,7 +2298,7 @@ msgstr "Impossible de générer des champs. Essayez à nouveau de recommander le
 msgid "Could not generate folder configuration. Try again."
 msgstr "Impossible de générer la configuration du dossier. Essayer à nouveau."
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:446
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:492
 msgid "Could not read that file."
 msgstr "Impossible de lire ce fichier."
 
@@ -2610,6 +2613,10 @@ msgstr "Accès aux données"
 msgid "Data Destination"
 msgstr "Destination des données"
 
+#: src/pages/portal/components/PortalDocumentUpload.tsx:123
+msgid "Data extracted"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:437
 msgid "Data extraction complete"
 msgstr "Extraction des données terminée"
@@ -2752,7 +2759,7 @@ msgstr "Supprimer le portail"
 msgid "Delete Role"
 msgstr "Supprimer le rôle"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:661
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:706
 msgid "Delete row"
 msgstr "Supprimer la ligne"
 
@@ -2924,7 +2931,7 @@ msgstr "Téléchargement direct"
 msgid "Disabled"
 msgstr "Désactivé"
 
-#: src/pages/requests/components/InboxList.tsx:1869
+#: src/pages/requests/components/InboxList.tsx:1881
 #: src/pages/requests/components/QuickFilters.tsx:156
 #: src/pages/requests/components/request/components/sections/overview/components/discrepancies/Discrepancies.tsx:56
 #: src/pages/requests/utils/localizeRequestUi.ts:26
@@ -2947,7 +2954,7 @@ msgstr "Avez-vous besoin d'un ERP ou d'une intégration système, ou les intégr
 msgid "Doc agent"
 msgstr "Agent de documentation"
 
-#: src/pages/portal/components/PortalWizard.tsx:164
+#: src/pages/portal/components/PortalWizard.tsx:166
 msgid "Document"
 msgstr "Document"
 
@@ -2955,7 +2962,7 @@ msgstr "Document"
 msgid "Document attached"
 msgstr "Document joint"
 
-#: src/pages/portal/components/PortalWizard.tsx:388
+#: src/pages/portal/components/PortalWizard.tsx:415
 msgid "Document attached. Please confirm the details on the next steps."
 msgstr "Document joint. Veuillez confirmer les détails des prochaines étapes."
 
@@ -3046,6 +3053,10 @@ msgstr "Type de document"
 msgid "Document updated successfully."
 msgstr "Document mis à jour avec succès."
 
+#: src/pages/portal/components/PortalDocumentUpload.tsx:123
+msgid "Document uploaded"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2169
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3306
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3311
@@ -3095,7 +3106,7 @@ msgstr "Doubles paiements signalés par les algorithmes du grand livre"
 #: src/pages/folders/components/DocumentDetailsView.tsx:2526
 #: src/pages/folders/components/DocumentDetailsView.tsx:2529
 #: src/pages/folders/components/DocumentSigningPage.tsx:2860
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:783
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:870
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:68
 msgid "Download"
 msgstr "Télécharger"
@@ -3235,7 +3246,7 @@ msgstr "date d'échéance"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:843
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1946
 #: src/pages/folders/components/StartWorkflowView.tsx:175
-#: src/pages/requests/components/InboxList.tsx:1857
+#: src/pages/requests/components/InboxList.tsx:1869
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
 #: src/pages/requests/utils/localizeRequestUi.ts:14
@@ -3344,7 +3355,7 @@ msgstr "par ex. Rapports"
 msgid "Each batch needs manual confirmation before it runs."
 msgstr "Chaque lot nécessite une confirmation manuelle avant son exécution."
 
-#: src/pages/portal/components/PortalWizard.tsx:412
+#: src/pages/portal/components/PortalWizard.tsx:439
 msgid "Each file must be 10 MB or smaller."
 msgstr "Chaque fichier doit faire 10 Mo ou moins."
 
@@ -3743,7 +3754,7 @@ msgid "Exception uploading file: {detail}"
 msgstr "Fichier d'importation d'exception : {detail}"
 
 #: src/pages/requests/components/Header.tsx:72
-#: src/pages/requests/components/InboxList.tsx:2011
+#: src/pages/requests/components/InboxList.tsx:2026
 #: src/pages/requests/utils/localizeRequestUi.ts:36
 msgid "Exceptions"
 msgstr "Exceptions"
@@ -3787,7 +3798,7 @@ msgstr "Explorez, testez et déboguez les points de terminaison d'API avec des r
 #: src/pages/folders/components/Upload/Upload.tsx:2061
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1903
+#: src/pages/requests/components/InboxList.tsx:1918
 msgid "Export"
 msgstr "Exporter"
 
@@ -3799,7 +3810,7 @@ msgstr "Exporter au format CSV"
 msgid "Export PDF"
 msgstr "Exporter un PDF"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:539
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:585
 msgid "Export to Excel"
 msgstr "Exporter vers Excel"
 
@@ -3831,13 +3842,17 @@ msgstr "Données extraites"
 msgid "Extracting data"
 msgstr "Extraction des données"
 
-#: src/pages/portal/components/PortalDocumentUpload.tsx:238
-#: src/pages/portal/components/PortalWizard.tsx:525
-#: src/pages/portal/components/PortalWizard.tsx:753
-#: src/pages/portal/components/PortalWizard.tsx:1103
-#: src/pages/portal/components/PortalWizard.tsx:1109
+#: src/pages/portal/components/PortalDocumentUpload.tsx:118
+#: src/pages/portal/components/PortalDocumentUpload.tsx:144
+msgid "Extracting data from document..."
+msgstr ""
+
+#: src/pages/portal/components/PortalWizard.tsx:552
+#: src/pages/portal/components/PortalWizard.tsx:785
+#: src/pages/portal/components/PortalWizard.tsx:1148
+#: src/pages/portal/components/PortalWizard.tsx:1154
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:929
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:927
 msgid "Extracting data from the document…"
 msgstr "Extraction des données du document…"
 
@@ -3855,8 +3870,8 @@ msgid "Extracting grid fields and filtering metadata records."
 msgstr "Extraction des champs de grille et filtrage des enregistrements de métadonnées."
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:52
-msgid "Extracting invoice fields..."
-msgstr "Extraction des champs de facture..."
+#~ msgid "Extracting invoice fields..."
+#~ msgstr "Extraction des champs de facture..."
 
 #: src/pages/folders/components/AiSummaryView.tsx:486
 msgid "Extracting metadata, checking duplicates, validating compliance"
@@ -3997,7 +4012,7 @@ msgstr "Échec de l'analyse du fichier"
 msgid "Failed to parse file. Please upload a valid CSV or Excel file."
 msgstr "Échec de l'analyse du fichier. Veuillez téléverser un fichier CSV ou Excel valide."
 
-#: src/pages/portal/components/PortalDetail.tsx:249
+#: src/pages/portal/components/PortalDetail.tsx:255
 msgid "Failed to proceed request:"
 msgstr "Échec du traitement de la demande :"
 
@@ -4081,7 +4096,7 @@ msgstr "Février"
 msgid "Fetching Details.."
 msgstr "Récupération des détails.."
 
-#: src/pages/portal/PortalPage.tsx:302
+#: src/pages/portal/PortalPage.tsx:305
 msgid "Fetching the latest portal configuration."
 msgstr "Récupération de la dernière configuration du portail."
 
@@ -4426,7 +4441,7 @@ msgstr "Mot de passe oublié"
 msgid "Forgot password?"
 msgstr "Mot de passe oublié ?"
 
-#: src/pages/portal/components/PortalHome.tsx:311
+#: src/pages/portal/components/PortalHome.tsx:325
 #: src/pages/portal/components/PortalPicker.tsx:123
 msgid "Form"
 msgstr "Formulaire"
@@ -4544,7 +4559,6 @@ msgstr "Obtenez un aperçu rapide du processus de configuration avant de connect
 #: src/pages/dashboard/DashboardPage.tsx:158
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/WelcomeMessage.tsx:26
 #: src/pages/dashboard/workflows/accounts-payable/components/SetupCallout.tsx:34
-#: src/pages/portal/components/PortalDocumentUpload.tsx:221
 msgid "Get Started"
 msgstr "Commencer"
 
@@ -4806,7 +4820,7 @@ msgstr "Haute précision"
 #~ msgid "High Risk"
 #~ msgstr ""
 
-#: src/pages/requests/components/InboxList.tsx:1886
+#: src/pages/requests/components/InboxList.tsx:1898
 #: src/pages/requests/utils/localizeRequestUi.ts:27
 msgid "High Value"
 msgstr "Haute valeur"
@@ -4892,16 +4906,16 @@ msgstr "Serveur IMAP"
 msgid "Immediate Invoice Processing"
 msgstr "Traitement immédiat des factures"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:529
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:575
 msgid "Import CSV/Excel"
 msgstr "Importer CSV/Excel"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:582
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:631
 msgid "Import extracted items"
 msgstr "Importer les éléments extraits"
 
 #: src/pages/requests/components/buttons/UploadPoButton.tsx:14
-#: src/pages/requests/components/InboxList.tsx:1910
+#: src/pages/requests/components/InboxList.tsx:1925
 msgid "Import PO Data"
 msgstr "Importer les données BC"
 
@@ -5105,7 +5119,7 @@ msgstr "Invité"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:839
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1942
-#: src/pages/portal/components/PortalWizard.tsx:164
+#: src/pages/portal/components/PortalWizard.tsx:166
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1344
 msgid "Invoice"
 msgstr "Facture"
@@ -5445,12 +5459,12 @@ msgstr "Configurons votre flux AP"
 #~ msgstr ""
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:208
-msgid "Let’s start your Invoice Submission."
-msgstr "Commençons votre soumission de facture."
+#~ msgid "Let’s start your Invoice Submission."
+#~ msgstr "Commençons votre soumission de facture."
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:209
-msgid "Let’s start your submission."
-msgstr "Commençons votre soumission."
+#~ msgid "Let’s start your submission."
+#~ msgstr "Commençons votre soumission."
 
 #: src/hooks/useTheme.tsx:30
 #: src/layouts/app/components/topbar/components/user-menu/components/Theme.tsx:14
@@ -5550,7 +5564,7 @@ msgstr "Répertorie tous les documents correspondants pour confirmation avant l'
 msgid "Loading activity..."
 msgstr "Chargement de l'activité..."
 
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:687
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:773
 msgid "Loading attachments..."
 msgstr "Chargement des pièces jointes..."
 
@@ -5605,7 +5619,7 @@ msgstr "Chargement des notifications..."
 msgid "Loading older comments..."
 msgstr "Chargement des commentaires plus anciens..."
 
-#: src/pages/portal/PortalPage.tsx:300
+#: src/pages/portal/PortalPage.tsx:303
 msgid "Loading portal"
 msgstr "Portail de chargement"
 
@@ -5954,7 +5968,7 @@ msgstr "Score du match"
 msgid "Match:"
 msgstr "Correspondre:"
 
-#: src/pages/requests/components/InboxList.tsx:1864
+#: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3266
@@ -5986,8 +6000,8 @@ msgid "Matching PO details"
 msgstr "Détails du bon de commande correspondant"
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:51
-msgid "Matching supplier records..."
-msgstr "Correspondance des enregistrements des fournisseurs..."
+#~ msgid "Matching supplier records..."
+#~ msgstr "Correspondance des enregistrements des fournisseurs..."
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3461
 msgid "Matter Validation"
@@ -6284,7 +6298,7 @@ msgstr "Mon compte"
 msgid "My Sign"
 msgstr "Mon signe"
 
-#: src/pages/portal/components/PortalHome.tsx:174
+#: src/pages/portal/components/PortalHome.tsx:188
 msgid "My Submissions"
 msgstr "Mes soumissions"
 
@@ -6385,10 +6399,10 @@ msgstr "Nouvelle demande"
 #~ msgid "New Role Setup"
 #~ msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:185
+#: src/pages/portal/components/PortalHome.tsx:199
 #: src/pages/portal/components/PortalPicker.tsx:54
-#: src/pages/portal/components/PortalWizard.tsx:810
-#: src/pages/portal/PortalPage.tsx:444
+#: src/pages/portal/components/PortalWizard.tsx:842
+#: src/pages/portal/PortalPage.tsx:448
 msgid "New Submission"
 msgstr "Nouvelle soumission"
 
@@ -6583,8 +6597,8 @@ msgstr "Aucune stratégie de sécurité de dossier trouvée. Cliquez sur « Ajo
 msgid "No form fields found for this request."
 msgstr "Aucun champ de formulaire trouvé pour cette demande."
 
-#: src/pages/portal/components/PortalDetail.tsx:353
-#: src/pages/portal/components/PortalWizard.tsx:1085
+#: src/pages/portal/components/PortalDetail.tsx:374
+#: src/pages/portal/components/PortalWizard.tsx:1130
 msgid "No form panels found for this request."
 msgstr "Aucun panneau de formulaire trouvé pour cette demande."
 
@@ -6618,7 +6632,7 @@ msgstr "Aucun fait clé extrait."
 msgid "No logs found"
 msgstr "Aucun journal trouvé"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:440
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:486
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "Aucune colonne correspondante trouvée : les en-têtes CSV/Excel doivent correspondre aux noms de colonnes du tableau."
 
@@ -6760,15 +6774,15 @@ msgstr "Aucun emplacement de signature n'a été assigné à votre compte."
 msgid "No signers"
 msgstr "Aucun signataire"
 
-#: src/pages/portal/components/PortalHome.tsx:398
+#: src/pages/portal/components/PortalHome.tsx:429
 msgid "No submissions match your search."
 msgstr "Aucune soumission ne correspond à votre recherche."
 
-#: src/pages/portal/components/PortalHome.tsx:401
+#: src/pages/portal/components/PortalHome.tsx:432
 msgid "No submissions yet."
 msgstr "Aucune soumission pour l'instant."
 
-#: src/pages/portal/components/PortalHome.tsx:400
+#: src/pages/portal/components/PortalHome.tsx:431
 msgid "No submissions yet. Start a new submission to see it here."
 msgstr "Aucune soumission pour l'instant. Commencez une nouvelle soumission pour la voir ici."
 
@@ -6789,7 +6803,7 @@ msgstr "Aucune information sur les tendances des fournisseurs disponible."
 msgid "No suppliers found"
 msgstr "Aucun fournisseur trouvé"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:482
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:528
 msgid "No table columns configured."
 msgstr "Aucune colonne de tableau configurée."
 
@@ -6852,7 +6866,7 @@ msgstr "Aucun fichier valide sélectionné."
 #~ msgid "No workflows are connected to this portal yet."
 #~ msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:265
+#: src/pages/portal/components/PortalHome.tsx:279
 #: src/pages/portal/components/PortalPicker.tsx:78
 msgid "No workflows match your search."
 msgstr "Aucun workflow ne correspond à votre recherche."
@@ -6888,7 +6902,7 @@ msgstr "Pas égal"
 msgid "Not mapped"
 msgstr "Non cartographié"
 
-#: src/pages/requests/components/InboxList.tsx:1875
+#: src/pages/requests/components/InboxList.tsx:1887
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3267
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3552
@@ -6961,7 +6975,7 @@ msgstr "Échec de l'extraction OCR : {detail}"
 msgid "October"
 msgstr "Octobre"
 
-#: src/pages/portal/components/PortalHome.tsx:362
+#: src/pages/portal/components/PortalHome.tsx:376
 msgid "of"
 msgstr "de"
 
@@ -7001,7 +7015,7 @@ msgid "OneDrive"
 msgstr "OneDrive"
 
 #: src/pages/folders/components/FolderTable.tsx:1194
-#: src/pages/portal/components/PortalHome.tsx:323
+#: src/pages/portal/components/PortalHome.tsx:337
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:358
 msgid "Open"
 msgstr "Ouvrir"
@@ -7162,7 +7176,7 @@ msgstr "Partiellement approuvé"
 msgid "PARTIALLY APPROVED"
 msgstr "PARTIELLEMENT APPROUVÉ"
 
-#: src/pages/requests/components/InboxList.tsx:1877
+#: src/pages/requests/components/InboxList.tsx:1889
 #: src/pages/requests/components/request/components/sections/history/History.tsx:328
 #: src/pages/requests/utils/localizeRequestUi.ts:22
 msgid "Partially Matched"
@@ -7277,8 +7291,8 @@ msgid "Pen width"
 msgstr "Largeur du stylo"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2434
-#: src/pages/portal/components/PortalHome.tsx:62
-#: src/pages/portal/components/PortalHome.tsx:113
+#: src/pages/portal/components/PortalHome.tsx:76
+#: src/pages/portal/components/PortalHome.tsx:127
 #: src/pages/settings/components/ManageUser.tsx:1425
 #: src/pages/settings/components/ManageUser.tsx:2608
 msgid "Pending"
@@ -7432,7 +7446,7 @@ msgstr "Veuillez décrire le flux de travail que vous souhaitez créer"
 msgid "Please fill all mandatory fields before proceeding."
 msgstr "Veuillez remplir tous les champs obligatoires avant de continuer."
 
-#: src/pages/portal/components/PortalWizard.tsx:861
+#: src/pages/portal/components/PortalWizard.tsx:893
 msgid "Please fill in required field(s): {list}"
 msgstr "Veuillez remplir les champs obligatoires : {list}"
 
@@ -7725,7 +7739,7 @@ msgstr "Nom du portail"
 msgid "Portal name and description"
 msgstr "Nom et description du portail"
 
-#: src/pages/portal/PortalPage.tsx:311
+#: src/pages/portal/PortalPage.tsx:314
 msgid "Portal not found"
 msgstr "Portail introuvable"
 
@@ -7859,7 +7873,7 @@ msgid "Process documents faster with our agentic pipeline"
 msgstr "Traitez les documents plus rapidement avec notre pipeline agentique"
 
 #: src/pages/requests/components/Header.tsx:79
-#: src/pages/requests/components/InboxList.tsx:2013
+#: src/pages/requests/components/InboxList.tsx:2028
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 msgid "Processed"
 msgstr "Traité"
@@ -8020,8 +8034,8 @@ msgstr "Lire"
 #~ msgstr ""
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:122
-msgid "Reading your document..."
-msgstr "Lecture de votre document..."
+#~ msgid "Reading your document..."
+#~ msgstr "Lecture de votre document..."
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:25
 msgid "Ready for Approval"
@@ -8080,9 +8094,11 @@ msgstr "Refaire"
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 #: src/pages/forms/FormEntriesPage.tsx:2126
 #: src/pages/forms/FormsPage.tsx:589
-#: src/pages/requests/components/buttons/RefreshButton.tsx:13
-#: src/pages/requests/components/buttons/RefreshButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1896
+#: src/pages/portal/components/PortalHome.tsx:406
+#: src/pages/portal/components/PortalHome.tsx:416
+#: src/pages/requests/components/buttons/RefreshButton.tsx:31
+#: src/pages/requests/components/buttons/RefreshButton.tsx:36
+#: src/pages/requests/components/InboxList.tsx:1909
 #: src/pages/settings/components/AuditMonitoring.tsx:193
 #: src/pages/settings/components/credits/Credits.tsx:899
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2136
@@ -8123,7 +8139,7 @@ msgstr "Options de résidence des données régionales"
 msgid "Reject Transaction"
 msgstr "Rejeter la transaction"
 
-#: src/pages/portal/components/PortalHome.tsx:64
+#: src/pages/portal/components/PortalHome.tsx:78
 #: src/pages/requests/components/QuickFilters.tsx:90
 #: src/pages/requests/utils/localizeRequestUi.ts:25
 msgid "Rejected"
@@ -8165,8 +8181,9 @@ msgid "Remove condition"
 msgstr "Supprimer la condition"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:688
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:832
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:968
+#: src/pages/portal/components/PortalDocumentUpload.tsx:131
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:834
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:969
 msgid "Remove file"
 msgstr "Supprimer le fichier"
 
@@ -8244,13 +8261,13 @@ msgstr "ID du dépôt manquant. Impossible de téléverser."
 msgid "Request a Demo"
 msgstr "Demander une démo"
 
-#: src/pages/portal/components/PortalDetail.tsx:258
+#: src/pages/portal/components/PortalDetail.tsx:264
 #: src/pages/requests/components/request/Request.tsx:1561
 msgid "Request action \"{action}\" completed successfully"
 msgstr "L'action de demande \"{action}\" s'est terminée avec succès"
 
-#: src/pages/portal/components/PortalWizard.tsx:873
-#: src/pages/portal/components/PortalWizard.tsx:926
+#: src/pages/portal/components/PortalWizard.tsx:905
+#: src/pages/portal/components/PortalWizard.tsx:958
 msgid "Request created. You can track it from My Submissions."
 msgstr "Demande créée. Vous pouvez le suivre depuis Mes soumissions."
 
@@ -8278,7 +8295,7 @@ msgstr "Demande partagée avec succès"
 msgid "Request Status"
 msgstr "Demande Status"
 
-#: src/pages/portal/components/PortalDetail.tsx:257
+#: src/pages/portal/components/PortalDetail.tsx:263
 #: src/pages/requests/components/request/Request.tsx:1560
 #: src/pages/requests/components/request/Request.tsx:1629
 msgid "Request submitted successfully"
@@ -8290,7 +8307,7 @@ msgstr "Demande soumise."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:26
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
-#: src/pages/requests/components/InboxList.tsx:2014
+#: src/pages/requests/components/InboxList.tsx:2029
 #: src/pages/requests/components/Table.tsx:178
 msgid "Requests"
 msgstr "Demandes"
@@ -8309,7 +8326,7 @@ msgstr "Exiger une confirmation manuelle avant d'exécuter"
 msgid "Required"
 msgstr "Obligatoire"
 
-#: src/pages/portal/components/PortalWizard.tsx:845
+#: src/pages/portal/components/PortalWizard.tsx:877
 msgid "Required field"
 msgstr "Champ obligatoire"
 
@@ -8772,12 +8789,12 @@ msgstr "Enregistrement…"
 msgid "Scan QR"
 msgstr "Scanner le QR"
 
-#: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:84
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:505
+#: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:85
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:551
 msgid "Scan QR / Barcode"
 msgstr "Scannez le QR / le code-barres"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:150
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:142
 msgid "Scan QR code to select"
 msgstr "Scannez le code QR pour sélectionner"
 
@@ -8938,7 +8955,7 @@ msgstr "Icônes de recherche"
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:947
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:639
-#: src/pages/requests/components/InboxList.tsx:1829
+#: src/pages/requests/components/InboxList.tsx:1841
 msgid "Search invoice, supplier, PO..."
 msgstr "Rechercher facture, fournisseur, bon de commande..."
 
@@ -8994,7 +9011,7 @@ msgstr "Types de requêtes de recherche…"
 msgid "Search status..."
 msgstr "État de la recherche..."
 
-#: src/pages/portal/components/PortalHome.tsx:371
+#: src/pages/portal/components/PortalHome.tsx:385
 msgid "Search submissions…"
 msgstr "Rechercher des soumissions…"
 
@@ -9020,7 +9037,7 @@ msgstr "Recherchez des utilisateurs ou saisissez un e-mail…"
 msgid "Search workflows..."
 msgstr "Rechercher des flux de travail..."
 
-#: src/pages/portal/components/PortalHome.tsx:251
+#: src/pages/portal/components/PortalHome.tsx:265
 msgid "Search workflows…"
 msgstr "Rechercher des flux de travail…"
 
@@ -9083,12 +9100,12 @@ msgstr "Protocole de sécurité"
 #~ msgid "Security Summary"
 #~ msgstr ""
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:936
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:934
 msgid "See the Attachments section for uploaded files."
 msgstr "Consultez la section Pièces jointes pour les fichiers téléchargés."
 
 #: src/pages/folders/components/DocumentsListView.tsx:613
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:593
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:642
 #: src/pages/settings/components/ManageUser.tsx:1902
 #: src/pages/settings/components/SettingsSelectField.tsx:55
 msgid "Select"
@@ -9255,7 +9272,7 @@ msgstr "Sélectionnez le champ de mot de passe"
 msgid "Select role"
 msgstr "Sélectionnez un rôle"
 
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:629
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:679
 msgid "Select row"
 msgstr "Sélectionner une ligne"
 
@@ -9447,8 +9464,8 @@ msgstr "Configurez votre automatisation AP"
 msgid "Set your brand name and colors"
 msgstr "Définissez le nom de votre marque et vos couleurs"
 
-#: src/pages/portal/components/PortalWizard.tsx:323
-#: src/pages/portal/components/PortalWizard.tsx:351
+#: src/pages/portal/components/PortalWizard.tsx:350
+#: src/pages/portal/components/PortalWizard.tsx:378
 msgid "setting up..."
 msgstr "mise en place..."
 
@@ -9664,7 +9681,7 @@ msgstr "Se connecter avec Google"
 msgid "Sign in with Microsoft"
 msgstr "Connectez-vous avec Microsoft"
 
-#: src/pages/portal/components/PortalShell.tsx:84
+#: src/pages/portal/components/PortalShell.tsx:85
 msgid "Sign out"
 msgstr "se déconnecter"
 
@@ -9906,8 +9923,8 @@ msgid "Step 1"
 msgstr "Étape 1"
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:137
-msgid "Step 1 of {stepCount}"
-msgstr "Étape 1 de {stepCount}"
+#~ msgid "Step 1 of {stepCount}"
+#~ msgstr "Étape 1 de {stepCount}"
 
 #: src/pages/settings/components/ManageUser.tsx:159
 #: src/pages/settings/components/RolesPermissions.tsx:155
@@ -9991,15 +10008,15 @@ msgstr "Rationalisez vos bons de commande. Faites correspondre automatiquement l
 msgid "Submission Details"
 msgstr "Détails de la soumission"
 
-#: src/pages/portal/components/PortalHome.tsx:320
-#: src/pages/portal/components/PortalHome.tsx:363
+#: src/pages/portal/components/PortalHome.tsx:334
+#: src/pages/portal/components/PortalHome.tsx:377
 msgid "submissions"
 msgstr "soumissions"
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1974
 #: src/pages/folders/components/DocumentDetailsView.tsx:1995
-#: src/pages/portal/components/PortalShell.tsx:113
-#: src/pages/portal/components/PortalWizard.tsx:811
+#: src/pages/portal/components/PortalShell.tsx:120
+#: src/pages/portal/components/PortalWizard.tsx:843
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:108
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:121
 msgid "Submit"
@@ -10044,7 +10061,7 @@ msgstr "fournisseur"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:840
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1943
-#: src/pages/requests/components/InboxList.tsx:1847
+#: src/pages/requests/components/InboxList.tsx:1859
 #: src/pages/requests/components/QuickFilters.tsx:351
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:19
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:203
@@ -10151,7 +10168,7 @@ msgstr "Formats pris en charge : PNG, JPG, JPEG."
 msgid "Supports Excel (.xlsx, .xls) and CSV formats"
 msgstr "Prend en charge les formats Excel (.xlsx, .xls) et CSV"
 
-#: src/pages/portal/components/PortalDocumentUpload.tsx:237
+#: src/pages/portal/components/PortalDocumentUpload.tsx:143
 msgid "Supports PDF and images · Max 10 MB"
 msgstr "Prend en charge les PDF et les images · Max 10 Mo"
 
@@ -10330,11 +10347,11 @@ msgstr "Ce lien de connexion de marque n'est pas valide ou n'est plus disponible
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:101
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
-#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:256
+#: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:261
 msgid "This field is required."
 msgstr "Ce champ est obligatoire."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1035
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:1036
 msgid "This field type ({fieldType}) isn't supported in this view yet."
 msgstr "Ce type de champ ({fieldType}) n'est pas encore pris en charge dans cette vue."
 
@@ -10365,7 +10382,7 @@ msgstr "Ce mois-ci"
 msgid "This portal is missing a master form or username field."
 msgstr "Il manque un formulaire principal ou un champ de nom d'utilisateur sur ce portail."
 
-#: src/pages/portal/PortalPage.tsx:313
+#: src/pages/portal/PortalPage.tsx:316
 msgid "This portal link is invalid or has not been published yet."
 msgstr "Ce lien de portail n'est pas valide ou n'a pas encore été publié."
 
@@ -10373,7 +10390,7 @@ msgstr "Ce lien de portail n'est pas valide ou n'a pas encore été publié."
 msgid "This related document cannot be removed."
 msgstr "Ce document associé ne peut pas être supprimé."
 
-#: src/pages/portal/components/PortalDetail.tsx:217
+#: src/pages/portal/components/PortalDetail.tsx:223
 msgid "This request is missing an instance id."
 msgstr "Il manque un identifiant d'instance à cette requête."
 
@@ -10403,7 +10420,7 @@ msgstr "Cette semaine"
 msgid "This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets."
 msgstr "Ce classeur ne contient qu'une seule feuille de calcul. L'importation de bon de commande nécessite à la fois des données d'en-tête et d'article de campagne. Veuillez télécharger un fichier Excel contenant au moins deux feuilles de calcul."
 
-#: src/pages/portal/components/PortalWizard.tsx:1016
+#: src/pages/portal/components/PortalWizard.tsx:1061
 msgid "This workflow has no form configured."
 msgstr "Ce workflow n'a aucun formulaire configuré."
 
@@ -10488,7 +10505,7 @@ msgstr "Principaux agents par utilisation de crédits · {periodSubtitle}"
 #~ msgstr "Concentration Top-3"
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:180
-#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:673
+#: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:722
 msgid "Total"
 msgstr "Total"
 
@@ -10534,7 +10551,7 @@ msgstr "Total des enregistrements :"
 #~ msgid "Total submitted"
 #~ msgstr ""
 
-#: src/pages/portal/components/PortalHome.tsx:99
+#: src/pages/portal/components/PortalHome.tsx:113
 msgid "Total Submitted"
 msgstr "Total soumis"
 
@@ -10550,7 +10567,7 @@ msgstr "Taux sans intervention"
 msgid "Track processing status, approvals, and analytics from a unified dashboard."
 msgstr "Suivez le statut de traitement, les approbations et les analyses depuis un tableau de bord unifié."
 
-#: src/pages/portal/components/PortalHome.tsx:177
+#: src/pages/portal/components/PortalHome.tsx:191
 msgid "Track the status of everything you've submitted."
 msgstr "Suivez l'état de tout ce que vous avez soumis."
 
@@ -10625,8 +10642,8 @@ msgstr "Taper"
 msgid "Type an option and press Enter"
 msgstr "Tapez une option et appuyez sur Entrée"
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:230
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:424
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:229
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:423
 msgid "Type custom option..."
 msgstr "Tapez l'option personnalisée..."
 
@@ -10668,7 +10685,7 @@ msgstr "Impossible de copier le résumé"
 msgid "Unable to create sign request"
 msgstr "Impossible de créer une demande de signature"
 
-#: src/pages/portal/components/PortalWizard.tsx:935
+#: src/pages/portal/components/PortalWizard.tsx:967
 msgid "Unable to create this request."
 msgstr "Impossible de créer cette demande."
 
@@ -10709,19 +10726,19 @@ msgstr "Impossible de charger la demande de signature"
 msgid "Unable to load sign requests"
 msgstr "Impossible de charger les demandes de signature"
 
-#: src/pages/portal/PortalPage.tsx:229
+#: src/pages/portal/PortalPage.tsx:232
 msgid "Unable to load submissions for the selected workflows."
 msgstr "Impossible de charger les soumissions pour les workflows sélectionnés."
 
-#: src/pages/portal/components/PortalDetail.tsx:79
+#: src/pages/portal/components/PortalDetail.tsx:81
 msgid "Unable to load this request."
 msgstr "Impossible de charger cette demande."
 
-#: src/pages/portal/components/PortalWizard.tsx:143
+#: src/pages/portal/components/PortalWizard.tsx:145
 msgid "Unable to load this workflow form."
 msgstr "Impossible de charger ce formulaire de workflow."
 
-#: src/pages/portal/components/PortalDetail.tsx:265
+#: src/pages/portal/components/PortalDetail.tsx:271
 msgid "Unable to move this request."
 msgstr "Impossible de déplacer cette demande."
 
@@ -10729,9 +10746,9 @@ msgstr "Impossible de déplacer cette demande."
 msgid "Unable to open sign request"
 msgstr "Impossible d'ouvrir la demande de signature"
 
-#: src/pages/portal/components/PortalWizard.tsx:397
-#: src/pages/portal/components/PortalWizard.tsx:561
-#: src/pages/portal/components/PortalWizard.tsx:780
+#: src/pages/portal/components/PortalWizard.tsx:424
+#: src/pages/portal/components/PortalWizard.tsx:588
+#: src/pages/portal/components/PortalWizard.tsx:812
 msgid "Unable to process this document."
 msgstr "Impossible de traiter ce document."
 
@@ -10765,7 +10782,7 @@ msgstr "Impossible de définir le mot de passe"
 msgid "Unable to sign in"
 msgstr "Impossible de se connecter"
 
-#: src/pages/portal/components/PortalWizard.tsx:338
+#: src/pages/portal/components/PortalWizard.tsx:365
 msgid "Unable to start this workflow."
 msgstr "Impossible de démarrer ce flux de travail."
 
@@ -10777,8 +10794,8 @@ msgstr "Impossible d'envoyer la signature. Réessayez."
 msgid "Unable to update user"
 msgstr "Impossible de mettre à jour l'utilisateur"
 
-#: src/pages/portal/components/PortalWizard.tsx:625
-#: src/pages/portal/components/PortalWizard.tsx:670
+#: src/pages/portal/components/PortalWizard.tsx:652
+#: src/pages/portal/components/PortalWizard.tsx:697
 msgid "Unable to upload {fileName}."
 msgstr "Impossible de télécharger {fileName}."
 
@@ -10907,12 +10924,12 @@ msgstr "Met à jour les enregistrements dans la base de données principale"
 #: src/pages/folders/components/FolderExplorer.tsx:295
 #: src/pages/folders/components/FolderFilterBar.tsx:697
 #: src/pages/folders/components/Upload/Upload.tsx:1618
-#: src/pages/portal/components/PortalHome.tsx:311
+#: src/pages/portal/components/PortalHome.tsx:325
 #: src/pages/portal/components/PortalPicker.tsx:123
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:227
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:65
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:625
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:673
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:711
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:759
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:205
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:67
 msgid "Upload"
@@ -10928,8 +10945,8 @@ msgid "Upload a signature image first."
 msgstr "Téléversez d'abord une image de signature."
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:216
-msgid "Upload an invoice — our AI reads it and pre-fills the details for you to confirm."
-msgstr "Téléchargez une facture : notre IA la lit et pré-remplit les détails pour que vous puissiez la confirmer."
+#~ msgid "Upload an invoice — our AI reads it and pre-fills the details for you to confirm."
+#~ msgstr "Téléchargez une facture : notre IA la lit et pré-remplit les détails pour que vous puissiez la confirmer."
 
 #: src/features/builder/components/FieldSidebar.tsx:214
 #~ msgid "Upload Configuration"
@@ -10985,8 +11002,8 @@ msgid "Upload Purchase Order"
 msgstr "Téléverser un bon de commande"
 
 #: src/pages/portal/components/PortalDocumentUpload.tsx:213
-msgid "Upload your document and our AI will read it, then walk you through confirming the details step by step."
-msgstr "Téléchargez votre document et notre IA le lira, puis vous guidera dans la confirmation des détails étape par étape."
+#~ msgid "Upload your document and our AI will read it, then walk you through confirming the details step by step."
+#~ msgstr "Téléchargez votre document et notre IA le lira, puis vous guidera dans la confirmation des détails étape par étape."
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:53
 msgid "Upload your organization's logo and favicon"
@@ -11019,12 +11036,12 @@ msgstr "Téléversement du fichier..."
 msgid "Uploading master file to process entries in the background..."
 msgstr "Téléchargement du fichier maître pour traiter les entrées en arrière-plan..."
 
-#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:928
+#: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:926
 msgid "Uploading the document…"
 msgstr "Téléchargement du document…"
 
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:625
-#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:673
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:711
+#: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:759
 msgid "Uploading..."
 msgstr "Téléchargement..."
 
@@ -11382,7 +11399,7 @@ msgstr "Nous avons envoyé un code à 6 chiffres à {0}."
 msgid "Weekly credit consumption"
 msgstr "Consommation hebdomadaire de crédits"
 
-#: src/pages/portal/components/PortalHome.tsx:171
+#: src/pages/portal/components/PortalHome.tsx:185
 msgid "Welcome back, {displayName}."
 msgstr "Bon retour, {displayName}."
 
@@ -11465,7 +11482,7 @@ msgid "Workflow started but did not return any data."
 msgstr "Le workflow a démarré mais n'a renvoyé aucune donnée."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:83
-#: src/pages/portal/components/PortalHome.tsx:243
+#: src/pages/portal/components/PortalHome.tsx:257
 #: src/pages/settings/components/PortalConfiguration.tsx:87
 #: src/pages/settings/components/PortalConfiguration.tsx:485
 #: src/pages/settings/components/PortalConfiguration.tsx:1373

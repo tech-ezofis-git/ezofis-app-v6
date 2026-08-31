@@ -1800,6 +1800,18 @@ const InboxList: React.FC<InboxListProps> = ({
 
   // Debug (keep for a bit until stable)
   // console.log({ selectedIndex, hasPrev, hasNext, flatRowsLen: flatRows.length, selectedItem }, 'nav-debug')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return
+    try {
+      setIsRefreshing(true)
+      await Promise.resolve(onRefresh?.())
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   const handlePoSheet = () => {
     // alert("hi")
     openNewRequest('po')
@@ -1823,7 +1835,7 @@ const InboxList: React.FC<InboxListProps> = ({
           activeQuickFilters={activeQuickFilters}
           customSearchComponent={<TableSearch table={table as any} />}
           dataset={flatRows}
-          isLoading={isLoading || isRefetching}
+          isLoading={isLoading || isRefetching || isRefreshing}
           optionalFields={genericPickerFilterFields}
           onFieldOpen={handleFieldOpen}
           searchPlaceholder={t`Search invoice, supplier, PO...`}
@@ -1893,8 +1905,11 @@ const InboxList: React.FC<InboxListProps> = ({
               icon: 'tabler:refresh',
               id: 'refresh',
               isIconButton: true,
+              spin: isRefetching || isLoading || isRefreshing,
               tooltip: t`Refresh`,
-              onClick: onRefresh,
+              onClick: () => {
+                void handleRefresh()
+              },
             },
             {
               icon: 'tabler:download',

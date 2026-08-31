@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
@@ -36,6 +37,7 @@ type PortalHomeProps = {
   onNewSubmission: () => void
   onOpenSubmission: (submission: PortalSubmission) => void
   onOpenWorkflow: (workflowId: string) => void
+  onRefreshSubmissions?: () => void | Promise<void>
 }
 
 export default function PortalHome({
@@ -51,9 +53,21 @@ export default function PortalHome({
   onNewSubmission,
   onOpenSubmission,
   onOpenWorkflow,
+  onRefreshSubmissions,
 }: PortalHomeProps) {
   const { t } = useLingui()
   const [query, setQuery] = useState('')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    if (isRefreshing || !onRefreshSubmissions) return
+    try {
+      setIsRefreshing(true)
+      await Promise.resolve(onRefreshSubmissions())
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
   const showingWorkflows = Boolean(showWorkflowCards)
   const statusOptions = useMemo<Option[]>(
     () => [
@@ -387,6 +401,23 @@ export default function PortalHome({
                   }
                 />
               </div>
+              {onRefreshSubmissions ? (
+                <IconButton
+                  ariaLabel={t`Refresh`}
+                  color='gray'
+                  disabled={loadingSubmissions || isRefreshing}
+                  icon='tabler:refresh'
+                  iconClass={
+                    loadingSubmissions || isRefreshing
+                      ? 'animate-spin'
+                      : undefined
+                  }
+                  size='md'
+                  tooltip={t`Refresh`}
+                  variant='outline'
+                  onClick={() => void handleRefresh()}
+                />
+              ) : null}
             </div>
           </div>
 

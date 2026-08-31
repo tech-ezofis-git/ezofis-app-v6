@@ -65,12 +65,21 @@ const Button = forwardRef<HTMLButtonElement, Props>(
       >
         {children ?? (
           <>
-            {loading && (
-              <Icon className='-ml-1 animate-spin' name='fa:spinner' />
-            )}
-            {!loading && icon && (
+            {loading || iconClass?.includes('animate-spin') ? (
+              <Icon
+                className={cn('-ml-1 animate-spin', iconClass)}
+                name={
+                  icon &&
+                  (icon.includes('refresh') ||
+                    icon.includes('rotate') ||
+                    icon.includes('sync'))
+                    ? icon
+                    : 'fa:spinner'
+                }
+              />
+            ) : icon ? (
               <Icon className={cn('-ml-1', iconClass)} name={icon} />
-            )}
+            ) : null}
             {label && <span className={labelClass}>{label}</span>}
             {suffixIcon && (
               <Icon
