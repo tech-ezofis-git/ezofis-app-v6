@@ -1,8 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import type { Option } from '@/types/option'
-import { uploadForOcr, getRepositoryItemFacets } from '@/api/v6/folder/folder'
+import { getRepositoryItemFacets, uploadForOcr } from '@/api/v6/folder/folder'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputDateTime from '@/components/base/inputs/InputDateTime'
@@ -37,6 +37,15 @@ import {
 import CompactDropzone from './CompactDropzone'
 import TableFieldRenderer from './TableFieldRenderer'
 
+interface ChoiceFieldProps {
+  field: any
+  value: any
+  error?: string
+  readOnly?: boolean
+  required?: boolean
+  onChange: (val: any) => void
+}
+
 interface Props {
   field: any
   repositoryId: string | undefined
@@ -47,6 +56,9 @@ interface Props {
   // when the field has no in-session value of its own (e.g. after a page
   // reload, since FILE_UPLOAD values never round-trip through formData).
   fallbackAttachments?: any[]
+  // Full form value model — only used to resolve a TABLE field's configured
+  // AI/OCR line-item source (settings.aiSettings.lineItemSourceFieldId).
+  formModel?: Record<string, any>
   isPreparing?: boolean
   panels?: any[]
   preparePhase?: 'extracting' | 'uploading' | null
@@ -62,6 +74,9 @@ interface Props {
   onRequestUpload?: (file: File) => void | Promise<void>
 }
 
+import { Button } from '@mantine/core'
+import cn from '@/utils/cn'
+
 interface StagedFileValue {
   fileName: string
   fileId?: string
@@ -75,18 +90,6 @@ interface StagedFileValue {
   ocrJson?: string
   rawFile?: File
   repositoryId?: string
-}
-
-import { Button } from '@mantine/core'
-import cn from '@/utils/cn'
-
-interface ChoiceFieldProps {
-  error?: string
-  field: any
-  readOnly?: boolean
-  required?: boolean
-  value: any
-  onChange: (val: any) => void
 }
 
 const ChoiceRadioGroupField = ({
@@ -135,8 +138,9 @@ const ChoiceRadioGroupField = ({
 
           {specific.qrCodeEnabled && !readOnly && (
             <button
+              className='flex cursor-pointer items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-8 shadow-2xs transition-colors hover:border-primary-5 hover:text-primary-9'
+              title={t`Scan QR code to select`}
               type='button'
-              className='flex items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-0.5 text-[11px] font-medium text-gray-8 shadow-2xs transition-colors hover:border-primary-5 hover:text-primary-9 cursor-pointer'
               onClick={() => {
                 if (allOptions.length > 0) {
                   const randomOpt =
@@ -144,7 +148,6 @@ const ChoiceRadioGroupField = ({
                   onChange(randomOpt)
                 }
               }}
-              title={t`Scan QR code to select`}
             >
               <Icon height={12} name='lucide:qr-code' width={12} />
               <span>{t`Scan QR`}</span>
@@ -161,19 +164,19 @@ const ChoiceRadioGroupField = ({
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
-          'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+            'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
         )}
       >
         <div
           className={cn(
-            'gap-2 w-full',
+            'w-full gap-2',
             isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
           )}
           style={
             !isAutoFlex
               ? {
-                gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
-              }
+                  gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
+                }
               : undefined
           }
         >
@@ -183,7 +186,7 @@ const ChoiceRadioGroupField = ({
               <div
                 key={i}
                 className={cn(
-                  'flex min-h-[38px] flex-1 min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
+                  'flex min-h-[38px] min-w-0 flex-1 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
                   isAutoFlex ? 'min-w-[100px]' : '',
                   readOnly
                     ? 'cursor-not-allowed bg-gray-3 text-gray-10 opacity-100'
@@ -222,9 +225,9 @@ const ChoiceRadioGroupField = ({
               {isAddingOption ? (
                 <div className='flex items-center gap-2'>
                   <input
-                    type='text'
                     className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
                     placeholder={t`Type custom option...`}
+                    type='text'
                     value={newOptionText}
                     autoFocus
                     onChange={(e) => setNewOptionText(e.target.value)}
@@ -234,17 +237,17 @@ const ChoiceRadioGroupField = ({
                     }}
                   />
                   <Button
+                    className='h-8 cursor-pointer rounded-lg'
                     size='xs'
-                    className='h-8 rounded-lg cursor-pointer'
                     onClick={handleAddCustom}
                   >
                     {t`Add`}
                   </Button>
                   <Button
+                    className='h-8 cursor-pointer rounded-lg'
+                    color='gray'
                     size='xs'
                     variant='subtle'
-                    color='gray'
-                    className='h-8 rounded-lg cursor-pointer'
                     onClick={() => setIsAddingOption(false)}
                   >
                     {t`Cancel`}
@@ -252,8 +255,8 @@ const ChoiceRadioGroupField = ({
                 </div>
               ) : (
                 <button
+                  className='flex cursor-pointer items-center gap-1 text-xs font-semibold text-primary-9 hover:underline'
                   type='button'
-                  className='flex items-center gap-1 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
                   onClick={() => setIsAddingOption(true)}
                 >
                   <Icon height={12} name='lucide:plus' width={12} />
@@ -328,16 +331,16 @@ const ChoiceCheckboxGroupField = ({
           {specific.bulkActionsEnabled && !readOnly && (
             <div className='flex items-center gap-2'>
               <button
-                type='button'
                 className='cursor-pointer text-[11px] font-semibold text-primary-9 hover:underline'
+                type='button'
                 onClick={() => onChange(allOptions)}
               >
                 Select All
               </button>
-              <span className='text-gray-4 text-xs'>•</span>
+              <span className='text-xs text-gray-4'>•</span>
               <button
-                type='button'
                 className='cursor-pointer text-[11px] font-semibold text-gray-7 hover:underline'
+                type='button'
                 onClick={() => onChange([])}
               >
                 Clear All
@@ -355,19 +358,19 @@ const ChoiceCheckboxGroupField = ({
         className={cn(
           'w-full space-y-2',
           specific.showOptionsWrapper &&
-          'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+            'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
         )}
       >
         <div
           className={cn(
-            'gap-2 w-full',
+            'w-full gap-2',
             isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
           )}
           style={
             !isAutoFlex
               ? {
-                gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
-              }
+                  gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
+                }
               : undefined
           }
         >
@@ -377,7 +380,7 @@ const ChoiceCheckboxGroupField = ({
               <div
                 key={i}
                 className={cn(
-                  'flex min-h-[38px] flex-1 min-w-0 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
+                  'flex min-h-[38px] min-w-0 flex-1 items-center gap-2.5 rounded-lg border px-3 py-2 text-13 transition-all',
                   isAutoFlex ? 'min-w-[100px]' : '',
                   readOnly
                     ? 'cursor-not-allowed bg-gray-3 text-gray-10 opacity-100'
@@ -385,7 +388,7 @@ const ChoiceCheckboxGroupField = ({
                   isSelected
                     ? readOnly
                       ? 'border-gray-4 bg-gray-3 font-semibold text-gray-11'
-                      : 'border-primary-9 bg-primary-9 text-white font-semibold shadow-2xs'
+                      : 'border-primary-9 bg-primary-9 font-semibold text-white shadow-2xs'
                     : readOnly
                       ? 'border-gray-3 bg-gray-3 text-gray-10'
                       : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
@@ -416,9 +419,9 @@ const ChoiceCheckboxGroupField = ({
               {isAddingOption ? (
                 <div className='flex items-center gap-2'>
                   <input
-                    type='text'
                     className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
                     placeholder={t`Type custom option...`}
+                    type='text'
                     value={newOptionText}
                     autoFocus
                     onChange={(e) => setNewOptionText(e.target.value)}
@@ -428,17 +431,17 @@ const ChoiceCheckboxGroupField = ({
                     }}
                   />
                   <Button
+                    className='h-8 cursor-pointer rounded-lg'
                     size='xs'
-                    className='h-8 rounded-lg cursor-pointer'
                     onClick={handleAddCustom}
                   >
                     {t`Add`}
                   </Button>
                   <Button
+                    className='h-8 cursor-pointer rounded-lg'
+                    color='gray'
                     size='xs'
                     variant='subtle'
-                    color='gray'
-                    className='h-8 rounded-lg cursor-pointer'
                     onClick={() => setIsAddingOption(false)}
                   >
                     {t`Cancel`}
@@ -446,8 +449,8 @@ const ChoiceCheckboxGroupField = ({
                 </div>
               ) : (
                 <button
+                  className='flex cursor-pointer items-center gap-1 text-xs font-semibold text-primary-9 hover:underline'
                   type='button'
-                  className='flex items-center gap-1 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
                   onClick={() => setIsAddingOption(true)}
                 >
                   <Icon height={12} name='lucide:plus' width={12} />
@@ -460,7 +463,7 @@ const ChoiceCheckboxGroupField = ({
 
       {validation.fieldRule === 'REQUIRED' &&
         validation.requiredValidation === 'ALL' && (
-          <div className='flex items-center gap-1 pt-0.5 text-[11px] font-medium text-amber-7'>
+          <div className='text-amber-7 flex items-center gap-1 pt-0.5 text-[11px] font-medium'>
             <Icon height={12} name='lucide:alert-circle' width={12} />
             <span>{t`All options must be checked to fulfill requirements.`}</span>
           </div>
@@ -479,6 +482,7 @@ const FieldRenderer = ({
   error,
   fallbackAttachments,
   field,
+  formModel,
   isPreparing,
   panels,
   preparePhase,
@@ -504,6 +508,7 @@ const FieldRenderer = ({
   const facetSource = getDropdownFacetSource(field, repositoryId)
 
   const { data: uniqueFieldOptions = [] } = useQuery({
+    enabled: facetSource.enabled,
     queryKey: [
       'repositoryItemFacets',
       facetSource.repositoryId,
@@ -519,7 +524,6 @@ const FieldRenderer = ({
         splitArrayValues: field.type === 'MULTI_SELECT',
       })
     },
-    enabled: facetSource.enabled,
   })
 
   const selectOptions = withExtraFieldOptions(
@@ -615,7 +619,7 @@ const FieldRenderer = ({
       )
 
     case 'DATE': {
-      const { minDate, maxDate } = getDateTimeLimits(field)
+      const { maxDate, minDate } = getDateTimeLimits(field)
       return (
         <InputDate
           {...common}
@@ -627,7 +631,7 @@ const FieldRenderer = ({
       )
     }
     case 'DATE_TIME': {
-      const { minDate, maxDate } = getDateTimeLimits(field)
+      const { maxDate, minDate } = getDateTimeLimits(field)
       const timeFormat =
         field.settings?.validation?.timeFormat === '24' ? '24h' : '12h'
       return (
@@ -642,7 +646,7 @@ const FieldRenderer = ({
       )
     }
     case 'TIME': {
-      const { minTime, maxTime } = getDateTimeLimits(field)
+      const { maxTime, minTime } = getDateTimeLimits(field)
       const timeFormat =
         field.settings?.validation?.timeFormat === '24' ? '24h' : '12h'
       return (
@@ -674,14 +678,14 @@ const FieldRenderer = ({
       return (
         <InputSelect
           {...common}
+          createOptionLabel={(query) => t`Add "${query}"`}
+          value={selected}
           creatable
           searchable
-          createOptionLabel={(query) => t`Add "${query}"`}
           options={withExtraFieldOptions(
             selectOptions,
             selected ? [selected] : [],
           )}
-          value={selected}
           onChange={(opt: Option | null) =>
             onChange(opt ? selectOptionStoredValue(opt, selectOptions) : null)
           }
@@ -714,13 +718,15 @@ const FieldRenderer = ({
       return (
         <InputSelectMultiple
           {...common}
-          creatable
-          searchable
           createOptionLabel={(query) => t`Add "${query}"`}
           options={withExtraFieldOptions(selectOptions, selected)}
           value={selected}
+          creatable
+          searchable
           onChange={(opts: Option[]) =>
-            onChange(opts.map((opt) => selectOptionStoredValue(opt, selectOptions)))
+            onChange(
+              opts.map((opt) => selectOptionStoredValue(opt, selectOptions)),
+            )
           }
         />
       )
@@ -881,11 +887,7 @@ const FieldRenderer = ({
           panels || [],
           field,
         )
-        const { data, error } = await uploadForOcr(
-          repositoryId,
-          file,
-          ocrHints,
-        )
+        const { data, error } = await uploadForOcr(repositoryId, file, ocrHints)
         setIsUploading(false)
 
         if (error || !data) {
@@ -942,12 +944,12 @@ const FieldRenderer = ({
             )
             return (
               <div
+                key={attachment.id ?? attName}
                 className={`mt-2 flex w-full items-center gap-2.5 rounded-lg border border-gray-2 bg-surface p-2 ${
                   onOpenAttachment
                     ? 'cursor-pointer transition-all hover:border-primary-5 hover:bg-primary-1/30'
                     : ''
                 }`}
-                key={attachment.id ?? attName}
                 onClick={() => onOpenAttachment?.(attachment)}
               >
                 <div
@@ -955,7 +957,10 @@ const FieldRenderer = ({
                 >
                   <Icon className='size-4' name={getFileIcon(attExt)} />
                 </div>
-                <div className='flex min-w-0 flex-1 items-center gap-1' title={attName}>
+                <div
+                  className='flex min-w-0 flex-1 items-center gap-1'
+                  title={attName}
+                >
                   <span className='min-w-0 truncate text-12 font-semibold text-gray-12'>
                     {attName}
                   </span>
@@ -985,10 +990,29 @@ const FieldRenderer = ({
 
     case 'TABLE':
     case 'DYNAMIC_TABLE': {
+      const sourceFieldId = field.settings?.aiSettings?.lineItemSourceFieldId
+      const sourceFileValue = sourceFieldId
+        ? formModel?.[sourceFieldId]
+        : undefined
+      let ocrLineItems: Record<string, any>[] | undefined
+      if (sourceFileValue?.ocrJson) {
+        try {
+          const parsed = JSON.parse(sourceFileValue.ocrJson)
+          if (Array.isArray(parsed?.ocrResult)) {
+            ocrLineItems = parsed.ocrResult.filter(
+              (row: any) => row && typeof row === 'object',
+            )
+          }
+        } catch {
+          ocrLineItems = undefined
+        }
+      }
+
       return (
         <div className='w-full'>
           <TableFieldRenderer
             field={field}
+            ocrLineItems={ocrLineItems}
             readOnly={readOnly}
             required={required}
             value={Array.isArray(value) ? value : []}

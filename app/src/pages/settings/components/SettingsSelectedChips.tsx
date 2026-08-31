@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import cn from '@/utils/cn'
 import type { SettingsOption } from '../helpers/userGroupMappers'
@@ -21,6 +22,7 @@ export default function SettingsSelectedChips({
   items,
   onRemove,
 }: SettingsSelectedChipsProps) {
+  const { t } = useLingui()
   if (!items?.length) return null
 
   return (
@@ -44,7 +46,7 @@ export default function SettingsSelectedChips({
               </span>
               <span className='truncate'>{item.name}</span>
               <IconButton
-                ariaLabel={`Remove ${item.name}`}
+                ariaLabel={t`Remove ${item.name}`}
                 className='size-4 shrink-0 text-gray-9 hover:bg-primary-4/50 hover:text-gray-13'
                 color='gray'
                 icon='lucide:x'

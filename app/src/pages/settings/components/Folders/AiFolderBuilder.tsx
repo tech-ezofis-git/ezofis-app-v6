@@ -875,9 +875,9 @@ export default function AiFolderBuilder({
   const breadcrumbConfig = useMemo(
     () => ({
       items: [
-        { key: 'settings', label: 'Settings' },
-        { key: 'folder-configuration', label: 'Folder Configuration' },
-        { label: 'AI Folder Builder' },
+        { key: 'settings', label: t`Settings` },
+        { key: 'folder-configuration', label: t`Folder Configuration` },
+        { label: t`AI Folder Builder` },
       ],
       onNavigate: (key: string) => {
         if (key === 'settings') {

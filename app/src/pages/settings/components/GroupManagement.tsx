@@ -256,7 +256,7 @@ export default function GroupManagement({
 
         if (response.error || !response.data) {
           showToast({
-            message: response.error || 'Failed to load group',
+            message: response.error || t`Failed to load group`,
             variant: 'error',
           })
           return
@@ -276,7 +276,7 @@ export default function GroupManagement({
         setIsLoadingGroupDetails(false)
       }
     },
-    [userOptions],
+    [t, userOptions],
   )
 
   const deletingGroup = useMemo(
@@ -306,14 +306,14 @@ export default function GroupManagement({
         return
       }
 
-      showToast({ message: 'Group deleted successfully', variant: 'success' })
+      showToast({ message: t`Group deleted successfully`, variant: 'success' })
       setDeletingGroupId(null)
       await loadGroups()
     } finally {
       setIsDeletingGroup(false)
       setIsLoadingGroups(false)
     }
-  }, [deletingGroupId, loadGroups])
+  }, [deletingGroupId, loadGroups, t])
 
   const saveGroup = async () => {
     const description = draftGroup.description.trim()
@@ -336,7 +336,7 @@ export default function GroupManagement({
           return
         }
 
-        showToast({ message: 'Group updated successfully', variant: 'success' })
+        showToast({ message: t`Group updated successfully`, variant: 'success' })
         setIsSetupOpen(false)
         await loadGroups()
       } finally {
@@ -359,7 +359,7 @@ export default function GroupManagement({
         return
       }
 
-      showToast({ message: 'Group created successfully', variant: 'success' })
+      showToast({ message: t`Group created successfully`, variant: 'success' })
       setIsSetupOpen(false)
       await loadGroups()
     } finally {
@@ -573,8 +573,8 @@ export default function GroupManagement({
         title={t`Delete Group`}
         description={
           deletingGroup
-            ? `Are you sure you want to delete "${deletingGroup.name}"? This action cannot be undone.`
-            : 'Are you sure you want to delete this group? This action cannot be undone.'
+            ? t`Are you sure you want to delete "${deletingGroup.name}"? This action cannot be undone.`
+            : t`Are you sure you want to delete this group? This action cannot be undone.`
         }
         confirmLabel={t`Delete`}
         isConfirming={isDeletingGroup}
@@ -603,13 +603,13 @@ export default function GroupManagement({
                 icon: 'tabler:refresh',
                 id: 'refresh',
                 isIconButton: true,
-                tooltip: 'Refresh',
+                tooltip: t`Refresh`,
                 variant: 'outline',
                 onClick: loadGroups,
               },
             ]}
             addButton={{
-              tooltip: 'Add Group',
+              tooltip: t`Add Group`,
               onClick: openCreateGroup,
             }}
             filters={[
@@ -622,7 +622,7 @@ export default function GroupManagement({
                   .sort((a, b) => a.localeCompare(b))
                   .map((name) => ({ label: name, value: name })),
                 searchable: true,
-                searchPlaceholder: 'Search name...',
+                searchPlaceholder: t`Search name...`,
               },
               { id: 'status', label: t`Status`, options: statusOptions },
             ]}
@@ -641,9 +641,9 @@ export default function GroupManagement({
           <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
-                emptyDescription='Create a group to organize users by team, department, or function.'
+                emptyDescription={t`Create a group to organize users by team, department, or function.`}
                 emptyIcon='lucide:users-round'
-                emptyTitle='No groups yet'
+                emptyTitle={t`No groups yet`}
                 isLoading={isLoadingGroups}
                 isReLoading={isLoadingGroups}
                 pageSize={pageSize}
@@ -712,20 +712,20 @@ function GroupSetup({
   const getMissingLabels = (step = activeStep) => {
     if (step === 0) {
       return getMissingRequiredLabels([
-        { label: 'Group Name', value: draftGroup.name },
+        { label: t`Group Name`, value: draftGroup.name },
       ])
     }
 
     if (step === 1) {
-      return (selectedMembers ?? []).length ? [] : ['Group Members']
+      return (selectedMembers ?? []).length ? [] : [t`Group Members`]
     }
 
     // Review / save: all required fields
     return [
       ...getMissingRequiredLabels([
-        { label: 'Group Name', value: draftGroup.name },
+        { label: t`Group Name`, value: draftGroup.name },
       ]),
-      ...(selectedMembers?.length ? [] : ['Group Members']),
+      ...(selectedMembers?.length ? [] : [t`Group Members`]),
     ]
   }
 
@@ -750,9 +750,9 @@ function GroupSetup({
 
     if (missingLabels.length) {
       setShowErrors(true)
-      if (missingLabels.includes('Group Name')) {
+      if (missingLabels.includes(t`Group Name`)) {
         onStepChange(0)
-      } else if (missingLabels.includes('Group Members')) {
+      } else if (missingLabels.includes(t`Group Members`)) {
         onStepChange(1)
       }
       showToast({
@@ -828,11 +828,11 @@ function GroupSetup({
               <AnimateFadeIn delay={0.1}>
                 <InputText
                   autoFocus={!editingGroupId}
-                  label={t`Group Name *`}
+                  label={`${t`Group Name`} *`}
                   placeholder={t`e.g. Finance Team`}
                   value={draftGroup.name}
                   error={getFieldRequiredError(
-                    'Group Name',
+                    t`Group Name`,
                     showErrors,
                     draftGroup.name,
                   )}
@@ -841,7 +841,7 @@ function GroupSetup({
               </AnimateFadeIn>
               <AnimateFadeIn delay={0.15}>
                 <InputTextarea
-                  label='Description'
+                  label={t`Description`}
                   minRows={4}
                   placeholder={t`Describe the purpose of this group...`}
                   value={draftGroup.description}
@@ -860,15 +860,15 @@ function GroupSetup({
               <AnimateFadeIn delay={0.1}>
                 <div className='flex flex-col gap-2'>
                   <InputSelectMultiple
-                    label='Group Members *'
+                    label={`${t`Group Members`} *`}
                     options={userOptions}
-                    placeholder='Search and select users...'
+                    placeholder={t`Search and select users...`}
                     value={selectedMembers}
                     clearable
                     searchable
                     error={
                       showErrors && !selectedMembers.length
-                        ? 'Please fill the required field: Group Members'
+                        ? t`Please fill the required field: Group Members`
                         : undefined
                     }
                     onChange={(value) =>
@@ -896,7 +896,7 @@ function GroupSetup({
               <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
                 <AnimateFadeIn delay={0.1}>
                   <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-                    Group Summary
+                    {t`Group Summary`}
                   </h3>
                 </AnimateFadeIn>
                 <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>

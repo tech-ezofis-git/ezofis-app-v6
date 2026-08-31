@@ -1,4 +1,5 @@
 import { msg } from '@lingui/core/macro'
+import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
 import { createColumnHelper, useReactTable } from '@tanstack/react-table'
 import { MoreHorizontal } from 'lucide-react'
@@ -95,29 +96,29 @@ const PORTAL_STEP_MSGS = [
 
 const LOGIN_TYPE_OPTIONS = [
   {
-    description: 'Sends OTP to the Email',
+    description: staticT`Sends OTP to the Email`,
     id: 1,
-    name: 'Email with OTP',
+    name: staticT`Email with OTP`,
     value: 'emailOtp' as const,
   },
   {
-    description: 'Sign in with application username and password',
+    description: staticT`Sign in with application username and password`,
     id: 2,
-    name: 'Application Sign in',
+    name: staticT`Application Sign in`,
     value: 'applicationLogin' as const,
   },
   {
-    description: 'Validate accounts to master',
+    description: staticT`Validate accounts to master`,
     id: 3,
-    name: 'Master Login',
+    name: staticT`Master Login`,
     value: 'masterLogin' as const,
   },
 ]
 
 const LOGIN_TYPE_LABELS: Record<PortalLoginType, string> = {
-  applicationLogin: 'Application Sign in',
-  emailOtp: 'Email with OTP',
-  masterLogin: 'Master Login',
+  applicationLogin: staticT`Application Sign in`,
+  emailOtp: staticT`Email with OTP`,
+  masterLogin: staticT`Master Login`,
 }
 
 const FALLBACK_FORM_OPTIONS: Option[] = [
@@ -641,8 +642,8 @@ export default function PortalConfiguration({
         variant='danger'
         description={
           deletingPortal
-            ? `Are you sure you want to delete "${deletingPortal.name}"? This action cannot be undone.`
-            : 'Are you sure you want to delete this portal? This action cannot be undone.'
+            ? t`Are you sure you want to delete "${deletingPortal.name}"? This action cannot be undone.`
+            : t`Are you sure you want to delete this portal? This action cannot be undone.`
         }
         onCancel={() => setDeletingPortalId(null)}
         onConfirm={() => void confirmDeletePortal()}
@@ -663,13 +664,13 @@ export default function PortalConfiguration({
                 icon: 'tabler:refresh',
                 id: 'refresh',
                 isIconButton: true,
-                tooltip: 'Refresh',
+                tooltip: t`Refresh`,
                 variant: 'outline',
                 onClick: reloadPortals,
               },
             ]}
             addButton={{
-              tooltip: 'Add Portal',
+              tooltip: t`Add Portal`,
               onClick: openCreatePortal,
             }}
             filters={[
@@ -682,7 +683,7 @@ export default function PortalConfiguration({
                   .sort((a, b) => a.localeCompare(b))
                   .map((name) => ({ label: name, value: name })),
                 searchable: true,
-                searchPlaceholder: 'Search name...',
+                searchPlaceholder: t`Search name...`,
               },
               {
                 id: 'login',
@@ -715,9 +716,9 @@ export default function PortalConfiguration({
           <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
-                emptyDescription='Create a portal to configure login methods and connected workflows.'
+                emptyDescription={t`Create a portal to configure login methods and connected workflows.`}
                 emptyIcon='lucide:app-window'
-                emptyTitle='No portals yet'
+                emptyTitle={t`No portals yet`}
                 isLoading={isLoadingPortals}
                 isReLoading={isLoadingPortals}
                 pageSize={pageSize}
@@ -930,17 +931,17 @@ function PortalSetup({
   const getMissingLabels = (step = activeStep) => {
     if (step === 0) {
       return getMissingRequiredLabels([
-        { label: 'Portal Name', value: draftPortal.name },
+        { label: t`Portal Name`, value: draftPortal.name },
       ])
     }
 
     if (step === 1) {
-      const labels = draftPortal.loginType ? [] : ['Login type']
+      const labels = draftPortal.loginType ? [] : [t`Login type`]
       if (draftPortal.loginType === 'masterLogin') {
         labels.push(
           ...getMissingRequiredLabels([
             {
-              label: 'Master Form',
+              label: t`Master Form`,
               value:
                 draftPortal.authentication.formId &&
                 draftPortal.authentication.formId !== 0 &&
@@ -949,11 +950,11 @@ function PortalSetup({
                   : '',
             },
             {
-              label: 'Username Field',
+              label: t`Username Field`,
               value: draftPortal.authentication.usernameField[0],
             },
             {
-              label: 'First Name Field',
+              label: t`First Name Field`,
               value: draftPortal.authentication.firstnameField,
             },
           ]),
@@ -962,7 +963,7 @@ function PortalSetup({
           labels.push(
             ...getMissingRequiredLabels([
               {
-                label: 'Password Field',
+                label: t`Password Field`,
                 value: draftPortal.authentication.passwordField,
               },
             ]),
@@ -973,15 +974,15 @@ function PortalSetup({
     }
 
     if (step === 2) {
-      return draftPortal.workflows.length ? [] : ['Workflow']
+      return draftPortal.workflows.length ? [] : [t`Workflow`]
     }
 
     return [
       ...getMissingRequiredLabels([
-        { label: 'Portal Name', value: draftPortal.name },
+        { label: t`Portal Name`, value: draftPortal.name },
       ]),
-      ...(draftPortal.loginType ? [] : ['Login type']),
-      ...(draftPortal.workflows.length ? [] : ['Workflow']),
+      ...(draftPortal.loginType ? [] : [t`Login type`]),
+      ...(draftPortal.workflows.length ? [] : [t`Workflow`]),
     ]
   }
 
@@ -1003,10 +1004,10 @@ function PortalSetup({
     const missingLabels = getMissingLabels(3)
     if (missingLabels.length) {
       setShowErrors(true)
-      if (missingLabels.includes('Portal Name')) onStepChange(0)
+      if (missingLabels.includes(t`Portal Name`)) onStepChange(0)
       else if (
-        missingLabels.includes('Login type') ||
-        missingLabels.includes('Master Form')
+        missingLabels.includes(t`Login type`) ||
+        missingLabels.includes(t`Master Form`)
       ) {
         onStepChange(1)
       } else onStepChange(2)
@@ -1123,11 +1124,11 @@ function PortalSetup({
               <AnimateFadeIn delay={0.1}>
                 <InputText
                   autoFocus={!editingPortalId}
-                  label={t`Portal Name *`}
+                  label={`${t`Portal Name`} *`}
                   placeholder={t`e.g. Access2Pay Portal`}
                   value={draftPortal.name}
                   error={getFieldRequiredError(
-                    'Portal Name',
+                    t`Portal Name`,
                     showErrors,
                     draftPortal.name,
                   )}
@@ -1156,7 +1157,7 @@ function PortalSetup({
             <SettingsFormSection>
               <AnimateFadeIn delay={0.1}>
                 <InputRadioGroup
-                  label={t`Login type *`}
+                  label={`${t`Login type`} *`}
                   options={LOGIN_TYPE_OPTIONS}
                   value={loginTypeToRadioId(draftPortal.loginType)}
                   error={
@@ -1172,13 +1173,13 @@ function PortalSetup({
                 <AnimateFadeIn delay={0.15}>
                   <div className='flex flex-col gap-6 md:gap-7'>
                     <InputSelect
-                      label={t`Master Form *`}
+                      label={`${t`Master Form`} *`}
                       loading={loadingForms}
                       options={formOptions}
                       placeholder={t`Select master form`}
                       searchable
                       error={getFieldRequiredError(
-                        'Master Form',
+                        t`Master Form`,
                         showErrors,
                         draftPortal.authentication.formId &&
                           draftPortal.authentication.formId !== 0 &&
@@ -1204,13 +1205,13 @@ function PortalSetup({
                       }
                     />
                     <InputSelect
-                      label={t`Username Field *`}
+                      label={`${t`Username Field`} *`}
                       loading={loadingFields}
                       options={formFields}
                       placeholder={t`Select username / email field`}
                       searchable
                       error={getFieldRequiredError(
-                        'Username Field',
+                        t`Username Field`,
                         showErrors,
                         draftPortal.authentication.usernameField[0],
                       )}
@@ -1231,13 +1232,13 @@ function PortalSetup({
                       }
                     />
                     <InputSelect
-                      label={t`First Name Field *`}
+                      label={`${t`First Name Field`} *`}
                       loading={loadingFields}
                       options={formFields}
                       placeholder={t`Select first name field`}
                       searchable
                       error={getFieldRequiredError(
-                        'First Name Field',
+                        t`First Name Field`,
                         showErrors,
                         draftPortal.authentication.firstnameField,
                       )}
@@ -1260,15 +1261,15 @@ function PortalSetup({
                       options={[
                         {
                           description:
-                            'Use a one-time password for initial login',
+                            t`Use a one-time password for initial login`,
                           id: 1,
-                          name: 'Login With OTP',
+                          name: t`Login With OTP`,
                         },
                         {
                           description:
-                            'Use the login password field from the master for authentication',
+                            t`Use the login password field from the master for authentication`,
                           id: 2,
-                          name: 'Login Password Field',
+                          name: t`Login Password Field`,
                         },
                       ]}
                       value={
@@ -1292,13 +1293,13 @@ function PortalSetup({
                     />
                     {draftPortal.authentication.passwordTypes === 'PASSWORD' ? (
                       <InputSelect
-                        label={t`Password Field *`}
+                        label={`${t`Password Field`} *`}
                         loading={loadingFields}
                         options={formFields}
                         placeholder={t`Select password field`}
                         searchable
                         error={getFieldRequiredError(
-                          'Password Field',
+                          t`Password Field`,
                           showErrors,
                           draftPortal.authentication.passwordField,
                         )}
@@ -1369,7 +1370,7 @@ function PortalSetup({
               <AnimateFadeIn delay={0.1}>
                 <div className='flex flex-col gap-2'>
                   <InputSelectMultiple
-                    label={t`Workflows *`}
+                    label={`${t`Workflows`} *`}
                     loading={loadingWorkflows}
                     options={workflowOptions}
                     placeholder={t`Search and select workflows...`}
@@ -1378,7 +1379,7 @@ function PortalSetup({
                     searchable
                     error={
                       showErrors && !draftPortal.workflows.length
-                        ? 'Please fill the required field: Workflow'
+                        ? t`Please fill the required field: Workflow`
                         : undefined
                     }
                     onChange={(value) => {

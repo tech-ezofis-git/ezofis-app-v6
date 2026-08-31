@@ -444,16 +444,16 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
     () => [
       columnHelper.accessor('subActivityType', {
         enableSorting: false,
-        header: 'Activity',
-        meta: { ...settingsHeaderMeta.start, label: 'Activity' },
+        header: t`Activity`,
+        meta: { ...settingsHeaderMeta.start, label: t`Activity` },
         minSize: 220,
         size: 280,
         cell: ({ getValue }) => getValue() || '—',
       }),
       columnHelper.accessor('fileName', {
         enableSorting: false,
-        header: 'Document Reference',
-        meta: { ...settingsHeaderMeta.start, label: 'Document Reference' },
+        header: t`Document Reference`,
+        meta: { ...settingsHeaderMeta.start, label: t`Document Reference` },
         minSize: 100,
         size: 130,
         maxSize: 160,
@@ -464,8 +464,8 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       }),
       columnHelper.accessor('agent', {
         enableSorting: false,
-        header: 'Agent',
-        meta: { ...settingsHeaderMeta.start, label: 'Agent' },
+        header: t`Agent`,
+        meta: { ...settingsHeaderMeta.start, label: t`Agent` },
         minSize: 110,
         size: 140,
         maxSize: 180,
@@ -486,8 +486,8 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       }),
       columnHelper.accessor('credit', {
         enableSorting: false,
-        header: 'Credits Used',
-        meta: { ...settingsHeaderMeta.end, label: 'Credits Used' },
+        header: t`Credits Used`,
+        meta: { ...settingsHeaderMeta.end, label: t`Credits Used` },
         minSize: 80,
         size: 90,
         maxSize: 110,
@@ -495,16 +495,16 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
       }),
       columnHelper.accessor('remarks', {
         enableSorting: false,
-        header: 'Description',
-        meta: { ...settingsHeaderMeta.start, label: 'Description' },
+        header: t`Description`,
+        meta: { ...settingsHeaderMeta.start, label: t`Description` },
         minSize: 240,
         size: 320,
         cell: ({ getValue }) => getValue() || '—',
       }),
       columnHelper.accessor('createdAt', {
         enableSorting: false,
-        header: 'Activity Date',
-        meta: { ...settingsHeaderMeta.start, label: 'Activity Date' },
+        header: t`Activity Date`,
+        meta: { ...settingsHeaderMeta.start, label: t`Activity Date` },
         minSize: 120,
         size: 150,
         maxSize: 170,
@@ -656,7 +656,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                         {formatNumber(creditsUsed)}
                       </span>
                       <span className='text-12 text-text-muted font-normal'>
-                        of {formatNumber(purchasedCredits)}
+                        {t`of ${formatNumber(purchasedCredits)}`}
                       </span>
                     </>
                   )}
@@ -689,10 +689,10 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   ) : (
                     <>
                       <span className={cn(isRemainingLow && 'text-red-9 font-bold')}>
-                        {`${formatNumber(remainingCredits)} remaining`}
+                        {t`${formatNumber(remainingCredits)} remaining`}
                       </span>
                       <span>
-                        {`${usagePercentage}% used`}
+                        {t`${usagePercentage}% used`}
                       </span>
                     </>
                   )}
@@ -715,7 +715,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                         {formatNumber(topActivity?.creditsUsed ?? 0)}
                       </span>
                       <span className='text-12 text-text-muted font-normal'>
-                        credits
+                        {t`credits`}
                       </span>
                     </>
                   )}
@@ -725,7 +725,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                 {isLoading ? (
                   <Skeleton className='h-3 w-32 rounded' />
                 ) : (
-                  (topActivity?.type ?? 'No activity recorded')
+                  (topActivity?.type ?? t`No activity recorded`)
                 )}
               </div>
             </div>
@@ -740,7 +740,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                   {isLoading ? (
                     <Skeleton className='h-6 w-24 rounded' />
                   ) : (
-                    (peakTimeline?.label ?? 'None')
+                    (peakTimeline?.label ?? t`None`)
                   )}
                 </div>
               </div>
@@ -748,7 +748,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                 {isLoading ? (
                   <Skeleton className='h-3 w-36 rounded' />
                 ) : (
-                  `${formatNumber(peakTimeline?.creditsUsed ?? 0)} credits, highest this period`
+                  t`${formatNumber(peakTimeline?.creditsUsed ?? 0)} credits, highest this period`
                 )}
               </div>
             </div>
@@ -766,7 +766,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                     <>
                       {consumptionByAgent.length}
                       <span className='ml-1 text-12 text-text-muted font-normal'>
-                        agents
+                        {t`agents`}
                       </span>
                     </>
                   )}
@@ -776,7 +776,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                 {isLoading ? (
                   <Skeleton className='h-3 w-32 rounded' />
                 ) : (
-                  (consumptionByAgent.map(c => c.name).join(', ') || 'No active agents')
+                  (consumptionByAgent.map(c => c.name).join(', ') || t`No active agents`)
                 )}
               </div>
             </div>
@@ -794,7 +794,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                     <>
                       {formatNumber(projectedMonthEndUsage)}
                       <span className='ml-1 text-12 text-text-muted font-normal'>
-                        credits
+                        {t`credits`}
                       </span>
                     </>
                   )}
@@ -815,7 +815,7 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
                       />
                     </div>
                     <div className='text-11 text-text-muted font-inter font-normal mt-0.5'>
-                      {`${usagePercentage}% of ${formatNumber(purchasedCredits)} budget`}
+                      {t`${usagePercentage}% of ${formatNumber(purchasedCredits)} budget`}
                     </div>
                   </>
                 )}
@@ -863,15 +863,15 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
             </ChartCard>
 
             <DummyChartCard
-              badge={`${formatNumber(activityCreditsSum)} credits`}
-              title='Credit distribution by activity'
+              badge={t`${formatNumber(activityCreditsSum)} credits`}
+              title={t`Credit distribution by activity`}
             >
               <CreditDistributionByActivityChart data={consumptionByActivity} />
             </DummyChartCard>
 
             <DummyChartCard
-              badge={`${formatNumber(agentCreditsSum)} credits`}
-              title='Credits by AI agent'
+              badge={t`${formatNumber(agentCreditsSum)} credits`}
+              title={t`Credits by AI agent`}
             >
               <CreditsByAiAgentChart data={consumptionByAgent} />
             </DummyChartCard>
@@ -904,25 +904,25 @@ export default function Credits({ onBack }: { onBack?: () => void }) {
               filters={[
                 {
                   id: 'agent',
-                  label: 'Agent',
+                  label: t`Agent`,
                   options: agentFilterOptions,
                 },
                 {
                   dataType: 'date',
                   id: 'createdAt',
-                  label: 'Activity Date',
+                  label: t`Activity Date`,
                   options: [],
                 },
               ]}
               moreFilters={[
                 {
                   id: 'fileName',
-                  label: 'Document Reference',
+                  label: t`Document Reference`,
                   options: referenceFilterOptions,
                 },
                 {
                   id: 'subActivityType',
-                  label: 'Activity',
+                  label: t`Activity`,
                   options: subActivityFilterOptions,
                 },
               ]}
@@ -1181,6 +1181,7 @@ function HighestConsumptionPieChart({
 }: {
   data: { credits: number; name: string }[]
 }) {
+  const { t } = useLingui()
   const chartData =
     data.length > 0
       ? data.map((item, index) => ({
@@ -1194,7 +1195,7 @@ function HighestConsumptionPieChart({
   if (chartData.length === 0) {
     return (
       <div className='flex h-[200px] items-center justify-center text-13 text-gray-10'>
-        {`No consumption data for this period.`}
+        {t`No consumption data for this period.`}
       </div>
     )
   }
@@ -1225,7 +1226,7 @@ function HighestConsumptionPieChart({
                 boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 fontSize: '11px',
               }}
-              formatter={(val: any) => [`${formatNumber(val)} credits`, 'Usage']}
+              formatter={(val: any) => [t`${formatNumber(val)} credits`, t`Usage`]}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -1422,6 +1423,7 @@ const dailyData = [
 ]
 
 function DailyCreditUsageChart() {
+  const { t } = useLingui()
   return (
     <ResponsiveContainer height={200} width='100%'>
       <LineChart
@@ -1451,7 +1453,7 @@ function DailyCreditUsageChart() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             fontSize: '11px',
           }}
-          formatter={(val: any) => [`${val} credits`, 'Usage']}
+          formatter={(val: any) => [t`${val} credits`, t`Usage`]}
         />
         <Line
           type='monotone'
@@ -1473,6 +1475,7 @@ const weeklyData = [
 ]
 
 function WeeklyCreditConsumptionChart() {
+  const { t } = useLingui()
   return (
     <div className='flex flex-col gap-2'>
       <ResponsiveContainer height={180} width='100%'>
@@ -1514,15 +1517,15 @@ function WeeklyCreditConsumptionChart() {
       <div className='mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-1 text-[11px] font-semibold text-gray-10'>
         <div className='flex items-center gap-1.5'>
           <div className='size-2.5 rounded-sm bg-[var(--purple-9)]' />
-          <span>AP agent</span>
+          <span>{t`AP agent`}</span>
         </div>
         <div className='flex items-center gap-1.5'>
           <div className='size-2.5 rounded-sm bg-[var(--cyan-9)]' />
-          <span>OCR agent</span>
+          <span>{t`OCR agent`}</span>
         </div>
         <div className='flex items-center gap-1.5'>
           <div className='size-2.5 rounded-sm bg-[var(--pink-9)]' />
-          <span>Doc agent</span>
+          <span>{t`Doc agent`}</span>
         </div>
       </div>
     </div>
@@ -1539,6 +1542,7 @@ const monthlyData = [
 ]
 
 function MonthlyCreditTrendChart() {
+  const { t } = useLingui()
   return (
     <ResponsiveContainer height={200} width='100%'>
       <AreaChart
@@ -1574,7 +1578,7 @@ function MonthlyCreditTrendChart() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             fontSize: '11px',
           }}
-          formatter={(val: any) => [`${val} credits`, 'Trend']}
+          formatter={(val: any) => [t`${val} credits`, t`Trend`]}
         />
         <Area
           type='monotone'
@@ -1705,6 +1709,7 @@ function CreditsByAiAgentChart({
 }: {
   data: { name: string; credits: number }[]
 }) {
+  const { t } = useLingui()
   const chartData =
     data.length > 0
       ? data
@@ -1746,7 +1751,7 @@ function CreditsByAiAgentChart({
         />
         <Tooltip
           cursor={{ fill: 'var(--gray-2)', opacity: 0.15 }}
-          formatter={(val: any) => [`${formatNumber(val)} credits`, 'Credits']}
+          formatter={(val: any) => [t`${formatNumber(val)} credits`, t`Credits`]}
           contentStyle={{
             border: 'none',
             borderRadius: '8px',
@@ -1775,6 +1780,7 @@ const forecastData = [
 ]
 
 function CreditForecastChart() {
+  const { t } = useLingui()
   return (
     <div className='flex flex-col gap-2'>
       <ResponsiveContainer height={180} width='100%'>
@@ -1830,11 +1836,11 @@ function CreditForecastChart() {
       <div className='mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 pl-1 text-[11px] font-semibold text-gray-10'>
         <div className='flex items-center gap-1.5'>
           <div className='size-2.5 rounded-sm bg-[var(--purple-9)]' />
-          <span>Actual</span>
+          <span>{t`Actual`}</span>
         </div>
         <div className='flex items-center gap-1.5'>
           <div className='size-2.5 rounded-sm bg-[var(--cyan-9)]' />
-          <span>Projected</span>
+          <span>{t`Projected`}</span>
         </div>
       </div>
     </div>

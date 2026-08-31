@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import { useMemo } from 'react'
 
@@ -44,12 +45,14 @@ export default function SettingsSelectField({
   error,
   label,
   options,
-  placeholder = 'Select',
+  placeholder,
   required,
   searchable,
   value,
   onChange,
 }: SettingsSelectFieldProps) {
+  const { t } = useLingui()
+  const defaultPlaceholder = placeholder || t`Select`
   const normalizedValue = useMemo(() => {
     const trimmed = String(value || '').trim()
     return !trimmed || trimmed === '—' ? '' : trimmed
@@ -94,7 +97,7 @@ export default function SettingsSelectField({
       error={error}
       label={label}
       options={selectOptions}
-      placeholder={placeholder}
+      placeholder={defaultPlaceholder}
       required={required}
       searchable={searchable ?? creatable}
       value={selectedOption}

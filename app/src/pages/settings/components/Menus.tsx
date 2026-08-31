@@ -17,6 +17,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
 import {
   createMenu as createMenuApi,
@@ -82,19 +83,19 @@ type MenuStep = {
 
 const menuSteps: MenuStep[] = [
   {
-    description: 'Menu key & label',
+    description: staticT`Menu key & label`,
     key: 'details',
-    title: 'Menu Details',
+    title: staticT`Menu Details`,
   },
   {
-    description: 'Route path & sort order',
+    description: staticT`Route path & sort order`,
     key: 'route',
-    title: 'Route & Order',
+    title: staticT`Route & Order`,
   },
   {
-    description: 'Review & save menu settings',
+    description: staticT`Review & save menu settings`,
     key: 'review',
-    title: 'Review',
+    title: staticT`Review`,
   },
 ]
 
@@ -197,7 +198,7 @@ export default function MenuProfileManagement({
 
       if (response.error || !response.data) {
         showToast({
-          message: response.error || 'Failed to load menu',
+          message: response.error || t`Failed to load menu`,
           variant: 'error',
         })
         return
@@ -216,7 +217,7 @@ export default function MenuProfileManagement({
     } finally {
       setIsLoadingMenuDetails(false)
     }
-  }, [])
+  }, [t])
 
   const deletingMenu = useMemo(
     () => menus.find((menu) => menu.id === deletingMenuId) || null,
@@ -227,7 +228,7 @@ export default function MenuProfileManagement({
     (menuId: string, isSystem: boolean) => {
       if (isSystem) {
         showToast({
-          message: 'System menus cannot be deleted',
+          message: t`System menus cannot be deleted`,
           variant: 'error',
         })
         return
@@ -235,7 +236,7 @@ export default function MenuProfileManagement({
 
       setDeletingMenuId(menuId)
     },
-    [],
+    [t],
   )
 
   const cancelDeleteMenu = useCallback(() => {
@@ -255,13 +256,13 @@ export default function MenuProfileManagement({
         return
       }
 
-      showToast({ message: 'Menu deleted successfully', variant: 'success' })
+      showToast({ message: t`Menu deleted successfully`, variant: 'success' })
       setDeletingMenuId(null)
       await loadMenus()
     } finally {
       setIsDeletingMenu(false)
     }
-  }, [deletingMenuId, loadMenus])
+  }, [deletingMenuId, loadMenus, t])
 
   const saveMenu = async () => {
     const key = formState.key.trim()
@@ -285,7 +286,7 @@ export default function MenuProfileManagement({
           return
         }
 
-        showToast({ message: 'Menu updated successfully', variant: 'success' })
+        showToast({ message: t`Menu updated successfully`, variant: 'success' })
       } else {
         if (!key) return
 
@@ -301,7 +302,7 @@ export default function MenuProfileManagement({
           return
         }
 
-        showToast({ message: 'Menu created successfully', variant: 'success' })
+        showToast({ message: t`Menu created successfully`, variant: 'success' })
       }
 
       resetSetup()
@@ -336,9 +337,9 @@ export default function MenuProfileManagement({
       }),
       menuColumnHelper.accessor('label', {
         enableSorting: false,
-        header: 'Menu',
+        header: t`Menu`,
         id: 'label',
-        meta: { ...settingsHeaderMeta.start, label: 'Menu' },
+        meta: { ...settingsHeaderMeta.start, label: t`Menu` },
         minSize: 180,
         size: 220,
         cell: ({ row }) => {
@@ -365,7 +366,7 @@ export default function MenuProfileManagement({
       }),
       menuColumnHelper.accessor('routePath', {
         enableSorting: false,
-        header: 'Route',
+        header: t`Route`,
         id: 'routePath',
         meta: settingsHeaderMeta.start,
         minSize: 160,
@@ -378,7 +379,7 @@ export default function MenuProfileManagement({
       }),
       menuColumnHelper.accessor('sortOrder', {
         enableSorting: false,
-        header: 'Order',
+        header: t`Order`,
         id: 'sortOrder',
         meta: settingsHeaderMeta.center,
         minSize: 90,
@@ -391,7 +392,7 @@ export default function MenuProfileManagement({
       }),
       menuColumnHelper.display({
         enableSorting: false,
-        header: 'Type',
+        header: t`Type`,
         id: 'type',
         meta: settingsHeaderMeta.start,
         minSize: 110,
@@ -400,7 +401,7 @@ export default function MenuProfileManagement({
       }),
       menuColumnHelper.accessor('created', {
         enableSorting: false,
-        header: 'Created',
+        header: t`Created`,
         id: 'created',
         meta: settingsHeaderMeta.start,
         minSize: 110,
@@ -410,7 +411,7 @@ export default function MenuProfileManagement({
       menuColumnHelper.display({
         enableResizing: false,
         enableSorting: false,
-        header: 'Actions',
+        header: t`Actions`,
         id: 'actions',
         meta: settingsHeaderMeta.end,
         minSize: 72,
@@ -460,7 +461,7 @@ export default function MenuProfileManagement({
         },
       }),
     ],
-    [deleteMenu, isLoadingMenuDetails, openEditMenu],
+    [deleteMenu, isLoadingMenuDetails, openEditMenu, t],
   )
 
   const {
@@ -524,8 +525,8 @@ export default function MenuProfileManagement({
         title={t`Delete Menu`}
         description={
           deletingMenu
-            ? `Are you sure you want to delete "${deletingMenu.label}"? This action cannot be undone.`
-            : 'Are you sure you want to delete this menu? This action cannot be undone.'
+            ? t`Are you sure you want to delete "${deletingMenu.label}"? This action cannot be undone.`
+            : t`Are you sure you want to delete this menu? This action cannot be undone.`
         }
         confirmLabel={t`Delete`}
         isConfirming={isDeletingMenu}
@@ -542,7 +543,7 @@ export default function MenuProfileManagement({
           toolbar={toolbar}
           actions={
             <SettingsHeaderAddButton
-              tooltip='Create Menu'
+              tooltip={t`Create Menu`}
               onClick={openCreateMenu}
             />
           }
@@ -553,9 +554,9 @@ export default function MenuProfileManagement({
           <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             <div className='min-h-0 flex-1 overflow-hidden'>
               <DataTable
-                emptyDescription='Create a menu to add custom navigation items.'
+                emptyDescription={t`Create a menu to add custom navigation items.`}
                 emptyIcon='lucide:menu'
-                emptyTitle='No menus yet'
+                emptyTitle={t`No menus yet`}
                 isLoading={isLoadingMenus}
                 isReLoading={isLoadingMenus}
                 pageSize={pageSize}
@@ -572,7 +573,7 @@ export default function MenuProfileManagement({
             </div>
             <Pagination
               className='mt-4 shrink-0'
-              itemLabel='Menus'
+              itemLabel={t`Menus`}
               page={page}
               pageSize={pageSize}
               showPageNumbers={false}
@@ -618,27 +619,27 @@ function MenuSetup({
   const getMissingLabels = (step = activeStep) => {
     if (step === 0) {
       return getMissingRequiredLabels([
-        ...(editingMenuId ? [] : [{ label: 'Menu Key', value: formState.key }]),
-        { label: 'Label', value: formState.label },
+        ...(editingMenuId ? [] : [{ label: t`Menu Key`, value: formState.key }]),
+        { label: t`Label`, value: formState.label },
       ])
     }
 
     if (step === 1) {
       return getMissingRequiredLabels([
-        { label: 'Route Path', value: formState.routePath },
+        { label: t`Route Path`, value: formState.routePath },
         {
-          label: 'Sort Order',
+          label: t`Sort Order`,
           value: formState.sortOrder >= 0 ? formState.sortOrder : '',
         },
       ])
     }
 
     return getMissingRequiredLabels([
-      ...(editingMenuId ? [] : [{ label: 'Menu Key', value: formState.key }]),
-      { label: 'Label', value: formState.label },
-      { label: 'Route Path', value: formState.routePath },
+      ...(editingMenuId ? [] : [{ label: t`Menu Key`, value: formState.key }]),
+      { label: t`Label`, value: formState.label },
+      { label: t`Route Path`, value: formState.routePath },
       {
-        label: 'Sort Order',
+        label: t`Sort Order`,
         value: formState.sortOrder >= 0 ? formState.sortOrder : '',
       },
     ])
@@ -666,13 +667,13 @@ function MenuSetup({
     if (missingLabels.length) {
       setShowErrors(true)
       if (
-        missingLabels.includes('Menu Key') ||
-        missingLabels.includes('Label')
+        missingLabels.includes(t`Menu Key`) ||
+        missingLabels.includes(t`Label`)
       ) {
         onStepChange(0)
       } else if (
-        missingLabels.includes('Route Path') ||
-        missingLabels.includes('Sort Order')
+        missingLabels.includes(t`Route Path`) ||
+        missingLabels.includes(t`Sort Order`)
       ) {
         onStepChange(1)
       }
@@ -713,8 +714,6 @@ function MenuSetup({
     onBack()
   }
 
-  const activeStepConfig = menuSteps[activeStep]
-
   const wizardSteps = useMemo(() => {
     return menuSteps.map((s, idx) => ({
       id: idx,
@@ -735,11 +734,11 @@ function MenuSetup({
       onCancel={onCancel}
       onBackToSettings={onBack}
       isSaving={isSaving}
-      saveLabel={editingMenuId ? 'Update Menu' : 'Save Menu'}
-      moduleTitle='Menu & Profile Management'
-      setupTitle={editingMenuId ? 'Edit Menu' : 'Create Menu'}
-      headerTitle={editingMenuId ? 'Edit Menu Setup' : 'New Menu Setup'}
-      headerDescription='Configure application navigation menus, route paths, and display order'
+      saveLabel={editingMenuId ? t`Update Menu` : t`Save Menu`}
+      moduleTitle={t`Menu & Profile Management`}
+      setupTitle={editingMenuId ? t`Edit Menu` : t`Create Menu`}
+      headerTitle={editingMenuId ? t`Edit Menu Setup` : t`New Menu Setup`}
+      headerDescription={t`Configure application navigation menus, route paths, and display order`}
     >
       {activeStep === 0 ? (
         <SettingsFormSection>
@@ -756,7 +755,7 @@ function MenuSetup({
               placeholder={t`e.g. reports`}
               value={formState.key}
               error={getFieldRequiredError(
-                'Menu Key',
+                t`Menu Key`,
                 showErrors,
                 formState.key,
               )}
@@ -768,7 +767,7 @@ function MenuSetup({
             placeholder={t`e.g. Reports`}
             value={formState.label}
             error={getFieldRequiredError(
-              'Label',
+              t`Label`,
               showErrors,
               formState.label,
             )}
@@ -784,7 +783,7 @@ function MenuSetup({
             placeholder={t`e.g. /reports`}
             value={formState.routePath}
             error={getFieldRequiredError(
-              'Route Path',
+              t`Route Path`,
               showErrors,
               formState.routePath,
             )}
@@ -798,7 +797,7 @@ function MenuSetup({
             value={formState.sortOrder}
             error={
               showErrors && !(formState.sortOrder >= 0)
-                ? 'Please fill the required field: Sort Order'
+                ? t`Please fill the required field: Sort Order`
                 : undefined
             }
             onChange={(value) =>
@@ -815,7 +814,7 @@ function MenuSetup({
         <SettingsFormSection>
           <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
             <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-              Menu Summary
+              {t`Menu Summary`}
             </h3>
             <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
               <SummaryItem label={t`Menu Key`} value={formState.key || '—'} />
@@ -852,6 +851,7 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
 }
 
 function TypeBadge({ isSystem }: { isSystem: boolean }) {
+  const { t } = useLingui()
   const tone = isSystem
     ? 'border-[var(--primary-6)] bg-[var(--primary-2)] text-[var(--primary-11)]'
     : 'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-11)]'
@@ -860,7 +860,7 @@ function TypeBadge({ isSystem }: { isSystem: boolean }) {
     <span
       className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${tone}`}
     >
-      {isSystem ? 'System' : 'Custom'}
+      {isSystem ? t`System` : t`Custom`}
     </span>
   )
 }

@@ -15,7 +15,13 @@ export const generateId = () => {
   }
 }
 
-export type FormLayout = 'SINGLE' | 'CLASSIC' | 'ACCORDION' | 'typeform' | 'grid' | 'full'
+export type FormLayout =
+  | 'SINGLE'
+  | 'CLASSIC'
+  | 'ACCORDION'
+  | 'typeform'
+  | 'grid'
+  | 'full'
 
 export interface FormStore {
   activePanelId: string | null
@@ -146,6 +152,9 @@ export interface Question {
         masterFormColumn: any[]
         masterFormId: number
       }
+      // TABLE fields only: id of a FILE_UPLOAD field on the same form whose
+      // OCR-extracted line items should be offered for import into this table.
+      lineItemSourceFieldId?: string
       validateTypeKeyword?: string
     }
     general: {
@@ -219,8 +228,6 @@ export interface Question {
       optionsPerLine?: number
       optionsSource?: string
       optionsType?: string
-      repositoryId?: string
-      repositoryField?: string
       parentDateFieldId?: string
       parentDateOffset?: number
       parentFieldFilterValue?: any
@@ -230,6 +237,8 @@ export interface Question {
       prefixLabel?: string
       preventNegative?: boolean
       qrCodeEnabled?: boolean
+      repositoryField?: string
+      repositoryId?: string
       requireFirst?: boolean
       requireLast?: boolean
       requirePostalCode?: boolean
@@ -249,15 +258,23 @@ export interface Question {
       tableColumns?: Array<{
         id: string
         name: string
+        settings?: {
+          lookupSettings?: {
+            repositoryField?: string
+            repositoryId?: string
+          }
+          specific?: {
+            customOptions?: string
+            formulaTokens?: Array<{
+              type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION'
+              value: string
+            }>
+            placeholder?: string
+          }
+          validation?: { fieldRule?: 'OPTIONAL' | 'REQUIRED' }
+        }
         size: 'SMALL' | 'MEDIUM' | 'LARGE'
         type: QuestionType
-        settings?: {
-          validation?: { fieldRule?: 'OPTIONAL' | 'REQUIRED' }
-          specific?: {
-            placeholder?: string
-            customOptions?: string
-          }
-        }
       }>
       timeDefaultValueType?: 'CUSTOM' | 'NOW' | 'NONE'
       uniqueCheck?: boolean
@@ -445,15 +462,17 @@ export const useFormStore = create<FormStore>()(
           const mergeField = (existingField: Question, f: any): Question => {
             const fieldLabel = f.label || f.title || existingField.label
             const fieldType = (
-              f.type || existingField.type || 'SHORT_TEXT'
+              f.type ||
+              existingField.type ||
+              'SHORT_TEXT'
             ).toUpperCase() as QuestionType
             const isMandatory =
               f.isMandatory !== undefined
                 ? f.isMandatory
                 : f.settings?.validation?.fieldRule
                   ? f.settings.validation.fieldRule === 'MANDATORY'
-                  : (existingField.settings?.validation?.fieldRule as string) ===
-                    'MANDATORY'
+                  : (existingField.settings?.validation
+                      ?.fieldRule as string) === 'MANDATORY'
 
             return {
               ...existingField,
@@ -486,7 +505,9 @@ export const useFormStore = create<FormStore>()(
                 },
                 validation: {
                   ...existingField.settings?.validation,
-                  fieldRule: (isMandatory ? 'MANDATORY' : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
+                  fieldRule: (isMandatory
+                    ? 'MANDATORY'
+                    : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
                 },
               },
             }
@@ -494,10 +515,13 @@ export const useFormStore = create<FormStore>()(
 
           const buildNewField = (f: any): Question => {
             const fieldLabel = f.label || f.title || 'Untitled Field'
-            const fieldType = (f.type || 'SHORT_TEXT').toUpperCase() as QuestionType
+            const fieldType = (
+              f.type || 'SHORT_TEXT'
+            ).toUpperCase() as QuestionType
             const baseField = getField(fieldType)
             const isMandatory = Boolean(
-              f.isMandatory || f.settings?.validation?.fieldRule === 'MANDATORY',
+              f.isMandatory ||
+              f.settings?.validation?.fieldRule === 'MANDATORY',
             )
 
             return {
@@ -526,7 +550,9 @@ export const useFormStore = create<FormStore>()(
                       : f.settings?.specific?.customOptions || '',
                 },
                 validation: {
-                  fieldRule: (isMandatory ? 'MANDATORY' : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
+                  fieldRule: (isMandatory
+                    ? 'MANDATORY'
+                    : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
                   ...f.settings?.validation,
                 },
               },
@@ -551,7 +577,8 @@ export const useFormStore = create<FormStore>()(
                     ((f.id && f.id === ef.id) ||
                       (!f.id &&
                         label &&
-                        (f.label || f.title || '').toLowerCase().trim() === label)),
+                        (f.label || f.title || '').toLowerCase().trim() ===
+                          label)),
                 )
                 if (!match) return ef
                 matched.add(match)
@@ -559,7 +586,9 @@ export const useFormStore = create<FormStore>()(
               })
 
             const added = aiFields
-              .filter((f) => !matched.has(f) && !(f.id && removedFieldIds.has(f.id)))
+              .filter(
+                (f) => !matched.has(f) && !(f.id && removedFieldIds.has(f.id)),
+              )
               .map(buildNewField)
 
             return [...kept, ...added]
@@ -567,7 +596,9 @@ export const useFormStore = create<FormStore>()(
 
           const findAiPanel = (existingPanel: Panel) => {
             const title = (
-              existingPanel.settings?.title || (existingPanel as any).title || ''
+              existingPanel.settings?.title ||
+              (existingPanel as any).title ||
+              ''
             )
               .toLowerCase()
               .trim()
@@ -576,7 +607,8 @@ export const useFormStore = create<FormStore>()(
                 (existingPanel.id && p.id && p.id === existingPanel.id) ||
                 (!p.id &&
                   title &&
-                  (p.settings?.title || p.title || '').toLowerCase().trim() === title),
+                  (p.settings?.title || p.title || '').toLowerCase().trim() ===
+                    title),
             )
           }
 
@@ -601,13 +633,17 @@ export const useFormStore = create<FormStore>()(
                     match.description ??
                     p.settings?.description ??
                     '',
-                  title: match.settings?.title || match.title || p.settings?.title,
+                  title:
+                    match.settings?.title || match.title || p.settings?.title,
                 },
               }
             })
 
           const newPanels = aiPanels
-            .filter((p) => !matchedAiPanels.has(p) && !(p.id && removedPanelIds.has(p.id)))
+            .filter(
+              (p) =>
+                !matchedAiPanels.has(p) && !(p.id && removedPanelIds.has(p.id)),
+            )
             .map((p) => ({
               fields: (p.fields || []).map(buildNewField),
               id: p.id || generateId(),
@@ -721,7 +757,8 @@ export const useFormStore = create<FormStore>()(
           isSidebarOpen: false,
           layout: (() => {
             const l = String(genSettings.layout || 'CLASSIC').toUpperCase()
-            if (l === 'TYPEFORM' || l === 'STEPPER' || l === 'SINGLE') return 'SINGLE'
+            if (l === 'TYPEFORM' || l === 'STEPPER' || l === 'SINGLE')
+              return 'SINGLE'
             if (l === 'GRID' || l === 'CLASSIC') return 'CLASSIC'
             if (l === 'FULL' || l === 'ACCORDION') return 'ACCORDION'
             return 'CLASSIC'
@@ -852,7 +889,9 @@ export const useFormStore = create<FormStore>()(
       updatePanel: (id, updates) =>
         set((state) => ({
           panels: state.panels.map((p) =>
-            p.id === id ? { ...p, settings: { ...(p.settings || {}), ...updates } } : p,
+            p.id === id
+              ? { ...p, settings: { ...(p.settings || {}), ...updates } }
+              : p,
           ),
         })),
 
@@ -909,6 +948,7 @@ export const useFormStore = create<FormStore>()(
     }),
     {
       name: 'form-builder-storage-v3',
+      version: 3,
       partialize: (state) => {
         // Exclude transient UI drawer flags from localStorage persistence
         const {
@@ -922,7 +962,6 @@ export const useFormStore = create<FormStore>()(
         } = state
         return rest
       },
-      version: 3,
     },
   ),
 )

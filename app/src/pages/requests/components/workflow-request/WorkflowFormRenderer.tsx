@@ -31,7 +31,6 @@ interface Props {
   // fight the outer container for scroll ownership.
   disableOwnScroll?: boolean
   exclusive?: boolean
-  getPanelValue?: (panel: any, index: number) => string
   hasAttemptedSubmit?: boolean
   // Field ids hidden from the current acting user by the current stage's
   // Security & Form Access settings (formVisibilityAccess / formSecureControls).
@@ -39,6 +38,7 @@ interface Props {
   // Overview only — scopes the local field↔attachment map to this request.
   instanceId?: string | number
   missingMandatoryFieldIds?: Set<string>
+  openValue?: string | null
   preparePhase?: 'extracting' | 'uploading' | null
   preparingFieldId?: string | null
   // Field ids the current acting user can see but not edit, from the same
@@ -47,13 +47,13 @@ interface Props {
   repoFieldHints?: string[]
   repositoryId?: string
   viewOnly?: boolean
-  openValue?: string | null
+  getPanelValue?: (panel: any, index: number) => string
   onFieldChange: (fieldId: string, value: any) => void
-  onOpenChange?: (value: string | null) => void
   onOcrFieldList?: (
     list: { name?: string; value?: string }[] | undefined,
   ) => void
   onOpenAttachment?: (attachment: any) => void
+  onOpenChange?: (value: string | null) => void
   onRequestUpload?: (fieldId: string, file: File) => void | Promise<void>
 }
 
@@ -70,7 +70,6 @@ const WorkflowFormRenderer = ({
   disableOwnScroll,
   exclusive,
   formModel,
-  getPanelValue,
   hasAttemptedSubmit,
   hiddenFieldIds,
   instanceId,
@@ -83,10 +82,11 @@ const WorkflowFormRenderer = ({
   repoFieldHints,
   repositoryId,
   viewOnly,
+  getPanelValue,
   onFieldChange,
-  onOpenChange,
   onOcrFieldList,
   onOpenAttachment,
+  onOpenChange,
   onRequestUpload,
 }: Props) => {
   const { t } = useLingui()
@@ -137,14 +137,9 @@ const WorkflowFormRenderer = ({
     getPanelValue?.(panel, index) || `panel-${index}`
 
   const content = (
-    <div className='w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'>
+    <div className='w-full max-w-full min-w-0 overflow-x-hidden px-6 py-6'>
       <AnimateFadeIn delay={0.1}>
         <Accordion
-          defaultValue={
-            exclusive
-              ? undefined
-              : panels.map((panel, idx) => resolvePanelValue(panel, idx))
-          }
           multiple={!exclusive}
           radius='md'
           value={exclusive ? openValue || null : undefined}
@@ -157,6 +152,11 @@ const WorkflowFormRenderer = ({
             label: 'text-14 font-bold tracking-tight text-gray-13',
             panel: 'min-w-0 overflow-hidden px-6 pt-2 pb-6',
           }}
+          defaultValue={
+            exclusive
+              ? undefined
+              : panels.map((panel, idx) => resolvePanelValue(panel, idx))
+          }
           onChange={(value) => {
             if (!exclusive) return
             onOpenChange?.(typeof value === 'string' ? value : null)
@@ -183,10 +183,10 @@ const WorkflowFormRenderer = ({
                 value={panelValue}
               >
                 <span
-                  aria-hidden
                   className='block h-px'
                   data-portal-section={panelValue}
                   id={panelValue}
+                  aria-hidden
                 />
                 <Accordion.Control>
                   <div className='flex items-center justify-between gap-3'>
@@ -225,11 +225,10 @@ const WorkflowFormRenderer = ({
                   </div>
                 </Accordion.Control>
                 <Accordion.Panel>
-                  <div className='-mx-2 flex flex-wrap min-w-0 max-w-full'>
+                  <div className='-mx-2 flex max-w-full min-w-0 flex-wrap'>
                     {visibleFields.map((field: any) => {
                       const isTableField =
-                        field.type === 'TABLE' ||
-                        field.type === 'DYNAMIC_TABLE'
+                        field.type === 'TABLE' || field.type === 'DYNAMIC_TABLE'
                       const sizeClass = getColumnSizeClass(
                         isTableField
                           ? field.settings?.general?.size || 'col-12'
@@ -237,13 +236,14 @@ const WorkflowFormRenderer = ({
                       )
                       return (
                         <div
-                          className={`${sizeClass} min-w-0 max-w-full px-2 pb-4`}
+                          className={`${sizeClass} max-w-full min-w-0 px-2 pb-4`}
                           data-field-id={field.id}
                           key={field.id}
                         >
                           <FieldRenderer
                             fallbackAttachments={attachmentsByField[field.id]}
                             field={field}
+                            formModel={formModel}
                             panels={panels}
                             preparePhase={preparePhase}
                             repoFieldHints={repoFieldHints}
@@ -290,8 +290,8 @@ const WorkflowFormRenderer = ({
   return disableOwnScroll ? (
     content
   ) : (
-    <div className='h-full min-h-0 min-w-0 w-full overflow-hidden'>
-      <ScrollArea className='h-full min-w-0 w-full' height='100%'>
+    <div className='h-full min-h-0 w-full min-w-0 overflow-hidden'>
+      <ScrollArea className='h-full w-full min-w-0' height='100%'>
         {content}
       </ScrollArea>
     </div>

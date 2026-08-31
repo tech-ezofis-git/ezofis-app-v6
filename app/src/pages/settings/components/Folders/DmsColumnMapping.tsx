@@ -1,23 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { t as staticT } from '@lingui/macro'
+import { useLingui } from '@lingui/react/macro'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
 import cn from '@/utils/cn'
 
 const DATA_TYPES = [
-  { icon: 'lucide:type', id: 'SHORT_TEXT', name: 'Short Text' },
-  { icon: 'tabler:align-left', id: 'LONG_TEXT', name: 'Long Text' },
-  { icon: 'tabler:numbers', id: 'NUMBER', name: 'Number' },
-  { icon: 'tabler:toggle-left', id: 'BOOLEAN', name: 'Boolean' },
-  { icon: 'tabler:calendar', id: 'DATE', name: 'Date' },
-  { icon: 'tabler:clock', id: 'TIME', name: 'Time' },
-  { icon: 'tabler:calendar-time', id: 'DATE_TIME', name: 'Date & Time' },
-  { icon: 'tabler:list', id: 'SINGLE_SELECT', name: 'Dropdown' },
-  { icon: 'tabler:table', id: 'TABLE', name: 'Table' },
-  { icon: 'tabler:barcode', id: 'BARCODE', name: 'Barcode' },
-  { icon: 'tabler:checkbox', id: 'OMR', name: 'Checkbox/OMR' },
-  { icon: 'tabler:calculator', id: 'CALCULATED', name: 'Calculated' },
-  { icon: 'tabler:settings', id: 'AUTO_GENERATED', name: 'Auto Generated' },
-  { icon: 'tabler:link', id: 'LINK', name: 'Link' },
+  { icon: 'lucide:type', id: 'SHORT_TEXT', name: staticT`Short Text` },
+  { icon: 'tabler:align-left', id: 'LONG_TEXT', name: staticT`Long Text` },
+  { icon: 'tabler:numbers', id: 'NUMBER', name: staticT`Number` },
+  { icon: 'tabler:toggle-left', id: 'BOOLEAN', name: staticT`Boolean` },
+  { icon: 'tabler:calendar', id: 'DATE', name: staticT`Date` },
+  { icon: 'tabler:clock', id: 'TIME', name: staticT`Time` },
+  { icon: 'tabler:calendar-time', id: 'DATE_TIME', name: staticT`Date & Time` },
+  { icon: 'tabler:list', id: 'SINGLE_SELECT', name: staticT`Dropdown` },
+  { icon: 'tabler:table', id: 'TABLE', name: staticT`Table` },
+  { icon: 'tabler:barcode', id: 'BARCODE', name: staticT`Barcode` },
+  { icon: 'tabler:checkbox', id: 'OMR', name: staticT`Checkbox/OMR` },
+  { icon: 'tabler:calculator', id: 'CALCULATED', name: staticT`Calculated` },
+  { icon: 'tabler:settings', id: 'AUTO_GENERATED', name: staticT`Auto Generated` },
+  { icon: 'tabler:link', id: 'LINK', name: staticT`Link` },
 ]
 
 type FieldRow = {
@@ -75,6 +77,7 @@ export default function DmsColumnMapping({
   onUpdateDataTypes,
   onUpdateSyncFields,
 }: DmsColumnMappingProps) {
+  const { t } = useLingui()
   const [activeDropdownRow, setActiveDropdownRow] = useState<string | null>(null)
   const [activeTypeDropdownRow, setActiveTypeDropdownRow] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -132,7 +135,7 @@ export default function DmsColumnMapping({
         </div>
         <div>
           <h3 className='text-[13px] font-semibold text-gray-12'>
-            Map Repository Fields (destination) to Excel Fields (source).
+            {t`Map Repository Fields (destination) to Excel Fields (source).`}
           </h3>
         </div>
       </div>
@@ -142,19 +145,19 @@ export default function DmsColumnMapping({
       <div className='sticky top-0 z-10 grid grid-cols-12 items-center gap-4 border-b border-border-default bg-gray-2/50 px-5 py-3 text-[13px] font-semibold text-gray-12 backdrop-blur-sm'>
         <div className='col-span-3 flex items-center gap-2'>
           <Icon className='size-3.5 text-green-11' name='lucide:file-spreadsheet' />
-          Excel Fields
+          {t`Excel Fields`}
         </div>
         <div className='col-span-3 flex items-center gap-2'>
           <Icon className='size-3.5 text-blue-11' name='lucide:layout-template' />
-          Example Value
+          {t`Example Value`}
         </div>
         <div className='col-span-6 flex items-center gap-3 pl-2'>
           <div className='flex-1 flex items-center gap-2'>
             <Icon className='size-3.5 text-indigo-11' name='lucide:database' />
-            Folder Fields
+            {t`Folder Fields`}
           </div>
           <div className='flex w-16 shrink-0 items-center justify-end pr-2 text-primary-9'>
-            Sync
+            {t`Sync`}
           </div>
         </div>
       </div>
@@ -223,7 +226,7 @@ export default function DmsColumnMapping({
                     <div className='flex min-w-0 items-center gap-2'>
                       {isMapped ? (
                         <>
-                          <Tooltip content='Folder Field' position='top'>
+                          <Tooltip content={t`Folder Field`} position='top'>
                             <span className='inline-flex shrink-0' onClick={(e) => e.stopPropagation()}>
                               <Icon name='lucide:database' className='size-3.5 text-indigo-11' />
                             </span>
@@ -232,7 +235,7 @@ export default function DmsColumnMapping({
                         </>
                       ) : (
                         <span className='truncate text-[13px] font-normal text-gray-9'>
-                          Skip this field (unmapped)
+                          {t`Skip this field (unmapped)`}
                         </span>
                       )}
                     </div>
@@ -270,7 +273,7 @@ export default function DmsColumnMapping({
                             // eslint-disable-next-line jsx-a11y/no-autofocus
                             autoFocus
                             className='w-full bg-transparent text-13 text-gray-12 placeholder-gray-9 outline-none'
-                            placeholder='Search folder fields...'
+                            placeholder={t`Search folder fields...`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                           />
@@ -280,7 +283,7 @@ export default function DmsColumnMapping({
                       <div className='flex-1 overflow-y-auto p-1.5 custom-scrollbar'>
                         <div className={MENU_LABEL_CLASS}>
                           <Icon className='size-3.5 text-indigo-11' name='lucide:database' />
-                          Folder Fields
+                          {t`Folder Fields`}
                         </div>
                         
                         <button
@@ -304,7 +307,7 @@ export default function DmsColumnMapping({
                           }}
                         >
                           <CompactRadioIndicator checked={!isMapped} />
-                          <span className={OPTION_LABEL_CLASS}>Skip this field (unmapped)</span>
+                          <span className={OPTION_LABEL_CLASS}>{t`Skip this field (unmapped)`}</span>
                         </button>
                         
                         {filteredFields.length > 0 ? (
@@ -338,13 +341,13 @@ export default function DmsColumnMapping({
                               {f.fieldName}
                             </span>
                             {isAlreadyMapped && (
-                              <span className="text-[10px] text-gray-8 ml-auto">Already mapped</span>
+                              <span className="text-[10px] text-gray-8 ml-auto">{t`Already mapped`}</span>
                             )}
                           </button>
                         )})
                       ) : (
                         <div className='px-2 py-3 text-center text-12 text-gray-10'>
-                          No fields found
+                          {t`No fields found`}
                         </div>
                       )}
                     </div>
@@ -396,7 +399,7 @@ export default function DmsColumnMapping({
 
         {uploadedColumns.length === 0 && (
           <div className='py-8 text-center text-13 font-medium text-gray-10'>
-            No uploaded columns found.
+            {t`No uploaded columns found.`}
           </div>
         )}
       </div>

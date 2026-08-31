@@ -1679,6 +1679,7 @@ function Authentication({
   user,
   onChange,
 }: FormSectionProps & { showErrors?: boolean }) {
+  const { t } = useLingui()
   const hasPhoneNumber = Boolean(String(user.phoneNumber || '').trim())
   const selectedMethod =
     (user.mfaMethods ?? [])[0] === 'Mobile OTP' && !hasPhoneNumber
@@ -1686,7 +1687,7 @@ function Authentication({
       : (user.mfaMethods ?? [])[0] || ''
   const methodError =
     showErrors && user.mfaEnabled && !selectedMethod
-      ? 'Please fill the required field: MFA Method'
+      ? t`Please fill the required field: MFA Method`
       : undefined
 
   return (
@@ -1695,10 +1696,10 @@ function Authentication({
         <div className='flex items-center justify-between gap-4 rounded-[12px] border border-[var(--border-default)] bg-surface p-3.5'>
           <div className='min-w-0'>
             <div className='text-xs font-semibold text-[var(--gray-13)]'>
-              Multi-Factor Authentication
+              {t`Multi-Factor Authentication`}
             </div>
             <p className='mt-0.5 text-xs text-[var(--gray-11)]'>
-              Require additional verification for sign-in
+              {t`Require additional verification for sign-in`}
             </p>
           </div>
           <Switch
@@ -1729,7 +1730,7 @@ function Authentication({
         <AnimateFadeIn delay={0.15}>
           <div className='space-y-2'>
             <label className='block text-xs font-semibold text-[var(--gray-13)]'>
-              MFA Method <span className='text-[var(--red-9)]'>*</span>
+              {t`MFA Method`} <span className='text-[var(--red-9)]'>*</span>
             </label>
             <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'>
               {mfaMethodOptions.map((opt) => {
@@ -1759,7 +1760,7 @@ function Authentication({
                       .join(' ')}
                     title={
                       isDisabled
-                        ? 'Add a phone number in Login Details to enable Mobile OTP'
+                        ? t`Add a phone number in Login Details to enable Mobile OTP`
                         : undefined
                     }
                     onClick={() => {
@@ -1796,7 +1797,7 @@ function Authentication({
                       </div>
                       {isDisabled ? (
                         <div className='mt-0.5 text-[11px] text-[var(--gray-10)]'>
-                          Requires phone number
+                          {t`Requires phone number`}
                         </div>
                       ) : null}
                     </div>
@@ -1838,10 +1839,10 @@ function BusinessDetails({
     <SettingsFormSection>
       <AnimateFadeIn delay={0.1}>
         <SettingsSelectField
-          error={getFieldRequiredError('Role', Boolean(showErrors), user.role)}
+          error={getFieldRequiredError(t`Role`, Boolean(showErrors), user.role)}
           label={t`Role`}
           options={roleOptions}
-          placeholder={isLoadingRoles ? 'Loading roles...' : 'Select role'}
+          placeholder={isLoadingRoles ? t`Loading roles...` : t`Select role`}
           value={user.role}
           required
           searchable
@@ -2153,8 +2154,8 @@ function GroupAssignment({
             searchable
             placeholder={
               isLoadingGroups
-                ? 'Loading groups...'
-                : 'Search and select groups...'
+                ? t`Loading groups...`
+                : t`Search and select groups...`
             }
             onChange={(value) =>
               onChange({
@@ -2190,7 +2191,7 @@ function GroupAssignment({
       {!isLoadingGroups && !groupOptions.length ? (
         <AnimateFadeIn delay={0.15}>
           <div className='rounded-[10px] border border-dashed border-[var(--border-default)] bg-surface px-5 py-8 text-center text-sm text-[var(--gray-10)]'>
-            No groups available from the API yet.
+            {t`No groups available from the API yet.`}
           </div>
         </AnimateFadeIn>
       ) : null}
@@ -2251,7 +2252,7 @@ function LoginDetails({
             value={user.firstName}
             required
             error={getFieldRequiredError(
-              'First Name',
+              t`First Name`,
               Boolean(showErrors),
               user.firstName,
             )}
@@ -2264,7 +2265,7 @@ function LoginDetails({
             value={user.lastName}
             required
             error={getFieldRequiredError(
-              'Last Name',
+              t`Last Name`,
               Boolean(showErrors),
               user.lastName,
             )}
@@ -2284,7 +2285,7 @@ function LoginDetails({
             required
             error={
               getFieldRequiredError(
-                'Email Address',
+                t`Email Address`,
                 Boolean(showErrors),
                 user.email,
               ) ||
@@ -2418,13 +2419,13 @@ function LoginDetails({
             })}
           </div>
           {getFieldRequiredError(
-            'Login Type',
+            t`Login Type`,
             Boolean(showErrors),
             user.loginType,
           ) ? (
             <p className='text-xs text-[var(--red-9)]'>
               {getFieldRequiredError(
-                'Login Type',
+                t`Login Type`,
                 Boolean(showErrors),
                 user.loginType,
               )}
@@ -2528,7 +2529,7 @@ function Review({ user }: { user: DraftUser }) {
       <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
         <AnimateFadeIn delay={0.1}>
           <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-            User Summary
+            {t`User Summary`}
           </h3>
         </AnimateFadeIn>
 
@@ -2553,10 +2554,10 @@ function Review({ user }: { user: DraftUser }) {
             />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.24}>
-            <SummaryItem label={t`Job Title`} value={user.jobTitle || ''} />
+            <SummaryItem label={t`Job Title`} value={user.jobTitle || '—'} />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.27}>
-            <SummaryItem label={t`Manager`} value={user.manager || ''} />
+            <SummaryItem label={t`Manager`} value={user.manager || '—'} />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.3}>
             <SummaryItem
@@ -2565,24 +2566,24 @@ function Review({ user }: { user: DraftUser }) {
             />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.33}>
-            <SummaryItem label={t`Department`} value={user.department || ''} />
+            <SummaryItem label={t`Department`} value={user.department || '—'} />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.36}>
-            <SummaryItem label={t`Role`} value={user.role || ''} />
+            <SummaryItem label={t`Role`} value={user.role || '—'} />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.39}>
-            <SummaryItem label={t`Location`} value={user.location || ''} />
+            <SummaryItem label={t`Location`} value={user.location || '—'} />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.42}>
             <SummaryItem
               label={t`Groups`}
-              value={(user.groups ?? []).length ? user.groups.join(', ') : ''}
+              value={(user.groups ?? []).length ? user.groups.join(', ') : '—'}
             />
           </AnimateFadeIn>
           <AnimateFadeIn delay={0.45}>
             <SummaryItem
               label={t`MFA`}
-              value={`${user.mfaEnabled ? 'Enabled' : 'Disabled'} (${(user.mfaMethods ?? []).join(', ') || 'No methods'})`}
+              value={`${user.mfaEnabled ? t`Enabled` : t`Disabled`} (${(user.mfaMethods ?? []).join(', ') || t`No methods`})`}
             />
           </AnimateFadeIn>
         </div>

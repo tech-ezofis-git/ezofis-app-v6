@@ -1,4 +1,4 @@
-import { t } from '@lingui/core/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useDebouncedCallback } from '@mantine/hooks'
 import { useClickOutside } from '@mantine/hooks'
 import { useEffect, useRef, useState } from 'react'
@@ -17,6 +17,7 @@ export default function SettingsSearchInput({
   value,
   onChange,
 }: SettingsSearchInputProps) {
+  const { t } = useLingui()
   const defaultPlaceholder = placeholder || t`Search`
   const inputRef = useRef<HTMLInputElement>(null)
   const [focused, setFocused] = useState(false)
@@ -49,7 +50,7 @@ export default function SettingsSearchInput({
 
   const searchContent = (
     <div
-      aria-label='Search'
+      aria-label={t`Search`}
       className={containerClasses}
       ref={ref}
       role='search'

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { motion } from 'motion/react'
 import { Check, Pencil } from 'lucide-react'
 import cn from '@/utils/cn'
@@ -110,6 +111,7 @@ export function BuilderTimelineStep({
   bottomConnectorState: TimelineConnectorState
   onSelectStep?: (stepId: number) => void
 }) {
+  const { t } = useLingui()
   const isActive = status === 'active'
   const isCompleted = status === 'completed'
   const showBody = Boolean((isCompleted && summary) || (isActive && children))
@@ -201,7 +203,7 @@ export function BuilderTimelineStep({
                 }}
               >
                 <Pencil className='size-3.5' />
-                <span>Edit</span>
+                <span>{t`Edit`}</span>
               </button>
             ) : null}
           </div>

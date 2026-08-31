@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useLingui } from '@lingui/react/macro'
 import type { ActivityCredit } from '../sampleCreditData'
 import { topSubActivityCredits, totalCredit } from '../sampleCreditData'
 import DataChart from './DataChart'
@@ -8,6 +9,7 @@ type CreditsChartProps = {
 }
 
 const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = '' }) => {
+  const { t } = useLingui()
   const [selectedType, setSelectedType] = useState<ActivityCredit | null>(null)
   const [expandedRows, setExpandedRows] = useState<string[]>([])
 
@@ -27,8 +29,8 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = '' }) => {
     <div id='creditsChart'>
       <div className='custom-grid'>
         <div className='grid-header'>
-          <div className='grid-header-cell'>Type</div>
-          <div className='grid-header-cell'>Credit Used</div>
+          <div className='grid-header-cell'>{t`Type`}</div>
+          <div className='grid-header-cell'>{t`Credit Used`}</div>
         </div>
 
         {filteredData.length ? (
@@ -45,7 +47,7 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = '' }) => {
             </button>
           ))
         ) : (
-          <div className='no-data-message'>No Data Found</div>
+          <div className='no-data-message'>{t`No Data Found`}</div>
         )}
       </div>
 
@@ -56,7 +58,7 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = '' }) => {
             onClick={(event) => event.stopPropagation()}
           >
             <div className='sheet-header'>
-              <h3>{selectedType.activityType} - Usage Details</h3>
+              <h3>{t`${selectedType.activityType} - Usage Details`}</h3>
               <button
                 className='close-button'
                 onClick={() => setSelectedType(null)}
@@ -68,8 +70,8 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = '' }) => {
             <table className='credits-table'>
               <thead>
                 <tr>
-                  <th>Activity Name</th>
-                  <th>Total Credits Used</th>
+                  <th>{t`Activity Name`}</th>
+                  <th>{t`Total Credits Used`}</th>
                 </tr>
               </thead>
               <tbody>
@@ -83,7 +85,7 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = '' }) => {
                       >
                         <td>
                           {isExpanded ? '▾' : '▸'} {subActivity.subActivityName}{' '}
-                          ({subActivity.repositoryDetails.length} Folders)
+                          {t`(${subActivity.repositoryDetails.length} Folders)`}
                         </td>
                         <td>{subActivity.totalCreditUsed.toLocaleString()}</td>
                       </tr>
@@ -93,9 +95,9 @@ const CreditsChart: React.FC<CreditsChartProps> = ({ data, search = '' }) => {
                             <table className='nested-table'>
                               <thead>
                                 <tr>
-                                  <th>Folder Name</th>
-                                  <th>Usage Count</th>
-                                  <th>Credits Used</th>
+                                  <th>{t`Folder Name`}</th>
+                                  <th>{t`Usage Count`}</th>
+                                  <th>{t`Credits Used`}</th>
                                 </tr>
                               </thead>
                               <tbody>

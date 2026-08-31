@@ -1,3 +1,5 @@
+import { t as staticT } from '@lingui/macro'
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
@@ -7,7 +9,7 @@ const FIELD_KIND_ICONS = {
   predefined: {
     className: 'text-gray-10',
     icon: 'tabler:template',
-    label: 'Master field',
+    label: staticT`Master field`,
   },
 } as const
 
@@ -45,8 +47,10 @@ export default function MasterFieldSelectDropdown({
   options,
   value,
   onChange,
-  placeholder = 'Select matching field...',
+  placeholder,
 }: MasterFieldSelectDropdownProps) {
+  const { t } = useLingui()
+  const displayPlaceholder = placeholder ?? t`Select matching field...`
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [openUpward, setOpenUpward] = useState(false)
@@ -101,7 +105,7 @@ export default function MasterFieldSelectDropdown({
               <span className='truncate font-normal'>{mappedEzField}</span>
             </>
           ) : (
-            <span className='truncate font-normal text-gray-9'>{placeholder}</span>
+            <span className='truncate font-normal text-gray-9'>{displayPlaceholder}</span>
           )}
         </div>
 
@@ -134,7 +138,7 @@ export default function MasterFieldSelectDropdown({
               <input
                 autoFocus
                 type='text'
-                placeholder='Search or enter custom name'
+                placeholder={t`Search or enter custom name`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className='h-8 w-full rounded-md border border-gray-3 bg-surface pl-7 pr-2 text-13 font-normal text-gray-12 outline-0 transition-colors placeholder:text-gray-8 focus:border-primary-7'
@@ -149,7 +153,7 @@ export default function MasterFieldSelectDropdown({
                 name={FIELD_KIND_ICONS.predefined.icon}
               />
               <span className='min-w-0 flex-1 truncate text-left'>
-                Master Fields
+                {t`Master Fields`}
                 <span className='ml-1 font-normal text-gray-9'>({filteredOptions.length})</span>
               </span>
             </div>
@@ -177,7 +181,7 @@ export default function MasterFieldSelectDropdown({
               })
             ) : (
               <div className='flex h-8 items-center px-2 text-13 font-normal text-gray-10 select-none'>
-                No matching master fields
+                {t`No matching master fields`}
               </div>
             )}
           </div>
@@ -192,7 +196,7 @@ export default function MasterFieldSelectDropdown({
               }}
             >
               <Icon className='size-3.5 shrink-0' name='tabler:circle-off' />
-              <span className={OPTION_LABEL_CLASS}>Skip this field (unmap)</span>
+              <span className={OPTION_LABEL_CLASS}>{t`Skip this field (unmap)`}</span>
             </button>
           </div>
         </div>

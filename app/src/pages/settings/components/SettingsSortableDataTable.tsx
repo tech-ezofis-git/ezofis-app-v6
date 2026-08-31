@@ -13,6 +13,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useLingui } from '@lingui/react/macro'
 import {
   flexRender,
   type Row,
@@ -228,6 +229,7 @@ function SortableDataRow<TData>({
   disabled?: boolean
   renderSubComponent?: (row: TData) => React.ReactNode
 }) {
+  const { t } = useLingui()
   const {
     attributes,
     isDragging,
@@ -270,7 +272,7 @@ function SortableDataRow<TData>({
             <div className='flex justify-center'>
               {!disabled ? (
                 <button
-                  aria-label='Drag to reorder'
+                  aria-label={t`Drag to reorder`}
                   className='flex cursor-grab items-center text-gray-9 outline-none active:cursor-grabbing'
                   ref={setActivatorNodeRef}
                   type='button'
