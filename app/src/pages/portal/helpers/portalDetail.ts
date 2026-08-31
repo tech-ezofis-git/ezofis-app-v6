@@ -1,4 +1,8 @@
-import { isFieldHidden } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
+import {
+  isFieldFilled,
+  isFieldHidden,
+  isFieldRequired,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import { extractWorkflowGraph } from '@/pages/requests/utils/workflow.utils'
 import type { FormPanel } from './portalForm'
 import {
@@ -124,6 +128,51 @@ export const orderWorkflowSteps = (workflow: unknown): PortalWorkflowStep[] => {
   return ordered
 }
 
+export const getInitiateNodeLabel = (workflow: unknown): string => {
+  const { blocks } = extractWorkflowGraph(workflow)
+  if (!blocks.length) return ''
+
+  const isStartBlock = (block: Record<string, unknown>, index: number) => {
+    const type = String(
+      block.type || block.toolType || block.nodeType || '',
+    ).toUpperCase()
+    if (type === 'START' || type === 'INITIATOR' || type === 'TRIGGER') {
+      return true
+    }
+    const settings =
+      block.settings && typeof block.settings === 'object'
+        ? (block.settings as Record<string, unknown>)
+        : {}
+    if (String(settings.label || '').toLowerCase() === 'initiator') return true
+    return index === 0
+  }
+
+  const startBlock = blocks.find(isStartBlock) || blocks[0]
+  if (!startBlock) return ''
+
+  const settings =
+    startBlock.settings && typeof startBlock.settings === 'object'
+      ? (startBlock.settings as Record<string, unknown>)
+      : {}
+  const general =
+    settings.general && typeof settings.general === 'object'
+      ? (settings.general as Record<string, unknown>)
+      : {}
+
+  const label =
+    textOf(general.label) ||
+    textOf(general.title) ||
+    textOf(general.name) ||
+    textOf(settings.label) ||
+    textOf(settings.title) ||
+    textOf(settings.name) ||
+    textOf(startBlock.label) ||
+    textOf(startBlock.name) ||
+    textOf(startBlock.title)
+
+  return label
+}
+
 const matchStepIndex = (
   steps: PortalWorkflowStep[],
   activityId: string,
@@ -204,6 +253,7 @@ export const PORTAL_SECTION_ATTACHMENTS = 'portal-section-attachments'
 export const PORTAL_SECTION_HISTORY = 'portal-section-history'
 
 export type PortalNavSection = {
+  completed?: boolean
   id: string
   title: string
 }
@@ -227,21 +277,51 @@ export const getFormPanelTitle = (panel: FormPanel, index: number) => {
 export const buildPortalNavSections = (
   panels: FormPanel[],
   labels: { attachments: string; history: string },
+  formModel?: Record<string, unknown>,
+  hiddenFieldIds?: Set<string>,
 ): PortalNavSection[] => {
   const sections: PortalNavSection[] = panels
-    .map((panel, index) => ({
-      id: formPanelSectionId(panel, index),
-      panel,
-      title: getFormPanelTitle(panel, index),
-    }))
+    .map((panel, index) => {
+      const visibleFields = (panel.fields || []).filter(
+        (field: any) =>
+          !isFieldHidden(field) && !hiddenFieldIds?.has(String(field.id || '')),
+      )
+      const requiredFields = visibleFields.filter(isFieldRequired)
+      let completed = false
+      if (formModel) {
+        if (requiredFields.length > 0) {
+          completed = requiredFields.every((field: any) => {
+            const fieldId = String(field.id || '')
+            const jsonId = String(field.jsonId || '')
+            const val =
+              formModel[fieldId] ?? (jsonId ? formModel[jsonId] : undefined)
+            return isFieldFilled(field, val)
+          })
+        } else {
+          completed = visibleFields.some((field: any) => {
+            const fieldId = String(field.id || '')
+            const jsonId = String(field.jsonId || '')
+            const val =
+              formModel[fieldId] ?? (jsonId ? formModel[jsonId] : undefined)
+            return isFieldFilled(field, val)
+          })
+        }
+      }
+      return {
+        completed,
+        id: formPanelSectionId(panel, index),
+        panel,
+        title: getFormPanelTitle(panel, index),
+      }
+    })
     .filter(({ panel }) =>
       (panel.fields || []).some((field) => !isFieldHidden(field)),
     )
-    .map(({ id, title }) => ({ id, title }))
+    .map(({ completed, id, title }) => ({ completed, id, title }))
 
   sections.push(
-    { id: PORTAL_SECTION_ATTACHMENTS, title: labels.attachments },
-    { id: PORTAL_SECTION_HISTORY, title: labels.history },
+    { completed: false, id: PORTAL_SECTION_ATTACHMENTS, title: labels.attachments },
+    { completed: false, id: PORTAL_SECTION_HISTORY, title: labels.history },
   )
   return sections
 }

@@ -102,11 +102,15 @@ export default function PortalDetail({
   }, [loadedFormModel])
   const sections = useMemo(
     () =>
-      buildPortalNavSections(panels, {
-        attachments: t`Attachments`,
-        history: t`Activity`,
-      }),
-    [panels, t],
+      buildPortalNavSections(
+        panels,
+        {
+          attachments: t`Attachments`,
+          history: t`Activity`,
+        },
+        formModel,
+      ),
+    [formModel, panels, t],
   )
   const sectionIds = useMemo(
     () => sections.map((section) => section.id),

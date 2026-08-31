@@ -137,7 +137,13 @@ const WorkflowFormRenderer = ({
     getPanelValue?.(panel, index) || `panel-${index}`
 
   const content = (
-    <div className='w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'>
+    <div
+      className={
+        disableOwnScroll
+          ? 'w-full min-w-0 max-w-full'
+          : 'w-full min-w-0 max-w-full overflow-x-hidden px-6 py-6'
+      }
+    >
       <AnimateFadeIn delay={0.1}>
         <Accordion
           defaultValue={
@@ -209,7 +215,7 @@ const WorkflowFormRenderer = ({
                       </div>
                     </div>
                     {!viewOnly && requiredFields.length > 0 && (
-                      <span className='shrink-0 text-11 font-medium whitespace-nowrap text-gray-9'>
+                      <span className='mr-3 shrink-0 text-11 font-medium whitespace-nowrap text-gray-9 self-center flex items-center gap-1'>
                         <span
                           className={
                             completedCount === requiredFields.length

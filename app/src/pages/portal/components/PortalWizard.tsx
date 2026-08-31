@@ -32,6 +32,7 @@ import cn from '@/utils/cn'
 import {
   buildPortalNavSections,
   formPanelSectionId,
+  getInitiateNodeLabel,
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_DOCUMENT,
   PORTAL_SECTION_HISTORY,
@@ -162,40 +163,6 @@ const PortalWizard = ({
   const documentTitle =
     source?.fileFields[0]?.label ||
     (source?.isAccountsPayable ? t`Invoice` : t`Document`)
-  const sections = useMemo(
-    () => {
-      const items = buildPortalNavSections(panels, {
-        attachments: t`Attachments`,
-        history: t`Activity`,
-      }).filter((section) => section.id !== PORTAL_SECTION_HISTORY)
-
-      if (!needsDocumentSection) return items
-      return [
-        { id: PORTAL_SECTION_DOCUMENT, title: documentTitle },
-        ...items,
-      ]
-    },
-    [documentTitle, needsDocumentSection, panels, t],
-  )
-  const sectionIds = useMemo(
-    () => sections.map((section) => section.id),
-    [sections],
-  )
-
-  useEffect(() => {
-    if (!sections[0]) return
-    setActiveId((current) => current || sections[0].id)
-  }, [sections])
-
-  const { scrollToSection } = usePortalSectionSpy(
-    scrollEl,
-    sectionIds,
-    (id) => setActiveId((current) => (current === id ? current : id)),
-  )
-
-  const selectSection = (id: string) => {
-    scrollToSection(id)
-  }
 
   const hiddenFileFieldIds = useMemo(() => {
     if (!needsDocumentSection) return undefined
@@ -303,6 +270,65 @@ const PortalWizard = ({
     portalFormModel,
     repoFieldDescriptors,
   ])
+
+  const sections = useMemo(() => {
+    const items = buildPortalNavSections(
+      formPanels,
+      {
+        attachments: t`Attachments`,
+        history: t`Activity`,
+      },
+      portalFormModel,
+      hiddenFileFieldIds,
+    ).filter((section) => section.id !== PORTAL_SECTION_HISTORY)
+
+    const itemsWithAttachments = items.map((sec) =>
+      sec.id === PORTAL_SECTION_ATTACHMENTS
+        ? { ...sec, completed: extraFiles.length > 0 }
+        : sec,
+    )
+
+    if (!needsDocumentSection) return itemsWithAttachments
+
+    const isDocCompleted = Boolean(files.length > 0 || primaryPending)
+    return [
+      {
+        completed: isDocCompleted,
+        id: PORTAL_SECTION_DOCUMENT,
+        title: documentTitle,
+      },
+      ...itemsWithAttachments,
+    ]
+  }, [
+    documentTitle,
+    extraFiles.length,
+    files.length,
+    formPanels,
+    hiddenFileFieldIds,
+    needsDocumentSection,
+    portalFormModel,
+    primaryPending,
+    t,
+  ])
+  const sectionIds = useMemo(
+    () => sections.map((section) => section.id),
+    [sections],
+  )
+
+  useEffect(() => {
+    if (!sections[0]) return
+    setActiveId((current) => current || sections[0].id)
+  }, [sections])
+
+  const { scrollToSection } = usePortalSectionSpy(
+    scrollEl,
+    sectionIds,
+    (id) => setActiveId((current) => (current === id ? current : id)),
+  )
+
+  const selectSection = (id: string) => {
+    scrollToSection(id)
+  }
 
   const jumpAfterApFill = (nextAnswers: AnswerMap) => {
     if (!source) return
@@ -693,6 +719,11 @@ const PortalWizard = ({
     source?.fileFields.forEach((field) => {
       handleFieldChange(field.id, { fileName: file.name, rawFile: file })
     })
+    if (source?.isAccountsPayable && !apInstanceId) {
+      void startAccountsPayable(file)
+    } else if (source?.repositoryId) {
+      void runOcrForPrimary(file)
+    }
   }
 
   const handleAnalyzeDocument = async () => {
@@ -944,9 +975,15 @@ const PortalWizard = ({
   const handleSubmitRef = useRef(handleSubmit)
   handleSubmitRef.current = handleSubmit
 
+  const initiateNodeLabel = useMemo(() => {
+    if (!source?.workflow) return ''
+    return getInitiateNodeLabel(source.workflow)
+  }, [source?.workflow])
+
   useEffect(() => {
     onChromeChange?.({
       canSubmit,
+      stageLabel: initiateNodeLabel,
       submitLabel,
       submitting,
       title: wizardTitle,
@@ -954,7 +991,14 @@ const PortalWizard = ({
         void handleSubmitRef.current()
       },
     })
-  }, [canSubmit, onChromeChange, submitLabel, submitting, wizardTitle])
+  }, [
+    canSubmit,
+    initiateNodeLabel,
+    onChromeChange,
+    submitLabel,
+    submitting,
+    wizardTitle,
+  ])
 
   useEffect(
     () => () => {
@@ -1041,7 +1085,7 @@ const PortalWizard = ({
         </div>
 
         {needsDocumentSection ? (
-          <div className='mb-3 scroll-mt-3 px-6' id={PORTAL_SECTION_DOCUMENT}>
+          <div className='mb-3 scroll-mt-3' id={PORTAL_SECTION_DOCUMENT}>
             <PortalDocumentUpload
               analyzed={Boolean(primaryPending?.ocrChecked || apInstanceId)}
               analyzing={processing && preparingFieldId === null}
@@ -1087,7 +1131,7 @@ const PortalWizard = ({
         )}
 
         <div
-          className='mt-5 scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-4 shadow-sm sm:p-5'
+          className='mt-3 scroll-mt-3 rounded-xl border border-gray-3 bg-gray-0 p-6 shadow-2xs transition-shadow hover:shadow-sm'
           id={PORTAL_SECTION_ATTACHMENTS}
         >
           <div className='mb-3 text-15 font-semibold text-gray-13'>
