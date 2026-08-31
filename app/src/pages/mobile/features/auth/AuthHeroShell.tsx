@@ -33,7 +33,7 @@ export function AuthHeroShell({
               src={logoMark}
             />
             <span className='text-[22px] font-semibold tracking-tight text-white'>
-              ezofis
+              EZOFIS
             </span>
           </div>
 

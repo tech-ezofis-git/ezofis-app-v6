@@ -9,6 +9,15 @@ const APAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 const FTPAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/FTPAgentNodeSettings'),
 )
+const KYCAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/KYCAgentNodeSettings'),
+)
+const ProcurementAgentNodeSettings = lazy<
+  React.ComponentType<{ node: Node }>
+>(() => import('./settings/ProcurementAgentNodeSettings'))
+const DocumentGenerateAgentNodeSettings = lazy<
+  React.ComponentType<{ node: Node }>
+>(() => import('./settings/DocumentGenerateAgentNodeSettings'))
 const OCRAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/OCRAgentNodeSettings'),
 )
@@ -452,6 +461,63 @@ function PropertiesPanel({
             }
           >
             <OCRAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render KYC Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.KYC_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <KYCAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Procurement Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.PROCUREMENT_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <ProcurementAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Document Generate Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <DocumentGenerateAgentNodeSettings node={node} />
           </Suspense>
         </div>
         {CommonFooter}

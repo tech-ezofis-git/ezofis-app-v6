@@ -163,12 +163,18 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
           </div>
 
           {/* Label and Status */}
-          <div className='flex flex-1 flex-col gap-0.5'>
-            <span className='text-[17px] font-bold text-gray-12'>
+          <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
+            <span
+              className='truncate text-[17px] font-bold text-gray-12'
+              title={data.label as string}
+            >
               {data.stepNumber ? `${data.stepNumber}. ` : ''}
               {data.label as string}
             </span>
-            <span className='text-[14px] font-medium text-gray-10'>
+            <span
+              className='truncate text-[14px] font-medium text-gray-10'
+              title={(data.subLabel as string) || 'Click to configure'}
+            >
               {(data.subLabel as string) || 'Click to configure'}
             </span>
           </div>

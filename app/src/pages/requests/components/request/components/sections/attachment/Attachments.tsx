@@ -528,6 +528,92 @@ export default function Attachments({
     }
   }
 
+  const getMimeTypeFromBase64 = (base64: string): string => {
+    if (base64.startsWith('/9j/')) return 'image/jpeg'
+    if (base64.startsWith('iVBORw0KGgo')) return 'image/png'
+    return 'application/pdf'
+  }
+
+  const formatBase64Url = (base64: string, mimeType: string): string => {
+    return base64.startsWith('data:')
+      ? base64
+      : `data:${mimeType};base64,${base64}`
+  }
+
+  const handleOpenFile = async (e: React.MouseEvent, file: FileLike) => {
+    e.stopPropagation()
+    if (onSelect) {
+      onSelect(file)
+      return
+    }
+
+    const localUrl = (file as any)._localFileUrl || (file as any).localUrl
+    if (localUrl) {
+      window.open(localUrl, '_blank')
+      return
+    }
+
+    if ((file as any).rawFile instanceof File) {
+      const url = URL.createObjectURL((file as any).rawFile)
+      window.open(url, '_blank')
+      return
+    }
+
+    const repoId = String(file.repositoryId || repositoryId || '').trim()
+    const itemId = String(file.itemId || file.id || '').trim()
+
+    const isUuid = (val: string): boolean => {
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        val,
+      )
+    }
+
+    if (isUuid(repoId) && isUuid(itemId)) {
+      try {
+        const response = await fileApi.viewBinaryV6(repoId, itemId)
+        if (response?.data instanceof Blob) {
+          const url = window.URL.createObjectURL(response.data)
+          window.open(url, '_blank')
+          return
+        }
+      } catch (err) {
+        console.error('Error viewing V6 attachment:', err)
+      }
+    } else {
+      const rId = Number(repoId)
+      if (!Number.isNaN(rId) && rId > 0) {
+        try {
+          const tId = session?.tenantId ? Number(session.tenantId) : 2
+          const uId = session?.id ? String(session.id) : '2'
+          const response = await fileApi.viewBinary(
+            tId,
+            uId,
+            rId,
+            Number(itemId || file.id || 0),
+            2,
+          )
+          const base64 = response?.data?.file || response?.data
+          if (typeof base64 === 'string') {
+            const mimeType = getMimeTypeFromBase64(base64)
+            const url = formatBase64Url(base64, mimeType)
+            const win = window.open()
+            if (win) {
+              win.document.write(
+                `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
+              )
+            }
+            return
+          }
+        } catch (err) {
+          console.error('Error viewing legacy binary attachment:', err)
+        }
+      }
+    }
+
+    const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+    window.open(url, '_blank')
+  }
+
   const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
     e.stopPropagation()
     const repoId = String(file.repositoryId || repositoryId || '').trim()
@@ -697,7 +783,7 @@ export default function Attachments({
               <div
                 className='group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-1 bg-surface p-3 transition-all hover:border-blue-4 hover:shadow-sm'
                 key={file.id}
-                onClick={() => onSelect?.(file)}
+                onClick={(e) => handleOpenFile(e, file)}
               >
                 <div
                   className={cn(
@@ -711,8 +797,9 @@ export default function Attachments({
                 <div className='min-w-0 flex-1'>
                   <div className='flex flex-wrap items-baseline gap-1.5'>
                     <span
-                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:underline'
+                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:text-primary-9 hover:underline cursor-pointer'
                       title={displayTitle}
+                      onClick={(e) => handleOpenFile(e, file)}
                     >
                       {displayTitle}
                     </span>

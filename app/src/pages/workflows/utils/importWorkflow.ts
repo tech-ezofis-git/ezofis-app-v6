@@ -22,6 +22,31 @@ function getNodeDefaults(toolType: string) {
       iconColor: '#7c3aed',
       subLabel: 'File Transfer Protocol',
     }
+  if (typeStr === NODE_TOOL_TYPE.KYC_AGENT || typeStr.includes('kyc'))
+    return {
+      icon: 'lucide:shield-check',
+      iconColor: '#d97706',
+      subLabel: 'Verify identity & compliance documents',
+    }
+  if (
+    typeStr === NODE_TOOL_TYPE.PROCUREMENT_AGENT ||
+    typeStr.includes('procurement')
+  )
+    return {
+      icon: 'lucide:shopping-bag',
+      iconColor: '#0d9488',
+      subLabel: 'Automate requisitions & vendor POs',
+    }
+  if (
+    typeStr === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT ||
+    typeStr.includes('document_generate') ||
+    typeStr.includes('doc_gen')
+  )
+    return {
+      icon: 'lucide:file-text',
+      iconColor: '#4f46e5',
+      subLabel: 'Generate PDF & Word docs from templates',
+    }
   if (typeStr === NODE_TOOL_TYPE.GOOGLE_DRIVE)
     return {
       icon: 'logos:google-drive',
@@ -100,6 +125,12 @@ function mapLegacyTypeToToolType(legacyType: string, label: string): string {
       return NODE_TOOL_TYPE.OCR_AGENT
     case 'AP_AGENT':
       return NODE_TOOL_TYPE.AP_AGENT
+    case 'KYC_AGENT':
+      return NODE_TOOL_TYPE.KYC_AGENT
+    case 'PROCUREMENT_AGENT':
+      return NODE_TOOL_TYPE.PROCUREMENT_AGENT
+    case 'DOCUMENT_GENERATE_AGENT':
+      return NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT
     case 'CONDITION':
       return NODE_TOOL_TYPE.CONDITION
     case 'INTERNAL_ACTOR':

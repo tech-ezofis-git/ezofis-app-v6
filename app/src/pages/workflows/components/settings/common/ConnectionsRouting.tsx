@@ -101,6 +101,12 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
       return 'Route to OCR Agent for extraction'
     if (conn.targetToolType === NODE_TOOL_TYPE.FTP_AGENT)
       return 'Route to FTP Agent for file transfer'
+    if (conn.targetToolType === NODE_TOOL_TYPE.KYC_AGENT)
+      return 'Route to KYC Agent for identity verification'
+    if (conn.targetToolType === NODE_TOOL_TYPE.PROCUREMENT_AGENT)
+      return 'Route to Procurement Agent for requisition processing'
+    if (conn.targetToolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT)
+      return 'Route to Document Generate Agent for doc creation'
     if (conn.targetToolType === NODE_TOOL_TYPE.MANUAL_USER)
       return 'Route for manual user intervention'
     return `Define behavior when routing to ${conn.targetLabel}`

@@ -134,7 +134,7 @@ export default function PortalLogin({
 
         <footer className='text-center text-12 text-gray-9'>
           {t`Powered by`}{' '}
-          <span className='font-semibold text-primary-11'>ezofis</span>
+          <span className='font-semibold text-primary-11'>EZOFIS</span>
         </footer>
       </div>
     )
@@ -398,7 +398,7 @@ export default function PortalLogin({
       <AnimateFadeIn>
         <footer className='text-center text-12 text-gray-9'>
           {t`Powered by`}{' '}
-          <span className='font-semibold text-primary-11'>ezofis</span>
+          <span className='font-semibold text-primary-11'>EZOFIS</span>
         </footer>
       </AnimateFadeIn>
     </div>
