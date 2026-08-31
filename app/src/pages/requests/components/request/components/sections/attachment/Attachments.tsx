@@ -512,9 +512,9 @@ export default function Attachments({
         String(repositoryId),
         existingItem
           ? {
-              itemId: existingItem.itemId,
-              repositoryId: existingItem.repositoryId || repositoryId,
-            }
+            itemId: existingItem.itemId,
+            repositoryId: existingItem.repositoryId || repositoryId,
+          }
           : undefined,
       )
 
@@ -537,8 +537,37 @@ export default function Attachments({
     await performUpload(pendingUpload.file, metadata)
   }
 
-  const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
+  const getMimeTypeFromBase64 = (base64: string): string => {
+    if (base64.startsWith('/9j/')) return 'image/jpeg'
+    if (base64.startsWith('iVBORw0KGgo')) return 'image/png'
+    return 'application/pdf'
+  }
+
+  const formatBase64Url = (base64: string, mimeType: string): string => {
+    return base64.startsWith('data:')
+      ? base64
+      : `data:${mimeType};base64,${base64}`
+  }
+
+  const handleOpenFile = async (e: React.MouseEvent, file: FileLike) => {
     e.stopPropagation()
+    if (onSelect) {
+      onSelect(file)
+      return
+    }
+
+    const localUrl = (file as any)._localFileUrl || (file as any).localUrl
+    if (localUrl) {
+      window.open(localUrl, '_blank')
+      return
+    }
+
+    if ((file as any).rawFile instanceof File) {
+      const url = URL.createObjectURL((file as any).rawFile)
+      window.open(url, '_blank')
+      return
+    }
+
     const repoId = String(file.repositoryId || repositoryId || '').trim()
     const itemId = String(file.itemId || file.id || '').trim()
 
@@ -550,103 +579,253 @@ export default function Attachments({
 
     if (isUuid(repoId) && isUuid(itemId)) {
       try {
-        const response = await fileApi.viewBinaryV6(repoId, itemId, 'download')
+        const response = await fileApi.viewBinaryV6(repoId, itemId)
         if (response?.data instanceof Blob) {
           const url = window.URL.createObjectURL(response.data)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = file.name || 'download'
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-          window.URL.revokeObjectURL(url)
-        } else {
-          console.error('File binary data not found or invalid format.')
+          window.open(url, '_blank')
+          return
         }
       } catch (err) {
-        console.error('Error downloading attachment:', err)
+        console.error('Error viewing V6 attachment:', err)
       }
     } else {
-      const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
-      window.open(url, '_blank')
+      const rId = Number(repoId)
+      if (!Number.isNaN(rId) && rId > 0) {
+        try {
+          const tId = session?.tenantId ? Number(session.tenantId) : 2
+          const uId = session?.id ? String(session.id) : '2'
+          const response = await fileApi.viewBinary(
+            tId,
+            uId,
+            rId,
+            Number(itemId || file.id || 0),
+            2,
+          )
+          const base64 = response?.data?.file || response?.data
+          if (typeof base64 === 'string') {
+            const mimeType = getMimeTypeFromBase64(base64)
+            const url = formatBase64Url(base64, mimeType)
+            const win = window.open()
+            if (win) {
+              win.document.write(
+                `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
+              )
+            }
+            return
+          }
+        } catch (err) {
+          console.error('Error viewing legacy binary attachment:', err)
+        }
+      }
     }
+
+    const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+    window.open(url, '_blank')
+  }
+}
+
+const handleConfirmUpload = async (values: Record<string, string>) => {
+  if (!pendingUpload) return
+  const metadata = toUploadMetadata(pendingUpload.folderFields, values)
+  await performUpload(pendingUpload.file, metadata)
+}
+
+const getMimeTypeFromBase64 = (base64: string): string => {
+  if (base64.startsWith('/9j/')) return 'image/jpeg'
+  if (base64.startsWith('iVBORw0KGgo')) return 'image/png'
+  return 'application/pdf'
+}
+
+const formatBase64Url = (base64: string, mimeType: string): string => {
+  return base64.startsWith('data:')
+    ? base64
+    : `data:${mimeType};base64,${base64}`
+}
+
+const handleOpenFile = async (e: React.MouseEvent, file: FileLike) => {
+  e.stopPropagation()
+  if (onSelect) {
+    onSelect(file)
+    return
   }
 
-  if (pendingUpload) {
-    // Attachments is embedded in narrow containers (a 380px side panel, a
-    // portal detail column, ...), too tight for a document preview +
-    // indexing form. Escape to a full-page takeover, same as the Overview
-    // form-field upload's indexing step, regardless of where this instance
-    // is mounted.
-    return (
-      <div className='fixed inset-0 z-[100] flex h-full min-h-0 w-full flex-col bg-surface font-sans'>
-        <AttachmentSplitView
-          file={pendingUpload.file}
-          folderFields={pendingUpload.folderFields}
-          isSubmitting={isUploading}
-          metadata={pendingUpload.baseMetadata}
-          repositoryId={repositoryId}
-          title={pendingUpload.file.name}
-          onClose={() => {
-            setPendingUpload(null)
-            if (fileInputRef.current) fileInputRef.current.value = ''
-          }}
-          onConfirm={handleConfirmUpload}
-        />
-      </div>
+  const localUrl = (file as any)._localFileUrl || (file as any).localUrl
+  if (localUrl) {
+    window.open(localUrl, '_blank')
+    return
+  }
+
+  if ((file as any).rawFile instanceof File) {
+    const url = URL.createObjectURL((file as any).rawFile)
+    window.open(url, '_blank')
+    return
+  }
+
+  const repoId = String(file.repositoryId || repositoryId || '').trim()
+  const itemId = String(file.itemId || file.id || '').trim()
+
+  const isUuid = (val: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      val,
     )
   }
 
+  if (isUuid(repoId) && isUuid(itemId)) {
+    try {
+      const response = await fileApi.viewBinaryV6(repoId, itemId)
+      if (response?.data instanceof Blob) {
+        const url = window.URL.createObjectURL(response.data)
+        window.open(url, '_blank')
+        return
+      }
+    } catch (err) {
+      console.error('Error viewing V6 attachment:', err)
+    }
+  } else {
+    const rId = Number(repoId)
+    if (!Number.isNaN(rId) && rId > 0) {
+      try {
+        const tId = session?.tenantId ? Number(session.tenantId) : 2
+        const uId = session?.id ? String(session.id) : '2'
+        const response = await fileApi.viewBinary(
+          tId,
+          uId,
+          rId,
+          Number(itemId || file.id || 0),
+          2,
+        )
+        const base64 = response?.data?.file || response?.data
+        if (typeof base64 === 'string') {
+          const mimeType = getMimeTypeFromBase64(base64)
+          const url = formatBase64Url(base64, mimeType)
+          const win = window.open()
+          if (win) {
+            win.document.write(
+              `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
+            )
+          }
+          return
+        }
+      } catch (err) {
+        console.error('Error viewing legacy binary attachment:', err)
+      }
+    }
+  }
+
+  const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+  window.open(url, '_blank')
+}
+
+const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
+  e.stopPropagation()
+  const repoId = String(file.repositoryId || repositoryId || '').trim()
+  const itemId = String(file.itemId || file.id || '').trim()
+
+  const isUuid = (val: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      val,
+    )
+  }
+
+  if (isUuid(repoId) && isUuid(itemId)) {
+    try {
+      const response = await fileApi.viewBinaryV6(repoId, itemId, 'download')
+      if (response?.data instanceof Blob) {
+        const url = window.URL.createObjectURL(response.data)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = file.name || 'download'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+      } else {
+        console.error('File binary data not found or invalid format.')
+      }
+    } catch (err) {
+      console.error('Error downloading attachment:', err)
+    }
+  } else {
+    const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+    window.open(url, '_blank')
+  }
+}
+
+if (pendingUpload) {
+  // Attachments is embedded in narrow containers (a 380px side panel, a
+  // portal detail column, ...), too tight for a document preview +
+  // indexing form. Escape to a full-page takeover, same as the Overview
+  // form-field upload's indexing step, regardless of where this instance
+  // is mounted.
   return (
+    <div className='fixed inset-0 z-[100] flex h-full min-h-0 w-full flex-col bg-surface font-sans'>
+      <AttachmentSplitView
+        file={pendingUpload.file}
+        folderFields={pendingUpload.folderFields}
+        isSubmitting={isUploading}
+        metadata={pendingUpload.baseMetadata}
+        repositoryId={repositoryId}
+        title={pendingUpload.file.name}
+        onClose={() => {
+          setPendingUpload(null)
+          if (fileInputRef.current) fileInputRef.current.value = ''
+        }}
+        onConfirm={handleConfirmUpload}
+      />
+    </div>
+  )
+}
+
+return (
+  <div
+    className={
+      onClose
+        ? 'flex h-full min-h-0 w-full flex-col font-sans'
+        : 'relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'
+    }
+  >
+    <input
+      className='hidden'
+      ref={fileInputRef}
+      type='file'
+      onChange={onFileChange}
+    />
+
+    {onClose && (
+      <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+        <span className='text-xs font-semibold text-gray-12'>
+          {t`Attachments`} ({files.length})
+        </span>
+        <div className='flex items-center gap-1'>
+          {canUpload && !isLoading && (
+            <Button
+              disabled={isUploading}
+              icon='tabler:upload'
+              label={isUploading ? t`Uploading...` : t`Upload`}
+              loading={isUploading}
+              size='sm'
+              type='button'
+              onClick={() => fileInputRef.current?.click()}
+            />
+          )}
+          <IconButton
+            ariaLabel={t`Close`}
+            icon='tabler:x'
+            size='sm'
+            variant='ghost'
+            onClick={onClose}
+          />
+        </div>
+      </div>
+    )}
+
     <div
       className={
         onClose
-          ? 'flex h-full min-h-0 w-full flex-col font-sans'
-          : 'relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'
+          ? 'relative min-h-0 flex-1 overflow-y-auto px-4 py-4'
+          : 'contents'
       }
     >
-      <input
-        className='hidden'
-        ref={fileInputRef}
-        type='file'
-        onChange={onFileChange}
-      />
-
-      {onClose && (
-        <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
-          <span className='text-xs font-semibold text-gray-12'>
-            {t`Attachments`} ({files.length})
-          </span>
-          <div className='flex items-center gap-1'>
-            {canUpload && !isLoading && (
-              <Button
-                disabled={isUploading}
-                icon='tabler:upload'
-                label={isUploading ? t`Uploading...` : t`Upload`}
-                loading={isUploading}
-                size='sm'
-                type='button'
-                onClick={() => fileInputRef.current?.click()}
-              />
-            )}
-            <IconButton
-              ariaLabel={t`Close`}
-              icon='tabler:x'
-              size='sm'
-              variant='ghost'
-              onClick={onClose}
-            />
-          </div>
-        </div>
-      )}
-
-      <div
-        className={
-          onClose
-            ? 'relative min-h-0 flex-1 overflow-y-auto px-4 py-4'
-            : 'contents'
-        }
-      >
 
       {showRelatedFinder ? (
         <RelatedDocumentsFinder
@@ -713,7 +892,7 @@ export default function Attachments({
               <div
                 className='group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-1 bg-surface p-3 transition-all hover:border-blue-4 hover:shadow-sm'
                 key={file.id}
-                onClick={() => onSelect?.(file)}
+                onClick={(e) => handleOpenFile(e, file)}
               >
                 <div
                   className={cn(
@@ -727,8 +906,9 @@ export default function Attachments({
                 <div className='min-w-0 flex-1'>
                   <div className='flex flex-wrap items-baseline gap-1.5'>
                     <span
-                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:underline'
+                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:text-primary-9 hover:underline cursor-pointer'
                       title={displayTitle}
+                      onClick={(e) => handleOpenFile(e, file)}
                     >
                       {displayTitle}
                     </span>
@@ -790,9 +970,9 @@ export default function Attachments({
           })
         )}
       </div>
-      </div>
     </div>
-  )
+  </div>
+)
 }
 
 // Download URL

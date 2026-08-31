@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 import Attachments from '@/pages/requests/components/request/components/sections/attachment/Attachments'
+import AttachmentSplitView from '@/pages/requests/components/request/components/generic-overview/AttachmentSplitView'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import {
   buildDetailFormModel,
@@ -53,6 +54,7 @@ export default function PortalDetail({
   const [activeId, setActiveId] = useState('')
   const [openIds, setOpenIds] = useState<Set<string>>(new Set())
   const [formModel, setFormModel] = useState<Record<string, any>>({})
+  const [openedAttachment, setOpenedAttachment] = useState<any>(null)
   const [acting, setActing] = useState(false)
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
   const isInbox = submission.source === 'inbox'
@@ -100,11 +102,15 @@ export default function PortalDetail({
   }, [loadedFormModel])
   const sections = useMemo(
     () =>
-      buildPortalNavSections(panels, {
-        attachments: t`Attachments`,
-        history: t`Activity`,
-      }),
-    [panels, t],
+      buildPortalNavSections(
+        panels,
+        {
+          attachments: t`Attachments`,
+          history: t`Activity`,
+        },
+        formModel,
+      ),
+    [formModel, panels, t],
   )
   const sectionIds = useMemo(
     () => sections.map((section) => section.id),
@@ -295,9 +301,23 @@ export default function PortalDetail({
   )
 
   if (loading) {
+    return <PortalDetailSkeleton />
+  }
+
+  if (openedAttachment) {
     return (
-      <div className='h-full min-h-0'>
-        <PortalDetailSkeleton />
+      <div className='flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-gray-1'>
+        <AttachmentSplitView
+          attachment={openedAttachment}
+          folderFields={[]}
+          repositoryId={resolvedRepositoryId}
+          title={
+            openedAttachment.name ||
+            openedAttachment.fileName ||
+            t`Attachment`
+          }
+          onClose={() => setOpenedAttachment(null)}
+        />
       </div>
     )
   }
@@ -339,6 +359,7 @@ export default function PortalDetail({
               onFieldChange={(fieldId, value) =>
                 setFormModel((prev) => ({ ...prev, [fieldId]: value }))
               }
+              onOpenAttachment={(att) => setOpenedAttachment(att)}
             />
           ) : (
             <PortalSubmissionDetails
@@ -370,6 +391,7 @@ export default function PortalDetail({
             workflowId={submission.workflowId}
             canUpload={isInbox}
             enabled
+            onSelect={(file) => setOpenedAttachment(file)}
           />
         </div>
 

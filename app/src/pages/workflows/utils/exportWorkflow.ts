@@ -31,6 +31,9 @@ const mapToolTypeToLegacyType = (
   const t = normalizeNodeToolType(toolType)
   if (t === NODE_TOOL_TYPE.OCR_AGENT || t === 'ocr') return 'OCR'
   if (t === NODE_TOOL_TYPE.AP_AGENT) return 'AP_AGENT'
+  if (t === NODE_TOOL_TYPE.KYC_AGENT) return 'KYC_AGENT'
+  if (t === NODE_TOOL_TYPE.PROCUREMENT_AGENT) return 'PROCUREMENT_AGENT'
+  if (t === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) return 'DOCUMENT_GENERATE_AGENT'
   if (t === NODE_TOOL_TYPE.CONDITION) return 'CONDITION'
   if (
     t === NODE_TOOL_TYPE.MANUAL_USER ||

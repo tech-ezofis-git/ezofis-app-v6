@@ -30,6 +30,7 @@ type PortalShellProps = {
 
 type PortalWizardHeader = {
   canSubmit: boolean
+  stageLabel?: string
   submitLabel?: string
   submitting: boolean
   title: string
@@ -106,6 +107,12 @@ export default function PortalShell({
                 <h1 className='min-w-0 truncate text-15 font-semibold text-gray-13'>
                   {wizard.title}
                 </h1>
+                {wizard.stageLabel ? (
+                  <span className='inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-purple-3 bg-purple-1 px-2.5 text-12 font-semibold text-purple-9 dark:border-purple-9/30 dark:bg-purple-950/40 dark:text-purple-400'>
+                    <span className='size-1.5 rounded-full bg-purple-6' />
+                    {wizard.stageLabel}
+                  </span>
+                ) : null}
               </div>
               <Button
                 className='shrink-0 rounded-lg'

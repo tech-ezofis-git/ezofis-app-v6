@@ -68,6 +68,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
   const [submissionsTick, setSubmissionsTick] = useState(0)
   const [wizardChrome, setWizardChrome] = useState<{
     canSubmit: boolean
+    stageLabel?: string
     submitLabel: string
     submitting: boolean
     title: string
@@ -77,6 +78,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
     (
       chrome: {
         canSubmit: boolean
+        stageLabel?: string
         submitLabel: string
         submitting: boolean
         title: string
@@ -88,6 +90,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         if (!chrome) return prev ? null : prev
         if (
           prev?.canSubmit === chrome.canSubmit &&
+          prev?.stageLabel === chrome.stageLabel &&
           prev?.submitLabel === chrome.submitLabel &&
           prev?.submitting === chrome.submitting &&
           prev?.title === chrome.title
@@ -436,6 +439,7 @@ const PortalPage = ({ portalId }: PortalPageProps) => {
         view === 'wizard'
           ? {
               canSubmit: Boolean(wizardChrome?.canSubmit),
+              stageLabel: wizardChrome?.stageLabel,
               submitLabel: wizardChrome?.submitLabel,
               submitting: Boolean(wizardChrome?.submitting),
               title:
