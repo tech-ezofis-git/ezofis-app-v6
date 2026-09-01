@@ -5,7 +5,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ActionIcon, Tooltip } from '@mantine/core'
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import {
   type Panel as PanelType,
@@ -212,7 +212,7 @@ const Page = ({ panel, panelIndex }: Props) => {
                 <div
                   key={q.id}
                   className={cn(
-                    'group/field relative transition-all duration-300',
+                    'group/field relative',
                     getColumnSpan(q.settings.general.size),
                   )}
                 >
@@ -269,61 +269,63 @@ const Page = ({ panel, panelIndex }: Props) => {
   )
 }
 
-const SortableQuestionItem = ({
-  activeQuestionId,
-  deleteQuestion,
-  isBuilderMode,
-  isLocked,
-  question,
-  updateQuestion,
-  setActiveQuestionId,
-}: any) => {
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    transform,
-    transition,
-    setNodeRef,
-  } = useSortable({ id: question.id })
+const SortableQuestionItem = memo(
+  ({
+    activeQuestionId,
+    deleteQuestion,
+    isBuilderMode,
+    isLocked,
+    question,
+    updateQuestion,
+    setActiveQuestionId,
+  }: any) => {
+    const {
+      attributes,
+      isDragging,
+      listeners,
+      transform,
+      transition,
+      setNodeRef,
+    } = useSortable({ id: question.id })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 100 : 1,
-  }
+    const style = {
+      transform: CSS.Translate.toString(transform),
+      transition,
+      zIndex: isDragging ? 50 : undefined,
+    }
 
-  return (
-    <div
-      className={cn(
-        'relative w-full transition-all duration-300',
-        isDragging &&
-          'rounded-xl border-2 border-dashed border-primary-4 bg-primary-3/10',
-      )}
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-    >
-      <div className={cn(isDragging && 'invisible')}>
-        <QuestionCard
-          dragListeners={isLocked ? undefined : listeners}
-          isActive={activeQuestionId === question.id}
-          isBuilderMode={isBuilderMode}
-          isLocked={isLocked}
-          question={question}
-          onDelete={() => deleteQuestion(question.id)}
-          onSelect={() => {
-            setActiveQuestionId(question.id)
-            useFormStore.getState().setSelectionType('question')
-            useFormStore.getState().setSidebarOpen(true)
-          }}
-          onUpdate={(updates: Partial<Question>) =>
-            updateQuestion(question.id, updates)
-          }
-        />
+    return (
+      <div
+        className={cn(
+          'relative w-full',
+          isDragging &&
+            'rounded-xl border-2 border-dashed border-primary-5 bg-primary-3/20 opacity-40',
+        )}
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+      >
+        <div className={cn(isDragging && 'invisible pointer-events-none')}>
+          <QuestionCard
+            dragListeners={isLocked ? undefined : listeners}
+            isActive={activeQuestionId === question.id}
+            isBuilderMode={isBuilderMode}
+            isLocked={isLocked}
+            question={question}
+            onDelete={() => deleteQuestion(question.id)}
+            onSelect={() => {
+              setActiveQuestionId(question.id)
+              useFormStore.getState().setSelectionType('question')
+              useFormStore.getState().setSidebarOpen(true)
+            }}
+            onUpdate={(updates: Partial<Question>) =>
+              updateQuestion(question.id, updates)
+            }
+          />
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  },
+)
 
 export default Page

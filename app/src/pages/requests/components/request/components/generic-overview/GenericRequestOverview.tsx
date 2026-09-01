@@ -176,18 +176,54 @@ const GenericRequestOverview = ({
 
   const currentUserId = String(authUserStore.getState().session?.id || '')
 
+  // Fields whose values were used to compose the Request Number (a
+  // formColumn token in the workflow's Request Number Format) stay locked
+  // for the lifetime of the request, independent of per-stage edit access,
+  // since editing them after generation would desync the request number.
+  const requestNumberFieldIds = useMemo(() => {
+    const raw = rawWorkflowData?.workflowJson?.settings?.general
+      ?.processNumberPrefix as string | undefined
+    if (!raw) return new Set<string>()
+    try {
+      const segments = JSON.parse(raw)
+      if (!Array.isArray(segments)) return new Set<string>()
+      const ids: string[] = []
+      segments.forEach((segment: any) => {
+        if (segment?.key !== 'formColumn') return
+        String(segment.value || '')
+          .split(',')
+          .map((id: string) => id.trim())
+          .filter(Boolean)
+          .forEach((id: string) => ids.push(id))
+      })
+      return new Set(ids)
+    } catch {
+      return new Set<string>()
+    }
+  }, [rawWorkflowData])
+
   const readOnlyFieldIds = useMemo(() => {
     const access = formAccessMode(blockSettings.formEditAccess)
-    if (access === 'ALL') return undefined
-    if (access === 'NONE') return new Set(allFieldIds)
-    const rules = Array.isArray(blockSettings.formEditControls)
-      ? blockSettings.formEditControls
-      : []
-    const rule = rules.find((r: any) => String(r.userId) === currentUserId)
-    if (!rule) return undefined
-    const editable = new Set((rule?.formFields || []).map(String))
-    return new Set(allFieldIds.filter((id) => !editable.has(id)))
-  }, [blockSettings, allFieldIds, currentUserId])
+    const base =
+      access === 'NONE'
+        ? new Set(allFieldIds)
+        : access === 'CUSTOM'
+          ? (() => {
+              const rules = Array.isArray(blockSettings.formEditControls)
+                ? blockSettings.formEditControls
+                : []
+              const rule = rules.find(
+                (r: any) => String(r.userId) === currentUserId,
+              )
+              if (!rule) return undefined
+              const editable = new Set((rule?.formFields || []).map(String))
+              return new Set(allFieldIds.filter((id) => !editable.has(id)))
+            })()
+          : undefined
+
+    if (requestNumberFieldIds.size === 0) return base
+    return new Set([...(base || []), ...requestNumberFieldIds])
+  }, [blockSettings, allFieldIds, currentUserId, requestNumberFieldIds])
 
   const hiddenFieldIds = useMemo(() => {
     const access = formAccessMode(blockSettings.formVisibilityAccess)

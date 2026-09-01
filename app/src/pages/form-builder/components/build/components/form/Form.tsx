@@ -1,5 +1,5 @@
-﻿import {
-  closestCenter,
+import {
+  closestCorners,
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
@@ -10,7 +10,6 @@
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useEffect, useState } from 'react'
 import {
@@ -30,7 +29,7 @@ const Form = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 3,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -162,8 +161,7 @@ const Form = () => {
     <div className='mx-auto w-full max-w-[1200px] px-0 pb-40 font-inter'>
       <div className='flex flex-col gap-6'>
         <DndContext
-          collisionDetection={closestCenter}
-          modifiers={[restrictToVerticalAxis]}
+          collisionDetection={closestCorners}
           sensors={sensors}
           onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
@@ -175,9 +173,14 @@ const Form = () => {
             ))}
           </div>
 
-          <DragOverlay>
+          <DragOverlay
+            dropAnimation={{
+              duration: 200,
+              easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+            }}
+          >
             {activeQuestion ? (
-              <div className='z-[1000] scale-[1.02] cursor-grabbing rounded-2xl shadow-2xl ring-2 ring-accent-primary/20'>
+              <div className='pointer-events-none z-[1000] scale-[1.02] cursor-grabbing rounded-xl shadow-2xl ring-2 ring-primary-9/30 opacity-95'>
                 <QuestionCard
                   isActive={true}
                   question={activeQuestion}

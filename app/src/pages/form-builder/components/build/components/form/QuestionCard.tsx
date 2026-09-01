@@ -1,5 +1,5 @@
-import type React from 'react'
-import { Card, Rating, Tooltip } from '@mantine/core'
+import React, { memo, useMemo } from 'react'
+import { ActionIcon, Card, Menu, Rating, Tooltip } from '@mantine/core'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import { formatFormulaExpression } from '@/pages/form-builder/helpers/formula'
@@ -29,8 +29,11 @@ const QuestionCard = ({
   onSelect,
   onUpdate,
 }: Props) => {
-  const { panels } = useFormStore()
-  const allQuestions = panels.flatMap((p) => p.fields)
+  const panels = useFormStore((state) => state.panels)
+  const allQuestions = useMemo(
+    () => panels.flatMap((p) => p.fields),
+    [panels],
+  )
 
   // Logic Evaluation
   const checkLogic = () => {
@@ -144,7 +147,7 @@ const QuestionCard = ({
           </div>
 
           {/* Quick Actions & Drag Handle */}
-          <div className='flex items-center gap-1 pl-2'>
+          <div className='flex items-center gap-1.5 pl-2'>
             {!isLocked ? (
               <>
                 {(() => {
@@ -204,57 +207,92 @@ const QuestionCard = ({
                   )
                 })()}
 
-                <div
-                  className={cn(
-                    'flex items-center overflow-hidden transition-all duration-300 ease-out',
-                    isActive
-                      ? 'max-w-[90px] opacity-100'
-                      : 'max-w-0 opacity-0 group-hover:max-w-[90px] group-hover:opacity-100',
-                  )}
+                {/* 3-Dot Actions Menu */}
+                <Menu
+                  closeOnClickOutside
+                  closeOnItemClick
+                  position='bottom-end'
+                  shadow='md'
+                  withinPortal
+                  zIndex={300}
                 >
-                  <div className='mx-1 h-4 w-px shrink-0 bg-gray-2' />
-                  <div className='flex shrink-0 items-center gap-0.5'>
-                    <Tooltip label='Duplicate' position='top' withArrow>
-                      <IconButton
-                        className='size-6 cursor-pointer'
-                        color='primary'
-                        icon='lucide:copy'
-                        iconClass='size-[13px]'
+                  <Tooltip label='Field options' position='top' withArrow>
+                    <Menu.Target>
+                      <ActionIcon
+                        className='size-7 rounded-lg text-gray-10 transition-all hover:bg-gray-2 hover:text-gray-13 active:scale-95'
+                        color='gray'
                         size='sm'
-                        variant='ghost'
-                        onClick={(e: React.MouseEvent) => {
+                        variant='subtle'
+                        onClick={(e) => {
                           e.stopPropagation()
-                          useFormStore.getState().duplicateQuestion(question.id)
                         }}
-                      />
-                    </Tooltip>
+                      >
+                        <Icon height={15} name='lucide:ellipsis-vertical' width={15} />
+                      </ActionIcon>
+                    </Menu.Target>
+                  </Tooltip>
 
-                    <Tooltip label='Delete' position='top' withArrow>
-                      <IconButton
-                        className='hover:bg-red-50 size-6 cursor-pointer'
-                        color='red'
-                        icon='lucide:trash-2'
-                        iconClass='size-[13px]'
-                        size='sm'
-                        variant='ghost'
-                        onClick={(e: React.MouseEvent) => {
-                          e.stopPropagation()
-                          onDelete()
-                        }}
-                      />
-                    </Tooltip>
+                  <Menu.Dropdown
+                    className='rounded-xl border border-gray-3 bg-white p-1 shadow-lg'
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Menu.Item
+                      className='flex h-8 items-center gap-2 rounded-lg px-2.5 text-xs font-medium text-gray-12 transition-colors hover:bg-gray-2 hover:text-gray-13'
+                      leftSection={
+                        <Icon
+                          className='size-4 text-gray-11'
+                          height={15}
+                          name='lucide:copy'
+                          width={15}
+                        />
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        useFormStore.getState().duplicateQuestion(question.id)
+                      }}
+                    >
+                      Duplicate Field
+                    </Menu.Item>
+                    <Menu.Divider className='my-1 border-gray-2' />
+                    <Menu.Item
+                      className='flex h-8 items-center gap-2 rounded-lg px-2.5 text-xs font-medium text-red-11 transition-colors hover:bg-red-2 hover:text-red-12'
+                      color='red'
+                      leftSection={
+                        <Icon
+                          className='size-4 text-red-11'
+                          height={15}
+                          name='lucide:trash-2'
+                          width={15}
+                        />
+                      }
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onDelete()
+                      }}
+                    >
+                      Delete Field
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+
+                {/* Visible High-Contrast Drag Handle */}
+                <Tooltip
+                  label='Drag to reorder'
+                  openDelay={500}
+                  position='top'
+                  withArrow
+                >
+                  <div
+                    className='flex size-7 cursor-grab touch-none select-none items-center justify-center rounded-lg border border-gray-3 bg-gray-1 text-gray-10 shadow-2xs transition-colors hover:border-primary-4 hover:bg-primary-3/30 hover:text-primary-9 active:cursor-grabbing'
+                    {...dragListeners}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Icon height={15} name='lucide:grip-vertical' width={15} />
                   </div>
-                </div>
-
-                <div
-                  className='ml-1 flex h-6 w-4 cursor-grab items-center justify-center rounded text-gray-3 transition-colors hover:bg-gray-2 hover:text-gray-6 active:cursor-grabbing'
-                  {...dragListeners}
-                >
-                  <Icon height={14} name='lucide:grip-vertical' width={14} />
-                </div>
+                </Tooltip>
               </>
             ) : (
-              <div className='flex h-6 w-6 items-center justify-center rounded-lg text-gray-3 opacity-50'>
+              <div className='flex size-7 items-center justify-center rounded-lg text-gray-8 opacity-60'>
                 <Icon height={14} name='lucide:lock' width={14} />
               </div>
             )}
@@ -1049,4 +1087,4 @@ const QuestionCard = ({
   )
 }
 
-export default QuestionCard
+export default memo(QuestionCard)
