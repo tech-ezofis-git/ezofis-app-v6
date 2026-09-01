@@ -7,12 +7,27 @@ import { requestApi } from '@/api/requests/requests'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import InputNumber from '@/components/base/inputs/InputNumber'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
 import Input from '@/components/base/inputs/InputText'
 import { folderApi } from '@/pages/folders/api/folderApi'
 import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
+import type { PrefixSegment } from '../stores/useWorkflowStore'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { generateId } from '../utils/generateId'
+import {
+  CURRENT_DATE_OPTIONS,
+  getFormatPreview,
+  getResetCycle,
+  getSeparator,
+  MONTH_OPTIONS,
+  RESET_CYCLE_OPTIONS,
+  SEPARATOR_OPTIONS,
+  TOKEN_TYPE_OPTIONS,
+  YEAR_OPTIONS,
+} from '../utils/prefixFormat'
 import SettingsSection from './settings/common/SettingsSection'
 
 type PreviewField = {
@@ -24,6 +39,7 @@ type PreviewField = {
 const WorkflowSettings = () => {
   const [openGeneral, setOpenGeneral] = useState(true)
   const [openConfiguration, setOpenConfiguration] = useState(false)
+  const [openRequestNumber, setOpenRequestNumber] = useState(false)
 
   const {
     closeSettings,
@@ -31,6 +47,7 @@ const WorkflowSettings = () => {
     form,
     initiateUsing,
     isSettingsOpen,
+    prefixSegments,
     previewValues,
     workflowDescription,
     workflowName,
@@ -38,6 +55,7 @@ const WorkflowSettings = () => {
     setFolder,
     setForm,
     setInitiateUsing,
+    setPrefixSegments,
     setPreviewValues,
     setWorkflowDescription,
     setWorkflowName,
@@ -150,6 +168,68 @@ const WorkflowSettings = () => {
 
   const handlePreviewValuesChange = (options: Option[]) => {
     setPreviewValues(options.map((option) => String(option.id)))
+  }
+
+  // Request Number Format
+  const formFieldLabelsById = useMemo(() => {
+    const map: Record<string, string> = {}
+    previewFields.forEach((field) => {
+      map[field.label] = field.label
+    })
+    return map
+  }, [previewFields])
+
+  const separator = getSeparator(prefixSegments)
+  const resetCycle = getResetCycle(prefixSegments)
+  const autoIncrementEnabled = prefixSegments.some((s) => s.key === 'reset')
+  const tokenSegments = prefixSegments.filter(
+    (s) => s.key !== 'seperator' && s.key !== 'reset',
+  )
+  const formatPreview = getFormatPreview(prefixSegments, formFieldLabelsById)
+
+  const setSeparator = (value: string) => {
+    const hasSeparator = prefixSegments.some((s) => s.key === 'seperator')
+    setPrefixSegments(
+      hasSeparator
+        ? prefixSegments.map((s) =>
+            s.key === 'seperator' ? { ...s, value } : s,
+          )
+        : [{ id: generateId(), key: 'seperator', value }, ...prefixSegments],
+    )
+  }
+
+  const toggleAutoIncrement = (enabled: boolean) => {
+    if (enabled) {
+      setPrefixSegments([
+        ...prefixSegments,
+        { id: generateId(), key: 'reset', value: 'year' },
+      ])
+    } else {
+      setPrefixSegments(prefixSegments.filter((s) => s.key !== 'reset'))
+    }
+  }
+
+  const setResetCycleValue = (value: string) => {
+    setPrefixSegments(
+      prefixSegments.map((s) => (s.key === 'reset' ? { ...s, value } : s)),
+    )
+  }
+
+  const addToken = () => {
+    setPrefixSegments([
+      ...prefixSegments,
+      { id: generateId(), key: 'prefix', value: '' },
+    ])
+  }
+
+  const removeToken = (id: string) => {
+    setPrefixSegments(prefixSegments.filter((s) => s.id !== id))
+  }
+
+  const updateToken = (id: string, patch: Partial<PrefixSegment>) => {
+    setPrefixSegments(
+      prefixSegments.map((s) => (s.id === id ? { ...s, ...patch } : s)),
+    )
   }
 
   if (!isSettingsOpen) return null
@@ -316,6 +396,194 @@ const WorkflowSettings = () => {
             }
             onChange={handlePreviewValuesChange}
           />
+        </SettingsSection>
+
+        <SettingsSection
+          icon='lucide:hash'
+          isOpen={openRequestNumber}
+          title='Request Number Format'
+          variant='premium'
+          onToggle={() => setOpenRequestNumber(!openRequestNumber)}
+        >
+          {/* Separator */}
+          <InputSelect
+            label='Separator'
+            options={SEPARATOR_OPTIONS}
+            placeholder='Select'
+            value={
+              SEPARATOR_OPTIONS.find((o) => o.id === separator) || null
+            }
+            onChange={(val) => setSeparator(String(val?.id || '-'))}
+          />
+
+          {/* Auto-increment toggle */}
+          <div className='flex items-center justify-between'>
+            <span className='text-13 font-medium text-gray-11'>
+              Enable Auto-Increment
+            </span>
+            <InputSwitch
+              checked={autoIncrementEnabled}
+              onChange={toggleAutoIncrement}
+            />
+          </div>
+
+          {/* Reset cycle */}
+          {autoIncrementEnabled && (
+            <InputSelect
+              label='Reset Cycle'
+              options={RESET_CYCLE_OPTIONS}
+              placeholder='Select'
+              value={
+                RESET_CYCLE_OPTIONS.find((o) => o.id === resetCycle) || null
+              }
+              onChange={(val) => setResetCycleValue(String(val?.id || ''))}
+            />
+          )}
+
+          {/* Token list */}
+          <div className='space-y-2 rounded-xl bg-white p-3 shadow-sm'>
+            <span className='text-13 font-medium text-gray-11'>
+              Number Parts
+            </span>
+            <div className='space-y-2'>
+              {tokenSegments.map((segment) => (
+                <div
+                  className='flex items-start gap-2 rounded-xl border border-gray-2 bg-[#F8FAFC] p-2'
+                  key={segment.id}
+                >
+                  <div className='w-[120px] shrink-0'>
+                    <InputSelect
+                      options={TOKEN_TYPE_OPTIONS}
+                      placeholder='Select'
+                      value={
+                        TOKEN_TYPE_OPTIONS.find(
+                          (o) => o.id === segment.key,
+                        ) || null
+                      }
+                      onChange={(val) =>
+                        updateToken(segment.id, {
+                          key: String(val?.id || 'prefix'),
+                          value: '',
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className='flex-1'>
+                    {segment.key === 'prefix' && (
+                      <Input
+                        placeholder='Enter Prefix'
+                        value={String(segment.value)}
+                        onChange={(val) =>
+                          updateToken(segment.id, { value: val })
+                        }
+                      />
+                    )}
+                    {segment.key === 'year' && (
+                      <InputSelect
+                        options={YEAR_OPTIONS}
+                        placeholder='Select'
+                        value={
+                          YEAR_OPTIONS.find((o) => o.id === segment.value) ||
+                          null
+                        }
+                        onChange={(val) =>
+                          updateToken(segment.id, {
+                            value: String(val?.id || 'yyyy'),
+                          })
+                        }
+                      />
+                    )}
+                    {segment.key === 'month' && (
+                      <InputSelect
+                        options={MONTH_OPTIONS}
+                        placeholder='Select'
+                        value={
+                          MONTH_OPTIONS.find((o) => o.id === segment.value) ||
+                          null
+                        }
+                        onChange={(val) =>
+                          updateToken(segment.id, {
+                            value: String(val?.id || 'mm'),
+                          })
+                        }
+                      />
+                    )}
+                    {segment.key === 'formColumn' && (
+                      <InputSelectMultiple
+                        options={previewFieldOptions}
+                        placeholder='Select fields'
+                        clearable
+                        searchable
+                        value={previewFieldOptions.filter((o) =>
+                          String(segment.value)
+                            .split(',')
+                            .map((v) => v.trim())
+                            .includes(String(o.id)),
+                        )}
+                        onChange={(options) =>
+                          updateToken(segment.id, {
+                            value: options
+                              .map((o) => String(o.id))
+                              .join(','),
+                          })
+                        }
+                      />
+                    )}
+                    {segment.key === 'autoIncrement' && (
+                      <InputNumber
+                        max={7}
+                        min={1}
+                        placeholder='Enter no. of digits'
+                        value={segment.value}
+                        withControls
+                        onChange={(val) =>
+                          updateToken(segment.id, { value: Number(val) || 1 })
+                        }
+                      />
+                    )}
+                    {segment.key === 'currentDate' && (
+                      <InputSelect
+                        options={CURRENT_DATE_OPTIONS}
+                        placeholder='Select'
+                        value={
+                          CURRENT_DATE_OPTIONS.find(
+                            (o) => o.id === segment.value,
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          updateToken(segment.id, {
+                            value: String(val?.id || ''),
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+
+                  <button
+                    className='text-gray-400 hover:text-red-500 shrink-0 p-1.5 transition-colors'
+                    title='Remove part'
+                    onClick={() => removeToken(segment.id)}
+                  >
+                    <Icon className='h-4 w-4' name='lucide:x' />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              className='border-gray-300 text-slate-500 hover:bg-blue-50 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-2 text-13 font-medium transition-all hover:border-[#1677ff] hover:text-[#1677ff] active:scale-[0.99]'
+              onClick={addToken}
+            >
+              <Icon className='h-4 w-4' name='lucide:plus' />
+              <span>Add Part</span>
+            </button>
+          </div>
+
+          {/* Live preview */}
+          <div className='rounded-xl bg-white p-3 text-13 font-medium text-gray-11 shadow-sm'>
+            Format : <span className='text-primary-9'>{formatPreview}</span>
+          </div>
         </SettingsSection>
       </div>
 

@@ -2,11 +2,56 @@ import type { Edge, Node } from '@xyflow/react'
 import { create } from 'zustand'
 import { importWorkflow } from '../utils/importWorkflow'
 
+export type PrefixSegment = { id: string; key: string; value: string | number }
+
 type AddMenuState = {
   edgeId: string | null
   isOpen: boolean
   nodeId: string | null
   position: { x: number; y: number } | null
+}
+
+const defaultPrefixSegments: PrefixSegment[] = [
+  { id: '1', key: 'seperator', value: '-' },
+  { id: '2', key: 'prefix', value: 'REQ' },
+  { id: '3', key: 'autoIncrement', value: 1 },
+]
+
+const KNOWN_PREFIX_KEYS = new Set([
+  'seperator',
+  'reset',
+  'prefix',
+  'year',
+  'month',
+  'formColumn',
+  'currentDate',
+  'autoIncrement',
+])
+
+const migrateLegacyPrefix = (raw: unknown): PrefixSegment[] => {
+  if (typeof raw !== 'string' || !raw) return defaultPrefixSegments
+  try {
+    const parsed = JSON.parse(raw)
+    // Data saved under an unrecognized/older segment shape (e.g. the
+    // pre-migration `{id, type, value}` format) has no usable `key` -
+    // treat it the same as "no setting saved" rather than rendering
+    // blank rows.
+    if (
+      Array.isArray(parsed) &&
+      parsed.length &&
+      parsed.some((s) => KNOWN_PREFIX_KEYS.has(s?.key))
+    ) {
+      return parsed
+    }
+    return defaultPrefixSegments
+  } catch {
+    return [
+      { id: '1', key: 'seperator', value: '-' },
+      { id: '2', key: 'reset', value: 'year' },
+      { id: '3', key: 'prefix', value: raw },
+      { id: '4', key: 'autoIncrement', value: 1 },
+    ]
+  }
 }
 
 type Store = {
@@ -22,7 +67,7 @@ type Store = {
   isSettingsOpen: boolean
   loadedEdges: Edge[] | null
   loadedNodes: Node[] | null
-  prefixSegments: Array<{ id: string; type: string; value: string }>
+  prefixSegments: PrefixSegment[]
   previewValues: string[]
   selectedEdge: Edge | null
   selectedNode: Node | null
@@ -46,9 +91,7 @@ type Store = {
   setFolder: (value: number | null) => void
   setForm: (value: number | null) => void
   setInitiateUsing: (value: string) => void
-  setPrefixSegments: (
-    segments: Array<{ id: string; type: string; value: string }>,
-  ) => void
+  setPrefixSegments: (segments: PrefixSegment[]) => void
   setPreviewValues: (values: string[]) => void
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
@@ -76,12 +119,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   isSettingsOpen: false,
   loadedEdges: null,
   loadedNodes: null,
-  prefixSegments: [
-    { id: '1', type: 'date', value: 'Year' },
-    { id: '2', type: 'separator', value: '-' },
-    { id: '3', type: 'text', value: 'REQ' },
-    { id: '4', type: 'auto-increment', value: '1' },
-  ],
+  prefixSegments: defaultPrefixSegments,
   previewValues: [],
   selectedEdge: null,
   selectedNode: null,
@@ -111,20 +149,9 @@ const useWorkflowStore = create<Store>()((set) => ({
   loadLegacyWorkflow: (legacyJson: any, apiData?: any) => {
     const { edges, nodes } = importWorkflow(legacyJson)
 
-    let prefixSegments = [
-      { id: '1', type: 'date', value: 'Year' },
-      { id: '2', type: 'separator', value: '-' },
-      { id: '3', type: 'text', value: 'REQ' },
-      { id: '4', type: 'auto-increment', value: '1' },
-    ]
-
-    try {
-      if (legacyJson.settings?.general?.processNumberPrefix) {
-        prefixSegments = JSON.parse(
-          legacyJson.settings.general.processNumberPrefix,
-        )
-      }
-    } catch (e) {}
+    const prefixSegments = migrateLegacyPrefix(
+      legacyJson.settings?.general?.processNumberPrefix,
+    )
 
     let previewValues: string[] = []
     try {
@@ -198,12 +225,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       initiateUsing: 'document-form',
       loadedEdges: null,
       loadedNodes: null,
-      prefixSegments: [
-        { id: '1', type: 'date', value: 'Year' },
-        { id: '2', type: 'separator', value: '-' },
-        { id: '3', type: 'text', value: 'REQ' },
-        { id: '4', type: 'auto-increment', value: '1' },
-      ],
+      prefixSegments: defaultPrefixSegments,
       previewValues: [],
       selectedEdge: null,
       selectedNode: null,
