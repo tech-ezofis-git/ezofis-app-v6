@@ -173,13 +173,19 @@ export const getInitiateNodeLabel = (workflow: unknown): string => {
   return label
 }
 
+const sameStepId = (left: unknown, right: unknown) => {
+  const a = String(left ?? '').trim()
+  const b = String(right ?? '').trim()
+  return Boolean(a) && a === b
+}
+
 const matchStepIndex = (
   steps: PortalWorkflowStep[],
   activityId: string,
   stage: string,
 ) => {
   if (activityId) {
-    const byId = steps.findIndex((step) => step.id === activityId)
+    const byId = steps.findIndex((step) => sameStepId(step.id, activityId))
     if (byId >= 0) return byId
   }
   if (stage) {

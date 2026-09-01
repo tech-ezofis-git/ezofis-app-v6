@@ -7,10 +7,9 @@ import AttachmentSplitView from '@/pages/requests/components/request/components/
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
 import {
   buildDetailFormModel,
-  buildPortalNavSections,
   formPanelSectionId,
-  PORTAL_SECTION_ATTACHMENTS,
-  PORTAL_SECTION_HISTORY,
+  orderWorkflowSteps,
+  resolveStepStatuses,
   submissionInstanceIds,
 } from '../helpers/portalDetail'
 import type { PortalSubmission } from '../helpers/portalSubmissions'
@@ -23,10 +22,9 @@ import {
   getWorkflowRuleActions,
   isAssignedToUser,
 } from '../helpers/portalWorkflowAccess'
-import { usePortalSectionSpy } from '../hooks/usePortalSectionSpy'
 import PortalActivity from './PortalActivity'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
-import PortalPanelNav from './PortalPanelNav'
+import PortalProgressCard from './PortalProgressCard'
 import PortalSubmissionDetails from './PortalSubmissionDetails'
 
 type PortalDetailChrome = {
@@ -51,12 +49,10 @@ export default function PortalDetail({
   const { t } = useLingui()
   const [source, setSource] = useState<PortalWizardSource | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeId, setActiveId] = useState('')
   const [openIds, setOpenIds] = useState<Set<string>>(new Set())
   const [formModel, setFormModel] = useState<Record<string, any>>({})
   const [openedAttachment, setOpenedAttachment] = useState<any>(null)
   const [acting, setActing] = useState(false)
-  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
   const isInbox = submission.source === 'inbox'
 
   const { activityId, instanceId, processId, repositoryId } = useMemo(
@@ -100,57 +96,31 @@ export default function PortalDetail({
   useEffect(() => {
     setFormModel(loadedFormModel)
   }, [loadedFormModel])
-  const sections = useMemo(
-    () =>
-      buildPortalNavSections(
-        panels,
-        {
-          attachments: t`Attachments`,
-          history: t`Activity`,
-        },
-        formModel,
-      ),
-    [formModel, panels, t],
+
+  const workflowSteps = useMemo(
+    () => orderWorkflowSteps(source?.workflow),
+    [source?.workflow],
   )
-  const sectionIds = useMemo(
-    () => sections.map((section) => section.id),
-    [sections],
+  const workflowStepStatuses = useMemo(
+    () =>
+      resolveStepStatuses(
+        workflowSteps,
+        activityId,
+        submission.status,
+        String(submission.raw.stage || submission.raw.stageName || ''),
+      ),
+    [activityId, submission.raw.stage, submission.raw.stageName, submission.status, workflowSteps],
   )
 
   useEffect(() => {
-    if (!sections[0]) return
-    setActiveId((current) => current || sections[0].id)
+    if (!panels.length) return
     setOpenIds((current) => {
       if (current.size > 0) return current
-      return new Set(
-        sections
-          .filter(
-            (section) =>
-              section.id !== PORTAL_SECTION_ATTACHMENTS &&
-              section.id !== PORTAL_SECTION_HISTORY,
-          )
-          .map((section) => section.id),
-      )
+      return new Set(panels.map((panel, index) => formPanelSectionId(panel, index)))
     })
-  }, [sections])
-
-  const { scrollToSection } = usePortalSectionSpy(
-    scrollEl,
-    sectionIds,
-    (id) => setActiveId((current) => (current === id ? current : id)),
-  )
-
-  const selectSection = (id: string) => {
-    setOpenIds((current) => {
-      const next = new Set(current)
-      next.add(id)
-      return next
-    })
-    scrollToSection(id)
-  }
+  }, [panels])
 
   const toggleSection = (id: string) => {
-    setActiveId(id)
     setOpenIds((current) => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id)
@@ -195,7 +165,7 @@ export default function PortalDetail({
       ? workflowData.workflowJson.blocks
       : []
     const block = blocks.find(
-      (item: { id?: string }) => String(item.id || '') === currentActivityId,
+      (item: { id?: string }) => String(item.id || '') === String(currentActivityId || ''),
     )
     return (block?.settings || {}) as Record<string, unknown>
   }, [currentActivityId, workflowData])
@@ -323,26 +293,12 @@ export default function PortalDetail({
   }
 
   return (
-    <div className='flex h-full min-h-0'>
-      <aside className='hidden h-full min-h-0 w-72 shrink-0 overflow-hidden border-r border-gray-4 bg-surface md:flex md:flex-col xl:w-80'>
-        <PortalPanelNav
-          activeId={activeId}
-          sections={sections}
-          onSelect={selectSection}
+    <div className='h-full min-h-0 overflow-y-auto'>
+      <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
+        <PortalProgressCard
+          statuses={workflowStepStatuses}
+          steps={workflowSteps}
         />
-      </aside>
-
-      <section
-        className='h-full min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5'
-        ref={setScrollEl}
-      >
-        <div className='sticky top-0 z-10 mb-4 bg-gray-2 md:hidden'>
-          <PortalPanelNav
-            activeId={activeId}
-            sections={sections}
-            onSelect={selectSection}
-          />
-        </div>
 
         {panels.length > 0 ? (
           isInbox ? (
@@ -371,15 +327,12 @@ export default function PortalDetail({
           )
         ) : (
           <div className='rounded-xl border border-gray-4 bg-surface p-5 text-13 text-gray-10'>
-            {t`No form panels found for this request.`}
+            {t`No form fields found for this request.`}
           </div>
         )}
 
-        <div
-          className='mt-5 scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-4 shadow-sm sm:p-5'
-          id={PORTAL_SECTION_ATTACHMENTS}
-        >
-          <div className='mb-3 text-15 font-semibold text-gray-13'>
+        <div className='rounded-xl border border-gray-4 bg-surface p-6 shadow-sm sm:px-8 sm:py-7'>
+          <div className='mb-4 text-15 font-semibold text-gray-13'>
             {t`Attachments`}
           </div>
           <Attachments
@@ -395,11 +348,8 @@ export default function PortalDetail({
           />
         </div>
 
-        <div
-          className='mt-5 scroll-mt-3 rounded-xl border border-gray-4 bg-surface p-4 shadow-sm sm:p-5'
-          id={PORTAL_SECTION_HISTORY}
-        >
-          <div className='mb-3 text-15 font-semibold text-gray-13'>
+        <div className='rounded-xl border border-gray-4 bg-surface p-6 shadow-sm sm:px-8 sm:py-7'>
+          <div className='mb-4 text-15 font-semibold text-gray-13'>
             {t`Activity`}
           </div>
           <PortalActivity
@@ -409,7 +359,7 @@ export default function PortalDetail({
             enabled
           />
         </div>
-      </section>
+      </div>
     </div>
   )
 }
