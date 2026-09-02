@@ -2,6 +2,9 @@ import React, { memo, useMemo } from 'react'
 import { ActionIcon, Card, Menu, Rating, Tooltip } from '@mantine/core'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+// import Menu from '@/components/base/menu/Menu'
+// import MenuDivider from '@/components/base/menu/MenuDivider'
+// import MenuItem from '@/components/base/menu/MenuItem'
 import { formatFormulaExpression } from '@/pages/form-builder/helpers/formula'
 import {
   type Question,
@@ -106,17 +109,17 @@ const QuestionCard = ({
                             : question.type === 'FILE_UPLOAD'
                               ? 'lucide:upload-cloud'
                               : question.type === 'SINGLE_SELECT' ||
-                                  question.type === 'MULTI_SELECT'
+                                question.type === 'MULTI_SELECT'
                                 ? 'lucide:list-todo'
                                 : question.type === 'MULTIPLE_CHOICE'
                                   ? 'lucide:check-square'
                                   : question.type === 'SINGLE_CHOICE'
                                     ? 'lucide:radio'
-                                  : question.type === 'DATE' ||
+                                    : question.type === 'DATE' ||
                                       question.type === 'TIME' ||
                                       question.type === 'DATE_TIME'
-                                    ? 'lucide:calendar'
-                                    : 'mdi:form-textbox'
+                                      ? 'lucide:calendar'
+                                      : 'mdi:form-textbox'
                 }
               />
             </div>
@@ -465,12 +468,12 @@ const QuestionCard = ({
               const gridTemplate =
                 tableColumns.length > 0
                   ? `32px ${tableColumns
-                      .map((col) => {
-                        if (col.size === 'SMALL') return 'minmax(90px, 1fr)'
-                        if (col.size === 'LARGE') return 'minmax(180px, 3fr)'
-                        return 'minmax(130px, 2fr)'
-                      })
-                      .join(' ')}`
+                    .map((col) => {
+                      if (col.size === 'SMALL') return 'minmax(90px, 1fr)'
+                      if (col.size === 'LARGE') return 'minmax(180px, 3fr)'
+                      return 'minmax(130px, 2fr)'
+                    })
+                    .join(' ')}`
                   : '1fr'
 
               return (
@@ -803,7 +806,7 @@ const QuestionCard = ({
                   className={cn(
                     'w-full transition-all',
                     showWrapper &&
-                      'rounded-xl border border-gray-2 bg-gray-50/50 p-2.5 shadow-2xs',
+                    'rounded-xl border border-gray-2 bg-gray-50/50 p-2.5 shadow-2xs',
                   )}
                 >
                   <div
@@ -816,8 +819,8 @@ const QuestionCard = ({
                     style={
                       !isAutoFlex
                         ? {
-                            gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
-                          }
+                          gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+                        }
                         : undefined
                     }
                   >

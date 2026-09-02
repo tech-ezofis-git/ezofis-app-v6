@@ -288,11 +288,11 @@ const SortableQuestionItem = memo(
       setNodeRef,
     } = useSortable({ id: question.id })
 
-    const style = {
-      transform: CSS.Translate.toString(transform),
-      transition,
-      zIndex: isDragging ? 50 : undefined,
-    }
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+  }
 
     return (
       <div
