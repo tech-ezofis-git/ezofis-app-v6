@@ -25,6 +25,7 @@ using SaaSApp.Workflow.Infrastructure.Jobs;
 using SaaSApp.Dms.Infrastructure;
 using Serilog;
 using System.Reflection;
+using System.Text;
 using SaaSApp.BlobStorage;
 using SaaSApp.Repository.Application;
 using SaaSApp.Repository.Infrastructure;
@@ -100,6 +101,16 @@ var ezofisKey = builder.Configuration["EzofisAuth:SigningKey"];
 var hasAzureAd = !string.IsNullOrWhiteSpace(azureAdClientId);
 var hasAuth0 = !string.IsNullOrEmpty(auth0Domain);
 var hasEzofis = !string.IsNullOrEmpty(ezofisKey);
+
+if (string.IsNullOrEmpty(ezofisKey))
+{
+    Log.Warning(
+        "EzofisAuth:SigningKey is not configured. Email/password login will fail when issuing JWT (pilot user, Ezofis login).");
+}
+else if (Encoding.UTF8.GetBytes(ezofisKey).Length < 32)
+{
+    Log.Warning("EzofisAuth:SigningKey is shorter than 32 bytes. Email/password login will fail when issuing JWT.");
+}
 
 var authenticationSchemes = new List<string>();
 string? defaultScheme = null;
@@ -295,9 +306,9 @@ if (!string.IsNullOrWhiteSpace(pathBase))
     app.UsePathBase(pathBase);
 }
 
-// HTTPS redirection (off by default: Azure/nginx terminate TLS and proxy HTTP :5000.
-// Enabling this without forwarded headers 307-loops /swagger and /hangfire.)
-var httpsRedirectionEnabled = builder.Configuration.GetValue<bool?>("HttpsRedirection:Enabled") ?? false;
+// HTTPS redirection (configurable; keep off when hosting IIS on HTTP-only localhost)
+var httpsRedirectionEnabled = builder.Configuration.GetValue<bool?>("HttpsRedirection:Enabled")
+    ?? !app.Environment.IsDevelopment();
 if (httpsRedirectionEnabled)
 {
     app.UseHttpsRedirection();
@@ -312,7 +323,7 @@ app.UseMiddleware<RequestPerformanceLoggingMiddleware>();
 
 app.UseCors();
 
-var swaggerEnabled = app.Environment.IsDevelopment() || (builder.Configuration.GetValue<bool?>("Swagger:Enabled") ?? true);
+var swaggerEnabled = app.Environment.IsDevelopment() || (builder.Configuration.GetValue<bool?>("Swagger:Enabled") ?? false);
 if (swaggerEnabled)
 {
     app.UseSwagger(options =>
