@@ -151,9 +151,4 @@ jobs:
               EzofisAuth__Audience=Ezofis \
               DEPLOY_SHA="$SHORT_SHA" \
               DOCKER_ENABLE_CI=true
-          az webapp config container set \
-            --resource-group rg-v6 \
-            --name ezofis-app-v6 \
-            --multicontainer-config-type compose \
-            --multicontainer-config-file docker-compose.azure.yml
           az webapp restart --resource-group rg-v6 --name ezofis-app-v6
