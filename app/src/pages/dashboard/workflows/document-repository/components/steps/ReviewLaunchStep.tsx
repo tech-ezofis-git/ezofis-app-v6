@@ -1,15 +1,17 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createRepository } from '@/api/createFolder'
+import apiRouter from '@/api/apiRouter'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
-import { createRepository } from '@/api/createFolder'
-import SuccessCelebration from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/SuccessCelebration'
 import {
   StepFooter,
   StepLayout,
 } from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/components/StepLayout'
 import apSetupPayloads from '@/pages/dashboard/workflows/accounts-payable/constants/apSetupPayloads.json'
+import SuccessCelebration from '@/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/SuccessCelebration'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import {
   dmsStorageOptions,
@@ -75,6 +77,7 @@ const ReviewLaunchStep = () => {
   )
   const isSaving = useDmsSetupStore((state) => state.isSaving)
   const setIsSaving = useDmsSetupStore((state) => state.setIsSaving)
+  const resetSetup = useDmsSetupStore((state) => state.resetSetup)
   const setIsSetupCompleted = useDmsSetupStore(
     (state) => state.setIsSetupCompleted,
   )
@@ -83,6 +86,20 @@ const ReviewLaunchStep = () => {
     (state) => state.setShowConnectorError,
   )
   const setStep = useDmsSetupStore((state) => state.setStep)
+
+  const handleFinishDmsSetup = () => {
+    setIsSetupStarted(false)
+    resetSetup()
+    navigate({ replace: true, to: '/folders' })
+  }
+
+  useEffect(() => {
+    if (!showCelebration) return
+    const timer = setTimeout(() => {
+      handleFinishDmsSetup()
+    }, 4500)
+    return () => clearTimeout(timer)
+  }, [showCelebration])
 
   const selectedStorage =
     dmsStorageOptions.find((item) => item.id === storageId) ??
@@ -127,13 +144,36 @@ const ReviewLaunchStep = () => {
         return
       }
 
+      // Save onboarding configuration status via API endpoint for DMS setup completion
+      const userId = authUserStore.getState().session?.id || ''
+      if (userId) {
+        const configRes = await apiRouter.saveUserConfiguration(userId, {
+          message: 'configuration:completed',
+        })
+        if (configRes.error) {
+          showToast({
+            message: `Failed to save configuration status: ${configRes.error}`,
+            variant: 'error',
+          })
+          return
+        }
+        const session = authUserStore.getState().session
+        if (session) {
+          authUserStore.getState().setSession({
+            ...session,
+            configuration: 1,
+          })
+        }
+      }
+
       setIsSetupCompleted(true)
       setShowCelebration(true)
-
-      await new Promise((resolve) => setTimeout(resolve, 4500))
-
-      setIsSetupStarted(false)
-      navigate({ replace: true, to: '/folders' })
+    } catch (e: any) {
+      console.error(e)
+      showToast({
+        message: `An unexpected error occurred: ${e.message || e}`,
+        variant: 'error',
+      })
     } finally {
       setIsSaving(false)
     }
@@ -150,9 +190,12 @@ const ReviewLaunchStep = () => {
   if (showCelebration) {
     return (
       <SuccessCelebration
+        buttonIcon='tabler:folder'
+        buttonLabel='Go to Folders'
         description='Your folder is ready. Documents can now be stored and organized with your configured fields and storage.'
         loadingLabel='Opening folders...'
         title='DMS folder setup successful!'
+        onCreateRequest={handleFinishDmsSetup}
       />
     )
   }

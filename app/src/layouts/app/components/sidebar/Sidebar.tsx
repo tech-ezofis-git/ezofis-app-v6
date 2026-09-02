@@ -23,7 +23,7 @@ const Sidebar = () => {
         },
         {
           icon: 'lucide:inbox',
-          label: t`Requests`,
+          label: t`Workflows`,
           permissionKey: 'request',
           route: '/requests',
         },
