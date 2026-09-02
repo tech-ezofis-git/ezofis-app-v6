@@ -126,10 +126,38 @@ jobs:
     needs: [build-and-push-app, build-and-push-api, build-and-push-agents]
     if: always() && (needs.build-and-push-app.result == 'success' || needs.build-and-push-api.result == 'success' || needs.build-and-push-agents.result == 'success')
     steps:
+      - uses: actions/checkout@v4
       - uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-      - name: Restart web app to pull new images
+      - name: Apply runtime settings, pin images to sha, and restart
         run: |
-          az webapp config appsettings set --resource-group rg-v6 --name ezofis-app-v6 --settings HttpsRedirection__Enabled=false Swagger__Enabled=true
+          set -euo pipefail
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          SIGNING_KEY="$(jq -r '.EzofisAuth.SigningKey' api/appsettings.Production.json)"
+          if [ -z "$SIGNING_KEY" ] || [ "$SIGNING_KEY" = "null" ]; then
+            echo "EzofisAuth.SigningKey missing from api/appsettings.Production.json" >&2
+            exit 1
+          fi
+          cp docker-compose.azure.yml docker-compose.azure.deploy.yml
+          sed -i "s|ezofis-app-v6/app:latest|ezofis-app-v6/app:sha-${SHORT_SHA}|g" docker-compose.azure.deploy.yml
+          sed -i "s|ezofis-app-v6/api:latest|ezofis-app-v6/api:sha-${SHORT_SHA}|g" docker-compose.azure.deploy.yml
+          sed -i "s|ezofis-app-v6/agents:latest|ezofis-app-v6/agents:sha-${SHORT_SHA}|g" docker-compose.azure.deploy.yml
+          az webapp config appsettings set \
+            --resource-group rg-v6 \
+            --name ezofis-app-v6 \
+            --settings \
+              HttpsRedirection__Enabled=false \
+              Swagger__Enabled=true \
+              ASPNETCORE_ENVIRONMENT=Production \
+              EzofisAuth__SigningKey="$SIGNING_KEY" \
+              EzofisAuth__Issuer=Ezofis \
+              EzofisAuth__Audience=Ezofis \
+              DEPLOY_SHA="$SHORT_SHA" \
+              DOCKER_ENABLE_CI=true
+          az webapp config container set \
+            --resource-group rg-v6 \
+            --name ezofis-app-v6 \
+            --multicontainer-config-type compose \
+            --multicontainer-config-file docker-compose.azure.deploy.yml
           az webapp restart --resource-group rg-v6 --name ezofis-app-v6
