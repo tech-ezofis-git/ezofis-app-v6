@@ -134,9 +134,9 @@ jobs:
         run: |
           set -euo pipefail
           SHORT_SHA="${GITHUB_SHA:0:7}"
-          SIGNING_KEY="$(jq -r '.EzofisAuth.SigningKey' api/appsettings.Production.json)"
+          SIGNING_KEY="$(jq -r '.EzofisAuth.SigningKey' api/src/Api/appsettings.Production.json)"
           if [ -z "$SIGNING_KEY" ] || [ "$SIGNING_KEY" = "null" ]; then
-            echo "EzofisAuth.SigningKey missing from api/appsettings.Production.json" >&2
+            echo "EzofisAuth.SigningKey missing from api/src/Api/appsettings.Production.json" >&2
             exit 1
           fi
           cp docker-compose.azure.yml docker-compose.azure.deploy.yml
