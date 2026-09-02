@@ -17,7 +17,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_URLS=http://+:5000
+ENV ASPNETCORE_URLS=http://+:5000 \
+    HttpsRedirection__Enabled=false \
+    Swagger__Enabled=true
 EXPOSE 5000
 
 ENTRYPOINT ["dotnet", "SaaSApp.Api.dll"]
