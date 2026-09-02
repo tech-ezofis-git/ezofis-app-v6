@@ -9,6 +9,7 @@ import {
   buildDetailFormModel,
   formPanelSectionId,
   orderWorkflowSteps,
+  pickStageLabel,
   resolveStepStatuses,
   submissionInstanceIds,
 } from '../helpers/portalDetail'
@@ -107,9 +108,9 @@ export default function PortalDetail({
         workflowSteps,
         activityId,
         submission.status,
-        String(submission.raw.stage || submission.raw.stageName || ''),
+        pickStageLabel(submission.raw),
       ),
-    [activityId, submission.raw.stage, submission.raw.stageName, submission.status, workflowSteps],
+    [activityId, submission.raw, submission.status, workflowSteps],
   )
 
   useEffect(() => {

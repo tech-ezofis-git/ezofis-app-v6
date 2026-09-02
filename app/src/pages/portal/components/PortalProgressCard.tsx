@@ -1,9 +1,14 @@
 import { useLingui } from '@lingui/react/macro'
+import { useQuery } from '@tanstack/react-query'
+import { getUserListQueryOptions } from '@/api/userQueries'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
-import type {
-  PortalStepStatus,
-  PortalWorkflowStep,
+import {
+  getStepWaitingKind,
+  type PortalStepStatus,
+  type PortalWaitingKind,
+  type PortalWorkflowStep,
+  resolveAssigneeEmails,
 } from '../helpers/portalDetail'
 
 type PortalProgressCardProps = {
@@ -16,6 +21,39 @@ export default function PortalProgressCard({
   steps,
 }: PortalProgressCardProps) {
   const { t } = useLingui()
+  const currentStep = steps.find((_, index) => statuses[index] === 'current')
+  const needsUserLookup =
+    currentStep != null &&
+    getStepWaitingKind(currentStep) === 'user' &&
+    Boolean(currentStep.assignedUserIds?.length)
+  const { data: users } = useQuery({
+    ...getUserListQueryOptions(),
+    enabled: needsUserLookup,
+  })
+
+  const waitingMessage = (
+    kind: PortalWaitingKind,
+    step: PortalWorkflowStep,
+  ) => {
+    switch (kind) {
+      case 'user': {
+        const emails = resolveAssigneeEmails(step, users)
+        if (emails.length) {
+          const email = emails.join(', ')
+          return t`Waiting for ${email} approval`
+        }
+        return t`Waiting for user approval`
+      }
+      case 'agent':
+        return t`Waiting for agent review`
+      case 'payment':
+        return t`Waiting for payment`
+      case 'trigger':
+        return t`Waiting to start`
+      default:
+        return t`In progress...`
+    }
+  }
 
   if (!steps.length) return null
 
@@ -28,7 +66,6 @@ export default function PortalProgressCard({
           const isLast = index === steps.length - 1
           const nextStatus = statuses[index + 1]
           const lineDone = status === 'completed' && nextStatus !== 'pending'
-          console.log(step)
           return (
             <li className='relative flex items-start gap-4' key={step.id}>
               {!isLast && (
@@ -72,7 +109,7 @@ export default function PortalProgressCard({
                 </div>
                 {status === 'current' && (
                   <div className='mt-1 text-12 font-medium text-primary-9'>
-                    {t`In progress...`}
+                    {waitingMessage(getStepWaitingKind(step), step)}
                   </div>
                 )}
               </div>
