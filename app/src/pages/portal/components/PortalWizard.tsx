@@ -30,12 +30,10 @@ import {
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
 import {
-  buildPortalNavSections,
   formPanelSectionId,
   getInitiateNodeLabel,
   PORTAL_SECTION_ATTACHMENTS,
   PORTAL_SECTION_DOCUMENT,
-  PORTAL_SECTION_HISTORY,
 } from '../helpers/portalDetail'
 import {
   type AnswerMap,
@@ -51,10 +49,8 @@ import {
   type PortalWizardSource,
 } from '../helpers/portalWizardLoad'
 import { getStartActionLabel } from '../helpers/portalWorkflowAccess'
-import { usePortalSectionSpy } from '../hooks/usePortalSectionSpy'
 import PortalDocumentUpload from './PortalDocumentUpload'
 import { PortalDetailSkeleton } from './PortalLayoutSkeleton'
-import PortalPanelNav from './PortalPanelNav'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const AP_POLL_ATTEMPTS = 12
@@ -101,7 +97,6 @@ const PortalWizard = ({
   const [source, setSource] = useState<PortalWizardSource | null>(null)
   const [loadError, setLoadError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [activeId, setActiveId] = useState('')
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null)
   const [answers, setAnswers] = useState<AnswerMap>({})
   const [fieldError, setFieldError] = useState('')
@@ -130,7 +125,6 @@ const PortalWizard = ({
         setAnswers({})
         setFiles([])
         setExtraFiles([])
-        setActiveId('')
         setApInstanceId(null)
         setPrimaryPending(null)
         setExtraPending([])
@@ -272,63 +266,15 @@ const PortalWizard = ({
     repoFieldDescriptors,
   ])
 
-  const sections = useMemo(() => {
-    const items = buildPortalNavSections(
-      formPanels,
-      {
-        attachments: t`Attachments`,
-        history: t`Activity`,
-      },
-      portalFormModel,
-      hiddenFileFieldIds,
-    ).filter((section) => section.id !== PORTAL_SECTION_HISTORY)
-
-    const itemsWithAttachments = items.map((sec) =>
-      sec.id === PORTAL_SECTION_ATTACHMENTS
-        ? { ...sec, completed: extraFiles.length > 0 }
-        : sec,
-    )
-
-    if (!needsDocumentSection) return itemsWithAttachments
-
-    const isDocCompleted = Boolean(files.length > 0 || primaryPending)
-    return [
-      {
-        completed: isDocCompleted,
-        id: PORTAL_SECTION_DOCUMENT,
-        title: documentTitle,
-      },
-      ...itemsWithAttachments,
-    ]
-  }, [
-    documentTitle,
-    extraFiles.length,
-    files.length,
-    formPanels,
-    hiddenFileFieldIds,
-    needsDocumentSection,
-    portalFormModel,
-    primaryPending,
-    t,
-  ])
-  const sectionIds = useMemo(
-    () => sections.map((section) => section.id),
-    [sections],
-  )
-
-  useEffect(() => {
-    if (!sections[0]) return
-    setActiveId((current) => current || sections[0].id)
-  }, [sections])
-
-  const { scrollToSection } = usePortalSectionSpy(
-    scrollEl,
-    sectionIds,
-    (id) => setActiveId((current) => (current === id ? current : id)),
-  )
+  const wizardStepCount =
+    formPanels.length + 1 + (needsDocumentSection ? 1 : 0)
 
   const selectSection = (id: string) => {
-    scrollToSection(id)
+    const root = scrollEl
+    const target =
+      root?.querySelector<HTMLElement>(`#${CSS.escape(id)}`) ||
+      document.getElementById(id)
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const jumpAfterApFill = (nextAnswers: AnswerMap) => {
@@ -1064,29 +1010,10 @@ const PortalWizard = ({
   }
 
   return (
-    <div className='flex h-full min-h-0'>
-      <aside className='hidden h-full min-h-0 w-72 shrink-0 overflow-hidden border-r border-gray-4 bg-surface md:flex md:flex-col xl:w-80'>
-        <PortalPanelNav
-          activeId={activeId}
-          sections={sections}
-          onSelect={selectSection}
-        />
-      </aside>
-
-      <section
-        className='h-full min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5'
-        ref={setScrollEl}
-      >
-        <div className='sticky top-0 z-10 mb-4 bg-gray-2 md:hidden'>
-          <PortalPanelNav
-            activeId={activeId}
-            sections={sections}
-            onSelect={selectSection}
-          />
-        </div>
-
+    <div className='h-full min-h-0 overflow-y-auto' ref={setScrollEl}>
+      <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
         {needsDocumentSection ? (
-          <div className='mb-3 scroll-mt-3' id={PORTAL_SECTION_DOCUMENT}>
+          <div className='scroll-mt-3' id={PORTAL_SECTION_DOCUMENT}>
             <PortalDocumentUpload
               analyzed={Boolean(primaryPending?.ocrChecked || apInstanceId)}
               analyzing={processing && preparingFieldId === null}
@@ -1094,7 +1021,7 @@ const PortalWizard = ({
               file={files[0] || null}
               isInvoice={source.isAccountsPayable}
               label={documentTitle}
-              stepCount={Math.max(sections.length, 1)}
+              stepCount={wizardStepCount}
               onAnalyze={() => void handleAnalyzeDocument()}
               onCancel={() => onCancel?.()}
               onFiles={handleSelectPrimaryFiles}
@@ -1132,7 +1059,7 @@ const PortalWizard = ({
         )}
 
         <div
-          className='mt-3 scroll-mt-3 rounded-xl border border-gray-3 bg-gray-0 p-6 shadow-2xs transition-shadow hover:shadow-sm'
+          className='scroll-mt-3 rounded-xl border border-gray-3 bg-gray-0 p-6 shadow-2xs transition-shadow hover:shadow-sm'
           id={PORTAL_SECTION_ATTACHMENTS}
         >
           <div className='mb-3 text-15 font-semibold text-gray-13'>
@@ -1158,7 +1085,7 @@ const PortalWizard = ({
           )}
           {renderFileList(extraFiles, removeExtraFile)}
         </div>
-      </section>
+      </div>
     </div>
   )
 }
