@@ -12,7 +12,12 @@ import PageEmptyState from '@/components/common/PageEmptyState'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import useAuthUserStore from '@/stores/authUserStore'
 import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
-import type { InboxItem, IRequestMeta, WorkflowOption } from './types'
+import type {
+  InboxItem,
+  IRequestMeta,
+  RequestViewMode,
+  WorkflowOption,
+} from './types'
 import Header from './components/Header'
 import InboxList from './components/InboxList'
 import { ProcessingBackgroundManager } from './components/ProcessingBackgroundManager'
@@ -65,8 +70,12 @@ const RequestsPage = () => {
   const [activeTab, setActiveTab] = useState<string>(
     storedState?.activeTab ?? 'Inbox',
   )
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>(
-    storedState?.viewMode ?? 'grid',
+  const [viewMode, setViewMode] = useState<RequestViewMode>(
+    storedState?.viewMode === 'table' ||
+      storedState?.viewMode === 'grid' ||
+      storedState?.viewMode === 'kanban'
+      ? storedState.viewMode
+      : 'grid',
   )
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -144,14 +153,27 @@ const RequestsPage = () => {
     page,
     pageSize,
     groupBy,
-    activeTab,
+    viewMode === 'kanban' ? 'Kanban' : activeTab,
     filterClauses,
   )
 
-  const handleRowClick = (row: InboxItem, tab: string) => {
-    // Only open if we have a valid workflow ID
+  const syncListTabFromItem = (row: InboxItem) => {
+    const listTab = row._listTab || activeTab
+    if (
+      listTab === 'Inbox' ||
+      listTab === 'Exceptions' ||
+      listTab === 'Sent' ||
+      listTab === 'Closed' ||
+      listTab === 'Processed'
+    ) {
+      setRequestListTab(listTab === 'Exceptions' ? 'Inbox' : listTab)
+    }
+  }
+
+  const handleRowClick = (row: InboxItem, tab: string, missingFieldIds?: string[]) => {
+    syncListTabFromItem(row)
     if (selectedWorkflow?.id) {
-      openRequest(row, selectedWorkflow, tab)
+      openRequest(row, selectedWorkflow, tab, missingFieldIds)
     }
   }
 
@@ -652,14 +674,20 @@ const RequestsPage = () => {
   const onPrev = () => {
     if (hasPrev) {
       const prevItem = flatRows[selectedIndex - 1]
-      if (selectedWorkflow) openRequest(prevItem, selectedWorkflow, activeTab)
+      if (selectedWorkflow) {
+        syncListTabFromItem(prevItem)
+        openRequest(prevItem, selectedWorkflow, activeTab)
+      }
     }
   }
 
   const onNext = () => {
     if (hasNext) {
       const nextItem = flatRows[selectedIndex + 1]
-      if (selectedWorkflow) openRequest(nextItem, selectedWorkflow, activeTab)
+      if (selectedWorkflow) {
+        syncListTabFromItem(nextItem)
+        openRequest(nextItem, selectedWorkflow, activeTab)
+      }
     }
   }
 
@@ -712,13 +740,14 @@ const RequestsPage = () => {
   return (
     <>
       <div className='flex h-full min-h-0 w-full overflow-hidden'>
-        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+        <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
           {!selectedItem && (
             <Header
               // Pass state and setter to Header
               activeTab={activeTab}
               allWorkflows={allWorkflow}
               exceptionsCount={inboxResult?.exceptionsCount}
+              hideListTabs={viewMode === 'kanban'}
               isAccountsPayable={isAccountsPayable}
               isLoading={isLoading}
               metaData={metaData}

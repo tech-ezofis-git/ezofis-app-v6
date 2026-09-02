@@ -329,7 +329,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
           repositoryId: storeState.folder,
           type: storeState.initiateUsing,
         },
-        kanbanSettings: [],
+        kanbanSettings: storeState.kanbanSettings || [],
         linkMasterFormId: 0,
         name: storeState.workflowName,
         ocr: {

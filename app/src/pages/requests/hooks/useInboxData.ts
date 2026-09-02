@@ -128,12 +128,15 @@ export const transformProcess = (
     status,
   }
 
+  const listTab = process._listTab || activeTab
+  const canMove = listTab === 'Inbox' || listTab === 'Exceptions'
+
   const dynamicFields = fieldsSource
   let actions: any[] = []
   if (
-    activeTab === 'Inbox' ||
-    activeTab === 'Exceptions' ||
-    activeTab === 'Sent'
+    listTab === 'Inbox' ||
+    listTab === 'Exceptions' ||
+    listTab === 'Sent'
   ) {
     actions = getActionsForActivity(
       process.activityId,
@@ -184,7 +187,9 @@ export const transformProcess = (
     _actions: actions,
     _agentData: parsedAgentResponse ? [parsedAgentResponse] : [],
     _agentResponse: parsedAgentResponse,
-    _groupKey: groupKey || activeTab,
+    _canMove: canMove,
+    _groupKey: groupKey || listTab,
+    _listTab: listTab,
     _originalIndex: originalIndex,
     documentNumber: requestNo,
     id: processId || process.id,
@@ -230,6 +235,30 @@ export const transformProcess = (
   }
 }
 
+const listItemKey = (item: any): string =>
+  String(item?.workflowInstanceId || item?.processId || item?.id || '')
+
+const mergeKanbanLists = (
+  inboxItems: any[],
+  sentItems: any[],
+  completedItems: any[],
+) => {
+  const seen = new Set<string>()
+  const merged: any[] = []
+  const add = (items: any[], listTab: string) => {
+    for (const item of items) {
+      const key = listItemKey(item)
+      if (key && seen.has(key)) continue
+      if (key) seen.add(key)
+      merged.push({ ...item, _listTab: listTab })
+    }
+  }
+  add(inboxItems, 'Inbox')
+  add(sentItems, 'Sent')
+  add(completedItems, 'Closed')
+  return merged
+}
+
 const fetchInboxDataFn = async (
   activeTab: string,
   workflowId: string,
@@ -237,6 +266,53 @@ const fetchInboxDataFn = async (
   pageSize: number,
 ) => {
   switch (activeTab) {
+    case 'Kanban': {
+      const [inboxRes, sentRes, completedRes] = await Promise.all([
+        workflowsApiV6.getInboxList(workflowId, page, pageSize),
+        workflowsApiV6.getSentList(workflowId, page, pageSize),
+        workflowsApiV6.getCompletedList(workflowId, page, pageSize),
+      ])
+
+      if (inboxRes.error && sentRes.error && completedRes.error) {
+        throw new Error(
+          inboxRes.error || sentRes.error || completedRes.error,
+        )
+      }
+
+      const inboxPayload = unwrapListPayload(inboxRes.error ? {} : inboxRes.data)
+      const sentPayload = unwrapListPayload(sentRes.error ? {} : sentRes.data)
+      const completedPayload = unwrapListPayload(
+        completedRes.error ? {} : completedRes.data,
+      )
+      const inboxItems = inboxRes.error ? [] : readListItems(inboxPayload)
+      const sentItems = sentRes.error ? [] : readListItems(sentPayload)
+      const completedItems = completedRes.error
+        ? []
+        : readListItems(completedPayload)
+      const merged = mergeKanbanLists(inboxItems, sentItems, completedItems)
+      const totalItems =
+        (inboxRes.error
+          ? 0
+          : readListTotalCount(inboxPayload, inboxItems.length)) +
+        (sentRes.error
+          ? 0
+          : readListTotalCount(sentPayload, sentItems.length)) +
+        (completedRes.error
+          ? 0
+          : readListTotalCount(completedPayload, completedItems.length))
+
+      return {
+        data: [
+          {
+            key: 'root',
+            value: merged,
+          },
+        ],
+        meta: {
+          totalItems: totalItems || merged.length,
+        },
+      }
+    }
     case 'Sent': {
       const sentRes = await workflowsApiV6.getSentList(
         workflowId,

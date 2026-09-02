@@ -69,6 +69,7 @@ type Store = {
   isRequestOpen: boolean
   jobMappings: Record<string, string>
   jobStatuses: Record<string, any>
+  kanbanMissingFieldIds: string[]
   newRequest: boolean
   newRequestMeta: string | null
   pendingDeepLink: {
@@ -99,7 +100,12 @@ type Store = {
   closeRequest: () => void
   handleSetRepoData: (data: any) => void
   openNewRequest: (title: string) => void
-  openRequest: (item: any, workflowId: any, tab: string) => void // Updated signature
+  openRequest: (
+    item: any,
+    workflowId: any,
+    tab: string,
+    missingFieldIds?: string[],
+  ) => void
   removeProcessingProcess: (id: string | number) => void
   setJobMapping: (jobId: string | number, instanceId: string) => void
   setJobStatus: (id: string, status: any) => void
@@ -127,6 +133,7 @@ const requestStore = create<Store>()(
       isRequestOpen: false,
       jobMappings: getInitialJobMappings(),
       jobStatuses: getInitialJobStatuses(),
+      kanbanMissingFieldIds: [],
       newRequest: false,
       newRequestMeta: null,
       pendingDeepLink: null,
@@ -164,6 +171,7 @@ const requestStore = create<Store>()(
           activeTabValue: null,
           isClosed: !state.isClosed,
           isRequestOpen: false,
+          kanbanMissingFieldIds: [],
           selectedItem: null, // Optional: clear data on close
         })),
 
@@ -175,10 +183,11 @@ const requestStore = create<Store>()(
           pendingOpenNewRequest: false,
         }),
       // FIX: Accept data when opening
-      openRequest: (item, workflow, tab) =>
+      openRequest: (item, workflow, tab, missingFieldIds) =>
         set({
           activeTabValue: tab,
           isRequestOpen: true,
+          kanbanMissingFieldIds: missingFieldIds || [],
           selectedItem: item,
           selectedWorkflow: workflow,
           selectedWorkflowId: workflow.id as number | string,

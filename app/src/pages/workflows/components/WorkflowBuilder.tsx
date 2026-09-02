@@ -424,7 +424,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
           </div>
         )}
 
-        <WorkflowSettings />
+        <WorkflowSettings nodes={nodes} />
       </div>
     </div>
   )

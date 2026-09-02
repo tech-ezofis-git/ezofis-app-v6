@@ -45,7 +45,9 @@ export interface InboxItem {
   status: string
   _actions?: ActionButton[]
   // Properties calculated during flattening
+  _canMove?: boolean
   _groupKey?: string
+  _listTab?: string
   _originalIndex?: number
   _subKey?: string
 }
@@ -63,6 +65,8 @@ export interface TableGroup {
   groupKey?: string
   groupValue?: string
 }
+
+export type RequestViewMode = 'grid' | 'kanban' | 'table'
 
 export interface WorkflowOption {
   flowJson: string // The JSON string defining rules/actions

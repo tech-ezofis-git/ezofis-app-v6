@@ -22,16 +22,17 @@ import {
   hasStoredFileValue,
 } from '@/pages/requests/components/workflow-request/utils/gmailFormAttachment'
 import WorkflowFormRenderer from '@/pages/requests/components/workflow-request/WorkflowFormRenderer'
+import requestStore from '@/pages/requests/stores/useRequestStore'
 import { setFieldForAttachment } from '@/pages/requests/utils/fieldAttachmentMap'
 import {
   planRepositoryFolderMetadata,
   uploadInstanceAttachment,
 } from '@/pages/requests/utils/instanceAttachmentUpload'
 import {
+  type RepositoryFieldSchema,
   applyFilenamePreFill,
   getFolderStructureFields,
   toUploadMetadata,
-  type RepositoryFieldSchema,
 } from '@/pages/requests/utils/repoFolderMetadata'
 import authUserStore from '@/stores/authUserStore'
 import Attachments from '../sections/attachment/Attachments'
@@ -147,10 +148,51 @@ const GenericRequestOverview = ({
   onSignatureToggle,
 }: Props) => {
   const { t } = useLingui()
+  const kanbanMissingFieldIds = requestStore((state) => state.kanbanMissingFieldIds)
+  const missingMandatoryFieldIds = useMemo(
+    () => new Set(kanbanMissingFieldIds || []),
+    [kanbanMissingFieldIds],
+  )
+
   const panels = useMemo(
     () => rawWorkflowData?.formJson?.panels || [],
     [rawWorkflowData],
   )
+
+  const missingRequiredLabels = useMemo(() => {
+    if (!kanbanMissingFieldIds?.length) return []
+    const byId = new Map<string, string>()
+    panels.forEach((panel: any) => {
+      ;(panel.fields || []).forEach((field: any) => {
+        byId.set(String(field.id), String(field.label || field.name || field.id))
+      })
+    })
+    const labels: string[] = []
+    const seen = new Set<string>()
+    kanbanMissingFieldIds.forEach((id) => {
+      const label = byId.get(id) || id
+      if (seen.has(id) || seen.has(label)) return
+      seen.add(id)
+      seen.add(label)
+      labels.push(label)
+    })
+    return labels
+  }, [kanbanMissingFieldIds, panels])
+
+  useEffect(() => {
+    if (!kanbanMissingFieldIds?.length) return
+    const timer = window.setTimeout(() => {
+      const target = kanbanMissingFieldIds
+        .map((id) =>
+          document.querySelector(`[data-field-id="${CSS.escape(id)}"]`),
+        )
+        .find((node) => node instanceof HTMLElement)
+      if (target instanceof HTMLElement) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 280)
+    return () => window.clearTimeout(timer)
+  }, [kanbanMissingFieldIds])
 
   // The current activity's block carries the Manual User (INTERNAL_ACTOR)
   // Security & Form Access settings authored in the workflow builder -
@@ -553,11 +595,22 @@ const GenericRequestOverview = ({
           onChecklistToggle={onChecklistToggle}
           onSignatureToggle={onSignatureToggle}
         />
+        {/* {missingRequiredLabels.length > 0 ? (
+          <div className='mx-6 mt-3 rounded-lg border border-red-4 bg-red-1 px-3 py-2 text-12 font-medium text-red-11'>
+            {t`Please fill required field(s): ${missingRequiredLabels.join(', ')}`}
+          </div>
+        ) : null} */}
         <WorkflowFormRenderer
           attachments={attachments}
           formModel={formModel}
+          hasAttemptedSubmit={missingMandatoryFieldIds.size > 0}
           hiddenFieldIds={hiddenFieldIds}
           instanceId={instanceId}
+          missingMandatoryFieldIds={
+            missingMandatoryFieldIds.size > 0
+              ? missingMandatoryFieldIds
+              : undefined
+          }
           panels={panels}
           preparePhase={preparePhase}
           preparingFieldId={preparingFieldId}

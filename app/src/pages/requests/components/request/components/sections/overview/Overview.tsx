@@ -26,6 +26,7 @@ import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import { isKanbanMissingMatch } from '@/pages/requests/helpers/kanbanBoard'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import requestStore from '@/pages/requests/stores/useRequestStore'
@@ -955,11 +956,13 @@ const hasComparableValue = (val: unknown) => {
 }
 
 const FormCard = ({
+  fieldKey,
   highlight = false,
   icon: FieldIcon,
   invoiceValue,
   isLoading = false,
   label,
+  missing = false,
   options = [],
   poValue,
   score,
@@ -1175,8 +1178,10 @@ const FormCard = ({
   if (isEditing) {
     return (
       <div
+        data-field-id={fieldKey || label}
         className={cn(
           'group flex items-start gap-3 rounded-lg border border-[var(--primary-3)] bg-surface p-3 shadow-sm ring-1 ring-[var(--primary-3)]/20',
+          missing && 'border-red-8 bg-red-1 ring-red-4',
         )}
       >
         <div
@@ -1230,6 +1235,11 @@ const FormCard = ({
           <div className='animate-in fade-in zoom-in-95 duration-200'>
             {inputElement}
           </div>
+          {missing ? (
+            <p className='mt-1 text-12 font-medium text-red-9'>
+              {t`This field is required.`}
+            </p>
+          ) : null}
         </div>
       </div>
     )
@@ -1238,8 +1248,10 @@ const FormCard = ({
   return (
     <button
       type='button'
+      data-field-id={fieldKey || label}
       className={cn(
         'group flex w-full cursor-pointer items-start gap-3 rounded-lg border border-none border-transparent bg-transparent p-3 text-left transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
+        missing && 'border border-solid border-red-8 bg-red-1',
       )}
       onClick={() => {
         setIsEditing(true)
@@ -1313,6 +1325,11 @@ const FormCard = ({
                 ? '-'
                 : value}
             </p>
+            {missing ? (
+              <p className='text-12 font-medium text-red-9'>
+                {t`This field is required.`}
+              </p>
+            ) : null}
             {canSwitchSources && (
               <div
                 className='group/suggest animate-in fade-in zoom-in-95 mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all duration-200 hover:bg-[var(--primary-2)] active:scale-98'
@@ -1600,6 +1617,9 @@ const Overview = (props: any) => {
   } = props
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
+  const kanbanMissingFieldIds = requestStore(
+    (state) => state.kanbanMissingFieldIds,
+  )
   const matchingProc = useMemo(() => {
     return processingProcesses.find(
       (p) =>
@@ -1827,6 +1847,22 @@ const Overview = (props: any) => {
 
   const [activeTab, setActiveTab] = useState('summary')
   const [activeDetailView, setActiveDetailView] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!kanbanMissingFieldIds?.length) return
+    setActiveTab('summary')
+    const timer = window.setTimeout(() => {
+      const target = kanbanMissingFieldIds
+        .map((id) =>
+          document.querySelector(`[data-field-id="${CSS.escape(id)}"]`),
+        )
+        .find((node) => node instanceof HTMLElement)
+      if (target instanceof HTMLElement) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 280)
+    return () => window.clearTimeout(timer)
+  }, [kanbanMissingFieldIds])
 
   // Document ID resolver
   const docId = useMemo(() => {
@@ -4344,10 +4380,15 @@ const Overview = (props: any) => {
                                 'Tax Amount',
                               ].map((label) => (
                                 <FormCard
+                                  fieldKey={label}
                                   icon={getFieldIcon(label)}
                                   isLoading={isCurrentlyProcessing}
                                   key={label}
                                   label={localizeRequestFieldLabel(i18n, label)}
+                                  missing={isKanbanMissingMatch(
+                                    kanbanMissingFieldIds,
+                                    label,
+                                  )}
                                   options={getOptions(label)}
                                   type={getFieldType(label)}
                                   value={'-'}
@@ -4385,12 +4426,22 @@ const Overview = (props: any) => {
                                     !allowedLabels ||
                                     allowedLabels.size === 0
                                   ) {
-                                    return hasMeaningfulScalarValue(val)
+                                    return (
+                                      hasMeaningfulScalarValue(val) ||
+                                      isKanbanMissingMatch(
+                                        kanbanMissingFieldIds,
+                                        key,
+                                      )
+                                    )
                                   }
 
                                   return (
                                     allowedLabels.has(key) ||
-                                    hasMeaningfulScalarValue(val)
+                                    hasMeaningfulScalarValue(val) ||
+                                    isKanbanMissingMatch(
+                                      kanbanMissingFieldIds,
+                                      key,
+                                    )
                                   )
                                 })
                                 .map(([key, val]) => {
@@ -4413,8 +4464,13 @@ const Overview = (props: any) => {
 
                                   return (
                                     <FormCard
+                                      fieldKey={key}
                                       icon={getFieldIcon(key)}
                                       key={key}
+                                      missing={isKanbanMissingMatch(
+                                        kanbanMissingFieldIds,
+                                        key,
+                                      )}
                                       options={getOptions(key)}
                                       poValue={getFieldPoValue(key)}
                                       score={getFieldScore(key)}

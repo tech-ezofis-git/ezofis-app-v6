@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import type { Node } from '@xyflow/react'
 import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
@@ -28,6 +29,7 @@ import {
   TOKEN_TYPE_OPTIONS,
   YEAR_OPTIONS,
 } from '../utils/prefixFormat'
+import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
 import SettingsSection from './settings/common/SettingsSection'
 
 type PreviewField = {
@@ -36,10 +38,15 @@ type PreviewField = {
   source: 'form' | 'repository'
 }
 
-const WorkflowSettings = () => {
+type WorkflowSettingsProps = {
+  nodes?: Node[]
+}
+
+const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   const [openGeneral, setOpenGeneral] = useState(true)
   const [openConfiguration, setOpenConfiguration] = useState(false)
   const [openRequestNumber, setOpenRequestNumber] = useState(false)
+  const [openKanban, setOpenKanban] = useState(false)
 
   const {
     closeSettings,
@@ -47,6 +54,7 @@ const WorkflowSettings = () => {
     form,
     initiateUsing,
     isSettingsOpen,
+    kanbanSettings,
     prefixSegments,
     previewValues,
     workflowDescription,
@@ -55,6 +63,7 @@ const WorkflowSettings = () => {
     setFolder,
     setForm,
     setInitiateUsing,
+    setKanbanSettings,
     setPrefixSegments,
     setPreviewValues,
     setWorkflowDescription,
@@ -584,6 +593,20 @@ const WorkflowSettings = () => {
           <div className='rounded-xl bg-white p-3 text-13 font-medium text-gray-11 shadow-sm'>
             Format : <span className='text-primary-9'>{formatPreview}</span>
           </div>
+        </SettingsSection>
+
+        <SettingsSection
+          icon='lucide:columns-3'
+          isOpen={openKanban}
+          title='Kanban View Settings'
+          variant='premium'
+          onToggle={() => setOpenKanban(!openKanban)}
+        >
+          <KanbanViewSettingsSection
+            cards={kanbanSettings}
+            nodes={nodes}
+            onChange={setKanbanSettings}
+          />
         </SettingsSection>
       </div>
 

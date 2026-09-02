@@ -1,6 +1,10 @@
 import type { Edge, Node } from '@xyflow/react'
 import { create } from 'zustand'
 import { importWorkflow } from '../utils/importWorkflow'
+import {
+  type KanbanCardSetting,
+  parseKanbanSettings,
+} from '../utils/kanbanSettings'
 
 export type PrefixSegment = { id: string; key: string; value: string | number }
 
@@ -65,6 +69,7 @@ type Store = {
   isPanelOpen: boolean
   isRunningTest: boolean
   isSettingsOpen: boolean
+  kanbanSettings: KanbanCardSetting[]
   loadedEdges: Edge[] | null
   loadedNodes: Node[] | null
   prefixSegments: PrefixSegment[]
@@ -91,6 +96,7 @@ type Store = {
   setFolder: (value: number | null) => void
   setForm: (value: number | null) => void
   setInitiateUsing: (value: string) => void
+  setKanbanSettings: (cards: KanbanCardSetting[]) => void
   setPrefixSegments: (segments: PrefixSegment[]) => void
   setPreviewValues: (values: string[]) => void
   setWorkflowDescription: (description: string) => void
@@ -117,6 +123,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   isPanelOpen: false,
   isRunningTest: false,
   isSettingsOpen: false,
+  kanbanSettings: [],
   loadedEdges: null,
   loadedNodes: null,
   prefixSegments: defaultPrefixSegments,
@@ -197,6 +204,9 @@ const useWorkflowStore = create<Store>()((set) => ({
         null,
       initiateUsing:
         legacyJson.settings?.general?.initiateUsing?.type || 'document-form',
+      kanbanSettings: parseKanbanSettings(
+        legacyJson.settings?.general?.kanbanSettings,
+      ),
       loadedEdges: edges,
       loadedNodes: nodes,
       prefixSegments,
@@ -223,6 +233,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       folder: null,
       form: null,
       initiateUsing: 'document-form',
+      kanbanSettings: [],
       loadedEdges: null,
       loadedNodes: null,
       prefixSegments: defaultPrefixSegments,
@@ -266,6 +277,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   setFolder: (value) => set({ folder: value }),
   setForm: (value) => set({ form: value }),
   setInitiateUsing: (value) => set({ initiateUsing: value }),
+  setKanbanSettings: (cards) => set({ kanbanSettings: cards }),
   setPrefixSegments: (segments) => set({ prefixSegments: segments }),
   setPreviewValues: (values) => set({ previewValues: values }),
   setWorkflowDescription: (description) =>

@@ -60,13 +60,13 @@ export interface DynamicFilterProps {
   searchPlaceholder?: string
   searchQuery?: string
   toolbarActions?: ToolbarAction[]
-  viewMode?: 'grid' | 'table'
+  viewMode?: 'grid' | 'kanban' | 'table'
   onClearAll?: () => void
   onFieldOpen?: (field: DynamicFilterField) => void
   onFilterChange: (id: string, values: string | string[]) => void
   onQuickFilterToggle?: (id: string) => void
   onSearchChange?: (val: string) => void
-  onViewModeChange?: (mode: 'grid' | 'table') => void
+  onViewModeChange?: (mode: 'grid' | 'kanban' | 'table') => void
 }
 
 export interface QuickFilterOption {
@@ -821,6 +821,7 @@ export default function DynamicFilter({
                     ? 'bg-primary-3 text-primary-9'
                     : 'text-text-muted hover:bg-gray-2 hover:text-text-primary',
                 )}
+                type='button'
                 onClick={() => onViewModeChange('grid')}
               >
                 <Icon className='h-4 w-4' name='lucide:layout-grid' />
@@ -834,9 +835,24 @@ export default function DynamicFilter({
                     ? 'bg-primary-3 text-primary-9'
                     : 'text-text-muted hover:bg-gray-2 hover:text-text-primary',
                 )}
+                type='button'
                 onClick={() => onViewModeChange('table')}
               >
                 <Icon className='h-4 w-4' name='lucide:list' />
+              </button>
+            </Tooltip>
+            <Tooltip content={t`Kanban View`}>
+              <button
+                className={cn(
+                  'flex h-7 w-7 items-center justify-center rounded transition-colors',
+                  viewMode === 'kanban'
+                    ? 'bg-primary-3 text-primary-9'
+                    : 'text-text-muted hover:bg-gray-2 hover:text-text-primary',
+                )}
+                type='button'
+                onClick={() => onViewModeChange('kanban')}
+              >
+                <Icon className='h-4 w-4' name='lucide:columns-3' />
               </button>
             </Tooltip>
           </div>
