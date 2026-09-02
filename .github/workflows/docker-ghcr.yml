@@ -130,4 +130,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       - name: Restart web app to pull new images
-        run: az webapp restart --resource-group rg-v6 --name ezofis-app-v6
+        run: |
+          az webapp config appsettings set --resource-group rg-v6 --name ezofis-app-v6 --settings HttpsRedirection__Enabled=false Swagger__Enabled=true
+          az webapp restart --resource-group rg-v6 --name ezofis-app-v6
