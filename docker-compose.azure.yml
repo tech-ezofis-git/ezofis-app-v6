@@ -13,6 +13,10 @@ services:
     restart: always
     env_file:
       - .env.azure
+    environment:
+      # TLS is terminated at Azure/nginx; API listens on HTTP :5000.
+      HttpsRedirection__Enabled: "false"
+      Swagger__Enabled: "true"
 
   agents:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
