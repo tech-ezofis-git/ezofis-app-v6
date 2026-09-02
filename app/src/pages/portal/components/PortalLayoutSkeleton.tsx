@@ -93,28 +93,24 @@ export const PortalSubmissionsTableSkeleton = () => (
 )
 
 export const PortalDetailSkeleton = () => (
-  <div className='flex h-full min-h-0'>
-    <div className='hidden h-full w-72 shrink-0 border-r border-gray-4 bg-surface p-4 lg:block xl:w-80'>
-      <Skeleton className='mb-5 h-4 w-20' />
-      <div className='flex flex-col gap-3'>
-        {[0, 1, 2, 3, 4].map((index) => (
-          <div className='flex items-center gap-3 py-2' key={index}>
-            <Skeleton className='size-8 shrink-0 rounded-full' />
-            <Skeleton className='h-3.5 w-32' />
-          </div>
-        ))}
+  <div className='h-full min-h-0 overflow-y-auto'>
+    <div className='mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8'>
+      <div className='rounded-xl border border-gray-4 bg-surface p-6 sm:px-8 sm:py-7'>
+        <Skeleton className='mb-6 h-4 w-24' />
+        <div className='flex flex-col gap-6'>
+          {[0, 1, 2, 3, 4].map((index) => (
+            <div className='flex items-center gap-4' key={index}>
+              <Skeleton className='size-8 shrink-0 rounded-full' />
+              <Skeleton className='h-4 w-48' />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-    <div className='flex min-h-0 w-full min-w-0 flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5'>
       <div className='rounded-xl border border-gray-4 bg-surface p-5'>
         <Skeleton className='mb-4 h-4 w-40' />
         <Skeleton className='mb-3 h-10 w-full rounded-lg' />
         <Skeleton className='mb-3 h-10 w-full rounded-lg' />
         <Skeleton className='h-10 w-2/3 rounded-lg' />
-      </div>
-      <div className='rounded-xl border border-gray-4 bg-surface p-5'>
-        <Skeleton className='mb-4 h-4 w-28' />
-        <Skeleton className='h-16 w-full rounded-xl' />
       </div>
     </div>
   </div>

@@ -88,7 +88,7 @@ const PortalSubmissionDetails = ({
   const ocrFieldIds = useMemo(() => collectOcrFieldIds(panels), [panels])
 
   return (
-    <div className='animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-3 duration-300'>
+    <div className='animate-in fade-in slide-in-from-bottom-2 flex flex-col gap-4 duration-300'>
       <h2 className='text-15 font-bold text-gray-13'>{t`Submission Details`}</h2>
 
       {sections.length === 0 ? (
@@ -107,7 +107,7 @@ const PortalSubmissionDetails = ({
             >
               <button
                 className={cn(
-                  'flex w-full items-center gap-2 px-4 py-3.5 text-left transition-colors duration-200 hover:bg-gray-1 active:scale-[0.99]',
+                  'flex w-full items-center gap-2 px-5 py-4 text-left transition-colors duration-200 hover:bg-gray-1 active:scale-[0.99]',
                   open && 'bg-gray-1',
                 )}
                 type='button'
@@ -126,7 +126,7 @@ const PortalSubmissionDetails = ({
               </button>
 
               {open && (
-                <div className='animate-in fade-in slide-in-from-top-1 border-t border-gray-4 px-4 py-3 duration-200'>
+                <div className='animate-in fade-in slide-in-from-top-1 border-t border-gray-4 px-5 py-4 duration-200'>
                   {section.questions.map((question) => {
                     const value = valueOf(question, formModel)
                     const filled = formatAnswer(value) !== '—'

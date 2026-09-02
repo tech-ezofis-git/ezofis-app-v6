@@ -39,7 +39,7 @@ const PortalMetaRow = ({
   return (
     <div
       className={cn(
-        'flex items-center justify-between gap-3 py-2.5',
+        'flex items-center justify-between gap-4 py-3',
         padded && 'px-4',
         bordered && 'border-b border-gray-3 last:border-b-0',
       )}
