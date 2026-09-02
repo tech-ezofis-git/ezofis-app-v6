@@ -15,6 +15,7 @@ services:
       - .env.azure
     environment:
       # TLS is terminated at Azure/nginx; API listens on HTTP :5000.
+      ASPNETCORE_ENVIRONMENT: Production
       HttpsRedirection__Enabled: "false"
       Swagger__Enabled: "true"
 
