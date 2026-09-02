@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
-import { motion, AnimatePresence } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
+import React, { useEffect, useState } from 'react'
 import { getRepositorys } from '@/api/v6/folder/folder'
 import Button from '@/components/base/button/Button'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import cn from '@/utils/cn'
+import DashboardAiBuilder from './components/DashboardAiBuilder'
+import DashboardApiBuilder from './components/DashboardApiBuilder'
+import useDashboardStore from './stores/useDashboardStore'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
 import setupStore from './workflows/accounts-payable/stores/useSetupStore'
 import DocumentRepositorySetup from './workflows/document-repository/DocumentRepositorySetup'
@@ -15,8 +18,6 @@ import {
   openDmsSetupPreview,
 } from './workflows/setupPreview'
 import DashboardCharts from './workflows/shared/components/Header'
-import useDashboardStore from './stores/useDashboardStore'
-import DashboardAiBuilder from './components/DashboardAiBuilder'
 
 const DashboardPage = () => {
   const { t } = useLingui()
@@ -34,6 +35,7 @@ const DashboardPage = () => {
     Array<{ label: string; value: string }>
   >([])
   const [isLoadingRepos, setIsLoadingRepos] = useState(false)
+  const [useNewApiBuilder, setUseNewApiBuilder] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -51,9 +53,15 @@ const DashboardPage = () => {
               : []
         const mapped = list
           .map((item: any) => {
-            const id = String(item?.id || item?.repositoryId || item?.value || '')
+            const id = String(
+              item?.id || item?.repositoryId || item?.value || '',
+            )
             const label = String(
-              item?.name || item?.repositoryName || item?.title || item?.label || id,
+              item?.name ||
+                item?.repositoryName ||
+                item?.title ||
+                item?.label ||
+                id,
             )
             return { label, value: id }
           })
@@ -62,7 +70,10 @@ const DashboardPage = () => {
           setRepositoryOptions(mapped)
           // Default selection for Accounts Payable if not explicitly set
           if (!repositoryId || repositoryId === 'ap') {
-            const apOpt = mapped.find((opt: any) => /accounts payable/i.test(opt.label) || opt.value === 'ap')
+            const apOpt = mapped.find(
+              (opt: any) =>
+                /accounts payable/i.test(opt.label) || opt.value === 'ap',
+            )
             if (apOpt) {
               setRepositoryId(apOpt.value)
             }
@@ -145,8 +156,8 @@ const DashboardPage = () => {
                       disabled={isLoadingRepos}
                       options={selectOptions}
                       placeholder={t`Repository`}
-                      searchable
                       value={selectedOption}
+                      searchable
                       onChange={(selected) =>
                         setRepositoryId(
                           selected?.value || String(selected?.id || ''),
@@ -167,15 +178,15 @@ const DashboardPage = () => {
 
           <AnimatePresence mode='wait'>
             <motion.div
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.99, y: -12 }}
+              initial={{ opacity: 0, scale: 0.99, y: 12 }}
+              key={repositoryId || selectedOption?.value || 'ap'}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 'min-h-0 flex-1',
-                (isSetupStarted || isDmsSetupStarted) && 'h-full flex flex-col',
+                (isSetupStarted || isDmsSetupStarted) && 'flex h-full flex-col',
               )}
-              key={repositoryId || selectedOption?.value || 'ap'}
-              initial={{ opacity: 0, y: 12, scale: 0.99 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -12, scale: 0.99 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
               {isApDashboard ? (
                 <>
@@ -187,10 +198,33 @@ const DashboardPage = () => {
                   <AccountsPayable />
                 </>
               ) : (
-                <DashboardAiBuilder
-                  repositoryId={repositoryId}
-                  repositoryName={selectedRepoName || 'Custom Repository'}
-                />
+                <>
+                  <div className='flex justify-end gap-2 px-6 pt-3 md:px-8'>
+                    <Button
+                      label={t`AI Builder`}
+                      size='xs'
+                      variant={useNewApiBuilder ? 'outline' : 'solid'}
+                      onClick={() => setUseNewApiBuilder(false)}
+                    />
+                    <Button
+                      label={t`AI Builder (New API)`}
+                      size='xs'
+                      variant={useNewApiBuilder ? 'solid' : 'outline'}
+                      onClick={() => setUseNewApiBuilder(true)}
+                    />
+                  </div>
+                  {useNewApiBuilder ? (
+                    <DashboardApiBuilder
+                      repositoryId={repositoryId}
+                      repositoryName={selectedRepoName || 'Custom Repository'}
+                    />
+                  ) : (
+                    <DashboardAiBuilder
+                      repositoryId={repositoryId}
+                      repositoryName={selectedRepoName || 'Custom Repository'}
+                    />
+                  )}
+                </>
               )}
             </motion.div>
           </AnimatePresence>
