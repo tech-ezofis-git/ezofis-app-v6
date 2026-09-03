@@ -3,8 +3,6 @@ import { type Table as TanstackTable } from '@tanstack/react-table'
 import dayjs from 'dayjs'
 import {
   type MutableRefObject,
-  useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -41,13 +39,14 @@ import {
   normalizeKanbanLabel,
   resolveKanbanActivityId,
 } from '../helpers/kanbanBoard'
-import { buildTableMeta } from '../utils/dynamicTable.utils'
+import { buildTableMeta, toDisplayString } from '../utils/dynamicTable.utils'
 import {
   buildDynamicColumns,
   extractGenericRequestNumber,
   getFormPanels,
   resolveFormJson,
 } from './columns/useDynamicColumns'
+import HoverExpandableText from './HoverExpandableText'
 
 const formatRunningTime = (date: unknown): string => {
   if (!date) return ''
@@ -132,9 +131,6 @@ export default function KanbanView({
   onRowClick,
 }: KanbanViewProps) {
   const { t } = useLingui()
-  const boardRef = useRef<HTMLDivElement>(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(true)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dropTargetId, setDropTargetId] = useState<string | null>(null)
   const [dropAllowed, setDropAllowed] = useState(true)
@@ -221,101 +217,6 @@ export default function KanbanView({
 
     return result
   }, [columns, items, t])
-
-  const getBoardColumns = () => {
-    const el = boardRef.current
-    const inner = el?.firstElementChild
-    if (!el || !(inner instanceof HTMLElement)) return []
-    return Array.from(inner.children).filter(
-      (node): node is HTMLElement => node instanceof HTMLElement,
-    )
-  }
-
-  const updateNav = useCallback(() => {
-    const el = boardRef.current
-    const columnCount = grouped.length
-    if (!el) {
-      setCanScrollLeft(false)
-      setCanScrollRight(columnCount > 3)
-      return
-    }
-    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth)
-    const fits = Math.max(1, Math.floor(el.clientWidth / 336))
-    const hasOverflow = maxScroll > 1 || columnCount > fits
-    setCanScrollLeft(el.scrollLeft > 1)
-    setCanScrollRight(hasOverflow && el.scrollLeft < maxScroll - 1)
-  }, [grouped.length])
-
-  useEffect(() => {
-    const el = boardRef.current
-    if (!el) return
-    let frames = 0
-    let frame = 0
-    const poll = () => {
-      updateNav()
-      frames += 1
-      if (frames < 16) frame = window.requestAnimationFrame(poll)
-    }
-    frame = window.requestAnimationFrame(poll)
-    const observer = new ResizeObserver(updateNav)
-    observer.observe(el)
-    const inner = el.firstElementChild
-    if (inner instanceof HTMLElement) observer.observe(inner)
-    el.addEventListener('scroll', updateNav, { passive: true })
-    window.addEventListener('resize', updateNav)
-    return () => {
-      window.cancelAnimationFrame(frame)
-      observer.disconnect()
-      el.removeEventListener('scroll', updateNav)
-      window.removeEventListener('resize', updateNav)
-    }
-  }, [grouped, updateNav])
-
-  const scrollBoard = (direction: -1 | 1) => {
-    const el = boardRef.current
-    if (!el) return
-    const columns = getBoardColumns()
-    if (!columns.length) return
-
-    const inner = el.firstElementChild
-    if (!(inner instanceof HTMLElement)) return
-
-    const base = inner.getBoundingClientRect().left
-    const starts = columns.map(
-      (column) => column.getBoundingClientRect().left - base,
-    )
-    const current = el.scrollLeft
-    const max = Math.max(0, el.scrollWidth - el.clientWidth)
-    const stride = starts[1] != null ? starts[1] - starts[0] : 336
-
-    let next = current
-    if (direction > 0) {
-      const found = starts.find((start) => start > current + 4)
-      next = found == null ? max : found
-    } else {
-      let found: number | undefined
-      for (let index = starts.length - 1; index >= 0; index -= 1) {
-        if (starts[index] < current - 4) {
-          found = starts[index]
-          break
-        }
-      }
-      next = found == null ? 0 : found
-    }
-
-    if (Math.abs(next - current) < 2) {
-      next = current + direction * stride
-    }
-    next = Math.min(max, Math.max(0, next))
-    if (Math.abs(next - current) < 2) return
-
-    el.scrollTo({
-      behavior: 'smooth',
-      left: next,
-    })
-    setCanScrollLeft(next > 1)
-    setCanScrollRight(next < max - 1)
-  }
 
   const handleDropOnColumn = async (targetColumnId: string) => {
     const item = dragItemRef.current
@@ -452,23 +353,9 @@ export default function KanbanView({
     )
   }
 
-  const showArrows = grouped.length > 1
-
   return (
-    <div className='flex h-full min-h-0 w-full min-w-0 items-stretch gap-3 py-3'>
-      {showArrows ? (
-        <BoardNavButton
-          className='my-auto shrink-0'
-          direction='left'
-          enabled={canScrollLeft}
-          label={t`Scroll columns left`}
-          onClick={() => scrollBoard(-1)}
-        />
-      ) : null}
-      <div
-        className='min-h-0 min-w-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-        ref={boardRef}
-      >
+    <div className='flex h-full min-h-0 w-full min-w-0 py-3'>
+      <div className='min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
         <div className='flex h-full min-h-0 w-max gap-4'>
           {grouped.map((column) => {
             const stageBuckets = splitItemsByStage(column)
@@ -553,7 +440,7 @@ export default function KanbanView({
             return (
               <section
                 className={cn(
-                  'flex h-full min-h-0 w-80 shrink-0 snap-start flex-col overflow-hidden rounded-xl border bg-surface transition-all',
+                  'flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-xl border bg-surface transition-all',
                   isColumnDropTarget &&
                     dropAllowed &&
                     'border-primary-9 bg-primary-2 shadow-[0_0_0_3px_var(--primary-4)]',
@@ -663,57 +550,7 @@ export default function KanbanView({
           })}
         </div>
       </div>
-      {showArrows ? (
-        <BoardNavButton
-          className='my-auto shrink-0'
-          direction='right'
-          enabled={canScrollRight}
-          label={t`Scroll columns right`}
-          onClick={() => scrollBoard(1)}
-        />
-      ) : null}
     </div>
-  )
-}
-
-function BoardNavButton({
-  className,
-  direction,
-  enabled,
-  label,
-  onClick,
-}: {
-  className?: string
-  direction: 'left' | 'right'
-  enabled: boolean
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      aria-disabled={!enabled}
-      aria-label={label}
-      className={cn(
-        'flex size-11 items-center justify-center rounded-full border shadow-md transition-all duration-200',
-        enabled
-          ? 'cursor-pointer border-primary-9 bg-primary-9 text-[var(--surface)] hover:bg-primary-10 hover:shadow-lg active:scale-95'
-          : 'cursor-default border-gray-3 bg-white text-gray-8 opacity-50',
-        className,
-      )}
-      type='button'
-      onClick={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
-        onClick()
-      }}
-    >
-      <Icon
-        className='pointer-events-none size-5'
-        name={
-          direction === 'left' ? 'tabler:chevron-left' : 'tabler:chevron-right'
-        }
-      />
-    </button>
   )
 }
 
@@ -783,27 +620,28 @@ function KanbanCard({
     startedAt
 
   const fieldLines = (() => {
-    if (isAp) {
-      const invoice = findInvoiceNumber(item)
-      const supplier = findSupplierName(item)
-      const lines: { primary?: boolean; text: string }[] = []
-      if (supplier) lines.push({ primary: true, text: supplier })
-      if (invoice) lines.push({ text: invoice })
-      return lines
-    }
+    if (!isAp) return []
+    const invoice = findInvoiceNumber(item)
+    const supplier = findSupplierName(item)
+    const lines: { primary?: boolean; text: string }[] = []
+    if (supplier) lines.push({ primary: true, text: supplier })
+    if (invoice) lines.push({ text: invoice })
+    return lines
+  })()
+
+  const previewFieldTexts = (() => {
+    if (isAp) return []
     return dynamicFields
-      .map((col, index) => {
-        const rendered = col.renderCell?.(item)
-        const text =
-          rendered == null || rendered === '' || rendered === '-'
-            ? ''
-            : typeof rendered === 'string' || typeof rendered === 'number'
-              ? String(rendered)
-              : ''
-        if (!text) return null
-        return { primary: index === 0, text }
+      .map((col) => {
+        const text = toDisplayString(
+          item?.[col.id] ??
+            item?.formData?.fields?.[col.id] ??
+            item?.formData?.[col.id],
+        )
+        if (!text || text === '-') return ''
+        return text
       })
-      .filter(Boolean) as { primary?: boolean; text: string }[]
+      .filter(Boolean)
   })()
 
   return (
@@ -875,16 +713,46 @@ function KanbanCard({
       </div>
 
       {fieldLines.length > 0 && (
-        <div className='mb-2.5 flex flex-col gap-0.5'>
+        <div className='mb-2.5 flex min-w-0 flex-col gap-0.5'>
           {fieldLines.map((line) => (
+            <div className='flex min-w-0 items-center gap-1.5' key={line.text}>
+              <Icon
+                className='size-3 shrink-0 text-gray-8'
+                name='lucide:dot'
+              />
+              <HoverExpandableText
+                className={cn(
+                  'min-w-0 flex-1 text-12 leading-snug text-gray-11',
+                  line.primary && 'text-[13.5px] font-semibold text-gray-13',
+                )}
+                expandStyle='inline'
+                maxLines={1}
+                normalMaxWidthClass='max-w-full'
+                text={line.text}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {previewFieldTexts.length > 0 && (
+        <div className='mb-2.5 flex min-w-0 flex-col gap-0.5'>
+          {previewFieldTexts.map((text, index) => (
             <div
-              className={cn(
-                'truncate text-12 leading-snug text-gray-11',
-                line.primary && 'text-[13.5px] font-semibold text-gray-13',
-              )}
-              key={line.text}
+              className='flex min-w-0 items-center gap-1.5'
+              key={`${index}-${text}`}
             >
-              {line.text}
+              <Icon
+                className='size-3 shrink-0 text-gray-8'
+                name='lucide:dot'
+              />
+              <HoverExpandableText
+                className='min-w-0 flex-1 text-11 font-medium text-gray-10'
+                expandStyle='inline'
+                maxLines={1}
+                normalMaxWidthClass='max-w-full'
+                text={text}
+              />
             </div>
           ))}
         </div>

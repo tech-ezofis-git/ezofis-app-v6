@@ -57,11 +57,13 @@ const Header = ({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-6 border-b border-gray-3 px-6',
-        hideListTabs ? 'justify-end py-1.5' : 'justify-between',
+        'flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6',
+        hideListTabs ? 'py-2.5' : '',
       )}
     >
-      {!hideListTabs ? (
+      {hideListTabs ? (
+        <p className='text-15 font-semibold text-gray-13'>{t`Process Overview`}</p>
+      ) : (
         <Tabs
           color='primary'
           tabClassName='py-3.5'
@@ -108,7 +110,7 @@ const Header = ({
             </>
           )}
         </Tabs>
-      ) : null}
+      )}
 
       <div className='flex items-center gap-2'>
         <InputSelect
