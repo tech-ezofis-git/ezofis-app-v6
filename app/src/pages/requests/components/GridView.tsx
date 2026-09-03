@@ -1459,7 +1459,7 @@ const GridView = <TData,>({
     )
   } else {
     content = (
-      <div className='flex flex-col gap-2.5 px-2 pt-3 pb-4'>
+      <div className='flex flex-col gap-2.5 px-2 pt-3 pr-3 pb-4'>
         {allItems.map((row: any, index: number) => {
           const originalIndex =
             typeof row?._originalIndex === 'number' ? row._originalIndex : index
@@ -1645,7 +1645,9 @@ const GridView = <TData,>({
           </div>
         </div>
 
-        <div className='min-h-0 flex-1 overflow-y-auto'>{content}</div>
+        <div className='minimal-scrollbar min-h-0 flex-1 overflow-y-auto [scrollbar-color:var(--scrollbar-thumb)_transparent]'>
+          {content}
+        </div>
       </div>
 
       {/* File Preview Sheet */}

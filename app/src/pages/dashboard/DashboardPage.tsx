@@ -3,11 +3,13 @@ import { AnimatePresence, motion } from 'motion/react'
 import React, { useEffect, useState } from 'react'
 import { getRepositorys } from '@/api/v6/folder/folder'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import cn from '@/utils/cn'
-import DashboardAiBuilder from './components/DashboardAiBuilder'
-import DashboardApiBuilder from './components/DashboardApiBuilder'
+import DashboardApiBuilder, {
+  type SavedHtmlHeaderActions,
+} from './components/DashboardApiBuilder'
 import useDashboardStore from './stores/useDashboardStore'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
 import setupStore from './workflows/accounts-payable/stores/useSetupStore'
@@ -35,7 +37,8 @@ const DashboardPage = () => {
     Array<{ label: string; value: string }>
   >([])
   const [isLoadingRepos, setIsLoadingRepos] = useState(false)
-  const [useNewApiBuilder, setUseNewApiBuilder] = useState(false)
+  const [savedHtmlHeader, setSavedHtmlHeader] =
+    useState<SavedHtmlHeaderActions | null>(null)
 
   useEffect(() => {
     let active = true
@@ -130,7 +133,7 @@ const DashboardPage = () => {
     <div
       className={cn(
         'flex h-full flex-col bg-gray-1',
-        isDmsSetupStarted || isSetupStarted
+        isDmsSetupStarted || isSetupStarted || savedHtmlHeader
           ? 'overflow-hidden'
           : 'overflow-y-auto',
       )}
@@ -165,6 +168,32 @@ const DashboardPage = () => {
                       }
                     />
                   </div>
+                  {savedHtmlHeader ? (
+                    <>
+                      <IconButton
+                        ariaLabel={t`Refresh`}
+                        className='text-gray-12'
+                        color='gray'
+                        disabled={savedHtmlHeader.isRefreshing}
+                        icon='lucide:refresh-cw'
+                        loading={savedHtmlHeader.isRefreshing}
+                        size='md'
+                        tooltip={t`Refresh`}
+                        variant='outline'
+                        onClick={savedHtmlHeader.onRefresh}
+                      />
+                      <IconButton
+                        ariaLabel={t`Edit`}
+                        className='text-gray-12'
+                        color='gray'
+                        icon='lucide:pencil'
+                        size='md'
+                        tooltip={t`Edit`}
+                        variant='outline'
+                        onClick={savedHtmlHeader.onEdit}
+                      />
+                    </>
+                  ) : null}
                   <Button
                     label={t`Get Started`}
                     size='md'
@@ -185,7 +214,8 @@ const DashboardPage = () => {
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 'min-h-0 flex-1',
-                (isSetupStarted || isDmsSetupStarted) && 'flex h-full flex-col',
+                (isSetupStarted || isDmsSetupStarted || savedHtmlHeader) &&
+                  'flex h-full flex-col',
               )}
             >
               {isApDashboard ? (
@@ -198,33 +228,11 @@ const DashboardPage = () => {
                   <AccountsPayable />
                 </>
               ) : (
-                <>
-                  <div className='flex justify-end gap-2 px-6 pt-3 md:px-8'>
-                    <Button
-                      label={t`AI Builder`}
-                      size='xs'
-                      variant={useNewApiBuilder ? 'outline' : 'solid'}
-                      onClick={() => setUseNewApiBuilder(false)}
-                    />
-                    <Button
-                      label={t`AI Builder (New API)`}
-                      size='xs'
-                      variant={useNewApiBuilder ? 'solid' : 'outline'}
-                      onClick={() => setUseNewApiBuilder(true)}
-                    />
-                  </div>
-                  {useNewApiBuilder ? (
-                    <DashboardApiBuilder
-                      repositoryId={repositoryId}
-                      repositoryName={selectedRepoName || 'Custom Repository'}
-                    />
-                  ) : (
-                    <DashboardAiBuilder
-                      repositoryId={repositoryId}
-                      repositoryName={selectedRepoName || 'Custom Repository'}
-                    />
-                  )}
-                </>
+                <DashboardApiBuilder
+                  repositoryId={repositoryId}
+                  repositoryName={selectedRepoName || 'Custom Repository'}
+                  onSavedHtmlHeaderChange={setSavedHtmlHeader}
+                />
               )}
             </motion.div>
           </AnimatePresence>

@@ -455,9 +455,10 @@ export default function KanbanView({
   const showArrows = grouped.length > 1
 
   return (
-    <div className='flex h-full min-h-0 w-full min-w-0 items-stretch gap-2 py-3'>
+    <div className='flex h-full min-h-0 w-full min-w-0 items-stretch gap-3 py-3'>
       {showArrows ? (
         <BoardNavButton
+          className='my-auto shrink-0'
           direction='left'
           enabled={canScrollLeft}
           label={t`Scroll columns left`}
@@ -582,7 +583,7 @@ export default function KanbanView({
                 </header>
                 
                 {isGrouped ? (
-                  <div className='flex min-h-0 flex-1 flex-col gap-1 overflow-y-scroll px-2 py-2 [scrollbar-color:var(--gray-8)_var(--gray-2)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-gray-2'>
+                  <div className='flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 py-2 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
                     {stageBuckets.map((stage) => {
                       const groupKey = `${column.id}:${stage.id}`
                       const collapsed = Boolean(collapsedGroups[groupKey])
@@ -649,7 +650,7 @@ export default function KanbanView({
                     })}
                   </div>
                 ) : (
-                  <div className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-scroll px-3 py-3.5 [scrollbar-color:var(--gray-8)_var(--gray-2)] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-gray-2'>
+                  <div className='flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3.5 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
                     {renderCards(
                       column.items,
                       column.name,
@@ -664,6 +665,7 @@ export default function KanbanView({
       </div>
       {showArrows ? (
         <BoardNavButton
+          className='my-auto shrink-0'
           direction='right'
           enabled={canScrollRight}
           label={t`Scroll columns right`}
@@ -675,11 +677,13 @@ export default function KanbanView({
 }
 
 function BoardNavButton({
+  className,
   direction,
   enabled,
   label,
   onClick,
 }: {
+  className?: string
   direction: 'left' | 'right'
   enabled: boolean
   label: string
@@ -690,10 +694,11 @@ function BoardNavButton({
       aria-disabled={!enabled}
       aria-label={label}
       className={cn(
-        'z-10 my-auto flex size-11 shrink-0 items-center justify-center rounded-full border bg-white shadow-md transition-all duration-200',
+        'flex size-11 items-center justify-center rounded-full border shadow-md transition-all duration-200',
         enabled
-          ? 'cursor-pointer border-gray-4 text-gray-13 hover:border-primary-6 hover:text-primary-9 hover:shadow-lg active:scale-95'
-          : 'cursor-default border-gray-3 text-gray-8 opacity-50',
+          ? 'cursor-pointer border-primary-9 bg-primary-9 text-[var(--surface)] hover:bg-primary-10 hover:shadow-lg active:scale-95'
+          : 'cursor-default border-gray-3 bg-white text-gray-8 opacity-50',
+        className,
       )}
       type='button'
       onClick={(event) => {

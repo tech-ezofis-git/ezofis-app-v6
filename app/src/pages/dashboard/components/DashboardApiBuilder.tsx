@@ -1,67 +1,120 @@
 import { useLingui } from '@lingui/react/macro'
-import { Check, RefreshCw, Send } from 'lucide-react'
+import { Check, RefreshCw } from 'lucide-react'
 import { motion } from 'motion/react'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   type DashboardChart,
   type DashboardKpi,
   type DashboardSchemaResult,
   getDashboardHtml,
   getDashboardSchema,
+  getSavedDashboardHtml,
+  getSavedDashboardSchema,
+  saveDashboardSchema,
 } from '@/api/v6/dashboard'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
+import {
+  BuilderTimelineStep,
+  type TimelineConnectorState,
+  type TimelineStepStatus,
+} from '@/pages/settings/components/Folders/AiFolderBuilderTimeline'
+import { generateRepositoryDescription } from '@/services/ai/dashboardAi'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 
 interface Props {
+  onSavedHtmlHeaderChange?: (actions: SavedHtmlHeaderActions | null) => void
   repositoryId: string
   repositoryName: string
 }
 
-const STORAGE_PREFIX = 'dashboard_api_schema_'
+export type SavedHtmlHeaderActions = {
+  isRefreshing: boolean
+  onEdit: () => void
+  onRefresh: () => void
+}
 
 export default function DashboardApiBuilder({
+  onSavedHtmlHeaderChange,
   repositoryId,
   repositoryName,
 }: Props) {
   const { t } = useLingui()
-  const storageKey = `${STORAGE_PREFIX}${repositoryId || repositoryName}`
 
+  const [activeStep, setActiveStep] = useState(1)
   const [sessionId, setSessionId] = useState('')
   const [schema, setSchema] = useState<DashboardSchemaResult | null>(null)
-  const [message, setMessage] = useState('')
+  const [editableDesc, setEditableDesc] = useState('')
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false)
   const [isGeneratingSchema, setIsGeneratingSchema] = useState(false)
   const [isGeneratingHtml, setIsGeneratingHtml] = useState(false)
+  const [isLoadingSaved, setIsLoadingSaved] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isFullDashboardView, setIsFullDashboardView] = useState(false)
   const [html, setHtml] = useState('')
 
   const tenantId = authUserStore.getState().session?.tenantId || ''
 
-  const runSchema = async (promptText?: string) => {
+  const generatePrompt = async () => {
+    setIsGeneratingDesc(true)
+    try {
+      const desc = await generateRepositoryDescription(repositoryName)
+      setEditableDesc(desc)
+    } catch (err) {
+      console.error('Error auto-generating dashboard prompt:', err)
+      setEditableDesc(`I need to create a dashboard for ${repositoryName}`)
+    } finally {
+      setIsGeneratingDesc(false)
+    }
+  }
+
+  const runSchema = async (promptText: string) => {
+    const message = promptText.trim()
+    if (!tenantId) {
+      showToast({
+        message: t`Tenant is missing. Sign in again and retry.`,
+        variant: 'error',
+      })
+      return
+    }
+    if (!repositoryId) {
+      showToast({
+        message: t`Select a repository first.`,
+        variant: 'error',
+      })
+      return
+    }
+    if (!message) {
+      showToast({
+        message: t`Enter a dashboard prompt before continuing.`,
+        variant: 'error',
+      })
+      return
+    }
+
     const newSessionId = crypto.randomUUID()
     setSessionId(newSessionId)
     setIsGeneratingSchema(true)
     setHtml('')
     try {
       const res = await getDashboardSchema({
-        message: promptText,
-        repositoryId: repositoryId,
+        message,
+        repositoryId,
         sessionId: newSessionId,
-        tenantId: tenantId,
+        tenantId,
       })
-      if (res.error || !res.data) {
+      if (res.error || !res.data?.dashboard_result) {
         showToast({
           message: res.error || t`Failed to generate dashboard schema`,
           variant: 'error',
         })
         return
       }
-      setSchema(res.data.dashboard_result)
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(res.data.dashboard_result),
-      )
+      const result = res.data.dashboard_result
+      setSchema(result)
     } finally {
       setIsGeneratingSchema(false)
     }
@@ -75,42 +128,115 @@ export default function DashboardApiBuilder({
     try {
       const res = await getDashboardHtml({
         dashboard_json: targetSchema,
-        message: 'apply',
-        repositoryId: repositoryId,
+        repositoryId,
         sessionId: session,
-        tenantId: tenantId,
+        tenantId,
       })
+      if (res.html.trim()) {
+        setHtml(res.html)
+        return true
+      }
+
+      const cached = await getSavedDashboardHtml({
+        repositoryId,
+        tenantId,
+        workflowId: targetSchema.workflow_id || undefined,
+      })
+      if (cached.html.trim()) {
+        setHtml(cached.html)
+        return true
+      }
+
       if (res.error) {
         showToast({ message: res.error, variant: 'error' })
-        return
+        return false
       }
-      setHtml(res.html)
+      showToast({
+        message: t`Live dashboard HTML was empty. Showing the last saved dashboard if available.`,
+        variant: 'error',
+      })
+      return false
     } finally {
       setIsGeneratingHtml(false)
     }
   }
 
+  const startGeminiPrompt = async (active: () => boolean) => {
+    setActiveStep(1)
+    setSchema(null)
+    setHtml('')
+    setIsGeneratingDesc(true)
+    try {
+      const desc = await generateRepositoryDescription(repositoryName)
+      if (!active()) return
+      setEditableDesc(desc)
+    } catch (err) {
+      console.error('Error auto-generating dashboard prompt:', err)
+      if (active()) {
+        setEditableDesc(`I need to create a dashboard for ${repositoryName}`)
+      }
+    } finally {
+      if (active()) setIsGeneratingDesc(false)
+    }
+  }
+
   useEffect(() => {
     let active = true
+    const isActive = () => active
 
     const initialize = async () => {
-      const saved = localStorage.getItem(storageKey)
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved) as DashboardSchemaResult
-          if (parsed && Array.isArray(parsed.kpis)) {
-            const newSessionId = crypto.randomUUID()
-            if (!active) return
-            setSchema(parsed)
-            setSessionId(newSessionId)
-            await runData(parsed, newSessionId)
-            return
-          }
-        } catch (e) {
-          console.warn('Failed to parse saved dashboard schema:', e)
-        }
+      setIsLoadingSaved(true)
+      setIsFullDashboardView(false)
+      setActiveStep(1)
+      setSchema(null)
+      setHtml('')
+      setEditableDesc('')
+      setSessionId(crypto.randomUUID())
+
+      const currentTenantId = authUserStore.getState().session?.tenantId || ''
+      if (!currentTenantId || !repositoryId) {
+        await startGeminiPrompt(isActive)
+        if (active) setIsLoadingSaved(false)
+        return
       }
-      if (active) await runSchema()
+
+      const lookup = { repositoryId, tenantId: currentTenantId }
+
+      const savedHtml = await getSavedDashboardHtml(lookup)
+      if (!active) return
+      if (savedHtml.html) {
+        setHtml(savedHtml.html)
+        setActiveStep(3)
+        setIsFullDashboardView(true)
+        setIsLoadingSaved(false)
+        return
+      }
+
+      const savedSchema = await getSavedDashboardSchema(lookup)
+      if (!active) return
+      const schemaResult = savedSchema.data?.schema
+      const schemaHtml = savedSchema.data?.dashboardHtml || ''
+      if (schemaHtml) {
+        setHtml(schemaHtml)
+        if (schemaResult) {
+          setSchema(schemaResult)
+          setEditableDesc(schemaResult.message || '')
+        }
+        setActiveStep(3)
+        setIsFullDashboardView(true)
+        setIsLoadingSaved(false)
+        return
+      }
+      if (schemaResult) {
+        setSchema(schemaResult)
+        setEditableDesc(schemaResult.message || '')
+        setActiveStep(2)
+        setIsLoadingSaved(false)
+        return
+      }
+
+      await startGeminiPrompt(isActive)
+      if (active) setIsLoadingSaved(false)
     }
 
     void initialize()
@@ -118,7 +244,7 @@ export default function DashboardApiBuilder({
       active = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repositoryId, storageKey])
+  }, [repositoryId, repositoryName])
 
   const toggleKpi = (id: string) => {
     if (!schema) return
@@ -140,11 +266,148 @@ export default function DashboardApiBuilder({
     })
   }
 
+  const persistDashboard = async () => {
+    if (!schema) return false
+    const currentTenantId =
+      authUserStore.getState().session?.tenantId || tenantId
+    const workflowId = schema.workflow_id || undefined
+    setIsSaving(true)
+    try {
+      const saveRes = await saveDashboardSchema({
+        dashboard_json: schema,
+        dashboard_result: schema,
+        repositoryId,
+        tenantId: currentTenantId,
+        workflowId: workflowId || undefined,
+      })
+      if (saveRes.error) {
+        showToast({ message: saveRes.error, variant: 'error' })
+        return false
+      }
+      return true
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleApply = async () => {
-    if (!schema || !sessionId) return
-    localStorage.setItem(storageKey, JSON.stringify(schema))
-    await runData(schema, sessionId)
+    if (!schema) return
+    setActiveStep(3)
+    const ok = await runData(schema, sessionId || crypto.randomUUID())
+    if (!ok) return
     showToast({ message: t`Dashboard preview updated!`, variant: 'success' })
+  }
+
+  const handleSaveDashboard = async () => {
+    const ok = await persistDashboard()
+    if (!ok) return
+
+    if (schema) {
+      await runData(schema, sessionId || crypto.randomUUID())
+    }
+
+    const currentTenantId =
+      authUserStore.getState().session?.tenantId || tenantId
+    const cached = await getSavedDashboardHtml({
+      repositoryId,
+      tenantId: currentTenantId,
+      workflowId: schema?.workflow_id || undefined,
+    })
+    if (cached.html?.trim()) {
+      setHtml(cached.html)
+    }
+    setActiveStep(3)
+    setIsFullDashboardView(true)
+    showToast({
+      message: t`Dashboard saved for ${repositoryName}!`,
+      variant: 'success',
+    })
+  }
+
+  const reloadSavedHtml = async () => {
+    setIsGeneratingHtml(true)
+    try {
+      const currentTenantId =
+        authUserStore.getState().session?.tenantId || tenantId
+      const cached = await getSavedDashboardHtml({
+        repositoryId,
+        tenantId: currentTenantId,
+        workflowId: schema?.workflow_id || undefined,
+      })
+      if (cached.html.trim()) {
+        setHtml(cached.html)
+        return
+      }
+      if (schema) {
+        await runData(schema, sessionId || crypto.randomUUID())
+      }
+    } finally {
+      setIsGeneratingHtml(false)
+    }
+  }
+
+  const openBuilder = async () => {
+    if (!schema) {
+      const currentTenantId =
+        authUserStore.getState().session?.tenantId || tenantId
+      const savedSchema = await getSavedDashboardSchema({
+        repositoryId,
+        tenantId: currentTenantId,
+      })
+      if (savedSchema.data?.schema) {
+        setSchema(savedSchema.data.schema)
+        setEditableDesc(savedSchema.data.schema.message || '')
+      }
+    }
+    setIsFullDashboardView(false)
+    setActiveStep(html ? 3 : 2)
+  }
+
+  const reloadSavedHtmlRef = useRef(reloadSavedHtml)
+  reloadSavedHtmlRef.current = reloadSavedHtml
+  const openBuilderRef = useRef(openBuilder)
+  openBuilderRef.current = openBuilder
+
+  useEffect(() => {
+    if (!onSavedHtmlHeaderChange) return
+    if (!(isFullDashboardView && html)) {
+      onSavedHtmlHeaderChange(null)
+      return
+    }
+
+    onSavedHtmlHeaderChange({
+      isRefreshing: isGeneratingHtml,
+      onEdit: () => {
+        void openBuilderRef.current()
+      },
+      onRefresh: () => {
+        void reloadSavedHtmlRef.current()
+      },
+    })
+  }, [
+    html,
+    isFullDashboardView,
+    isGeneratingHtml,
+    onSavedHtmlHeaderChange,
+  ])
+
+  useEffect(() => {
+    return () => onSavedHtmlHeaderChange?.(null)
+  }, [onSavedHtmlHeaderChange])
+
+  const getStepStatus = (stepId: number): TimelineStepStatus => {
+    if (activeStep > stepId) return 'completed'
+    if (activeStep === stepId) return 'active'
+    return 'upcoming'
+  }
+
+  const getConnectorState = (
+    fromStep: number,
+    _toStep: number,
+  ): TimelineConnectorState => {
+    if (activeStep > fromStep) return 'completed'
+    if (activeStep === fromStep) return 'loading'
+    return 'idle'
   }
 
   const renderKpi = (kpi: DashboardKpi) => (
@@ -186,7 +449,9 @@ export default function DashboardApiBuilder({
       onClick={() => toggleChart(chart.id)}
     >
       <div className='min-w-0 space-y-1'>
-        <p className='text-13 font-bold text-text-primary'>{chart.title}</p>
+        <p className='text-13 font-bold text-text-primary'>
+          {chart.title || chart.label}
+        </p>
         <p className='text-11 leading-relaxed text-text-secondary'>
           {chart.description}
         </p>
@@ -201,91 +466,283 @@ export default function DashboardApiBuilder({
     </div>
   )
 
+  const step1Summary = (
+    <div className='flex items-start justify-between gap-4 rounded-xl border border-border-default bg-surface p-4 shadow-2xs'>
+      <div className='min-w-0 flex-1 space-y-1.5'>
+        <span className='text-13 font-bold text-text-primary'>
+          {repositoryName}
+        </span>
+        <p className='line-clamp-2 text-12 leading-relaxed text-text-secondary'>
+          {editableDesc ||
+            t`Centralized repository for all incoming documentation and related analytics.`}
+        </p>
+      </div>
+      <Button
+        icon='lucide:pencil'
+        label={t`Edit`}
+        size='sm'
+        variant='outline'
+        onClick={() => setActiveStep(1)}
+      />
+    </div>
+  )
+
+  const enabledKpiCount = schema?.kpis?.filter((kpi) => kpi.enabled).length || 0
+  const enabledChartCount =
+    schema?.charts?.filter((chart) => chart.enabled).length || 0
+
+  const step2Summary = (
+    <div className='flex items-start justify-between gap-4 rounded-xl border border-border-default bg-surface p-4 shadow-2xs'>
+      <div className='min-w-0 flex-1 space-y-1.5'>
+        <span className='text-13 font-bold text-text-primary'>
+          {t`Selected ${enabledKpiCount} KPIs and ${enabledChartCount} charts`}
+        </span>
+      </div>
+      <Button
+        icon='lucide:pencil'
+        label={t`Edit`}
+        size='sm'
+        variant='outline'
+        onClick={() => setActiveStep(2)}
+      />
+    </div>
+  )
+
+  if (isLoadingSaved) {
+    return (
+      <div className='mx-auto flex max-w-6xl flex-col items-center justify-center p-16'>
+        <RefreshCw className='mb-3 size-8 animate-spin text-primary-9' />
+        <p className='text-13 font-medium text-text-secondary'>
+          {t`Loading saved dashboard...`}
+        </p>
+      </div>
+    )
+  }
+
+  if (isFullDashboardView && html) {
+    return (
+      <motion.div
+        animate={{ opacity: 1 }}
+        className='flex h-full min-h-0 flex-1 flex-col'
+        initial={{ opacity: 0 }}
+        key={`api-dashboard-${repositoryId}`}
+        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <DashboardHtmlPreview
+          className='h-full min-h-0 w-full flex-1 overflow-auto'
+          html={html}
+          title={t`Dashboard`}
+        />
+      </motion.div>
+    )
+  }
+
   return (
     <motion.div
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      className='mx-auto max-w-6xl space-y-6 p-6'
+      className='mx-auto max-w-6xl p-6'
       initial={{ opacity: 0, scale: 0.99, y: 15 }}
-      key={`api-builder-${storageKey}`}
+      key={`api-builder-${repositoryId}`}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
-      <div className='space-y-4 rounded-[16px] border border-primary-9/20 bg-primary-3/10 p-5 shadow-xs'>
-        <div className='flex items-center gap-2 text-13 font-semibold text-primary-9'>
-          <AiBrandIcon className='size-4 shrink-0' />
-          <span>{t`Describe how you'd like the ${repositoryName} dashboard organized, then apply to preview.`}</span>
-        </div>
-        <div className='relative flex items-center'>
-          <input
-            className='w-full rounded-[12px] border border-border-default bg-surface py-2 pr-11 pl-4 text-13 text-text-primary shadow-2xs transition-all outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20'
-            placeholder={t`Put overdue first in red. Donut on the left in blue...`}
-            type='text'
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void runSchema(message)
-            }}
-          />
-          <button
-            className='absolute right-2 flex size-4 items-center justify-center rounded-[3px] bg-primary-9 text-white shadow-2xs transition-all hover:bg-primary-10 active:scale-95 disabled:opacity-50'
-            disabled={isGeneratingSchema}
-            type='button'
-            onClick={() => runSchema(message)}
-          >
-            {isGeneratingSchema ? (
-              <RefreshCw className='size-2.5 animate-spin' />
+      <BuilderTimelineStep
+        bottomConnectorState={getConnectorState(1, 2)}
+        description={t`Describe the dashboard you want to create.`}
+        showTopConnector={false}
+        status={getStepStatus(1)}
+        stepId={1}
+        summary={step1Summary}
+        title={t`Enter Prompt`}
+        topConnectorState='hidden'
+      >
+        <div className='space-y-4'>
+          <div className='rounded-[14px] border border-primary-9/20 bg-primary-3/10 p-4 transition-all'>
+            <div className='mb-3 flex items-center justify-between gap-3'>
+              <div className='flex min-w-0 items-center gap-2'>
+                <AiBrandIcon className='size-4 shrink-0' />
+                <h2 className='text-15 truncate font-semibold text-text-primary'>
+                  {repositoryName}
+                </h2>
+              </div>
+              <Button
+                disabled={isGeneratingDesc}
+                icon='lucide:refresh-cw'
+                label={t`Regenerate`}
+                size='xs'
+                variant='outline'
+                onClick={() => void generatePrompt()}
+              />
+            </div>
+            {isGeneratingDesc ? (
+              <div className='space-y-2.5'>
+                <div className='flex items-center gap-2 text-12 font-medium text-primary-9'>
+                  <RefreshCw className='size-3.5 animate-spin' />
+                  <span>{t`Generating description…`}</span>
+                </div>
+                <div className='h-3 w-full animate-pulse rounded bg-primary-9/10' />
+                <div className='h-3 w-5/6 animate-pulse rounded bg-primary-9/10' />
+                <div className='h-3 w-2/3 animate-pulse rounded bg-primary-9/10' />
+              </div>
             ) : (
-              <Send className='size-2.5' />
+              <textarea
+                className='min-h-24 w-full rounded-[12px] border border-border-default bg-surface px-3.5 py-2.5 text-13 leading-relaxed text-text-primary shadow-2xs outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-2 focus:ring-primary-9/20'
+                placeholder={t`Describe the dashboard you want to create...`}
+                value={editableDesc}
+                onChange={(e) => setEditableDesc(e.target.value)}
+              />
             )}
-          </button>
-        </div>
-      </div>
-
-      {isGeneratingSchema ? (
-        <div className='my-2 flex flex-col items-center justify-center rounded-[16px] border border-primary-9/30 bg-primary-3/10 p-10 text-center shadow-xs'>
-          <RefreshCw className='mb-3 size-8 animate-spin text-primary-9' />
-          <h4 className='text-14 font-semibold text-text-primary'>
-            {t`Generating dashboard schema...`}
-          </h4>
-        </div>
-      ) : schema ? (
-        <>
-          <div className='space-y-3'>
-            <span className='text-12 font-bold tracking-wider text-text-primary uppercase'>{t`KPIs`}</span>
-            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-              {schema.kpis.map(renderKpi)}
-            </div>
           </div>
 
-          <div className='space-y-3'>
-            <span className='text-12 font-bold tracking-wider text-text-primary uppercase'>{t`Charts`}</span>
-            <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-              {schema.charts.map(renderChart)}
-            </div>
-          </div>
-
-          <div className='flex items-center justify-end gap-2.5 border-t border-border-default pt-2'>
+          <div className='flex justify-end pt-2'>
             <Button
-              disabled={isGeneratingHtml}
-              icon='lucide:play'
-              label={t`Apply & Preview`}
+              disabled={isGeneratingDesc || !editableDesc.trim()}
+              label={t`Continue to Dashboard Designer`}
               size='md'
-              onClick={handleApply}
+              suffixIcon='lucide:arrow-right'
+              onClick={() => {
+                setActiveStep(2)
+                void runSchema(editableDesc)
+              }}
             />
+          </div>
+        </div>
+      </BuilderTimelineStep>
+
+      <BuilderTimelineStep
+        bottomConnectorState={getConnectorState(2, 3)}
+        description={t`Select suggested KPIs and charts from your data.`}
+        status={getStepStatus(2)}
+        stepId={2}
+        summary={step2Summary}
+        title={t`AI Dashboard Designer`}
+        topConnectorState={getConnectorState(1, 2)}
+        showTopConnector
+      >
+        <div className='space-y-5'>
+          {isGeneratingSchema ? (
+            <div className='my-2 flex flex-col items-center justify-center rounded-[16px] border border-primary-9/30 bg-primary-3/10 p-10 text-center shadow-xs'>
+              <RefreshCw className='mb-3 size-8 animate-spin text-primary-9' />
+              <h4 className='text-14 font-semibold text-text-primary'>
+                {t`Generating dashboard schema...`}
+              </h4>
+              <p className='mt-1 text-12 text-text-secondary'>
+                {t`Suggesting KPIs and charts for ${repositoryName}...`}
+              </p>
+            </div>
+          ) : schema ? (
+            <>
+              <div className='space-y-3'>
+                <span className='text-12 font-bold tracking-wider text-text-primary uppercase'>
+                  {t`KPIs`}
+                </span>
+                <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                  {(schema.kpis || []).map(renderKpi)}
+                </div>
+              </div>
+
+              <div className='space-y-3'>
+                <span className='text-12 font-bold tracking-wider text-text-primary uppercase'>
+                  {t`Charts`}
+                </span>
+                <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                  {(schema.charts || []).map(renderChart)}
+                </div>
+              </div>
+
+              <div className='flex items-center justify-between gap-2.5 border-t border-border-default pt-4'>
+                <Button
+                  icon='lucide:arrow-left'
+                  label={t`Back to Prompt`}
+                  size='md'
+                  variant='outline'
+                  onClick={() => setActiveStep(1)}
+                />
+                <Button
+                  disabled={isGeneratingHtml}
+                  icon='lucide:play'
+                  label={t`Apply & Preview`}
+                  size='md'
+                  onClick={() => void handleApply()}
+                />
+              </div>
+            </>
+          ) : (
+            <div className='my-2 flex flex-col items-center justify-center rounded-[16px] border border-dashed border-border-default bg-gray-2/40 p-8 text-center'>
+              <div className='mb-3 flex size-11 items-center justify-center rounded-2xl border border-primary-9/20 bg-primary-3/30 text-primary-9 shadow-2xs'>
+                <AiBrandIcon className='size-5 shrink-0' />
+              </div>
+              <h4 className='text-14 font-semibold text-text-primary'>
+                {t`Waiting to generate dashboard schema`}
+              </h4>
+              <p className='mt-1 max-w-md text-12 leading-relaxed text-text-secondary'>
+                {t`Continue from configuration to generate KPIs and charts from your prompt.`}
+              </p>
+            </div>
+          )}
+        </div>
+      </BuilderTimelineStep>
+
+      <BuilderTimelineStep
+        bottomConnectorState='hidden'
+        description={t`Live dashboard generated from your selected widgets.`}
+        status={getStepStatus(3)}
+        stepId={3}
+        title={t`Dashboard Preview`}
+        topConnectorState={getConnectorState(2, 3)}
+        showTopConnector
+      >
+        <div className='space-y-5'>
+          <div className='flex items-center justify-between gap-2.5'>
+            <Button
+              icon='lucide:arrow-left'
+              label={t`Back to Designer`}
+              size='md'
+              variant='outline'
+              onClick={() => setActiveStep(2)}
+            />
+            <div className='flex items-center gap-2.5'>
+              <Button
+                disabled={!schema || isGeneratingHtml}
+                icon='lucide:refresh-cw'
+                label={t`Refresh`}
+                size='md'
+                variant='outline'
+                onClick={() => {
+                  if (!schema) return
+                  void runData(schema, sessionId || crypto.randomUUID())
+                }}
+              />
+              <Button
+                disabled={!schema || isSaving}
+                icon='lucide:save'
+                label={t`Save Dashboard`}
+                size='md'
+                onClick={() => void handleSaveDashboard()}
+              />
+            </div>
           </div>
 
           {isGeneratingHtml ? (
             <div className='my-2 flex flex-col items-center justify-center rounded-[16px] border border-primary-9/30 bg-primary-3/10 p-10 text-center shadow-xs'>
               <RefreshCw className='mb-3 size-8 animate-spin text-primary-9' />
-              <h4 className='text-14 font-semibold text-text-primary'>{t`Rendering dashboard preview...`}</h4>
+              <h4 className='text-14 font-semibold text-text-primary'>
+                {t`Loading live dashboard data...`}
+              </h4>
             </div>
           ) : html ? (
-            <div
-              className='rounded-[16px] border border-border-default bg-surface p-2 shadow-xs'
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
-          ) : null}
-        </>
-      ) : null}
+            <DashboardHtmlPreview html={html} title={t`Dashboard preview`} />
+          ) : (
+            <div className='my-2 flex flex-col items-center justify-center rounded-[16px] border border-dashed border-border-default bg-gray-2/40 p-8 text-center'>
+              <h4 className='text-14 font-semibold text-text-primary'>
+                {t`No preview yet`}
+              </h4>
+              <p className='mt-1 max-w-md text-12 leading-relaxed text-text-secondary'>
+                {t`Select widgets in step 2, then click Apply & Preview to load live data.`}
+              </p>
+            </div>
+          )}
+        </div>
+      </BuilderTimelineStep>
     </motion.div>
   )
 }

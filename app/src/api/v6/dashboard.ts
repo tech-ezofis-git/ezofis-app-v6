@@ -61,10 +61,10 @@ export const getDashboardData = async (payload: V6DashboardPayload) => {
     }
 
     response.data = data
-  } catch (error: any) {
+  } catch (error) {
     console.error(error)
     response.error = getV6ApiErrorMessage(
-      error?.response?.data,
+      getAxiosErrorData(error),
       'Error Loading Dashboard',
     )
   }
@@ -97,10 +97,10 @@ export type DashboardChart = {
 }
 
 export type DashboardDataRequest = {
-  dashboard_json: DashboardSchemaResult
+  dashboard_json?: DashboardSchemaResult
   message?: string
   repositoryId?: string
-  sessionId: string
+  sessionId?: string
   tenantId: string
   workflowId?: string
 }
@@ -139,18 +139,152 @@ export type DashboardSchemaResult = {
   columns?: string[]
   data: null
   kpis: DashboardKpi[]
+  message?: string
   phase: string
-  repositoryId?: string
+  repository_id?: string
   repository_name?: string
+  repositoryId?: string
   table?: string
+  tenant_id?: string
   tenantId?: string
-  workflow_id?: string
+  workflow?: string
+  workflow_id?: string | null
 }
+
+export type SaveDashboardSchemaRequest = {
+  dashboard_json?: DashboardSchemaResult
+  dashboard_result?: DashboardSchemaResult
+  repositoryId?: string
+  tenantId: string
+  workflowId?: string
+}
+
+export type SavedDashboardLookup = {
+  repositoryId?: string
+  tenantId: string
+  workflowId?: string
+}
+
+export type SavedDashboardSnapshot = {
+  dashboardHtml: string
+  repositoryId?: string
+  schema: DashboardSchemaResult | null
+  tenantId?: string
+  workflowId?: string
+}
+
+const DASHBOARD_API_TIMEOUT_MS = 180_000
 
 const buildTenantHeaders = (tenantId?: string) => {
   const store = authUserStore.getState()
   const resolvedTenantId = store.session?.tenantId || tenantId || ''
   return resolvedTenantId ? { 'X-Tenant-Id': resolvedTenantId } : undefined
+}
+
+const asRecord = (value: unknown): Record<string, unknown> | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  return value as Record<string, unknown>
+}
+
+const parseDashboardResult = (value: unknown): DashboardSchemaResult | null => {
+  let result = value
+  if (typeof result === 'string') {
+    try {
+      result = JSON.parse(result)
+    } catch {
+      return null
+    }
+  }
+  const record = asRecord(result)
+  if (!record) return null
+
+  const nested = record.dashboard_result ?? record.dashboardResult
+  if (nested && nested !== result) {
+    return parseDashboardResult(nested)
+  }
+
+  const kpis = Array.isArray(record.kpis) ? (record.kpis as DashboardKpi[]) : []
+  const charts = Array.isArray(record.charts)
+    ? (record.charts as DashboardChart[])
+    : []
+  if (kpis.length === 0 && charts.length === 0 && !record.phase) {
+    return null
+  }
+
+  return {
+    ...(result as DashboardSchemaResult),
+    charts,
+    kpis,
+  }
+}
+
+const getAxiosStatus = (error: unknown) => {
+  if (!error || typeof error !== 'object' || !('response' in error)) return 0
+  return Number(
+    (error as { response?: { status?: number } }).response?.status || 0,
+  )
+}
+
+const HTML_FIELD_KEYS = [
+  'dashboardHtml',
+  'DashboardHtml',
+  'dashboard_html',
+  'html',
+  'Html',
+] as const
+
+const looksLikeDashboardMarkup = (value: string) => {
+  const trimmed = value.trim()
+  return (
+    trimmed.startsWith('<') ||
+    trimmed.includes('ez-dash') ||
+    trimmed.includes('<style')
+  )
+}
+
+const readHtmlField = (record: Record<string, unknown>) => {
+  for (const key of HTML_FIELD_KEYS) {
+    const candidate = record[key]
+    if (typeof candidate === 'string' && candidate.trim()) return candidate
+  }
+  return ''
+}
+
+const extractDashboardHtml = (data: unknown): string => {
+  const visit = (value: unknown, depth: number): string => {
+    if (depth > 6 || value == null) return ''
+    if (typeof value === 'string') {
+      const trimmed = value.trim()
+      if (!trimmed) return ''
+      if (looksLikeDashboardMarkup(trimmed)) return value
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          return visit(JSON.parse(trimmed), depth + 1)
+        } catch {
+          return ''
+        }
+      }
+      return ''
+    }
+    const record = asRecord(value)
+    if (!record) return ''
+    const direct = readHtmlField(record)
+    if (direct) return direct
+    for (const nested of Object.values(record)) {
+      const found = visit(nested, depth + 1)
+      if (found) return found
+    }
+    return ''
+  }
+
+  return visit(data, 0).trim()
+}
+
+const getAxiosErrorData = (error: unknown) => {
+  if (!error || typeof error !== 'object' || !('response' in error)) {
+    return undefined
+  }
+  return (error as { response?: { data?: unknown } }).response?.data
 }
 
 export const getDashboardSchema = async (payload: DashboardSchemaRequest) => {
@@ -164,9 +298,17 @@ export const getDashboardSchema = async (payload: DashboardSchemaRequest) => {
 
   try {
     const { data, status } = await axiosV6({
-      data: payload,
+      data: {
+        message: payload.message,
+        repository_id: payload.repositoryId,
+        session_id: payload.sessionId,
+        tenant_id: payload.tenantId,
+        workflow_id: payload.workflowId,
+      },
       headers: buildTenantHeaders(payload.tenantId),
       method: 'POST',
+      skipCancellation: true,
+      timeout: DASHBOARD_API_TIMEOUT_MS,
       url: `/dashboard/schema`,
     })
 
@@ -174,12 +316,80 @@ export const getDashboardSchema = async (payload: DashboardSchemaRequest) => {
       throw new Error('invalid status code')
     }
 
-    response.data = data
-  } catch (error: any) {
+    const record = asRecord(data) || {}
+    const dashboardResult = parseDashboardResult(
+      record.dashboard_result ?? record.dashboardResult,
+    )
+
+    if (!dashboardResult) {
+      throw new Error('Dashboard schema response is missing dashboard_result')
+    }
+
+    response.data = {
+      correlation_id: String(
+        record.correlation_id ?? record.correlationId ?? '',
+      ),
+      dashboard_result: dashboardResult,
+      html: null,
+      latency_ms: Number(record.latency_ms ?? record.latencyMs ?? 0),
+      reply: typeof record.reply === 'string' ? record.reply : undefined,
+      sessionId: String(
+        record.session_id ?? record.sessionId ?? payload.sessionId,
+      ),
+    }
+  } catch (error) {
     console.error(error)
     response.error = getV6ApiErrorMessage(
-      error?.response?.data,
+      getAxiosErrorData(error),
       'Error Generating Dashboard Schema',
+    )
+  }
+
+  return response
+}
+
+export const saveDashboardSchema = async (
+  payload: SaveDashboardSchemaRequest,
+) => {
+  const response: {
+    error: string
+  } = {
+    error: '',
+  }
+
+  const dashboardResult = payload.dashboard_result || payload.dashboard_json
+  if (!dashboardResult) {
+    response.error = 'dashboard_result is required'
+    return response
+  }
+
+  try {
+    const { status } = await axiosV6({
+      data: {
+        dashboard_json: dashboardResult,
+        dashboard_result: dashboardResult,
+        repositoryId: payload.repositoryId,
+        repository_id: payload.repositoryId,
+        tenantId: payload.tenantId,
+        tenant_id: payload.tenantId,
+        workflowId: payload.workflowId,
+        workflow_id: payload.workflowId,
+      },
+      headers: buildTenantHeaders(payload.tenantId),
+      method: 'POST',
+      skipCancellation: true,
+      timeout: DASHBOARD_API_TIMEOUT_MS,
+      url: `/dashboard/schema/save`,
+    })
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+  } catch (error) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      getAxiosErrorData(error),
+      'Error Saving Dashboard Schema',
     )
   }
 
@@ -197,10 +407,19 @@ export const getDashboardHtml = async (payload: DashboardDataRequest) => {
 
   try {
     const { data, status } = await axiosV6({
-      data: payload,
+      data: {
+        dashboard_json: payload.dashboard_json,
+        message: payload.message,
+        repository_id: payload.repositoryId,
+        session_id: payload.sessionId,
+        tenant_id: payload.tenantId,
+        workflow_id: payload.workflowId,
+      },
       headers: buildTenantHeaders(payload.tenantId),
       method: 'POST',
       responseType: 'text',
+      skipCancellation: true,
+      timeout: DASHBOARD_API_TIMEOUT_MS,
       url: `/dashboard/data`,
     })
 
@@ -208,14 +427,195 @@ export const getDashboardHtml = async (payload: DashboardDataRequest) => {
       throw new Error('invalid status code')
     }
 
-    response.html = typeof data === 'string' ? data : ''
-  } catch (error: any) {
+    response.html = extractDashboardHtml(data)
+  } catch (error) {
     console.error(error)
     response.error = getV6ApiErrorMessage(
-      error?.response?.data,
+      getAxiosErrorData(error),
       'Error Loading Dashboard Data',
     )
   }
+
+  return response
+}
+
+export const getSavedDashboardSchema = async (payload: SavedDashboardLookup) => {
+  const response: {
+    data: SavedDashboardSnapshot | null
+    error: string
+    notFound: boolean
+  } = {
+    data: null,
+    error: '',
+    notFound: false,
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      headers: buildTenantHeaders(payload.tenantId),
+      method: 'GET',
+      params: {
+        repositoryId: payload.repositoryId,
+        tenantId: payload.tenantId,
+        ...(payload.workflowId ? { workflowId: payload.workflowId } : {}),
+      },
+      skipCancellation: true,
+      timeout: DASHBOARD_API_TIMEOUT_MS,
+      url: `/dashboard/schema/saved`,
+    })
+
+    if (status === 404) {
+      response.notFound = true
+      return response
+    }
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    let body: unknown = data
+    if (typeof data === 'string') {
+      try {
+        body = JSON.parse(data)
+      } catch {
+        body = data
+      }
+    }
+
+    const record = asRecord(body) || {}
+    const nested =
+      asRecord(record.value) ||
+      asRecord(record.data) ||
+      asRecord(record.result) ||
+      record
+    const schema = parseDashboardResult(
+      nested.schemaJson ??
+        nested.schema_json ??
+        nested.dashboard_result ??
+        nested.dashboardResult ??
+        nested,
+    )
+
+    response.data = {
+      dashboardHtml: extractDashboardHtml(body),
+      repositoryId: String(
+        record.repositoryId ?? record.repository_id ?? payload.repositoryId ?? '',
+      ),
+      schema,
+      tenantId: String(
+        record.tenantId ?? record.tenant_id ?? payload.tenantId,
+      ),
+      workflowId: String(
+        record.workflowId ?? record.workflow_id ?? payload.workflowId ?? '',
+      ),
+    }
+  } catch (error) {
+    if (getAxiosStatus(error) === 404) {
+      response.notFound = true
+      return response
+    }
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      getAxiosErrorData(error),
+      'Error Loading Saved Dashboard Schema',
+    )
+  }
+
+  return response
+}
+
+export const getSavedDashboardHtml = async (payload: SavedDashboardLookup) => {
+  const response: {
+    error: string
+    html: string
+    notFound: boolean
+  } = {
+    error: '',
+    html: '',
+    notFound: false,
+  }
+
+  const params = {
+    raw: false,
+    repositoryId: payload.repositoryId,
+    tenantId: payload.tenantId,
+    ...(payload.workflowId ? { workflowId: payload.workflowId } : {}),
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      headers: buildTenantHeaders(payload.tenantId),
+      method: 'GET',
+      params,
+      skipCancellation: true,
+      timeout: DASHBOARD_API_TIMEOUT_MS,
+      url: `/dashboard/data/saved`,
+    })
+
+    if (status === 404) {
+      response.notFound = true
+      return response
+    }
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    let payload: unknown = data
+    if (typeof data === 'string') {
+      try {
+        payload = JSON.parse(data)
+      } catch {
+        payload = data
+      }
+    }
+
+    const record = asRecord(payload)
+    response.html =
+      (record ? readHtmlField(record) : '') || extractDashboardHtml(payload)
+  } catch (error) {
+    if (getAxiosStatus(error) === 404) {
+      response.notFound = true
+      return response
+    }
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      getAxiosErrorData(error),
+      'Error Loading Saved Dashboard',
+    )
+  }
+
+  return response
+}
+
+export const loadSavedRepositoryDashboard = async (
+  payload: SavedDashboardLookup,
+) => {
+  const response: {
+    error: string
+    html: string
+    schema: DashboardSchemaResult | null
+  } = {
+    error: '',
+    html: '',
+    schema: null,
+  }
+
+  const savedHtml = await getSavedDashboardHtml(payload)
+  if (savedHtml.error && !savedHtml.notFound) {
+    response.error = savedHtml.error
+  }
+  response.html = savedHtml.html
+  if (response.html) {
+    return response
+  }
+
+  const savedSchema = await getSavedDashboardSchema(payload)
+  if (savedSchema.error && !savedSchema.notFound) {
+    response.error = response.error || savedSchema.error
+  }
+  response.schema = savedSchema.data?.schema || null
+  response.html = savedSchema.data?.dashboardHtml || ''
 
   return response
 }
@@ -224,6 +624,10 @@ export const dashboardApiV6 = {
   getDashboardData,
   getDashboardHtml,
   getDashboardSchema,
+  getSavedDashboardHtml,
+  getSavedDashboardSchema,
+  loadSavedRepositoryDashboard,
+  saveDashboardSchema,
 }
 
 export default dashboardApiV6
