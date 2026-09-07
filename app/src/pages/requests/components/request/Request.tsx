@@ -12,6 +12,8 @@ import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { extractGenericRequestNumber } from '@/pages/requests/components/columns/useDynamicColumns'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
@@ -37,7 +39,6 @@ import {
   seedGmailFirstFileUpload,
   shouldSeedFirstFileUploadFromAttachment,
 } from '../workflow-request/utils/gmailFormAttachment'
-import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
 import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
@@ -515,15 +516,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-          String(p.processId || p.id) === jobKey
-            ? {
-              ...p,
-              apAgentJobId: null,
-              id: jobData.instanceId,
-              processId: jobData.instanceId,
-            }
-            : p,
-        )
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
         : state.processingProcesses
 
       return {
@@ -1055,10 +1056,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-      request.review ||
-      request._agentData?.[0]?.decision ||
-      request.completedAtUtc
-    )
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc
+      )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1222,30 +1223,29 @@ const Request = ({
   )
 
   const resolvedRequestNo = useMemo(() => {
-    return isGenericWorkflow
-      ? selectedItem?.formEntryId
-        ? `REQ-${selectedItem.formEntryId}`
-        : selectedItem?.referenceNumber ||
-        selectedItem?.requestNo ||
-        'REQ - ...'
-      : formModel?.['Invoice Number'] ||
+    if (isGenericWorkflow) {
+      const genericNo = extractGenericRequestNumber(selectedItem)
+      return genericNo === '-' ? 'REQ - ...' : genericNo
+    }
+    return (
+      formModel?.['Invoice Number'] ||
       formModel?.['Invoice No'] ||
       formModel?.['invoice_number'] ||
       formModel?.['invoice_no'] ||
       currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-      'Invoice No'
+        'Invoice No'
       ] ||
       currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-      'invoice_no'
+        'invoice_no'
       ] ||
       currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-      'Invoice Number'
+        'Invoice Number'
       ] ||
       currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-      'invoice_number'
+        'invoice_number'
       ] ||
       currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-      'invoice_num'
+        'invoice_num'
       ] ||
       currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
       selectedItem?.reqNo ||
@@ -1253,6 +1253,7 @@ const Request = ({
       selectedItem?.invoiceNumber ||
       selectedItem?.requestNo ||
       'REQ - ...'
+    )
   }, [isGenericWorkflow, selectedItem, formModel, currentAgentData])
 
   useEffect(() => {
@@ -1456,7 +1457,10 @@ const Request = ({
       })
       return
     }
-    if (currentBlockSettings.documentRequired && genericAttachments.length === 0) {
+    if (
+      currentBlockSettings.documentRequired &&
+      genericAttachments.length === 0
+    ) {
       showToast({
         message: t`At least one attachment is required before proceeding.`,
         variant: 'error',
@@ -1526,8 +1530,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-              selectedItem?.agentResponse || request?.agentResponse || {},
-            ),
+                selectedItem?.agentResponse || request?.agentResponse || {},
+              ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1628,10 +1632,10 @@ const Request = ({
             ? genericFormModel
             : Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                formModel,
-                selectedWorkflow,
-                request?._formDefinition,
-              )
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1928,19 +1932,14 @@ const Request = ({
 
   return (
     <div
-      className={`flex w-full min-h-0 flex-col overflow-hidden p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-full'}`}
+      className={`flex min-h-0 w-full flex-col overflow-hidden p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-full'}`}
     >
       <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
           actions={headerActions}
           agentData={currentAgentData}
-          assigneeLabel={assigneeLabel}
           approveLoading={submitting}
-          commentsCount={
-            isGenericWorkflow
-              ? genericComments.length
-              : selectedItem?.commentsCount || 0
-          }
+          assigneeLabel={assigneeLabel}
           currency={currency}
           enableAIInsights={true}
           hideActions={hideActions}
@@ -1950,6 +1949,7 @@ const Request = ({
           percent={jobStatus?.percent}
           poNumber={poVal}
           poValue={poValue}
+          requestNo={resolvedRequestNo}
           rightView={rightView}
           showApprove={requestListTab === 'Inbox'}
           simple={isGenericWorkflow}
@@ -1959,6 +1959,11 @@ const Request = ({
             isGenericWorkflow
               ? genericAttachments.length
               : selectedItem?.attachmentCount || 0
+          }
+          commentsCount={
+            isGenericWorkflow
+              ? genericComments.length
+              : selectedItem?.commentsCount || 0
           }
           lastActionAt={
             selectedItem?.lastActionDate ||
@@ -2000,7 +2005,6 @@ const Request = ({
             request?.userName ||
             authUserStore.getState().session?.name
           }
-          requestNo={resolvedRequestNo}
           stage={
             // `lastActionStageName` is the stage the request came FROM (the
             // last completed action), not where it currently sits — so it
@@ -2043,11 +2047,6 @@ const Request = ({
               <GenericRequestOverview
                 attachments={genericAttachments}
                 checklistChecked={checklistChecked}
-                checklistItems={
-                  Array.isArray(currentBlockSettings.checklistItems)
-                    ? currentBlockSettings.checklistItems
-                    : []
-                }
                 comments={genericComments}
                 documentRequired={!!currentBlockSettings.documentRequired}
                 formModel={genericFormModel}
@@ -2057,12 +2056,17 @@ const Request = ({
                 signatureConfirmed={signatureConfirmed}
                 userSignatureRequired={!!currentBlockSettings.userSignature}
                 viewOnly={requestListTab !== 'Inbox'}
+                checklistItems={
+                  Array.isArray(currentBlockSettings.checklistItems)
+                    ? currentBlockSettings.checklistItems
+                    : []
+                }
                 setRightView={setRightView}
                 onAttachmentsChanged={refetchGenericAttachments}
-                onCommentsChanged={refetchGenericComments}
                 onChecklistToggle={(id, checked) =>
                   setChecklistChecked((prev) => ({ ...prev, [id]: checked }))
                 }
+                onCommentsChanged={refetchGenericComments}
                 onFieldChange={handleGenericFieldChange}
                 onSignatureToggle={setSignatureConfirmed}
               />

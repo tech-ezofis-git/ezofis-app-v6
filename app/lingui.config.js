@@ -7,6 +7,7 @@ export default defineConfig({
       path: '<rootDir>/src/locales/{locale}/messages',
     },
   ],
+  compileNamespace: 'es',
   locales: ['en', 'ar', 'fr', 'ms'],
   sourceLocale: 'en',
 })

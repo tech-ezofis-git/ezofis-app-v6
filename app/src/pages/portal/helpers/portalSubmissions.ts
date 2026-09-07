@@ -14,8 +14,6 @@ export const PORTAL_STATUS_TONE: Record<PortalSubmissionStatus, string> = {
   'Rejected': 'bg-red-3 text-red-11',
 }
 
-export type PortalSubmissionSource = 'completed' | 'inbox' | 'sent'
-
 export type PortalSubmission = {
   amount: string
   id: string
@@ -28,6 +26,8 @@ export type PortalSubmission = {
   workflowId: string
   workflowName: string
 }
+
+export type PortalSubmissionSource = 'completed' | 'inbox' | 'sent'
 
 const PAGE_SIZE = 100
 const SOURCE_RANK: Record<PortalSubmissionSource, number> = {
@@ -172,10 +172,14 @@ const instanceIdOf = (item: Record<string, unknown>) =>
   )
 
 const requestNoOf = (item: Record<string, unknown>, id: string) => {
-  const explicit = textOf(
-    item.requestNo || item.referenceNumber || item.documentNumber,
-  )
+  const explicit = textOf(item.referenceNumber)
   if (explicit) return explicit
+  const entryId = item.formEntryId
+  if (entryId !== undefined && entryId !== null && entryId !== '') {
+    return `REQ-${entryId}`
+  }
+  const fallback = textOf(item.requestNo || item.documentNumber)
+  if (fallback) return fallback
   const short = id.replace(/-/g, '').slice(0, 8).toUpperCase()
   return short ? `REQ-${short}` : '—'
 }

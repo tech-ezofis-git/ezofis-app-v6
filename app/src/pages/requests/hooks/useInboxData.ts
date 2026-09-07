@@ -133,19 +133,23 @@ export const transformProcess = (
 
   const dynamicFields = fieldsSource
   let actions: any[] = []
-  if (
-    listTab === 'Inbox' ||
-    listTab === 'Exceptions' ||
-    listTab === 'Sent'
-  ) {
+  if (listTab === 'Inbox' || listTab === 'Exceptions' || listTab === 'Sent') {
     actions = getActionsForActivity(
       process.activityId,
       selectedWorkflow?.flowJson,
     )
   }
   const processId = process.workflowInstanceId || process.processId
+  const referenceNumber =
+    process.referenceNumber == null
+      ? ''
+      : String(process.referenceNumber).trim()
+  const formEntryId = process.formEntryId
   const requestNo =
-    process.referenceNumber ||
+    referenceNumber ||
+    (formEntryId !== undefined && formEntryId !== null && formEntryId !== ''
+      ? `REQ-${formEntryId}`
+      : '') ||
     (processId && typeof processId === 'string'
       ? `REQ-${processId.substring(0, 8).toUpperCase()}`
       : '') ||
@@ -274,12 +278,12 @@ const fetchInboxDataFn = async (
       ])
 
       if (inboxRes.error && sentRes.error && completedRes.error) {
-        throw new Error(
-          inboxRes.error || sentRes.error || completedRes.error,
-        )
+        throw new Error(inboxRes.error || sentRes.error || completedRes.error)
       }
 
-      const inboxPayload = unwrapListPayload(inboxRes.error ? {} : inboxRes.data)
+      const inboxPayload = unwrapListPayload(
+        inboxRes.error ? {} : inboxRes.data,
+      )
       const sentPayload = unwrapListPayload(sentRes.error ? {} : sentRes.data)
       const completedPayload = unwrapListPayload(
         completedRes.error ? {} : completedRes.data,

@@ -518,7 +518,7 @@ function PdfViewer({
       install: (pluginFunctions: { zoom?: (nextScale: number) => void }) => {
         viewerRef.current = pluginFunctions
       },
-      onViewerStateChange: (viewerState: { scale?: number }) => {
+      onViewerStateChange: (viewerState: any) => {
         if (viewerState?.scale) {
           setScale((previous) =>
             previous === viewerState.scale ? previous : viewerState.scale || previous,

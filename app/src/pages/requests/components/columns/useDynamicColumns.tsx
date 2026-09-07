@@ -745,17 +745,19 @@ const extractInvoiceDate = (row: any): string => {
   return '-'
 }
 
-// Backend `referenceNumber` values are long timestamp-based strings
-// (REQ-20260819095120360); `formEntryId` is a small sequential per-form
-// counter (1, 2, 3, ...) already returned on every process/instance
-// record, so it's what actually gives a short, human "REQ-1" style id.
+// Prefer the API's `referenceNumber` when it has a value. Empty / missing
+// `referenceNumber` keeps the short sequential `REQ-${formEntryId}` id
+// (REQ-1, REQ-2, ...).
 export const extractGenericRequestNumber = (row: any): string => {
   if (!row) return '-'
+  const referenceNumber =
+    row.referenceNumber == null ? '' : String(row.referenceNumber).trim()
+  if (referenceNumber) return referenceNumber
   const entryId = row.formEntryId
   if (entryId !== undefined && entryId !== null && entryId !== '') {
     return `REQ-${entryId}`
   }
-  return row.requestNo || row.referenceNumber || '-'
+  return row.requestNo || '-'
 }
 
 const extractInvoiceNumber = (row: any): string => {

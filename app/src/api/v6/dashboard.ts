@@ -561,18 +561,18 @@ export const getSavedDashboardHtml = async (payload: SavedDashboardLookup) => {
       throw new Error('invalid status code')
     }
 
-    let payload: unknown = data
+    let parsedData: unknown = data
     if (typeof data === 'string') {
       try {
-        payload = JSON.parse(data)
+        parsedData = JSON.parse(data)
       } catch {
-        payload = data
+        parsedData = data
       }
     }
 
-    const record = asRecord(payload)
+    const record = asRecord(parsedData)
     response.html =
-      (record ? readHtmlField(record) : '') || extractDashboardHtml(payload)
+      (record ? readHtmlField(record) : '') || extractDashboardHtml(parsedData)
   } catch (error) {
     if (getAxiosStatus(error) === 404) {
       response.notFound = true
