@@ -56,7 +56,9 @@ const ComboboxOption = ({
       <div className='min-w-0 flex-1'>
         <div className='truncate text-13 font-normal text-gray-12'>{name}</div>
         {description && (
-          <div className='mt-1 text-xs text-gray-10'>{description}</div>
+          <div className='mt-0.5 line-clamp-2 text-xs text-gray-10'>
+            {description}
+          </div>
         )}
       </div>
     </Base.Option>

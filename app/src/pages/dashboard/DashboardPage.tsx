@@ -34,7 +34,7 @@ const DashboardPage = () => {
   const setRepositoryId = useDashboardStore((state) => state.setRepositoryId)
 
   const [repositoryOptions, setRepositoryOptions] = useState<
-    Array<{ label: string; value: string }>
+    Array<{ description?: string; label: string; value: string }>
   >([])
   const [isLoadingRepos, setIsLoadingRepos] = useState(false)
   const [savedHtmlHeader, setSavedHtmlHeader] =
@@ -66,7 +66,13 @@ const DashboardPage = () => {
                 item?.label ||
                 id,
             )
-            return { label, value: id }
+            const description = String(
+              item?.description ||
+                item?.Description ||
+                item?.repositoryDescription ||
+                '',
+            ).trim()
+            return { description, label, value: id }
           })
           .filter((opt: any) => Boolean(opt.value && opt.label))
         if (active) {
@@ -95,6 +101,7 @@ const DashboardPage = () => {
   }, [])
 
   const selectOptions = repositoryOptions.map((opt) => ({
+    description: opt.description,
     id: opt.value,
     name: opt.label,
     value: opt.value,
@@ -154,13 +161,14 @@ const DashboardPage = () => {
                   </p>
                 </div>
                 <div className='flex items-center gap-3'>
-                  <div className='w-[190px] sm:w-[220px]'>
+                  <div className='w-[220px] sm:w-[280px]'>
                     <InputSelect
                       disabled={isLoadingRepos}
                       options={selectOptions}
                       placeholder={t`Repository`}
                       value={selectedOption}
                       searchable
+                      width={340}
                       onChange={(selected) =>
                         setRepositoryId(
                           selected?.value || String(selected?.id || ''),

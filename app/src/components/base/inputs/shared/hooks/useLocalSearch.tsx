@@ -10,7 +10,11 @@ export default function useLocalSearch(options: Option[] = []) {
     const list = options ?? []
     const trimmed = debounced.trim().toLowerCase()
     return trimmed
-      ? list.filter((o) => o.name.toLowerCase().includes(trimmed))
+      ? list.filter(
+          (o) =>
+            o.name.toLowerCase().includes(trimmed) ||
+            (o.description || '').toLowerCase().includes(trimmed),
+        )
       : list
   }, [options, debounced])
 
