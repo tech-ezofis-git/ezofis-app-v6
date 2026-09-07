@@ -117,6 +117,26 @@ export type DashboardKpi = {
   position?: string
 }
 
+export type DashboardPromptRequest = {
+  repositoryId?: string
+  sessionId?: string
+  tenantId: string
+  workflowId?: string
+}
+
+export type DashboardPromptResult = {
+  correlation_id?: string
+  latency_ms?: number
+  prompt: string
+  repository_id?: string
+  repository_name?: string
+  session_id: string
+  table?: string
+  tenant_id?: string
+  workflow_id?: string
+  workflow_name?: string
+}
+
 export type DashboardSchemaRequest = {
   message?: string
   repositoryId?: string
@@ -287,6 +307,103 @@ const getAxiosErrorData = (error: unknown) => {
   return (error as { response?: { data?: unknown } }).response?.data
 }
 
+const asId = (value?: string | null) => {
+  if (value == null) return ''
+  const trimmed = String(value).trim()
+  if (!trimmed || trimmed.toLowerCase() === 'null') return ''
+  return trimmed
+}
+
+const readStringField = (
+  record: Record<string, unknown>,
+  ...keys: string[]
+) => {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+    if (value != null && typeof value !== 'object') {
+      const text = String(value).trim()
+      if (text && text.toLowerCase() !== 'null') return text
+    }
+  }
+  return ''
+}
+
+export const suggestDashboardPrompt = async (
+  payload: DashboardPromptRequest,
+) => {
+  const response: {
+    data: DashboardPromptResult | null
+    error: string
+  } = {
+    data: null,
+    error: '',
+  }
+
+  const repositoryId = asId(payload.repositoryId)
+  const workflowId = asId(payload.workflowId)
+  const sessionId = asId(payload.sessionId)
+
+  try {
+    const { data, status } = await axiosV6({
+      data: {
+        ...(sessionId ? { session_id: sessionId } : {}),
+        tenant_id: asId(payload.tenantId),
+        ...(repositoryId ? { repository_id: repositoryId } : {}),
+        ...(workflowId ? { workflow_id: workflowId } : {}),
+      },
+      headers: buildTenantHeaders(payload.tenantId),
+      method: 'POST',
+      skipCancellation: true,
+      timeout: DASHBOARD_API_TIMEOUT_MS,
+      url: `/dashboard/prompts`,
+    })
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    const record = asRecord(data) || {}
+    const prompt = readStringField(record, 'prompt', 'Prompt', 'message')
+    if (!prompt) {
+      throw new Error('Dashboard prompt response is missing prompt')
+    }
+
+    response.data = {
+      correlation_id: readStringField(
+        record,
+        'correlation_id',
+        'correlationId',
+      ),
+      latency_ms: Number(record.latency_ms ?? record.latencyMs ?? 0),
+      prompt,
+      repository_id: readStringField(
+        record,
+        'repository_id',
+        'repositoryId',
+      ),
+      repository_name: readStringField(
+        record,
+        'repository_name',
+        'repositoryName',
+      ),
+      session_id: readStringField(record, 'session_id', 'sessionId'),
+      table: readStringField(record, 'table'),
+      tenant_id: readStringField(record, 'tenant_id', 'tenantId'),
+      workflow_id: readStringField(record, 'workflow_id', 'workflowId'),
+      workflow_name: readStringField(record, 'workflow_name', 'workflowName'),
+    }
+  } catch (error) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      getAxiosErrorData(error),
+      'Error Suggesting Dashboard Prompt',
+    )
+  }
+
+  return response
+}
+
 export const getDashboardSchema = async (payload: DashboardSchemaRequest) => {
   const response: {
     data: DashboardSchemaResponse | null
@@ -405,15 +522,22 @@ export const getDashboardHtml = async (payload: DashboardDataRequest) => {
     html: '',
   }
 
+  const repositoryId = asId(payload.repositoryId)
+  const workflowId = asId(payload.workflowId)
+  const sessionId = asId(payload.sessionId)
+  const message = asId(payload.message)
+
   try {
     const { data, status } = await axiosV6({
       data: {
-        dashboard_json: payload.dashboard_json,
-        message: payload.message,
-        repository_id: payload.repositoryId,
-        session_id: payload.sessionId,
-        tenant_id: payload.tenantId,
-        workflow_id: payload.workflowId,
+        ...(payload.dashboard_json
+          ? { dashboard_json: payload.dashboard_json }
+          : {}),
+        ...(message ? { message } : {}),
+        ...(repositoryId ? { repository_id: repositoryId } : {}),
+        ...(sessionId ? { session_id: sessionId } : {}),
+        tenant_id: asId(payload.tenantId),
+        ...(workflowId ? { workflow_id: workflowId } : {}),
       },
       headers: buildTenantHeaders(payload.tenantId),
       method: 'POST',
@@ -455,9 +579,13 @@ export const getSavedDashboardSchema = async (payload: SavedDashboardLookup) => 
       headers: buildTenantHeaders(payload.tenantId),
       method: 'GET',
       params: {
-        repositoryId: payload.repositoryId,
         tenantId: payload.tenantId,
-        ...(payload.workflowId ? { workflowId: payload.workflowId } : {}),
+        ...(asId(payload.repositoryId)
+          ? { repositoryId: asId(payload.repositoryId) }
+          : {}),
+        ...(asId(payload.workflowId)
+          ? { workflowId: asId(payload.workflowId) }
+          : {}),
       },
       skipCancellation: true,
       timeout: DASHBOARD_API_TIMEOUT_MS,
@@ -498,16 +626,17 @@ export const getSavedDashboardSchema = async (payload: SavedDashboardLookup) => 
 
     response.data = {
       dashboardHtml: extractDashboardHtml(body),
-      repositoryId: String(
-        record.repositoryId ?? record.repository_id ?? payload.repositoryId ?? '',
-      ),
+      repositoryId: readStringField(
+        record,
+        'repositoryId',
+        'repository_id',
+      ) || asId(payload.repositoryId),
       schema,
-      tenantId: String(
-        record.tenantId ?? record.tenant_id ?? payload.tenantId,
-      ),
-      workflowId: String(
-        record.workflowId ?? record.workflow_id ?? payload.workflowId ?? '',
-      ),
+      tenantId:
+        readStringField(record, 'tenantId', 'tenant_id') || payload.tenantId,
+      workflowId:
+        readStringField(record, 'workflowId', 'workflow_id') ||
+        asId(payload.workflowId),
     }
   } catch (error) {
     if (getAxiosStatus(error) === 404) {
@@ -601,21 +730,33 @@ export const loadSavedRepositoryDashboard = async (
     schema: null,
   }
 
-  const savedHtml = await getSavedDashboardHtml(payload)
-  if (savedHtml.error && !savedHtml.notFound) {
-    response.error = savedHtml.error
-  }
-  response.html = savedHtml.html
-  if (response.html) {
+  const savedSchema = await getSavedDashboardSchema(payload)
+  if (savedSchema.error && !savedSchema.notFound) {
+    response.error = savedSchema.error
     return response
   }
 
-  const savedSchema = await getSavedDashboardSchema(payload)
-  if (savedSchema.error && !savedSchema.notFound) {
-    response.error = response.error || savedSchema.error
+  const schema = savedSchema.data?.schema || null
+  response.schema = schema
+  if (!schema) {
+    return response
   }
-  response.schema = savedSchema.data?.schema || null
-  response.html = savedSchema.data?.dashboardHtml || ''
+
+  const repositoryId = asId(
+    payload.repositoryId || schema.repository_id || schema.repositoryId,
+  )
+  const workflowId = asId(payload.workflowId || schema.workflow_id)
+
+  const dataRes = await getDashboardHtml({
+    dashboard_json: schema,
+    repositoryId,
+    tenantId: payload.tenantId,
+    workflowId,
+  })
+  response.html = dataRes.html
+  if (!response.html) {
+    response.error = dataRes.error
+  }
 
   return response
 }
@@ -628,6 +769,7 @@ export const dashboardApiV6 = {
   getSavedDashboardSchema,
   loadSavedRepositoryDashboard,
   saveDashboardSchema,
+  suggestDashboardPrompt,
 }
 
 export default dashboardApiV6

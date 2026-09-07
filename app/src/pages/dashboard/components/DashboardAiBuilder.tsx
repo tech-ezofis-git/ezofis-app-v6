@@ -27,12 +27,13 @@ import {
 import {
   type DashboardChart,
   type DashboardKpi,
+  type DashboardPromptResult,
   type DashboardSchemaResult,
   getDashboardHtml,
   getDashboardSchema,
-  getSavedDashboardHtml,
-  getSavedDashboardSchema,
+  loadSavedRepositoryDashboard,
   saveDashboardSchema,
+  suggestDashboardPrompt,
 } from '@/api/v6/dashboard'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
@@ -58,6 +59,7 @@ import cn from '@/utils/cn'
 interface Props {
   repositoryId: string
   repositoryName: string
+  workflowId?: string
 }
 
 const COLORS = [
@@ -71,6 +73,7 @@ const COLORS = [
 export default function DashboardAiBuilder({
   repositoryId,
   repositoryName,
+  workflowId = '',
 }: Props) {
   const { t } = useLingui()
 
@@ -101,10 +104,45 @@ export default function DashboardAiBuilder({
   const [isEditMode, setIsEditMode] = useState(false)
   const [editableDesc, setEditableDesc] = useState('')
   const [sessionId, setSessionId] = useState('')
+  const [resolvedWorkflowId, setResolvedWorkflowId] = useState(workflowId)
   const [schemaResult, setSchemaResult] =
     useState<DashboardSchemaResult | null>(null)
   const [dashboardHtml, setDashboardHtml] = useState('')
   const schemaRequestRef = useRef(0)
+  const activeWorkflowId = resolvedWorkflowId || workflowId || ''
+
+  const applyPromptResult = (result: DashboardPromptResult) => {
+    if (result.session_id) setSessionId(result.session_id)
+    if (result.workflow_id) setResolvedWorkflowId(result.workflow_id)
+    setEditableDesc(result.prompt)
+  }
+
+  const generatePrompt = async () => {
+    setIsGeneratingDesc(true)
+    try {
+      const tenantId = authUserStore.getState().session?.tenantId || ''
+      const promptRes = await suggestDashboardPrompt({
+        repositoryId,
+        sessionId,
+        tenantId,
+        workflowId: activeWorkflowId,
+      })
+      if (promptRes.data?.prompt) {
+        applyPromptResult(promptRes.data)
+        return
+      }
+      if (promptRes.error) {
+        console.warn('Dashboard prompt API failed:', promptRes.error)
+      }
+      const desc = await generateRepositoryDescription(repositoryName)
+      setEditableDesc(desc)
+    } catch (err) {
+      console.error('Error auto-generating dashboard prompt:', err)
+      setEditableDesc(`I need to create a dashboard for ${repositoryName}`)
+    } finally {
+      setIsGeneratingDesc(false)
+    }
+  }
 
   const filtersProp = React.useMemo(
     () => [
@@ -224,29 +262,28 @@ export default function DashboardAiBuilder({
       setSchemaResult(null)
       setDashboardHtml('')
       setEditableDesc('')
+      setSessionId('')
+      setResolvedWorkflowId(workflowId || '')
 
       const tenantId = authUserStore.getState().session?.tenantId || ''
-      if (tenantId && repositoryId) {
-        const lookup = { repositoryId, tenantId }
-        const savedHtml = await getSavedDashboardHtml(lookup)
-        if (!active) return
-        if (savedHtml.html) {
-          setDashboardHtml(savedHtml.html)
-          setActiveStep(3)
-          setIsFullDashboardView(true)
-          return
+      if (tenantId && (repositoryId || workflowId)) {
+        const lookup = {
+          repositoryId,
+          tenantId,
+          workflowId: workflowId || undefined,
         }
-
-        const savedSchema = await getSavedDashboardSchema(lookup)
+        const saved = await loadSavedRepositoryDashboard(lookup)
         if (!active) return
-        const schemaResult = savedSchema.data?.schema
-        const schemaHtml = savedSchema.data?.dashboardHtml || ''
-        if (schemaHtml) {
-          setDashboardHtml(schemaHtml)
+        const schemaResult = saved.schema
+        if (saved.html.trim()) {
           if (schemaResult) {
             setSchemaResult(schemaResult)
             setEditableDesc(schemaResult.message || '')
+            if (schemaResult.workflow_id) {
+              setResolvedWorkflowId(schemaResult.workflow_id)
+            }
           }
+          setDashboardHtml(saved.html)
           setActiveStep(3)
           setIsFullDashboardView(true)
           return
@@ -254,6 +291,9 @@ export default function DashboardAiBuilder({
         if (schemaResult) {
           setSchemaResult(schemaResult)
           setEditableDesc(schemaResult.message || '')
+          if (schemaResult.workflow_id) {
+            setResolvedWorkflowId(schemaResult.workflow_id)
+          }
           setActiveStep(2)
           setIsFullDashboardView(false)
           return
@@ -267,6 +307,18 @@ export default function DashboardAiBuilder({
       }
 
       try {
+        const tenantId = authUserStore.getState().session?.tenantId || ''
+        const promptRes = await suggestDashboardPrompt({
+          repositoryId,
+          sessionId: '',
+          tenantId,
+          workflowId: workflowId || '',
+        })
+        if (!active) return
+        if (promptRes.data?.prompt) {
+          applyPromptResult(promptRes.data)
+          return
+        }
         const desc = await generateRepositoryDescription(repositoryName)
         if (!active) return
         setEditableDesc(desc)
@@ -284,7 +336,7 @@ export default function DashboardAiBuilder({
     return () => {
       active = false
     }
-  }, [repositoryId, repositoryName])
+  }, [repositoryId, repositoryName, workflowId])
 
   const runSchemaAndLoadData = async (promptText: string) => {
     const tenantId = authUserStore.getState().session?.tenantId || ''
@@ -297,7 +349,7 @@ export default function DashboardAiBuilder({
       })
       return
     }
-    if (!repositoryId) {
+    if (!repositoryId && !activeWorkflowId) {
       showToast({
         message: t`Select a repository first.`,
         variant: 'error',
@@ -313,8 +365,8 @@ export default function DashboardAiBuilder({
     }
 
     const requestId = ++schemaRequestRef.current
-    const newSessionId = crypto.randomUUID()
-    setSessionId(newSessionId)
+    const nextSessionId = sessionId || crypto.randomUUID()
+    setSessionId(nextSessionId)
     setIsGeneratingSchema(true)
     setIsGeneratingHtml(false)
     setDashboardHtml('')
@@ -324,8 +376,9 @@ export default function DashboardAiBuilder({
       const schemaRes = await getDashboardSchema({
         message,
         repositoryId,
-        sessionId: newSessionId,
+        sessionId: nextSessionId,
         tenantId,
+        workflowId: activeWorkflowId || undefined,
       })
       if (requestId !== schemaRequestRef.current) return
       if (schemaRes.error || !schemaRes.data?.dashboard_result) {
@@ -367,6 +420,7 @@ export default function DashboardAiBuilder({
           repositoryId,
           sessionId: sessionId || crypto.randomUUID(),
           tenantId,
+          workflowId: schemaResult.workflow_id || activeWorkflowId || undefined,
         })
         if (dataRes.html.trim()) {
           setDashboardHtml(dataRes.html)
@@ -375,15 +429,24 @@ export default function DashboardAiBuilder({
         if (dataRes.error) {
           showToast({ message: dataRes.error, variant: 'error' })
         }
+        return
       }
 
-      const cached = await getSavedDashboardHtml({
+      const saved = await loadSavedRepositoryDashboard({
         repositoryId,
         tenantId,
-        workflowId: schemaResult?.workflow_id || undefined,
+        workflowId: activeWorkflowId || undefined,
       })
-      if (cached.html.trim()) {
-        setDashboardHtml(cached.html)
+      if (saved.schema) {
+        setSchemaResult(saved.schema)
+        setEditableDesc(saved.schema.message || '')
+      }
+      if (saved.html.trim()) {
+        setDashboardHtml(saved.html)
+        return
+      }
+      if (saved.error) {
+        showToast({ message: saved.error, variant: 'error' })
       }
     } finally {
       setIsGeneratingHtml(false)
@@ -419,7 +482,7 @@ export default function DashboardAiBuilder({
       dashboard_result: schemaResult,
       repositoryId,
       tenantId,
-      workflowId: schemaResult.workflow_id || undefined,
+      workflowId: schemaResult.workflow_id || activeWorkflowId || undefined,
     })
     if (saveRes.error) {
       showToast({ message: saveRes.error, variant: 'error' })
@@ -535,7 +598,7 @@ export default function DashboardAiBuilder({
         dashboard_result: schemaResult,
         repositoryId,
         tenantId,
-        workflowId: schemaResult.workflow_id || undefined,
+        workflowId: schemaResult.workflow_id || activeWorkflowId || undefined,
       })
       if (saveRes.error) {
         showToast({ message: saveRes.error, variant: 'error' })
@@ -543,14 +606,6 @@ export default function DashboardAiBuilder({
       }
       if (!dashboardHtml) {
         await refreshDashboardData()
-      }
-      const cached = await getSavedDashboardHtml({
-        repositoryId,
-        tenantId,
-        workflowId: schemaResult.workflow_id || undefined,
-      })
-      if (cached.html?.trim()) {
-        setDashboardHtml(cached.html)
       }
       setIsEditMode(false)
       setIsFullDashboardView(true)
@@ -886,15 +941,7 @@ export default function DashboardAiBuilder({
                 size='xs'
                 variant='outline'
                 onClick={() => {
-                  setIsGeneratingDesc(true)
-                  void generateRepositoryDescription(repositoryName)
-                    .then((desc) => setEditableDesc(desc))
-                    .catch(() => {
-                      setEditableDesc(
-                        `I need to create a dashboard for ${repositoryName}`,
-                      )
-                    })
-                    .finally(() => setIsGeneratingDesc(false))
+                  void generatePrompt()
                 }}
               />
             </div>

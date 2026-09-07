@@ -5,12 +5,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   type DashboardChart,
   type DashboardKpi,
+  type DashboardPromptResult,
   type DashboardSchemaResult,
   getDashboardHtml,
   getDashboardSchema,
-  getSavedDashboardHtml,
   getSavedDashboardSchema,
+  loadSavedRepositoryDashboard,
   saveDashboardSchema,
+  suggestDashboardPrompt,
 } from '@/api/v6/dashboard'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
@@ -29,6 +31,7 @@ interface Props {
   onSavedHtmlHeaderChange?: (actions: SavedHtmlHeaderActions | null) => void
   repositoryId: string
   repositoryName: string
+  workflowId?: string
 }
 
 export type SavedHtmlHeaderActions = {
@@ -41,11 +44,13 @@ export default function DashboardApiBuilder({
   onSavedHtmlHeaderChange,
   repositoryId,
   repositoryName,
+  workflowId = '',
 }: Props) {
   const { t } = useLingui()
 
   const [activeStep, setActiveStep] = useState(1)
   const [sessionId, setSessionId] = useState('')
+  const [resolvedWorkflowId, setResolvedWorkflowId] = useState(workflowId)
   const [schema, setSchema] = useState<DashboardSchemaResult | null>(null)
   const [editableDesc, setEditableDesc] = useState('')
   const [isGeneratingDesc, setIsGeneratingDesc] = useState(false)
@@ -57,10 +62,32 @@ export default function DashboardApiBuilder({
   const [html, setHtml] = useState('')
 
   const tenantId = authUserStore.getState().session?.tenantId || ''
+  const activeWorkflowId = resolvedWorkflowId || workflowId || ''
+
+  const applyPromptResult = (result: DashboardPromptResult) => {
+    if (result.session_id) setSessionId(result.session_id)
+    if (result.workflow_id) setResolvedWorkflowId(result.workflow_id)
+    setEditableDesc(result.prompt)
+  }
 
   const generatePrompt = async () => {
     setIsGeneratingDesc(true)
     try {
+      const currentTenantId =
+        authUserStore.getState().session?.tenantId || tenantId
+      const promptRes = await suggestDashboardPrompt({
+        repositoryId,
+        sessionId,
+        tenantId: currentTenantId,
+        workflowId: activeWorkflowId,
+      })
+      if (promptRes.data?.prompt) {
+        applyPromptResult(promptRes.data)
+        return
+      }
+      if (promptRes.error) {
+        console.warn('Dashboard prompt API failed:', promptRes.error)
+      }
       const desc = await generateRepositoryDescription(repositoryName)
       setEditableDesc(desc)
     } catch (err) {
@@ -80,7 +107,7 @@ export default function DashboardApiBuilder({
       })
       return
     }
-    if (!repositoryId) {
+    if (!repositoryId && !activeWorkflowId) {
       showToast({
         message: t`Select a repository first.`,
         variant: 'error',
@@ -95,16 +122,17 @@ export default function DashboardApiBuilder({
       return
     }
 
-    const newSessionId = crypto.randomUUID()
-    setSessionId(newSessionId)
+    const nextSessionId = sessionId || crypto.randomUUID()
+    setSessionId(nextSessionId)
     setIsGeneratingSchema(true)
     setHtml('')
     try {
       const res = await getDashboardSchema({
         message,
         repositoryId,
-        sessionId: newSessionId,
+        sessionId: nextSessionId,
         tenantId,
+        workflowId: activeWorkflowId || undefined,
       })
       if (res.error || !res.data?.dashboard_result) {
         showToast({
@@ -131,19 +159,11 @@ export default function DashboardApiBuilder({
         repositoryId,
         sessionId: session,
         tenantId,
+        workflowId:
+          targetSchema.workflow_id || activeWorkflowId || undefined,
       })
       if (res.html.trim()) {
         setHtml(res.html)
-        return true
-      }
-
-      const cached = await getSavedDashboardHtml({
-        repositoryId,
-        tenantId,
-        workflowId: targetSchema.workflow_id || undefined,
-      })
-      if (cached.html.trim()) {
-        setHtml(cached.html)
         return true
       }
 
@@ -152,7 +172,7 @@ export default function DashboardApiBuilder({
         return false
       }
       showToast({
-        message: t`Live dashboard HTML was empty. Showing the last saved dashboard if available.`,
+        message: t`Live dashboard HTML was empty.`,
         variant: 'error',
       })
       return false
@@ -161,12 +181,28 @@ export default function DashboardApiBuilder({
     }
   }
 
-  const startGeminiPrompt = async (active: () => boolean) => {
+  const startSuggestedPrompt = async (active: () => boolean) => {
     setActiveStep(1)
     setSchema(null)
     setHtml('')
     setIsGeneratingDesc(true)
     try {
+      const currentTenantId =
+        authUserStore.getState().session?.tenantId || tenantId
+      const promptRes = await suggestDashboardPrompt({
+        repositoryId,
+        sessionId: '',
+        tenantId: currentTenantId,
+        workflowId: workflowId || '',
+      })
+      if (!active()) return
+      if (promptRes.data?.prompt) {
+        applyPromptResult(promptRes.data)
+        return
+      }
+      if (promptRes.error) {
+        console.warn('Dashboard prompt API failed:', promptRes.error)
+      }
       const desc = await generateRepositoryDescription(repositoryName)
       if (!active()) return
       setEditableDesc(desc)
@@ -191,37 +227,34 @@ export default function DashboardApiBuilder({
       setSchema(null)
       setHtml('')
       setEditableDesc('')
-      setSessionId(crypto.randomUUID())
+      setSessionId('')
+      setResolvedWorkflowId(workflowId || '')
 
       const currentTenantId = authUserStore.getState().session?.tenantId || ''
-      if (!currentTenantId || !repositoryId) {
-        await startGeminiPrompt(isActive)
+      if (!currentTenantId || (!repositoryId && !workflowId)) {
+        await startSuggestedPrompt(isActive)
         if (active) setIsLoadingSaved(false)
         return
       }
 
-      const lookup = { repositoryId, tenantId: currentTenantId }
-
-      const savedHtml = await getSavedDashboardHtml(lookup)
-      if (!active) return
-      if (savedHtml.html) {
-        setHtml(savedHtml.html)
-        setActiveStep(3)
-        setIsFullDashboardView(true)
-        setIsLoadingSaved(false)
-        return
+      const lookup = {
+        repositoryId,
+        tenantId: currentTenantId,
+        workflowId: workflowId || undefined,
       }
 
-      const savedSchema = await getSavedDashboardSchema(lookup)
+      const saved = await loadSavedRepositoryDashboard(lookup)
       if (!active) return
-      const schemaResult = savedSchema.data?.schema
-      const schemaHtml = savedSchema.data?.dashboardHtml || ''
-      if (schemaHtml) {
-        setHtml(schemaHtml)
+      const schemaResult = saved.schema
+      if (saved.html.trim()) {
         if (schemaResult) {
           setSchema(schemaResult)
           setEditableDesc(schemaResult.message || '')
+          if (schemaResult.workflow_id) {
+            setResolvedWorkflowId(schemaResult.workflow_id)
+          }
         }
+        setHtml(saved.html)
         setActiveStep(3)
         setIsFullDashboardView(true)
         setIsLoadingSaved(false)
@@ -230,12 +263,15 @@ export default function DashboardApiBuilder({
       if (schemaResult) {
         setSchema(schemaResult)
         setEditableDesc(schemaResult.message || '')
+        if (schemaResult.workflow_id) {
+          setResolvedWorkflowId(schemaResult.workflow_id)
+        }
         setActiveStep(2)
         setIsLoadingSaved(false)
         return
       }
 
-      await startGeminiPrompt(isActive)
+      await startSuggestedPrompt(isActive)
       if (active) setIsLoadingSaved(false)
     }
 
@@ -244,7 +280,7 @@ export default function DashboardApiBuilder({
       active = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repositoryId, repositoryName])
+  }, [repositoryId, repositoryName, workflowId])
 
   const toggleKpi = (id: string) => {
     if (!schema) return
@@ -270,7 +306,8 @@ export default function DashboardApiBuilder({
     if (!schema) return false
     const currentTenantId =
       authUserStore.getState().session?.tenantId || tenantId
-    const workflowId = schema.workflow_id || undefined
+    const schemaWorkflowId =
+      schema.workflow_id || activeWorkflowId || undefined
     setIsSaving(true)
     try {
       const saveRes = await saveDashboardSchema({
@@ -278,7 +315,7 @@ export default function DashboardApiBuilder({
         dashboard_result: schema,
         repositoryId,
         tenantId: currentTenantId,
-        workflowId: workflowId || undefined,
+        workflowId: schemaWorkflowId,
       })
       if (saveRes.error) {
         showToast({ message: saveRes.error, variant: 'error' })
@@ -306,16 +343,6 @@ export default function DashboardApiBuilder({
       await runData(schema, sessionId || crypto.randomUUID())
     }
 
-    const currentTenantId =
-      authUserStore.getState().session?.tenantId || tenantId
-    const cached = await getSavedDashboardHtml({
-      repositoryId,
-      tenantId: currentTenantId,
-      workflowId: schema?.workflow_id || undefined,
-    })
-    if (cached.html?.trim()) {
-      setHtml(cached.html)
-    }
     setActiveStep(3)
     setIsFullDashboardView(true)
     showToast({
@@ -325,21 +352,30 @@ export default function DashboardApiBuilder({
   }
 
   const reloadSavedHtml = async () => {
+    if (schema) {
+      await runData(schema, sessionId || '')
+      return
+    }
+
     setIsGeneratingHtml(true)
     try {
       const currentTenantId =
         authUserStore.getState().session?.tenantId || tenantId
-      const cached = await getSavedDashboardHtml({
+      const saved = await loadSavedRepositoryDashboard({
         repositoryId,
         tenantId: currentTenantId,
-        workflowId: schema?.workflow_id || undefined,
+        workflowId: activeWorkflowId || undefined,
       })
-      if (cached.html.trim()) {
-        setHtml(cached.html)
+      if (saved.schema) {
+        setSchema(saved.schema)
+        setEditableDesc(saved.schema.message || '')
+      }
+      if (saved.html.trim()) {
+        setHtml(saved.html)
         return
       }
-      if (schema) {
-        await runData(schema, sessionId || crypto.randomUUID())
+      if (saved.error) {
+        showToast({ message: saved.error, variant: 'error' })
       }
     } finally {
       setIsGeneratingHtml(false)
