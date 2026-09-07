@@ -22,6 +22,14 @@ public sealed class ApAgentMasterLookupService : IApAgentMasterLookupService
     private static readonly string[] CurrencyAliases = ["Currency"];
     private static readonly string[] LineTableAliases =
         ["PO Line Item", "PO Line Items", "PO_Line_Item", "Lines"];
+    private static readonly string[] AddressAliases =
+        ["Supplier Address", "Supplier_Address", "Vendor Address"];
+    private static readonly string[] ShipToAliases =
+        ["Ship To Address", "Ship_To_Address"];
+    private static readonly string[] PoDateAliases = ["PO Date", "PO_Date"];
+    private static readonly string[] DueDateAliases = ["Due Date", "Due_Date"];
+    private static readonly string[] TermsAliases = ["Terms"];
+    private static readonly string[] BuyerAliases = ["Buyer"];
     private static readonly string[] LineIdAliases = ["Line", "Part Number", "Part_Number", "id"];
     private static readonly string[] LineDescriptionAliases = ["Description", "description"];
     private static readonly string[] LineQtyAliases = ["Quantity", "Qty", "qty"];
@@ -249,7 +257,13 @@ public sealed class ApAgentMasterLookupService : IApAgentMasterLookupService
             Amount = total,
             Currency = currency,
             Lines = lines,
-            FormId = formId
+            FormId = formId,
+            SupplierAddress = FirstString(row, controls, AddressAliases),
+            ShipToAddress = FirstString(row, controls, ShipToAliases),
+            PoDate = FirstString(row, controls, PoDateAliases),
+            DueDate = FirstString(row, controls, DueDateAliases),
+            Terms = FirstString(row, controls, TermsAliases),
+            Buyer = FirstString(row, controls, BuyerAliases)
         };
     }
 

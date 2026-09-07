@@ -28,6 +28,24 @@ public sealed class ApAgentPoMasterDto
 
     [JsonPropertyName("form_id")]
     public string? FormId { get; init; }
+
+    [JsonPropertyName("supplier_address")]
+    public string? SupplierAddress { get; init; }
+
+    [JsonPropertyName("ship_to_address")]
+    public string? ShipToAddress { get; init; }
+
+    [JsonPropertyName("po_date")]
+    public string? PoDate { get; init; }
+
+    [JsonPropertyName("due_date")]
+    public string? DueDate { get; init; }
+
+    [JsonPropertyName("terms")]
+    public string? Terms { get; init; }
+
+    [JsonPropertyName("buyer")]
+    public string? Buyer { get; init; }
 }
 
 public sealed class ApAgentPoLineDto
