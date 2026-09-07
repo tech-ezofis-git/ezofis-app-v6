@@ -1,69 +1,96 @@
 import type { Edge, Node } from '@xyflow/react'
+import { generateId } from './generateId'
+import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 
 function getNodeDefaults(toolType: string) {
-  const typeStr = (toolType || '').toLowerCase()
-  if (typeStr.includes('ocr'))
+  const typeStr = normalizeNodeToolType(toolType)
+  if (typeStr === NODE_TOOL_TYPE.OCR_AGENT || typeStr.includes('ocr'))
     return {
       icon: 'lucide:scan-text',
       iconColor: '#2563eb',
       subLabel: 'Extract text from images/PDFs',
     }
-  if (typeStr.includes('ap agent'))
+  if (typeStr === NODE_TOOL_TYPE.AP_AGENT)
     return {
       icon: 'lucide:receipt-text',
       iconColor: '#059669',
       subLabel: 'Accounts Payable automation',
     }
-  if (typeStr.includes('ftp'))
+  if (typeStr === NODE_TOOL_TYPE.FTP_AGENT || typeStr.includes('ftp'))
     return {
       icon: 'lucide:server',
       iconColor: '#7c3aed',
       subLabel: 'File Transfer Protocol',
     }
-  if (typeStr.includes('google drive'))
+  if (typeStr === NODE_TOOL_TYPE.KYC_AGENT || typeStr.includes('kyc'))
+    return {
+      icon: 'lucide:shield-check',
+      iconColor: '#d97706',
+      subLabel: 'Verify identity & compliance documents',
+    }
+  if (
+    typeStr === NODE_TOOL_TYPE.PROCUREMENT_AGENT ||
+    typeStr.includes('procurement')
+  )
+    return {
+      icon: 'lucide:shopping-bag',
+      iconColor: '#0d9488',
+      subLabel: 'Automate requisitions & vendor POs',
+    }
+  if (
+    typeStr === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT ||
+    typeStr.includes('document_generate') ||
+    typeStr.includes('doc_gen')
+  )
+    return {
+      icon: 'lucide:file-text',
+      iconColor: '#4f46e5',
+      subLabel: 'Generate PDF & Word docs from templates',
+    }
+  if (typeStr === NODE_TOOL_TYPE.GOOGLE_DRIVE)
     return {
       icon: 'logos:google-drive',
       iconColor: '',
       subLabel: 'Store or collect files from Google Drive',
     }
-  if (typeStr.includes('onedrive'))
+  if (typeStr === NODE_TOOL_TYPE.ONEDRIVE)
     return {
       icon: 'logos:microsoft-onedrive',
       iconColor: '',
       subLabel: 'Microsoft OneDrive integration',
     }
-  if (typeStr.includes('gmail'))
+  if (typeStr === NODE_TOOL_TYPE.GMAIL)
     return {
       icon: 'logos:google-gmail',
       iconColor: '',
       subLabel: 'Send or receive emails',
     }
-  if (typeStr.includes('outlook'))
+  if (typeStr === NODE_TOOL_TYPE.OUTLOOK)
     return {
       icon: 'vscode-icons:file-type-outlook',
       iconColor: '',
       subLabel: 'Microsoft Outlook integration',
     }
-  if (typeStr.includes('slack'))
+  if (typeStr === NODE_TOOL_TYPE.SLACK)
     return {
       icon: 'logos:slack-icon',
       iconColor: '',
       subLabel: 'Send channel messages',
     }
-  if (typeStr.includes('teams'))
+  if (typeStr === NODE_TOOL_TYPE.TEAMS)
     return {
       icon: 'logos:microsoft-teams',
       iconColor: '',
       subLabel: 'Microsoft Teams integration',
     }
-  if (typeStr.includes('condition'))
+  if (typeStr === NODE_TOOL_TYPE.CONDITION)
     return {
       icon: 'lucide:split',
       iconColor: '#f97316',
       subLabel: 'Check logic conditions',
     }
   if (
-    typeStr.includes('manual user') ||
+    typeStr === NODE_TOOL_TYPE.MANUAL_USER ||
     typeStr.includes('verifier') ||
     typeStr.includes('actor')
   )
@@ -73,16 +100,17 @@ function getNodeDefaults(toolType: string) {
       subLabel: 'Trigger manually by user',
     }
   if (
+    typeStr === NODE_TOOL_TYPE.FORM_SUBMISSION ||
     typeStr.includes('form') ||
-    typeStr.includes('trigger') ||
-    typeStr.includes('initiator')
+    typeStr === 'trigger' ||
+    typeStr === 'initiator'
   )
     return {
       icon: 'lucide:file-input',
       iconColor: '#ea580c',
       subLabel: 'Trigger on new form entry',
     }
-  if (typeStr.includes('end') || typeStr.includes('action'))
+  if (typeStr === NODE_TOOL_TYPE.END || typeStr === 'action')
     return {
       icon: 'lucide:party-popper',
       iconColor: 'var(--color-secondary-9)',
@@ -94,19 +122,35 @@ function getNodeDefaults(toolType: string) {
 function mapLegacyTypeToToolType(legacyType: string, label: string): string {
   switch (legacyType) {
     case 'OCR':
-      return 'ocr agent'
+      return NODE_TOOL_TYPE.OCR_AGENT
     case 'AP_AGENT':
-      return 'ap agent'
+      return NODE_TOOL_TYPE.AP_AGENT
+    case 'KYC_AGENT':
+      return NODE_TOOL_TYPE.KYC_AGENT
+    case 'PROCUREMENT_AGENT':
+      return NODE_TOOL_TYPE.PROCUREMENT_AGENT
+    case 'DOCUMENT_GENERATE_AGENT':
+      return NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT
     case 'CONDITION':
-      return 'condition'
+      return NODE_TOOL_TYPE.CONDITION
     case 'INTERNAL_ACTOR':
-      return 'manual user'
-    case 'START':
-      return label || 'trigger'
+      return NODE_TOOL_TYPE.MANUAL_USER
+    case 'START': {
+      const fromLabel = normalizeNodeToolType(label)
+      if (
+        fromLabel === NODE_TOOL_TYPE.GMAIL ||
+        fromLabel === NODE_TOOL_TYPE.OUTLOOK ||
+        fromLabel === NODE_TOOL_TYPE.MANUAL_USER ||
+        fromLabel === NODE_TOOL_TYPE.FORM_SUBMISSION
+      ) {
+        return fromLabel
+      }
+      return NODE_TOOL_TYPE.FORM_SUBMISSION
+    }
     case 'END':
-      return label || 'action'
+      return NODE_TOOL_TYPE.END
     default:
-      return label || legacyType
+      return normalizeNodeToolType(label || legacyType)
   }
 }
 
@@ -198,7 +242,9 @@ export const importWorkflow = (
       const connectorType = String(
         mailSettings.connectorType || 'gmail',
       ).toLowerCase()
-      toolType = connectorType.includes('outlook') ? 'outlook' : 'gmail'
+      toolType = connectorType.includes('outlook')
+        ? NODE_TOOL_TYPE.OUTLOOK
+        : NODE_TOOL_TYPE.GMAIL
       if (
         mailSettings.connectorId !== undefined &&
         mailSettings.connectorId !== null &&
@@ -241,7 +287,7 @@ export const importWorkflow = (
         }
       }
     } else if (isManualStart) {
-      toolType = 'manual user'
+      toolType = NODE_TOOL_TYPE.MANUAL_USER
     }
 
     if (connectorId === undefined) {
@@ -265,7 +311,10 @@ export const importWorkflow = (
     // Map AP Agent nested settings into flat UI fields used by APAgentSettingsPanel
     const apAgent = block.settings?.apAgent
     let apAgentUi: Record<string, unknown> = {}
-    if (apAgent && (toolType === 'ap agent' || block.type === 'AP_AGENT')) {
+    if (
+      apAgent &&
+      (toolType === NODE_TOOL_TYPE.AP_AGENT || block.type === 'AP_AGENT')
+    ) {
       const invoiceTypeMap: Record<string, string> = {
         NON_PO: 'Non-PO',
         NON_PO_INVOICE: 'Non-PO',
@@ -280,7 +329,8 @@ export const importWorkflow = (
         : []
 
       const toMasterOption = (id: unknown) => {
-        if (id === null || id === undefined || id === '' || id === 0) return null
+        if (id === null || id === undefined || id === '' || id === 0)
+          return null
         return { id, name: String(id) }
       }
 
@@ -352,23 +402,35 @@ export const importWorkflow = (
         fromDomainNameEnabled,
         fromMailAddressEnabled,
         fromMailAddresses,
+        generatePDF: Boolean(
+          block.settings?.generatePDF ||
+            (Array.isArray(block.settings?.generatePDFFields) &&
+              block.settings.generatePDFFields.length > 0),
+        ),
+        pdfTemplate: block.settings?.pdfTemplate,
+        pdfTemplateJson:
+          typeof block.settings?.pdfTemplateJson === 'string'
+            ? block.settings.pdfTemplateJson
+            : block.settings?.pdfTemplate
+              ? JSON.stringify(block.settings.pdfTemplate, null, 2)
+              : '',
         hasAttachmentEnabled,
         icon: defaults.icon,
         iconColor: defaults.iconColor,
         initiateBy: block.settings?.initiateBy,
         initiateMode: block.settings?.initiateMode,
-        label: nodeLabel,
-        mailContentEnabled,
-        mailContentToMonitor,
-        mailSubjectEnabled,
-        mailSubjectToMonitor,
-        masterConditions: block.settings?.masterConditions,
         isGroupEnabled: Array.isArray(block.settings?.groups)
           ? block.settings.groups.length > 0
           : undefined,
         isUserEnabled: Array.isArray(block.settings?.users)
           ? block.settings.users.length > 0
           : undefined,
+        label: nodeLabel,
+        mailContentEnabled,
+        mailContentToMonitor,
+        mailSubjectEnabled,
+        mailSubjectToMonitor,
+        masterConditions: block.settings?.masterConditions,
         selectedGroups: Array.isArray(block.settings?.groups)
           ? block.settings.groups
               .map((g: any) => {
@@ -417,9 +479,74 @@ export const importWorkflow = (
           : undefined,
         standardCondition: block.settings?.standardCondition ?? true,
         subLabel: defaults.subLabel,
-        toolType: toolType,
+        toolType: normalizeNodeToolType(toolType),
         type: nodeType,
         warning: false,
+
+        // Manual User (INTERNAL_ACTOR) - General / Action-By
+        isManagerEnabled: block.settings?.isManagerEnabled ?? false,
+        isToRequesterEnabled: block.settings?.isToRequesterEnabled ?? false,
+        isDynamicUserEnabled: block.settings?.isDynamicUserEnabled ?? false,
+        dynamicUserField: block.settings?.dynamicUserField ?? null,
+        isMasterUserEnabled: block.settings?.isMasterUserEnabled ?? false,
+        masterUserColumn: block.settings?.masterUserColumn ?? '',
+        isActedActivityEnabled:
+          block.settings?.isActedActivityEnabled ?? false,
+        actedActivityBlockId: block.settings?.actedActivityBlockId ?? null,
+        isCoordinatorEnabled: block.settings?.isCoordinatorEnabled ?? false,
+        internalForward: block.settings?.internalForward ?? false,
+        forwardedUserAction: block.settings?.forwardedUserAction ?? '',
+        internalForwardUser: Array.isArray(block.settings?.internalForwardUser)
+          ? block.settings.internalForwardUser.map(String)
+          : [],
+        internalForwardGroup: Array.isArray(
+          block.settings?.internalForwardGroup,
+        )
+          ? block.settings.internalForwardGroup.map(String)
+          : [],
+        partialApprove: block.settings?.partialApprove ?? 'ALL',
+        fullApprovalAction: block.settings?.fullApprovalAction ?? '',
+        documentRequired: block.settings?.documentRequired ?? false,
+        userSignature: block.settings?.userSignature ?? false,
+        generatePDFFields: Array.isArray(block.settings?.generatePDFFields)
+          ? block.settings.generatePDFFields.map(String)
+          : [],
+        hasFooter: block.settings?.hasFooter ?? false,
+        footerText: block.settings?.footerText ?? '',
+        generateCSV: block.settings?.generateCSV ?? false,
+        generateCSVFields: Array.isArray(block.settings?.generateCSVFields)
+          ? block.settings.generateCSVFields.map(String)
+          : [],
+
+        // Manual User - Security & Form Access
+        formEditAccess: block.settings?.formEditAccess ?? 'ALL',
+        formEditControls: Array.isArray(block.settings?.formEditControls)
+          ? block.settings.formEditControls.map((r: any) => ({
+              id: r.id || generateId(),
+              formFields: Array.isArray(r.formFields) ? r.formFields : [],
+              userId: String(r.userId ?? ''),
+            }))
+          : [],
+        formVisibilityAccess: block.settings?.formVisibilityAccess ?? 'ALL',
+        formSecureControls: Array.isArray(block.settings?.formSecureControls)
+          ? block.settings.formSecureControls.map((r: any) => ({
+              id: r.id || generateId(),
+              formFields: Array.isArray(r.formFields) ? r.formFields : [],
+              userId: String(r.userId ?? ''),
+            }))
+          : [],
+        mandatoryFields: Array.isArray(block.settings?.mandatoryFields)
+          ? block.settings.mandatoryFields.map(String)
+          : [],
+
+        // Manual User - Checklist
+        checklistItems: Array.isArray(block.settings?.checklistItems)
+          ? block.settings.checklistItems.map((i: any) => ({
+              id: i.id || generateId(),
+              label: i.label || '',
+              required: i.required !== false,
+            }))
+          : [],
         ...apAgentUi,
         // specifically map the legacy block properties we might need for rendering
         // but avoid polluting the new structure with unmapped settings
@@ -433,24 +560,47 @@ export const importWorkflow = (
     }
   })
 
+  const validNodeIds = new Set(nodes.map((n) => n.id))
+
   const edges: Edge[] = Array.isArray(legacyJson.rules)
-    ? legacyJson.rules.map((rule: any) => {
-        return {
-          data: {
-            action: rule.proceedAction, // Map legacy proceedAction to the new builder's expected 'action' field
-            confirm: rule.confirm,
-            passwordAccess: rule.passwordAccess,
-            proceedAction: rule.proceedAction,
-            remarks: rule.remarks,
-            signature: rule.signature,
-          },
-          id: rule.id,
-          source: rule.fromBlockId,
-          target: rule.toBlockId,
-          type: 'custom',
-        }
-      })
+    ? (legacyJson.rules
+        .map((rule: any) => {
+          const sourceId = String(rule.fromBlockId || rule.from || '')
+          const targetId = String(rule.toBlockId || rule.to || '')
+          if (!sourceId || !targetId) return null
+          if (!validNodeIds.has(sourceId) || !validNodeIds.has(targetId))
+            return null
+
+          const actionName = rule.action || rule.proceedAction || 'Submit'
+          return {
+            data: {
+              action: actionName,
+              confirm: rule.confirm ?? false,
+              passwordAccess: rule.passwordAccess ?? false,
+              proceedAction: actionName,
+              remarks: rule.remarks ?? false,
+              signature: rule.signature ?? false,
+            },
+            id: String(rule.id || `e_${sourceId}_${targetId}`),
+            source: sourceId,
+            target: targetId,
+            type: 'custom',
+          }
+        })
+        .filter(Boolean) as Edge[])
     : []
+
+  if (edges.length === 0 && nodes.length > 1) {
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({
+        data: {},
+        id: `e_${nodes[i].id}_${nodes[i + 1].id}`,
+        source: nodes[i].id,
+        target: nodes[i + 1].id,
+        type: 'custom',
+      })
+    }
+  }
 
   return { edges, nodes }
 }

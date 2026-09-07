@@ -3,32 +3,24 @@ import type { Form } from '@/types/form'
 import cn from '@/utils/cn'
 
 interface Props {
-  status: Form['status'] | string
+  status: Form['status'] | string | number
 }
 
 const FormStatusBadge = ({ status }: Props) => {
   const normalized = String(status || '').trim().toUpperCase()
 
   const { className, label } = useMemo(() => {
-    switch (normalized) {
-      case 'PUBLISHED':
-        return {
-          className:
-            'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]',
-          label: 'Published',
-        }
-      case 'DRAFT':
-        return {
-          className:
-            'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
-          label: 'Draft',
-        }
-      default:
-        return {
-          className:
-            'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
-          label: status || '—',
-        }
+    if (normalized === 'PUBLISHED' || normalized === '1' || status === 1) {
+      return {
+        className:
+          'border-[var(--green-5)] bg-[var(--green-3)] text-[var(--green-11)]',
+        label: 'Published',
+      }
+    }
+    return {
+      className:
+        'border-[var(--gray-4)] bg-[var(--gray-2)] text-[var(--gray-10)]',
+      label: 'Draft',
     }
   }, [normalized, status])
 

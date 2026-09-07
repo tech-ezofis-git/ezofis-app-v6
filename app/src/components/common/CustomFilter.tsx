@@ -415,7 +415,7 @@ export default function CustomFilter({
       (filter) => filter.id === activeFilterDropdown,
     )
     if (!activeFilter?.searchable) return
-    if (activeFilter.options.length > 0) return
+    if ((activeFilter.options ?? []).length > 0) return
 
     if (skipMoreFilterDebounceRef.current) {
       skipMoreFilterDebounceRef.current = false
@@ -635,7 +635,9 @@ export default function CustomFilter({
         {filters.map((filter) => {
           const selectedValues = parseFilterValues(activeFilters[filter.id])
           const firstValue = selectedValues[0] || ''
-          const firstOption = filter.options.find((o) => o.value === firstValue)
+          const firstOption = (filter.options ?? []).find(
+            (o) => o.value === firstValue,
+          )
           let displayLabel = filter.label
           if (selectedValues.length === 1) {
             const optionLabel = firstOption?.label || ''
@@ -738,7 +740,7 @@ export default function CustomFilter({
                     {isDate ? (
                       <DateFilterMenu
                         options={
-                          filter.options.length > 0
+                          filter.options?.length > 0
                             ? filter.options
                             : DEFAULT_DATE_RANGE_OPTIONS
                         }
@@ -965,13 +967,13 @@ export default function CustomFilter({
         )}
 
         {afterSearchActions ? (
-          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {afterSearchActions}
           </div>
         ) : null}
 
         {viewMode && onViewModeChange && (
-          <div className='ml-1 flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
+          <div className='flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--border-default)] bg-[var(--gray-1)] p-1'>
             <Tooltip content={t`Grid View`} openDelay={500}>
               <button
                 type='button'
@@ -1004,7 +1006,7 @@ export default function CustomFilter({
         )}
 
         {actionButtons && actionButtons.length > 0 && (
-          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {actionButtons.map((btn) => {
               const btnEl = btn.isIconButton ? (
                 <IconButton
@@ -1041,13 +1043,13 @@ export default function CustomFilter({
         )}
 
         {trailingActions ? (
-          <div className='ml-1 flex shrink-0 items-center gap-1.5'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {trailingActions}
           </div>
         ) : null}
 
         {addButton && (
-          <div className='ml-1 flex shrink-0 items-center'>
+          <div className='flex shrink-0 items-center'>
             {addButton.tooltip ? (
               <Tooltip content={addButton.tooltip}>
                 {addButton.label ? (

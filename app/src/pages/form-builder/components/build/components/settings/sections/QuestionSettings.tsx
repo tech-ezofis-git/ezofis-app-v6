@@ -1,25 +1,107 @@
-import { Button, Divider, NumberInput, SegmentedControl } from '@mantine/core'
+import {
+  Button,
+  Divider,
+  NumberInput,
+  SegmentedControl,
+  Select,
+  Tooltip,
+} from '@mantine/core'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import type { Question } from '@/pages/form-builder/store/formStore'
+import type {
+  LogicRule,
+  Question,
+  QuestionType,
+} from '@/pages/form-builder/store/formStore'
+import {
+  getRepositoryItemFilterFields,
+  getRepositorys,
+} from '@/api/v6/folder/folder'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
-import { useFormStore } from '@/pages/form-builder/store/formStore'
+import { classNames as baseInputClassNames } from '@/components/base/inputs/shared/constants'
+import SortableContainer from '@/components/base/sortable/SortableContainer'
+import SortableItem from '@/components/base/sortable/SortableItem'
+import { generateId, useFormStore } from '@/pages/form-builder/store/formStore'
 import cn from '@/utils/cn'
 import SettingsSection from '../../../../common/SettingsSection'
+import FormulaBuilder from './FormulaBuilder'
+import TableColumnSettingsPanel from './TableColumnSettingsPanel'
+
+const TABLE_COLUMN_TYPES: Array<{ label: string; value: QuestionType }> = [
+  { label: 'Short Text', value: 'SHORT_TEXT' },
+  { label: 'Long Text', value: 'LONG_TEXT' },
+  { label: 'Number', value: 'NUMBER' },
+  { label: 'Currency', value: 'CURRENCY_AMOUNT' },
+  { label: 'Date', value: 'DATE' },
+  { label: 'Time', value: 'TIME' },
+  { label: 'Date & Time', value: 'DATE_TIME' },
+  { label: 'Single Select', value: 'SINGLE_SELECT' },
+  { label: 'Multi Select', value: 'MULTI_SELECT' },
+  { label: 'Single Choice', value: 'SINGLE_CHOICE' },
+  { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
+  { label: 'File Upload', value: 'FILE_UPLOAD' },
+  { label: 'Image Upload', value: 'IMAGE_UPLOAD' },
+  { label: 'Signature', value: 'SIGNATURE' },
+  { label: 'Rating', value: 'RATING' },
+  { label: 'Yes/No Toggle', value: 'YES_NO_TOGGLE' },
+  { label: 'Phone Number', value: 'PHONE_NUMBER' },
+  { label: 'Email', value: 'EMAIL' },
+  { label: 'URL', value: 'URL' },
+  { label: 'Calculated', value: 'CALCULATED' },
+  { label: 'Address', value: 'ADDRESS' },
+  { label: 'Counter', value: 'COUNTER' },
+  { label: 'Opinion Scale', value: 'OPINION_SCALE' },
+  { label: 'Score', value: 'SCORE' },
+]
 
 interface QuestionSettingsProps {
   activeQuestion: Question
 }
 
-const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
+const QuestionSettings = ({
+  activeQuestion: rawQuestion,
+}: QuestionSettingsProps) => {
+  const activeQuestion = {
+    ...rawQuestion,
+    settings: {
+      ...rawQuestion.settings,
+      general: rawQuestion.settings?.general ?? {},
+      logic: rawQuestion.settings?.logic ?? [],
+      lookupSettings: rawQuestion.settings?.lookupSettings ?? {},
+      specific: rawQuestion.settings?.specific ?? {},
+      validation: rawQuestion.settings?.validation ?? {},
+    },
+  }
   const updateQuestion = useFormStore((state) => state.updateQuestion)
   const panels = useFormStore((state) => state.panels)
-  const allQuestions = panels.flatMap((p) => p.fields)
+  const allQuestions = (panels ?? []).flatMap((p) => p.fields ?? [])
 
-  const [openSetup, setOpenSetup] = useState(false)
+  const currentRepoId = activeQuestion.settings.specific.repositoryId || ''
+
+  const { data: repositories = [] } = useQuery({
+    queryKey: ['repositories'],
+    queryFn: async () => {
+      const res = await getRepositorys()
+      return Array.isArray(res.data) ? res.data : []
+    },
+  })
+
+  const { data: repositoryFields = [] } = useQuery({
+    enabled: !!currentRepoId,
+    queryKey: ['repositoryItemFilterFields', currentRepoId],
+    queryFn: async () => {
+      if (!currentRepoId) return []
+      const res = await getRepositoryItemFilterFields(currentRepoId)
+      return res.data?.fields || []
+    },
+  })
+
+  const [openSetup, setOpenSetup] = useState(true)
   const [openValidation, setOpenValidation] = useState(false)
   const [openAppearance, setOpenAppearance] = useState(false)
   const [openAdvanced, setOpenAdvanced] = useState(false)
@@ -37,12 +119,18 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
   const [localDefaultValue, setLocalDefaultValue] = useState(
     activeQuestion.settings.specific.defaultValue || '',
   )
+  const [idCopied, setIdCopied] = useState(false)
+  const [showMoreSetup, setShowMoreSetup] = useState(false)
+  const [showSelectAdvanced, setShowSelectAdvanced] = useState(false)
+  const [showTableAdvanced, setShowTableAdvanced] = useState(false)
+  const [expandedColumnId, setExpandedColumnId] = useState<string | null>(null)
 
   useEffect(() => {
     setLocalLabel(activeQuestion.label || '')
     setLocalDesc(activeQuestion.settings.general.description || '')
     setLocalPlaceholder(activeQuestion.settings.general.placeholder || '')
     setLocalDefaultValue(activeQuestion.settings.specific.defaultValue || '')
+    if (rawQuestion.type === 'CALCULATED') setOpenSpecific(true)
   }, [activeQuestion.id])
 
   const updateNested = (
@@ -58,6 +146,72 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
     }))
   }
 
+  const logicRules = activeQuestion.settings.logic || []
+  const logicFieldOptions = allQuestions
+    .filter((q) => q?.id && q.id !== activeQuestion.id)
+    .map((q) => ({ id: q.id, name: q.label || 'Untitled Field' }))
+
+  const nonFillableFieldTypes = [
+    'FILE_UPLOAD',
+    'IMAGE_UPLOAD',
+    'DIVIDER',
+    'LABEL',
+    'HEADING',
+    'TEXT_BUILDER',
+  ]
+  const assignOtherControlsOptions = allQuestions
+    .filter(
+      (q) =>
+        q?.id &&
+        q.id !== activeQuestion.id &&
+        !nonFillableFieldTypes.includes(q.type),
+    )
+    .map((q) => ({ id: q.id, name: q.label || 'Untitled Field' }))
+
+  const setLogicRules = (rules: LogicRule[]) => {
+    updateQuestion(activeQuestion.id, (q: Question) => ({
+      ...q,
+      settings: { ...q.settings, logic: rules },
+    }))
+  }
+
+  const addLogicRule = () => {
+    const newRule: LogicRule = {
+      action: 'SHOW',
+      condition: 'IS',
+      fieldId: logicFieldOptions[0]?.id || '',
+      id: generateId(),
+      value: '',
+    }
+    setLogicRules([...logicRules, newRule])
+  }
+
+  const updateLogicRule = (ruleId: string, updates: Partial<LogicRule>) => {
+    setLogicRules(
+      logicRules.map((r) => (r.id === ruleId ? { ...r, ...updates } : r)),
+    )
+  }
+
+  const removeLogicRule = (ruleId: string) => {
+    setLogicRules(logicRules.filter((r) => r.id !== ruleId))
+  }
+
+  const logicConditionOptions = [
+    { id: 'IS', name: 'is' },
+    { id: 'IS_NOT', name: 'is not' },
+    { id: 'CONTAINS', name: 'contains' },
+    { id: 'NOT_CONTAINS', name: 'does not contain' },
+    { id: 'GT', name: 'is greater than' },
+    { id: 'LT', name: 'is less than' },
+    { id: 'EMPTY', name: 'is empty' },
+    { id: 'NOT_EMPTY', name: 'is not empty' },
+  ]
+
+  const logicActionOptions = [
+    { id: 'SHOW', name: 'Show' },
+    { id: 'HIDE', name: 'Hide' },
+  ]
+
   const isShortText = activeQuestion.type === 'SHORT_TEXT'
   const isLongText = activeQuestion.type === 'LONG_TEXT'
   const isNumber =
@@ -72,7 +226,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
     activeQuestion.type === 'FILE_UPLOAD' ||
     activeQuestion.type === 'IMAGE_UPLOAD'
   const isTextBuilder = activeQuestion.type === 'TEXT_BUILDER'
-  const isTable = activeQuestion.type === 'TABLE'
+  const isTable =
+    activeQuestion.type === 'TABLE' || activeQuestion.type === 'DYNAMIC_TABLE'
   const isRating = activeQuestion.type === 'RATING'
   const isOpinionScale = activeQuestion.type === 'OPINION_SCALE'
   const isSignature = activeQuestion.type === 'SIGNATURE'
@@ -83,6 +238,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
   const isFullName = activeQuestion.type === 'FULL_NAME'
   const isDate = activeQuestion.type === 'DATE'
   const isTime = activeQuestion.type === 'TIME'
+  const isDateTime = activeQuestion.type === 'DATE_TIME'
   const isSelect = [
     'SINGLE_SELECT',
     'MULTI_SELECT',
@@ -99,7 +255,8 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
   const isChoice = isChoiceField
 
   const optionsPerLineOptions = [
-    { id: '1', name: 'Vertical (1)' },
+    { id: '0', name: 'Auto (Flex Wrap)' },
+    { id: '1', name: 'Vertical (1 Column)' },
     { id: '2', name: '2 Columns' },
     { id: '3', name: '3 Columns' },
     { id: '4', name: '4 Columns' },
@@ -214,6 +371,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
         onToggle={() => setOpenSetup(!openSetup)}
       >
         <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
+          {/* Primary controls - the ones edited most often */}
           <InputText
             label='Field Label'
             placeholder='e.g. What is your name?'
@@ -224,207 +382,279 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             onChange={(val: string) => setLocalLabel(val)}
           />
 
-          <div className='flex flex-col gap-1'>
-            <div className='px-1 text-[11px] font-bold tracking-tighter text-gray-9 uppercase'>
-              System Field ID
-            </div>
-            <div
-              className='bg-gray-50 cursor-help rounded-lg border border-gray-1 px-3 py-2 font-mono text-[11px] text-gray-12 select-all'
-              title='Click to select'
+          <Tooltip label={activeQuestion.id} position='top' withArrow>
+            <button
+              className='flex w-fit items-center gap-1.5 rounded-md px-1 py-0.5 text-[10px] font-medium text-gray-6 transition-colors hover:bg-gray-1 hover:text-gray-9'
+              type='button'
+              onClick={() => {
+                navigator.clipboard?.writeText(activeQuestion.id)
+                setIdCopied(true)
+                setTimeout(() => setIdCopied(false), 1500)
+              }}
             >
-              {activeQuestion.id}
-            </div>
-          </div>
+              <Icon
+                height={11}
+                name={idCopied ? 'lucide:check' : 'lucide:hash'}
+                width={11}
+              />
+              {idCopied ? 'Copied' : 'Copy field ID'}
+            </button>
+          </Tooltip>
 
-          {(isLongText || isNumber || isDate || isTime || isSelect) && (
+          {!isCalculated && (
             <InputText
-              label='Display Label (Internal)'
-              placeholder='Alternative visual name'
-              value={activeQuestion.displayLabel || ''}
-              onChange={(val: string) =>
-                updateQuestion(activeQuestion.id, { displayLabel: val })
+              label='Placeholder'
+              value={localPlaceholder}
+              placeholder={
+                isNumber
+                  ? '0'
+                  : isDate
+                    ? 'YYYY-MM-DD'
+                    : isTime
+                      ? 'HH:MM'
+                      : isDateTime
+                        ? 'YYYY-MM-DD HH:MM'
+                        : 'e.g. Type here...'
               }
-            />
-          )}
-
-          <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-1 py-2'>
-            <div className='text-xs font-semibold text-gray-7'>Hide Label</div>
-            <InputSwitch
-              checked={activeQuestion.settings.general.hideLabel || false}
-              onChange={(checked: boolean) =>
-                updateNested('general', { hideLabel: checked })
-              }
-            />
-          </div>
-
-          <InputText
-            label='Placeholder'
-            value={localPlaceholder}
-            placeholder={
-              isNumber
-                ? '0'
-                : isDate
-                  ? 'YYYY-MM-DD'
-                  : isTime
-                    ? 'HH:MM'
-                    : 'e.g. Type here...'
-            }
-            onBlur={() =>
-              updateNested('general', { placeholder: localPlaceholder })
-            }
-            onChange={(val: string) => setLocalPlaceholder(val)}
-          />
-
-          {!isNumber && !isDate && !isSelect && (
-            <InputText
-              label='Default Value'
-              placeholder='Pre-defined answer'
-              value={localDefaultValue}
               onBlur={() =>
-                updateNested('specific', { defaultValue: localDefaultValue })
+                updateNested('general', { placeholder: localPlaceholder })
               }
-              onChange={(val: string) => setLocalDefaultValue(val)}
+              onChange={(val: string) => setLocalPlaceholder(val)}
             />
           )}
+
+          {!isNumber &&
+            !isDate &&
+            !isDateTime &&
+            !isSelect &&
+            !isCalculated && (
+              <InputText
+                label='Default Value'
+                placeholder='No default'
+                value={localDefaultValue}
+                onBlur={() =>
+                  updateNested('specific', { defaultValue: localDefaultValue })
+                }
+                onChange={(val: string) => setLocalDefaultValue(val)}
+              />
+            )}
 
           <div>
             <label className='mb-2 block text-13 font-medium text-gray-11'>
-              Help Text / Description
+              Field Width
             </label>
-            <div className='relative'>
-              <textarea
-                className='min-h-[80px] w-full resize-none rounded-md border border-gray-1 bg-white px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
-                placeholder='Add extra instructions...'
-                value={localDesc}
-                onBlur={() =>
-                  updateNested('general', { description: localDesc })
-                }
-                onChange={(e) => setLocalDesc(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {(isLongText || isNumber || isDate || isTime) && (
-            <InputText
-              label='Tooltip (Hover Text)'
-              placeholder='Explanation on hover'
-              value={activeQuestion.settings.general.tooltip || ''}
-              onChange={(val: string) =>
-                updateNested('general', { tooltip: val })
+            <InputSelect
+              placeholder='Select width'
+              options={
+                isLongText ||
+                isNumber ||
+                isDate ||
+                isTime ||
+                isDateTime ||
+                isSelect
+                  ? sizeOptions
+                  : [
+                      { id: 'col-12', name: '100% Full Width' },
+                      { id: 'col-6', name: '50% Half Width' },
+                      { id: 'col-4', name: '33% Column' },
+                    ]
+              }
+              value={
+                (isLongText ||
+                isNumber ||
+                isDate ||
+                isTime ||
+                isDateTime ||
+                isSelect
+                  ? sizeOptions
+                  : [
+                      { id: 'col-12', name: '100% Full Width' },
+                      { id: 'col-6', name: '50% Half Width' },
+                      { id: 'col-4', name: '33% Column' },
+                    ]
+                ).find(
+                  (o) => o.id === activeQuestion.settings.general.size,
+                ) || { id: 'col-12', name: '100% Full Width' }
+              }
+              onChange={(val) =>
+                val && updateNested('general', { size: val.id })
               }
             />
-          )}
+          </div>
 
-          {(isShortText ||
-            isLongText ||
-            isNumber ||
-            isDate ||
-            isTime ||
-            isSelect) && (
-            <div className='bg-primary-subtle/20 border-primary-subtle/30 flex items-center justify-between rounded-lg border px-3 py-2'>
-              <div>
-                <div className='text-xs font-bold text-primary-9'>
-                  Answer Status Indicator
-                </div>
-                <div className='text-[10px] text-gray-9'>
-                  Track progress for this field
-                </div>
-              </div>
-              <InputSwitch
-                checked={
-                  activeQuestion.settings.specific.showStatusIndicator || false
-                }
-                onChange={(checked) =>
-                  updateNested('specific', { showStatusIndicator: checked })
-                }
-              />
-            </div>
-          )}
+          {/* Secondary controls - collapsed by default */}
+          <button
+            className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+            type='button'
+            onClick={() => setShowMoreSetup(!showMoreSetup)}
+          >
+            <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+              More Options
+            </span>
+            <Icon
+              height={14}
+              name='lucide:chevron-down'
+              width={14}
+              className={cn(
+                'text-gray-5 transition-transform duration-200',
+                showMoreSetup && 'rotate-180',
+              )}
+            />
+          </button>
 
-          <Divider className='border-gray-1' />
-
-          <div className='space-y-3'>
-            <div>
-              <label className='mb-2 block text-13 font-medium text-gray-11'>
-                Field Width
-              </label>
-              <InputSelect
-                placeholder='Select width'
-                options={
-                  isLongText || isNumber || isDate || isTime || isSelect
-                    ? sizeOptions
-                    : [
-                        { id: 'col-12', name: '100% Full Width' },
-                        { id: 'col-6', name: '50% Half Width' },
-                        { id: 'col-4', name: '33% Column' },
-                      ]
-                }
-                value={
-                  (isLongText || isNumber || isDate || isTime || isSelect
-                    ? sizeOptions
-                    : [
-                        { id: 'col-12', name: '100% Full Width' },
-                        { id: 'col-6', name: '50% Half Width' },
-                        { id: 'col-4', name: '33% Column' },
-                      ]
-                  ).find(
-                    (o) => o.id === activeQuestion.settings.general.size,
-                  ) || { id: 'col-12', name: '100% Full Width' }
-                }
-                onChange={(val) =>
-                  val && updateNested('general', { size: val.id })
-                }
-              />
-            </div>
-
-            {(isLongText || isNumber || isDate || isTime || isSelect) && (
-              <div>
-                <label className='mb-2 block text-13 font-medium text-gray-11'>
-                  Visibility State
-                </label>
-                <InputSelect
-                  options={visibilityOptions}
-                  placeholder='Normal, Read Only...'
-                  value={
-                    visibilityOptions.find(
-                      (o) =>
-                        o.id === activeQuestion.settings.general.visibility,
-                    ) || visibilityOptions[0]
+          {showMoreSetup && (
+            <div className='animate-in fade-in slide-in-from-top-1 space-y-4 duration-200'>
+              {(isLongText ||
+                isNumber ||
+                isDate ||
+                isTime ||
+                isDateTime ||
+                isSelect) && (
+                <InputText
+                  label='Display Label (Internal)'
+                  placeholder='Alternative visual name'
+                  value={activeQuestion.displayLabel || ''}
+                  onChange={(val: string) =>
+                    updateQuestion(activeQuestion.id, { displayLabel: val })
                   }
-                  onChange={(val) =>
-                    val && updateNested('general', { visibility: val.id })
+                />
+              )}
+
+              <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+                <div className='text-xs font-semibold text-gray-7'>
+                  Hide Label
+                </div>
+                <InputSwitch
+                  checked={activeQuestion.settings.general.hideLabel || false}
+                  onChange={(checked: boolean) =>
+                    updateNested('general', { hideLabel: checked })
                   }
                 />
               </div>
-            )}
 
-            {!isLongText && !isNumber && !isDate && !isTime && !isSelect && (
-              <div className='grid grid-cols-2 gap-2'>
-                <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
-                  <div className='text-xs font-bold text-gray-13'>
-                    Read Only
-                  </div>
-                  <InputSwitch
-                    checked={activeQuestion.settings.general.readOnly || false}
-                    onChange={(checked) =>
-                      updateNested('general', { readOnly: checked })
+              <div>
+                <label className='mb-2 block text-13 font-medium text-gray-11'>
+                  Help Text / Description
+                </label>
+                <div className='relative'>
+                  <textarea
+                    className='min-h-[80px] w-full resize-none rounded-md border border-gray-1 bg-white px-3 py-2 text-13 font-medium text-gray-12 transition-all outline-none placeholder:font-normal placeholder:text-gray-8 focus:border-primary-8 focus:ring-2 focus:ring-primary-6'
+                    placeholder='Add extra instructions...'
+                    value={localDesc}
+                    onBlur={() =>
+                      updateNested('general', { description: localDesc })
                     }
-                  />
-                </div>
-                <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
-                  <div className='text-xs font-bold text-gray-13'>
-                    Hidden Field
-                  </div>
-                  <InputSwitch
-                    checked={activeQuestion.settings.general.hidden || false}
-                    onChange={(checked) =>
-                      updateNested('general', { hidden: checked })
-                    }
+                    onChange={(e) => setLocalDesc(e.target.value)}
                   />
                 </div>
               </div>
-            )}
-          </div>
+
+              {(isLongText || isNumber || isDate || isTime || isDateTime) && (
+                <InputText
+                  label='Tooltip (Hover Text)'
+                  placeholder='Explanation on hover'
+                  value={activeQuestion.settings.general.tooltip || ''}
+                  onChange={(val: string) =>
+                    updateNested('general', { tooltip: val })
+                  }
+                />
+              )}
+
+              {(isShortText ||
+                isLongText ||
+                isNumber ||
+                isDate ||
+                isTime ||
+                isDateTime ||
+                isSelect) && (
+                <div className='bg-gray-50/50 flex items-center justify-between rounded-lg border border-gray-1 px-3 py-2'>
+                  <div>
+                    <div className='text-xs font-bold text-gray-13'>
+                      Answer Status Indicator
+                    </div>
+                    <div className='text-[10px] text-gray-9'>
+                      Track progress for this field
+                    </div>
+                  </div>
+                  <InputSwitch
+                    checked={
+                      activeQuestion.settings.specific.showStatusIndicator ||
+                      false
+                    }
+                    onChange={(checked) =>
+                      updateNested('specific', {
+                        showStatusIndicator: checked,
+                      })
+                    }
+                  />
+                </div>
+              )}
+
+              <Divider className='border-gray-1' />
+
+              {(isLongText ||
+                isNumber ||
+                isDate ||
+                isTime ||
+                isDateTime ||
+                isSelect) && (
+                <div>
+                  <label className='mb-2 block text-13 font-medium text-gray-11'>
+                    Visibility State
+                  </label>
+                  <InputSelect
+                    options={visibilityOptions}
+                    placeholder='Normal, Read Only...'
+                    value={
+                      visibilityOptions.find(
+                        (o) =>
+                          o.id === activeQuestion.settings.general.visibility,
+                      ) || visibilityOptions[0]
+                    }
+                    onChange={(val) =>
+                      val && updateNested('general', { visibility: val.id })
+                    }
+                  />
+                </div>
+              )}
+
+              {!isLongText &&
+                !isNumber &&
+                !isDate &&
+                !isTime &&
+                !isDateTime &&
+                !isSelect && (
+                  <div className='grid grid-cols-2 gap-2'>
+                    <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                      <div className='text-xs font-bold text-gray-13'>
+                        Read Only
+                      </div>
+                      <InputSwitch
+                        checked={
+                          activeQuestion.settings.general.readOnly || false
+                        }
+                        onChange={(checked) =>
+                          updateNested('general', { readOnly: checked })
+                        }
+                      />
+                    </div>
+                    <div className='bg-gray-50/30 flex flex-col gap-2 rounded-xl border border-gray-1 p-3'>
+                      <div className='text-xs font-bold text-gray-13'>
+                        Hidden Field
+                      </div>
+                      <InputSwitch
+                        checked={
+                          activeQuestion.settings.general.hidden || false
+                        }
+                        onChange={(checked) =>
+                          updateNested('general', { hidden: checked })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+            </div>
+          )}
         </div>
       </SettingsSection>
 
@@ -432,6 +662,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
       {(isNumber ||
         isDate ||
         isTime ||
+        isDateTime ||
         isSelect ||
         isCurrency ||
         isCalculated ||
@@ -456,30 +687,34 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               ? 'lucide:calendar'
               : isTime
                 ? 'lucide:clock'
-                : isSelect
-                  ? 'lucide:list-todo'
-                  : isCurrency
-                    ? 'lucide:banknote'
-                    : isCalculated
-                      ? 'lucide:calculator'
-                      : isCountryCode
-                        ? 'lucide:globe'
-                        : 'lucide:sliders'
+                : isDateTime
+                  ? 'lucide:calendar-clock'
+                  : isSelect
+                    ? 'lucide:list-todo'
+                    : isCurrency
+                      ? 'lucide:banknote'
+                      : isCalculated
+                        ? 'lucide:calculator'
+                        : isCountryCode
+                          ? 'lucide:globe'
+                          : 'lucide:sliders'
           }
           title={
             isDate
               ? 'Date Config'
               : isTime
                 ? 'Time Config'
-                : isSelect && !isCurrency
-                  ? 'Select Config'
-                  : isCurrency
-                    ? 'Currency Config'
-                    : isCalculated
-                      ? 'Formula Builder'
-                      : isCountryCode
-                        ? 'Country Config'
-                        : 'Field Configuration'
+                : isDateTime
+                  ? 'Date & Time Config'
+                  : isSelect && !isCurrency
+                    ? 'Select Config'
+                    : isCurrency
+                      ? 'Currency Config'
+                      : isCalculated
+                        ? 'Formula Builder'
+                        : isCountryCode
+                          ? 'Country Config'
+                          : 'Field Configuration'
           }
           onToggle={() => setOpenSpecific(!openSpecific)}
         >
@@ -521,108 +756,13 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
             )}
 
             {isCalculated && (
-              <div className='space-y-4'>
-                <div className='bg-amber-50/30 border-amber-200/50 space-y-3 rounded-xl border p-3'>
-                  <label className='text-amber-9 block text-[11px] font-bold tracking-wider uppercase'>
-                    Formula Tokens
-                  </label>
-                  <div className='flex min-h-[40px] flex-wrap gap-2 rounded-lg border border-gray-1 bg-white p-2'>
-                    {(activeQuestion.settings.specific.formulaTokens || [])
-                      .length === 0 && (
-                      <span className='self-center text-[11px] text-gray-4 italic'>
-                        No formula defined yet...
-                      </span>
-                    )}
-                    {(activeQuestion.settings.specific.formulaTokens || []).map(
-                      (token: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className={cn(
-                            'flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-bold shadow-sm',
-                            token.type === 'FIELD'
-                              ? 'bg-blue-50 text-blue-700 border-blue-200 border'
-                              : token.type === 'OPERATOR'
-                                ? 'bg-amber-100 text-amber-800 border-amber-300 border'
-                                : 'border border-gray-2 bg-gray-1 text-gray-7',
-                          )}
-                        >
-                          {token.type === 'FIELD'
-                            ? panels
-                                .flatMap((p: any) => p.fields)
-                                .find((f: any) => f.id === token.value)
-                                ?.label || 'Deleted Field'
-                            : token.value}
-                          <button
-                            className='hover:text-red-500 transition-colors'
-                            onClick={() => {
-                              const newTokens = [
-                                ...(activeQuestion.settings.specific
-                                  .formulaTokens || []),
-                              ]
-                              newTokens.splice(idx, 1)
-                              updateNested('specific', {
-                                formulaTokens: newTokens,
-                              })
-                            }}
-                          >
-                            <Icon height={10} name='lucide:x' width={10} />
-                          </button>
-                        </div>
-                      ),
-                    )}
-                  </div>
-
-                  <div className='grid grid-cols-4 gap-1'>
-                    {['+', '-', '*', '/'].map((op) => (
-                      <button
-                        className='bg-amber-100/50 hover:bg-amber-100 text-amber-700 border-amber-200/30 rounded border py-1 font-bold transition-colors'
-                        key={op}
-                        onClick={() =>
-                          updateNested('specific', {
-                            formulaTokens: [
-                              ...(activeQuestion.settings.specific
-                                .formulaTokens || []),
-                              { type: 'OPERATOR', value: op },
-                            ],
-                          })
-                        }
-                      >
-                        {op}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className='space-y-2'>
-                    <label className='block text-[10px] font-bold text-gray-5 uppercase'>
-                      Add Variable
-                    </label>
-                    <InputSelect
-                      placeholder='Select field...'
-                      value={null}
-                      options={panels
-                        .flatMap((p: any) => p.fields)
-                        .filter(
-                          (f: any) =>
-                            f.id !== activeQuestion.id &&
-                            ['NUMBER', 'COUNTER', 'CURRENCY_AMOUNT'].includes(
-                              f.type,
-                            ),
-                        )
-                        .map((f: any) => ({ id: f.id, name: f.label }))}
-                      onChange={(val) =>
-                        val &&
-                        updateNested('specific', {
-                          formulaTokens: [
-                            ...(activeQuestion.settings.specific
-                              .formulaTokens || []),
-                            { type: 'FIELD', value: val.id },
-                          ],
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
+              <FormulaBuilder
+                activeQuestion={activeQuestion}
+                fields={allQuestions}
+                onChange={(formulaTokens) =>
+                  updateNested('specific', { formulaTokens })
+                }
+              />
             )}
 
             {isCurrency && (
@@ -727,31 +867,83 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   />
                 </div>
 
+                {(activeQuestion.settings.specific.optionsType ===
+                  'MASTER_TABLE' ||
+                  activeQuestion.settings.specific.optionsType ===
+                    'PREDEFINED') && (
+                  <div className='bg-amber-500/5 border-amber-500/20 text-amber-700 rounded-lg border p-3 text-xs font-medium'>
+                    Master Table and Predefined sources require a backend
+                    endpoint — coming soon.
+                  </div>
+                )}
+
                 {activeQuestion.settings.specific.optionsType ===
-                  'MASTER_TABLE' && (
+                  'REPOSITORY' && (
                   <div className='bg-primary-subtle/5 border-primary-subtle/10 space-y-3 rounded-lg border p-3'>
                     <label className='block text-[11px] font-bold text-primary-9 uppercase'>
-                      Dynamic Source Builder
+                      Repository Source Builder
                     </label>
-                    <div className='grid grid-cols-2 gap-2'>
-                      <InputSelect
-                        placeholder='Table'
-                        value={null}
-                        options={[
-                          { id: 't1', name: 'Employees' },
-                          { id: 't2', name: 'Departments' },
-                        ]}
-                        onChange={() => {}}
-                      />
-                      <InputSelect
-                        placeholder='Column'
-                        value={null}
-                        options={[
-                          { id: 'c1', name: 'Name' },
-                          { id: 'c2', name: 'Code' },
-                        ]}
-                        onChange={() => {}}
-                      />
+                    <div className='space-y-3'>
+                      <div>
+                        <label className='mb-1 block text-xs font-medium text-gray-11'>
+                          Repository
+                        </label>
+                        <InputSelect
+                          placeholder='Select Repository'
+                          options={repositories.map((r: any) => ({
+                            id: r.id,
+                            name: r.name || r.title || r.id,
+                          }))}
+                          value={
+                            repositories
+                              .map((r: any) => ({
+                                id: r.id,
+                                name: r.name || r.title || r.id,
+                              }))
+                              .find(
+                                (r: any) =>
+                                  r.id ===
+                                  activeQuestion.settings.specific.repositoryId,
+                              ) || null
+                          }
+                          onChange={(val) => {
+                            updateNested('specific', {
+                              repositoryField: '',
+                              repositoryId: val?.id || '',
+                            })
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label className='mb-1 block text-xs font-medium text-gray-11'>
+                          Column / Field
+                        </label>
+                        <InputSelect
+                          placeholder='Select Column'
+                          options={repositoryFields.map((f: any) => ({
+                            id: f.sqlColumnName || f.name,
+                            name: f.name || f.sqlColumnName,
+                          }))}
+                          value={
+                            repositoryFields
+                              .map((f: any) => ({
+                                id: f.sqlColumnName || f.name,
+                                name: f.name || f.sqlColumnName,
+                              }))
+                              .find(
+                                (f: any) =>
+                                  f.id ===
+                                  activeQuestion.settings.specific
+                                    .repositoryField,
+                              ) || null
+                          }
+                          onChange={(val) => {
+                            updateNested('specific', {
+                              repositoryField: val?.id || '',
+                            })
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -795,257 +987,319 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   </div>
                 )}
 
-                {isMulti && (
-                  <div className='bg-gray-50/50 space-y-4 rounded-xl border border-gray-1 p-3'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <div className='text-xs font-bold text-gray-8'>
-                          Bulk Actions
-                        </div>
-                        <div className='text-[10px] text-gray-6'>
-                          Select All / Unselect All
-                        </div>
-                      </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.specific.bulkActionsEnabled ||
-                          false
-                        }
-                        onChange={(checked) =>
-                          updateNested('specific', {
-                            bulkActionsEnabled: checked,
-                          })
-                        }
-                      />
-                    </div>
+                <button
+                  className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+                  type='button'
+                  onClick={() => setShowSelectAdvanced(!showSelectAdvanced)}
+                >
+                  <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                    Advanced Options
+                  </span>
+                  <Icon
+                    height={14}
+                    name='lucide:chevron-down'
+                    width={14}
+                    className={cn(
+                      'text-gray-5 transition-transform duration-200',
+                      showSelectAdvanced && 'rotate-180',
+                    )}
+                  />
+                </button>
 
-                    {activeQuestion.type === 'MULTI_SELECT' && (
-                      <>
-                        <Divider className='border-dashed border-gray-1' />
-
-                        <div className='space-y-3'>
-                          <div className='flex items-center justify-between'>
-                            <div>
-                              <div className='text-xs font-bold text-gray-13'>
-                                Allow Custom Entries
-                              </div>
-                              <div className='text-[10px] text-gray-6'>
-                                Users can type in new options
-                              </div>
+                {showSelectAdvanced && (
+                  <>
+                    {isMulti && (
+                      <div className='bg-gray-50/50 space-y-4 rounded-xl border border-gray-1 p-3'>
+                        <div className='flex items-center justify-between'>
+                          <div>
+                            <div className='text-xs font-bold text-gray-8'>
+                              Bulk Actions
                             </div>
-                            <InputSwitch
-                              checked={
-                                activeQuestion.settings.specific
-                                  .allowCustomEntries || false
-                              }
-                              onChange={(checked) =>
-                                updateNested('specific', {
-                                  allowCustomEntries: checked,
-                                })
-                              }
-                            />
+                            <div className='text-[10px] text-gray-6'>
+                              Select All / Unselect All
+                            </div>
                           </div>
+                          <InputSwitch
+                            checked={
+                              activeQuestion.settings.specific
+                                .bulkActionsEnabled || false
+                            }
+                            onChange={(checked) =>
+                              updateNested('specific', {
+                                bulkActionsEnabled: checked,
+                              })
+                            }
+                          />
+                        </div>
 
-                          {activeQuestion.settings.specific
-                            .allowCustomEntries && (
-                            <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
-                              <label className='block text-[10px] font-bold tracking-wider text-gray-8 uppercase'>
-                                Entry Validation
-                              </label>
-                              <InputSelect
-                                options={validationOptions}
-                                placeholder='Format for custom entry'
-                                value={
-                                  validationOptions.find(
-                                    (o) =>
-                                      o.id ===
-                                      activeQuestion.settings.validation
-                                        .contentRule,
-                                  ) || validationOptions[0]
+                        {['MULTI_SELECT', 'MULTIPLE_CHOICE'].includes(
+                          activeQuestion.type,
+                        ) &&
+                          (activeQuestion.settings.specific.optionsType ===
+                            'CUSTOM' ||
+                            !activeQuestion.settings.specific.optionsType) && (
+                            <>
+                              <Divider className='border-dashed border-gray-1' />
+
+                              <div className='space-y-3'>
+                                <div className='flex items-center justify-between'>
+                                  <div>
+                                    <div className='text-xs font-bold text-gray-13'>
+                                      Allow Custom Entries
+                                    </div>
+                                    <div className='text-[10px] text-gray-6'>
+                                      Users can type in new options
+                                    </div>
+                                  </div>
+                                  <InputSwitch
+                                    checked={
+                                      activeQuestion.settings.specific
+                                        .allowCustomEntries || false
+                                    }
+                                    onChange={(checked) =>
+                                      updateNested('specific', {
+                                        allowCustomEntries: checked,
+                                      })
+                                    }
+                                  />
+                                </div>
+
+                                {activeQuestion.settings.specific
+                                  .allowCustomEntries && (
+                                  <div className='animate-in fade-in slide-in-from-top-1 space-y-2 duration-200'>
+                                    <label className='block text-[10px] font-bold tracking-wider text-gray-8 uppercase'>
+                                      Entry Validation
+                                    </label>
+                                    <InputSelect
+                                      options={validationOptions}
+                                      placeholder='Format for custom entry'
+                                      value={
+                                        validationOptions.find(
+                                          (o) =>
+                                            o.id ===
+                                            activeQuestion.settings.validation
+                                              .contentRule,
+                                        ) || validationOptions[0]
+                                      }
+                                      onChange={(val) =>
+                                        val &&
+                                        updateNested('validation', {
+                                          contentRule: val.id,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+                      </div>
+                    )}
+
+                    {isChoice && (
+                      <div className='bg-secondary-subtle/10 border-secondary-subtle/20 space-y-4 rounded-xl border p-3'>
+                        <div className='flex items-center justify-between'>
+                          <div>
+                            <div className='text-xs font-bold text-gray-13'>
+                              Show Options Wrapper
+                            </div>
+                            <div className='text-[10px] text-gray-6'>
+                              Add border and padding to group
+                            </div>
+                          </div>
+                          <InputSwitch
+                            checked={
+                              activeQuestion.settings.specific
+                                .showOptionsWrapper || false
+                            }
+                            onChange={(checked) =>
+                              updateNested('specific', {
+                                showOptionsWrapper: checked,
+                              })
+                            }
+                          />
+                        </div>
+
+                        {activeQuestion.type === 'SINGLE_CHOICE' && (
+                          <>
+                            <Divider className='border-dashed border-gray-1' />
+                            <div className='flex items-center justify-between'>
+                              <div>
+                                <div className='text-xs font-bold text-gray-13'>
+                                  QR Code Value Scan
+                                </div>
+                                <div className='text-[10px] text-gray-6'>
+                                  Display barcode/QR scan button beside label
+                                </div>
+                              </div>
+                              <InputSwitch
+                                checked={
+                                  activeQuestion.settings.specific
+                                    .qrCodeEnabled || false
                                 }
-                                onChange={(val) =>
-                                  val &&
-                                  updateNested('validation', {
-                                    contentRule: val.id,
+                                onChange={(checked) =>
+                                  updateNested('specific', {
+                                    qrCodeEnabled: checked,
                                   })
                                 }
                               />
                             </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                          </>
+                        )}
 
-                {isChoice && (
-                  <div className='bg-secondary-subtle/10 border-secondary-subtle/20 space-y-4 rounded-xl border p-3'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <div className='text-xs font-bold text-gray-13'>
-                          Show Options Wrapper
-                        </div>
-                        <div className='text-[10px] text-gray-6'>
-                          Add border and padding to group
+                        <Divider className='border-dashed border-gray-1' />
+
+                        <div className='space-y-2'>
+                          <label className='block text-13 font-medium text-gray-11'>
+                            Options Layout
+                          </label>
+                          <InputSelect
+                            options={optionsPerLineOptions}
+                            placeholder='Items per row'
+                            value={
+                              optionsPerLineOptions.find(
+                                (o) =>
+                                  Number(o.id) ===
+                                  (activeQuestion.settings.specific
+                                    .optionsPerLine ?? 3),
+                              ) || optionsPerLineOptions[3]
+                            }
+                            onChange={(val) =>
+                              val &&
+                              updateNested('specific', {
+                                optionsPerLine: Number(val.id),
+                              })
+                            }
+                          />
+                          <div className='text-[10px] text-gray-6 italic'>
+                            Control layout grid (0 = Auto Flex, 1 = Vertical
+                            List).
+                          </div>
                         </div>
                       </div>
-                      <InputSwitch
-                        checked={
-                          activeQuestion.settings.specific.showOptionsWrapper ||
-                          false
-                        }
-                        onChange={(checked) =>
-                          updateNested('specific', {
-                            showOptionsWrapper: checked,
-                          })
-                        }
-                      />
-                    </div>
+                    )}
 
                     <Divider className='border-dashed border-gray-1' />
 
-                    <div className='space-y-2'>
-                      <label className='block text-13 font-medium text-gray-11'>
-                        Options Layout
+                    <div>
+                      <label className='mb-2 block text-13 font-medium text-gray-11'>
+                        Cascading Filter (Parent)
                       </label>
                       <InputSelect
-                        options={optionsPerLineOptions}
-                        placeholder='Items per row'
+                        placeholder='Filter by another field'
+                        value={null}
+                        options={[
+                          { id: 'none', name: 'No Filter' },
+                          ...panels
+                            .flatMap((p: any) => p.fields)
+                            .filter(
+                              (f: any) =>
+                                f.id !== activeQuestion.id &&
+                                ['SINGLE_SELECT', 'SINGLE_CHOICE'].includes(
+                                  f.type,
+                                ),
+                            )
+                            .map((f: any) => ({ id: f.id, name: f.label })),
+                        ]}
+                        onChange={(val) =>
+                          val &&
+                          updateNested('specific', { parentFieldId: val.id })
+                        }
+                      />
+                      <div className='mt-1 text-[10px] text-gray-6 italic'>
+                        Options will change based on parent selection.
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className='mb-2 block text-13 font-medium text-gray-11'>
+                        Default Selection Mode
+                      </label>
+                      <InputSelect
+                        options={selectDefaultValueOptions}
+                        placeholder='Initial value mode'
                         value={
-                          optionsPerLineOptions.find(
+                          selectDefaultValueOptions.find(
                             (o) =>
-                              Number(o.id) ===
-                              activeQuestion.settings.specific.optionsPerLine,
-                          ) || optionsPerLineOptions[0]
+                              o.id ===
+                              activeQuestion.settings.specific.defaultValueType,
+                          ) || selectDefaultValueOptions[2]
                         }
                         onChange={(val) =>
                           val &&
-                          updateNested('specific', {
-                            optionsPerLine: Number(val.id),
-                          })
+                          updateNested('specific', { defaultValueType: val.id })
                         }
                       />
-                      <div className='text-[10px] text-gray-6 italic'>
-                        Control grid columns (1 = Vertical List).
-                      </div>
                     </div>
-                  </div>
-                )}
 
-                <Divider className='border-dashed border-gray-1' />
-
-                <div>
-                  <label className='mb-2 block text-13 font-medium text-gray-11'>
-                    Cascading Filter (Parent)
-                  </label>
-                  <InputSelect
-                    placeholder='Filter by another field'
-                    value={null}
-                    options={[
-                      { id: 'none', name: 'No Filter' },
-                      ...panels
-                        .flatMap((p: any) => p.fields)
-                        .filter(
-                          (f: any) =>
-                            f.id !== activeQuestion.id &&
-                            ['SINGLE_SELECT', 'SINGLE_CHOICE'].includes(f.type),
-                        )
-                        .map((f: any) => ({ id: f.id, name: f.label })),
-                    ]}
-                    onChange={(val) =>
-                      val && updateNested('specific', { parentFieldId: val.id })
-                    }
-                  />
-                  <div className='mt-1 text-[10px] text-gray-6 italic'>
-                    Options will change based on parent selection.
-                  </div>
-                </div>
-
-                <div>
-                  <label className='mb-2 block text-13 font-medium text-gray-11'>
-                    Default Selection Mode
-                  </label>
-                  <InputSelect
-                    options={selectDefaultValueOptions}
-                    placeholder='Initial value mode'
-                    value={
-                      selectDefaultValueOptions.find(
-                        (o) =>
-                          o.id ===
-                          activeQuestion.settings.specific.defaultValueType,
-                      ) || selectDefaultValueOptions[2]
-                    }
-                    onChange={(val) =>
-                      val &&
-                      updateNested('specific', { defaultValueType: val.id })
-                    }
-                  />
-                </div>
-
-                {activeQuestion.settings.specific.defaultValueType ===
-                  'STATIC' && (
-                  <div className='animate-in fade-in slide-in-from-top-1 space-y-3 duration-200'>
-                    {isCurrency ? (
-                      <div className='grid grid-cols-2 gap-2'>
-                        <InputText
-                          label='Default Currency'
-                          placeholder='USD'
-                          value={
-                            (
-                              activeQuestion.settings.specific
-                                .defaultValue as any
-                            )?.currency || ''
-                          }
-                          onChange={(val: string) =>
-                            updateNested('specific', {
-                              defaultValue: {
-                                ...((activeQuestion.settings.specific
-                                  .defaultValue as any) || {}),
-                                currency: val.toUpperCase(),
-                              },
-                            })
-                          }
-                        />
-                        <NumberInput
-                          label='Default Amount'
-                          placeholder='0.00'
-                          value={
-                            (
-                              activeQuestion.settings.specific
-                                .defaultValue as any
-                            )?.amount || undefined
-                          }
-                          onChange={(val) =>
-                            updateNested('specific', {
-                              defaultValue: {
-                                ...((activeQuestion.settings.specific
-                                  .defaultValue as any) || {}),
-                                amount: val,
-                              },
-                            })
-                          }
-                        />
+                    {activeQuestion.settings.specific.defaultValueType ===
+                      'STATIC' && (
+                      <div className='animate-in fade-in slide-in-from-top-1 space-y-3 duration-200'>
+                        {isCurrency ? (
+                          <div className='grid grid-cols-2 gap-2'>
+                            <InputText
+                              label='Default Currency'
+                              placeholder='USD'
+                              value={
+                                (
+                                  activeQuestion.settings.specific
+                                    .defaultValue as any
+                                )?.currency || ''
+                              }
+                              onChange={(val: string) =>
+                                updateNested('specific', {
+                                  defaultValue: {
+                                    ...((activeQuestion.settings.specific
+                                      .defaultValue as any) || {}),
+                                    currency: val.toUpperCase(),
+                                  },
+                                })
+                              }
+                            />
+                            <NumberInput
+                              label='Default Amount'
+                              placeholder='0.00'
+                              value={
+                                (
+                                  activeQuestion.settings.specific
+                                    .defaultValue as any
+                                )?.amount || undefined
+                              }
+                              onChange={(val) =>
+                                updateNested('specific', {
+                                  defaultValue: {
+                                    ...((activeQuestion.settings.specific
+                                      .defaultValue as any) || {}),
+                                    amount: val,
+                                  },
+                                })
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <InputText
+                            value={localDefaultValue}
+                            label={
+                              isMulti
+                                ? 'Static Default Values (Comma separated)'
+                                : 'Static Default Value'
+                            }
+                            placeholder={
+                              isMulti ? 'Option A, Option B' : 'Option A'
+                            }
+                            onBlur={() =>
+                              updateNested('specific', {
+                                defaultValue: localDefaultValue,
+                              })
+                            }
+                            onChange={(val: string) =>
+                              setLocalDefaultValue(val)
+                            }
+                          />
+                        )}
                       </div>
-                    ) : (
-                      <InputText
-                        value={localDefaultValue}
-                        label={
-                          isMulti
-                            ? 'Static Default Values (Comma separated)'
-                            : 'Static Default Value'
-                        }
-                        placeholder={
-                          isMulti ? 'Option A, Option B' : 'Option A'
-                        }
-                        onBlur={() =>
-                          updateNested('specific', {
-                            defaultValue: localDefaultValue,
-                          })
-                        }
-                        onChange={(val: string) => setLocalDefaultValue(val)}
-                      />
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
@@ -1197,7 +1451,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               </div>
             )}
 
-            {isDate && (
+            {(isDate || isDateTime) && (
               <div className='space-y-4'>
                 <div>
                   <label className='mb-2 block text-13 font-medium text-gray-11'>
@@ -1224,11 +1478,13 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   'CUSTOM' && (
                   <div className='bg-gray-50 rounded-lg border border-gray-1 p-3'>
                     <label className='mb-2 block text-[11px] font-bold text-gray-8 uppercase'>
-                      Pick Fixed Date
+                      {isDateTime
+                        ? 'Pick Fixed Date & Time'
+                        : 'Pick Fixed Date'}
                     </label>
                     <input
                       className='w-full rounded border border-gray-1 bg-white px-2 py-1 text-sm outline-none focus:border-primary-8'
-                      type='date'
+                      type={isDateTime ? 'datetime-local' : 'date'}
                       value={
                         activeQuestion.settings.specific.defaultValue || ''
                       }
@@ -1401,167 +1657,420 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               </div>
             )}
 
-            {isTable && (
-              <div className='space-y-6'>
-                {/* Columns Builder Simulation */}
-                <div className='space-y-3'>
-                  <div className='flex items-center justify-between'>
-                    <label className='block text-13 font-bold text-gray-12'>
-                      Table Columns
-                    </label>
-                    <div className='flex cursor-pointer items-center gap-1 rounded border border-accent-soft/20 bg-accent-soft/10 px-2 py-0.5 text-[10px] font-bold text-accent-primary transition-colors hover:bg-accent-soft/20'>
-                      <Icon height={10} name='lucide:plus' width={10} />
-                      Add Column
-                    </div>
-                  </div>
-                  <div className='space-y-2'>
-                    {(
-                      activeQuestion.settings.specific.tableColumns || [
-                        {
-                          id: '1',
-                          name: 'Item Name',
-                          size: 'MEDIUM',
-                          type: 'SHORT_TEXT',
-                        },
-                        { id: '2', name: 'Qty', size: 'SMALL', type: 'NUMBER' },
-                        {
-                          id: '3',
-                          name: 'Price',
-                          size: 'SMALL',
-                          type: 'CURRENCY_AMOUNT',
-                        },
-                      ]
-                    ).map((col: any) => (
-                      <div
-                        className='bg-gray-50 group/col flex items-center justify-between rounded-lg border border-gray-1 p-2'
-                        key={col.id}
-                      >
-                        <div className='flex items-center gap-2'>
-                          <Icon
-                            className='cursor-grab text-gray-3'
-                            height={12}
-                            name='lucide:grip-vertical'
-                            width={12}
-                          />
-                          <div className='flex flex-col'>
-                            <span className='text-[11px] font-bold text-gray-12'>
-                              {col.name}
-                            </span>
-                            <span className='text-[9px] font-medium text-gray-5 uppercase'>
-                              {col.type.replace('_', ' ')} • {col.size}
-                            </span>
-                          </div>
-                        </div>
-                        <div className='flex items-center gap-1 opacity-0 transition-opacity group-hover/col:opacity-100'>
-                          <IconButton
-                            color='gray'
-                            icon='lucide:settings'
-                            size='xs'
-                            variant='ghost'
-                          />
-                          <IconButton
-                            color='red'
-                            icon='lucide:trash-2'
-                            size='xs'
-                            variant='ghost'
-                          />
-                        </div>
+            {isTable &&
+              (() => {
+                const tableColumns =
+                  activeQuestion.settings.specific.tableColumns || []
+
+                const handleAddTableColumn = () => {
+                  const newColNumber = tableColumns.length + 1
+                  updateNested('specific', {
+                    tableColumns: [
+                      ...tableColumns,
+                      {
+                        id: generateId(),
+                        name: `Column ${newColNumber}`,
+                        size: 'MEDIUM',
+                        type: 'SHORT_TEXT',
+                        settings: { specific: {}, validation: {} },
+                      },
+                    ],
+                  })
+                }
+
+                const handleUpdateTableColumn = (
+                  colId: string,
+                  patch: Partial<{
+                    name: string
+                    settings: (typeof tableColumns)[number]['settings']
+                    size: 'SMALL' | 'MEDIUM' | 'LARGE'
+                    type: QuestionType
+                  }>,
+                ) => {
+                  updateNested('specific', {
+                    tableColumns: tableColumns.map((c) =>
+                      c.id === colId ? { ...c, ...patch } : c,
+                    ),
+                  })
+                }
+
+                const handleUpdateTableColumnSettings = (
+                  colId: string,
+                  settingsPatch: NonNullable<
+                    (typeof tableColumns)[number]['settings']
+                  >,
+                ) => {
+                  const col = tableColumns.find((c) => c.id === colId)
+                  if (!col) return
+                  handleUpdateTableColumn(colId, {
+                    settings: {
+                      lookupSettings: {
+                        ...col.settings?.lookupSettings,
+                        ...settingsPatch.lookupSettings,
+                      },
+                      specific: {
+                        ...col.settings?.specific,
+                        ...settingsPatch.specific,
+                      },
+                      validation: {
+                        ...col.settings?.validation,
+                        ...settingsPatch.validation,
+                      },
+                    },
+                  })
+                }
+
+                const handleDeleteTableColumn = (colId: string) => {
+                  if (tableColumns.length <= 1) return
+                  updateNested('specific', {
+                    tableColumns: tableColumns.filter((c) => c.id !== colId),
+                  })
+                }
+
+                const handleReorderTableColumns = (newOrderIds: string[]) => {
+                  const reordered = newOrderIds
+                    .map((id) => tableColumns.find((c) => c.id === id))
+                    .filter(Boolean) as typeof tableColumns
+                  updateNested('specific', { tableColumns: reordered })
+                }
+
+                return (
+                  <div className='space-y-6'>
+                    {/* Columns Builder */}
+                    <div className='space-y-3'>
+                      <div className='flex items-center justify-between'>
+                        <label className='block text-13 font-bold text-gray-12'>
+                          Table Columns
+                        </label>
+                        <button
+                          className='flex cursor-pointer items-center gap-1 rounded border border-accent-soft/20 bg-accent-soft/10 px-2 py-0.5 text-[10px] font-bold text-accent-primary transition-colors hover:bg-accent-soft/20'
+                          type='button'
+                          onClick={handleAddTableColumn}
+                        >
+                          <Icon height={10} name='lucide:plus' width={10} />
+                          Add Column
+                        </button>
                       </div>
-                    ))}
+
+                      {tableColumns.length === 0 ? (
+                        <div className='rounded-lg border border-dashed border-gray-2 p-4 text-center text-xs text-gray-8'>
+                          No columns yet. Click "Add Column" to configure
+                          columns.
+                        </div>
+                      ) : (
+                        <SortableContainer
+                          items={tableColumns.map((c) => c.id)}
+                          onItemsChange={handleReorderTableColumns}
+                        >
+                          <div className='space-y-2'>
+                            {tableColumns.map((col) => (
+                              <SortableItem
+                                className='items-stretch'
+                                handlerPosition='before'
+                                id={col.id}
+                                key={col.id}
+                              >
+                                <div className='group/col bg-gray-50/80 flex-1 space-y-2 rounded-lg border border-gray-2 p-2.5 transition-colors hover:border-gray-3'>
+                                  <div className='flex items-center justify-between gap-2'>
+                                    <input
+                                      className='flex-1 rounded border border-transparent bg-transparent px-1.5 py-0.5 text-xs font-bold text-gray-12 transition-colors hover:border-gray-3 hover:bg-white focus:border-accent-primary focus:bg-white focus:outline-none'
+                                      placeholder='Column name...'
+                                      type='text'
+                                      value={col.name}
+                                      onChange={(e) =>
+                                        handleUpdateTableColumn(col.id, {
+                                          name: e.target.value,
+                                        })
+                                      }
+                                    />
+                                    <div className='flex shrink-0 items-center gap-0.5'>
+                                      <IconButton
+                                        icon='lucide:settings'
+                                        size='xs'
+                                        color={
+                                          expandedColumnId === col.id
+                                            ? 'primary'
+                                            : 'gray'
+                                        }
+                                        variant={
+                                          expandedColumnId === col.id
+                                            ? 'subtle'
+                                            : 'ghost'
+                                        }
+                                        onClick={() =>
+                                          setExpandedColumnId(
+                                            expandedColumnId === col.id
+                                              ? null
+                                              : col.id,
+                                          )
+                                        }
+                                      />
+                                      <IconButton
+                                        color='red'
+                                        disabled={tableColumns.length <= 1}
+                                        icon='lucide:trash-2'
+                                        size='xs'
+                                        variant='ghost'
+                                        onClick={() =>
+                                          handleDeleteTableColumn(col.id)
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className='flex items-center gap-2'>
+                                    <div className='flex-1'>
+                                      <Select
+                                        data={TABLE_COLUMN_TYPES}
+                                        size='xs'
+                                        value={col.type || 'SHORT_TEXT'}
+                                        classNames={{
+                                          input:
+                                            'h-7 border-gray-3 bg-white text-xs font-medium text-gray-12',
+                                        }}
+                                        onChange={(val) =>
+                                          val &&
+                                          handleUpdateTableColumn(col.id, {
+                                            type: val as QuestionType,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                    <div className='w-28 shrink-0'>
+                                      <SegmentedControl
+                                        size='xs'
+                                        value={col.size || 'MEDIUM'}
+                                        fullWidth
+                                        data={[
+                                          { label: 'S', value: 'SMALL' },
+                                          { label: 'M', value: 'MEDIUM' },
+                                          { label: 'L', value: 'LARGE' },
+                                        ]}
+                                        onChange={(val) =>
+                                          handleUpdateTableColumn(col.id, {
+                                            size: val as any,
+                                          })
+                                        }
+                                      />
+                                    </div>
+                                  </div>
+                                  {expandedColumnId === col.id && (
+                                    <div className='border-t border-gray-2 pt-2'>
+                                      <TableColumnSettingsPanel
+                                        column={col}
+                                        repositories={repositories.map(
+                                          (r: any) => ({
+                                            id: String(r.id),
+                                            name: r.name,
+                                          }),
+                                        )}
+                                        siblingColumns={tableColumns.filter(
+                                          (c) => c.id !== col.id,
+                                        )}
+                                        onUpdate={(patch) =>
+                                          handleUpdateTableColumnSettings(
+                                            col.id,
+                                            patch,
+                                          )
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </SortableItem>
+                            ))}
+                          </div>
+                        </SortableContainer>
+                      )}
+                    </div>
+
+                    <Divider className='border-dashed border-gray-1' />
+
+                    <button
+                      className='flex w-full items-center justify-between rounded-lg py-1 text-left transition-colors hover:text-accent-primary'
+                      type='button'
+                      onClick={() => setShowTableAdvanced(!showTableAdvanced)}
+                    >
+                      <span className='text-[11px] font-bold tracking-wider text-gray-7 uppercase'>
+                        Row & Export Options
+                      </span>
+                      <Icon
+                        height={14}
+                        name='lucide:chevron-down'
+                        width={14}
+                        className={cn(
+                          'text-gray-5 transition-transform duration-200',
+                          showTableAdvanced && 'rotate-180',
+                        )}
+                      />
+                    </button>
+
+                    {showTableAdvanced && (
+                      <>
+                        {/* Row Management */}
+                        <div className='space-y-4'>
+                          <div className='space-y-2'>
+                            <label className='block text-13 font-medium text-gray-11'>
+                              Table Entry Type
+                            </label>
+                            <SegmentedControl
+                              className='bg-gray-50'
+                              size='xs'
+                              fullWidth
+                              data={[
+                                { label: 'On Demand', value: 'ON_DEMAND' },
+                                { label: 'Fixed Rows', value: 'FIXED' },
+                              ]}
+                              value={
+                                activeQuestion.settings.specific.rowsType ||
+                                'ON_DEMAND'
+                              }
+                              onChange={(v) =>
+                                updateNested('specific', { rowsType: v })
+                              }
+                            />
+                          </div>
+
+                          {activeQuestion.settings.specific.rowsType ===
+                            'FIXED' && (
+                            <NumberInput
+                              label='Fixed Row Count'
+                              max={100}
+                              min={1}
+                              size='xs'
+                              value={
+                                activeQuestion.settings.specific
+                                  .fixedRowCount || 5
+                              }
+                              onChange={(v) =>
+                                updateNested('specific', { fixedRowCount: v })
+                              }
+                            />
+                          )}
+
+                          <InputSelect
+                            label='Row Selection'
+                            options={[
+                              { id: 'NONE', name: 'None' },
+                              { id: 'SINGLE', name: 'Single Row' },
+                              { id: 'MULTIPLE', name: 'Multiple Rows' },
+                            ]}
+                            value={{
+                              id:
+                                activeQuestion.settings.specific.rowSelection ||
+                                'NONE',
+                              name:
+                                activeQuestion.settings.specific
+                                  .rowSelection === 'MULTIPLE'
+                                  ? 'Multiple Rows'
+                                  : activeQuestion.settings.specific
+                                        .rowSelection === 'SINGLE'
+                                    ? 'Single Row'
+                                    : 'None',
+                            }}
+                            onChange={(v) =>
+                              v &&
+                              updateNested('specific', { rowSelection: v.id })
+                            }
+                          />
+                        </div>
+
+                        <Divider className='border-dashed border-gray-1' />
+
+                        {/* Bulk Actions & View */}
+                        <div className='space-y-3'>
+                          <InputSwitch
+                            label='Enable Import/Export'
+                            checked={
+                              activeQuestion.settings.specific
+                                .importExportEnabled || false
+                            }
+                            onChange={(v) =>
+                              updateNested('specific', {
+                                importExportEnabled: v,
+                              })
+                            }
+                          />
+                          <InputSwitch
+                            label='Show Summary Totals'
+                            checked={
+                              activeQuestion.settings.specific.showSummaryRow ||
+                              false
+                            }
+                            onChange={(v) =>
+                              updateNested('specific', { showSummaryRow: v })
+                            }
+                          />
+                          <InputSwitch
+                            label='Enable QR/Barcode Scan-to-Fill'
+                            checked={
+                              activeQuestion.settings.specific.qrCodeEnabled ||
+                              false
+                            }
+                            onChange={(v) =>
+                              updateNested('specific', { qrCodeEnabled: v })
+                            }
+                          />
+                        </div>
+
+                        <Divider className='border-dashed border-gray-1' />
+
+                        {/* AI Line-Item Extraction */}
+                        <div className='space-y-2'>
+                          <label className='block text-13 font-medium text-gray-11'>
+                            Auto-fill rows from document (AI/OCR)
+                          </label>
+                          <InputSelect
+                            placeholder='Select a File Upload field'
+                            clearable
+                            options={allQuestions
+                              .filter(
+                                (q) =>
+                                  q?.id &&
+                                  (q.type === 'FILE_UPLOAD' ||
+                                    q.type === 'IMAGE_UPLOAD'),
+                              )
+                              .map((q) => ({
+                                id: q.id,
+                                name: q.label || 'Untitled Field',
+                              }))}
+                            value={
+                              activeQuestion.settings.aiSettings
+                                ?.lineItemSourceFieldId
+                                ? {
+                                    id: activeQuestion.settings.aiSettings
+                                      .lineItemSourceFieldId,
+                                    name:
+                                      allQuestions.find(
+                                        (q) =>
+                                          q.id ===
+                                          activeQuestion.settings.aiSettings
+                                            ?.lineItemSourceFieldId,
+                                      )?.label || 'Selected Field',
+                                  }
+                                : null
+                            }
+                            onChange={(v) =>
+                              updateQuestion(
+                                activeQuestion.id,
+                                (q: Question) => ({
+                                  ...q,
+                                  settings: {
+                                    ...q.settings,
+                                    aiSettings: {
+                                      ...q.settings.aiSettings,
+                                      lineItemSourceFieldId: v?.id,
+                                    },
+                                  },
+                                }),
+                              )
+                            }
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-
-                <Divider className='border-dashed border-gray-1' />
-
-                {/* Row Management */}
-                <div className='space-y-4'>
-                  <div className='space-y-2'>
-                    <label className='block text-13 font-medium text-gray-11'>
-                      Table Entry Type
-                    </label>
-                    <SegmentedControl
-                      className='bg-gray-50'
-                      size='xs'
-                      fullWidth
-                      data={[
-                        { label: 'On Demand', value: 'ON_DEMAND' },
-                        { label: 'Fixed Rows', value: 'FIXED' },
-                      ]}
-                      value={
-                        activeQuestion.settings.specific.rowsType || 'ON_DEMAND'
-                      }
-                      onChange={(v) =>
-                        updateNested('specific', { rowsType: v })
-                      }
-                    />
-                  </div>
-
-                  {activeQuestion.settings.specific.rowsType === 'FIXED' && (
-                    <NumberInput
-                      label='Fixed Row Count'
-                      max={100}
-                      min={1}
-                      size='xs'
-                      value={
-                        activeQuestion.settings.specific.fixedRowCount || 5
-                      }
-                      onChange={(v) =>
-                        updateNested('specific', { fixedRowCount: v })
-                      }
-                    />
-                  )}
-
-                  <InputSelect
-                    label='Row Selection'
-                    options={[
-                      { id: 'NONE', name: 'None' },
-                      { id: 'SINGLE', name: 'Single Row' },
-                      { id: 'MULTIPLE', name: 'Multiple Rows' },
-                    ]}
-                    value={{
-                      id:
-                        activeQuestion.settings.specific.rowSelection || 'NONE',
-                      name:
-                        activeQuestion.settings.specific.rowSelection ===
-                        'MULTIPLE'
-                          ? 'Multiple Rows'
-                          : activeQuestion.settings.specific.rowSelection ===
-                              'SINGLE'
-                            ? 'Single Row'
-                            : 'None',
-                    }}
-                    onChange={(v) =>
-                      v && updateNested('specific', { rowSelection: v.id })
-                    }
-                  />
-                </div>
-
-                <Divider className='border-dashed border-gray-1' />
-
-                {/* Bulk Actions & View */}
-                <div className='space-y-3'>
-                  <InputSwitch
-                    label='Enable Import/Export'
-                    checked={
-                      activeQuestion.settings.specific.importExportEnabled ||
-                      false
-                    }
-                    onChange={(v) =>
-                      updateNested('specific', { importExportEnabled: v })
-                    }
-                  />
-                  <InputSwitch
-                    label='Show Summary Totals'
-                    checked={
-                      activeQuestion.settings.specific.showSummaryRow || false
-                    }
-                    onChange={(v) =>
-                      updateNested('specific', { showSummaryRow: v })
-                    }
-                  />
-                </div>
-              </div>
-            )}
+                )
+              })()}
 
             {isRating && (
               <div className='space-y-4'>
@@ -1959,6 +2468,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           isNumber ||
           isDate ||
           isTime ||
+          isDateTime ||
           isSelect ||
           isCurrency ||
           isCalculated ||
@@ -2005,6 +2515,42 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   />
                 </div>
 
+                {activeQuestion.type === 'MULTIPLE_CHOICE' &&
+                  activeQuestion.settings.validation.fieldRule ===
+                    'REQUIRED' && (
+                    <>
+                      <Divider className='border-dashed border-gray-1' />
+                      <div className='space-y-2'>
+                        <label className='block text-[11px] font-bold text-gray-8 uppercase'>
+                          Requirement Mode
+                        </label>
+                        <SegmentedControl
+                          size='xs'
+                          fullWidth
+                          data={[
+                            { label: 'At least one (ANY)', value: 'ANY' },
+                            { label: 'All required (ALL)', value: 'ALL' },
+                          ]}
+                          value={
+                            activeQuestion.settings.validation
+                              .requiredValidation || 'ANY'
+                          }
+                          onChange={(v) =>
+                            updateNested('validation', {
+                              requiredValidation: v as 'ANY' | 'ALL',
+                            })
+                          }
+                        />
+                        <div className='text-[10px] text-gray-6 italic'>
+                          {activeQuestion.settings.validation
+                            .requiredValidation === 'ALL'
+                            ? 'User must check all options to proceed (e.g. compliance checklists).'
+                            : 'User must check at least one option to proceed.'}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                 {isCurrency && (
                   <>
                     <Divider className='border-dashed border-gray-1' />
@@ -2038,16 +2584,16 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     <div className='flex items-center justify-between'>
                       <div>
                         <div className='text-xs font-bold text-gray-8'>
-                          Set Calculated Field
+                          Live Formula
                         </div>
                         <div className='text-[10px] text-gray-6'>
-                          Enable automatic formula engine
+                          Recalculate when source fields change
                         </div>
                       </div>
                       <InputSwitch
                         checked={
                           activeQuestion.settings.validation
-                            .isCalculationEnabled || false
+                            .isCalculationEnabled !== false
                         }
                         onChange={(checked) =>
                           updateNested('validation', {
@@ -2060,18 +2606,22 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                 )}
               </div>
 
-              {(isShortText || isLongText || isNumber || isTime) && (
+              {(isShortText ||
+                isLongText ||
+                isNumber ||
+                isTime ||
+                isDateTime) && (
                 <div>
                   <label className='mb-2 block text-13 font-medium text-gray-11'>
                     {isNumber
                       ? 'Number Format'
-                      : isTime
+                      : isTime || isDateTime
                         ? 'Time Format'
                         : 'Validation Type'}
                   </label>
                   <InputSelect
                     options={
-                      isTime
+                      isTime || isDateTime
                         ? timeFormatOptions.map((o) => ({
                             id: o.value,
                             name: o.label,
@@ -2081,12 +2631,12 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     placeholder={
                       isNumber
                         ? 'Select numeric format'
-                        : isTime
+                        : isTime || isDateTime
                           ? 'Select display format'
                           : 'e.g. Email, Alpha...'
                     }
                     value={
-                      isTime
+                      isTime || isDateTime
                         ? timeFormatOptions.find(
                             (o) =>
                               o.value ===
@@ -2112,7 +2662,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                       val &&
                       updateNested(
                         'validation',
-                        isTime
+                        isTime || isDateTime
                           ? { timeFormat: val.id }
                           : { contentRule: val.id },
                       )
@@ -2138,7 +2688,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     }
                   />
                 )}
-              {isDate && (
+              {(isDate || isDateTime) && (
                 <div className='space-y-4'>
                   <div>
                     <label className='mb-2 block text-13 font-medium text-gray-11'>
@@ -2270,14 +2820,14 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     'MIN_TIME' && (
                     <div className='grid grid-cols-2 items-end gap-3'>
                       <NumberInput
-                        label='Max Hours from Now'
+                        label='Hours from Current'
                         placeholder='0'
                         size='xs'
                         value={
-                          activeQuestion.settings.validation.maxTimeOffset || 0
+                          activeQuestion.settings.validation.minTimeOffset || 0
                         }
                         onChange={(v) =>
-                          updateNested('validation', { maxTimeOffset: v })
+                          updateNested('validation', { minTimeOffset: v })
                         }
                       />
                       <div className='pb-2 text-[10px] text-gray-6 italic'>
@@ -2290,14 +2840,14 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     'MAX_TIME' && (
                     <div className='grid grid-cols-2 items-end gap-3'>
                       <NumberInput
-                        label='Min Hours from Now'
+                        label='Hours from Current'
                         placeholder='0'
                         size='xs'
                         value={
-                          activeQuestion.settings.validation.minTimeOffset || 0
+                          activeQuestion.settings.validation.maxTimeOffset || 0
                         }
                         onChange={(v) =>
-                          updateNested('validation', { minTimeOffset: v })
+                          updateNested('validation', { maxTimeOffset: v })
                         }
                       />
                       <div className='pb-2 text-[10px] text-gray-6 italic'>
@@ -2516,7 +3066,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               {isFileUpload && (
                 <div className='space-y-4'>
                   <div className='space-y-1.5'>
-                    <div className='text-xs font-medium text-gray-7'>
+                    <div className='text-xs font-bold text-gray-8'>
                       Allowed File Types
                     </div>
                     <div className='flex flex-wrap gap-2'>
@@ -2530,7 +3080,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                                 .allowedFileTypes || []
                             ).includes(ext)
                               ? 'border-accent-primary bg-accent-soft text-accent-primary'
-                              : 'bg-gray-50 border-gray-1 text-gray-4 hover:border-gray-3',
+                              : 'hover:bg-gray-50 border-gray-2 bg-white text-gray-8 hover:border-accent-primary/40',
                           )}
                           onClick={() => {
                             const current =
@@ -2550,11 +3100,14 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     </div>
                   </div>
 
-                  <div className='grid grid-cols-2 gap-3'>
+                  <div className='grid grid-cols-2 items-start gap-3'>
                     <NumberInput
                       label='Max File Size (MB)'
                       placeholder='5'
-                      size='xs'
+                      classNames={{
+                        input: baseInputClassNames.input,
+                        label: baseInputClassNames.label,
+                      }}
                       value={
                         Number(
                           activeQuestion.settings.validation.maxFileSize,
@@ -2596,20 +3149,26 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                     />
                   </div>
 
-                  <div className='bg-gray-50 space-y-2 rounded-lg border border-dashed border-gray-1 p-3'>
-                    <div className='flex items-center justify-between'>
-                      <div className='text-xs font-semibold text-gray-8'>
-                        Auto-Fill Mapping
-                      </div>
-                      <IconButton
-                        icon='lucide:settings-2'
-                        size='xs'
-                        variant='ghost'
-                      />
-                    </div>
-                    <div className='text-[11px] text-gray-5'>
-                      Map document data to form fields via AI OCR.
-                    </div>
+                  <div className='space-y-1.5'>
+                    <InputSelectMultiple
+                      // description='Fields to auto-fill from this document via AI OCR. OCR only runs on upload when at least one field is assigned.'
+                      label='Auto-fill from Document'
+                      options={assignOtherControlsOptions}
+                      placeholder='Select fields to auto-fill from OCR'
+                      clearable
+                      searchable
+                      value={assignOtherControlsOptions.filter((o) =>
+                        (
+                          activeQuestion.settings.validation
+                            .assignOtherControls || []
+                        ).includes(o.id),
+                      )}
+                      onChange={(vals) =>
+                        updateNested('validation', {
+                          assignOtherControls: vals.map((v) => v.id),
+                        })
+                      }
+                    />
                   </div>
                 </div>
               )}
@@ -2619,7 +3178,12 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
 
       {/* 4. DATA LOOKUP SECTION */}
       {!isDivider &&
-        (isLongText || isNumber || isDate || isTime || isSelect) && (
+        (isLongText ||
+          isNumber ||
+          isDate ||
+          isTime ||
+          isDateTime ||
+          isSelect) && (
           <SettingsSection
             icon='lucide:database'
             isOpen={openLookup}
@@ -2699,10 +3263,10 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                 }
               />
 
-              {(isNumber || isDate || isTime || isSelect) && (
+              {(isNumber || isDate || isTime || isDateTime || isSelect) && (
                 <InputText
                   label={
-                    isDate
+                    isDate || isDateTime
                       ? 'Target Column (Date)'
                       : isTime
                         ? 'Target Column (Time)'
@@ -2711,7 +3275,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                           : 'Target Column (Number)'
                   }
                   placeholder={
-                    isDate
+                    isDate || isDateTime
                       ? 'e.g. birth_date'
                       : isTime
                         ? 'e.g. checkin_time'
@@ -2727,89 +3291,6 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
                   }
                 />
               )}
-
-              <div className='space-y-2'>
-                <div className='text-xs font-bold tracking-wider text-gray-11 uppercase'>
-                  Mapping Configuration
-                </div>
-                <div className='bg-gray-50 space-y-2 rounded-lg border border-dashed border-gray-1 p-3'>
-                  <div className='grid grid-cols-2 gap-2'>
-                    <div className='text-[10px] font-semibold text-gray-8'>
-                      External Field
-                    </div>
-                    <div className='text-[10px] font-semibold text-gray-8'>
-                      Local Prop
-                    </div>
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    <InputText
-                      placeholder='Source Column'
-                      value=''
-                      readOnly
-                      onChange={(v: any) => {
-                        console.log(v)
-                      }}
-                    />
-                    <Icon
-                      className='text-gray-5'
-                      name='lucide:arrow-right'
-                      width={12}
-                    />
-                    <InputText
-                      value={isSelect ? 'Display Label' : 'Field Value'}
-                      readOnly
-                      onChange={(v: any) => {
-                        console.log(v)
-                      }}
-                    />
-                  </div>
-                  {isSelect && (
-                    <div className='flex items-center gap-2'>
-                      <InputText
-                        placeholder='ID Column'
-                        value=''
-                        readOnly
-                        onChange={(v: any) => {
-                          console.log(v)
-                        }}
-                      />
-                      <Icon
-                        className='text-gray-5'
-                        name='lucide:arrow-right'
-                        width={12}
-                      />
-                      <InputText
-                        value='Option Value'
-                        readOnly
-                        onChange={(v: any) => {
-                          console.log(v)
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className='space-y-2'>
-                <div className='text-xs font-bold tracking-wider text-gray-11 uppercase'>
-                  Condition Mapping
-                </div>
-                <div className='bg-gray-50 rounded-lg border border-dashed border-gray-1 p-3'>
-                  <div className='text-[11px] text-gray-6 italic'>
-                    Define when this lookup should be triggered based on other
-                    field values.
-                  </div>
-                  <Button
-                    className='mt-3 border border-gray-1 bg-white'
-                    color='gray'
-                    size='compact-xs'
-                    variant='subtle'
-                    fullWidth
-                  >
-                    + Add Condition Rule
-                  </Button>
-                </div>
-              </div>
             </div>
           </SettingsSection>
         )}
@@ -2861,7 +3342,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               />
             </div>
 
-            {!isNumber && !isDate && !isSelect && (
+            {!isNumber && !isDate && !isDateTime && !isSelect && (
               <InputText
                 label='Input Mask'
                 placeholder='e.g. (###) ###-####'
@@ -2917,7 +3398,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
               </div>
             )}
 
-            {!isDivider && (
+            {!isDivider && !isCalculated && (
               <div className='flex items-center justify-between px-1 py-2'>
                 <div>
                   <div className='text-xs font-bold text-gray-13'>
@@ -2988,7 +3469,7 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
       </SettingsSection>
 
       {/* 7. LOGIC SECTION */}
-      {!isShortText && !isDate && !isTime && (
+      {!isShortText && !isDate && !isTime && !isDateTime && (
         <SettingsSection
           icon='lucide:split'
           isOpen={openLogic}
@@ -2996,18 +3477,146 @@ const QuestionSettings = ({ activeQuestion }: QuestionSettingsProps) => {
           variant='premium'
           onToggle={() => setOpenLogic(!openLogic)}
         >
-          <div className='animate-in fade-in slide-in-from-bottom-2 space-y-4 duration-300'>
-            <div className='bg-gray-50/50 rounded-xl border border-gray-2 p-4 text-center'>
-              <div className='mb-1 text-sm font-semibold text-gray-9'>
-                Visibility Logic
+          <div className='animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-300'>
+            {logicRules.length === 0 ? (
+              <div className='bg-gray-50/50 rounded-xl border border-gray-2 p-4 text-center'>
+                <div className='mb-1 text-sm font-semibold text-gray-9'>
+                  Visibility Logic
+                </div>
+                <div className='mb-3 text-[11px] text-gray-5'>
+                  Set rules to show or hide this field based on other responses.
+                </div>
+                {logicFieldOptions.length === 0 ? (
+                  <div className='text-[11px] text-gray-5 italic'>
+                    Add another field to this form to create a rule.
+                  </div>
+                ) : (
+                  <Button
+                    color='primary'
+                    size='xs'
+                    variant='subtle'
+                    leftSection={
+                      <Icon height={12} name='lucide:plus' width={12} />
+                    }
+                    onClick={addLogicRule}
+                  >
+                    Add Rule
+                  </Button>
+                )}
               </div>
-              <div className='mb-3 text-[11px] text-gray-5'>
-                Set rules to show or hide this field based on other responses.
+            ) : (
+              <div className='space-y-2.5'>
+                {logicRules.map((rule, idx) => {
+                  const needsValue = !['EMPTY', 'NOT_EMPTY'].includes(
+                    rule.condition,
+                  )
+                  return (
+                    <div
+                      className='space-y-2 rounded-xl border border-gray-1 bg-white p-3 shadow-sm'
+                      key={rule.id}
+                    >
+                      <div className='flex items-center justify-between'>
+                        <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                          {idx === 0 ? 'If' : 'And if'}
+                        </span>
+                        <button
+                          className='hover:text-red-500 text-gray-4 transition-colors'
+                          title='Remove rule'
+                          onClick={() => removeLogicRule(rule.id)}
+                        >
+                          <Icon height={13} name='lucide:x' width={13} />
+                        </button>
+                      </div>
+
+                      <InputSelect
+                        options={logicFieldOptions}
+                        placeholder='Select a field'
+                        value={
+                          logicFieldOptions.find(
+                            (o) => o.id === rule.fieldId,
+                          ) || null
+                        }
+                        onChange={(val) =>
+                          val &&
+                          updateLogicRule(rule.id, { fieldId: String(val.id) })
+                        }
+                      />
+
+                      <div
+                        className={cn(
+                          'grid gap-2',
+                          needsValue ? 'grid-cols-2' : 'grid-cols-1',
+                        )}
+                      >
+                        <InputSelect
+                          options={logicConditionOptions}
+                          value={
+                            logicConditionOptions.find(
+                              (o) => o.id === rule.condition,
+                            ) || logicConditionOptions[0]
+                          }
+                          onChange={(val) =>
+                            val &&
+                            updateLogicRule(rule.id, {
+                              condition: val.id as LogicRule['condition'],
+                            })
+                          }
+                        />
+                        {needsValue && (
+                          <InputText
+                            placeholder='Value'
+                            value={rule.value ?? ''}
+                            onChange={(val: string) =>
+                              updateLogicRule(rule.id, { value: val })
+                            }
+                          />
+                        )}
+                      </div>
+
+                      <div className='flex items-center gap-2 border-t border-dashed border-gray-1 pt-2'>
+                        <span className='text-[10px] font-bold tracking-wider text-gray-5 uppercase'>
+                          Then
+                        </span>
+                        <div className='w-28'>
+                          <InputSelect
+                            options={logicActionOptions}
+                            value={
+                              logicActionOptions.find(
+                                (o) => o.id === rule.action,
+                              ) || logicActionOptions[0]
+                            }
+                            onChange={(val) =>
+                              val &&
+                              updateLogicRule(rule.id, {
+                                action: val.id as LogicRule['action'],
+                              })
+                            }
+                          />
+                        </div>
+                        <span className='text-[11px] text-gray-6'>
+                          this field
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+
+                <Button
+                  className='w-full border border-dashed border-gray-2 bg-white'
+                  color='gray'
+                  disabled={logicRules.length >= logicFieldOptions.length}
+                  size='xs'
+                  variant='subtle'
+                  fullWidth
+                  leftSection={
+                    <Icon height={12} name='lucide:plus' width={12} />
+                  }
+                  onClick={addLogicRule}
+                >
+                  Add Another Rule
+                </Button>
               </div>
-              <Button color='primary' size='xs' variant='subtle'>
-                + Add Rule
-              </Button>
-            </div>
+            )}
           </div>
         </SettingsSection>
       )}

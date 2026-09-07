@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react'
 import { useLocation, useSearch } from '@tanstack/react-router'
 import { useIsMobile } from '@/pages/mobile'
+import {
+  useWhiteLabelDocumentTitle,
+  WHITE_LABEL_TITLES,
+} from '@/utils/whiteLabel'
 import AuthFooter from './components/AuthFooter'
 import AuthHeader from './components/AuthHeader'
 import Features from './components/Features'
@@ -15,7 +19,10 @@ const AuthLayout = ({ children }: Props) => {
   const search: Record<string, unknown> = useSearch({ strict: false }) as any
   const isMobile = useIsMobile()
   const pathname = location.pathname.replace(/\/$/, '')
-  const isResetPassword = pathname === '/reset-password'
+  const isResetPassword =
+    pathname === '/reset-password' || pathname === '/setup'
+
+  useWhiteLabelDocumentTitle(WHITE_LABEL_TITLES[pathname] ?? 'Account')
 
   const shareToken =
     typeof search?.shareToken === 'string' ? search.shareToken : ''
@@ -38,9 +45,7 @@ const AuthLayout = ({ children }: Props) => {
 
   if (isMobile) {
     return (
-      <div className='h-dvh overflow-hidden bg-surface-primary'>
-        {children}
-      </div>
+      <div className='h-dvh overflow-hidden bg-surface-primary'>{children}</div>
     )
   }
 

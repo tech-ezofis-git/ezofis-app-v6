@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import type { TableColMeta } from '@/pages/requests/utils/dynamicTable.utils'
 import Icon from '@/components/base/icon/Icon'
 import Modal from '@/components/base/Modal'
@@ -24,6 +25,7 @@ export default function DynamicTableModal({
   onClose: () => void
   safeParse: (v: any) => any
 }) {
+  const { t } = useLingui()
   const { meta, rows } = normalizeTablePayload(safeParse, rawVal)
 
   return (
@@ -42,7 +44,7 @@ export default function DynamicTableModal({
 
       <div className='px-6 py-4 md:px-8'>
         {!rows?.length ? (
-          <div className='text-sm text-gray-11'>No table data available.</div>
+          <div className='text-sm text-gray-11'>{t`No table data available.`}</div>
         ) : (
           <div className='bg-primary flex flex-col rounded-lg shadow'>
             <div className='max-h-[65vh] flex-1 overflow-auto p-2'>

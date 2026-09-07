@@ -1,58 +1,76 @@
 import {
+  Badge,
   Button,
   Divider,
   Rating,
   SegmentedControl,
+  Select,
   TextInput,
   Tooltip,
-  UnstyledButton,
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
-import Icon from '@/components/base/icon/Icon'
+import { useQuery } from '@tanstack/react-query'
+import type { Option } from '@/types/option'
 import {
-  type Panel as PanelType,
+  getRepositoryItemFacets,
+  getRepositorys,
+  uploadForOcr,
+} from '@/api/v6/folder/folder'
+import Icon from '@/components/base/icon/Icon'
+import InputDateTime from '@/components/base/inputs/InputDateTime'
+import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
+import InputTime from '@/components/base/inputs/InputTime'
+import CalculatedFieldInput from '@/pages/form-builder/components/common/CalculatedFieldInput'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import {
   type Question,
   useFormStore,
-  type WelcomePageSettings as WelcomePage,
 } from '@/pages/form-builder/store/formStore'
+import {
+  buildMergedOcrFieldHints,
+  facetsToFieldOptions,
+  findFieldOption,
+  getConfiguredFieldOptions,
+  getDropdownFacetSource,
+  getFieldOptions as getSharedFieldOptions,
+  mapOcrFieldsToModel,
+  normalizeStoredMultiSelectValue,
+  withExtraFieldOptions,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import cn from '@/utils/cn'
 
-type ViewMode = 'typeform' | 'grid' | 'full'
-
 const LivePreview = () => {
-  const {
-    isPreviewOpen,
-    panels,
-    showThankYouPage,
-    showWelcomePage,
-    thankYouPage,
-    welcomePage,
-    setIsPreviewOpen,
-  } = useFormStore()
-
-  const [viewMode, setViewMode] = useState<ViewMode>('typeform')
+  const { isPreviewOpen, name, panels, setIsPreviewOpen } = useFormStore()
   const [deviceType, setDeviceType] = useState<'desktop' | 'tablet' | 'mobile'>(
     'desktop',
   )
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isCompleted, setIsCompleted] = useState(false)
-  const [showWelcome, setShowWelcome] = useState(false)
+  const [previewModel, setPreviewModel] = useState<Record<string, any>>({})
+  const [extractingFieldId, setExtractingFieldId] = useState<string | null>(
+    null,
+  )
+  const [repositories, setRepositories] = useState<any[]>([])
+  const [selectedRepoId, setSelectedRepoId] = useState<string>('')
 
-  // Flatten all fields for Typeform mode
-  const allFields = panels.flatMap((p) => p.fields)
-  const totalFields = allFields.length
-  const totalPanels = panels.length
-
-  // Reset state when opening
+  // Fetch repositories for OCR target context
   useEffect(() => {
-    if (isPreviewOpen) {
-      setCurrentIndex(0)
-      setIsCompleted(false)
-      setShowWelcome(showWelcomePage)
+    let cancelled = false
+    getRepositorys().then((res) => {
+      if (
+        !cancelled &&
+        res.data &&
+        Array.isArray(res.data) &&
+        res.data.length > 0
+      ) {
+        setRepositories(res.data)
+        setSelectedRepoId(res.data[0].id)
+      }
+    })
+    return () => {
+      cancelled = true
     }
-  }, [isPreviewOpen, showWelcomePage])
+  }, [])
 
-  // Close on Escape
+  // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsPreviewOpen(false)
@@ -61,130 +79,134 @@ const LivePreview = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [setIsPreviewOpen])
 
+  useEffect(() => {
+    if (isPreviewOpen) {
+      setPreviewModel((prev) => applyCalculatedFields(panels, prev))
+    }
+  }, [isPreviewOpen, panels])
+
   if (!isPreviewOpen) return null
 
-  // Handlers
-  const handleNext = () => {
-    if (showWelcome) {
-      setShowWelcome(false)
+  const handleFieldValueChange = (fieldId: string, value: any) => {
+    setPreviewModel((prev) =>
+      applyCalculatedFields(panels, { ...prev, [fieldId]: value }),
+    )
+  }
+
+  const handleOcrFileSelect = async (file: File, field: Question) => {
+    if (!file) return
+
+    const fieldId = field.id
+    const assignedFieldIds = field.settings.validation.assignOtherControls || []
+
+    // OCR only runs when this upload field has target fields assigned to it.
+    if (assignedFieldIds.length === 0) {
+      setPreviewModel((prev) => ({ ...prev, [fieldId]: file.name }))
       return
     }
 
-    if (viewMode === 'typeform') {
-      if (currentIndex < totalFields - 1) {
-        setCurrentIndex((prev) => prev + 1)
-      } else if (showThankYouPage) {
-        setIsCompleted(true)
-      } else {
-        setIsPreviewOpen(false)
-      }
-    } else if (viewMode === 'grid') {
-      if (currentIndex < totalPanels - 1) {
-        setCurrentIndex((prev) => prev + 1)
-      } else if (showThankYouPage) {
-        setIsCompleted(true)
-      } else {
-        setIsPreviewOpen(false)
-      }
-    } else {
-      if (showThankYouPage) {
-        setIsCompleted(true)
-      } else {
-        setIsPreviewOpen(false)
-      }
-    }
-  }
+    setExtractingFieldId(fieldId)
 
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex((prev) => prev - 1)
-    } else if (showWelcomePage && !showWelcome) {
-      setShowWelcome(true)
-    }
-  }
+    try {
+      const assignedFields = panels
+        .flatMap((p) => p.fields || [])
+        .filter((f) => assignedFieldIds.includes(f.id))
 
-  // Progress Calculation
-  let progress = 0
-  if (viewMode === 'typeform') {
-    progress =
-      totalFields > 0 ? Math.round(((currentIndex + 1) / totalFields) * 100) : 0
-  } else if (viewMode === 'grid') {
-    progress =
-      totalPanels > 0 ? Math.round(((currentIndex + 1) / totalPanels) * 100) : 0
-  } else {
-    progress = 100
+      const fieldHints = buildMergedOcrFieldHints([], panels, field)
+
+      const repoIdToUse =
+        selectedRepoId || (repositories[0]?.id ?? 'default-repo')
+
+      const { data, error } = await uploadForOcr(repoIdToUse, file, fieldHints)
+
+      if (!error && data?.ocrFieldList) {
+        const ocrPatch = mapOcrFieldsToModel(panels, data.ocrFieldList)
+
+        // Direct label/type matching fallback, restricted to assigned fields
+        const extraPatch: Record<string, string> = {}
+        if (Array.isArray(data.ocrFieldList)) {
+          for (const item of data.ocrFieldList) {
+            if (!item?.name || !item.value) continue
+            const targetName = item.name.trim().toLowerCase()
+            for (const targetField of assignedFields) {
+              if (
+                targetField.label &&
+                targetField.label.trim().toLowerCase() === targetName
+              ) {
+                extraPatch[targetField.id] = item.value
+              }
+            }
+          }
+        }
+
+        // Only ever populate fields this upload field was explicitly assigned to
+        const restrictedPatch: Record<string, string> = {}
+        for (const id of assignedFieldIds) {
+          if (extraPatch[id] !== undefined) restrictedPatch[id] = extraPatch[id]
+          else if (ocrPatch[id] !== undefined)
+            restrictedPatch[id] = ocrPatch[id]
+        }
+
+        const mergedPatch = { ...restrictedPatch, [fieldId]: file.name }
+        setPreviewModel((prev) =>
+          applyCalculatedFields(panels, { ...prev, ...mergedPatch }),
+        )
+      } else {
+        setPreviewModel((prev) =>
+          applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+        )
+      }
+    } catch (err: any) {
+      console.error('OCR Extraction error:', err)
+      setPreviewModel((prev) =>
+        applyCalculatedFields(panels, { ...prev, [fieldId]: file.name }),
+      )
+    } finally {
+      setExtractingFieldId(null)
+    }
   }
 
   return (
-    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-white font-inter duration-500'>
-      {/* Header */}
-      <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-2 bg-white px-6'>
-        <div className='flex items-center gap-4'>
-          <div className='flex items-center gap-3'>
-            <div className='flex size-9 items-center justify-center rounded-xl border border-gray-2 bg-gray-1 text-gray-7'>
-              <Icon height={18} name='tabler:eye' width={18} />
-            </div>
-            <span className='text-lg font-bold tracking-tight text-gray-13'>
-              Preview
-            </span>
+    <div className='animate-in fade-in fixed inset-0 z-[200] flex flex-col bg-gray-2/80 font-inter backdrop-blur-sm duration-300'>
+      {/* Header Control Bar */}
+      <div className='z-30 flex h-16 shrink-0 items-center justify-between border-b border-gray-3 bg-white px-6 shadow-2xs'>
+        <div className='flex items-center gap-3'>
+          <div className='flex size-9 items-center justify-center rounded-xl border border-gray-3 bg-primary-3 text-primary-9 shadow-2xs'>
+            <Icon height={18} name='tabler:eye' width={18} />
           </div>
-
-          <div className='mx-2 h-6 w-px bg-gray-2' />
-
-          <div className='flex gap-1 overflow-hidden rounded-xl border border-gray-2 bg-gray-1 p-1'>
-            {[
-              {
-                icon: 'lucide:layout-list',
-                label: 'One at a time',
-                value: 'typeform',
-              },
-              {
-                icon: 'lucide:layout-grid',
-                label: 'Section by Section',
-                value: 'grid',
-              },
-              {
-                icon: 'lucide:file-text',
-                label: 'All Questions',
-                value: 'full',
-              },
-            ].map((v) => {
-              const active = viewMode === v.value
-              return (
-                <Tooltip key={v.value} label={v.label} openDelay={500}>
-                  <UnstyledButton
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg px-3 py-1.5 transition-all',
-                      active
-                        ? 'bg-white text-accent-primary shadow-sm'
-                        : 'text-gray-5 hover:bg-gray-2',
-                    )}
-                    onClick={() => {
-                      setViewMode(v.value as ViewMode)
-                      setCurrentIndex(0)
-                      setIsCompleted(false)
-                      setShowWelcome(showWelcomePage)
-                    }}
-                  >
-                    <Icon height={14} name={v.icon} width={14} />
-                    <div className='text-[10px] font-extrabold tracking-wider uppercase'>
-                      {active ? v.label : ''}
-                    </div>
-                  </UnstyledButton>
-                </Tooltip>
-              )
-            })}
+          <div className='flex flex-col'>
+            <span className='text-sm font-bold text-gray-12'>
+              Form Live Preview
+            </span>
+            <span className='text-xs text-gray-10'>
+              {name || 'Untitled Form'}
+            </span>
           </div>
         </div>
 
-        <div className='flex items-center gap-4'>
+        <div className='flex items-center gap-3'>
+          {Object.keys(previewModel).length > 0 && (
+            <Button
+              className='h-9 cursor-pointer rounded-xl font-medium'
+              color='gray'
+              size='sm'
+              variant='outline'
+              leftSection={
+                <Icon height={14} name='lucide:rotate-ccw' width={14} />
+              }
+              onClick={() => setPreviewModel(applyCalculatedFields(panels, {}))}
+            >
+              Clear Values
+            </Button>
+          )}
+
           <SegmentedControl
             radius='xl'
             size='xs'
             value={deviceType}
             classNames={{
-              indicator: 'bg-white shadow-sm',
-              root: 'border border-gray-2 bg-gray-1 p-1',
+              indicator: 'bg-white shadow-xs',
+              root: 'border border-gray-3 bg-gray-2 p-1',
             }}
             data={[
               {
@@ -208,131 +230,118 @@ const LivePreview = () => {
             ]}
             onChange={(v) => setDeviceType(v as any)}
           />
-          <div className='mx-1 h-6 w-px bg-gray-2' />
+
+          <div className='h-6 w-px bg-gray-3' />
+
           <Button
-            className='h-10 rounded-xl px-4 hover:bg-gray-1'
+            className='h-9 cursor-pointer rounded-xl px-4 text-gray-12 hover:bg-gray-2'
             color='gray'
-            leftSection={<Icon height={18} name='tabler:x' width={18} />}
+            leftSection={<Icon height={16} name='tabler:x' width={16} />}
             size='sm'
             variant='subtle'
             onClick={() => setIsPreviewOpen(false)}
           >
-            Exit
+            Close
           </Button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className='bg-gray-50 relative flex flex-1 flex-col items-center justify-center overflow-hidden p-4 transition-all duration-500 sm:p-8'>
+      {/* Single Scrollable Full-Form Preview Container */}
+      <div className='relative flex flex-1 items-center justify-center overflow-hidden bg-gray-2/40 p-4 sm:p-6'>
         <div
           className={cn(
-            'relative flex h-full max-h-[850px] flex-col overflow-hidden rounded-[2rem] border border-gray-2 bg-white shadow-2xl transition-all duration-500',
-            deviceType === 'desktop' && 'w-full max-w-4xl',
-            deviceType === 'tablet' && 'w-[768px] max-w-full',
-            deviceType === 'mobile' && 'w-[375px] max-w-full',
+            'relative flex h-full max-h-[880px] w-full flex-col overflow-hidden rounded-2xl border border-gray-3 bg-white shadow-xl transition-all duration-300',
+            deviceType === 'desktop' && 'max-w-4xl',
+            deviceType === 'tablet' && 'max-w-[768px]',
+            deviceType === 'mobile' && 'max-w-[380px]',
           )}
         >
-          {/* Progress Bar */}
-          {!showWelcome && !isCompleted && viewMode !== 'full' && (
-            <div className='absolute top-0 left-0 z-10 h-1.5 w-full bg-gray-1'>
-              <div
-                className='h-full bg-accent-primary shadow-[0_0_10px_rgba(var(--accent-primary-rgb),0.5)] transition-all duration-700 ease-in-out'
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          )}
-
-          <div className='custom-scrollbar relative flex flex-1 flex-col overflow-y-auto'>
-            {showWelcome ? (
-              <WelcomeScreen page={welcomePage} onStart={handleNext} />
-            ) : isCompleted ? (
-              <CompletionScreen
-                page={thankYouPage}
-                onClose={() => setIsPreviewOpen(false)}
-              />
-            ) : (
-              <div className='flex-1 p-10 sm:p-14'>
-                {viewMode === 'typeform' && (
-                  <TypeformView
-                    field={allFields[currentIndex]}
-                    index={currentIndex}
-                  />
-                )}
-                {viewMode === 'grid' && (
-                  <PanelPreview
-                    panel={panels[currentIndex]}
-                    panelIndex={currentIndex}
-                  />
-                )}
-                {viewMode === 'full' && <FullFormView panels={panels} />}
-              </div>
-            )}
-          </div>
-
-          {/* Footer / Navigation */}
-          <div className='z-20 flex shrink-0 items-center justify-between border-t border-gray-1 bg-white px-8 py-6'>
-            <div className='group flex cursor-default items-center gap-2 opacity-80 transition-opacity hover:opacity-100'>
-              <div className='flex size-6 items-center justify-center rounded-lg bg-accent-soft/30 transition-colors group-hover:bg-accent-soft/50'>
+          {/* Scrollable Form Content */}
+          <div className='custom-scrollbar flex-1 space-y-6 overflow-y-auto p-6 sm:p-8'>
+            {panels.length === 0 ||
+              panels.every((p) => p.fields.length === 0) ? (
+              <div className='py-24 text-center text-gray-10'>
                 <Icon
-                  className='text-accent-primary transition-transform group-hover:scale-110'
-                  height={14}
-                  name='lucide:zap'
-                  width={14}
+                  className='mx-auto mb-3 text-gray-8 opacity-60'
+                  height={40}
+                  name='tabler:clipboard-x'
+                  width={40}
                 />
+                <div className='text-sm font-semibold text-gray-12'>
+                  No fields added to this form yet.
+                </div>
+                <div className='mt-1 text-xs text-gray-9'>
+                  Add sections and fields in the Form Builder to preview them
+                  here.
+                </div>
               </div>
-              <div className='text-[10px] font-extrabold tracking-[0.2em] text-gray-11 uppercase'>
-                Powered By{' '}
-                <span className='border-b border-gray-3 pb-0.5 text-gray-13'>
-                  EZOFIS
-                </span>
-              </div>
-            </div>
-
-            {!isCompleted && (
-              <div className='flex gap-4'>
-                {(showWelcome ||
-                  (viewMode !== 'full' && currentIndex > 0) ||
-                  (!showWelcome && showWelcomePage)) && (
-                  <Button
-                    className='h-11 rounded-2xl px-6 font-bold'
-                    color='gray'
-                    disabled={showWelcome}
-                    size='md'
-                    variant='subtle'
-                    onClick={handlePrev}
-                  >
-                    {showWelcome ? '' : 'Back'}
-                  </Button>
-                )}
-                <Button
-                  className='h-11 rounded-2xl px-8 font-black text-white shadow-lg shadow-accent-soft/50 transition-all hover:opacity-90 active:scale-95'
-                  color='primary'
-                  size='md'
-                  variant='filled'
-                  rightSection={
-                    <Icon
-                      height={18}
-                      width={18}
-                      name={
-                        isCompleted || viewMode === 'full'
-                          ? 'tabler:check'
-                          : 'tabler:arrow-right'
-                      }
-                    />
-                  }
-                  onClick={handleNext}
+            ) : (
+              panels.map((panel, idx) => (
+                <div
+                  className='space-y-4 rounded-xl border border-gray-3 bg-white p-5 shadow-2xs'
+                  key={panel.id}
                 >
-                  {showWelcome
-                    ? welcomePage.buttonText
-                    : viewMode === 'full'
-                      ? 'Submit'
-                      : currentIndex === totalFields - 1 ||
-                          (viewMode === 'grid' &&
-                            currentIndex === totalPanels - 1)
-                        ? 'Submit'
-                        : 'Next'}
-                </Button>
-              </div>
+                  {/* Section Title & Description Header */}
+                  <div className='border-b border-gray-3 pb-3'>
+                    <h3 className='text-base font-bold text-gray-12'>
+                      {panel.settings.title || `Section ${idx + 1}`}
+                    </h3>
+                    {panel.settings.description && (
+                      <p className='mt-1 text-xs font-normal text-gray-10'>
+                        {panel.settings.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Section Fields Grid */}
+                  <div className='grid grid-cols-12 gap-x-4 gap-y-4'>
+                    {panel.fields.map((field) => (
+                      <div
+                        key={field.id}
+                        className={cn(
+                          'col-span-12',
+                          deviceType !== 'mobile' &&
+                          field.settings.general.size === 'col-6' &&
+                          'md:col-span-6',
+                          deviceType !== 'mobile' &&
+                          field.settings.general.size === 'col-4' &&
+                          'md:col-span-4',
+                          deviceType !== 'mobile' &&
+                          field.settings.general.size === 'col-3' &&
+                          'md:col-span-3',
+                        )}
+                      >
+                        {!field.settings.general.hideLabel && (
+                          <div className='mb-1.5 flex items-center justify-between'>
+                            <label className='block text-xs font-semibold text-gray-12'>
+                              {field.label || 'Untitled Question'}
+                              {field.settings.validation.fieldRule ===
+                                'REQUIRED' && (
+                                  <span className='ml-1 font-bold text-red-11'>
+                                    *
+                                  </span>
+                                )}
+                            </label>
+                          </div>
+                        )}
+                        {field.settings.general.description && (
+                          <p className='mb-1.5 text-[11px] font-normal text-gray-10'>
+                            {field.settings.general.description}
+                          </p>
+                        )}
+                        {renderPreviewInput(
+                          field,
+                          previewModel,
+                          handleFieldValueChange,
+                          (file) => handleOcrFileSelect(file, field),
+                          extractingFieldId === field.id,
+                          selectedRepoId,
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
@@ -341,345 +350,524 @@ const LivePreview = () => {
   )
 }
 
-// interface TableColumn {
-//   id: string
-//   label: string
-//   size: string
-//   type: string
-// }
+const getFieldOptions = (field: Question): string[] => {
+  const { customOptions, separateOptionsUsing } = field.settings.specific
+  if (!customOptions) return ['Option A', 'Option B', 'Option C']
 
-// --- Sub-Components ---
+  const separator = separateOptionsUsing === 'COMMA' ? ',' : '\n'
+  const options = customOptions
+    .split(separator)
+    .map((opt) => opt.trim())
+    .filter(Boolean)
 
-const WelcomeScreen = ({
-  page,
-  onStart,
+  return options.length > 0 ? options : ['Option A', 'Option B', 'Option C']
+}
+
+const LivePreviewDropdown = ({
+  field,
+  fallbackRepositoryId,
+  multiple,
+  value,
+  onChange,
 }: {
-  page: WelcomePage
-  onStart: () => void
-}) => (
-  <div className='animate-in fade-in zoom-in-95 flex flex-1 flex-col items-center justify-center p-12 text-center duration-500'>
-    <div className='mb-10 flex size-28 rotate-3 items-center justify-center rounded-[2.5rem] border border-accent-soft/60 bg-accent-soft/30 text-accent-primary shadow-sm'>
-      <Icon className='size-12' name='lucide:megaphone' />
-    </div>
-    <h1 className='mb-6 text-5xl leading-tight font-black tracking-tight text-gray-13'>
-      {page.title}
-    </h1>
-    <p className='mx-auto mb-12 max-w-lg text-xl leading-relaxed font-medium text-gray-11'>
-      {page.description}
-    </p>
-    <Button
-      className='h-16 rounded-2xl px-12 text-xl font-black text-white shadow-xl shadow-accent-soft/60 transition-all hover:scale-[1.02] active:scale-95'
-      color='primary'
-      size='xl'
-      variant='filled'
-      onClick={onStart}
-    >
-      {page.buttonText}
-    </Button>
-  </div>
-)
+  field: Question
+  fallbackRepositoryId?: string
+  multiple?: boolean
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const optionsType = field.settings?.specific?.optionsType || 'CUSTOM'
+  const facetSource = getDropdownFacetSource(field, fallbackRepositoryId)
 
-const CompletionScreen = ({
-  page,
-  onClose,
+  const { data: uniqueFieldOptions = [] } = useQuery({
+    queryKey: [
+      'livePreviewFacets',
+      facetSource.repositoryId,
+      facetSource.fieldName,
+    ],
+    queryFn: async () => {
+      const res = await getRepositoryItemFacets({
+        fieldName: facetSource.fieldName,
+        limit: 1000,
+        repositoryId: facetSource.repositoryId,
+      })
+      return facetsToFieldOptions(res.data, {
+        splitArrayValues: field.type === 'MULTI_SELECT',
+      })
+    },
+    enabled: facetSource.enabled,
+  })
+
+  const selectOptions = withExtraFieldOptions(
+    optionsType === 'DYNAMIC'
+      ? getSharedFieldOptions(field)
+      : getConfiguredFieldOptions(field),
+    uniqueFieldOptions,
+  )
+
+  if (multiple) {
+    const seen = new Set<string>()
+    const selectedOptions = normalizeStoredMultiSelectValue(value).flatMap(
+      (id) => {
+        const opt = findFieldOption(selectOptions, id)
+        if (!opt) return []
+        const key = String(opt.id).toLowerCase()
+        if (seen.has(key)) return []
+        seen.add(key)
+        return [opt]
+      },
+    )
+
+    return (
+      <InputSelectMultiple
+        options={withExtraFieldOptions(selectOptions, selectedOptions)}
+        placeholder={field.settings?.general?.placeholder || 'Select options...'}
+        value={selectedOptions}
+        onChange={(opts: Option[]) => onChange(opts.map((o) => o.id))}
+      />
+    )
+  }
+
+  return (
+    <Select
+      data={selectOptions.map((opt) => opt.name)}
+      placeholder={field.settings.general.placeholder || 'Select an option'}
+      size='sm'
+      value={String(value) || null}
+      classNames={{
+        input:
+          'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+      }}
+      onChange={(val) => onChange(val)}
+    />
+  )
+}
+
+const LivePreviewChoiceGroup = ({
+  field,
+  value,
+  onChange,
 }: {
-  page: WelcomePage
-  onClose: () => void
-}) => (
-  <div className='animate-in fade-in zoom-in-95 flex flex-1 flex-col items-center justify-center p-12 text-center duration-500'>
-    <div className='border-green-200 animate-bounce-slow mb-10 flex size-28 items-center justify-center rounded-full border bg-green-10/5 text-green-6 shadow-sm'>
-      <Icon className='size-12' name='tabler:circle-check' />
-    </div>
-    <h2 className='mb-6 text-5xl font-black tracking-tight text-gray-13'>
-      {page.title}
-    </h2>
-    <p className='mx-auto mb-12 max-w-md text-xl leading-relaxed font-medium text-gray-11'>
-      {page.description}
-    </p>
-    <div className='flex flex-col gap-4'>
-      <Button
-        className='h-14 rounded-2xl border-2 border-gray-3 px-10 font-bold transition-all hover:bg-gray-1'
-        color='gray'
-        size='lg'
-        variant='outline'
-        onClick={onClose}
-      >
-        Close Preview
-      </Button>
-    </div>
-  </div>
-)
+  field: Question
+  value: any
+  onChange: (val: any) => void
+}) => {
+  const specific = field.settings?.specific ?? {}
+  const validation = field.settings?.validation ?? {}
+  const [customList, setCustomList] = useState<string[]>([])
+  const [newOptionText, setNewOptionText] = useState('')
+  const [isAddingOption, setIsAddingOption] = useState(false)
 
-const TypeformView = ({ field, index }: { field: Question; index: number }) => {
-  if (!field) return <EmptyState />
+  const baseOptions = getFieldOptions(field)
+  const allOptions = [...baseOptions, ...customList]
+
+  const optionsPerLine = specific.optionsPerLine ?? 3
+  const isAutoFlex = optionsPerLine === 0
+  const isSingle = field.type === 'SINGLE_CHOICE'
+  const isMulti = field.type === 'MULTIPLE_CHOICE'
+
+  const selectedList = Array.isArray(value)
+    ? value
+    : value
+      ? [String(value)]
+      : []
+
+  const handleToggle = (opt: string) => {
+    if (isSingle) {
+      onChange(opt)
+    } else {
+      const next = selectedList.includes(opt)
+        ? selectedList.filter((item) => item !== opt)
+        : [...selectedList, opt]
+      onChange(next)
+    }
+  }
+
+  const handleSelectAll = () => {
+    onChange(allOptions)
+  }
+
+  const handleClearAll = () => {
+    onChange([])
+  }
+
+  const handleAddCustomOption = () => {
+    const trimmed = newOptionText.trim()
+    if (!trimmed || allOptions.includes(trimmed)) return
+    setCustomList((prev) => [...prev, trimmed])
+    if (isSingle) {
+      onChange(trimmed)
+    } else {
+      onChange([...selectedList, trimmed])
+    }
+    setNewOptionText('')
+    setIsAddingOption(false)
+  }
 
   return (
     <div
-      className='animate-in fade-in slide-in-from-bottom-4 flex min-h-[300px] flex-col justify-center duration-500'
-      key={field.id}
+      className={cn(
+        'w-full space-y-2.5',
+        specific.showOptionsWrapper &&
+        'rounded-xl border border-gray-3 bg-gray-1/40 p-3 shadow-2xs',
+      )}
     >
-      <div className='mb-6'>
-        <h2 className='mb-2 text-2xl leading-tight font-bold text-gray-9'>
-          <span className='mr-2 text-xl text-accent-primary'>{index + 1}.</span>
-          {field.label || 'Untitled Question'}
-        </h2>
-        {field.settings.general.description && (
-          <p className='text-lg text-gray-5'>
-            {field.settings.general.description}
-          </p>
+      {/* Header controls for QR code and Bulk actions */}
+      <div className='flex items-center justify-between'>
+        {isMulti && specific.bulkActionsEnabled && (
+          <div className='flex items-center gap-2'>
+            <button
+              type='button'
+              className='cursor-pointer text-[11px] font-semibold text-primary-9 hover:underline'
+              onClick={handleSelectAll}
+            >
+              Select All
+            </button>
+            <span className='text-gray-4 text-xs'>•</span>
+            <button
+              type='button'
+              className='cursor-pointer text-[11px] font-semibold text-gray-7 hover:underline'
+              onClick={handleClearAll}
+            >
+              Clear All
+            </button>
+          </div>
+        )}
+
+        {isSingle && specific.qrCodeEnabled && (
+          <button
+            type='button'
+            className='ml-auto flex items-center gap-1 rounded-md border border-gray-3 bg-white px-2 py-1 text-[11px] font-medium text-gray-7 shadow-2xs hover:border-primary-5 hover:text-primary-9 cursor-pointer'
+            onClick={() => {
+              if (allOptions.length > 0) {
+                const randomOpt =
+                  allOptions[Math.floor(Math.random() * allOptions.length)]
+                onChange(randomOpt)
+              }
+            }}
+            title='Simulate QR Code Scan'
+          >
+            <Icon height={13} name='lucide:qr-code' width={13} />
+            <span>Scan QR</span>
+          </button>
         )}
       </div>
 
-      <div className='mb-6'>{renderPreviewInput(field)}</div>
-
-      {field.settings.validation.fieldRule === 'REQUIRED' && (
-        <div className='text-red-500 flex items-center gap-1 text-xs font-bold tracking-wider uppercase'>
-          <Icon height={10} name='tabler:asterisk' width={10} />
-          Required
-        </div>
-      )}
-    </div>
-  )
-}
-
-const PanelPreview = ({
-  panel,
-  panelIndex,
-}: {
-  panel: PanelType
-  panelIndex: number
-}) => {
-  if (!panel || panel.fields.length === 0) return <EmptyState />
-
-  return (
-    <div
-      className='animate-in fade-in slide-in-from-right-4 space-y-8 duration-500'
-      key={panel.id}
-    >
-      <div className='mb-4 border-b border-gray-1 pb-4'>
-        <div className='text-sm font-bold tracking-wider text-gray-4 uppercase'>
-          Section {panelIndex + 1}
-        </div>
-      </div>
-
-      <div className='grid grid-cols-12 gap-6'>
-        {panel.fields.map((f) => (
-          <div
-            key={f.id}
-            className={cn(
-              'col-span-12',
-              f.settings.general.size === 'col-6' && 'md:col-span-6',
-              f.settings.general.size === 'col-4' && 'md:col-span-4',
-            )}
-          >
-            <div className='mb-2'>
-              <label className='mb-1 block text-sm font-bold text-gray-9'>
-                {f.label || 'Untitled Question'}
-                {f.settings.validation.fieldRule === 'REQUIRED' && (
-                  <span className='text-red-500 ml-1'>*</span>
-                )}
-              </label>
-              {f.settings.general.description && (
-                <p className='mb-2 text-xs text-gray-5'>
-                  {f.settings.general.description}
-                </p>
+      {/* Options Layout */}
+      <div
+        className={cn(
+          'gap-2',
+          isAutoFlex ? 'flex flex-wrap items-center' : 'grid',
+        )}
+        style={
+          !isAutoFlex
+            ? {
+              gridTemplateColumns: `repeat(${optionsPerLine}, minmax(0, 1fr))`,
+            }
+            : undefined
+        }
+      >
+        {allOptions.map((opt, i) => {
+          const isSelected = selectedList.includes(opt)
+          return (
+            <div
+              key={i}
+              className={cn(
+                'flex min-h-[38px] cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-xs transition-all active:scale-[0.99]',
+                isAutoFlex ? 'flex-shrink-0' : '',
+                isSelected
+                  ? 'border-primary-9 bg-primary-1 font-semibold text-primary-9 shadow-2xs'
+                  : 'border-gray-3 bg-white text-gray-12 hover:border-gray-4 hover:bg-gray-2',
               )}
-            </div>
-            {renderPreviewInput(f, 'sm')}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const FullFormView = ({ panels }: { panels: PanelType[] }) => {
-  const allFields = panels.flatMap((p) => p.fields)
-  if (allFields.length === 0) return <EmptyState />
-
-  return (
-    <div className='animate-in fade-in space-y-12 duration-500'>
-      {panels.map((panel, i) => (
-        <div className='space-y-6' key={panel.id}>
-          {panels.length > 1 && (
-            <div className='border-b border-gray-1 pb-2'>
-              <div className='text-sm font-bold tracking-wider text-gray-4 uppercase'>
-                Section {i + 1}
-              </div>
-            </div>
-          )}
-          <div className='grid grid-cols-12 gap-6'>
-            {panel.fields.map((f) => (
+              onClick={() => handleToggle(opt)}
+            >
               <div
-                key={f.id}
                 className={cn(
-                  'col-span-12',
-                  f.settings.general.size === 'col-6' && 'md:col-span-6',
-                  f.settings.general.size === 'col-4' && 'md:col-span-4',
+                  'flex size-4 shrink-0 items-center justify-center border transition-colors',
+                  isSingle ? 'rounded-full' : 'rounded-md',
+                  isSelected
+                    ? 'border-primary-9 bg-primary-9 text-white'
+                    : 'border-gray-4 bg-white',
                 )}
               >
-                <div className='mb-2'>
-                  <label className='mb-1 block text-sm font-bold text-gray-9'>
-                    {f.label || 'Untitled Question'}
-                    {f.settings.validation.fieldRule === 'REQUIRED' && (
-                      <span className='text-red-500 ml-1'>*</span>
-                    )}
-                  </label>
-                  {f.settings.general.description && (
-                    <p className='mb-2 text-xs text-gray-5'>
-                      {f.settings.general.description}
-                    </p>
-                  )}
-                </div>
-                {renderPreviewInput(f, 'sm')}
+                {isSelected && (
+                  <Icon
+                    height={10}
+                    name={isSingle ? 'lucide:circle' : 'lucide:check'}
+                    width={10}
+                  />
+                )}
               </div>
-            ))}
-          </div>
+              <span className='truncate'>{opt}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Custom option adder */}
+      {(specific.allowCustomEntries || specific.allowToAddNewOptions) && (
+        <div className='pt-1'>
+          {isAddingOption ? (
+            <div className='flex items-center gap-2'>
+              <input
+                type='text'
+                className='h-8 flex-1 rounded-lg border border-gray-3 bg-white px-2.5 text-xs text-gray-12 outline-none focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+                placeholder='Type custom option...'
+                value={newOptionText}
+                autoFocus
+                onChange={(e) => setNewOptionText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddCustomOption()
+                  if (e.key === 'Escape') setIsAddingOption(false)
+                }}
+              />
+              <Button
+                size='xs'
+                className='h-8 rounded-lg cursor-pointer'
+                onClick={handleAddCustomOption}
+              >
+                Add
+              </Button>
+              <Button
+                size='xs'
+                variant='subtle'
+                color='gray'
+                className='h-8 rounded-lg cursor-pointer'
+                onClick={() => setIsAddingOption(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <button
+              type='button'
+              className='flex items-center gap-1.5 text-xs font-semibold text-primary-9 hover:underline cursor-pointer'
+              onClick={() => setIsAddingOption(true)}
+            >
+              <Icon height={13} name='lucide:plus' width={13} />
+              <span>Add custom option</span>
+            </button>
+          )}
         </div>
-      ))}
+      )}
+
+      {/* Requirement mode info note */}
+      {isMulti &&
+        validation.fieldRule === 'REQUIRED' &&
+        validation.requiredValidation === 'ALL' && (
+          <div className='flex items-center gap-1 pt-0.5 text-[10px] font-medium text-amber-7'>
+            <Icon height={11} name='lucide:alert-circle' width={11} />
+            <span>
+              All {allOptions.length} options must be checked to fulfill requirements.
+            </span>
+          </div>
+        )}
     </div>
   )
 }
 
-const EmptyState = () => (
-  <div className='py-20 text-center text-gray-5'>
-    <Icon
-      className='mx-auto mb-4 opacity-50'
-      height={48}
-      name='tabler:clipboard-x'
-      width={48}
-    />
-    <div>No questions to display.</div>
-  </div>
-)
+const renderPreviewInput = (
+  field: Question,
+  model: Record<string, any>,
+  onChange: (fieldId: string, value: any) => void,
+  onOcrProcessFile?: (file: File) => void,
+  isExtracting?: boolean,
+  fallbackRepositoryId?: string,
+) => {
+  const fieldValue = model[field.id] ?? ''
 
-const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
-  const isSmall = size === 'sm'
   switch (field.type) {
     case 'LABEL':
       return (
-        <div
-          className={cn(
-            'font-medium text-gray-9',
-            isSmall ? 'text-sm' : 'text-xl',
-          )}
-        >
+        <div className='text-sm font-medium text-gray-12'>
           {field.label || 'Label Text'}
         </div>
       )
     case 'DIVIDER':
-      return <Divider className='my-4' />
+      return <Divider className='my-2' />
     case 'TEXT_BUILDER':
       return (
-        <div
-          className={cn(
-            'w-full overflow-hidden rounded-lg border border-gray-2 bg-white',
-            isSmall ? 'min-h-[100px]' : 'min-h-[200px]',
-          )}
-        >
-          <div className='bg-gray-50 flex gap-2 border-b border-gray-2 p-2'>
+        <div className='min-h-[100px] w-full overflow-hidden rounded-lg border border-gray-3 bg-white'>
+          <div className='flex gap-2 border-b border-gray-3 bg-gray-2/60 p-2'>
             <Icon
-              className='text-gray-4'
-              height={16}
+              className='text-gray-10'
+              height={14}
               name='tabler:bold'
-              width={16}
+              width={14}
             />
             <Icon
-              className='text-gray-4'
-              height={16}
+              className='text-gray-10'
+              height={14}
               name='tabler:italic'
-              width={16}
+              width={14}
             />
             <Icon
-              className='text-gray-4'
-              height={16}
+              className='text-gray-10'
+              height={14}
               name='tabler:list'
-              width={16}
+              width={14}
             />
           </div>
-          <div className='p-4 text-gray-4 italic'>
-            Rich text editor placeholder...
+          <div className='p-3 text-xs text-gray-9 italic'>
+            {fieldValue ? String(fieldValue) : 'Rich text content editor...'}
           </div>
         </div>
       )
-    case 'FILE_UPLOAD':
+    case 'IMAGE_UPLOAD':
+    case 'FILE_UPLOAD': {
+      const fileInputId = `preview-field-file-${field.id}`
       return (
-        <div
-          className={cn(
-            'bg-gray-50 hover:bg-gray-100 flex w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-2 transition-colors',
-            isSmall ? 'p-4' : 'p-10',
-          )}
-        >
-          <Icon
-            className='mb-2 text-gray-4'
-            height={isSmall ? 24 : 40}
-            name='tabler:upload'
-            width={isSmall ? 24 : 40}
+        <div className='w-full'>
+          <input
+            accept={field.type === 'IMAGE_UPLOAD' ? 'image/*' : '*/*'}
+            className='hidden'
+            disabled={isExtracting}
+            id={fileInputId}
+            type='file'
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file && onOcrProcessFile) {
+                onOcrProcessFile(file)
+              }
+            }}
           />
-          <div
+          <label
+            htmlFor={isExtracting ? undefined : fileInputId}
             className={cn(
-              'font-medium text-gray-6',
-              isSmall ? 'text-xs' : 'text-sm',
+              'flex w-full flex-col items-center justify-center rounded-xl border border-dashed p-4 transition-all',
+              isExtracting
+                ? 'cursor-wait border-purple-4 bg-purple-1/40'
+                : 'cursor-pointer border-gray-3 bg-gray-1/40 hover:border-primary-9 hover:bg-primary-1/30 active:scale-[0.99]',
             )}
           >
-            Click to upload or drag and drop
-          </div>
-          <div className='mt-1 text-center text-xs text-gray-4'>
-            Any file up to 10MB
-          </div>
+            {isExtracting ? (
+              <>
+                <Icon
+                  className='mb-1.5 animate-spin text-purple-9'
+                  height={24}
+                  name='lucide:loader-2'
+                  width={24}
+                />
+                <div className='text-xs font-bold text-purple-11'>
+                  Extracting document data...
+                </div>
+                <div className='mt-0.5 text-[10px] text-purple-9'>
+                  Populating form fields, please wait...
+                </div>
+              </>
+            ) : (
+              <>
+                <Icon
+                  className='mb-1.5 text-primary-9'
+                  height={22}
+                  name='tabler:upload'
+                  width={22}
+                />
+                <div className='text-xs font-semibold text-gray-12'>
+                  {fieldValue ? (
+                    <span className='flex items-center gap-1.5 font-bold text-primary-9'>
+                      <Icon height={16} name='lucide:file-check' width={16} />
+                      {String(fieldValue)}
+                    </span>
+                  ) : (
+                    'Click to select file for this field or drag & drop'
+                  )}
+                </div>
+                <div className='mt-0.5 text-[10px] text-gray-9'>
+                  Supports PDF & Images (Auto-extracts /uploadForOCR data)
+                </div>
+              </>
+            )}
+          </label>
         </div>
       )
+    }
     case 'TIME':
       return (
-        <div
-          className={cn(
-            'flex items-center gap-3 rounded-lg border border-gray-2 bg-white text-gray-5',
-            isSmall ? 'p-2 text-sm' : 'p-3 text-lg',
-          )}
-        >
-          <Icon
-            height={isSmall ? 16 : 20}
-            name='tabler:clock'
-            width={isSmall ? 16 : 20}
-          />
-          <span>HH : MM AM/PM</span>
-        </div>
+        <InputTime
+          format={
+            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+          }
+          value={fieldValue || ''}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
+    case 'DATE_TIME':
+      return (
+        <InputDateTime
+          format={
+            field.settings.validation?.timeFormat === '24' ? '24h' : '12h'
+          }
+          value={fieldValue || null}
+          onChange={(val) => onChange(field.id, val)}
+        />
       )
     case 'TABLE':
-      const columns = field.settings.specific.columns || [
-        { id: '1', label: 'Column 1', size: 'col-4', type: 'SHORT_TEXT' },
-        { id: '2', label: 'Column 2', size: 'col-4', type: 'SHORT_TEXT' },
-        { id: '3', label: 'Column 3', size: 'col-4', type: 'SHORT_TEXT' },
+    case 'DYNAMIC_TABLE': {
+      const columns = field.settings.specific.tableColumns || [
+        { id: '1', name: 'Column 1', size: 'MEDIUM', type: 'SHORT_TEXT' },
+        { id: '2', name: 'Column 2', size: 'MEDIUM', type: 'SHORT_TEXT' },
+        { id: '3', name: 'Column 3', size: 'MEDIUM', type: 'SHORT_TEXT' },
       ]
+      const rows: Array<Record<string, unknown>> = Array.isArray(fieldValue)
+        ? fieldValue.length > 0
+          ? fieldValue
+          : [{ _rowId: '1' }, { _rowId: '2' }]
+        : [{ _rowId: '1' }, { _rowId: '2' }]
+
+      const updateCell = (
+        rowIndex: number,
+        columnId: string,
+        cellValue: string,
+      ) => {
+        const next = rows.map((row, index) =>
+          index === rowIndex ? { ...row, [columnId]: cellValue } : { ...row },
+        )
+        onChange(field.id, next)
+      }
+
       return (
-        <div className='overflow-x-auto rounded-lg border border-gray-2 bg-white'>
-          <table className='w-full border-collapse text-left text-sm'>
-            <thead className='bg-gray-50 border-b border-gray-2'>
+        <div className='overflow-x-auto rounded-lg border border-gray-3 bg-white'>
+          <table className='w-full border-collapse text-left text-xs'>
+            <thead className='border-b border-gray-3 bg-gray-2/60'>
               <tr>
                 {columns.map((col: any) => (
                   <th
+                    className='p-2.5 font-bold whitespace-nowrap text-gray-12'
                     key={col.id}
-                    className={cn(
-                      'p-3 font-bold whitespace-nowrap text-gray-7',
-                      col.size === 'col-3' && 'w-[100px]',
-                      col.size === 'col-6' && 'w-[200px]',
-                      col.size === 'col-12' && 'w-[300px]',
-                    )}
                   >
-                    {col.label}
+                    {col.name || col.label || 'Column'}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {[1, 2].map((i) => (
-                <tr className='border-b border-gray-1 last:border-0' key={i}>
+              {rows.map((row, rowIndex) => (
+                <tr
+                  className='border-b border-gray-2 last:border-0'
+                  key={String(row._rowId || rowIndex)}
+                >
                   {columns.map((col: any) => (
-                    <td className='p-3' key={col.id}>
+                    <td className='p-2' key={col.id}>
                       <TextInput
                         placeholder='...'
                         size='xs'
+                        type={
+                          col.type === 'NUMBER' ||
+                          col.type === 'COUNTER' ||
+                          col.type === 'CURRENCY_AMOUNT'
+                            ? 'number'
+                            : 'text'
+                        }
+                        value={
+                          row[col.id] === undefined || row[col.id] === null
+                            ? ''
+                            : String(row[col.id])
+                        }
                         variant='unstyled'
+                        onChange={(event) =>
+                          updateCell(rowIndex, col.id, event.target.value)
+                        }
                       />
                     </td>
                   ))}
@@ -689,111 +877,112 @@ const renderPreviewInput = (field: Question, size: 'lg' | 'sm' = 'lg') => {
           </table>
         </div>
       )
+    }
     case 'SHORT_TEXT':
     case 'EMAIL':
     case 'PHONE_NUMBER':
     case 'NUMBER':
+    case 'COUNTER':
     case 'CURRENCY_AMOUNT':
     case 'ADDRESS':
     case 'FULL_NAME':
       return (
         <TextInput
-          size={isSmall ? 'sm' : 'xl'}
-          variant={isSmall ? 'default' : 'unstyled'}
+          size='sm'
+          value={String(fieldValue)}
+          variant='default'
           classNames={{
-            input: isSmall
-              ? 'bg-white'
-              : 'rounded-none border-b-2 border-gray-2 px-0 py-2 text-2xl font-light transition-colors focus:border-accent-primary',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
+          onChange={(e) => onChange(field.id, e.target.value)}
         />
+      )
+    case 'CALCULATED':
+      return (
+        <CalculatedFieldInput hideLabel value={fieldValue} />
       )
     case 'LONG_TEXT':
       return (
         <textarea
-          className={cn(
-            'w-full resize-none transition-colors outline-none',
-            isSmall
-              ? 'min-h-[80px] rounded-md border border-gray-3 bg-white p-2 text-sm focus:border-accent-primary focus:ring-1 focus:ring-accent-primary'
-              : 'min-h-[100px] border-b-2 border-gray-2 bg-transparent py-2 text-xl font-light focus:border-accent-primary',
-          )}
+          className='min-h-[80px] w-full rounded-md border border-gray-3 bg-white p-2.5 text-xs text-gray-12 shadow-2xs transition-colors outline-none placeholder:text-gray-9 focus:border-primary-9 focus:ring-1 focus:ring-primary-3'
+          value={String(fieldValue)}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
+          onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
     case 'DATE':
       return (
-        <div
-          className={cn(
-            'inline-flex cursor-pointer items-center gap-3 rounded-lg border border-gray-2 bg-white text-gray-5 transition-colors hover:border-accent-primary/50',
-            isSmall ? 'p-2 text-sm' : 'p-3 text-lg',
-          )}
-        >
-          <Icon
-            height={isSmall ? 16 : 20}
-            name='tabler:calendar'
-            width={isSmall ? 16 : 20}
-          />
-          <span>MM / DD / YYYY</span>
-        </div>
+        <TextInput
+          leftSection={<Icon height={15} name='tabler:calendar' width={15} />}
+          placeholder='YYYY-MM-DD or MM/DD/YYYY'
+          size='sm'
+          value={String(fieldValue)}
+          variant='default'
+          classNames={{
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
+          }}
+          onChange={(e) => onChange(field.id, e.target.value)}
+        />
       )
     case 'RATING':
       return (
         <Rating
           color='yellow'
           count={field.settings.specific.iconCount || 5}
-          defaultValue={0}
-          size={isSmall ? 'md' : 'xl'}
+          size='md'
+          value={Number(fieldValue) || 0}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
+    case 'SINGLE_SELECT':
+      return (
+        <LivePreviewDropdown
+          field={field}
+          fallbackRepositoryId={fallbackRepositoryId}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
+      )
+    case 'MULTI_SELECT':
+      return (
+        <LivePreviewDropdown
+          field={field}
+          fallbackRepositoryId={fallbackRepositoryId}
+          multiple
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
         />
       )
     case 'SINGLE_CHOICE':
     case 'MULTIPLE_CHOICE':
-    case 'SINGLE_SELECT':
-    case 'MULTI_SELECT':
       return (
-        <div className='space-y-2'>
-          {['Option A', 'Option B', 'Option C'].map((opt, i) => (
-            <div
-              key={i}
-              className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-lg border border-gray-2 bg-white transition-all hover:border-accent-primary/30 hover:bg-accent-soft/5',
-                isSmall ? 'p-2 text-sm' : 'p-3',
-              )}
-            >
-              <div
-                className={cn(
-                  'flex items-center justify-center border border-gray-3',
-                  field.type === 'SINGLE_CHOICE'
-                    ? 'rounded-full'
-                    : 'rounded-md',
-                  isSmall ? 'size-4' : 'size-5',
-                )}
-              ></div>
-              <span
-                className={cn('text-gray-7', isSmall ? 'text-sm' : 'text-lg')}
-              >
-                {opt}
-              </span>
-            </div>
-          ))}
-        </div>
+        <LivePreviewChoiceGroup
+          field={field}
+          value={fieldValue}
+          onChange={(val) => onChange(field.id, val)}
+        />
       )
     default:
       return (
         <TextInput
-          size={isSmall ? 'sm' : 'xl'}
-          variant={isSmall ? 'default' : 'unstyled'}
+          size='sm'
+          value={String(fieldValue)}
+          variant='default'
           classNames={{
-            input: isSmall
-              ? 'bg-white'
-              : 'rounded-none border-b-2 border-gray-2 px-0 py-2 text-2xl font-light transition-colors focus:border-accent-primary',
+            input:
+              'border-gray-3 bg-white text-xs text-gray-12 shadow-2xs focus:border-primary-9',
           }}
           placeholder={
             field.settings.general.placeholder || 'Type your answer here...'
           }
+          onChange={(e) => onChange(field.id, e.target.value)}
         />
       )
   }

@@ -16,9 +16,15 @@ export type GlobalSearchHit = {
   description?: string
   id: GlobalSearchHitId
   ifileName?: string
+  matchFields?: string[]
+  matchSource?: string
+  matchValue?: string
+  matchedFields?: string[]
+  matchedValue?: string
   modifiedDateandtime?: string
   name?: string
   requestNo?: string
+  snippet?: string
   type: string
 }
 
@@ -30,7 +36,10 @@ export type GlobalSearchRequest = {
 }
 
 export async function fetchGlobalSearch(
-  payload: Omit<GlobalSearchRequest, 'tenantId'> & { tenantId?: string },
+  payload: Omit<GlobalSearchRequest, 'specificId' | 'tenantId'> & {
+    specificId?: string | string[] | null
+    tenantId?: string
+  },
 ): Promise<GlobalSearchHit[]> {
   const { accessToken, tenantId: resolvedTenantId } = resolveChatbotAuth()
   const tenantId = payload.tenantId || resolvedTenantId
@@ -39,8 +48,16 @@ export async function fetchGlobalSearch(
     throw new Error('Missing tenant. Sign in again, then retry search.')
   }
 
-  const rawSpecificId = payload.specificId ? String(payload.specificId).trim() : ''
-  const specificId = rawSpecificId || null
+  // Backend currently only accepts a single specificId string; multiple
+  // folder selections are joined here until it supports an array natively.
+  let specificId: string | null
+  if (Array.isArray(payload.specificId)) {
+    const cleaned = payload.specificId.map((id) => String(id).trim()).filter(Boolean)
+    specificId = cleaned.length ? cleaned.join(',') : null
+  } else {
+    const rawSpecificId = payload.specificId ? String(payload.specificId).trim() : ''
+    specificId = rawSpecificId || null
+  }
 
   const response = await fetch(SEARCH_ENDPOINT, {
     body: JSON.stringify({

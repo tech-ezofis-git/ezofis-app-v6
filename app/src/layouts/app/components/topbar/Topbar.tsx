@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import SidebarToggle from '../sidebar/SidebarToggle'
 import GlobalSearch from './components/GlobalSearch'
 import Notifications from './components/notifications/Notifications'
@@ -11,6 +12,9 @@ const Topbar = () => {
   const { t } = useLingui()
   const openAskAI = useAskAIStore((state) => state.open)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+  const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
+  const openPlayground = usePlaygroundStore((state) => state.open)
+  const closePlayground = usePlaygroundStore((state) => state.close)
 
   const handleOpenAskAI = () => {
     // Read from store directly so HMR / stale closures can't block open.
@@ -30,15 +34,15 @@ const Topbar = () => {
         <GlobalSearch />
         <IconButton
           ariaLabel={t`Ask AI`}
+          color='gray'
+          icon='lucide:bot'
+          tooltip={t`Ask AI`}
+          variant='ghost'
           className={
             isAskAIOpen
               ? 'text-primary-11 hover:text-primary-12'
               : 'text-gray-11 hover:text-gray-13'
           }
-          color='gray'
-          icon='lucide:bot'
-          tooltip={t`Ask AI`}
-          variant='ghost'
           onClick={handleOpenAskAI}
         />
         <IconButton
@@ -50,6 +54,21 @@ const Topbar = () => {
           variant='ghost'
           onClick={() =>
             globalThis.open('https://help.ezofis.com/', '_blank', 'noopener')
+          }
+        />
+        <IconButton
+          ariaLabel={t`API Playground`}
+          color='gray'
+          icon='tabler:plug-connected'
+          tooltip={t`API Playground`}
+          variant='ghost'
+          className={
+            isPlaygroundOpen
+              ? 'text-primary-11 hover:text-primary-12'
+              : 'text-gray-11 hover:text-gray-13'
+          }
+          onClick={() =>
+            isPlaygroundOpen ? closePlayground() : openPlayground()
           }
         />
         <Notifications />

@@ -1,6 +1,9 @@
+import type { NavigateOptions } from '@tanstack/react-router'
 import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
 import Logo from '@/components/common/Logo'
+import cn from '@/utils/cn'
+import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 
 interface Props {
   isTokenValid: boolean
@@ -8,11 +11,20 @@ interface Props {
 
 const PageHeader = ({ isTokenValid }: Props) => {
   const navigate = useNavigate()
-  const signOut = () => navigate({ to: '/sign-in' })
+  const isWhiteLabel = useIsWhiteLabel()
+  const signOut = () =>
+    navigate({
+      to: resolveAuthPath('/sign-in', isWhiteLabel) as NavigateOptions['to'],
+    })
 
   return (
-    <div className='flex items-center justify-between gap-4'>
-      <Logo />
+    <div
+      className={cn(
+        'flex items-center gap-4',
+        isWhiteLabel ? 'justify-end' : 'justify-between',
+      )}
+    >
+      {!isWhiteLabel && <Logo />}
 
       {isTokenValid && (
         <div className='flex items-center gap-2'>

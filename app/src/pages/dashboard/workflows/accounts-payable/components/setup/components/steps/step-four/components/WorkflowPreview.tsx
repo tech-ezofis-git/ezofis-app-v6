@@ -152,17 +152,17 @@ const WorkflowPreview = () => {
   ]
 
   return (
-    <div className='dark:bg-gray-950 relative w-full overflow-hidden rounded-xl border border-gray-3 bg-white'>
+    <div className='relative w-full overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs transition-colors'>
       {/* Header */}
-      <div className='bg-gray-50/50 dark:bg-gray-900/50 flex items-center justify-between border-b border-gray-3 px-5 py-3.5'>
+      <div className='flex items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-2)]/60 px-5 py-3.5'>
         <div className='flex items-center gap-2'>
-          <Icon className='size-4 text-purple-9' name='tabler:git-fork' />
-          <span className='text-13/5 font-semibold text-gray-13'>
+          <Icon className='size-4 text-[var(--primary-9)]' name='tabler:git-fork' />
+          <span className='text-[13px] font-semibold text-[var(--gray-13)]'>
             Automated Invoice Pipeline
           </span>
         </div>
-        <div className='flex items-center gap-1.5 rounded-full border border-green-3 bg-green-1 px-2.5 py-0.5 text-11 font-medium text-green-11'>
-          <span className='size-1.5 animate-pulse rounded-full bg-green-9' />
+        <div className='flex items-center gap-1.5 rounded-full border border-[var(--green-4)] bg-[var(--green-2)] px-2.5 py-0.5 text-xs font-semibold text-[var(--green-10)]'>
+          <span className='size-1.5 animate-pulse rounded-full bg-[var(--green-9)]' />
           Validation Ready
         </div>
       </div>
@@ -170,7 +170,7 @@ const WorkflowPreview = () => {
       <div className='relative py-10'>
         {/* Grid Background */}
         <div
-          className='absolute inset-0 opacity-[0.02] dark:opacity-[0.05]'
+          className='absolute inset-0 opacity-[0.03] dark:opacity-[0.07]'
           style={{
             backgroundImage:
               'radial-gradient(circle, currentColor 1px, transparent 1px)',
@@ -188,13 +188,13 @@ const WorkflowPreview = () => {
             <g>
               {/* Base track */}
               <path
-                className='fill-none stroke-gray-3 stroke-[1.5] dark:stroke-gray-8'
+                className='fill-none stroke-[var(--gray-4)] stroke-[1.5]'
                 d={flowPath}
               />
 
               {/* Moving dashed flow along the full path */}
               <motion.path
-                className='fill-none stroke-purple-5 stroke-[2]'
+                className='fill-none stroke-[var(--primary-7)] stroke-[2]'
                 d={flowPath}
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{
@@ -264,12 +264,12 @@ const WorkflowPreview = () => {
               {points.map((p, i) => (
                 <motion.circle
                   animate={{ opacity: 1, scale: 1 }}
-                  className='dark:stroke-gray-900 fill-purple-5 stroke-white stroke-1'
+                  className='fill-[var(--primary-9)] stroke-surface stroke-2'
                   cx={p.x}
                   cy={p.y}
                   initial={{ opacity: 0, scale: 0 }}
                   key={i}
-                  r='2.5'
+                  r='3'
                   transition={{ delay: 1 + i * 0.2, type: 'spring' }}
                 />
               ))}
@@ -365,21 +365,21 @@ const NodeCard = ({
 }) => (
   <div className='group relative'>
     {isTrigger && (
-      <div className='absolute -top-4 left-0 flex items-center gap-1 rounded-[2px] border border-purple-3 bg-purple-1 px-1 py-0 text-[6px] font-bold tracking-wider text-purple-9 uppercase'>
-        <Icon className='size-1.5' name='tabler:bolt-filled' />
+      <div className='absolute -top-4 left-0 flex items-center gap-1 rounded border border-[var(--purple-4)] bg-[var(--purple-2)] px-1.5 py-0.5 text-[8px] font-bold tracking-wider text-[var(--purple-10)] uppercase shadow-xs'>
+        <Icon className='size-2' name='tabler:bolt-filled' />
         Trigger
       </div>
     )}
     <motion.div
       transition={{ damping: 25, stiffness: 400, type: 'spring' }}
       className={cn(
-        'relative z-10 flex flex-col rounded-md border p-2 shadow-[0_2px_6px_rgba(0,0,0,0.02)] transition-colors',
+        'relative z-10 flex flex-col rounded-xl border p-2.5 shadow-xs transition-all duration-200',
         widthClass,
         isAgent
-          ? 'border-purple-8 bg-purple-9 text-white dark:border-purple-7 dark:bg-purple-9'
+          ? 'border-purple-8 bg-purple-9 text-white shadow-purple-9/20 dark:border-purple-7 dark:bg-purple-9'
           : isEnd
-            ? 'dark:bg-gray-900 border-green-9 bg-white text-gray-12 dark:border-green-8'
-            : 'dark:bg-gray-900 border-gray-3 bg-white text-gray-12 dark:border-gray-8',
+            ? 'border-[var(--green-5)] bg-surface text-[var(--gray-13)] hover:border-[var(--green-6)]'
+            : 'border-[var(--gray-4)] bg-surface text-[var(--gray-13)] hover:border-[var(--primary-6)]',
       )}
       whileHover={
         isAgent
@@ -442,22 +442,24 @@ const NodeCard = ({
           <motion.div
             whileHover={{ rotate: 5, scale: 1.1 }}
             className={cn(
-              'flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-colors',
-              'group-hover:bg-purple-50 dark:bg-gray-800 border-gray-2 bg-gray-1 group-hover:border-purple-2 dark:border-gray-7',
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border transition-colors',
+              isEnd
+                ? 'border-[var(--green-4)] bg-[var(--green-2)] text-[var(--green-10)]'
+                : 'border-[var(--gray-3)] bg-[var(--gray-2)] text-[var(--gray-12)] group-hover:border-[var(--primary-4)] group-hover:bg-[var(--primary-2)] group-hover:text-[var(--primary-9)]',
             )}
           >
-            <Icon className='size-3.5' name={icon} />
+            <Icon className='size-4' name={icon} />
           </motion.div>
           <div className='min-w-0 flex-1 overflow-hidden'>
-            <h4 className='truncate whitespace-nowrap text-[10px] leading-tight font-bold text-gray-12 transition-colors group-hover:text-purple-7'>
+            <h4 className='truncate whitespace-nowrap text-[11px] leading-tight font-bold text-[var(--gray-13)] transition-colors group-hover:text-[var(--primary-9)]'>
               {title}
             </h4>
             <p
               title={subtitle}
               className={cn(
-                'mt-0.5 text-[10px] leading-tight font-medium text-gray-10',
+                'mt-0.5 text-[10px] leading-tight font-medium text-[var(--gray-11)]',
                 showFullText
-                  ? 'break-all break-all whitespace-normal'
+                  ? 'break-all whitespace-normal'
                   : 'truncate whitespace-nowrap',
               )}
             >
@@ -467,7 +469,7 @@ const NodeCard = ({
               <p
                 title={detail}
                 className={cn(
-                  'mt-0.5 text-[9px] leading-tight text-gray-9',
+                  'mt-0.5 text-[9px] leading-tight text-[var(--gray-9)]',
                   showFullText
                     ? 'wrap-anywhere break-words whitespace-normal'
                     : 'truncate whitespace-nowrap',

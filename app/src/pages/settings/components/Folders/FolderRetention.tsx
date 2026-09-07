@@ -3,6 +3,7 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { useLingui } from '@lingui/react/macro'
 import { useMemo, useState } from 'react'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
@@ -46,6 +47,7 @@ export default function FolderRetention({
   onEditPolicy,
   onDeletePolicy,
 }: FolderRetentionProps) {
+  const { t } = useLingui()
   const {
     page,
     pageSize,
@@ -73,7 +75,7 @@ export default function FolderRetention({
   const columns = useMemo(
     () => [
       columnHelper.accessor((row) => row, {
-        header: 'Policy',
+        header: t`Policy`,
         id: 'name',
         cell: (info) => {
           const policy = info.getValue()
@@ -92,7 +94,7 @@ export default function FolderRetention({
         },
       }),
       columnHelper.accessor((row) => row, {
-        header: 'Trigger',
+        header: t`Trigger`,
         id: 'trigger',
         cell: (info) => {
           const policy = info.getValue()
@@ -111,7 +113,7 @@ export default function FolderRetention({
         },
       }),
       columnHelper.accessor('action', {
-        header: 'Action',
+        header: t`Action`,
         id: 'action',
         cell: (info) => {
           const meta = actionMeta(info.getValue())
@@ -129,7 +131,7 @@ export default function FolderRetention({
         },
       }),
       columnHelper.accessor('conditions', {
-        header: 'Conditions',
+        header: t`Conditions`,
         id: 'conditions',
         cell: (info) => {
           const count = (info.getValue() || []).filter((c) => c.field).length
@@ -147,7 +149,7 @@ export default function FolderRetention({
         },
       }),
       columnHelper.display({
-        header: 'Status',
+        header: t`Status`,
         id: 'status',
         cell: () => (
           <span className='inline-flex items-center gap-1.5 rounded-md border border-green-3 bg-green-2 px-2.5 py-1 text-xs font-semibold text-green-11'>
@@ -155,7 +157,7 @@ export default function FolderRetention({
               className='size-3.5 text-green-9'
               name='tabler:circle-check'
             />
-            Active
+            {t`Active`}
           </span>
         ),
       }),
@@ -185,14 +187,14 @@ export default function FolderRetention({
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => handleEditPolicy(index)}
                 />
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => handleDeletePolicy(index)}
                 />
               </Menu>
@@ -201,7 +203,7 @@ export default function FolderRetention({
         },
       }),
     ],
-    [columnHelper],
+    [columnHelper, t],
   )
 
   const table = useReactTable({
@@ -226,17 +228,15 @@ export default function FolderRetention({
       <div className='flex items-center justify-between'>
         <div>
           <h2 className='text-15 font-semibold text-gray-13'>
-            Retention Policies
+            {t`Retention Policies`}
           </h2>
           <p className='mt-0.5 text-xs text-gray-11'>
-            AI-assisted lifecycle rules that archive, soft delete, or
-            permanently delete documents in folder &quot;{folderName}&quot; once
-            they meet your retention criteria.
+            {t`AI-assisted lifecycle rules that archive, soft delete, or permanently delete documents in folder "${folderName}" once they meet your retention criteria.`}
           </p>
         </div>
         <Button
           icon='tabler:plus'
-          label='Create Policy'
+          label={t`Create Policy`}
           size='sm'
           onClick={handleAddPolicy}
         />
@@ -247,9 +247,9 @@ export default function FolderRetention({
       <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
         <div className='min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
           <DataTable
-            emptyDescription="No retention policies configured yet. Click 'Create Policy' to set up the trigger, action, and conditions."
+            emptyDescription={t`No retention policies configured yet. Click 'Create Policy' to set up the trigger, action, and conditions.`}
             emptyIcon='tabler:clock-hour-4'
-            emptyTitle='No Retention Policies'
+            emptyTitle={t`No Retention Policies`}
             isReLoading={false}
             rowSize={rowSize}
             table={table}
@@ -263,7 +263,7 @@ export default function FolderRetention({
 
         <Pagination
           className='mt-4 shrink-0'
-          itemLabel='Policies'
+          itemLabel={t`Policies`}
           page={page}
           pageSize={pageSize}
           showPageNumbers={false}

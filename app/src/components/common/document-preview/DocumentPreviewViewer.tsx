@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import {
   type DocumentLoadEvent,
   Viewer,
@@ -10,6 +11,7 @@ import {
 } from '@react-pdf-viewer/search'
 import { FileText } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Icon from '@/components/base/icon/Icon'
 import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
 import {
   buildFieldSearchKeywords,
@@ -35,6 +37,8 @@ const PROBE_SCALE = 0.25
 const PAGE_WIDTH_GUTTER = 24
 const MIN_PAGE_SCALE = 0.1
 const MAX_PAGE_SCALE = 5
+const MIN_USER_ZOOM = 0.5
+const MAX_USER_ZOOM = 2.5
 
 type DocumentPreviewViewerProps = {
   activeHighlightColor?: string
@@ -248,6 +252,47 @@ const applyHighlightStyles = (
   element.style.boxShadow = 'none'
 }
 
+function ZoomToolbar({
+  scale,
+  onZoom,
+}: {
+  scale: number
+  onZoom: (nextScale: number) => void
+}) {
+  const { t } = useLingui()
+  const zoomBy = (direction: -1 | 1) => {
+    const step = scale <= 1 ? 0.05 : 0.1
+    const next = Number((scale + direction * step).toFixed(2))
+    onZoom(Math.min(MAX_USER_ZOOM, Math.max(MIN_USER_ZOOM, next)))
+  }
+
+  return (
+    <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 shadow-2xl backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300'>
+      <button
+        aria-label={t`Zoom out`}
+        className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
+        disabled={scale <= MIN_USER_ZOOM}
+        type='button'
+        onClick={() => zoomBy(-1)}
+      >
+        <Icon className='size-5' name='lucide:zoom-out' />
+      </button>
+      <span className='min-w-[40px] text-center text-[12px] font-semibold text-[var(--gray-13)]'>
+        {Math.round(scale * 100)}%
+      </span>
+      <button
+        aria-label={t`Zoom in`}
+        className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
+        disabled={scale >= MAX_USER_ZOOM}
+        type='button'
+        onClick={() => zoomBy(1)}
+      >
+        <Icon className='size-5' name='lucide:zoom-in' />
+      </button>
+    </div>
+  )
+}
+
 export default function DocumentPreviewViewer({
   activeHighlightColor,
   activeHighlightTerm,
@@ -323,13 +368,7 @@ export default function DocumentPreviewViewer({
     )
   } else if (treatAsRasterImage) {
     content = (
-      <div className='flex h-full w-full items-center justify-center bg-[var(--gray-1)] p-4'>
-        <img
-          alt={fileName || 'Document Preview'}
-          className='max-h-full max-w-full object-contain'
-          src={fileUrl}
-        />
-      </div>
+      <ImagePreview fileName={fileName} fileUrl={fileUrl} />
     )
   } else {
     content = (
@@ -358,6 +397,30 @@ export default function DocumentPreviewViewer({
           />
         </div>
       ) : null}
+    </div>
+  )
+}
+
+function ImagePreview({
+  fileName,
+  fileUrl,
+}: {
+  fileName?: string
+  fileUrl: string
+}) {
+  const [scale, setScale] = useState(1)
+
+  return (
+    <div className='relative h-full w-full overflow-auto bg-[var(--gray-1)]'>
+      <div className='flex min-h-full min-w-full items-center justify-center p-4'>
+        <img
+          alt={fileName || 'Document Preview'}
+          className='max-h-full max-w-full origin-center object-contain transition-transform duration-200'
+          src={fileUrl}
+          style={{ transform: `scale(${scale})` }}
+        />
+      </div>
+      <ZoomToolbar scale={scale} onZoom={setScale} />
     </div>
   )
 }
@@ -446,7 +509,38 @@ function PdfViewer({
   const [probeDone, setProbeDone] = useState(false)
   const [renderAttempt, setRenderAttempt] = useState(0)
   const [pageScale, setPageScale] = useState<number | null>(null)
+  const [scale, setScale] = useState(1)
   const blankRetryUsedRef = useRef(false)
+  const viewerRef = useRef<{ zoom?: (nextScale: number) => void } | null>(null)
+
+  const zoomPluginInstance = useMemo(
+    () => ({
+      install: (pluginFunctions: { zoom?: (nextScale: number) => void }) => {
+        viewerRef.current = pluginFunctions
+      },
+      onViewerStateChange: (viewerState: any) => {
+        if (viewerState?.scale) {
+          setScale((previous) =>
+            previous === viewerState.scale ? previous : viewerState.scale || previous,
+          )
+        }
+        return viewerState
+      },
+      onZoom: (event: { scale: number }) => {
+        setScale(event.scale)
+      },
+    }),
+    [],
+  )
+
+  const zoomTo = (nextScale: number) => {
+    const boundedScale = Math.min(
+      MAX_USER_ZOOM,
+      Math.max(MIN_USER_ZOOM, Number(nextScale.toFixed(2))),
+    )
+    setScale(boundedScale)
+    viewerRef.current?.zoom?.(boundedScale)
+  }
 
   const handleDocumentLoad = (event: DocumentLoadEvent) => {
     setLoadError(null)
@@ -460,6 +554,7 @@ function PdfViewer({
 
     if (!containerWidth) {
       setPageScale(1)
+      setScale(1)
       return
     }
 
@@ -469,12 +564,18 @@ function PdfViewer({
         const pageWidth = page.getViewport({ scale: 1 }).width
         const usableWidth = Math.max(containerWidth - PAGE_WIDTH_GUTTER, 1)
         const nextScale = pageWidth > 0 ? usableWidth / pageWidth : 1
-
-        setPageScale(
-          Math.min(Math.max(nextScale, MIN_PAGE_SCALE), MAX_PAGE_SCALE),
+        const fitted = Math.min(
+          Math.max(nextScale, MIN_PAGE_SCALE),
+          MAX_PAGE_SCALE,
         )
+
+        setPageScale(fitted)
+        setScale(fitted)
       })
-      .catch(() => setPageScale(1))
+      .catch(() => {
+        setPageScale(1)
+        setScale(1)
+      })
   }
   const [matchesVersion, setMatchesVersion] = useState(0)
   const lastHighlightKeyRef = useRef('')
@@ -514,6 +615,8 @@ function PdfViewer({
     matchesRef.current = []
     highlightElementsRef.current = new Map()
     probeRunIdRef.current += 1
+    setScale(1)
+    viewerRef.current = null
   }, [fileUrl, renderAttempt])
 
   // Page canvases use a non-alpha 2d context, so a canvas that never received
@@ -844,7 +947,7 @@ function PdfViewer({
           <Viewer
             defaultScale={pageScale ?? PROBE_SCALE}
             fileUrl={fileUrl}
-            plugins={[searchPluginInstance]}
+            plugins={[searchPluginInstance, zoomPluginInstance]}
             renderError={() => (
               <div className='flex h-full min-h-[320px] items-center justify-center bg-[var(--gray-1)] text-sm text-[var(--gray-11)]'>
                 Unable to display this document
@@ -854,6 +957,10 @@ function PdfViewer({
           />
         </Worker>
       </div>
+
+      {documentReady && !loadError ? (
+        <ZoomToolbar scale={scale} onZoom={zoomTo} />
+      ) : null}
     </div>
   )
 }

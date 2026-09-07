@@ -79,6 +79,7 @@ interface Props<TData> extends ComponentProps<'table'> {
   onLoadMore?: () => void
 
   onReload: () => void
+  onRowClick?: (row: any) => void
   onRowSizeChange?: (rowSize: RowSize) => void
 }
 
@@ -134,6 +135,7 @@ const DataTable = <TData,>({
   onEmptyPrimaryAction,
   onLoadMore,
   onReload,
+  onRowClick,
   onRowSizeChange,
 }: Props<TData>) => {
   const [internalRowSize, setInternalRowSize] = useState<RowSize>('default')
@@ -204,9 +206,15 @@ const DataTable = <TData,>({
     updateWidth()
 
     const observer = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) return
-      setContainerWidth(entry.contentRect.width)
+      window.requestAnimationFrame(() => {
+        const entry = entries[0]
+        if (!entry) return
+        
+        setContainerWidth((prev) => {
+          const newWidth = Math.round(entry.contentRect.width)
+          return Math.abs(prev - newWidth) > 1 ? newWidth : prev
+        })
+      })
     })
 
     observer.observe(container)
@@ -485,8 +493,12 @@ const DataTable = <TData,>({
 
                   return (
                     <Tr
-                      className='relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]'
+                      className={cn(
+                        'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
+                        onRowClick && 'cursor-pointer'
+                      )}
                       key={row.id}
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const allowOverflow = shouldAllowCellOverflow(

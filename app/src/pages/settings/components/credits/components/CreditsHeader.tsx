@@ -1,4 +1,5 @@
 import React from 'react'
+import { useLingui } from '@lingui/react/macro'
 import { timelineData } from '../sampleCreditData'
 
 type CreditsHeaderProps = {
@@ -6,6 +7,7 @@ type CreditsHeaderProps = {
 }
 
 const CreditsHeader: React.FC<CreditsHeaderProps> = ({ selectedMonth }) => {
+  const { t } = useLingui()
   const max = Math.max(...timelineData.map((item) => item.value))
   const points = timelineData
     .map((item, index) => {
@@ -19,16 +21,16 @@ const CreditsHeader: React.FC<CreditsHeaderProps> = ({ selectedMonth }) => {
     <div id='chartHeader'>
       <div className='card-header-with-actions compact-header'>
         <div>
-          <div className='title'>Control with Readiness Timelines</div>
+          <div className='title'>{t`Control with Readiness Timelines`}</div>
           <div className='subtitle'>
-            Static credit trend for {selectedMonth}
+            {t`Static credit trend for ${selectedMonth}`}
           </div>
         </div>
       </div>
 
       <div className='line-chart-wrapper'>
         <svg
-          aria-label='Credit timeline chart'
+          aria-label={t`Credit timeline chart`}
           className='line-chart-svg'
           role='img'
           viewBox='0 0 360 220'

@@ -9,6 +9,15 @@ const APAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 const FTPAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/FTPAgentNodeSettings'),
 )
+const KYCAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/KYCAgentNodeSettings'),
+)
+const ProcurementAgentNodeSettings = lazy<
+  React.ComponentType<{ node: Node }>
+>(() => import('./settings/ProcurementAgentNodeSettings'))
+const DocumentGenerateAgentNodeSettings = lazy<
+  React.ComponentType<{ node: Node }>
+>(() => import('./settings/DocumentGenerateAgentNodeSettings'))
 const OCRAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/OCRAgentNodeSettings'),
 )
@@ -29,8 +38,10 @@ const ConditionNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
 )
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
+import { parseOAuthConnectionSuccess } from '@/pages/workflows/utils/oauthAuthorize'
 import cn from '@/utils/cn'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { getNodeToolType, NODE_TOOL_TYPE } from '../utils/nodeToolTypes'
 import ConnectionsRouting from './settings/common/ConnectionsRouting'
 
 interface PropertiesPanelProps {
@@ -86,25 +97,28 @@ function PropertiesPanel({
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       if (event.data.type === 'CONNECTION_SUCCESS') {
-        const { connector, provider } = event.data
-        const newValue = `${provider}-${Date.now()}`
-        // Select the new connection
-        if (node) {
-          setNodes((nodes) =>
-            nodes.map((n) =>
-              n.id === node.id
-                ? {
-                    ...n,
-                    data: {
-                      ...n.data,
-                      connection: newValue,
-                      connectionLabel: connector,
-                    },
-                  }
-                : n,
-            ),
-          )
-        }
+        const { connector, connectorId, email, label } =
+          parseOAuthConnectionSuccess(event.data)
+        if (!node) return
+
+        setNodes((nodes) =>
+          nodes.map((n) =>
+            n.id === node.id
+              ? {
+                  ...n,
+                  data: {
+                    ...n.data,
+                    account: email || connector,
+                    connection: connectorId || n.data.connection,
+                    connectionLabel:
+                      label || connector || n.data.connectionLabel,
+                    connectorId: connectorId || n.data.connectorId,
+                    externalAccountEmail: email,
+                  },
+                }
+              : n,
+          ),
+        )
       }
     }
 
@@ -357,15 +371,10 @@ function PropertiesPanel({
     </div>
   )
 
-  // Determine the effective tool type (original name or current label as fallback)
-  const toolType = (
-    (node.data.toolType as string) ||
-    (node.data.label as string) ||
-    ''
-  ).toLowerCase()
+  const toolType = getNodeToolType(node.data)
 
   // Render AP Agent node settings panel
-  if (toolType === 'ap agent') {
+  if (toolType === NODE_TOOL_TYPE.AP_AGENT) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -384,7 +393,7 @@ function PropertiesPanel({
   }
 
   // Render FTP Agent node settings panel
-  if (toolType === 'ftp agent') {
+  if (toolType === NODE_TOOL_TYPE.FTP_AGENT) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -403,7 +412,7 @@ function PropertiesPanel({
   }
 
   // Render Google Drive settings panel
-  if (toolType === 'google drive') {
+  if (toolType === NODE_TOOL_TYPE.GOOGLE_DRIVE) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -422,7 +431,7 @@ function PropertiesPanel({
   }
 
   // Render OneDrive settings panel
-  if (toolType === 'onedrive') {
+  if (toolType === NODE_TOOL_TYPE.ONEDRIVE) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -441,7 +450,7 @@ function PropertiesPanel({
   }
 
   // Render OCR Agent node settings panel
-  if (toolType === 'ocr agent') {
+  if (toolType === NODE_TOOL_TYPE.OCR_AGENT) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -459,8 +468,65 @@ function PropertiesPanel({
     )
   }
 
+  // Render KYC Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.KYC_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <KYCAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Procurement Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.PROCUREMENT_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <ProcurementAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Document Generate Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <DocumentGenerateAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
   // Render Condition node settings panel
-  if (toolType === 'condition') {
+  if (toolType === NODE_TOOL_TYPE.CONDITION) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -479,7 +545,10 @@ function PropertiesPanel({
   }
 
   // Render Manual User node settings panel
-  if (toolType === 'manual user' || toolType === 'form submission') {
+  if (
+    toolType === NODE_TOOL_TYPE.MANUAL_USER ||
+    toolType === NODE_TOOL_TYPE.FORM_SUBMISSION
+  ) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -497,18 +566,10 @@ function PropertiesPanel({
     )
   }
 
-  // Render Email settings panel (email-initiated start / gmail / outlook)
-  const initiateBy = Array.isArray(node.data.initiateBy)
-    ? node.data.initiateBy.map((mode) => String(mode).toUpperCase())
-    : []
-  const isEmailNode =
-    toolType.includes('gmail') ||
-    toolType.includes('outlook') ||
-    (node.data.icon as string)?.includes('gmail') ||
-    (node.data.icon as string)?.includes('outlook') ||
-    (node.data.type === 'trigger' && initiateBy.includes('EMAIL'))
-
-  if (isEmailNode) {
+  if (
+    toolType === NODE_TOOL_TYPE.GMAIL ||
+    toolType === NODE_TOOL_TYPE.OUTLOOK
+  ) {
     return (
       <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
         {NodeHeader}
@@ -519,37 +580,6 @@ function PropertiesPanel({
             }
           >
             <EmailNodeSettings node={node} />
-          </Suspense>
-        </div>
-        {CommonFooter}
-      </div>
-    )
-  }
-
-  // Render start node settings for manual (user/group) initiation
-  const isStartNode =
-    node.data.type === 'trigger' && !edges.some((e) => e.target === node.id)
-  const isManualInitiatedStart =
-    isStartNode &&
-    (toolType === 'manual user' ||
-      toolType === 'form submission' ||
-      initiateBy.includes('USER') ||
-      String(node.data.initiateMode || '').toUpperCase() === 'MANUAL' ||
-      toolType === 'initiator' ||
-      toolType === 'trigger' ||
-      toolType === 'start')
-
-  if (isManualInitiatedStart) {
-    return (
-      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
-        {NodeHeader}
-        <div className='flex-1 overflow-hidden'>
-          <Suspense
-            fallback={
-              <div className='p-6 text-gray-10'>Loading settings...</div>
-            }
-          >
-            <ManualUserNodeSettings node={node} />
           </Suspense>
         </div>
         {CommonFooter}

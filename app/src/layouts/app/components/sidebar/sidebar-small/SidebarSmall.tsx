@@ -1,8 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import ScrollArea from '@/components/base/scroll-area/ScrollArea'
 import Tooltip from '@/components/base/Tooltip'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Logo from '@/components/common/Logo'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import cn from '@/utils/cn'
@@ -24,7 +24,7 @@ const SidebarSmall = ({ menus }: Props) => {
       <div className='flex h-full w-14 flex-col justify-between pb-4'>
         <div className='flex flex-col items-center'>
           <div className='mb-2 flex size-14 items-center justify-center'>
-            <Logo markClassName='size-8' hideText />
+            <Logo markClassName='size-10' hideText />
           </div>
 
           <ScrollArea height='calc(100dvh - 190px)'>
@@ -53,14 +53,17 @@ const SidebarSmall = ({ menus }: Props) => {
             <button
               aria-current={isDemoFormOpen ? 'page' : undefined}
               aria-label={t`Request a Demo`}
+              type='button'
               className={cn(
                 'group relative flex size-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-2 active:scale-95',
                 isDemoFormOpen && 'bg-gray-3',
               )}
-              type='button'
               onClick={openDemoForm}
             >
-              <AiBrandIcon className='relative size-4' variant='outline-purple' />
+              <AiBrandIcon
+                className='relative size-4'
+                variant='outline-purple'
+              />
             </button>
           </Tooltip>
 

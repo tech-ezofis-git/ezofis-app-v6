@@ -27,6 +27,7 @@ export type Session = {
   name?: string
   permissionKeys?: SessionPermission[] | null
   tenantId: string
+  role?: string
 }
 export type SessionPermission = {
   [key: string]: unknown

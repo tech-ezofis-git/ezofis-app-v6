@@ -12,7 +12,7 @@ import useWorkflowStore from '../../stores/useWorkflowStore'
 
 const CustomNode = ({ data, id, selected }: NodeProps) => {
   const isTrigger = data.type === 'trigger'
-  const isEndNode = data.label === 'Workflow Success'
+  const isEndNode = data.type === 'end'
   const isDeletable = !isTrigger && !isEndNode
   const hasWarning = data.warning
   const { screenToFlowPosition, setNodes } = useReactFlow()
@@ -25,7 +25,7 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
   })
 
   // Only show "Trigger" tag if it's a trigger node AND has NO incoming connections (i.e., it's a start node)
-  const showTriggerTag = isTrigger && connections.length === 0
+  const showTriggerTag = isTrigger && (connections?.length ?? 0) === 0
 
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -163,12 +163,18 @@ const CustomNode = ({ data, id, selected }: NodeProps) => {
           </div>
 
           {/* Label and Status */}
-          <div className='flex flex-1 flex-col gap-0.5'>
-            <span className='text-[17px] font-bold text-gray-12'>
+          <div className='flex flex-1 flex-col gap-0.5 overflow-hidden'>
+            <span
+              className='truncate text-[17px] font-bold text-gray-12'
+              title={data.label as string}
+            >
               {data.stepNumber ? `${data.stepNumber}. ` : ''}
               {data.label as string}
             </span>
-            <span className='text-[14px] font-medium text-gray-10'>
+            <span
+              className='truncate text-[14px] font-medium text-gray-10'
+              title={(data.subLabel as string) || 'Click to configure'}
+            >
               {(data.subLabel as string) || 'Click to configure'}
             </span>
           </div>

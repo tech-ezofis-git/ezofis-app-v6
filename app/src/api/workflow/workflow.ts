@@ -1,10 +1,10 @@
 import authUserStore from '../../stores/authUserStore'
-import { axiosCrypto, axiosV6 } from '../axios'
+import { axiosV6 } from '../axios'
 
 const createProcessTransaction = async (payload: any) => {
   const response: any = { data: '', error: '' }
   try {
-    const { data, status } = await axiosCrypto.post(
+    const { data, status } = await axiosV6.post(
       `/workflow/transaction`,
       JSON.stringify(payload),
     )
@@ -19,7 +19,7 @@ const createProcessTransaction = async (payload: any) => {
 
 const getAllWorkflows = async (payload: any) => {
   try {
-    const { data, status } = await axiosCrypto.post(
+    const { data, status } = await axiosV6.post(
       '/workflow/all',
       JSON.stringify(payload),
     )
@@ -86,7 +86,7 @@ const updateWorkflow = async (id: number, payload: any) => {
   const response: any = { error: '', payload: '' }
 
   try {
-    const { data, status } = await axiosCrypto.put(
+    const { data, status } = await axiosV6.put(
       `/workflow/${id}`,
       JSON.stringify(payload),
     )
@@ -110,12 +110,42 @@ const updateWorkflow = async (id: number, payload: any) => {
   return response
 }
 
+const moveNextWorkflowInstance = async (
+  instanceId: string,
+  payload: {
+    activityid: string
+    review?: string | null
+    comments?: string | null
+    activityUserId?: string | null
+    workflowId?: string | null
+    transactionId?: string | number | null
+    instanceId?: string | null
+    processId?: string | null
+    formData?: any
+    formId?: string | null
+    formEntryId?: string | null
+    AIAGENTResponse?: string | null
+    AIAGENTHtml?: string | null
+    itemId?: string | null
+    repositoryId?: string | null
+    isItemTable?: boolean | null
+  },
+) => {
+  const { data } = await axiosV6.post(
+    `/workflows/instances/${instanceId}/move-next`,
+    JSON.stringify(payload),
+  )
+  return data
+}
+
 const workflowApi = {
   createProcessTransaction,
   createWorkflow,
   updateWorkflow,
   getAllWorkflows,
   getWorkflowById,
+  moveNextWorkflowInstance,
 }
 
 export default workflowApi
+

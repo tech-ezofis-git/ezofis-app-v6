@@ -11,7 +11,12 @@ const ClearAll = ({ onClick }: Props) => {
 
   return (
     <Tooltip content={t`Clear all`} position='top'>
-      <IconButton color='gray' icon='lucide:brush-cleaning' variant='ghost' onClick={onClick} />
+      <IconButton
+        color='gray'
+        icon='lucide:brush-cleaning'
+        variant='ghost'
+        onClick={onClick}
+      />
     </Tooltip>
   )
 }

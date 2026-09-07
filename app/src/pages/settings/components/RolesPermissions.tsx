@@ -127,11 +127,11 @@ type RoleUserProps = {
 
 type TabKey = 'roles' | 'permissions' | 'menus' | 'assignments'
 
-const tabs: { key: TabKey; label: string }[] = [
-  { key: 'roles', label: 'Role List' },
-  { key: 'permissions', label: 'Permission Matrix' },
-  { key: 'menus', label: 'Menu Profiles' },
-  { key: 'assignments', label: 'User Assignments' },
+const tabs: { key: TabKey; label: any }[] = [
+  { key: 'roles', label: msg`Role List` },
+  { key: 'permissions', label: msg`Permission Matrix` },
+  { key: 'menus', label: msg`Menu Profiles` },
+  { key: 'assignments', label: msg`User Assignments` },
 ]
 
 const ROLE_STEP_MSGS = [
@@ -192,32 +192,20 @@ const mapApiMenuToProfileItem = (menu: V6MenuItem): MenuItem => ({
   visible: true,
 })
 
-const initialUsers: AssignedUser[] = [
-  { email: 'john@company.com', id: '1', name: 'John Doe', role: 'AP Manager' },
-  {
-    email: 'sarah@company.com',
-    id: '2',
-    name: 'Sarah Miller',
-    role: 'AP Officer',
-  },
-  {
-    email: 'mike@company.com',
-    id: '3',
-    name: 'Mike Ross',
-    role: 'Business User',
-  },
-  { email: 'lisa@company.com', id: '4', name: 'Lisa Chen', role: 'Auditor' },
-  {
-    email: 'tom@company.com',
-    id: '5',
-    name: 'Tom Wilson',
-    role: 'Read Only User',
-  },
-]
-
 const roleColumnHelper = createColumnHelper<Role>()
 const permissionColumnHelper = createColumnHelper<PermissionRow>()
 const userAssignmentColumnHelper = createColumnHelper<AssignedUser>()
+
+const SESSION_KEY = 'ezofis_roles_permissions_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
 
 export default function RolesPermissions({ onBack }: RoleUserProps) {
   const { t } = useLingui()
@@ -226,54 +214,35 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   const [permissionRows, setPermissionRows] = useState<PermissionRow[]>([])
   const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems)
   const [apiMenus, setApiMenus] = useState<V6MenuItem[]>([])
-  const [users, setUsers] = useState<AssignedUser[]>(initialUsers)
-  const [isCreatingRole, setIsCreatingRole] = useState(false)
-  const [createStep, setCreateStep] = useState(0)
-  const [newRoleName, setNewRoleName] = useState('')
-  const [newRoleDescription, setNewRoleDescription] = useState('')
-  const [selectedUsers, setSelectedUsers] = useState<Option[]>([])
+  const storedState = useMemo(() => getStoredState(), [])
+
+  const [isCreatingRole, setIsCreatingRole] = useState(storedState?.isCreatingRole ?? false)
+  const [createStep, setCreateStep] = useState(storedState?.createStep ?? 0)
+  const [newRoleName, setNewRoleName] = useState(storedState?.newRoleName ?? '')
+  const [newRoleDescription, setNewRoleDescription] = useState(storedState?.newRoleDescription ?? '')
+  const [selectedUsers, setSelectedUsers] = useState<Option[]>(storedState?.selectedUsers ?? [])
   const [newPermissionRows, setNewPermissionRows] = useState<PermissionRow[]>(
-    [],
+    storedState?.newPermissionRows ?? [],
   )
-  const [editingRoleId, setEditingRoleId] = useState<string | null>(null)
-  const [isLoadingRoles, setIsLoadingRoles] = useState(false)
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(
+    storedState?.editingRoleId ?? null,
+  )
+  const [userOptions, setUserOptions] = useState<Option[]>([])
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true)
   const [isLoadingRoleDetails, setIsLoadingRoleDetails] = useState(false)
-  const [isLoadingRolePermissions, setIsLoadingRolePermissions] =
-    useState(false)
-  const [isLoadingMenus, setIsLoadingMenus] = useState(false)
+  const [isLoadingRolePermissions, setIsLoadingRolePermissions] = useState(false)
   const [isSavingRole, setIsSavingRole] = useState(false)
-  const [deletingRoleId, setDeletingRoleId] = useState<string | number | null>(
-    null,
-  )
+  const [deletingRoleId, setDeletingRoleId] = useState<string | null>(null)
   const [isDeletingRole, setIsDeletingRole] = useState(false)
-  const userOptions: Option[] = useMemo(() => {
-    return mapUsersToOptions(
-      users.map((user) => ({
-        email: user.email,
-        firstName: user.name.split(' ')[0] || user.name,
-        id: user.id,
-        lastName: user.name.split(' ').slice(1).join(' '),
-      })),
-    )
-  }, [users])
-
-  const selectedRole = useMemo(() => {
-    if (!roles.length) return null
-    return roles.find((role) => role.id === selectedRoleId) || roles[0]
-  }, [roles, selectedRoleId])
-
-  const roleNames = useMemo(() => roles.map((role) => role.name), [roles])
 
   const resetCreateRole = () => {
-    setIsCreatingRole(false)
-    setCreateStep(0)
+    setEditingRoleId(null)
     setNewRoleName('')
     setNewRoleDescription('')
     setSelectedUsers([])
-    const resetMenus = apiMenus.map((item) => ({ ...item, visible: true }))
-    setApiMenus(resetMenus)
-    setNewPermissionRows(buildEmptyPermissionRows(resetMenus))
-    setEditingRoleId(null)
+    setNewPermissionRows(buildEmptyPermissionRows(apiMenus))
+    setCreateStep(0)
+    setIsCreatingRole(false)
   }
 
   const deletingRole = useMemo(
@@ -281,42 +250,21 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     [deletingRoleId, roles],
   )
 
-  const deleteRole = (roleId: string | number) => {
-    setDeletingRoleId(roleId)
-  }
+  const deleteRole = useCallback((id: string) => {
+    setDeletingRoleId(id)
+  }, [])
 
-  const cancelDeleteRole = () => {
+  const cancelDeleteRole = useCallback(() => {
     if (isDeletingRole) return
     setDeletingRoleId(null)
-  }
-
-  const confirmDeleteRole = async () => {
-    if (deletingRoleId == null) return
-
-    setIsDeletingRole(true)
-    setIsLoadingRoles(true)
-    try {
-      const response = await deleteRoleApi(String(deletingRoleId))
-
-      if (response.error) {
-        showToast({ message: response.error, variant: 'error' })
-        return
-      }
-
-      showToast({ message: 'Role deleted successfully', variant: 'success' })
-      setDeletingRoleId(null)
-      await loadRoles()
-    } finally {
-      setIsDeletingRole(false)
-      setIsLoadingRoles(false)
-    }
-  }
+  }, [isDeletingRole])
 
   const loadRolesRequestIdRef = useRef(0)
 
   const loadRoles = useCallback(async () => {
     const requestId = ++loadRolesRequestIdRef.current
     setIsLoadingRoles(true)
+
     try {
       const [rolesResponse, usersResponse] = await Promise.all([
         getRoles(),
@@ -335,27 +283,22 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         if (usersResponse.error) {
           showToast({ message: usersResponse.error, variant: 'error' })
         } else {
-          const apiUsers = usersResponse.data.map((user) => ({
-            email: user.email,
-            id: String(user.id),
-            name:
-              `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
-              user.displayName ||
-              user.email,
-            role: user.role || 'Business User',
-          }))
-          setUsers(apiUsers)
+          setUserOptions(mapUsersToOptions(usersResponse.data))
         }
       }
 
       if (!rolesResponse.canceled) {
         if (rolesResponse.error) {
           showToast({ message: rolesResponse.error, variant: 'error' })
+          setRoles([])
           return
         }
 
-        const mappedRoles = rolesResponse.data.map(mapApiRoleToRole)
+        const mappedRoles = Array.isArray(rolesResponse.data)
+          ? rolesResponse.data.map(mapApiRoleToRole)
+          : []
         setRoles(mappedRoles)
+
         if (mappedRoles.length) {
           setSelectedRoleId((current) =>
             mappedRoles.some((role) => role.id === current)
@@ -378,30 +321,6 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   }, [loadRoles])
 
   const loadMenus = useCallback(async (): Promise<V6MenuItem[]> => {
-    // setIsLoadingMenus(true)
-
-    // try {
-    //   const response = await getMenus()
-
-    //   if (response.error) {
-    //     showToast({ message: response.error, variant: 'error' })
-    //     setMenuItems([])
-    //     setApiMenus([])
-    //     return []
-    //   }
-    //   console.log('Menus response:', response.data) // Debugging line
-
-    //   const menus = [...response.data].sort(
-    //     (a, b) => Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0),
-    //   )
-
-    //   setApiMenus(menus)
-    //   setMenuItems(menus.map(mapApiMenuToProfileItem))
-
-    //   return menus
-    // } finally {
-    //   setIsLoadingMenus(false)
-    // }
     const menus = ROLE_PERMISSION_PAGES.map((page) => ({
       key: page.key,
       name: page.name,
@@ -432,7 +351,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
         if (response.error || !response.data) {
           showToast({
-            message: response.error || 'Failed to load role permissions',
+            message: response.error || t`Failed to load role permissions`,
             variant: 'error',
           })
           return
@@ -463,7 +382,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         setIsLoadingRolePermissions(false)
       }
     },
-    [apiMenus, loadMenus],
+    [apiMenus, loadMenus, t],
   )
 
   useEffect(() => {
@@ -509,8 +428,8 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       showToast({
         message: editingRoleId
-          ? 'Role updated successfully'
-          : 'Role created successfully',
+          ? t`Role updated successfully`
+          : t`Role created successfully`,
         variant: 'success',
       })
       await loadRoles()
@@ -527,7 +446,7 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 
       if (response.error || !response.data) {
         showToast({
-          message: response.error || 'Failed to load role',
+          message: response.error || t`Failed to load role`,
           variant: 'error',
         })
         return
@@ -591,11 +510,27 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     })
   }
 
-  const changeUserRole = (id: string, role: string) => {
-    setUsers((current) =>
-      current.map((user) => (user.id === id ? { ...user, role } : user)),
-    )
-  }
+  const confirmDeleteRole = useCallback(async () => {
+    if (!deletingRoleId) return
+
+    setIsDeletingRole(true)
+    try {
+      const response = await deleteRoleApi(deletingRoleId)
+      if (response.error) {
+        showToast({ message: response.error, variant: 'error' })
+        return
+      }
+
+      showToast({
+        message: t`Role deleted successfully.`,
+        variant: 'success',
+      })
+      setDeletingRoleId(null)
+      await loadRoles()
+    } finally {
+      setIsDeletingRole(false)
+    }
+  }, [deletingRoleId, loadRoles, t])
 
   if (isCreatingRole) {
     return (
@@ -609,13 +544,13 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         selectedUsers={selectedUsers}
         submitLabel={editingRoleId ? t`Update Role` : t`Save Role`}
         userOptions={userOptions}
-        onBack={() => setCreateStep((step) => Math.max(step - 1, 0))}
+        onBack={() => setCreateStep((step: number) => Math.max(step - 1, 0))}
         onBackToSettings={onBack}
         onCancel={resetCreateRole}
         onCreate={saveRole}
         onDescriptionChange={setNewRoleDescription}
         onNext={() =>
-          setCreateStep((step) => Math.min(step + 1, 2))
+          setCreateStep((step: number) => Math.min(step + 1, 2))
         }
         onRoleNameChange={setNewRoleName}
         onSelectedUsersChange={setSelectedUsers}
@@ -629,13 +564,13 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     <main className='flex h-full min-h-0 flex-col bg-[var(--surface)]'>
       <ConfirmDialog
         opened={deletingRoleId != null}
-        title='Delete Role'
+        title={t`Delete Role`}
         description={
           deletingRole
-            ? `Are you sure you want to delete "${deletingRole.name}"? This action cannot be undone.`
-            : 'Are you sure you want to delete this role? This action cannot be undone.'
+            ? t`Are you sure you want to delete "${deletingRole.name}"? This action cannot be undone.`
+            : t`Are you sure you want to delete this role? This action cannot be undone.`
         }
-        confirmLabel='Delete'
+        confirmLabel={t`Delete`}
         isConfirming={isDeletingRole}
         variant='danger'
         onCancel={cancelDeleteRole}
@@ -846,11 +781,11 @@ function CreateRolePage({
   const getMissingLabels = (step = activeStep) => {
     if (step === 1) return []
 
-    const fields = [{ label: 'Role Name', value: roleName }]
+    const fields = [{ label: t`Role Name`, value: roleName }]
     const labels = getMissingRequiredLabels(fields)
 
     if (!selectedUsers.length) {
-      labels.push('Select Users')
+      labels.push(t`Select Users`)
     }
 
     return labels
@@ -951,7 +886,7 @@ function CreateRolePage({
               <AnimateFadeIn delay={0.1}>
                 <InputText
                   autoFocus={!editingRoleId}
-                  error={getFieldRequiredError('Role Name', showErrors, roleName)}
+                  error={getFieldRequiredError(t`Role Name`, showErrors, roleName)}
                   label={t`Role Name`}
                   required
                   placeholder={t`e.g. AP Supervisor`}
@@ -982,7 +917,7 @@ function CreateRolePage({
                     searchable
                     error={
                       showErrors && !selectedUsers.length
-                        ? 'Please fill the required field: Select Users'
+                        ? t`Please fill the required field: Select Users`
                         : undefined
                     }
                     onChange={(value) =>
@@ -1023,25 +958,25 @@ function CreateRolePage({
               <div className='rounded-[14px] border border-[var(--border-default)] bg-surface p-6'>
                 <AnimateFadeIn delay={0.1}>
                   <h3 className='text-md mb-6 font-semibold text-[var(--gray-13)]'>
-                    Role Summary
+                    {t`Role Summary`}
                   </h3>
                 </AnimateFadeIn>
                 <div className='grid grid-cols-1 gap-x-12 gap-y-4 text-sm md:grid-cols-2'>
                   <AnimateFadeIn delay={0.15}>
-                    <SummaryItem label='Role Name' value={roleName || '—'} />
+                    <SummaryItem label={t`Role Name`} value={roleName || '—'} />
                   </AnimateFadeIn>
                   <AnimateFadeIn delay={0.18}>
                     <SummaryItem
-                      label='Permissions'
-                      value={`${enabledCount} enabled`}
+                      label={t`Permissions`}
+                      value={t`${enabledCount} enabled`}
                     />
                   </AnimateFadeIn>
                   <AnimateFadeIn delay={0.21}>
-                    <SummaryItem label='Description' value={description || '—'} />
+                    <SummaryItem label={t`Description`} value={description || '—'} />
                   </AnimateFadeIn>
                   <AnimateFadeIn delay={0.24}>
                     <SummaryItem
-                      label='Users'
+                      label={t`Users`}
                       value={
                         selectedUsers.length
                           ? selectedUsers.map((user) => user.name).join(', ')
@@ -1098,10 +1033,11 @@ function applyPermissionKeysToMenus(
   menus: V6MenuItem[],
   permissionKeys: Array<{ key?: string; name?: string; visible?: unknown }>,
 ): V6MenuItem[] {
-  const permissionKeysMap = buildPermissionKeysMap(permissionKeys)
-  const hasPermissionKeys = permissionKeys.length > 0
+  const safePermissionKeys = permissionKeys ?? []
+  const permissionKeysMap = buildPermissionKeysMap(safePermissionKeys)
+  const hasPermissionKeys = safePermissionKeys.length > 0
   const sourceMenus = (
-    menus.length
+    menus?.length
       ? menus
       : ROLE_PERMISSION_PAGES.map((page) => ({
           key: page.key,
@@ -1120,7 +1056,7 @@ function applyPermissionKeysToMenus(
           normalizeRolePermissionKey(String(menu.key || (menu as any).id || '')) ===
           page.key,
       ) || null
-    const permission = permissionKeys.find(
+    const permission = safePermissionKeys.find(
       (item) =>
         normalizeRolePermissionKey(String(item.key || '')) === page.key,
     )
@@ -1160,8 +1096,8 @@ function mapApiRoleToRole(role: V6RoleItem): Role {
     ? permissionsFromKeys
     : Array.isArray(role.permissions)
       ? role.permissions
-          .map((permission) => normalizeRolePermissionKey(String(permission)))
-          .filter((key) => ALLOWED_ROLE_PERMISSION_KEYS.has(key))
+      .map((permission) => normalizeRolePermissionKey(String(permission)))
+      .filter((key) => ALLOWED_ROLE_PERMISSION_KEYS.has(key))
       : []
   const users = Array.isArray(role.users)
     ? role.users
@@ -1268,6 +1204,7 @@ function MenuProfiles({
   onRoleChange: (id: string) => void
   onToggle: (id: string) => void
 }) {
+  const { t } = useLingui()
   const orderedItems = [...items].sort((a, b) => a.order - b.order)
 
   return (
@@ -1294,18 +1231,18 @@ function MenuProfiles({
         <div className='flex items-center gap-3 border-b border-[var(--border-default)] px-5 py-4'>
           <Grid2X2 className='text-[var(--primary-9)]' size={18} />
           <h2 className='text-md font-semibold text-[var(--gray-13)]'>
-            Menu Visibility for {selectedRoleName}
+            {t`Menu Visibility for ${selectedRoleName}`}
           </h2>
         </div>
 
         <div className='ez-scrollbar max-h-[calc(100vh-320px)] overflow-y-auto'>
           {isLoading ? (
             <div className='px-5 py-12 text-center text-sm text-[var(--gray-11)]'>
-              Loading menus...
+              {t`Loading menus...`}
             </div>
           ) : orderedItems.length === 0 ? (
             <div className='px-5 py-12 text-center text-sm text-[var(--gray-11)]'>
-              No menus found.
+              {t`No menus found.`}
             </div>
           ) : (
             orderedItems.map((item) => (
@@ -1453,9 +1390,9 @@ function PermissionMatrix({
         }
       />
       <DataTable
-        emptyDescription='Menus will appear here once navigation items are available.'
+        emptyDescription={t`Menus will appear here once navigation items are available.`}
         emptyIcon='lucide:shield'
-        emptyTitle='No permissions to configure'
+        emptyTitle={t`No permissions to configure`}
         isLoading={isLoading}
         isReLoading={isLoading}
         pageSize={Math.max(5, rows.length || 5)}
@@ -1675,14 +1612,14 @@ function RoleList({
               >
                 <DropdownMenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => onEdit(role.id)}
                 />
                 <DropdownMenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => onDelete(role.id)}
                 />
               </Menu>
@@ -1691,7 +1628,7 @@ function RoleList({
         },
       }),
     ],
-    [isLoadingRoleDetails, onEdit, onDelete],
+    [isLoadingRoleDetails, onEdit, onDelete, t],
   )
 
   const roleTable = useReactTable({
@@ -1718,7 +1655,7 @@ function RoleList({
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
-      <SettingsPageHeader title='Roles & Permissions' onBack={onBack} />
+      <SettingsPageHeader title={t`Roles & Permissions`} onBack={onBack} />
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
         <CustomFilter
@@ -1734,7 +1671,7 @@ function RoleList({
                 .sort((a, b) => a.localeCompare(b))
                 .map((name) => ({ label: name, value: name })),
               searchable: true,
-              searchPlaceholder: 'Search name...',
+              searchPlaceholder: t`Search name...`,
             },
           ]}
           trailingActions={
@@ -1747,7 +1684,7 @@ function RoleList({
               icon: 'tabler:refresh',
               id: 'refresh',
               isIconButton: true,
-              tooltip: 'Refresh',
+              tooltip: t`Refresh`,
               variant: 'outline',
               onClick: onReload,
             },
@@ -1771,9 +1708,9 @@ function RoleList({
         <div className='mt-4 flex min-h-0 flex-1 flex-col overflow-hidden'>
           <div className='min-h-0 flex-1 overflow-hidden'>
             <DataTable
-              emptyDescription='Create a role to manage access permissions across the platform.'
+              emptyDescription={t`Create a role to manage access permissions across the platform.`}
               emptyIcon='lucide:shield'
-              emptyTitle='No roles yet'
+              emptyTitle={t`No roles yet`}
               isLoading={isLoading}
               isReLoading={isLoading}
               pageSize={pageSize}

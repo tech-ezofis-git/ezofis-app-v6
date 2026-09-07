@@ -1,11 +1,11 @@
 import { useLingui } from '@lingui/react/macro'
-import { AnimatePresence, motion } from 'motion/react'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
-import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { AnimatePresence, motion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import cn from '@/utils/cn'
 import {
@@ -15,6 +15,7 @@ import {
   getSearchHitTitle,
   type GlobalSearchHit,
 } from './globalSearchApi'
+import { foundLine, hl, lineFor, searchMock } from './mockSearch'
 
 const GlobalSearch = () => {
   const { t } = useLingui()
@@ -26,7 +27,8 @@ const GlobalSearch = () => {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState<GlobalSearchHit[]>([])
+  const [results, setResults] = useState<any[]>([])
+  const [useDummyData, setUseDummyData] = useState(false)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const requestIdRef = useRef(0)
@@ -77,27 +79,42 @@ const GlobalSearch = () => {
     const requestId = ++requestIdRef.current
     setLoading(true)
 
-    void fetchGlobalSearch({
-      actionFrom: pageContext?.actionFrom || 'Repository',
-      query: debouncedQuery,
-      specificId: pageContext?.specificId || '',
-    })
-      .then((hits) => {
+    if (useDummyData) {
+      setTimeout(() => {
         if (requestId !== requestIdRef.current) return
+        const hits = searchMock(debouncedQuery)
         setResults(hits)
         setError('')
+        setLoading(false)
+      }, 400)
+    } else {
+      void fetchGlobalSearch({
+        actionFrom: pageContext?.actionFrom || 'Repository',
+        query: debouncedQuery,
+        specificId: pageContext?.specificId || '',
       })
-      .catch((err: unknown) => {
-        if (requestId !== requestIdRef.current) return
-        setResults([])
-        setError(
-          err instanceof Error ? err.message : t`Could not complete search.`,
-        )
-      })
-      .finally(() => {
-        if (requestId === requestIdRef.current) setLoading(false)
-      })
-  }, [debouncedQuery, pageContext?.actionFrom, pageContext?.specificId])
+        .then((hits) => {
+          if (requestId !== requestIdRef.current) return
+          setResults(hits)
+          setError('')
+        })
+        .catch((err: unknown) => {
+          if (requestId !== requestIdRef.current) return
+          setResults([])
+          setError(
+            err instanceof Error ? err.message : t`Could not complete search.`,
+          )
+        })
+        .finally(() => {
+          if (requestId === requestIdRef.current) setLoading(false)
+        })
+    }
+  }, [
+    debouncedQuery,
+    useDummyData,
+    pageContext?.actionFrom,
+    pageContext?.specificId,
+  ])
 
   const openAllResults = () => {
     const searchText = query.trim() || debouncedQuery
@@ -185,15 +202,29 @@ const GlobalSearch = () => {
               }}
             />
             <button
-              aria-label={t`Search`}
-              className='grid size-7 shrink-0 place-items-center rounded-md text-gray-11 transition-colors hover:bg-gray-4 hover:text-gray-13'
               type='button'
+              aria-label={
+                useDummyData
+                  ? t`Switch to Original Data`
+                  : t`Switch to Dummy Data`
+              }
+              className={cn(
+                'grid size-7 shrink-0 place-items-center rounded-md transition-colors',
+                useDummyData
+                  ? 'bg-primary-9 text-white'
+                  : 'text-gray-11 hover:bg-gray-4 hover:text-gray-13',
+              )}
+              title={
+                useDummyData
+                  ? t`Switch to Original Data`
+                  : t`Switch to Dummy Data`
+              }
               onClick={(e) => {
                 e.stopPropagation()
-                if (searchLabel) openAllResults()
+                setUseDummyData(!useDummyData)
               }}
             >
-              <Icon name='lucide:search' />
+              <Icon name={useDummyData ? 'lucide:database' : 'lucide:search'} />
             </button>
             {loading && (
               <div className='absolute right-0 bottom-0 left-0 h-0.5 overflow-hidden rounded-b-lg bg-primary-3'>
@@ -262,12 +293,12 @@ const GlobalSearch = () => {
                 key='loading'
               >
                 <motion.div
+                  className='text-primary-9'
                   animate={{
                     opacity: [0.55, 1, 0.55],
                     rotate: [0, 8, -8, 0],
                     scale: [0.92, 1.1, 0.92],
                   }}
-                  className='text-primary-9'
                   transition={{
                     duration: 1.4,
                     ease: 'easeInOut',
@@ -319,62 +350,147 @@ const GlobalSearch = () => {
                 initial={{ opacity: 0 }}
                 key='list'
               >
-                <ul className='ez-scrollbar min-h-0 flex-1 overflow-y-auto divide-y divide-gray-3 px-1 py-1'>
+                <ul className='ez-scrollbar min-h-0 flex-1 divide-y divide-gray-3 overflow-y-auto pb-1'>
                   {results.map((hit, index) => {
-                    const title = getSearchHitTitle(hit)
-                    const date = getSearchHitDate(hit)
-                    const icon = getSearchHitIcon(hit.type)
-                    const isLatest = false
-                    const key =
-                      hit.id?.itemId ||
-                      `${hit.type}-${title}-${date}-${index}`
+                    const isDummy = !!hit.found
+
+                    const title = isDummy ? hit.title : getSearchHitTitle(hit)
+                    const titleHtml = isDummy ? hl(title, hit.needles) : title
+
+                    let iconName = 'lucide:file'
+                    if (isDummy) {
+                      const t = hit.type
+                      iconName =
+                        t === 'request'
+                          ? 'lucide:clipboard-list'
+                          : t === 'document'
+                            ? 'lucide:file-text'
+                            : t === 'folder'
+                              ? 'lucide:folder'
+                              : 'lucide:git-branch'
+                    } else {
+                      iconName = getSearchHitIcon(hit.type)
+                    }
+
+                    const badges = isDummy ? hit.badges || [] : []
 
                     return (
                       <motion.li
                         animate={{ opacity: 1, y: 0 }}
                         initial={{ opacity: 0, y: 8 }}
-                        key={key}
+                        key={hit.id?.itemId || hit.id || index}
                         transition={{
                           delay: Math.min(index, 12) * 0.03,
                           duration: 0.2,
                         }}
                       >
-                        <button
-                          className='flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-primary-2'
-                          type='button'
-                          onClick={() => openHit(hit)}
+                        <div
+                          className='group flex w-full cursor-pointer items-start gap-4 px-4 py-4 text-left transition-colors hover:bg-gray-2'
+                          onClick={() => {
+                            if (!isDummy) openHit(hit)
+                          }}
                         >
-                          <span
+                          {/* Icon Container */}
+                          <div
                             className={cn(
-                              'flex size-9 shrink-0 items-center justify-center rounded-[10px]',
-                              isLatest
-                                ? 'bg-primary-3 text-primary-10'
-                                : 'bg-gray-3 text-gray-11',
+                              'flex size-8 shrink-0 items-center justify-center rounded-lg border border-gray-4 bg-surface shadow-sm transition-all',
+                              hit.pinned
+                                ? 'border-primary-4 bg-white text-primary-9'
+                                : 'text-gray-11 group-hover:border-gray-6 group-hover:bg-white',
                             )}
                           >
-                            <Icon className='size-4' name={icon} />
-                          </span>
+                            <Icon className='size-4' name={iconName} />
+                          </div>
 
-                          <span className='min-w-0 flex-1'>
-                            <span className='block truncate text-[13.5px] leading-5 font-semibold text-gray-13'>
-                              {title}
-                            </span>
-                            <span className='mt-0.5 block truncate text-[12px] text-gray-10'>
-                              {date || hit.type || t`Result`}
-                            </span>
-                          </span>
+                          <div className='min-w-0 flex-1'>
+                            {/* Title & Badge */}
+                            <div className='mb-1 flex flex-wrap items-center gap-2'>
+                              <span
+                                className='truncate text-[14.5px] font-semibold text-gray-12'
+                                dangerouslySetInnerHTML={{ __html: titleHtml }}
+                              />
+                              {isDummy && hit.subtitle && (
+                                <span className='text-[13.5px] text-gray-11'>
+                                  {hit.subtitle}
+                                </span>
+                              )}
+                              {isDummy && hit.folder && (
+                                <span className='shrink-0 rounded-full border border-gray-4 bg-gray-3 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+                                  {hit.folder}
+                                </span>
+                              )}
 
-                          {isLatest ? (
-                            <span className='shrink-0 rounded-full bg-primary-3 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary-10 lowercase'>
-                              {t`latest`}
-                            </span>
-                          ) : null}
+                              {badges.map((b: any, i: number) => {
+                                const colorCls =
+                                  b.tone === 'ok'
+                                    ? 'bg-green-2 text-green-11 border-transparent'
+                                    : b.tone === 'warn'
+                                      ? 'bg-amber-2 text-amber-11 border-transparent'
+                                      : b.tone === 'err'
+                                        ? 'bg-red-2 text-red-11 border-transparent'
+                                        : 'bg-gray-3 border-gray-4 text-gray-11'
+                                return (
+                                  <span
+                                    key={i}
+                                    className={cn(
+                                      'shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                                      colorCls,
+                                    )}
+                                  >
+                                    {b.label}
+                                  </span>
+                                )
+                              })}
+                            </div>
 
-                          <Icon
-                            className='size-4 shrink-0 text-gray-8'
-                            name='lucide:chevron-right'
-                          />
-                        </button>
+                            {/* Meta */}
+                            <div className='mb-2 line-clamp-1 hover:line-clamp-none text-[12.5px] text-slate-500'>
+                              {isDummy
+                                ? lineFor(hit)
+                                : [
+                                    hit.name ? t`Updated from ${hit.name}` : '',
+                                    getSearchHitDate(hit)
+                                  ].filter(Boolean).join(', ') || hit.type || t`Result`}
+                            </div>
+
+                            {/* Found snippets */}
+                            {isDummy && hit.found && hit.found.length > 0 && (
+                              <div className='flex flex-col gap-1.5'>
+                                <div className='flex items-start gap-2'>
+                                  <div className='bg-[#00bcd4] mt-[7px] size-[5px] shrink-0 rounded-full' />
+                                  <div
+                                    className='text-[12.5px] leading-relaxed text-slate-600 line-clamp-1 hover:line-clamp-none'
+                                    dangerouslySetInnerHTML={{
+                                      __html: foundLine(
+                                        hit.found[0],
+                                        hit.needles,
+                                      ),
+                                    }}
+                                  />
+                                </div>
+                                {hit.found.length > 1 && (
+                                  <div className='mt-1 cursor-pointer text-[11.5px] font-medium text-primary-9 hover:underline'>
+                                    + {hit.found.length - 1} more place
+                                    {hit.found.length - 1 === 1 ? '' : 's'} it
+                                    matched
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Found snippets (Real Data) */}
+                            {!isDummy && hit.matchSource && (
+                              <div className='flex flex-col gap-1.5 mt-2'>
+                                <div className='flex items-start gap-2'>
+                                  <div className='bg-[#00bcd4] mt-[7px] size-[5px] shrink-0 rounded-full' />
+                                  <div className='text-[12.5px] leading-relaxed text-slate-600 line-clamp-1 hover:line-clamp-none'>
+                                    {t`Matched in:`} <span className='capitalize font-medium'>{hit.matchSource}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </motion.li>
                     )
                   })}

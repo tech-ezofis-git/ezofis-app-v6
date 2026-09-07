@@ -25,29 +25,30 @@ function getFileIcon(fileName: string): string {
       return 'vscode-icons:file-type-pdf2'
     case 'doc':
     case 'docx':
-      return 'tabler:file-type-doc'
+      return 'vscode-icons:file-type-word'
     case 'xls':
     case 'xlsx':
-      return 'tabler:file-type-xls'
+    case 'csv':
+      return 'vscode-icons:file-type-excel'
     case 'ppt':
     case 'pptx':
-      return 'tabler:file-type-ppt'
+      return 'vscode-icons:file-type-powerpoint'
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
     case 'webp':
-      return 'tabler:photo'
+    case 'svg':
+      return 'vscode-icons:file-type-image'
     case 'zip':
     case 'rar':
     case '7z':
-      return 'tabler:file-zip'
+      return 'vscode-icons:file-type-zip'
     case 'txt':
-      return 'tabler:file-text'
-    case 'csv':
-      return 'tabler:file-spreadsheet'
+    case 'rtf':
+      return 'vscode-icons:file-type-text'
     default:
-      return 'tabler:file'
+      return 'vscode-icons:file-type-text'
   }
 }
 

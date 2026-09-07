@@ -1,0 +1,299 @@
+{
+  "$schema_note": "EZOFIS v6 design tokens — machine-readable input for LLM-driven dashboard generation. Source: src/styles/{light,dark,theme}.css, src/pages/settings/helpers/settingsTheme.ts, src/pages/dashboard/**, src/services/ai/dashboardAi.ts.",
+
+  "meta": {
+    "product": "EZOFIS v6",
+    "ui_library": "Mantine v8 + Tailwind v4",
+    "font_stack": {
+      "heading": "Poppins, sans-serif",
+      "body": "Inter, sans-serif",
+      "body_weight_default": 450
+    },
+    "border_radius_base": "5px",
+    "color_mode": "supports light and dark, switched via [data-mantine-color-scheme]"
+  },
+
+  "color_scales": {
+    "note": "Each scale has 12 steps (gray has 14). Step 9 is the solid/high-saturation step normally used for fills; steps 1-2 are backgrounds; steps 11-12 are text-on-light. Values differ between light and dark mode — both given.",
+    "primary": {
+      "role": "brand purple — primary actions, focus, active states",
+      "light": ["#fdfcff","#fbf7ff","#f3f0ff","#e7d8ff","#dbceff","#cfc4ff","#c3baff","#9c89ff","#7c5cff","#6a4cf0","#5b3ed6","#1f2937"],
+      "dark":  ["#140e1c","#1d1328","#2e1945","#3c1c5b","#47236a","#542d7a","#673b94","#864dc0","#a855f7","#9b47e9","#d09dff","#ead8ff"]
+    },
+    "secondary": {
+      "role": "brand cyan — secondary accents, info highlights",
+      "light": ["#f9fdfe","#f1fbfc","#dbf7fd","#c5f2fb","#aeeaf5","#95dfed","#70d0e1","#00bbd3","#00bcd4","#00b0c8","#007f94","#003e47"],
+      "dark":  ["#071315","#0e1b1e","#012d33","#003a44","#004753","#005663","#006978","#008395","#00bcd4","#00b0c8","#38cee6","#b2edf8"]
+    },
+    "tertiary": {
+      "role": "brand green — positive/growth accents",
+      "light": ["#f3fbf6","#e6f6ed","#ccefd9","#b1e5c4","#94d9ad","#73cb93","#4fbb76","#3eb574","#30a46c","#2b9864","#218358","#123b2a"],
+      "dark":  ["#0b1a12","#0f2418","#12361f","#144827","#185a30","#1d6e3a","#258748","#2fa55a","#3dd68c","#34c57e","#7ee0ad","#c6f0d8"]
+    },
+    "gray": {
+      "role": "neutral scale, 14 steps (0 = pure white/black extremes, 13 = strongest text)",
+      "light": ["#ffffff","#fdfcfd","#f6f6f9","#e6e6ef","#dadae5","#cecedc","#c1c1d2","#b5b5c9","#9b9bb6","#8181a0","#67678a","#4d4d73","#33335c","#1f2937"],
+      "dark":  ["#000000","#121113","#1a191b","#232225","#2b292d","#323035","#3c393f","#49474e","#625f69","#6f6d78","#7c7a85","#b5b2bc","#d2d0d6","#eeeef0"]
+    },
+    "red":    { "role": "error / negative / destructive",
+      "light": ["#fffcfc","#fff7f7","#feebec","#ffdbdc","#ffcdce","#fdbdbe","#f4a9aa","#eb8e90","#e5484d","#dc3e42","#ce2c31","#641723"],
+      "dark":  ["#191111","#201314","#3b1219","#500f1c","#611623","#72232d","#8c333a","#b54548","#e5484d","#ec5d5e","#ff9592","#ffd1d9"] },
+    "pink":   { "role": "extended palette — tags, highlights",
+      "light": ["#fffcfe","#fef7fb","#fee9f5","#fbdcef","#f6cee7","#efbfdd","#e7acd0","#dd93c2","#d6409f","#cf3897","#c2298a","#651249"],
+      "dark":  ["#191117","#21121d","#37172f","#4b143d","#591c47","#692955","#833869","#a84885","#d6409f","#de51a8","#ff8dcc","#fdd1ea"] },
+    "purple": { "role": "extended palette — tags, AI/accent surfaces",
+      "light": ["#fefcfe","#fbf7fe","#f7edfe","#f2e2fc","#ead5f9","#e0c4f4","#d1afec","#be93e4","#8e4ec6","#8347b9","#8145b5","#402060"],
+      "dark":  ["#18111b","#1e1523","#301c3b","#3d224e","#48295c","#54346b","#664282","#8457aa","#8e4ec6","#9a5cd0","#d19dff","#ecd9fa"] },
+    "violet": { "role": "extended palette",
+      "light": ["#fdfcfe","#faf8ff","#f4f0fe","#ebe4ff","#e1d9ff","#d4cafe","#c2b5f5","#aa99ec","#6e56cf","#654dc4","#6550b9","#2f265f"],
+      "dark":  ["#14121f","#1b1525","#291f43","#33255b","#3c2e69","#473876","#56468b","#6958ad","#6e56cf","#7d66d9","#baa7ff","#e2ddfe"] },
+    "indigo": { "role": "extended palette",
+      "light": ["#fdfdfe","#f7f9ff","#edf2fe","#e1e9ff","#d2deff","#c1d0ff","#abbdf9","#8da4ef","#3e63dd","#3358d4","#3a5bc7","#1f2d5c"],
+      "dark":  ["#11131f","#141726","#182449","#1d2e62","#253974","#304384","#3a4f97","#435db1","#3e63dd","#5472e4","#9eb1ff","#d6e1ff"] },
+    "blue":   { "role": "info",
+      "light": ["#fbfdff","#f4faff","#e6f4fe","#d5efff","#c2e5ff","#acd8fc","#8ec8f6","#5eb1ef","#0090ff","#0588f0","#0d74ce","#113264"],
+      "dark":  ["#0d1520","#111927","#0d2847","#003362","#004074","#104d87","#205d9e","#2870bd","#0090ff","#3b9eff","#70b8ff","#c2e6ff"] },
+    "cyan":   { "role": "extended palette",
+      "light": ["#fafdfe","#f2fafb","#def7f9","#caf1f6","#b5e9f0","#9ddde7","#7dcedc","#3db9cf","#00a2c7","#0797b9","#107d98","#0d3c48"],
+      "dark":  ["#0b161a","#101b20","#082c36","#003848","#004558","#045468","#12677e","#11809c","#00a2c7","#23afd0","#4ccce6","#b6ecf7"] },
+    "teal":   { "role": "extended palette",
+      "light": ["#fafefd","#f3fbf9","#e0f8f3","#ccf3ea","#b8eae0","#a1ded2","#83cdc1","#53b9ab","#12a594","#0d9b8a","#008573","#0d3d38"],
+      "dark":  ["#0d1514","#111c1b","#0d2d2a","#023b37","#084843","#145750","#1c6961","#207e73","#12a594","#0eb39e","#0bd8b6","#adf0dd"] },
+    "green":  { "role": "success / positive",
+      "light": ["#fbfefc","#f4fbf6","#e6f6eb","#d6f1df","#c4e8d1","#adddc0","#8eceaa","#5bb98b","#30a46c","#2b9a66","#218358","#193b2d"],
+      "dark":  ["#0e1512","#121b17","#132d21","#113b29","#174933","#20573e","#28684a","#2f7c57","#30a46c","#33b074","#3dd68c","#b1f1cb"] },
+    "bronze": { "role": "extended palette",
+      "light": ["#fdfcfc","#fdf7f5","#f6edea","#efe4df","#e7d9d3","#dfcdc5","#d3bcb3","#c2a499","#a18072","#957468","#7d5e54","#43302b"],
+      "dark":  ["#141110","#1c1917","#262220","#302a27","#3b3330","#493e3a","#5a4c47","#6f5f58","#a18072","#ae8c7e","#d4b3a5","#ede0d9"] },
+    "gold":   { "role": "extended palette",
+      "light": ["#fdfdfc","#faf9f2","#f2f0e7","#eae6db","#e1dccf","#d8d0bf","#cbc0aa","#b9a88d","#978365","#8c7a5e","#71624b","#3b352b"],
+      "dark":  ["#121211","#1b1a17","#24231f","#2d2b26","#38352e","#444039","#544f46","#696256","#978365","#a39073","#cbb99f","#e8e2d9"] },
+    "orange": { "role": "warning",
+      "light": ["#fefcfb","#fff7ed","#ffefd6","#ffdfb5","#ffd19a","#ffc182","#f5ae73","#ec9455","#f76b15","#ef5f00","#cc4e00","#582d1d"],
+      "dark":  ["#17120e","#1e160f","#331e0b","#462100","#562800","#66350c","#7e451d","#a35829","#f76b15","#ff801f","#ffa057","#ffe0c2"] },
+    "yellow": { "role": "extended palette — caution highlights",
+      "light": ["#fefdfb","#fefbe9","#fff7c2","#ffee9c","#fbe577","#f3d673","#e9c162","#e2a336","#ffc53d","#ffba18","#ab6400","#4f3422"],
+      "dark":  ["#16120c","#1d180f","#302008","#3f2700","#4d3000","#5c3d05","#714f19","#8f6424","#ffc53d","#ffd60a","#ffca16","#ffe7b3"] }
+  },
+
+  "semantic_tokens": {
+    "note": "What actual UI code consumes (via CSS var or Tailwind class, e.g. bg-surface, text-text-primary). Resolve to a color_scales value at a given mode.",
+    "light": {
+      "surface": "#ffffff",
+      "surface_raised": "#ffffff",
+      "surface_muted": "#f6f6f9",
+      "surface_hover": "#f6f6f9",
+      "surface_overlay": "#ffffff",
+      "surface_primary": "#ffffff",
+      "surface_secondary": "#f6f6f9",
+      "bg_dashboard": "#f6f3fb",
+      "text_primary": "#1f2937",
+      "text_secondary": "#4d4d73",
+      "text_muted": "#8181a0",
+      "text_on_accent": "#ffffff",
+      "border_default": "#e6e6ef",
+      "border_strong": "#dadae5",
+      "border_focus": "#9c89ff",
+      "accent_primary": "#7c5cff",
+      "accent_soft": "#f3f0ff",
+      "error_main": "#e5484d",
+      "success_main": "#30a46c",
+      "success_subtle": "#e6f6eb",
+      "warning_main": "#f76b15",
+      "info_main": "#0090ff",
+      "overlay_backdrop": "color-mix(in srgb, #1f2937 55%, transparent)",
+      "shadow_sm": "0 1px 2px 0 rgb(15 23 42 / 0.05)",
+      "shadow_md": "0 4px 12px -2px rgb(15 23 42 / 0.08)",
+      "shadow_lg": "0 12px 32px -8px rgb(15 23 42 / 0.12)"
+    },
+    "dark": {
+      "surface": "#121113",
+      "surface_raised": "#1a191b",
+      "surface_muted": "#1a191b",
+      "surface_hover": "#232225",
+      "surface_overlay": "#1a191b",
+      "surface_primary": "#121113",
+      "surface_secondary": "#1a191b",
+      "bg_dashboard": "#000000",
+      "text_primary": "#eeeef0",
+      "text_secondary": "#b5b2bc",
+      "text_muted": "#6f6d78",
+      "text_on_accent": "#000000",
+      "border_default": "#232225",
+      "border_strong": "#2b292d",
+      "border_focus": "#864dc0",
+      "accent_primary": "#a855f7",
+      "accent_soft": "#2e1945",
+      "error_main": "#e5484d",
+      "success_main": "#3dd68c",
+      "success_subtle": "#12361f",
+      "warning_main": "#f76b15",
+      "info_main": "#0090ff",
+      "overlay_backdrop": "color-mix(in srgb, #000000 45%, transparent)",
+      "shadow_sm": "0 1px 2px 0 rgb(0 0 0 / 0.25)",
+      "shadow_md": "0 4px 12px -2px rgb(0 0 0 / 0.35)",
+      "shadow_lg": "0 12px 32px -8px rgb(0 0 0 / 0.45)"
+    }
+  },
+
+  "status_colors": {
+    "note": "Consistent status vocabulary for badges/pills/table status cells (settingsSeverityStyles + DashboardTableRow.status).",
+    "approved":  { "text": "#30a46c", "bg_light": "#e6f6eb", "bg_dark": "#132d21" },
+    "completed": { "text": "#30a46c", "bg_light": "#e6f6eb", "bg_dark": "#132d21" },
+    "pending":   { "text": "#f76b15", "bg_light": "#ffefd6", "bg_dark": "#331e0b" },
+    "review":    { "text": "#0090ff", "bg_light": "#e6f4fe", "bg_dark": "#0d2847" },
+    "critical":  { "text": "#ce2c31", "bg_light": "#feebec", "bg_dark": "#3b1219" },
+    "rejected":  { "text": "#e5484d", "bg_light": "#feebec", "bg_dark": "#3b1219" }
+  },
+
+  "chart_palettes": {
+    "note": "Multiple palettes coexist in the codebase for different chart contexts. Prefer 'dashboard_categorical' for new AI-generated dashboards — it is the widest and most tested for multi-series charts (pie/donut/bar categories).",
+    "dashboard_categorical_recommended": [
+      "#7c5cff",
+      "#00bbd3",
+      "#e5484d",
+      "#d6409f",
+      "#8e4ec6",
+      "#1E8E6F",
+      "#ec9455",
+      "#3e63dd",
+      "#0f7a86",
+      "#847C93"
+    ],
+    "settings_chart_palette": [
+      "var(--primary-9)  -> light #7c5cff / dark #a855f7",
+      "var(--cyan-9)     -> light #00a2c7 / dark #00a2c7",
+      "var(--green-9)    -> light #30a46c / dark #3dd68c",
+      "var(--orange-9)   -> light #f76b15 / dark #f76b15",
+      "var(--red-9)      -> light #e5484d / dark #e5484d",
+      "var(--gray-9)     -> light #8181a0 / dark #6f6d78"
+    ],
+    "dashboard_ai_builder_fallback": ["#4f46e5", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"],
+    "risk_3_step": ["#1E8E6F", "#0f7a86", "#B3261E"],
+    "single_series_accent": {
+      "primary_fill": "#7c5cff",
+      "primary_stroke": "#7c5cff",
+      "area_fill_soft": "#f3f0ff",
+      "sparkline_light": "orange-8 (#ec9455 family)",
+      "sparkline_dark": "lime-4"
+    },
+    "grid_and_axis": {
+      "grid_light": "#e6e6ef",
+      "grid_dark": "#232225",
+      "axis_text_light": "#4d4d73",
+      "axis_text_dark": "#b5b2bc"
+    }
+  },
+
+  "typography": {
+    "fonts": {
+      "heading": { "family": "Poppins", "weights": [500, 600, 700], "google_fonts": true },
+      "body":    { "family": "Inter", "weights": [400, 450, 500, 600], "google_fonts": true, "default_weight": 450 }
+    },
+    "scale_px": [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
+    "usage": {
+      "kpi_value": "28px / bold / gray-13 (see statValue token)",
+      "page_title": "18px / semibold / tracking-tight / gray-13",
+      "page_subtitle": "13px / gray-11",
+      "body": "14px / weight 450",
+      "caption_label": "11-12px / uppercase / letter-spacing / gray-11"
+    }
+  },
+
+  "layout_tokens": {
+    "radius_base": "5px",
+    "card_radius": "12px",
+    "button_radius": "6-8px",
+    "pill_radius": "9999px (badges)",
+    "shadow_sm": "0 1px 2px rgba(15,23,42,.05)",
+    "shadow_md": "0 4px 12px -2px rgba(15,23,42,.08)",
+    "shadow_lg": "0 12px 32px -8px rgba(15,23,42,.12)"
+  },
+
+  "dashboard_ai_output_schema": {
+    "note": "This is the EXACT JSON contract the app's dashboard renderer expects back from a generation model (mirrors src/services/ai/dashboardAi.ts). A model producing a dashboard for this app MUST return an object matching DashboardAiConfig.",
+    "type_definitions": {
+      "DashboardComponentType": ["header", "kpi_grid", "insights", "pie_chart", "bar_chart", "area_chart", "spend_tiles", "table"],
+      "DashboardKpiItem": {
+        "id": "string",
+        "title": "string",
+        "value": "string",
+        "subtext": "string",
+        "trend": "string (optional, e.g. '+14.2%')",
+        "isPositive": "boolean (optional)",
+        "enabled": "boolean (optional, default true)"
+      },
+      "DashboardChartPoint": {
+        "name": "string",
+        "value": "number",
+        "amount": "string (optional, formatted currency label)",
+        "profitMargin": "number (optional)",
+        "additional_keys": "allowed — chart point is an open record"
+      },
+      "DashboardInsightItem": {
+        "id": "string",
+        "text": "string",
+        "enabled": "boolean (optional)"
+      },
+      "DashboardTableRow": {
+        "id": "string",
+        "title": "string",
+        "category": "string",
+        "amount": "string",
+        "status": ["Approved", "Pending", "Review", "Completed"],
+        "date": "string (YYYY-MM-DD)"
+      },
+      "DashboardSummaryBadge": {
+        "label": "string (uppercase short label)",
+        "value": "string",
+        "color": "string (optional Tailwind class, e.g. 'text-red-9', 'text-green-9', 'text-primary-9')"
+      },
+      "DashboardWidgetComponent": {
+        "id": "string",
+        "type": "DashboardComponentType",
+        "title": "string (optional)",
+        "subtitle": "string (optional)",
+        "enabled": "boolean (optional)",
+        "summaryBadges": "DashboardSummaryBadge[] (optional)",
+        "kpis": "DashboardKpiItem[] (optional, only for type=kpi_grid)",
+        "insights": "DashboardInsightItem[] (optional, only for type=insights)",
+        "data": "DashboardChartPoint[] | DashboardTableRow[] (optional, for chart/table types)"
+      },
+      "DashboardSectionGroup": {
+        "id": "string",
+        "title": "string",
+        "subtitle": "string",
+        "summaryBadges": "DashboardSummaryBadge[]",
+        "enabled": "boolean",
+        "isExpanded": "boolean (optional)",
+        "components": "DashboardWidgetComponent[]"
+      },
+      "DashboardAiConfig": {
+        "repositoryName": "string",
+        "description": "string",
+        "sections": "DashboardSectionGroup[]",
+        "source": ["gemini", "local"]
+      }
+    },
+    "conventions": {
+      "currency_format": "$485.2K style — dollar sign, one decimal, K/M suffix for thousands/millions",
+      "trend_format": "signed percentage string, e.g. '+14.2%' or '-10.5%'",
+      "date_format": "YYYY-MM-DD",
+      "id_pattern": "prefix_xxxxxxxx (8-char random/uuid slice), e.g. 'kpi_a1b2c3d4' — generateUniqueId(prefix) in dashboardAi.ts",
+      "sections_per_dashboard": 4,
+      "typical_section_pattern": [
+        "1. Command Center — kpi_grid (6 KPIs) + insights + pie_chart (risk)",
+        "2. Profitability & Cash Position — bar_chart (dual-axis profit vs spend) + area_chart (payment trend) + bar_chart (cash forecast)",
+        "3. Supplier Concentration & Risk — pie_chart (top suppliers) + pie_chart (outstanding payables) + spend_tiles (department spend)",
+        "4. Aging & Operations Pipeline — bar_chart (approval days) + table (recent records)"
+      ]
+    },
+    "color_assignment_rules": [
+      "Use dashboard_categorical_recommended[] in order for multi-slice pie/donut/bar charts, cycling with modulo if series > 10.",
+      "Use status_colors for any status/severity badge or table status cell, keyed by the status string (case-insensitive).",
+      "Use semantic_tokens.error_main for negative trend indicators (isPositive:false) and semantic_tokens.success_main for positive ones.",
+      "Use accent_primary as the single-series fill for area/bar charts that are not comparative (e.g. one KPI trend line).",
+      "Never emit a raw hex not present in this file for chart series color — pick from chart_palettes."
+    ]
+  }
+}

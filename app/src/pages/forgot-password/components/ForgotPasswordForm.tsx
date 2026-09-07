@@ -4,6 +4,7 @@ import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
 import Title from '@/components/base/Title'
+import { useIsWhiteLabel } from '@/utils/whiteLabel'
 
 interface Props {
   email: string
@@ -13,6 +14,7 @@ interface Props {
 
 const ForgotPasswordForm = ({ email, setEmail, onChangeView }: Props) => {
   const [loading, setLoading] = useState(false)
+  const isWhiteLabel = useIsWhiteLabel()
 
   const sendLink = () => {
     setLoading(true)
@@ -34,7 +36,7 @@ const ForgotPasswordForm = ({ email, setEmail, onChangeView }: Props) => {
 
       <InputText
         leftSection={<Icon className='text-gray-8' name='lucide:mail' />}
-        placeholder='hello@ezofis.com'
+        placeholder={isWhiteLabel ? 'hello@example.com' : 'hello@ezofis.com'}
         value={email}
         onChange={setEmail}
       />

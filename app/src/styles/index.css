@@ -36,13 +36,12 @@
     direction: ltr;
   }
 
-  @media (prefers-reduced-motion: no-preference) {
-    html.theme-transitions,
-    html.theme-transitions *,
-    html.theme-transitions *::before,
-    html.theme-transitions *::after {
-      transition: var(--transition-theme) !important;
-    }
+  /* Instant, synchronized theme switching across all components without transition lag */
+  html.theme-transitions,
+  html.theme-transitions *,
+  html.theme-transitions *::before,
+  html.theme-transitions *::after {
+    transition: none !important;
   }
 
   body {
@@ -197,6 +196,54 @@
 
 .bg-secondary-12 {
   background-color: var(--secondary-12);
+}
+
+.bg-tertiary-1 {
+  background-color: var(--tertiary-1);
+}
+
+.bg-tertiary-2 {
+  background-color: var(--tertiary-2);
+}
+
+.bg-tertiary-3 {
+  background-color: var(--tertiary-3);
+}
+
+.bg-tertiary-4 {
+  background-color: var(--tertiary-4);
+}
+
+.bg-tertiary-5 {
+  background-color: var(--tertiary-5);
+}
+
+.bg-tertiary-6 {
+  background-color: var(--tertiary-6);
+}
+
+.bg-tertiary-7 {
+  background-color: var(--tertiary-7);
+}
+
+.bg-tertiary-8 {
+  background-color: var(--tertiary-8);
+}
+
+.bg-tertiary-9 {
+  background-color: var(--tertiary-9);
+}
+
+.bg-tertiary-10 {
+  background-color: var(--tertiary-10);
+}
+
+.bg-tertiary-11 {
+  background-color: var(--tertiary-11);
+}
+
+.bg-tertiary-12 {
+  background-color: var(--tertiary-12);
 }
 
 .bg-red-1 {

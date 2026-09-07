@@ -252,6 +252,48 @@ const startWorkflow = async (workflowId: string, formData: FormData) => {
   return response
 }
 
+export interface StartWorkflowJsonPayload {
+  context?: string
+  envType?: string
+  formData?: Record<string, any>
+  stagedFiles?: {
+    fileId: string
+    repositoryId: string
+    fieldId?: string
+    fieldName?: string
+    fileName?: string
+    itemId?: string
+    jsonId?: string
+  }[]
+}
+
+// Preferred start endpoint for normal (non-AP-Agent) workflows — see the
+// "Normal Workflow — Frontend Integration Guide" (PR #40, Aug 2026).
+// formData is a flat object keyed by field jsonId; uploaded files go in
+// stagedFiles (via uploadAndIndex.uploadWithOcr), not in formData.
+const startWorkflowJson = async (
+  workflowId: string,
+  payload: StartWorkflowJsonPayload,
+) => {
+  const response: { data: any; error: string } = { data: null, error: '' }
+  try {
+    const { data, status } = await axiosV6({
+      data: payload,
+      headers: getTenantHeaders(),
+      method: 'POST',
+      url: `/Workflows/${workflowId}/start/json`,
+    })
+    if (status !== 200 && status !== 201) throw new Error('invalid status code')
+    response.data = data
+  } catch (e: unknown) {
+    console.error(e)
+    const err = e as { message?: string; response?: { data?: string } }
+    response.error =
+      err?.response?.data || err?.message || 'error starting workflow'
+  }
+  return response
+}
+
 const updateWorkflow = async (workflowId: string, payload: any) => {
   const response: { data: any; error: string } = {
     data: null,
@@ -641,9 +683,9 @@ const addInstanceAttachment = async (
 }
 
 export interface V6FilterField {
+  dataType: string
   name: string
   sqlColumnName: string
-  dataType: string
   supportedOperators: string[]
 }
 
@@ -656,41 +698,36 @@ const EXCLUDED_FILTER_FIELD_DATA_TYPES = new Set([
 export const isExcludedFilterFieldDataType = (dataType: unknown) =>
   EXCLUDED_FILTER_FIELD_DATA_TYPES.has(String(dataType || '').toUpperCase())
 
-export interface V6FilterFieldsResponse {
-  workflowId: string
-  formId: string
-  fields: V6FilterField[]
+export interface V6ControlValuesResponse {
+  columnName: string
+  jsonId: string
+  status: string
+  values: string[]
+  wFormControlName: string
+  wFormId: string
 }
 
-export interface V6ControlValuesResponse {
-  status: string
-  wFormId: string
-  wFormControlName: string
-  jsonId: string
-  columnName: string
-  values: string[]
+export interface V6FilterFieldsResponse {
+  fields: V6FilterField[]
+  formId: string
+  workflowId: string
 }
 
 export interface V6SearchFilterClause {
-  criteria: string
   condition: string
+  criteria: string
+  dataType?: string
   value?: any
   values?: any[]
   valueTo?: string
-  dataType?: string
-}
-
-export interface V6SearchSortBy {
-  criteria: string
-  order: string
 }
 
 export interface V6SearchPayload {
   filterBy: V6SearchFilterClause[]
-  sortBy?: V6SearchSortBy
-  groupBy?: string
   currentPage?: number
+  groupBy?: string
   itemsPerPage?: number
+  sortBy?: V6SearchSortBy
 }
 
 export interface V6SearchResponse {
@@ -704,6 +741,11 @@ export interface V6SearchResponse {
     totalItems: number
   }
   tableExists?: boolean
+}
+
+export interface V6SearchSortBy {
+  criteria: string
+  order: string
 }
 
 const getFilterFields = async (workflowId: string) => {
@@ -803,16 +845,17 @@ export const workflowsApiV6 = {
   addInstanceComment,
   createWorkflow,
   deleteWorkflow,
-  getControlValues,
-  getFilterFields,
   moveNext,
   searchTickets,
   shareFile,
   startWorkflow,
+  startWorkflowJson,
   updateWorkflow,
   getAllWorkflows,
   getApAgentJobStatus,
   getCompletedList,
+  getControlValues,
+  getFilterFields,
   getInboxList,
   getInstanceAttachments,
   getInstanceComments,

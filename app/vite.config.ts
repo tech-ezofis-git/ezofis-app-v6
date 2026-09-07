@@ -2,6 +2,7 @@ import { lingui } from '@lingui/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import viteReact from '@vitejs/plugin-react'
+import fs from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 
@@ -16,6 +17,34 @@ export default defineConfig({
     }),
     tailwindcss(),
     lingui(),
+    {
+      name: 'save-light-css-plugin',
+      configureServer(server: any) {
+        server.middlewares.use((req: any, res: any, next: any) => {
+          if (req.method === 'POST' && (req.url === '/api/save-light-css' || req.url === '/api/save-dark-css')) {
+            const fileName = req.url === '/api/save-dark-css' ? 'dark.css' : 'light.css'
+            let body = ''
+            req.on('data', (chunk: any) => {
+              body += chunk
+            })
+            req.on('end', () => {
+              try {
+                const data = JSON.parse(body)
+                const targetPath = resolve(__dirname, `./src/styles/${fileName}`)
+                fs.writeFileSync(targetPath, data.cssContent, 'utf-8')
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ success: true }))
+              } catch (err: any) {
+                res.writeHead(500, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify({ error: err.message }))
+              }
+            })
+            return
+          }
+          next()
+        })
+      }
+    }
   ],
   resolve: {
     alias: {

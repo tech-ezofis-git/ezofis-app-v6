@@ -1,11 +1,16 @@
-import React, { useEffect, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
-import { motion, AnimatePresence } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
+import React, { useEffect, useState } from 'react'
 import { getRepositorys } from '@/api/v6/folder/folder'
 import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
 import cn from '@/utils/cn'
+import DashboardApiBuilder, {
+  type SavedHtmlHeaderActions,
+} from './components/DashboardApiBuilder'
+import useDashboardStore from './stores/useDashboardStore'
 import AccountsPayable from './workflows/accounts-payable/AccountsPayable'
 import setupStore from './workflows/accounts-payable/stores/useSetupStore'
 import DocumentRepositorySetup from './workflows/document-repository/DocumentRepositorySetup'
@@ -15,8 +20,6 @@ import {
   openDmsSetupPreview,
 } from './workflows/setupPreview'
 import DashboardCharts from './workflows/shared/components/Header'
-import useDashboardStore from './stores/useDashboardStore'
-import DashboardAiBuilder from './components/DashboardAiBuilder'
 
 const DashboardPage = () => {
   const { t } = useLingui()
@@ -31,9 +34,11 @@ const DashboardPage = () => {
   const setRepositoryId = useDashboardStore((state) => state.setRepositoryId)
 
   const [repositoryOptions, setRepositoryOptions] = useState<
-    Array<{ label: string; value: string }>
+    Array<{ description?: string; label: string; value: string }>
   >([])
   const [isLoadingRepos, setIsLoadingRepos] = useState(false)
+  const [savedHtmlHeader, setSavedHtmlHeader] =
+    useState<SavedHtmlHeaderActions | null>(null)
 
   useEffect(() => {
     let active = true
@@ -51,18 +56,33 @@ const DashboardPage = () => {
               : []
         const mapped = list
           .map((item: any) => {
-            const id = String(item?.id || item?.repositoryId || item?.value || '')
-            const label = String(
-              item?.name || item?.repositoryName || item?.title || item?.label || id,
+            const id = String(
+              item?.id || item?.repositoryId || item?.value || '',
             )
-            return { label, value: id }
+            const label = String(
+              item?.name ||
+                item?.repositoryName ||
+                item?.title ||
+                item?.label ||
+                id,
+            )
+            const description = String(
+              item?.description ||
+                item?.Description ||
+                item?.repositoryDescription ||
+                '',
+            ).trim()
+            return { description, label, value: id }
           })
           .filter((opt: any) => Boolean(opt.value && opt.label))
         if (active) {
           setRepositoryOptions(mapped)
           // Default selection for Accounts Payable if not explicitly set
           if (!repositoryId || repositoryId === 'ap') {
-            const apOpt = mapped.find((opt: any) => /accounts payable/i.test(opt.label) || opt.value === 'ap')
+            const apOpt = mapped.find(
+              (opt: any) =>
+                /accounts payable/i.test(opt.label) || opt.value === 'ap',
+            )
             if (apOpt) {
               setRepositoryId(apOpt.value)
             }
@@ -81,6 +101,7 @@ const DashboardPage = () => {
   }, [])
 
   const selectOptions = repositoryOptions.map((opt) => ({
+    description: opt.description,
     id: opt.value,
     name: opt.label,
     value: opt.value,
@@ -119,7 +140,7 @@ const DashboardPage = () => {
     <div
       className={cn(
         'flex h-full flex-col bg-gray-1',
-        isDmsSetupStarted || isSetupStarted
+        isDmsSetupStarted || isSetupStarted || savedHtmlHeader
           ? 'overflow-hidden'
           : 'overflow-y-auto',
       )}
@@ -140,13 +161,14 @@ const DashboardPage = () => {
                   </p>
                 </div>
                 <div className='flex items-center gap-3'>
-                  <div className='w-[190px] sm:w-[220px]'>
+                  <div className='w-[220px] sm:w-[280px]'>
                     <InputSelect
                       disabled={isLoadingRepos}
                       options={selectOptions}
                       placeholder={t`Repository`}
-                      searchable
                       value={selectedOption}
+                      searchable
+                      width={340}
                       onChange={(selected) =>
                         setRepositoryId(
                           selected?.value || String(selected?.id || ''),
@@ -154,6 +176,32 @@ const DashboardPage = () => {
                       }
                     />
                   </div>
+                  {savedHtmlHeader ? (
+                    <>
+                      <IconButton
+                        ariaLabel={t`Refresh`}
+                        className='text-gray-12'
+                        color='gray'
+                        disabled={savedHtmlHeader.isRefreshing}
+                        icon='lucide:refresh-cw'
+                        loading={savedHtmlHeader.isRefreshing}
+                        size='md'
+                        tooltip={t`Refresh`}
+                        variant='outline'
+                        onClick={savedHtmlHeader.onRefresh}
+                      />
+                      <IconButton
+                        ariaLabel={t`Edit`}
+                        className='text-gray-12'
+                        color='gray'
+                        icon='lucide:pencil'
+                        size='md'
+                        tooltip={t`Edit`}
+                        variant='outline'
+                        onClick={savedHtmlHeader.onEdit}
+                      />
+                    </>
+                  ) : null}
                   <Button
                     label={t`Get Started`}
                     size='md'
@@ -167,15 +215,16 @@ const DashboardPage = () => {
 
           <AnimatePresence mode='wait'>
             <motion.div
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.99, y: -12 }}
+              initial={{ opacity: 0, scale: 0.99, y: 12 }}
+              key={repositoryId || selectedOption?.value || 'ap'}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 'min-h-0 flex-1',
-                (isSetupStarted || isDmsSetupStarted) && 'h-full flex flex-col',
+                (isSetupStarted || isDmsSetupStarted || savedHtmlHeader) &&
+                  'flex h-full flex-col',
               )}
-              key={repositoryId || selectedOption?.value || 'ap'}
-              initial={{ opacity: 0, y: 12, scale: 0.99 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -12, scale: 0.99 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             >
               {isApDashboard ? (
                 <>
@@ -187,9 +236,10 @@ const DashboardPage = () => {
                   <AccountsPayable />
                 </>
               ) : (
-                <DashboardAiBuilder
+                <DashboardApiBuilder
                   repositoryId={repositoryId}
                   repositoryName={selectedRepoName || 'Custom Repository'}
+                  onSavedHtmlHeaderChange={setSavedHtmlHeader}
                 />
               )}
             </motion.div>

@@ -67,8 +67,8 @@ export function calculateUserSetupProgress(user: SettingsUser) {
     isFilled(user.businessUnit),
     isFilled(user.manager),
     isFilled(user.location),
-    user.groups.length > 0,
-    !user.mfaEnabled || user.mfaMethods.length > 0,
+    (user.groups ?? []).length > 0,
+    !user.mfaEnabled || (user.mfaMethods ?? []).length > 0,
   ]
 
   const filled = checks.filter(Boolean).length

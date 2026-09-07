@@ -1,3 +1,5 @@
+import { t } from '@lingui/macro'
+
 export interface MockDocument {
   documentType: string
   effectiveDate: string
@@ -49,15 +51,15 @@ export interface RetentionPolicy {
 export const RETENTION_FIELDS: RetentionField[] = [
   {
     key: 'status',
-    label: 'Status',
+    label: t`Status`,
     options: ['Draft', 'Active', 'Expired', 'Terminated'],
     type: 'select',
   },
-  { key: 'effectiveDate', label: 'Effective Date', type: 'date' },
-  { key: 'expiryDate', label: 'Expiry / Due Date', type: 'date' },
-  { key: 'lastActivityDate', label: 'Last Activity Date', type: 'date' },
-  { key: 'owner', label: 'Owner', type: 'text' },
-  { key: 'documentType', label: 'Document Type', type: 'text' },
+  { key: 'effectiveDate', label: t`Effective Date`, type: 'date' },
+  { key: 'expiryDate', label: t`Expiry / Due Date`, type: 'date' },
+  { key: 'lastActivityDate', label: t`Last Activity Date`, type: 'date' },
+  { key: 'owner', label: t`Owner`, type: 'text' },
+  { key: 'documentType', label: t`Document Type`, type: 'text' },
 ]
 
 export const DATE_FIELD_KEYS = [
@@ -67,9 +69,9 @@ export const DATE_FIELD_KEYS = [
 ]
 
 export const DURATION_UNIT_OPTIONS = [
-  { id: 'days', name: 'days' },
-  { id: 'months', name: 'months' },
-  { id: 'years', name: 'years' },
+  { id: 'days', name: t`days` },
+  { id: 'months', name: t`months` },
+  { id: 'years', name: t`years` },
 ]
 
 export const ACTION_OPTIONS: {
@@ -81,35 +83,33 @@ export const ACTION_OPTIONS: {
 }[] = [
   {
     color: 'primary',
-    description:
-      'Move matched documents out of active storage into the archive.',
+    description: t`Move matched documents out of active storage into the archive.`,
     icon: 'tabler:archive',
     id: 'archive',
-    name: 'Archive',
+    name: t`Archive`,
   },
   {
     color: 'amber',
-    description:
-      'Hide matched documents and hold them for recovery for a grace period.',
+    description: t`Hide matched documents and hold them for recovery for a grace period.`,
     icon: 'tabler:trash-x',
     id: 'soft_delete',
-    name: 'Soft Delete',
+    name: t`Soft Delete`,
   },
   {
     color: 'red',
-    description: 'Permanently remove matched documents. This cannot be undone.',
+    description: t`Permanently remove matched documents. This cannot be undone.`,
     icon: 'tabler:trash',
     id: 'permanent_delete',
-    name: 'Permanent Delete',
+    name: t`Permanent Delete`,
   },
 ]
 
 export const OPERATOR_OPTIONS = [
-  { id: 'equals', name: 'Equals' },
-  { id: 'not_equals', name: 'Is Not' },
-  { id: 'contains', name: 'Contains' },
-  { id: 'greater_than', name: 'Greater Than' },
-  { id: 'less_than', name: 'Less Than' },
+  { id: 'equals', name: t`Equals` },
+  { id: 'not_equals', name: t`Is Not` },
+  { id: 'contains', name: t`Contains` },
+  { id: 'greater_than', name: t`Greater Than` },
+  { id: 'less_than', name: t`Less Than` },
 ]
 
 const SUGGESTED_TRIGGER_BY_ACTION: Record<
@@ -128,7 +128,7 @@ export const fieldLabel = (key: string) =>
   RETENTION_FIELDS.find((f) => f.key === key)?.label || key
 
 export const opLabel = (op: string) =>
-  OPERATOR_OPTIONS.find((o) => o.id === op)?.name || 'Equals'
+  OPERATOR_OPTIONS.find((o) => o.id === op)?.name || t`Equals`
 
 export const actionMeta = (action: RetentionAction | '') =>
   ACTION_OPTIONS.find((a) => a.id === action) || ACTION_OPTIONS[0]
@@ -277,7 +277,7 @@ export const reasonText = (
   const days = daysSince(
     (doc as unknown as Record<string, string>)[policy.triggerField],
   )
-  return `${fieldLabel(policy.triggerField)} was ${days} days ago — past the ${thresholdDays(policy)}-day threshold`
+  return t`${fieldLabel(policy.triggerField)} was ${days ?? 0} days ago — past the ${thresholdDays(policy)}-day threshold`
 }
 
 export const buildSummarySentence = (
@@ -294,7 +294,7 @@ export const buildSummarySentence = (
     | 'triggerField'
   >,
 ): string => {
-  const joinWord = policy.matchType === 'any' ? 'or' : 'and'
+  const joinWord = policy.matchType === 'any' ? t`or` : t`and`
   const condTexts = policy.conditions
     .filter((c) => c.field)
     .map(
@@ -302,12 +302,12 @@ export const buildSummarySentence = (
         `${fieldLabel(c.field)} ${opLabel(c.op).toLowerCase()} "${c.value}"`,
     )
 
-  let s = `Documents in "${folderName}" will move to ${actionMeta(policy.action).name.toLowerCase()} once ${fieldLabel(policy.triggerField)} is more than ${policy.durationValue} ${policy.durationUnit} old`
-  if (condTexts.length) s += `, and ${condTexts.join(` ${joinWord} `)}`
+  let s = t`Documents in "${folderName}" will move to ${actionMeta(policy.action).name.toLowerCase()} once ${fieldLabel(policy.triggerField)} is more than ${policy.durationValue} ${policy.durationUnit} old`
+  if (condTexts.length) s += t`, and ${condTexts.join(` ${joinWord} `)}`
   s += '.'
   if (policy.requireConfirm)
-    s += ' Each batch needs manual confirmation before it runs.'
-  if (policy.notifyOwner) s += ' Document owners are notified beforehand.'
+    s += ` ${t`Each batch needs manual confirmation before it runs.`}`
+  if (policy.notifyOwner) s += ` ${t`Document owners are notified beforehand.`}`
   return s
 }
 

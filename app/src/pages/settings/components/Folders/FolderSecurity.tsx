@@ -1,3 +1,5 @@
+import { t as staticT } from '@lingui/macro'
+import { useLingui } from '@lingui/react/macro'
 import {
   createColumnHelper,
   getFilteredRowModel,
@@ -51,9 +53,9 @@ export type FolderSecurityProps = {
 type TabKey = 'folder' | 'document' | 'retention'
 
 const tabs: { key: TabKey; label: string }[] = [
-  { key: 'folder', label: 'Folder Security' },
-  { key: 'document', label: 'Document Security' },
-  { key: 'retention', label: 'Retention Policy' },
+  { key: 'folder', label: staticT`Folder Security` },
+  { key: 'document', label: staticT`Document Security` },
+  { key: 'retention', label: staticT`Retention Policy` },
 ]
 
 const getInitials = (name: string) => {
@@ -71,6 +73,7 @@ export default function FolderSecurity({
   onBack,
   onBackToSettings,
 }: FolderSecurityProps) {
+  const { t } = useLingui()
   const [activeTab, setActiveTab] = useState<TabKey>('folder')
   const [users, setUsers] = useState<V6UserListItem[]>([])
   const [groups, setGroups] = useState<V6GroupItem[]>([])
@@ -110,7 +113,7 @@ export default function FolderSecurity({
 
   const handleDeleteRetentionPolicy = useCallback((index: number) => {
     setRetentionPolicies((prev) => prev.filter((_, idx) => idx !== index))
-    showToast({ message: 'Retention policy deleted.', variant: 'success' })
+    showToast({ message: t`Retention policy deleted.`, variant: 'success' })
   }, [])
 
   const handleSaveRetentionPolicy = useCallback(
@@ -157,9 +160,9 @@ export default function FolderSecurity({
   const breadcrumbConfig = useMemo(
     () => ({
       items: [
-        { key: 'settings', label: 'Settings' },
-        { key: 'folder-configuration', label: 'Folder Configuration' },
-        { label: folderName ? `Security` : 'Folder Security' },
+        { key: 'settings', label: t`Settings` },
+        { key: 'folder-configuration', label: t`Folder Configuration` },
+        { label: folderName ? t`Security` : t`Folder Security` },
       ],
       onNavigate: (key: string) => {
         if (key === 'settings') {
@@ -339,7 +342,7 @@ export default function FolderSecurity({
       return
     }
     showToast({
-      message: 'Folder security policy deleted.',
+      message: t`Folder security policy deleted.`,
       variant: 'success',
     })
   }
@@ -365,7 +368,7 @@ export default function FolderSecurity({
       return
     }
     showToast({
-      message: 'Document security rule deleted.',
+      message: t`Document security rule deleted.`,
       variant: 'success',
     })
   }
@@ -379,7 +382,7 @@ export default function FolderSecurity({
   const policyColumns = useMemo(
     () => [
       policyColumnHelper.accessor((row) => row, {
-        header: 'Assigned Users & Groups',
+        header: t`Assigned Users & Groups`,
         id: 'principals',
         cell: (info) => {
           const policy = info.getValue()
@@ -423,12 +426,12 @@ export default function FolderSecurity({
               })}
               {extraCount > 0 && (
                 <span className='text-xs font-medium text-gray-11'>
-                  +{extraCount} more
+                  {t`+${extraCount} more`}
                 </span>
               )}
               {allItems.length === 0 && (
                 <span className='text-xs text-gray-10 italic'>
-                  No users or groups assigned
+                  {t`No users or groups assigned`}
                 </span>
               )}
             </div>
@@ -436,7 +439,7 @@ export default function FolderSecurity({
         },
       }),
       policyColumnHelper.accessor('permissions', {
-        header: 'Granted Permissions',
+        header: t`Granted Permissions`,
         id: 'permissions',
         cell: (info) => {
           const perms = info.getValue() || {}
@@ -483,14 +486,14 @@ export default function FolderSecurity({
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => handleEditPolicy(index)}
                 />
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => void handleDeletePolicy(index)}
                 />
               </Menu>
@@ -533,7 +536,7 @@ export default function FolderSecurity({
   const ruleColumns = useMemo(
     () => [
       ruleColumnHelper.accessor((row) => row, {
-        header: 'Target Users & Groups',
+        header: t`Target Users & Groups`,
         id: 'targets',
         cell: (info) => {
           const rule = info.getValue()
@@ -577,12 +580,12 @@ export default function FolderSecurity({
               })}
               {extraCount > 0 && (
                 <span className='text-xs font-medium text-gray-11'>
-                  +{extraCount} more
+                  {t`+${extraCount} more`}
                 </span>
               )}
               {allItems.length === 0 && (
                 <span className='text-xs text-gray-10 italic'>
-                  No users or groups assigned
+                  {t`No users or groups assigned`}
                 </span>
               )}
             </div>
@@ -590,37 +593,37 @@ export default function FolderSecurity({
         },
       }),
       ruleColumnHelper.accessor('action', {
-        header: 'Effect Action',
+        header: t`Effect Action`,
         id: 'action',
         cell: (info) => {
           const action = info.getValue()
           return action === 'hide' ? (
             <span className='inline-flex items-center gap-1.5 rounded-md border border-red-3 bg-red-2 px-2.5 py-1 text-xs font-semibold text-red-11'>
               <Icon className='size-3.5 text-red-9' name='tabler:eye-off' />
-              Hide Documents
+              {t`Hide Documents`}
             </span>
           ) : (
             <span className='inline-flex items-center gap-1.5 rounded-md border border-green-3 bg-green-2 px-2.5 py-1 text-xs font-semibold text-green-11'>
               <Icon className='size-3.5 text-green-9' name='tabler:eye' />
-              Show Documents
+              {t`Show Documents`}
             </span>
           )
         },
       }),
       ruleColumnHelper.accessor('match', {
-        header: 'Match',
+        header: t`Match`,
         id: 'match',
         cell: (info) => {
           const match = info.getValue()
           return (
             <span className='inline-flex rounded bg-primary-3 px-2 py-0.5 text-[11px] font-semibold text-primary-11'>
-              {match === 'any' ? 'Any' : 'All'}
+              {match === 'any' ? t`Any` : t`All`}
             </span>
           )
         },
       }),
       ruleColumnHelper.accessor('conditions', {
-        header: 'Conditions',
+        header: t`Conditions`,
         id: 'conditions',
         cell: (info) => {
           const conds = info.getValue() || []
@@ -665,14 +668,14 @@ export default function FolderSecurity({
               >
                 <MenuItem
                   icon='lucide:pencil'
-                  label='Edit'
+                  label={t`Edit`}
                   onClick={() => handleEditRule(index)}
                 />
                 <MenuItem
                   className='text-red-11'
                   icon='lucide:trash-2'
                   iconClass='text-red-11'
-                  label='Delete'
+                  label={t`Delete`}
                   onClick={() => void handleDeleteRule(index)}
                 />
               </Menu>
@@ -806,16 +809,15 @@ export default function FolderSecurity({
             <div className='flex items-center justify-between'>
               <div>
                 <h2 className='text-15 font-semibold text-gray-13'>
-                  Folder Security Policies
+                  {t`Folder Security Policies`}
                 </h2>
                 <p className='mt-0.5 text-xs text-gray-11'>
-                  Manage access policies and privileges for folder &quot;
-                  {folderName}&quot;
+                  {t`Manage access policies and privileges for folder "${folderName}"`}
                 </p>
               </div>
               <Button
                 icon='tabler:plus'
-                label='Add Policy'
+                label={t`Add Policy`}
                 size='sm'
                 onClick={handleAddPolicy}
               />
@@ -826,9 +828,9 @@ export default function FolderSecurity({
             <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
               <div className='min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
                 <DataTable
-                  emptyDescription="No folder security policies found. Click 'Add Policy' to configure access rules."
+                  emptyDescription={t`No folder security policies found. Click 'Add Policy' to configure access rules.`}
                   emptyIcon='tabler:shield'
-                  emptyTitle='No Security Policies'
+                  emptyTitle={t`No Security Policies`}
                   isLoading={isLoadingPolicies}
                   isReLoading={isLoadingPolicies}
                   rowSize={policyRowSize}
@@ -845,7 +847,7 @@ export default function FolderSecurity({
 
               <Pagination
                 className='mt-4 shrink-0'
-                itemLabel='Policies'
+                itemLabel={t`Policies`}
                 page={policyPage}
                 pageSize={policyPageSize}
                 showPageNumbers={false}
@@ -860,16 +862,15 @@ export default function FolderSecurity({
             <div className='flex items-center justify-between'>
               <div>
                 <h2 className='text-15 font-semibold text-gray-13'>
-                  Document Security Rules
+                  {t`Document Security Rules`}
                 </h2>
                 <p className='mt-0.5 text-xs text-gray-11'>
-                  Manage document-level access rules evaluated against document
-                  metadata for folder &quot;{folderName}&quot;
+                  {t`Manage document-level access rules evaluated against document metadata for folder "${folderName}"`}
                 </p>
               </div>
               <Button
                 icon='tabler:plus'
-                label='Add Document Rule'
+                label={t`Add Document Rule`}
                 size='sm'
                 onClick={handleAddRule}
               />
@@ -880,9 +881,9 @@ export default function FolderSecurity({
             <div className='mt-2 flex min-h-0 flex-1 flex-col overflow-hidden'>
               <div className='min-h-0 flex-1 overflow-hidden rounded-lg border border-[var(--border-default)] bg-surface shadow-2xs'>
                 <DataTable
-                  emptyDescription="No document security rules found. Click 'Add Document Rule' to set up metadata rules."
+                  emptyDescription={t`No document security rules found. Click 'Add Document Rule' to set up metadata rules.`}
                   emptyIcon='tabler:adjustments'
-                  emptyTitle='No Document Rules'
+                  emptyTitle={t`No Document Rules`}
                   isLoading={isLoadingRules}
                   isReLoading={isLoadingRules}
                   rowSize={ruleRowSize}
@@ -899,7 +900,7 @@ export default function FolderSecurity({
 
               <Pagination
                 className='mt-4 shrink-0'
-                itemLabel='Rules'
+                itemLabel={t`Rules`}
                 page={rulePage}
                 pageSize={rulePageSize}
                 showPageNumbers={false}

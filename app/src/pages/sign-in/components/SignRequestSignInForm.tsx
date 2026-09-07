@@ -1,9 +1,9 @@
 import { useMsal } from '@azure/msal-react'
+import { useLingui } from '@lingui/react/macro'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useLingui } from '@lingui/react/macro'
 import { useEffect, useState } from 'react'
-import { getSession, login as ezofisLogin } from '@/api/v6/auth'
+import { login as ezofisLogin, getSession } from '@/api/v6/auth'
 import {
   getSignRequestInvitePreview,
   setSignRequestPassword,
@@ -21,6 +21,7 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import authUserStore from '@/stores/authUserStore'
 import { setToLocalStorage } from '@/utils/local-storage'
+import { useIsWhiteLabel } from '@/utils/whiteLabel'
 import { redirectAfterLogin } from '../utils/redirectAfterLogin'
 
 interface Props {
@@ -31,11 +32,11 @@ interface Props {
 
 function applyInviteAuth(payload: {
   accessToken?: string
-  tokenType?: string
-  expiresIn?: number
-  userId?: string
-  tenantId?: string
   email?: string
+  expiresIn?: number
+  tenantId?: string
+  tokenType?: string
+  userId?: string
 }) {
   if (!payload.accessToken) return false
   const identity = {
@@ -66,6 +67,7 @@ const SignRequestSignInForm = ({
 }: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
   const { instance: msalInstance } = useMsal()
   const search: any = useSearch({ strict: false })
   const redirectTo =
@@ -283,8 +285,10 @@ const SignRequestSignInForm = ({
       <IconIllustrated icon='tabler:user' />
       <Title
         className='text-center'
-        description={t`Hi, Welcome back to EZOFIS`}
         level={1}
+        description={
+          isWhiteLabel ? t`Hi, Welcome back` : t`Hi, Welcome back to EZOFIS`
+        }
         title={
           setupRequired ? t`Create access to sign` : t`Sign in to your account`
         }
@@ -361,16 +365,16 @@ const SignRequestSignInForm = ({
           </>
         ) : null}
 
-        {error ? <Alert className='mt-2' text={error} variant='primary' /> : null}
+        {error ? (
+          <Alert className='mt-2' text={error} variant='primary' />
+        ) : null}
 
         {showPassword && (showGoogle || showMicrosoft) ? (
           <Divider label={t`Or`} />
         ) : null}
 
         <div className='space-y-3'>
-          {showGoogle ? (
-            <GoogleButton onClick={() => googleLogin()} />
-          ) : null}
+          {showGoogle ? <GoogleButton onClick={() => googleLogin()} /> : null}
           {showMicrosoft ? (
             <MicrosoftButton onClick={() => void handleMicrosoftLogin()} />
           ) : null}

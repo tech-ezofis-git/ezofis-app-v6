@@ -2,6 +2,8 @@ import { ArrowLeft, CheckCircle2, Loader2, PenLine, ScanText } from 'lucide-reac
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
+import IconButton from '@/components/base/button/IconButton'
+
 import {
   collectSignRequestFields,
   createSignRequest,
@@ -19,6 +21,10 @@ import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
 import { SkeletonDocumentDetails } from '@/components/common/skeletons'
 import showToast from '@/components/base/toast/showToast'
+import Icon from '@/components/base/icon/Icon'
+import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
+import RelatedDocumentsFinder from '@/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder'
+import { getSearchHitTitle } from '@/layouts/app/components/topbar/components/globalSearchApi'
 import {
   getRepositoryById,
   persistEditedDocumentToRepository,
@@ -26,7 +32,7 @@ import {
 } from '@/api/v6/folder/folder'
 import CollaboraEditor from './CollaboraEditor'
 import authUserStore from '@/stores/authUserStore'
-import { formatUtcToLocalDate, formatUtcToLocalDateTime } from '@/utils/utcDate'
+import { formatUtcToLocalDate, formatUtcToLocalDateTime, parseUtcDate } from '@/utils/utcDate'
 import { folderApi } from '../api/folderApi'
 import {
   getFileExtension,
@@ -50,12 +56,13 @@ import {
 import FolderSharePopover from './FolderSharePopover'
 import { DynamicIcon } from './icons'
 import { Button, Card, PrimaryButton, StatusPill } from './Ui'
-
+import Buttons from '@/components/base/button/Button'
 const EMPTY_SIGNATURE_FIELDS: SignRequestFieldDto[] = []
 
 type CommentItem = {
   actorName?: string
   author?: string
+  authorEmail?: string
   authorName?: string
   authorUserId?: string
   body?: string
@@ -90,9 +97,55 @@ type RelatedDoc = {
   matchCount?: number
   matchedFields?: string[]
   matchScore?: number
+  relatedItemId?: string
+  relatedRepositoryId?: string
   repositoryId: string
   repositoryName?: string | null
   supplier?: string | null
+}
+
+const toRelatedDoc = (
+  row: {
+    createdAtUtc?: string | null
+    documentType?: string | null
+    fileName?: string | null
+    fileSize?: number | null
+    fileType?: string | null
+    id?: string
+    matchCount?: number
+    matchedFields?: string[]
+    matchScore?: number
+    relatedItemId?: string
+    relatedRepositoryId?: string
+    repositoryId?: string
+    repositoryName?: string | null
+    supplier?: string | null
+  },
+  untitled: string,
+): RelatedDoc | null => {
+  const relatedItemId = String(
+    row?.relatedItemId || row?.id || '',
+  ).trim()
+  const relatedRepositoryId = String(
+    row?.relatedRepositoryId || row?.repositoryId || '',
+  ).trim()
+  if (!relatedItemId || !relatedRepositoryId) return null
+  return {
+    createdAtUtc: row.createdAtUtc,
+    documentType: row.documentType,
+    fileName: String(row.fileName || untitled),
+    fileSize: row.fileSize,
+    fileType: row.fileType,
+    id: relatedItemId,
+    matchCount: row.matchCount,
+    matchedFields: Array.isArray(row.matchedFields) ? row.matchedFields : [],
+    matchScore: row.matchScore,
+    relatedItemId,
+    relatedRepositoryId,
+    repositoryId: relatedRepositoryId,
+    repositoryName: row.repositoryName,
+    supplier: row.supplier,
+  }
 }
 
 type TimelineEvent = {
@@ -141,6 +194,19 @@ const formatDateTime = (value?: string) => {
   if (!value) return ''
   return formatUtcToLocalDateTime(value, value)
 }
+
+const formatDateOnly = (value?: string) => {
+  if (!value) return ''
+  return formatUtcToLocalDate(value, '')
+}
+
+const formatTimeOnly = (value?: string) => {
+  if (!value) return ''
+  const d = parseUtcDate(value)
+  if (!d) return ''
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+}
+
 
 const formatRelatedFileSize = (bytes?: number | null) => {
   if (bytes == null || Number.isNaN(Number(bytes)) || Number(bytes) <= 0) {
@@ -305,9 +371,16 @@ export function DocumentDetailsView({
 
   const [comments, setComments] = useState<CommentItem[]>([])
   const [commentsLoading, setCommentsLoading] = useState(false)
-  const [commentsLoaded, setCommentsLoaded] = useState(false)
+  const [commentsTotal, setCommentsTotal] = useState(0)
+  const [commentsPage, setCommentsPage] = useState(1)
+  const [commentsHasMore, setCommentsHasMore] = useState(true)
+  const [commentsLoadingMore, setCommentsLoadingMore] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [savingComment, setSavingComment] = useState(false)
+  const commentsEndRef = useRef<HTMLDivElement | null>(null)
+  const commentsContainerRef = useRef<HTMLDivElement | null>(null)
+  const commentsRequestIdRef = useRef(0)
+  const relatedDocsRequestIdRef = useRef(0)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [previewMimeType, setPreviewMimeType] = useState<string | null>(null)
   const [previewKind, setPreviewKind] = useState<DocumentPreviewKind | null>(
@@ -351,8 +424,131 @@ export function DocumentDetailsView({
   const signingResolvedForRef = useRef('')
   const [relatedDocs, setRelatedDocs] = useState<RelatedDoc[]>([])
   const [relatedDocsLoading, setRelatedDocsLoading] = useState(false)
-  const [relatedDocsLoaded, setRelatedDocsLoaded] = useState(false)
   const [relatedDocsTotal, setRelatedDocsTotal] = useState(0)
+  const [removingRelatedKey, setRemovingRelatedKey] = useState<string | null>(
+    null,
+  )
+
+  const applyRelatedDocs = useCallback(
+    (response: { data?: Array<Parameters<typeof toRelatedDoc>[0]>; totalCount?: number }) => {
+      const rows = Array.isArray(response?.data) ? response.data : []
+      const mapped = rows
+        .map((row) => toRelatedDoc(row, t`Untitled`))
+        .filter((row): row is RelatedDoc => Boolean(row))
+      setRelatedDocs(mapped)
+      setRelatedDocsTotal(Number(response?.totalCount || mapped.length || 0))
+    },
+    [t],
+  )
+
+  const loadRelatedDocs = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (inviteToken || !repositoryId || !id) return
+      const requestId = ++relatedDocsRequestIdRef.current
+      if (!options?.silent) setRelatedDocsLoading(true)
+      try {
+        const response = await folderApi.getRelatedDocuments(repositoryId, id, {
+          page: 1,
+          pageSize: 50,
+        })
+        if (requestId !== relatedDocsRequestIdRef.current) return
+        applyRelatedDocs(response)
+      } catch {
+        // Keep existing related docs if the refresh fails.
+      } finally {
+        if (requestId === relatedDocsRequestIdRef.current && !options?.silent) {
+          setRelatedDocsLoading(false)
+        }
+      }
+    },
+    [applyRelatedDocs, id, inviteToken, repositoryId],
+  )
+
+  const loadComments = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (inviteToken || !repositoryId || !id) return
+      const requestId = ++commentsRequestIdRef.current
+      if (!options?.silent) setCommentsLoading(true)
+      try {
+        const response = await folderApi.getDocumentComments(repositoryId, id, {
+          page: 1,
+          pageSize: 50,
+        })
+        if (requestId !== commentsRequestIdRef.current) return
+        const fetchedComments = Array.isArray(response?.comments)
+          ? [...response.comments].reverse()
+          : []
+        setComments(fetchedComments)
+        setCommentsTotal(
+          Number(response?.totalCount || fetchedComments.length || 0),
+        )
+        setCommentsPage(1)
+        setCommentsHasMore(fetchedComments.length === 50)
+        if (!options?.silent) {
+          window.setTimeout(() => {
+            commentsEndRef.current?.scrollIntoView({ behavior: 'auto' })
+          }, 100)
+        }
+      } catch {
+        // Keep existing comments if the refresh fails.
+      } finally {
+        if (requestId === commentsRequestIdRef.current && !options?.silent) {
+          setCommentsLoading(false)
+        }
+      }
+    },
+    [id, inviteToken, repositoryId],
+  )
+
+  const removeRelatedDoc = useCallback(
+    async (item: RelatedDoc) => {
+      const openRepoId = String(repositoryId || '').trim()
+      const openItemId = String(id || '').trim()
+      const relatedRepositoryId = String(
+        item.relatedRepositoryId || item.repositoryId || '',
+      ).trim()
+      const relatedItemId = String(item.relatedItemId || item.id || '').trim()
+      if (!openRepoId || !openItemId || !relatedRepositoryId || !relatedItemId) {
+        showToast({
+          message: t`This related document cannot be removed.`,
+          variant: 'error',
+        })
+        return
+      }
+
+      const key = `${relatedRepositoryId}:${relatedItemId}`
+      setRemovingRelatedKey(key)
+      try {
+        await folderApi.removeRelatedDocument(openRepoId, openItemId, {
+          relatedItemId,
+          relatedRepositoryId,
+        })
+        setRelatedDocs((prev) =>
+          prev.filter(
+            (doc) =>
+              `${doc.relatedRepositoryId || doc.repositoryId}:${doc.relatedItemId || doc.id}` !==
+              key,
+          ),
+        )
+        setRelatedDocsTotal((prev) => Math.max(0, prev - 1))
+        showToast({
+          message: t`Removed from related`,
+          variant: 'success',
+        })
+      } catch (exception) {
+        showToast({
+          message: toUiErrorMessage(
+            exception instanceof Error ? exception.message : exception,
+            t`Unable to remove related document`,
+          ),
+          variant: 'error',
+        })
+      } finally {
+        setRemovingRelatedKey(null)
+      }
+    },
+    [id, repositoryId, t],
+  )
   const { session } = authUserStore.getState()
   const currentUserEmail = String(session?.email || '')
     .trim()
@@ -403,19 +599,19 @@ export function DocumentDetailsView({
 
       const pendingForUser = currentUserEmail
         ? activeRequests.find((request) => {
-            return (request.signers || []).some((signer) => {
-              const email = String(signer.email || '')
-                .trim()
-                .toLowerCase()
-              const signerStatus = String(signer.status || '').toUpperCase()
-              return (
-                email === currentUserEmail &&
-                !signerStatus.includes('SIGNED') &&
-                !signerStatus.includes('DECLINE') &&
-                !signerStatus.includes('CANCEL')
-              )
-            })
+          return (request.signers || []).some((signer) => {
+            const email = String(signer.email || '')
+              .trim()
+              .toLowerCase()
+            const signerStatus = String(signer.status || '').toUpperCase()
+            return (
+              email === currentUserEmail &&
+              !signerStatus.includes('SIGNED') &&
+              !signerStatus.includes('DECLINE') &&
+              !signerStatus.includes('CANCEL')
+            )
           })
+        })
         : undefined
 
       // Latest active request — so the owner also sees marked places after refresh.
@@ -458,10 +654,10 @@ export function DocumentDetailsView({
           fields = fromDto.length
             ? fromDto
             : loadSignRequestFields({
-                itemId: id,
-                repositoryId,
-                signRequestId: requestId,
-              })
+              itemId: id,
+              repositoryId,
+              signRequestId: requestId,
+            })
         }
       } else if (requestId && !fields.length) {
         const detail = await getSignRequest({ signRequestId: requestId })
@@ -526,9 +722,11 @@ export function DocumentDetailsView({
       setComments([])
       setRelatedDocs([])
       setTimelineLoaded(false)
-      setCommentsLoaded(false)
-      setRelatedDocsLoaded(false)
+      setCommentsLoading(false)
+      setCommentsTotal(0)
+      setRelatedDocsLoading(false)
       setRelatedDocsTotal(0)
+      setRemovingRelatedKey(null)
       setTab('timeline')
 
       // Invite links: assignee may not have repository access — use preview meta.
@@ -578,9 +776,9 @@ export function DocumentDetailsView({
           id,
           useShareToken
             ? {
-                shareToken: shareCtx.shareToken,
-                tenantId: shareCtx.sourceTenantId,
-              }
+              shareToken: shareCtx.shareToken,
+              tenantId: shareCtx.sourceTenantId,
+            }
             : undefined,
         )
         if (mounted) setData(response as WorkspaceDocumentDetail)
@@ -694,94 +892,43 @@ export function DocumentDetailsView({
   }, [tab, repositoryId, id, timelineLoaded])
 
   useEffect(() => {
-    let mounted = true
+    if (inviteToken || !repositoryId || !id) return
+    void loadComments({ silent: true })
+    void loadRelatedDocs({ silent: true })
+  }, [id, inviteToken, loadComments, loadRelatedDocs, repositoryId])
 
-    const loadComments = async () => {
-      if (inviteToken) return
-      if (tab !== 'comments' || !repositoryId || !id || commentsLoaded) return
-      setCommentsLoading(true)
-
+  const handleCommentsScroll = async (e: any) => {
+    const target = e.target as HTMLDivElement
+    if (target.scrollTop === 0 && commentsHasMore && !commentsLoadingMore) {
+      setCommentsLoadingMore(true)
+      const previousScrollHeight = target.scrollHeight
       try {
+        const nextPage = commentsPage + 1
         const response = await folderApi.getDocumentComments(repositoryId, id, {
-          page: 1,
+          page: nextPage,
           pageSize: 50,
         })
-        if (mounted) {
-          setComments(
-            Array.isArray(response?.comments) ? response.comments : [],
-          )
-          setCommentsLoaded(true)
+        const fetchedComments = Array.isArray(response?.comments) ? response.comments : []
+        if (fetchedComments.length > 0) {
+          setComments((prev) => [...fetchedComments.reverse(), ...prev])
+          setCommentsPage(nextPage)
+          setCommentsHasMore(fetchedComments.length === 50)
+
+          setTimeout(() => {
+            if (commentsContainerRef.current) {
+              commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight - previousScrollHeight
+            }
+          }, 0)
+        } else {
+          setCommentsHasMore(false)
         }
-      } catch {
-        if (mounted) {
-          setComments([])
-          setCommentsLoaded(true)
-        }
+      } catch (error) {
+        console.error('Failed to load more comments:', error)
       } finally {
-        if (mounted) setCommentsLoading(false)
+        setCommentsLoadingMore(false)
       }
     }
-
-    loadComments()
-    return () => {
-      mounted = false
-    }
-  }, [tab, repositoryId, id, commentsLoaded])
-
-  useEffect(() => {
-    let mounted = true
-
-    const loadRelatedDocs = async () => {
-      if (inviteToken) return
-      if (tab !== 'relatedDocs' || !repositoryId || !id || relatedDocsLoaded)
-        return
-      setRelatedDocsLoading(true)
-
-      try {
-        const response = await folderApi.getRelatedDocuments(repositoryId, id, {
-          page: 1,
-          pageSize: 50,
-        })
-        if (!mounted) return
-        const rows = Array.isArray(response?.data) ? response.data : []
-        setRelatedDocs(
-          rows
-            .filter((row) => row?.id && row?.repositoryId)
-            .map((row) => ({
-              createdAtUtc: row.createdAtUtc,
-              documentType: row.documentType,
-              fileName: String(row.fileName || t`Untitled`),
-              fileSize: row.fileSize,
-              fileType: row.fileType,
-              id: String(row.id),
-              matchCount: row.matchCount,
-              matchedFields: Array.isArray(row.matchedFields)
-                ? row.matchedFields
-                : [],
-              matchScore: row.matchScore,
-              repositoryId: String(row.repositoryId),
-              repositoryName: row.repositoryName,
-              supplier: row.supplier,
-            })),
-        )
-        setRelatedDocsTotal(Number(response?.totalCount || rows.length || 0))
-        setRelatedDocsLoaded(true)
-      } catch {
-        if (mounted) {
-          setRelatedDocs([])
-          setRelatedDocsTotal(0)
-          setRelatedDocsLoaded(true)
-        }
-      } finally {
-        if (mounted) setRelatedDocsLoading(false)
-      }
-    }
-
-    void loadRelatedDocs()
-    return () => {
-      mounted = false
-    }
-  }, [tab, repositoryId, id, relatedDocsLoaded, inviteToken, t])
+  }
 
   useEffect(() => {
     const requestId = ++previewRequestIdRef.current
@@ -965,8 +1112,8 @@ export function DocumentDetailsView({
         body: commentText.trim(),
       })
       setCommentText('')
-      setCommentsLoaded(false)
-      setTab('comments')
+      setTimelineLoaded(false)
+      await loadComments({ silent: true })
     } finally {
       setSavingComment(false)
     }
@@ -1294,7 +1441,7 @@ export function DocumentDetailsView({
           label: t`Timeline`,
         },
         {
-          count: comments.length,
+          count: commentsTotal || comments.length,
           icon: 'messageSquare',
           key: 'comments',
           label: t`Comments`,
@@ -1306,7 +1453,14 @@ export function DocumentDetailsView({
           label: t`Related Docs`,
         },
       ] as const,
-    [comments.length, relatedDocs.length, relatedDocsTotal, t, timeline.length],
+    [
+      comments.length,
+      commentsTotal,
+      relatedDocs.length,
+      relatedDocsTotal,
+      t,
+      timeline.length,
+    ],
   )
 
   if (loading)
@@ -1405,6 +1559,7 @@ export function DocumentDetailsView({
               setAssignedFields([])
               setActiveSignRequestId('')
               setPreviewRefreshKey((value) => value + 1)
+              setTimelineLoaded(false)
               onSigningComplete?.()
             }
 
@@ -1582,20 +1737,85 @@ export function DocumentDetailsView({
       ) : null}
 
       <div className='no-print relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary px-5'>
-        {forceSigning || !onBack ? (
-          <div className='h-8 w-[72px]' aria-hidden />
-        ) : (
-          <Button
-            className='h-8 border-transparent px-3 text-[13px] shadow-none'
-            onClick={onBack}
-          >
-            <ArrowLeft size={12} /> {t`Back`}
-          </Button>
-        )}
+        <div className='flex items-center gap-3 min-w-0 flex-1 mr-4'>
+          {forceSigning || !onBack ? (
+            <div className='h-8 w-[72px] shrink-0' aria-hidden />
+          ) : (
+            <Button
+              className='h-8 border-transparent px-3 text-[13px] shadow-none shrink-0'
+              onClick={onBack}
+            >
+              <ArrowLeft size={12} /> {t`Back`}
+            </Button>
+          )}
 
-        <div className='flex items-center gap-1.5'>
+          {data?.fileName && (
+            <Tooltip
+              content={data.fileName}
+              position='bottom'
+              width={240}
+            >
+              <div className='flex items-center gap-2 min-w-0 select-none'>
+                <Icon
+                  className='size-5 shrink-0 text-gray-10'
+                  name={getFileIcon(data.fileName)}
+                />
+                <span className='truncate text-[14px] font-semibold text-gray-12 max-w-[200px] sm:max-w-[300px] md:max-w-[400px]'>
+                  {data.fileName}
+                </span>
+              </div>
+            </Tooltip>
+          )}
+        </div>
+
+        <div className='flex items-center gap-1.5 shrink-0'>
           {!compactActions ? (
             <>
+              {isEditableDocType ? (
+                <Tooltip content={t`Edit file`} position='bottom'>
+                  <button
+                    aria-label={t`Edit file`}
+                    className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                    disabled={
+                      !previewBlobRef.current ||
+                      isPreviewLoading ||
+                      isSigning
+                    }
+                    type='button'
+                    onClick={() => setIsEditingDoc(true)}
+                  >
+                    <DynamicIcon className='h-4 w-4' name='edit' />
+                  </button>
+                </Tooltip>
+              ) : null}
+
+              <Tooltip content={t`Print file`} position='bottom'>
+                <button
+                  aria-label={t`Print file`}
+                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={!previewUrl || isPreviewLoading}
+                  type='button'
+                  onClick={handlePrint}
+                >
+                  <DynamicIcon className='h-4 w-4' name='printer' />
+                </button>
+              </Tooltip>
+
+              <Tooltip
+                content={isDownloading ? t`Downloading...` : t`Download file`}
+                position='bottom'
+              >
+                <button
+                  aria-label={t`Download file`}
+                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                  disabled={isDownloading || isPreviewLoading}
+                  type='button'
+                  onClick={handleDownload}
+                >
+                  <DynamicIcon className='h-4 w-4' name='download' />
+                </button>
+              </Tooltip>
+
               <button
                 aria-label={t`AI Summary`}
                 className='inline-flex h-8 items-center justify-center gap-2 rounded-lg border border-gray-3 bg-surface px-3.5 text-[13px] font-semibold text-gray-11 transition-all hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13 hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
@@ -1618,98 +1838,98 @@ export function DocumentDetailsView({
                     if (open && autoOpenShare) onShareOpened?.()
                   }}
                   onShare={async (shares, message, meta) => {
-                      if (!id || !repositoryId) {
-                        showToast({
-                          message: t`Missing file context for share`,
-                          variant: 'error',
-                        })
-                        return false
-                      }
-                      try {
-                        const viewShares = shares.filter(
-                          (share) =>
-                            share.permission !== 'Sign' && share.action !== 2,
-                        )
-                        const signShares = shares.filter(
-                          (share) =>
-                            share.permission === 'Sign' || share.action === 2,
-                        )
+                    if (!id || !repositoryId) {
+                      showToast({
+                        message: t`Missing file context for share`,
+                        variant: 'error',
+                      })
+                      return false
+                    }
+                    try {
+                      const viewShares = shares.filter(
+                        (share) =>
+                          share.permission !== 'Sign' && share.action !== 2,
+                      )
+                      const signShares = shares.filter(
+                        (share) =>
+                          share.permission === 'Sign' || share.action === 2,
+                      )
 
-                        // View → share API only
-                        for (const share of viewShares) {
-                          await folderApi.inviteToShare({
-                            email: share.email,
-                            itemId: id,
-                            message:
-                              message ||
-                              (data?.fileName
-                                ? t`Please review this file: ${data.fileName}`
-                                : t`Please review this file`),
-                            permission: 'Can View',
-                            repositoryId,
-                          })
-                        }
-
-                        // Sign → sign API only (no share invite)
-                        if (signShares.length) {
-                          const created = await createSignRequest({
-                            itemId: id,
-                            message:
-                              message ||
-                              t`Please sign this document. You can place your signature anywhere.`,
-                            repositoryId,
-                            signers: signShares.map((share, index) => ({
-                              email: share.email.trim(),
-                              name:
-                                share.email.split('@')[0] || share.email.trim(),
-                              order: index + 1,
-                            })),
-                            signingMode:
-                              meta?.signingMode ||
-                              (signShares.length === 1
-                                ? 'single'
-                                : 'multiple'),
-                          })
-                          if (created.error || !created.data?.signRequestId) {
-                            throw new Error(
-                              String(
-                                created.error ||
-                                  'Unable to create sign request',
-                              ),
-                            )
-                          }
-                        }
-
-                        setSharedEmails((prev) => {
-                          const next = new Set(prev)
-                          shares.forEach((share) =>
-                            next.add(share.email.trim().toLowerCase()),
-                          )
-                          return [...next]
-                        })
-                        setSharedRoles((prev) => {
-                          const next = { ...prev }
-                          shares.forEach((share) => {
-                            const email = share.email.trim().toLowerCase()
-                            next[email] =
-                              share.permission === 'Sign' || share.action === 2
-                                ? 'Sign'
-                                : 'View'
-                          })
-                          return next
-                        })
-                        return true
-                      } catch (error) {
-                        showToast({
+                      // View → share API only
+                      for (const share of viewShares) {
+                        await folderApi.inviteToShare({
+                          email: share.email,
+                          itemId: id,
                           message:
-                            error instanceof Error
-                              ? error.message
-                              : t`Failed to invite`,
-                          variant: 'error',
+                            message ||
+                            (data?.fileName
+                              ? t`Please review this file: ${data.fileName}`
+                              : t`Please review this file`),
+                          permission: 'Can View',
+                          repositoryId,
                         })
-                        return false
                       }
-                    }}
+
+                      // Sign → sign API only (no share invite)
+                      if (signShares.length) {
+                        const created = await createSignRequest({
+                          itemId: id,
+                          message:
+                            message ||
+                            t`Please sign this document. You can place your signature anywhere.`,
+                          repositoryId,
+                          signers: signShares.map((share, index) => ({
+                            email: share.email.trim(),
+                            name:
+                              share.email.split('@')[0] || share.email.trim(),
+                            order: index + 1,
+                          })),
+                          signingMode:
+                            meta?.signingMode ||
+                            (signShares.length === 1
+                              ? 'single'
+                              : 'multiple'),
+                        })
+                        if (created.error || !created.data?.signRequestId) {
+                          throw new Error(
+                            String(
+                              created.error ||
+                              'Unable to create sign request',
+                            ),
+                          )
+                        }
+                      }
+
+                      setSharedEmails((prev) => {
+                        const next = new Set(prev)
+                        shares.forEach((share) =>
+                          next.add(share.email.trim().toLowerCase()),
+                        )
+                        return [...next]
+                      })
+                      setSharedRoles((prev) => {
+                        const next = { ...prev }
+                        shares.forEach((share) => {
+                          const email = share.email.trim().toLowerCase()
+                          next[email] =
+                            share.permission === 'Sign' || share.action === 2
+                              ? 'Sign'
+                              : 'View'
+                        })
+                        return next
+                      })
+                      return true
+                    } catch (error) {
+                      showToast({
+                        message:
+                          error instanceof Error
+                            ? error.message
+                            : t`Failed to invite`,
+                        variant: 'error',
+                      })
+                      return false
+                    }
+                  }}
                 />
               </div>
             </>
@@ -1717,13 +1937,12 @@ export function DocumentDetailsView({
           {canSign ? (
             <button
               ref={signTriggerRef}
-              aria-label={t`Sign`}
+              aria-label={t`My Sign`}
               aria-expanded={isSigning}
-              className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
-                isSigning
-                  ? 'border-primary-6 bg-primary-1 text-primary-9'
-                  : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
-              }`}
+              className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${isSigning
+                ? 'border-primary-6 bg-primary-1 text-primary-9'
+                : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
+                }`}
               disabled={!previewUrl || isPreviewLoading}
               type='button'
               onClick={() => {
@@ -1746,7 +1965,7 @@ export function DocumentDetailsView({
               <PenLine
                 className={`h-4 w-4 ${isSigning ? 'text-primary-9' : 'text-violet-9'}`}
               />
-              <span>{t`Sign`}</span>
+              <span>{t`My Sign`}</span>
             </button>
           ) : null}
           {isSigning && (signingState.hasPlacements || signingState.canSave) ? (
@@ -1782,11 +2001,10 @@ export function DocumentDetailsView({
 
       <div className='ez-detail-scroll min-h-0 flex-1 overflow-y-auto p-5'>
         <div
-          className={`grid gap-5 ${
-            forceSigning && infoCards.length === 0
-              ? 'grid-cols-1'
-              : 'grid-cols-[minmax(0,1fr)_400px]'
-          }`}
+          className={`grid gap-5 ${forceSigning && infoCards.length === 0
+            ? 'grid-cols-1'
+            : 'grid-cols-[minmax(0,1fr)_400px]'
+            }`}
         >
           <main className='min-w-0 space-y-4'>
             {data.alert ? (
@@ -1813,66 +2031,7 @@ export function DocumentDetailsView({
               </div>
             ) : null}
 
-            <Card className='overflow-hidden'>
-              <div className='flex items-center justify-between gap-3 border-b border-gray-3 px-5 py-4'>
-                <div className='flex min-w-0 items-center gap-3'>
-                  <DynamicIcon
-                    className='h-5 w-5 shrink-0 text-red-8'
-                    name='fileText'
-                  />
-                  <b className='truncate text-[16px] font-semibold text-gray-13'>
-                    {data.fileName}
-                  </b>
-                </div>
-
-                <div className='flex shrink-0 items-center gap-1.5'>
-                  {isEditableDocType ? (
-                    <Tooltip content={t`Edit`} position='top'>
-                      <button
-                        aria-label={t`Edit`}
-                        className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                        disabled={
-                          !previewBlobRef.current ||
-                          isPreviewLoading ||
-                          isSigning
-                        }
-                        type='button'
-                        onClick={() => setIsEditingDoc(true)}
-                      >
-                        <DynamicIcon className='h-4 w-4' name='edit' />
-                      </button>
-                    </Tooltip>
-                  ) : null}
-
-                  <Tooltip content={t`Print`} position='top'>
-                    <button
-                      aria-label={t`Print`}
-                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                      disabled={!previewUrl || isPreviewLoading}
-                      type='button'
-                      onClick={handlePrint}
-                    >
-                      <DynamicIcon className='h-4 w-4' name='printer' />
-                    </button>
-                  </Tooltip>
-
-                  <Tooltip
-                    content={isDownloading ? t`Downloading...` : t`Download`}
-                    position='top'
-                  >
-                    <button
-                      aria-label={t`Download`}
-                      className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-4 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                      disabled={isDownloading || isPreviewLoading}
-                      type='button'
-                      onClick={handleDownload}
-                    >
-                      <DynamicIcon className='h-4 w-4' name='download' />
-                    </button>
-                  </Tooltip>
-                </div>
-              </div>
-
+            <Card className='overflow-hidden p-0'>
               {downloadError ? (
                 <div className='border-b border-red-4 bg-red-1 px-5 py-2 text-[12px] font-medium text-red-10'>
                   {downloadError}
@@ -1880,11 +2039,10 @@ export function DocumentDetailsView({
               ) : null}
 
               <div
-                className={`ez-detail-scroll overflow-hidden bg-gray-1 ${
-                  isSigning || assignedFields.length > 0
-                    ? 'h-[min(72vh,820px)]'
-                    : 'h-[560px]'
-                }`}
+                className={`ez-detail-scroll overflow-hidden bg-gray-1 ${isSigning || assignedFields.length > 0
+                  ? 'h-[min(72vh,820px)]'
+                  : 'h-[560px]'
+                  }`}
               >
                 {hasValidFileUrl || isPreviewLoading ? (
                   <div
@@ -1932,9 +2090,8 @@ export function DocumentDetailsView({
                       <tr className='text-left text-gray-10'>
                         {lineItemColumns.map((key, index) => (
                           <th
-                            className={`sticky top-0 z-30 whitespace-nowrap border-b border-gray-3 px-3 py-3 text-left text-[12px] font-semibold tracking-wide text-gray-10 ${lineItemStickyClass(index, 'th')} ${
-                              index < 2 ? 'z-40' : ''
-                            }`}
+                            className={`sticky top-0 z-30 whitespace-nowrap border-b border-gray-3 px-3 py-3 text-left text-[12px] font-semibold tracking-wide text-gray-10 ${lineItemStickyClass(index, 'th')} ${index < 2 ? 'z-40' : ''
+                              }`}
                             key={key}
                           >
                             {formatLineItemHeader(key)}
@@ -1968,297 +2125,496 @@ export function DocumentDetailsView({
 
             {!forceSigning ? (
               <>
-            <div className='flex w-fit gap-1 rounded-xl bg-gray-2 p-1'>
-              {tabs.map((item) => (
-                <button
-                  className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-all active:scale-95 ${tab === item.key ? 'bg-surface-primary text-gray-13 shadow-sm ring-1 ring-gray-3' : 'text-gray-10 hover:bg-gray-4 hover:text-gray-12'}`}
-                  key={item.key}
-                  onClick={() => setTab(item.key)}
-                >
-                  <DynamicIcon className='h-4 w-4' name={item.icon} />
-                  {item.label} {item.count ? `(${item.count})` : ''}
-                </button>
-              ))}
-            </div>
-
-            <Card className='flex max-h-[min(52vh,480px)] min-h-[320px] flex-col overflow-hidden p-0'>
-              {tab === 'timeline' ? (
-                <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
-              {timelineLoading ? (
-                  <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                    {t`Loading timeline...`}
-                  </div>
-                ) : timeline.length ? (
-                  <div className='space-y-4'>
-                    {timeline.map((item, index) => (
-                      <div
-                        className='flex gap-3'
-                        key={`${item.id || item.title}-${index}`}
-                      >
-                        <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
-                          <DynamicIcon
-                            className='h-4 w-4'
-                            name={eventIconMap[item.eventType || ''] || 'clock'}
-                          />
-                        </span>
-                        <div>
-                          <b className='text-[13px] font-semibold text-gray-13'>
-                            {item.title}
-                          </b>
-                          <p className='mt-0.5 text-[12px] text-gray-10'>
-                            {[
-                              item.actorName || item.actorType,
-                              formatDateTime(item.createdAtUtc),
-                            ]
-                              .filter(Boolean)
-                              .join(' · ')}
-                          </p>
-                          {item.description ? (
-                            <p className='mt-1 text-[13px] text-gray-10'>
-                              {item.description}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <NoDataState
-                    description={t`No activity timeline is available for this document.`}
-                    icon='clock'
-                    title={t`No timeline found`}
-                  />
-                )}
+                <div className='flex w-fit gap-1 rounded-xl bg-gray-2 p-1'>
+                  {tabs.map((item) => (
+                    <button
+                      type='button'
+                      className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-medium transition-all active:scale-95 ${tab === item.key ? 'bg-surface-primary text-gray-13 shadow-sm ring-1 ring-gray-3' : 'text-gray-10 hover:bg-gray-4 hover:text-gray-12'}`}
+                      key={item.key}
+                      onClick={() => {
+                        setTab(item.key)
+                        if (item.key === 'comments') {
+                          void loadComments({ silent: false })
+                        }
+                        if (item.key === 'relatedDocs') {
+                          void loadRelatedDocs({ silent: false })
+                        }
+                      }}
+                    >
+                      <DynamicIcon className='h-4 w-4' name={item.icon} />
+                      {item.label} {item.count ? `(${item.count})` : ''}
+                    </button>
+                  ))}
                 </div>
-              ) : null}
 
-              {tab === 'comments' ? (
-                <div className='flex min-h-0 flex-1 flex-col'>
-                  <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
-                    {commentsLoading ? (
-                      <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                        {t`Loading comments...`}
-                      </div>
-                    ) : comments.length ? (
-                      <div className='space-y-4'>
-                        {comments.map((item, index) => {
-                          const author =
-                            item.authorName ||
-                            item.author ||
-                            item.actorName ||
-                            t`User`
-                          const message =
-                            item.body ||
-                            item.message ||
-                            item.comment ||
-                            item.text ||
-                            ''
-                          const isMine = item.authorUserId === currentUserEmail
+                <Card className='flex max-h-[min(52vh,480px)] min-h-[320px] flex-col overflow-hidden p-0'>
+                  {tab === 'timeline' ? (
+                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
+                      {timelineLoading ? (
+                        <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
+                          {t`Loading timeline...`}
+                        </div>
+                      ) : timeline.length ? (
+                        <div className='space-y-0'>
+                          {timeline.map((item, index) => {
+                            const isLast = index === timeline.length - 1
+                            const prevItem = index > 0 ? timeline[index - 1] : null
+                            const isSameDate =
+                              prevItem &&
+                              formatDateOnly(item.createdAtUtc) ===
+                                formatDateOnly(prevItem.createdAtUtc)
+                            const displayTime = isSameDate
+                              ? formatTimeOnly(item.createdAtUtc)
+                              : formatDateTime(item.createdAtUtc)
 
-                          return (
-                            <div
-                              className={`flex gap-3 ${isMine ? 'justify-end' : 'justify-start'}`}
-                              key={`${item.id || author}-${index}`}
-                            >
-                              {!isMine && (
-                                <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-[12px] font-semibold text-blue-11'>
-                                  {author.charAt(0).toUpperCase()}
-                                </span>
-                              )}
-
+                            return (
                               <div
-                                className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${
-                                  isMine
-                                    ? 'bg-violet-9 text-white'
-                                    : 'bg-gray-2 text-gray-13'
-                                }`}
+                                className='relative flex gap-3'
+                                key={`${item.id || item.title}-${index}`}
                               >
-                                <div className='flex items-center gap-3'>
-                                  <b className='text-[13px] font-semibold'>
-                                    {isMine ? t`You` : author}
-                                  </b>
-
-                                  <span
-                                    className={`text-[11px] ${isMine ? 'text-violet-1' : 'text-gray-10'}`}
-                                  >
-                                    {formatDateTime(
-                                      item.createdAtUtc || item.date,
-                                    )}
+                                {/* Icon + vertical line column */}
+                                <div className='flex flex-col items-center'>
+                                  <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
+                                    <DynamicIcon
+                                      className='h-4 w-4'
+                                      name={eventIconMap[item.eventType || ''] || 'clock'}
+                                    />
                                   </span>
+                                  {!isLast && (
+                                    <div className='w-px flex-1 bg-gray-5' />
+                                  )}
                                 </div>
 
-                                <p className='mt-1 text-[13px] leading-5 whitespace-pre-wrap'>
-                                  {message}
-                                </p>
+                                {/* Content */}
+                                <div className='min-w-0 pb-5'>
+                                  <p className='text-[13px] text-gray-11'>
+                                    <b className='font-semibold text-gray-12'>
+                                      {item.title}
+                                    </b>
+                                    {item.description ? (<span className='text-gray-10'>{': '}<b className='font-semibold'>{'"'}</b><i className='not-italic italic'>{item.description}</i><b className='font-semibold'>{'"'}</b></span>) : null}
+                                  </p>
+                                  <p className='mt-0.5 text-[12px] text-gray-9'>
+                                    {[
+                                      item.actorName || item.actorType,
+                                      displayTime,
+                                    ]
+                                      .filter(Boolean)
+                                      .join(' · ')}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <NoDataState
-                        description={t`No comments are available for this document. Add the first comment to start collaboration.`}
-                        icon='messageSquare'
-                        title={t`No comments found`}
-                      />
-                    )}
-                  </div>
-
-                  <div className='shrink-0 border-t border-gray-3 bg-surface-primary p-4'>
-                    <div className='flex items-center gap-3'>
-                      <textarea
-                        className='h-12 flex-1 resize-none rounded-lg border border-gray-3 bg-white px-4 py-3 text-[13px] text-gray-13 outline-none focus:border-blue-7'
-                        placeholder={t`Add a comment...`}
-                        rows={1}
-                        value={commentText}
-                        onChange={(event) => setCommentText(event.target.value)}
-                      />
-
-                      <PrimaryButton
-                        className='h-12 shrink-0 px-6 text-[13px]'
-                        disabled={!commentText.trim() || savingComment}
-                        onClick={saveComment}
-                      >
-                        {savingComment ? t`Posting...` : t`Post`}
-                      </PrimaryButton>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {tab === 'relatedDocs' ? (
-                <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
-                {relatedDocsLoading ? (
-                  <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
-                    {t`Loading related documents...`}
-                  </div>
-                ) : relatedDocs.length ? (
-                  <div className='space-y-2'>
-                    {relatedDocs.map((item) => {
-                      const sizeLabel = formatRelatedFileSize(item.fileSize)
-                      const dateLabel = item.createdAtUtc
-                        ? formatUtcToLocalDate(item.createdAtUtc, '')
-                        : ''
-                      const secondary = [
-                        dateLabel,
-                        item.repositoryName || item.supplier || null,
-                      ]
-                        .filter(Boolean)
-                        .join(' • ')
-                      const ext = String(
-                        item.fileType ||
-                          item.fileName.split('.').pop() ||
-                          'pdf',
-                      )
-                        .replace(/^\./, '')
-                        .toLowerCase()
-
-                      return (
-                        <div
-                          key={`${item.repositoryId}:${item.id}`}
-                          className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface-primary px-3 py-2.5 transition-colors hover:border-gray-5 hover:bg-gray-1'
-                        >
-                          <button
-                            type='button'
-                            className='flex min-w-0 flex-1 items-center gap-3 text-left'
-                            onClick={() => {
-                              onOpenRelatedDocument?.({
-                                id: item.id,
-                                repositoryId: item.repositoryId,
-                              })
-                            }}
-                          >
-                            <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-2'>
-                              <DynamicIcon
-                                className='h-4 w-4 text-red-9'
-                                name='fileText'
-                              />
-                            </span>
-                            <span className='min-w-0 flex-1'>
-                              <span className='flex min-w-0 flex-wrap items-baseline gap-x-1.5'>
-                                <b className='truncate text-[13px] font-semibold text-gray-13'>
-                                  {item.fileName}
-                                </b>
-                                {sizeLabel ? (
-                                  <span className='shrink-0 text-[12px] text-gray-9'>
-                                    ({sizeLabel})
-                                  </span>
-                                ) : ext ? (
-                                  <span className='shrink-0 text-[12px] uppercase text-gray-9'>
-                                    {ext}
-                                  </span>
-                                ) : null}
-                              </span>
-                              {secondary ? (
-                                <span className='mt-0.5 block truncate text-[12px] text-gray-9'>
-                                  {secondary}
-                                </span>
-                              ) : null}
-                            </span>
-                          </button>
-
-                          <Tooltip content={t`Download`} position='top'>
-                            <button
-                              type='button'
-                              aria-label={t`Download`}
-                              className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-                              onClick={async (event) => {
-                                event.stopPropagation()
-                                try {
-                                  const response = await fileApi.viewBinaryV6(
-                                    item.repositoryId,
-                                    item.id,
-                                    'attachment',
-                                  )
-                                  if (!(response?.data instanceof Blob)) {
-                                    throw new Error(
-                                      toUiErrorMessage(
-                                        response?.error,
-                                        t`Unable to download file`,
-                                      ),
-                                    )
-                                  }
-                                  const downloadUrl = URL.createObjectURL(
-                                    response.data,
-                                  )
-                                  const link = document.createElement('a')
-                                  link.href = downloadUrl
-                                  link.download = item.fileName || 'document'
-                                  document.body.appendChild(link)
-                                  link.click()
-                                  link.remove()
-                                  URL.revokeObjectURL(downloadUrl)
-                                } catch (exception: any) {
-                                  showToast({
-                                    message: toUiErrorMessage(
-                                      exception?.message || exception,
-                                      t`Unable to download file`,
-                                    ),
-                                    variant: 'error',
-                                  })
-                                }
-                              }}
-                            >
-                              <DynamicIcon
-                                className='h-4 w-4'
-                                name='download'
-                              />
-                            </button>
-                          </Tooltip>
+                            )
+                          })}
                         </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <NoDataState
-                    description={t`No related documents are linked with this file yet.`}
-                    icon='paperclip'
-                    title={t`Related documents not found`}
-                  />
-                )}
-                </div>
-              ) : null}
-            </Card>
+                      ) : (
+                        <NoDataState
+                          description={t`No activity timeline is available for this document.`}
+                          icon='clock'
+                          title={t`No timeline found`}
+                        />
+                      )}
+                    </div>
+                  ) : null}
+
+                  {tab === 'comments' ? (
+                    <div className='flex min-h-0 flex-1 flex-col'>
+                      <div
+                        className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'
+                        ref={commentsContainerRef}
+                        onScroll={handleCommentsScroll}
+                      >
+                        {commentsLoadingMore ? (
+                          <div className='py-4 text-center text-[12px] font-semibold text-gray-10'>
+                            {t`Loading older comments...`}
+                          </div>
+                        ) : null}
+                        {commentsLoading && comments.length === 0 ? (
+                          <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
+                            {t`Loading comments...`}
+                          </div>
+                        ) : (
+                          <>
+                            {commentsLoading && comments.length > 0 ? (
+                              <div className='py-2 text-center text-[12px] font-semibold text-gray-10'>
+                                {t`Loading comments...`}
+                              </div>
+                            ) : null}
+                            {comments.length ? (
+                          <div className='flex flex-col gap-2'>
+                            {(() => {
+                              let lastDateHeader = ''
+                              return comments.map((item, index) => {
+                                const author =
+                                  item.authorName ||
+                                  item.author ||
+                                  item.actorName ||
+                                  t`User`
+                                const message =
+                                  item.body ||
+                                  item.message ||
+                                  item.comment ||
+                                  item.text ||
+                                  ''
+                                const isMine = item.authorEmail === currentUserEmail || item.authorName === currentUserEmail || item.authorUserId === currentUserEmail
+
+                                let dateHeader = ''
+                                const dateStr = item.createdAtUtc || item.date
+                                let messageTime = ''
+
+                                if (dateStr) {
+                                  const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z')
+                                  if (!isNaN(d.getTime())) {
+                                    messageTime = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
+                                    const today = new Date()
+                                    const yesterday = new Date(today)
+                                    yesterday.setDate(yesterday.getDate() - 1)
+
+                                    const isSameDay = (d1: Date, d2: Date) =>
+                                      d1.getFullYear() === d2.getFullYear() &&
+                                      d1.getMonth() === d2.getMonth() &&
+                                      d1.getDate() === d2.getDate()
+
+                                    if (isSameDay(d, today)) dateHeader = t`Today`
+                                    else if (isSameDay(d, yesterday)) dateHeader = t`Yesterday`
+                                    else {
+                                      const diffTime = Math.abs(today.getTime() - d.getTime())
+                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                                      if (diffDays <= 7) {
+                                        dateHeader = d.toLocaleDateString(undefined, { weekday: 'long' })
+                                      } else {
+                                        dateHeader = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                                      }
+                                    }
+                                  }
+                                }
+
+                                const showDateHeader = dateHeader && dateHeader !== lastDateHeader
+                                if (showDateHeader) {
+                                  lastDateHeader = dateHeader
+                                }
+
+                                return (
+                                  <div key={`${item.id || author}-${index}`}>
+                                    {showDateHeader && (
+                                      <div className='my-4 flex justify-center'>
+                                        <span className='px-3 py-1 text-[12px] font-medium text-gray-10'>
+                                          {dateHeader}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div
+                                      className={`mb-1.5 flex gap-3 ${isMine ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                      {!isMine && (
+                                        <div className='flex flex-col justify-end pb-1'>
+                                          <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-[12px] font-semibold text-blue-11'>
+                                            {author.charAt(0).toUpperCase()}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      <div
+                                        className={`relative flex min-w-[100px] max-w-[75%] flex-col px-3 py-2 shadow-sm ${isMine
+                                          ? 'rounded-2xl rounded-br-none border border-gray-3 bg-surface-primary text-gray-13'
+                                          : 'rounded-2xl rounded-bl-none bg-gray-3 text-gray-13'
+                                          }`}
+                                      >
+                                        <p className='break-words whitespace-pre-wrap pb-1 text-[13px] leading-5'>
+                                          {message}
+                                        </p>
+
+                                        <div className={`flex items-end gap-2 mt-0.5 ${!isMine ? 'justify-between' : 'justify-end'}`}>
+                                          {!isMine && (
+                                            <span className='truncate text-[10px] text-gray-9 max-w-[120px]' title={author}>
+                                              {author}
+                                            </span>
+                                          )}
+
+                                          <span className='shrink-0 text-[10px] text-gray-9'>
+                                            {messageTime}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            })()}
+                            <div ref={commentsEndRef} />
+                          </div>
+                        ) : (
+                          <NoDataState
+                            description={t`No comments are available for this document. Add the first comment to start collaboration.`}
+                            icon='messageSquare'
+                            title={t`No comments found`}
+                          />
+                        )}
+                          </>
+                        )}
+                      </div>
+
+                      <div className='shrink-0 border-t border-[var(--gray-3)] bg-surface p-4'>
+                        <div className='flex items-center gap-3'>
+                          <textarea
+                            className='h-12 flex-1 resize-none rounded-xl border border-[var(--gray-4)] bg-surface px-4 py-3 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] outline-none transition-all focus:border-[var(--primary-6)] focus:ring-1 focus:ring-[var(--primary-4)]'
+                            placeholder={t`Add a comment...`}
+                            rows={1}
+                            value={commentText}
+                            onChange={(event) => setCommentText(event.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault()
+                                saveComment()
+                              }
+                            }}
+                          />
+
+                          <Buttons
+                            color='primary'
+                            icon='lucide:send'
+                            size='sm'
+                            variant='solid'
+                            className='px-3 py-3'
+                            onClick={saveComment}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {tab === 'relatedDocs' ? (
+                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-5'>
+                      <RelatedDocumentsFinder
+                        attachedIds={
+                          new Set(relatedDocs.map((d) => String(d.id)))
+                        }
+                        documentId={id}
+                        metadata={data}
+                        repositoryId={repositoryId}
+                        supplierName={data?.fileName}
+                        onLinkDocument={async (hit) => {
+                          const sourceRepositoryId = String(
+                            repositoryId || '',
+                          ).trim()
+                          const sourceItemId = String(id || '').trim()
+                          const linkedRepositoryId = String(
+                            hit.id?.repositoryId || repositoryId || '',
+                          ).trim()
+                          const linkedItemId = String(
+                            hit.id?.itemId || '',
+                          ).trim()
+                          if (
+                            !sourceRepositoryId ||
+                            !sourceItemId ||
+                            !linkedRepositoryId ||
+                            !linkedItemId
+                          ) {
+                            throw new Error(
+                              t`This result cannot be added to related documents.`,
+                            )
+                          }
+
+                          const saved = await folderApi.saveRelatedDocuments(
+                            sourceRepositoryId,
+                            sourceItemId,
+                            [
+                              {
+                                fileName: getSearchHitTitle(hit),
+                                itemId: linkedItemId,
+                                matchScore: (() => {
+                                  const pct = (hit as { pct?: number }).pct
+                                  return typeof pct === 'number' ? pct : 0
+                                })(),
+                                repositoryId: linkedRepositoryId,
+                                repositoryName:
+                                  hit.name && hit.name !== 'Main Repository'
+                                    ? hit.name
+                                    : '',
+                              },
+                            ],
+                          )
+
+                          if (Array.isArray(saved.data) && saved.data.length > 0) {
+                            applyRelatedDocs(saved)
+                            return
+                          }
+
+                          await loadRelatedDocs({ silent: true })
+                        }}
+                      />
+                      {relatedDocsLoading && relatedDocs.length === 0 ? (
+                        <div className='py-10 text-center text-[13px] font-semibold text-gray-10'>
+                          {t`Loading related documents...`}
+                        </div>
+                      ) : (
+                        <>
+                          {relatedDocsLoading && relatedDocs.length > 0 ? (
+                            <div className='py-2 text-center text-[12px] font-semibold text-gray-10'>
+                              {t`Loading related documents...`}
+                            </div>
+                          ) : null}
+                          {relatedDocs.length ? (
+                        <div className='space-y-2'>
+                          {relatedDocs.map((item) => {
+                            const sizeLabel = formatRelatedFileSize(item.fileSize)
+                            const dateLabel = item.createdAtUtc
+                              ? formatUtcToLocalDate(item.createdAtUtc, '')
+                              : ''
+                            const repoName =
+                              item.repositoryName && item.repositoryName !== 'Main Repository'
+                                ? item.repositoryName
+                                : 'Accounts Payable'
+                            const secondary = [
+                              dateLabel,
+                              repoName || item.supplier || null,
+                            ]
+                              .filter(Boolean)
+                              .join(' • ')
+                            const ext = String(
+                              item.fileType ||
+                              item.fileName.split('.').pop() ||
+                              'pdf',
+                            )
+                              .replace(/^\./, '')
+                              .toLowerCase()
+
+                            return (
+                              <div
+                                key={`${item.repositoryId}:${item.id}`}
+                                className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface-primary px-3 py-2.5 transition-colors hover:border-gray-5 hover:bg-gray-1'
+                              >
+                                <button
+                                  type='button'
+                                  className='flex min-w-0 flex-1 items-center gap-3 text-left'
+                                  onClick={() => {
+                                    onOpenRelatedDocument?.({
+                                      id: item.id,
+                                      repositoryId: item.repositoryId,
+                                    })
+                                  }}
+                                >
+                                  <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] border border-[var(--gray-3)]'>
+                                    <Icon
+                                      className='size-5 shrink-0'
+                                      name={getFileIcon(item.fileName)}
+                                    />
+                                  </span>
+                                  <span className='min-w-0 flex-1'>
+                                    <span className='flex min-w-0 flex-wrap items-baseline gap-x-1.5'>
+                                      <b className='truncate text-[13px] font-semibold text-gray-13'>
+                                        {item.fileName}
+                                      </b>
+                                      {sizeLabel ? (
+                                        <span className='shrink-0 text-[12px] text-gray-9'>
+                                          ({sizeLabel})
+                                        </span>
+                                      ) : ext ? (
+                                        <span className='shrink-0 text-[12px] uppercase text-gray-9'>
+                                          {ext}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    {secondary ? (
+                                      <span className='mt-0.5 block truncate text-[12px] text-gray-9'>
+                                        {secondary}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </button>
+
+                                <Tooltip content={t`Download`} position='top'>
+                                  <button
+                                    type='button'
+                                    aria-label={t`Download`}
+                                    className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+                                    onClick={async (event) => {
+                                      event.stopPropagation()
+                                      try {
+                                        const response = await fileApi.viewBinaryV6(
+                                          item.repositoryId,
+                                          item.id,
+                                          'attachment',
+                                        )
+                                        if (!(response?.data instanceof Blob)) {
+                                          throw new Error(
+                                            toUiErrorMessage(
+                                              response?.error,
+                                              t`Unable to download file`,
+                                            ),
+                                          )
+                                        }
+                                        const downloadUrl = URL.createObjectURL(
+                                          response.data,
+                                        )
+                                        const link = document.createElement('a')
+                                        link.href = downloadUrl
+                                        link.download = item.fileName || 'document'
+                                        document.body.appendChild(link)
+                                        link.click()
+                                        link.remove()
+                                        URL.revokeObjectURL(downloadUrl)
+                                      } catch (exception: any) {
+                                        showToast({
+                                          message: toUiErrorMessage(
+                                            exception?.message || exception,
+                                            t`Unable to download file`,
+                                          ),
+                                          variant: 'error',
+                                        })
+                                      }
+                                    }}
+                                  >
+                                    <DynamicIcon
+                                      className='h-4 w-4'
+                                      name='download'
+                                    />
+                                  </button>
+                                </Tooltip>
+                                <Tooltip content={t`Remove from related`} position='top'>
+                                  <button
+                                    type='button'
+                                    aria-label={t`Remove from related`}
+                                    disabled={
+                                      removingRelatedKey ===
+                                      `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}`
+                                    }
+                                    className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95 disabled:opacity-50'
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      void removeRelatedDoc(item)
+                                    }}
+                                  >
+                                    {removingRelatedKey ===
+                                    `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}` ? (
+                                      <DynamicIcon
+                                        className='h-4 w-4 animate-spin'
+                                        name='spinner'
+                                      />
+                                    ) : (
+                                      <DynamicIcon
+                                        className='h-4 w-4'
+                                        name='trash'
+                                      />
+                                    )}
+                                  </button>
+                                </Tooltip>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <NoDataState
+                          description={t`No related documents are linked with this file yet.`}
+                          icon='paperclip'
+                          title={t`Related documents not found`}
+                        />
+                      )}
+                        </>
+                      )}
+                    </div>
+                  ) : null}
+                </Card>
               </>
             ) : null}
           </main>
@@ -2286,9 +2642,8 @@ export function DocumentDetailsView({
                       return (
                         <button
                           type='button'
-                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${
-                            isActive ? 'bg-gray-2 ring-1 ring-primary-5/30 z-10' : 'hover:bg-gray-1'
-                          } ${hasPdfMatch ? '' : 'cursor-default'}`}
+                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${isActive ? 'bg-gray-2 ring-1 ring-primary-5/30 z-10' : 'hover:bg-gray-1'
+                            } ${hasPdfMatch ? '' : 'cursor-default'}`}
                           key={rowKey}
                           onClick={() => {
                             if (!hasPdfMatch) return
@@ -2311,20 +2666,14 @@ export function DocumentDetailsView({
 
                           {/* 2. Label */}
                           <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
-                            <span
-                              className='block truncate text-left group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words'
-                              title={row.label}
-                            >
+                            <span className='block truncate text-left hover:overflow-hidden hover:whitespace-normal hover:break-words'>
                               {row.label}
                             </span>
                           </div>
 
-                          {/* 3. Value (1 line truncated default, expands inline to next lines on hover) */}
-                          <div className='ml-auto max-w-[50%] min-w-0 shrink-0 text-right overflow-hidden group-hover:max-w-[65%] group-hover:overflow-visible transition-all pt-0.5'>
-                            <b
-                              className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words group-hover:text-left'
-                              title={displayVal}
-                            >
+                          {/* 3. Value — truncated on one line; hover wraps in this column only */}
+                          <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right'>
+                            <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:whitespace-normal hover:break-words'>
                               {displayVal}
                             </b>
                           </div>

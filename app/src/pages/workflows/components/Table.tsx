@@ -65,7 +65,7 @@ const Table = ({ onCreate }: TableProps) => {
         renderCell: (row) => (
           <FormStatusBadge
             status={
-              String(row.flowstatus || row.flowStatus) as 'Draft' | 'Published'
+              (row.flowstatus ?? row.flowStatus ?? row.status ?? row.publishOption) as any
             }
           />
         ),
@@ -162,6 +162,19 @@ const Table = ({ onCreate }: TableProps) => {
     description: true,
   }
 
+  const SESSION_KEY = 'ezofis_workflow_table_state'
+
+  function getStoredState() {
+    try {
+      const stored = sessionStorage.getItem(SESSION_KEY)
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  }
+
+  const storedState = useMemo(() => getStoredState(), [])
+
   const {
     expandState,
     groupState,
@@ -171,11 +184,25 @@ const Table = ({ onCreate }: TableProps) => {
     ...rest
   } = useDataTableState({
     initialVisibilityState,
+    storageKey: SESSION_KEY,
   })
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(100)
+  const [page, setPage] = useState(storedState?.page ?? 1)
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 100)
   const [rowSize, setRowSize] = useState<RowSize>('default')
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {},
+  )
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ activeFilters, page, pageSize }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [page, pageSize, activeFilters])
 
   const pendingAskAiAction = useAskAiActionStore((state) => state.pending)
   const setPageContext = useAskAiActionStore((state) => state.setPageContext)

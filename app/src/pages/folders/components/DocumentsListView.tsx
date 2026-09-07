@@ -5,11 +5,13 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { useLingui } from '@lingui/react/macro'
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
+import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
+import { FolderDataTableSection } from './FolderTable'
 import type { Option } from '@/types/option'
 import type {
   DynamicRepositoryColumn,
@@ -30,7 +32,7 @@ import {
 import { matchesAnyFilterValue } from '../utils/multiFilterValues'
 import { type BreadcrumbItem } from './Breadcrumbs'
 import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
-import { FolderFilterBar } from './FolderFilterBar'
+import { FolderFilterBar, matchesSearchText } from './FolderFilterBar'
 import { DynamicIcon } from './icons'
 import { Button, EllipsisText, StatusPill } from './Ui'
 
@@ -248,9 +250,50 @@ const getColumnWidth = (key: string, label?: string, dataType?: string) => {
   return Math.min(Math.max(labelWidth, 140), 260)
 }
 
+export const isAccountsPayableFolder = (
+  repositoryTitleOrId?: string,
+  breadcrumbs?: Array<{ label?: string; title?: string }>,
+  files?: any[],
+): boolean => {
+  const normalize = (val?: string) =>
+    (val || '').toLowerCase().replace(/[^a-z]/g, '')
+
+  const repoNorm = normalize(repositoryTitleOrId)
+  if (repoNorm.includes('accountspayable') || repoNorm.includes('payables')) {
+    return true
+  }
+
+  if (
+    breadcrumbs?.some((b) => {
+      const text = normalize(b.label || b.title)
+      return text.includes('accountspayable') || text.includes('payables')
+    })
+  ) {
+    return true
+  }
+
+  if (
+    files?.some((f) => {
+      const status = String(f?.status ?? f?.Status ?? '').trim()
+      return Boolean(
+        status &&
+          status !== '-' &&
+          status !== 'null' &&
+          status !== 'undefined' &&
+          status !== '—',
+      )
+    })
+  ) {
+    return true
+  }
+
+  return false
+}
+
 const buildRepositoryColumns = (
   fileColumns: DynamicRepositoryColumn[],
   labels: { currentStage: string; name: string },
+  isAccountsPayable: boolean = false,
 ): DynamicColumn[] => {
   const normalColumns = fileColumns.filter(
     (column) => !isHiddenFileKey(column.key) && !isPrimaryNameKey(column.key),
@@ -262,11 +305,15 @@ const buildRepositoryColumns = (
       label: labels.name,
       minWidth: 220,
     },
-    {
-      key: '__status',
-      label: labels.currentStage,
-      minWidth: 140,
-    },
+    ...(isAccountsPayable
+      ? [
+          {
+            key: '__status',
+            label: labels.currentStage,
+            minWidth: 140,
+          },
+        ]
+      : []),
     ...normalColumns.map((column) => {
       const label = column.label || toTitle(column.key)
 
@@ -282,7 +329,7 @@ const buildRepositoryColumns = (
 
 export function DocumentsListView({
   activeRepositoryId = '',
-  breadcrumbs: _breadcrumbs,
+  breadcrumbs = [],
   currentFolderGroupField = '',
   error = '',
   fileColumns = [],
@@ -297,7 +344,7 @@ export function DocumentsListView({
   loading = false,
   loadingPage = false,
   onAiSummary,
-  onBreadcrumbSelect: _onBreadcrumbSelect,
+  onBreadcrumbSelect,
   onEdit,
   onFiltersChange,
   onFilterMenuOpenChange,
@@ -326,6 +373,17 @@ export function DocumentsListView({
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState(searchQueryProp)
   const menuRef = useRef<HTMLDivElement | null>(null)
+
+  const handleOpenFolder = useCallback(
+    (id: string) => {
+      if (onRepositoryChange) {
+        onRepositoryChange(id)
+      } else if (onBreadcrumbSelect) {
+        onBreadcrumbSelect(id)
+      }
+    },
+    [onBreadcrumbSelect, onRepositoryChange],
+  )
 
   const normalizedFiles = useMemo(() => files as AnyFileItem[], [files])
 
@@ -365,13 +423,27 @@ export function DocumentsListView({
     return () => window.clearTimeout(timer)
   }, [onSearchChange, searchQuery])
 
+  const isAPFolder = useMemo(
+    () =>
+      isAccountsPayableFolder(
+        selectedRepositoryOption?.name || activeRepositoryId,
+        breadcrumbs,
+        normalizedFiles,
+      ),
+    [activeRepositoryId, breadcrumbs, normalizedFiles, selectedRepositoryOption],
+  )
+
   const columns = useMemo(
     () =>
-      buildRepositoryColumns(fileColumns, {
-        currentStage: t`Current Stage`,
-        name: t`Name`,
-      }),
-    [fileColumns, t],
+      buildRepositoryColumns(
+        fileColumns,
+        {
+          currentStage: t`Current Stage`,
+          name: t`Name`,
+        },
+        isAPFolder,
+      ),
+    [fileColumns, isAPFolder, t],
   )
 
   const currentPage = filePage?.page || 1
@@ -391,10 +463,14 @@ export function DocumentsListView({
     Boolean(String(searchQuery || '').trim()) ||
     Object.values(fileFilters).some((value) => Boolean(String(value || '').trim()))
 
-  // Client OR-match for multi-select (same field); AND across different fields.
+  // Client OR-match for multi-select (same field); AND across different fields; plus searchQuery.
   const visibleFiles = useMemo(() => {
-    return normalizedFiles.filter((file) =>
-      Object.entries(fileFilters).every(([key, value]) => {
+    return normalizedFiles.filter((file) => {
+      if (searchQuery && !matchesSearchText(file, searchQuery)) {
+        return false
+      }
+
+      return Object.entries(fileFilters).every(([key, value]) => {
         if (!value) return true
 
         if (key === '__status' || normalizeKey(key) === 'status') {
@@ -416,9 +492,9 @@ export function DocumentsListView({
             )
 
         return matchesAnyFilterValue(String(fieldValue ?? ''), value)
-      }),
-    )
-  }, [folderContextFilters, normalizedFiles, fileFilters])
+      })
+    })
+  }, [folderContextFilters, normalizedFiles, fileFilters, searchQuery])
 
   const selectedVisibleCount = visibleFiles.filter((file) =>
     selectedIds.includes(getFileId(file)),
@@ -579,6 +655,8 @@ export function DocumentsListView({
 
         if (column.key === '__name') {
           const fileId = getFileId(row.original)
+          const fileName = value !== '-' ? value : row.original.name || row.original.fileName || ''
+          const iconName = getFileIcon(fileName)
 
           return (
             <button
@@ -587,9 +665,9 @@ export function DocumentsListView({
               type='button'
               onClick={() => onOpenFile(fileId)}
             >
-              <DynamicIcon
-                className='h-5 w-5 shrink-0 text-[#4f5b88]'
-                name='fileText'
+              <Icon
+                className='size-5 shrink-0'
+                name={iconName}
               />
               <EllipsisText
                 className='font-semibold text-gray-13'
@@ -643,7 +721,9 @@ export function DocumentsListView({
       },
     }
 
-    return [selectColumn, ...dynamicColumns, actionColumn]
+    return selectionEnabled
+      ? [selectColumn, ...dynamicColumns, actionColumn]
+      : [...dynamicColumns, actionColumn]
   }, [
     allVisibleSelected,
     columns,
@@ -735,7 +815,7 @@ export function DocumentsListView({
           itemFilterFields={itemFilterFields}
           refreshing={refreshing}
           repositoryId={repositoryId}
-          searchPlaceholder={t`Search invoice, supplier, PO...`}
+          searchPlaceholder={t`Search by name or metadata...`}
           searchQuery={searchQuery}
           view={view}
           afterSearchActions={
@@ -765,70 +845,100 @@ export function DocumentsListView({
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-2 pt-2'>
-        <section className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
-          {visibleFiles.length === 0 &&
-          !loading &&
-          !loadingPage &&
-          !refreshing ? (
-            hasActiveQuery ? (
-              <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
-                <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
-                <b className='text-gray-13'>{t`No documents found`}</b>
-                <p className='text-sm text-gray-10'>
-                  {t`Try changing the file search or resetting the selected filters.`}
-                </p>
-                <Button
-                  className='mt-2 h-9 px-4 text-sm'
-                  onClick={resetSearchAndFilters}
-                >
-                  <DynamicIcon className='h-4 w-4' name='refresh' />
-                  {t`Reset Search`}
-                </Button>
-              </div>
-            ) : (
-              <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
-                <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
-                  <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
-                    <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
-                  </div>
-                </div>
-                <b className='text-gray-13'>{t`No documents found`}</b>
-                <p className='max-w-[460px] text-sm text-gray-10'>
-                  {t`This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content.`}
-                </p>
-                {onUploadFile || onUpload ? (
-                  <EmptyFolderUploadDropzone
-                    className='mt-4'
-                    disabled={uploadDisabled}
-                    onFileSelected={(file) => {
-                      if (onUploadFile) onUploadFile(file)
-                      else onUpload?.()
-                    }}
-                    onOpenUpload={onUpload}
-                  />
-                ) : null}
-              </div>
-            )
-          ) : (
-            <DataTable
-              component={<div />}
-              isLoading={loading || loadingPage || refreshing}
-              pageSize={Math.max(5, visibleFiles.length || pageSize)}
-              table={table}
-              isSticky
-              stickyHeader
-              hideGrouping
-              isReLoading={
-                refreshing ||
-                loadingPage ||
-                (loading && visibleFiles.length > 0)
-              }
+        <section className='flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden'>
+          {!activeRepositoryId || folders.length > 0 ? (
+            <FolderDataTableSection
+              folders={folders}
+              effectiveFolderTotal={folders.length}
+              folderFilters={{}}
+              folderSearch={searchQuery}
+              hasFiles={activeRepositoryId ? visibleFiles.length > 0 : false}
+              hasMoreFolders={false}
+              hideFolderActions={!activeRepositoryId}
+              isExpanded={!activeRepositoryId || visibleFiles.length === 0}
+              isSplitView={false}
+              loading={loading}
+              loadingFolders={false}
+              loadingPage={loadingPage}
+              onLoadMoreFolders={() => undefined}
+              onOpenFolder={handleOpenFolder}
               onReload={handleRefresh}
+              rowSize='default'
+              folderBodyMaxHeight={
+                activeRepositoryId && visibleFiles.length > 0
+                  ? `${Math.min(260, Math.max(96, folders.length * 56 + 52))}px`
+                  : undefined
+              }
             />
-          )}
+          ) : null}
+
+          {activeRepositoryId ? (
+            visibleFiles.length === 0 &&
+            !loading &&
+            !loadingPage &&
+            !refreshing &&
+            folders.length === 0 ? (
+              hasActiveQuery ? (
+                <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
+                  <DynamicIcon className='h-8 w-8 text-gray-8' name='search' />
+                  <b className='text-gray-13'>{t`No documents found`}</b>
+                  <p className='text-sm text-gray-10'>
+                    {t`Try changing the file search or resetting the selected filters.`}
+                  </p>
+                  <Button
+                    className='mt-2 h-9 px-4 text-sm'
+                    onClick={resetSearchAndFilters}
+                  >
+                    <DynamicIcon className='h-4 w-4' name='refresh' />
+                    {t`Reset Search`}
+                  </Button>
+                </div>
+              ) : (
+                <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
+                  <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
+                    <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
+                      <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
+                    </div>
+                  </div>
+                  <b className='text-gray-13'>{t`No documents found`}</b>
+                  <p className='max-w-[460px] text-sm text-gray-10'>
+                    {t`This folder does not contain any folders or files yet.`}
+                  </p>
+                  {onUpload && (
+                    <button
+                      className='mt-4 flex items-center gap-2 rounded-xl bg-[var(--primary-9)] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all hover:bg-[var(--primary-10)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40'
+                      disabled={uploadDisabled}
+                      type='button'
+                      onClick={onUpload}
+                    >
+                      <Icon className='size-4' name='tabler:upload' />
+                      {t`Upload Documents`}
+                    </button>
+                  )}
+                </div>
+              )
+            ) : visibleFiles.length > 0 || loading || loadingPage || refreshing ? (
+              <DataTable
+                component={<div />}
+                isLoading={(loading || loadingPage) && visibleFiles.length === 0}
+                pageSize={Math.max(5, visibleFiles.length || pageSize)}
+                table={table}
+                isSticky
+                stickyHeader
+                hideGrouping
+                isReLoading={
+                  refreshing ||
+                  loadingPage ||
+                  (loading && visibleFiles.length > 0)
+                }
+                onReload={handleRefresh}
+              />
+            ) : null
+          ) : null}
         </section>
       </div>
 
+      {!activeRepositoryId ? null : (
       <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
         <Pagination
           itemLabel={t`Files`}
@@ -854,6 +964,7 @@ export function DocumentsListView({
           }}
         />
       </div>
+      )}
 
       {openMenuId && actionMenuPosition ? (
         <div

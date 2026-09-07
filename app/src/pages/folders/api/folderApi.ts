@@ -14,12 +14,13 @@ import {
   authApiV6,
   type BrowseChildrenDto,
   type BrowseStructureDto,
+  deleteRepositoryItemRelatedSaved,
   getRepositoryItemComments,
   getRepositoryItemAiSummary,
   getRepositoryItemFacets,
   getRepositoryItemFilterFields,
   getRepositoryItems,
-  getRepositoryItemRelated,
+  getRepositoryItemRelatedSaved,
   getRepositoryItemShares,
   getRepositoryItemTimeline,
   getRepositoryItemWorkspace,
@@ -27,6 +28,7 @@ import {
   type PagedDto,
   type RelatedDocumentItem,
   type RelatedDocumentsResponse,
+  type RelatedSavedLinkItem,
   type RepositoryDto,
   type RepositoryFieldDto,
   type RepositoryItemFacet,
@@ -34,6 +36,7 @@ import {
   type RepositoryShareResult,
   type SharedWithMeItem,
   revokeRepositoryShare,
+  saveRepositoryItemRelated,
   shareRepositoryItem,
 } from '../../../api/v6/folder/folder'
 import { mapAiSummaryResponse } from '../utils/mapAiSummaryResponse'
@@ -894,6 +897,7 @@ export const folderApi = {
     )
   },
 
+
   async getDocumentDetail(
     repositoryId: string,
     itemId: string,
@@ -938,7 +942,7 @@ export const folderApi = {
     itemId: string,
     request: { page?: number; pageSize?: number } = {},
   ): Promise<RelatedDocumentsResponse> {
-    const result = await getRepositoryItemRelated({
+    const result = await getRepositoryItemRelatedSaved({
       itemId,
       page: request.page ?? 1,
       pageSize: request.pageSize ?? 50,
@@ -955,6 +959,43 @@ export const folderApi = {
         totalCount: 0,
       }
     )
+  },
+
+  async saveRelatedDocuments(
+    repositoryId: string,
+    itemId: string,
+    items: RelatedSavedLinkItem[],
+  ): Promise<RelatedDocumentsResponse> {
+    const result = await saveRepositoryItemRelated({
+      itemId,
+      items,
+      repositoryId,
+    })
+    if (result.error) throw new Error(String(result.error))
+    return (
+      result.data || {
+        data: [],
+        match: {},
+        matchFields: [],
+        page: 1,
+        pageSize: items.length || 50,
+        totalCount: 0,
+      }
+    )
+  },
+
+  async removeRelatedDocument(
+    repositoryId: string,
+    itemId: string,
+    related: { relatedItemId: string; relatedRepositoryId: string },
+  ): Promise<void> {
+    const result = await deleteRepositoryItemRelatedSaved({
+      itemId,
+      relatedItemId: related.relatedItemId,
+      relatedRepositoryId: related.relatedRepositoryId,
+      repositoryId,
+    })
+    if (result.error) throw new Error(String(result.error))
   },
 
   async getFolderChildren(
@@ -1475,6 +1516,7 @@ export const folderApi = {
       modifiedByName: repository.modifiedByName,
       storageProviderId: repository.storageProviderId,
       title: repository.name,
+      fileCount: repository.fileCount,
     }))
 
     return [

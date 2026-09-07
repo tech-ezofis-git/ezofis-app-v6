@@ -1,7 +1,9 @@
 import { ArrowUpFromLine, CheckCircle2, Copy, FileText } from 'lucide-react'
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useDebouncedValue } from '@mantine/hooks'
 import { UploadFiles, uploadForOcr } from '@/api/v6/folder/folder'
+import formApi from '@/api/form/form'
 import Icon from '@/components/base/icon/Icon'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import IconButton from '@/components/base/button/IconButton'
@@ -10,12 +12,16 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import showToast from '@/components/base/toast/showToast'
+import Tooltip from '@/components/base/Tooltip'
 import DocumentPreviewViewer from '@/components/common/document-preview/DocumentPreviewViewer'
+import cn from '@/utils/cn'
 import type { DynamicRepositoryColumn } from '../../api/folderApi'
 import {
+  DOCUMENT_ACCEPT,
   IMAGE_ACCEPT,
   isImage,
   isPdf,
+  isSupportedDocument,
   MAX_SIZE,
   PDF_ACCEPT,
 } from '../../../requests/components/request/components/newrequest/utils'
@@ -52,6 +58,164 @@ type RepositoryField = {
 }
 
 type ResultTab = 'fields' | 'json'
+
+interface JsonNodeProps {
+  data: unknown
+  name?: string
+  isLast?: boolean
+  level?: number
+}
+
+function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+
+  if (data === null || data === undefined) {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='italic text-gray-500'>null</span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'boolean') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='font-semibold text-blue-600 dark:text-blue-400'>
+          {String(data)}
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'number') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='font-medium text-amber-600 dark:text-amber-400'>
+          {data}
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  if (typeof data === 'string') {
+    return (
+      <div className='flex items-center gap-1 font-mono text-xs leading-5 break-all'>
+        <div className='size-4 shrink-0' />
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+        <span className='text-emerald-700 dark:text-emerald-400'>
+          "{data}"
+        </span>
+        {!isLast && <span className='text-gray-400'>,</span>}
+      </div>
+    )
+  }
+
+  const isArray = Array.isArray(data)
+  const isObject = typeof data === 'object' && data !== null
+  if (!isObject) return null
+
+  const keys = Object.keys(data as Record<string, unknown>)
+  const openBracket = isArray ? '[' : '{'
+  const closeBracket = isArray ? ']' : '}'
+  const itemCount = keys.length
+
+  return (
+    <div className='font-mono text-xs leading-5'>
+      <div className='flex items-center gap-1'>
+        <button
+          type='button'
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className='flex size-4 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition-colors hover:bg-[var(--gray-3)] hover:text-[var(--gray-13)]'
+        >
+          <Icon
+            name='tabler:chevron-right'
+            className={`size-3 transition-transform duration-150 ${isCollapsed ? '' : 'rotate-90'}`}
+          />
+        </button>
+
+        {name !== undefined && (
+          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+            "{name}":{' '}
+          </span>
+        )}
+
+        <span className='font-bold text-[var(--gray-12)]'>
+          {openBracket}
+        </span>
+
+        {isCollapsed ? (
+          <button
+            type='button'
+            onClick={() => setIsCollapsed(false)}
+            className='mx-1 rounded bg-[var(--gray-3)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--gray-11)] transition-colors hover:bg-[var(--gray-4)]'
+          >
+            {itemCount} {itemCount === 1 ? 'item' : 'items'} ...
+          </button>
+        ) : null}
+
+        {isCollapsed ? (
+          <span className='font-bold text-[var(--gray-12)]'>
+            {closeBracket}
+            {!isLast && ','}
+          </span>
+        ) : null}
+      </div>
+
+      {!isCollapsed && (
+        <div className='ml-2 border-l border-[var(--gray-4)]/70 pl-2.5'>
+          {keys.map((key, index) => {
+            const childData = (data as Record<string, any>)[key]
+            const isChildLast = index === keys.length - 1
+            return (
+              <JsonNode
+                key={key}
+                data={childData}
+                name={isArray ? undefined : key}
+                isLast={isChildLast}
+              />
+            )
+          })}
+        </div>
+      )}
+
+      {!isCollapsed && (
+        <div className='flex items-center gap-1 font-mono text-xs leading-5'>
+          <div className='size-4 shrink-0' />
+          <span className='font-bold text-[var(--gray-12)]'>
+            {closeBracket}
+          </span>
+          {!isLast && <span className='text-gray-400'>,</span>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 type UploadProps = {
   folderId: string | number | null
   initialFile?: File | null
@@ -59,6 +223,7 @@ type UploadProps = {
     fields?: RepositoryField[]
     id?: string
     name?: string
+    storageDrive?: string | null
   } | null
   repositoryId: string | number | null
   onBack: () => void
@@ -236,12 +401,121 @@ const extractOcrFieldMap = (response: unknown) => {
   return fieldMap
 }
 
+const extractOcrJsonAndText = (response: unknown) => {
+  let ocrJsonVal: any = []
+  let ocrTextVal: any = ''
+
+  if (!response || typeof response !== 'object') {
+    return { ocrJson: ocrJsonVal, ocrText: ocrTextVal }
+  }
+
+  const payload = response as Record<string, unknown>
+  const dataObj =
+    (payload.data as Record<string, unknown> | undefined) ?? payload
+
+  // 1. Parse ocrJson if it is a JSON string or object
+  const rawJson = dataObj.ocrJson ?? payload.ocrJson
+  let parsedJsonObj: Record<string, unknown> | null = null
+
+  if (rawJson != null) {
+    if (typeof rawJson === 'string') {
+      try {
+        parsedJsonObj = JSON.parse(rawJson) as Record<string, unknown>
+      } catch {
+        // invalid JSON string
+      }
+    } else if (typeof rawJson === 'object' && rawJson !== null) {
+      parsedJsonObj = rawJson as Record<string, unknown>
+    }
+  }
+
+  // 2. Extract ocrText (checks parsed ocrJson first, then root/dataObj level)
+  const rawText =
+    parsedJsonObj?.ocrText ??
+    dataObj.ocrText ??
+    payload.ocrText ??
+    dataObj.text ??
+    payload.text ??
+    ''
+
+  if (typeof rawText === 'string') {
+    ocrTextVal = rawText
+  } else if (rawText && typeof rawText === 'object') {
+    ocrTextVal =
+      typeof rawText === 'object' && Object.keys(rawText).length === 0
+        ? ''
+        : rawText
+  } else {
+    ocrTextVal = String(rawText || '')
+  }
+
+  // 3. Extract ocrResult to pass as ocrJson (checks parsed ocrJson first, then root/dataObj level)
+  let ocrResult =
+    parsedJsonObj?.ocrResult ??
+    parsedJsonObj?.fields ??
+    dataObj.ocrResult ??
+    payload.ocrResult ??
+    dataObj.ocrFieldList ??
+    payload.ocrFieldList
+
+  if (ocrResult !== undefined && ocrResult !== null) {
+    ocrJsonVal = ocrResult
+  }
+
+  return { ocrJson: ocrJsonVal, ocrText: ocrTextVal }
+}
+
+const getFileNameWithoutExtension = (fileName: string) => {
+  if (!fileName) return ''
+  const lastDotIndex = fileName.lastIndexOf('.')
+  if (lastDotIndex <= 0) return fileName
+  return fileName.substring(0, lastDotIndex)
+}
+
+const isFilenameField = (field: RepositoryField) => {
+  const normName = normalizeFieldKey(field.name || '')
+  const normSql = normalizeFieldKey(field.sqlColumnName || '')
+  return (
+    normName === 'filename' ||
+    normSql === 'filename' ||
+    normName === 'file' ||
+    normSql === 'file' ||
+    normName === 'documentname' ||
+    normSql === 'documentname'
+  )
+}
+
+const applyFilenamePreFill = (
+  values: Record<string, string>,
+  repositoryFields: RepositoryField[],
+  fileName?: string,
+) => {
+  if (!fileName) return values
+
+  const cleanFileName = getFileNameWithoutExtension(fileName)
+  const next = { ...values }
+
+  repositoryFields.forEach((field) => {
+    if (isFilenameField(field)) {
+      const fieldKey = getFieldKey(field)
+      if (!next[fieldKey] || !next[fieldKey].trim()) {
+        next[fieldKey] = cleanFileName
+      }
+    }
+  })
+
+  return next
+}
+
 const mapOcrResponseToFieldValues = (
   response: unknown,
   repositoryFields: RepositoryField[],
+  fileName?: string,
 ) => {
   const result = getInitialValues(repositoryFields)
-  if (!response || typeof response !== 'object') return result
+  if (!response || typeof response !== 'object') {
+    return applyFilenamePreFill(result, repositoryFields, fileName)
+  }
 
   const ocrFieldMap = extractOcrFieldMap(response)
 
@@ -296,7 +570,7 @@ const mapOcrResponseToFieldValues = (
     }
   })
 
-  return result
+  return applyFilenamePreFill(result, repositoryFields, fileName)
 }
 
 export default function Upload({
@@ -340,8 +614,331 @@ export default function Upload({
   }, [repositoryData?.fields])
 
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(() =>
-    getInitialValues(repositoryFields),
+    applyFilenamePreFill(
+      getInitialValues(repositoryFields),
+      repositoryFields,
+      initialFile?.name,
+    ),
   )
+
+  useEffect(() => {
+    if (!fileData?.name || !repositoryFields.length) return
+    setFieldValues((prev) =>
+      applyFilenamePreFill(prev, repositoryFields, fileData.name),
+    )
+  }, [fileData?.name, repositoryFields])
+
+  const [ocrExtractedValues, setOcrExtractedValues] = useState<Record<string, string>>({})
+  const [masterSyncedValues, setMasterSyncedValues] = useState<Record<string, string>>({})
+  const [rawOcrJson, setRawOcrJson] = useState<any>({})
+  const [rawOcrText, setRawOcrText] = useState<string>('')
+
+  const masterFormSyncData = useMemo(() => {
+    if (!repositoryData?.storageDrive || !repositoryData.storageDrive.includes('[')) return null
+    const sd = repositoryData.storageDrive
+    const prefix = sd.substring(0, sd.indexOf('[')).trim()
+    const mappingStr = sd.substring(sd.indexOf('[') + 1, sd.length - 1)
+
+    const formIds = prefix.split(',').map(id => id.trim())
+    const mapping: Record<string, string> = {}
+    const syncFields: Array<{ formId: string; formFieldId: string; repoField: string }> = []
+
+    mappingStr.split(',').forEach((pair: string) => {
+      const parts = pair.split(':').map(p => p.trim())
+      if (parts.length === 0 || !parts[0]) return
+
+      const repoField = parts[0]
+      const isMultiFormFormat = parts.length === 4 || (parts.length === 3 && parts[2] !== 'sync')
+
+      if (isMultiFormFormat) {
+        // Multi form format: repoField:formIdOrIndex:formFieldId[:sync]
+        const formIdOrIndex = parts[1]
+        const formFieldId = parts[2]
+        
+        let formId = formIdOrIndex
+        const idx = parseInt(formIdOrIndex, 10)
+        if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
+          formId = formIds[idx]
+        }
+
+        const combinedKey = `${formId}:${formFieldId}`
+        mapping[combinedKey] = repoField
+        if (parts.length === 4 && parts[3] === 'sync') {
+          syncFields.push({ formId, formFieldId, repoField })
+        }
+      } else {
+        // Legacy single form format: repoField:formFieldId[:sync]
+        const formId = formIds[0] || ''
+        const formFieldId = parts[1] || ''
+        const combinedKey = `${formId}:${formFieldId}`
+        mapping[combinedKey] = repoField
+        if (parts.length === 3 && parts[2] === 'sync') {
+          syncFields.push({ formId, formFieldId, repoField })
+        }
+      }
+    })
+
+    return { formIds, syncFields, mapping }
+  }, [repositoryData?.storageDrive])
+
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [syncingField, setSyncingField] = useState<string | null>(null)
+  const activeSyncCountRef = useRef(0)
+  const [masterFormSyncLabels, setMasterFormSyncLabels] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    if (!masterFormSyncData || !masterFormSyncData.syncFields.length) {
+      setMasterFormSyncLabels({})
+      return
+    }
+
+    let isMounted = true
+    const fetchForm = async () => {
+      try {
+        const uniqueFormIds = Array.from(
+          new Set(Object.values(masterFormSyncData.mapping).map((_v, idx) => {
+            // Find formId from the mapping keys (since keys are formId:formFieldId)
+            const keys = Object.keys(masterFormSyncData.mapping)
+            return keys[idx]?.split(':')?.[0]
+          }).filter(Boolean))
+        )
+
+        const formResponses = await Promise.all(
+          uniqueFormIds.map(fId =>
+            formApi.getFormDataById(fId)
+              .then(res => ({ formId: fId, data: res.data }))
+              .catch(() => ({ formId: fId, data: null }))
+          )
+        )
+
+        const fieldsByForm: Record<string, any[]> = {}
+        formResponses.forEach(res => {
+          if (!res.data) return
+          const formJson = res.data.formJson
+          const fieldsArray = Array.isArray(formJson?.panels)
+            ? formJson.panels.flatMap((panel: any) => Array.isArray(panel?.fields) ? panel.fields : [])
+            : Array.isArray(formJson?.fields)
+              ? formJson.fields
+              : Array.isArray(formJson?.components)
+                ? formJson.components
+                : []
+          fieldsByForm[res.formId] = fieldsArray
+        })
+
+        const newLabels: Record<string, string> = {}
+        masterFormSyncData.syncFields.forEach(syncField => {
+          const { formId, formFieldId, repoField } = syncField
+          const fieldsArray = fieldsByForm[formId] || []
+          const fieldDef = fieldsArray.find((f: any) => String(f.id || f.key || f.name) === formFieldId)
+
+          const formRes = formResponses.find(r => r.formId === formId)
+          const formName = formRes?.data?.name || formRes?.data?.title || formId
+
+          newLabels[repoField] = fieldDef
+            ? `${formName} - ${String(
+                fieldDef.displayLabel ||
+                fieldDef.label ||
+                fieldDef.name ||
+                fieldDef.title ||
+                fieldDef.id ||
+                fieldDef.key ||
+                formFieldId
+              )}`
+            : `${formName} - ${formFieldId}`
+        })
+
+        if (isMounted) {
+          setMasterFormSyncLabels(newLabels)
+        }
+      } catch (err) {
+        console.error('Failed to fetch master form definitions', err)
+      }
+    }
+
+    void fetchForm()
+
+    return () => { isMounted = false }
+  }, [masterFormSyncData])
+
+  const handleSync = async (
+    fieldValue: string,
+    repoFieldName: string,
+    formId: string,
+    currentOcrValues?: Record<string, string>
+  ) => {
+    if (!masterFormSyncData || !fieldValue || !formId) return
+    activeSyncCountRef.current++
+    setIsSyncing(true)
+    setSyncingField(repoFieldName)
+    try {
+      const criteriaFieldEntry = Object.entries(masterFormSyncData.mapping).find(
+        ([combinedKey, repoName]) => repoName === repoFieldName && combinedKey.startsWith(`${formId}:`)
+      )
+      if (!criteriaFieldEntry) {
+        throw new Error(`No mapping entry for field: ${repoFieldName} on form: ${formId}`)
+      }
+      const criteriaFieldId = criteriaFieldEntry[0].split(':')[1]
+
+      const payload = {
+        sortBy: { criteria: 'createdAt', order: 'DESC' },
+        filterBy: [
+          {
+            groupCondition: '',
+            filters: [
+              {
+                criteria: criteriaFieldId,
+                condition: 'eq',
+                value: fieldValue,
+              },
+            ],
+          },
+        ],
+        currentPage: 1,
+        itemsPerPage: 10,
+        mode: 'live',
+        includeFormJson: true,
+      }
+
+      const { data, error } = await formApi.searchFormEntries(formId, payload)
+      if (error) {
+        showToast({ message: `Sync failed: ${error}`, variant: 'error' })
+        return
+      }
+
+      const entries = data?.entries || []
+
+      if (entries.length === 0) {
+        showToast({
+          message: 'No matching record found.',
+          variant: 'error',
+        })
+        return
+      }
+
+      const entry = entries[0]
+      const values = entry?.values || entry?.data || entry?.formValues || entry
+
+      setFieldValues((prev) => {
+        const next = { ...prev }
+
+        Object.entries(masterFormSyncData.mapping || {}).forEach(
+          ([combinedKey, repoName]) => {
+            const [fId, formFieldId] = combinedKey.split(':')
+            if (fId !== formId) return
+            if (repoName === repoFieldName) return
+
+            const normalizedRepoName = String(repoName)
+              .trim()
+              .toLowerCase()
+
+            const repoField = repositoryFields.find((field: any) => {
+              const fieldName = String(field?.name || '')
+                .trim()
+                .toLowerCase()
+
+              const sqlColumnName = String(field?.sqlColumnName || '')
+                .trim()
+                .toLowerCase()
+
+              return (
+                fieldName === normalizedRepoName ||
+                sqlColumnName === normalizedRepoName
+              )
+            })
+
+            if (!repoField) {
+              console.warn('Repository field not found:', repoName)
+              return
+            }
+
+            let mappedValue = values?.[formFieldId]
+
+            if (
+              typeof mappedValue === 'object' &&
+              mappedValue !== null &&
+              'value' in mappedValue
+            ) {
+              mappedValue = mappedValue.value
+            }
+
+            const targetKey = getFieldKey(repoField)
+            const ocrValue = (currentOcrValues || ocrExtractedValues)[targetKey]
+
+            if (
+              mappedValue !== undefined &&
+              mappedValue !== null &&
+              String(mappedValue).trim() !== ''
+            ) {
+              next[targetKey] = mappedValue
+            } else if (ocrValue !== undefined && ocrValue !== null && String(ocrValue).trim() !== '') {
+              next[targetKey] = ocrValue
+            } else if (mappedValue !== undefined && mappedValue !== null) {
+              next[targetKey] = mappedValue
+            }
+          },
+        )
+
+        return next
+      })
+
+      setMasterSyncedValues((prev) => {
+        const next = { ...prev }
+        Object.entries(masterFormSyncData.mapping || {}).forEach(
+          ([combinedKey, repoName]) => {
+            const [fId, formFieldId] = combinedKey.split(':')
+            if (fId !== formId) return
+            if (repoName === repoFieldName) return
+
+            const normalizedRepoName = String(repoName).trim().toLowerCase()
+            const repoField = repositoryFields.find((field: any) => {
+              const fieldName = String(field?.name || '').trim().toLowerCase()
+              const sqlColumnName = String(field?.sqlColumnName || '').trim().toLowerCase()
+              return fieldName === normalizedRepoName || sqlColumnName === normalizedRepoName
+            })
+
+            if (!repoField) return
+
+            const sourceFieldId = String(formFieldId)
+            let mappedValue = values?.[sourceFieldId]
+
+            if (typeof mappedValue === 'object' && mappedValue !== null && 'value' in mappedValue) {
+              mappedValue = mappedValue.value
+            }
+
+            const targetKey = getFieldKey(repoField)
+            const ocrValue = (currentOcrValues || ocrExtractedValues)[targetKey]
+
+            if (
+              mappedValue !== undefined &&
+              mappedValue !== null &&
+              String(mappedValue).trim() !== ''
+            ) {
+              next[targetKey] = String(mappedValue)
+            } else if (ocrValue !== undefined && ocrValue !== null && String(ocrValue).trim() !== '') {
+              next[targetKey] = String(ocrValue)
+            } else if (mappedValue !== undefined && mappedValue !== null) {
+              next[targetKey] = String(mappedValue)
+            }
+          }
+        )
+        return next
+      })
+
+      console.log({
+        message: 'Fields synced successfully.',
+        variant: 'success',
+      })
+
+    } catch (e: any) {
+      console.log({ message: `Sync error: ${e.message}`, variant: 'error' })
+    } finally {
+      activeSyncCountRef.current = Math.max(0, activeSyncCountRef.current - 1)
+      if (activeSyncCountRef.current === 0) {
+        setIsSyncing(false)
+        setSyncingField(null)
+      }
+    }
+  }
 
   const isAnalyzing = ocrStatus === 'analyzing'
   const isExporting = exportStatus === 'exporting'
@@ -360,7 +957,13 @@ export default function Upload({
       const requestId = ++ocrRequestIdRef.current
       setOcrStatus('analyzing')
       setExportStatus('idle')
-      setFieldValues(getInitialValues(repositoryFields))
+      setFieldValues(
+        applyFilenamePreFill(
+          getInitialValues(repositoryFields),
+          repositoryFields,
+          selectedFile.name,
+        ),
+      )
       setFocusedFieldKey(null)
 
       const ocrFields = repositoryFields
@@ -377,16 +980,67 @@ export default function Upload({
         if (requestId !== ocrRequestIdRef.current) return
 
         if (error) {
-          setOcrStatus('error')
-          showToast({
-            message: t`OCR extraction failed: ${error}`,
-            variant: 'error',
-          })
+          console.warn('[uploadForOcr] OCR extraction failed/unavailable:', error)
+          setOcrStatus('idle')
           return
         }
 
-        setFieldValues(mapOcrResponseToFieldValues(data, repositoryFields))
+        const { ocrJson, ocrText } = extractOcrJsonAndText(data)
+        setRawOcrJson(ocrJson)
+        setRawOcrText(ocrText)
+
+        const mappedValues = mapOcrResponseToFieldValues(
+          data,
+          repositoryFields,
+          selectedFile.name,
+        )
+        setFieldValues(mappedValues)
+        setOcrExtractedValues(mappedValues)
         setOcrStatus('complete')
+
+        // Auto-sync trigger
+        if (masterFormSyncData && masterFormSyncData.syncFields.length > 0) {
+          const activeSyncs: Array<{ fieldName: string; fieldValue: string; formId: string }> = []
+
+          masterFormSyncData.syncFields.forEach((syncField) => {
+            const { formId, repoField: name } = syncField
+            const normalizedName = name.trim().toLowerCase()
+            const repoField = repositoryFields.find((f) => {
+              const fieldName = String(f.name || '').trim().toLowerCase()
+              const sqlColumnName = String(f.sqlColumnName || '').trim().toLowerCase()
+              return fieldName === normalizedName || sqlColumnName === normalizedName
+            })
+
+            if (repoField) {
+              const targetKey = getFieldKey(repoField)
+              const val = mappedValues[targetKey]
+              if (val?.trim()) {
+                activeSyncs.push({
+                  fieldName: name,
+                  fieldValue: val,
+                  formId: formId
+                })
+              }
+            }
+          })
+
+          const uniqueSyncsToTrigger: typeof activeSyncs = []
+          const triggeredFormIds = new Set<string>()
+
+          activeSyncs.forEach(sync => {
+            if (!triggeredFormIds.has(sync.formId)) {
+              triggeredFormIds.add(sync.formId)
+              uniqueSyncsToTrigger.push(sync)
+            }
+          })
+
+          uniqueSyncsToTrigger.forEach(sync => {
+            // We use setTimeout to allow state to settle before firing the sync
+            setTimeout(() => {
+              void handleSync(sync.fieldValue, sync.fieldName, sync.formId, mappedValues)
+            }, 0)
+          })
+        }
       } catch (error: any) {
         if (requestId !== ocrRequestIdRef.current) return
         setOcrStatus('error')
@@ -396,8 +1050,9 @@ export default function Upload({
           variant: 'error',
         })
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [repositoryFields, t],
+    [repositoryFields, t, masterFormSyncData],
   )
 
   const resetInput = () => {
@@ -417,6 +1072,10 @@ export default function Upload({
     setActiveTab('fields')
     setFocusedFieldKey(null)
     setFieldValues(getInitialValues(repositoryFields))
+    setOcrExtractedValues({})
+    setMasterSyncedValues({})
+    setRawOcrJson({})
+    setRawOcrText('')
     resetInput()
   }
 
@@ -430,22 +1089,21 @@ export default function Upload({
   const handleInvoiceFiles = (fileList: FileList | File[] | null) => {
     const files = Array.from(fileList ?? [])
     const validFiles = files.filter(
-      (file) => (isPdf(file) || isImage(file)) && file.size <= MAX_SIZE,
+      (file) => isSupportedDocument(file) && file.size <= MAX_SIZE,
     )
 
     if (!validFiles.length && files.length > 0) {
       const tooLarge = files.some((file) => file.size > MAX_SIZE)
-      const invalidType = files.some((file) => !isPdf(file) && !isImage(file))
+      const invalidType = files.some((file) => !isSupportedDocument(file))
 
       showToast({
         message: tooLarge
-          ? t`File is too large. Max size is 4MB.`
+          ? t`File is too large. Max size is 50MB.`
           : invalidType
-            ? t`Invalid file type. Please upload a PDF or Image.`
+            ? t`Invalid file type. Please upload a supported document.`
             : t`No valid files selected.`,
         variant: 'error',
       })
-
       resetInput()
       return
     }
@@ -473,6 +1131,13 @@ export default function Upload({
       setPreviewUrl(URL.createObjectURL(selectedFile))
       setActiveTab('fields')
       setExportStatus('idle')
+      setFieldValues(
+        applyFilenamePreFill(
+          getInitialValues(repositoryFields),
+          repositoryFields,
+          selectedFile.name,
+        ),
+      )
 
       if (!activeRepositoryId) {
         setOcrStatus('error')
@@ -498,11 +1163,13 @@ export default function Upload({
   }, [])
 
   const buildUploadMetadata = () => {
-    return repositoryFields.reduce<Record<string, string>>((acc, field) => {
+    const meta = repositoryFields.reduce<Record<string, any>>((acc, field) => {
       const key = field.sqlColumnName || field.name
       acc[key] = fieldValues[getFieldKey(field)] ?? ''
       return acc
     }, {})
+
+    return meta
   }
 
   const buildMetadata = () => {
@@ -518,10 +1185,13 @@ export default function Upload({
       }
     })
 
-    const values = fields.reduce<Record<string, string>>((acc, field) => {
+    const values = fields.reduce<Record<string, any>>((acc, field) => {
       acc[field.sqlColumnName || field.id] = field.value
       return acc
     }, {})
+
+    values.ocrJson = rawOcrJson ?? []
+    values.ocrText = rawOcrText ?? ''
 
     return {
       fields,
@@ -549,6 +1219,13 @@ export default function Upload({
     return true
   }
 
+  const filledFieldsCount = useMemo(() => {
+    return repositoryFields.filter((field) => {
+      const value = fieldValues[getFieldKey(field)]
+      return Boolean(String(value ?? '').trim())
+    }).length
+  }, [repositoryFields, fieldValues])
+
   const uploadFile = async () => {
     if (!fileData) {
       showToast({ message: t`Please select a file first.`, variant: 'error' })
@@ -573,6 +1250,20 @@ export default function Upload({
       const formData = new FormData()
       formData.append('file', fileData, fileData.name)
       formData.append('metadata', JSON.stringify(buildUploadMetadata()))
+
+      const ocrJsonStr =
+        typeof rawOcrJson === 'string'
+          ? rawOcrJson
+          : JSON.stringify(rawOcrJson ?? [])
+      formData.append('ocrJson', ocrJsonStr)
+
+      const ocrTextStr =
+        typeof rawOcrText === 'string'
+          ? rawOcrText
+          : typeof rawOcrText === 'object' && rawOcrText !== null
+            ? JSON.stringify(rawOcrText)
+            : String(rawOcrText ?? '')
+      formData.append('ocrText', ocrTextStr)
 
       const { data, error } = await UploadFiles(
         String(activeRepositoryId),
@@ -610,17 +1301,21 @@ export default function Upload({
     exportStatus,
   )
 
+  const [debouncedFocusedValue] = useDebouncedValue(
+    focusedFieldKey ? fieldValues[focusedFieldKey] : '',
+    400
+  )
+
   const highlightTerms = useMemo(() => {
     if (!focusedFieldKey) return []
-    const value = fieldValues[focusedFieldKey]
-    return value ? [value] : []
-  }, [focusedFieldKey, fieldValues])
+    return debouncedFocusedValue ? [debouncedFocusedValue] : []
+  }, [focusedFieldKey, debouncedFocusedValue])
 
   const handleFieldFocus = useCallback((field: RepositoryField) => {
     setFocusedFieldKey(getFieldKey(field))
   }, [])
 
-  const renderFieldControl = (field: RepositoryField) => {
+  const renderFieldControl = (field: RepositoryField, isSyncField: boolean = false) => {
     const column = toDynamicColumn(field)
     const fieldKey = getFieldKey(field)
     const fieldType = normalizeType(field.dataType)
@@ -634,10 +1329,132 @@ export default function Upload({
       onFocus: () => handleFieldFocus(field),
     }
 
-    if (fieldType === 'date' || fieldType === 'datetime') {
+    const normalizedFieldName = String(field.name).trim().toLowerCase()
+    const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
+    const matchingSyncFields = masterFormSyncData?.syncFields?.filter(
+      sf => {
+        const norm = sf.repoField.trim().toLowerCase()
+        return norm === normalizedFieldName || norm === normalizedColName
+      }
+    )
+
+    const renderRightSection = () => {
+      const elements = []
+
+      const ocrValue = ocrExtractedValues[fieldKey]
+      const syncValue = masterSyncedValues[fieldKey]
+      const currentValue = fieldValues[fieldKey]
+
+      // Icon if value is from OCR or Master Sync
+      if (currentValue) {
+        if (currentValue === syncValue) {
+          elements.push(
+            <Tooltip key="master-icon" content={t`Master Sync Data`} position="top">
+              <div className="flex items-center justify-center text-[var(--indigo-11)] transition-colors hover:text-[var(--indigo-9)]">
+                <Icon className="size-4" name="lucide:database" />
+              </div>
+            </Tooltip>
+          )
+        } else if (currentValue === ocrValue) {
+          elements.push(
+            <Tooltip key="ocr-icon" content={t`OCR Extracted Data`} position="top">
+              <div className="flex items-center justify-center text-[var(--primary-11)] transition-colors hover:text-[var(--primary-9)]">
+                <Icon className="size-4" name="tabler:scan" />
+              </div>
+            </Tooltip>
+          )
+        }
+      }
+
+      if (matchingSyncFields && matchingSyncFields.length > 0) {
+        const isThisFieldSyncing = syncingField === matchingSyncFields[0].repoField
+        elements.push(
+          <Tooltip key="sync-btn-tooltip" content={t`Sync Master Data`} position="top" disabled={!value}>
+            <Button
+              key="sync-btn"
+              aria-label={t`Sync`}
+              onClick={() => {
+                const uniqueFormIds = new Set<string>()
+                matchingSyncFields.forEach(sf => {
+                  if (!uniqueFormIds.has(sf.formId)) {
+                    uniqueFormIds.add(sf.formId)
+                    void handleSync(toTextValue(value), sf.repoField, sf.formId)
+                  }
+                })
+              }}
+              disabled={!value || syncingField !== null}
+              className={cn(
+                'flex h-[20px] w-[40px] items-center justify-center gap-1',
+                'rounded-[4px] px-1.5',
+                'text-[10px] font-medium uppercase tracking-[0.04em]',
+                'transition-colors',
+                isThisFieldSyncing
+                  ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
+                  : value
+                    ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
+                    : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
+              )}
+            >
+              {isThisFieldSyncing && (
+                <Icon className='size-2.5 animate-spin' name='tabler:loader' />
+              )}
+              <span className='text-[9px]'> {t`SYNC`}</span>
+            </Button>
+          </Tooltip>
+        )
+      }
+
+      if (elements.length === 0) return undefined
+
       return (
+        <div className="flex w-full items-center justify-end pr-2.5 gap-1.5">
+          {elements}
+        </div>
+      )
+    }
+
+    const fieldClassName = cn('w-full', isSyncField &&
+      '[&_input]:bg-[var(--gray-1)] [&_input]:border-[var(--gray-4)] [&_button]:bg-[var(--surface)] [&_textarea]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)]')
+
+    const renderSuggestionCapsule = () => {
+      const ocrValue = ocrExtractedValues[fieldKey]
+      const syncValue = masterSyncedValues[fieldKey]
+      const currentValue = fieldValues[fieldKey]
+
+      if (ocrValue && ocrValue !== currentValue && (!syncValue || syncValue === currentValue)) {
+        return (
+          <button
+            type="button"
+            onClick={() => updateFieldValue(field, ocrValue)}
+            className="mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)]"
+          >
+            <Icon className="size-3 shrink-0" name="tabler:scan" />
+            <span className="truncate text-xs ml-2">{ocrValue}</span>
+          </button>
+        )
+      }
+
+      if (syncValue && syncValue !== currentValue) {
+        return (
+          <button
+            type="button"
+            onClick={() => updateFieldValue(field, syncValue)}
+            className="mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--indigo-4)] bg-[var(--indigo-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--indigo-11)] transition-colors hover:bg-[var(--indigo-2)]"
+          >
+            <Icon className="size-3 shrink-0" name="lucide:database" />
+            <span className="truncate text-xs ml-2">{syncValue}</span>
+          </button>
+        )
+      }
+      return null
+    }
+
+    let InputComponent = null
+
+    if (fieldType === 'date' || fieldType === 'datetime') {
+      InputComponent = (
         <InputDate
-          className='w-full'
+          className={fieldClassName}
           disabled={disabled}
           label={label}
           required={required}
@@ -645,18 +1462,22 @@ export default function Upload({
           onChange={(nextValue: string | null) =>
             updateFieldValue(field, nextValue || '')
           }
+          // @ts-ignore
+          rightSection={renderRightSection()}
+          // @ts-ignore
+          rightSectionWidth={90}
+          rightSectionPointerEvents='auto'
           {...focusProps}
         />
       )
-    }
-
-    if (
+    } else if (
       fieldType === 'select' ||
       fieldType === 'dropdown' ||
       options.length > 0
     ) {
-      return (
+      InputComponent = (
         <InputSelect
+          className={fieldClassName}
           disabled={disabled}
           label={label}
           options={options}
@@ -668,19 +1489,22 @@ export default function Upload({
               String(selected?.value ?? selected?.name ?? selected?.id ?? ''),
             )
           }
+          // @ts-ignore
+          rightSection={renderRightSection()}
+          // @ts-ignore
+          rightSectionWidth={90}
+          rightSectionPointerEvents='auto'
           {...focusProps}
         />
       )
-    }
-
-    if (
+    } else if (
       fieldType === 'long_text' ||
       fieldType === 'textarea' ||
       label.toLowerCase().includes('address')
     ) {
-      return (
+      InputComponent = (
         <InputTextarea
-          className='w-full'
+          className={fieldClassName}
           disabled={disabled}
           label={label}
           placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
@@ -688,37 +1512,78 @@ export default function Upload({
           rows={3}
           value={toTextValue(value)}
           onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
+          // @ts-ignore
+          rightSection={renderRightSection()}
+          // @ts-ignore
+          rightSectionWidth={90}
+          rightSectionPointerEvents='auto'
+          {...focusProps}
+        />
+      )
+    } else {
+      InputComponent = (
+        <InputText
+          className={fieldClassName}
+          disabled={disabled}
+          label={label}
+          placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
+          required={required}
+          value={toTextValue(value)}
+          type={
+            fieldType === 'decimal' ||
+              fieldType === 'number' ||
+              fieldType === 'int' ||
+              fieldType === 'integer' ||
+              fieldType === 'currency'
+              ? 'number'
+              : 'text'
+          }
+          onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
+          rightSection={renderRightSection()}
+          rightSectionWidth={90}
+          rightSectionPointerEvents='auto'
           {...focusProps}
         />
       )
     }
 
     return (
-      <InputText
-        className='w-full'
-        disabled={disabled}
-        label={label}
-        placeholder={isAnalyzing ? t`Extracting...` : t`Enter ${label}`}
-        required={required}
-        value={toTextValue(value)}
-        type={
-          fieldType === 'decimal' ||
-            fieldType === 'number' ||
-            fieldType === 'int' ||
-            fieldType === 'integer' ||
-            fieldType === 'currency'
-            ? 'number'
-            : 'text'
-        }
-        onChange={(nextValue: string) => updateFieldValue(field, nextValue)}
-        {...focusProps}
-      />
+      <div className="flex w-full flex-col">
+        {InputComponent}
+        {renderSuggestionCapsule()}
+      </div>
     )
   }
 
+  const parsedJsonData = useMemo(() => {
+    if (
+      rawOcrJson &&
+      (Array.isArray(rawOcrJson)
+        ? rawOcrJson.length > 0
+        : Object.keys(rawOcrJson).length > 0)
+    ) {
+      return rawOcrJson
+    }
+    const meta = buildMetadata() as Record<string, any>
+    if (meta.ocrJson) {
+      try {
+        return typeof meta.ocrJson === 'string'
+          ? JSON.parse(meta.ocrJson)
+          : meta.ocrJson
+      } catch {
+        return meta.ocrJson
+      }
+    }
+    return meta
+  }, [rawOcrJson, fieldValues, repositoryFields])
+
+  const displayJsonContent = useMemo(() => {
+    return safeJson(parsedJsonData)
+  }, [parsedJsonData])
+
   const copyMetadata = async () => {
-    await navigator.clipboard.writeText(safeJson(buildMetadata()))
-    showToast({ message: t`Metadata copied.`, variant: 'success' })
+    await navigator.clipboard.writeText(displayJsonContent)
+    showToast({ message: t`JSON copied to clipboard.`, variant: 'success' })
   }
 
   if (!fileData) {
@@ -801,13 +1666,13 @@ export default function Upload({
                           </span>
                         </h2>
                         <p className='text-xs font-medium text-[var(--gray-9)]'>
-                          {t`Supports PDF and Images · Max 4 MB`}
+                          {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB`}
                         </p>
                       </div>
                     </AnimateStagger>
 
                     <input
-                      accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
+                      accept={DOCUMENT_ACCEPT}
                       className='hidden'
                       ref={invoiceInputRef}
                       type='file'
@@ -973,10 +1838,10 @@ export default function Upload({
 
         <div className='grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(470px,0.95fr)]'>
           <AnimateSlideUp className='flex h-[560px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'>
-            <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
+            <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
               <div className='flex min-w-0 items-center gap-3'>
-                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
-                  <FileText size={20} />
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
+                  <FileText size={18} />
                 </div>
                 <div className='min-w-0'>
                   <h2 className='text-base font-bold text-[var(--gray-13)]'>
@@ -991,7 +1856,7 @@ export default function Upload({
 
             <div
               className={[
-                'm-6 min-h-0 flex-1 overflow-hidden rounded-xl border transition-all',
+                'm-4 min-h-0 flex-1 overflow-hidden rounded-xl border transition-all',
                 isDragOver
                   ? 'border-[var(--primary-6)] bg-[var(--primary-1)]'
                   : 'border-[var(--gray-4)] bg-[var(--gray-1)]',
@@ -1019,7 +1884,7 @@ export default function Upload({
             </div>
 
             <input
-              accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
+              accept={DOCUMENT_ACCEPT}
               className='hidden'
               ref={invoiceInputRef}
               type='file'
@@ -1028,12 +1893,12 @@ export default function Upload({
           </AnimateSlideUp>
 
           <AnimateSlideUp
-            className='flex h-[560px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
+            className='flex h-[900px] max-h-[calc(100vh-100px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--gray-3)] bg-surface shadow-sm'
             delay={0.08}
           >
-            <div className='flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
+            <div className='flex h-[60px] shrink-0 items-center justify-between border-b border-[var(--gray-3)] px-5'>
               <div className='flex min-w-0 items-center gap-3'>
-                <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--primary-1)] text-[var(--primary-9)]'>
                   <Icon className='size-5' name='tabler:code' />
                 </div>
                 <div>
@@ -1043,7 +1908,7 @@ export default function Upload({
                   <p className='text-xs font-medium text-[var(--gray-9)]'>
                     {isAnalyzing
                       ? t`Extracting fields...`
-                      : t`${repositoryFields.length} fields ready`}
+                      : t`${filledFieldsCount} of ${repositoryFields.length} fields ready`}
                   </p>
                 </div>
               </div>
@@ -1076,7 +1941,7 @@ export default function Upload({
               </div>
             </div>
 
-            <div className='relative min-h-0 flex-1 overflow-hidden p-5'>
+            <div className='relative flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
               {isAnalyzing ? (
                 <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface/80 backdrop-blur-[1px]'>
                   <Icon
@@ -1089,36 +1954,69 @@ export default function Upload({
                 </div>
               ) : null}
 
-              {activeTab === 'fields' ? (
-                <div className='h-full max-h-full overflow-y-auto pr-2'>
-                  <div className='m-4 grid grid-cols-1 gap-4'>
-                    {repositoryFields.map((field) => (
-                      <div className='space-y-1.5' key={field.id}>
-                        {renderFieldControl(field)}
-                      </div>
-                    ))}
+              {activeTab === 'fields' ? (() => {
+                const syncRepoFields = repositoryFields.filter((field) => {
+                  const normalizedFieldName = String(field.name).trim().toLowerCase()
+                  const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
+                  return masterFormSyncData?.syncFields?.some((sf) => {
+                    const norm = sf.repoField.trim().toLowerCase()
+                    return norm === normalizedFieldName || norm === normalizedColName
+                  })
+                })
 
-                    {!repositoryFields.length ? (
-                      <div className='rounded-xl border border-dashed border-[var(--gray-4)] p-8 text-center text-sm font-medium text-[var(--gray-9)]'>
-                        {t`No repository fields configured.`}
+                const otherRepoFields = repositoryFields.filter(f => !syncRepoFields.includes(f))
+
+                return (
+                  <div className='flex h-full flex-col'>
+                    {syncRepoFields.length > 0 && (
+                      <div className='shrink-0 pb-3'>
+                        <div className='grid grid-cols-1 gap-4'>
+                          {syncRepoFields.map((field) => (
+                            <div
+                              className='space-y-1.5 rounded-[5px] bg-[var(--gray-2)] p-[5px] border border-gray-4'
+                              key={field.id}
+                            >
+                              {renderFieldControl(field, true)}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    ) : null}
+                    )}
+
+                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto pr-1.5'>
+                      <div className='grid grid-cols-1 gap-4'>
+                        {otherRepoFields.map((field) => (
+                          <div className='space-y-1.5' key={field.id}>
+                            {renderFieldControl(field, false)}
+                          </div>
+                        ))}
+
+                        {!repositoryFields.length ? (
+                          <div className='rounded-xl border border-dashed border-[var(--gray-4)] p-8 text-center text-sm font-medium text-[var(--gray-9)]'>
+                            {t`No repository fields configured.`}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className='relative h-full max-h-full'>
-                  <button
-                    aria-label={t`Copy JSON`}
-                    className='absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border border-[var(--gray-3)] bg-surface/95 px-2.5 py-1.5 text-xs font-semibold text-[var(--gray-11)] shadow-sm backdrop-blur-sm hover:bg-[var(--gray-2)]'
-                    type='button'
-                    onClick={copyMetadata}
-                  >
-                    <Copy size={14} />
-                    {t`Copy`}
-                  </button>
-                  <pre className='h-full max-h-full overflow-auto rounded-xl bg-[var(--gray-1)] p-4 pt-12 text-xs leading-6 text-[var(--gray-12)]'>
-                    {safeJson(buildMetadata())}
-                  </pre>
+                )
+              })() : (
+                <div className='relative flex h-full min-h-0 flex-1 flex-col'>
+                  <div className='absolute top-2.5 right-3.5 z-20'>
+                    <Tooltip content={t`Copy JSON`} position='top'>
+                      <button
+                        aria-label={t`Copy JSON`}
+                        className='flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--gray-4)] bg-surface/90 text-[var(--gray-11)] shadow-sm backdrop-blur-md transition-colors hover:bg-[var(--gray-2)] hover:text-[var(--gray-13)]'
+                        type='button'
+                        onClick={copyMetadata}
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                  <div className='ez-scrollbar h-full max-h-full min-h-0 flex-1 overflow-auto rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-3 pt-2.5 pr-14 text-xs leading-5 text-[var(--gray-12)]'>
+                    <JsonNode data={parsedJsonData} />
+                  </div>
                 </div>
               )}
             </div>

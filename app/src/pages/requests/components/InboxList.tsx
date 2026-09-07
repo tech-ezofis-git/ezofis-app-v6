@@ -11,7 +11,7 @@ import DynamicFilter, {
   type DynamicFilterField,
 } from '@/components/common/DynamicFilter'
 import { DUE_DATE_FILTER_OPTIONS } from '@/utils/filterUtils'
-import type { TableGroup, WorkflowOption } from '../types'
+import type { RequestViewMode, TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
 // import TableSort from '@/components/base/data-table/actions/TableSort'
 // import TableColumns from '@/components/base/data-table/actions/TableColumns'
@@ -26,8 +26,10 @@ import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
+import KanbanView from './KanbanView'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import { buildV6FilterClauses } from '../utils/requestFilterMapper'
+import { isAccountsPayableWorkflow } from '../utils/workflow.utils'
 
 interface InboxListProps {
   data: TableGroup[]
@@ -37,16 +39,17 @@ interface InboxListProps {
   pageSize: number
   selectedItem: any
   totalItems: number
-  viewMode: 'table' | 'grid'
+  viewMode: RequestViewMode
   workflow: WorkflowOption | null
   activeTab?: string
+  canCreateNewRequest?: boolean
   setPage: (p: number) => void
   setPageSize: (s: number) => void
-  setViewMode: (mode: 'table' | 'grid') => void
+  setViewMode: (mode: RequestViewMode) => void
   onFilterClausesChange?: (clauses: V6SearchFilterClause[]) => void
   onGroupByChange?: (groups: string[]) => void
   onRefresh: () => void
-  onRowClick: (item: any, tab: string) => void
+  onRowClick: (item: any, tab: string, missingFieldIds?: string[]) => void
 }
 
 // ✅ robust flattener for your backend shape (group.items)
@@ -1169,6 +1172,7 @@ const getRowColumnValue = (row: any, colId: string): string => {
 
 const InboxList: React.FC<InboxListProps> = ({
   activeTab,
+  canCreateNewRequest,
   data,
   isLoading,
   isRefetching,
@@ -1193,6 +1197,7 @@ const InboxList: React.FC<InboxListProps> = ({
   // const [rowSize, setRowSize] = useState<RowSize>('default')
 
   const [filterFields, setFilterFields] = useState<V6FilterField[]>([])
+  const [isFilterFieldsLoaded, setIsFilterFieldsLoaded] = useState(false)
 
   const dueDateFilterOptions = useMemo(
     () =>
@@ -1219,14 +1224,18 @@ const InboxList: React.FC<InboxListProps> = ({
   )
 
   useEffect(() => {
+    setIsFilterFieldsLoaded(false)
     if (workflow?.id) {
       workflowsApiV6.getFilterFields(String(workflow.id)).then((res) => {
         if (res.data?.fields) {
           setFilterFields(res.data.fields)
         }
+      }).finally(() => {
+        setIsFilterFieldsLoaded(true)
       })
     } else {
       setFilterFields([])
+      setIsFilterFieldsLoaded(true)
     }
   }, [workflow?.id])
 
@@ -1249,6 +1258,7 @@ const InboxList: React.FC<InboxListProps> = ({
     ...rest
   } = useDataTableState({
     initialVisibilityState,
+    storageKey: 'ezofis_requests_inbox_table_state',
   })
 
   // ✅ Sync groupState with parent
@@ -1338,7 +1348,7 @@ const InboxList: React.FC<InboxListProps> = ({
   }, [searchState])
 
   React.useEffect(() => {
-    if (onFilterClausesChange) {
+    if (onFilterClausesChange && isFilterFieldsLoaded) {
       const clauses = buildV6FilterClauses(
         activeFiltersMap,
         filterFields,
@@ -1353,6 +1363,7 @@ const InboxList: React.FC<InboxListProps> = ({
     activeQuickFilters,
     debouncedSearchState,
     onFilterClausesChange,
+    isFilterFieldsLoaded,
   ])
 
   const [controlOptionsMap, setControlOptionsMap] = useState<
@@ -1462,6 +1473,21 @@ const InboxList: React.FC<InboxListProps> = ({
     return fields
   }, [filterFields, columns])
 
+  // The 5 AP quick-filter chips (Due Date/Matched/Discrepancies/High
+  // Value/Supplier) don't mean anything for a generic workflow. For those,
+  // default to showing the workflow's own first two filterable fields as
+  // chips instead, with the rest still reachable via the "+" picker.
+  const isAccountsPayable = isAccountsPayableWorkflow(workflow)
+  const genericDefaultFilterFields = useMemo<DynamicFilterField[]>(
+    () => (isAccountsPayable ? [] : optionalFilterFields.slice(0, 2)),
+    [isAccountsPayable, optionalFilterFields],
+  )
+  const genericPickerFilterFields = useMemo<DynamicFilterField[]>(
+    () =>
+      isAccountsPayable ? optionalFilterFields : optionalFilterFields.slice(2),
+    [isAccountsPayable, optionalFilterFields],
+  )
+
   const handleFilterChange = (id: string, values: string | string[]) => {
     const store = requestStore.getState()
     const newFilters = store.activeQuickFilters.filter(
@@ -1488,12 +1514,16 @@ const InboxList: React.FC<InboxListProps> = ({
   }
 
   const quickFilteredRows = useMemo(() => {
-    if (activeTab !== 'Inbox' || activeQuickFilters.length === 0) {
+    if (
+      viewMode === 'kanban' ||
+      activeTab !== 'Inbox' ||
+      activeQuickFilters.length === 0
+    ) {
       return flatRows
     }
 
     return filterRowsByQuickFilters(flatRows, activeQuickFilters)
-  }, [flatRows, activeQuickFilters, activeTab])
+  }, [flatRows, activeQuickFilters, activeTab, viewMode])
 
   // ✅ Filter rows based on search state
   const filteredFlatRows = useMemo(() => {
@@ -1594,7 +1624,7 @@ const InboxList: React.FC<InboxListProps> = ({
 
   const finalData = useMemo(() => {
     if (
-      activeTab !== 'Inbox' ||
+      (activeTab !== 'Inbox' && viewMode !== 'kanban') ||
       !processingProcesses ||
       processingProcesses.length === 0
     ) {
@@ -1697,7 +1727,9 @@ const InboxList: React.FC<InboxListProps> = ({
           ...p,
           '_agentData': parsedAgentResponse ? [parsedAgentResponse] : [],
           '_agentResponse': parsedAgentResponse,
+          '_canMove': true,
           '_groupKey': 'root',
+          '_listTab': 'Inbox',
           'Currency': currency,
           'documentNumber':
             invoiceNo || p.requestNo || p.name || 'Processing...',
@@ -1732,7 +1764,7 @@ const InboxList: React.FC<InboxListProps> = ({
     }
 
     return outData
-  }, [filteredData, processingProcesses, activeTab])
+  }, [filteredData, processingProcesses, activeTab, viewMode])
 
   // ✅ Flatten final data to render flat table rows when viewMode is 'table'
   const flatFinalRows = useMemo(() => {
@@ -1775,19 +1807,43 @@ const InboxList: React.FC<InboxListProps> = ({
 
   // Debug (keep for a bit until stable)
   // console.log({ selectedIndex, hasPrev, hasNext, flatRowsLen: flatRows.length, selectedItem }, 'nav-debug')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return
+    try {
+      setIsRefreshing(true)
+      await Promise.resolve(onRefresh?.())
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   const handlePoSheet = () => {
     // alert("hi")
     openNewRequest('po')
   }
+
+  const hasActiveFiltersOrSearch =
+    Boolean(searchState?.value) ||
+    activeQuickFilters.length > 0 ||
+    Object.values(activeFiltersMap).some(
+      (arr) => Array.isArray(arr) && arr.length > 0,
+    )
+
+  const showFilterSection =
+    !selectedItem &&
+    (totalItems > 0 || flatRows.length > 0 || hasActiveFiltersOrSearch)
+
   return (
-    <div className='bg-primary flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
-      {!selectedItem && activeTab === 'Inbox' && (
+    <div className='bg-primary flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-6 py-2 md:px-6'>
+      {showFilterSection && (
         <DynamicFilter
           activeQuickFilters={activeQuickFilters}
           customSearchComponent={<TableSearch table={table as any} />}
           dataset={flatRows}
-          isLoading={isLoading || isRefetching}
-          optionalFields={optionalFilterFields}
+          isLoading={isLoading || isRefetching || isRefreshing}
+          optionalFields={genericPickerFilterFields}
           onFieldOpen={handleFieldOpen}
           searchPlaceholder={t`Search invoice, supplier, PO...`}
           searchQuery={searchState?.value || ''}
@@ -1802,14 +1858,18 @@ const InboxList: React.FC<InboxListProps> = ({
             'status': activeFiltersMap.status || [],
             'Supplier Name': activeFiltersMap.supplier || [],
           }}
-          fields={[
-            {
-              id: 'Supplier Name',
-              label: t`Supplier`,
-              valueGetter: (row) => getRowColumnValue(row, 'vendor'),
-            },
-          ]}
-          quickFilters={[
+          fields={
+            isAccountsPayable
+              ? [
+                  {
+                    id: 'Supplier Name',
+                    label: t`Supplier`,
+                    valueGetter: (row) => getRowColumnValue(row, 'vendor'),
+                  },
+                ]
+              : genericDefaultFilterFields
+          }
+          quickFilters={!isAccountsPayable ? [] : [
             {
               icon: 'tabler:calendar-due',
               id: 'due_date',
@@ -1852,8 +1912,11 @@ const InboxList: React.FC<InboxListProps> = ({
               icon: 'tabler:refresh',
               id: 'refresh',
               isIconButton: true,
+              spin: isRefetching || isLoading || isRefreshing,
               tooltip: t`Refresh`,
-              onClick: onRefresh,
+              onClick: () => {
+                void handleRefresh()
+              },
             },
             {
               icon: 'tabler:download',
@@ -1895,8 +1958,8 @@ const InboxList: React.FC<InboxListProps> = ({
           onViewModeChange={setViewMode}
         />
       )}
-      <div className='relative mt-2 flex min-h-0 w-full flex-1 flex-col'>
-        <div className='flex h-full w-full gap-3'>
+      <div className='relative mt-2 flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden'>
+        <div className='flex h-full min-h-0 min-w-0 w-full gap-3'>
           {/* Left */}
           {!selectedItem && viewMode === 'table' && (
             <div className='flex h-full min-w-0 flex-1 flex-col'>
@@ -1924,7 +1987,8 @@ const InboxList: React.FC<InboxListProps> = ({
                 stickyHeader={true}
                 table={table}
                 onEmptyPrimaryAction={
-                  activeTab === 'Inbox' || !activeTab
+                  canCreateNewRequest !== false &&
+                  (activeTab === 'Inbox' || !activeTab)
                     ? () => openNewRequest('request')
                     : undefined
                 }
@@ -1945,8 +2009,32 @@ const InboxList: React.FC<InboxListProps> = ({
                 isLoading={isLoading}
                 isReloading={isRefetching}
                 table={table} // Pass the instance
-                onNewRequest={() => openNewRequest('request')}
+                workflow={workflow}
+                onNewRequest={
+                  canCreateNewRequest !== false &&
+                  (activeTab === 'Inbox' || !activeTab)
+                    ? () => openNewRequest('request')
+                    : undefined
+                }
                 onReload={onRefresh}
+                onRowClick={onRowClick}
+              />
+            </div>
+          )}
+
+          {!selectedItem && viewMode === 'kanban' && (
+            <div className='flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
+              <KanbanView
+                isLoading={isLoading || isRefetching}
+                items={flatFinalRows}
+                table={table as any}
+                workflow={workflow}
+                onNewRequest={
+                  canCreateNewRequest !== false
+                    ? () => openNewRequest('request')
+                    : undefined
+                }
+                onRefresh={onRefresh}
                 onRowClick={onRowClick}
               />
             </div>
@@ -1956,9 +2044,17 @@ const InboxList: React.FC<InboxListProps> = ({
 
       {/* Footer */}
       {!selectedItem && (
-        <div className='z-10 shrink-0 bg-primary-1 pt-2'>
+        <div className='z-10 shrink-0 border-t border-[var(--gray-3)] bg-surface pt-2'>
           <Pagination
-            itemLabel={t`Requests`}
+            itemLabel={
+              viewMode === 'kanban'
+                ? t`Requests`
+                : activeTab === 'Exceptions'
+                  ? t`Exceptions`
+                  : activeTab === 'Processed'
+                    ? t`Processed`
+                    : t`Requests`
+            }
             page={page}
             pageSize={pageSize}
             showPageNumbers={false}

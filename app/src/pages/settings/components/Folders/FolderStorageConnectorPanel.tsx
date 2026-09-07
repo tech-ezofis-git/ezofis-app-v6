@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useState } from 'react'
 import { getConnectionQueryOptions } from '@/api/connectorQueries'
 import Button from '@/components/base/button/Button'
@@ -50,6 +51,7 @@ export default function FolderStorageConnectorPanel({
   required,
   onConnectorChange,
 }: Props) {
+  const { t } = useLingui()
   const session = authUserStore((state) => state.session)
   const queryClient = useQueryClient()
   const [isOpen, setIsOpen] = useState(false)
@@ -113,10 +115,10 @@ export default function FolderStorageConnectorPanel({
     setIsOpen(false)
     setNewConnectionName('')
     showToast({
-      message: `${option.title} connected successfully.`,
+      message: t`${option.title} connected successfully.`,
       variant: 'success',
     })
-  }, [apiConnections, onConnectorChange, option.title, pendingConnectionName])
+  }, [apiConnections, onConnectorChange, option.title, pendingConnectionName, t])
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -141,7 +143,7 @@ export default function FolderStorageConnectorPanel({
 
   const handleAuthorize = () => {
     if (!session?.tenantId) {
-      showToast({ message: 'Tenant ID is missing.', variant: 'error' })
+      showToast({ message: t`Tenant ID is missing.`, variant: 'error' })
       return
     }
 
@@ -164,7 +166,7 @@ export default function FolderStorageConnectorPanel({
   return (
     <div className='space-y-1.5'>
       <label className='mb-2 flex items-center gap-1 text-13 font-medium text-gray-11'>
-        Connector
+        {t`Connector`}
         {required ? <span className='text-red-11'>*</span> : null}
       </label>
       <div className='relative'>
@@ -190,8 +192,8 @@ export default function FolderStorageConnectorPanel({
           >
             {selectedLabel ||
               (isLoading
-                ? 'Loading...'
-                : `Select ${option.title} connector`)}
+                ? t`Loading...`
+                : t`Select ${option.title} connector`)}
           </span>
           <Icon
             className='size-4 shrink-0 text-gray-8'
@@ -244,13 +246,13 @@ export default function FolderStorageConnectorPanel({
                     }}
                   >
                     <Icon className='size-4' name='lucide:plus' />
-                    Add connection
+                    {t`Add connection`}
                   </button>
                 </>
               ) : (
                 <div className='space-y-3'>
                   <InputText
-                    label='Connection name'
+                    label={t`Connection name`}
                     placeholder={option.title}
                     value={newConnectionName}
                     onChange={setNewConnectionName}
@@ -258,7 +260,7 @@ export default function FolderStorageConnectorPanel({
                   <div className='flex items-center justify-end gap-2'>
                     <Button
                       color='gray'
-                      label='Cancel'
+                      label={t`Cancel`}
                       size='sm'
                       variant='outline'
                       onClick={() => {
@@ -270,7 +272,7 @@ export default function FolderStorageConnectorPanel({
                     />
                     <Button
                       icon='lucide:plug'
-                      label='Connect'
+                      label={t`Connect`}
                       loading={isConnecting}
                       size='sm'
                       onClick={handleAuthorize}

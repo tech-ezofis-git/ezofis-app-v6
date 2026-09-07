@@ -1,0 +1,13 @@
+import { createFileRoute } from '@tanstack/react-router'
+import SignUpPage from '@/pages/sign-up/SignUpPage'
+
+export const Route = createFileRoute('/_auth/newuser/')({
+  component: RouteComponent,
+  staticData: {
+    pageTitle: 'Sign Up',
+  },
+})
+
+function RouteComponent() {
+  return <SignUpPage />
+}

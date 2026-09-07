@@ -1,3 +1,4 @@
+import type { NavigateOptions } from '@tanstack/react-router'
 import { useMsal } from '@azure/msal-react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
@@ -14,6 +15,7 @@ import InputText from '@/components/base/inputs/InputText'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import authUserStore from '@/stores/authUserStore'
+import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 
 interface Props {
   email: string
@@ -23,6 +25,7 @@ interface Props {
 
 const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
   const { instance: msalInstance } = useMsal()
 
   const { resetSignUpUserData, setSignUpUserData } = authUserStore()
@@ -136,7 +139,12 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         }
 
         // skip verify screen
-        navigate({ to: '/reset-password' })
+        navigate({
+          to: resolveAuthPath(
+            '/reset-password',
+            isWhiteLabel,
+          ) as NavigateOptions['to'],
+        })
       } catch (e: any) {
         setError(e?.message ?? 'Google sign-up failed')
       } finally {
@@ -229,7 +237,7 @@ const SignUpForm = ({ email, setEmail, onChangeView }: Props) => {
         className='-mt-2'
         label='Email'
         leftSection={<Icon className='text-gray-9' name='lucide:mail' />}
-        placeholder='hello@ezofis.com'
+        placeholder={`${isWhiteLabel ? "hello@exmaple.com" : "hello@ezofis.com"}`}
         value={email}
         onChange={(v) => {
           setEmail(v)

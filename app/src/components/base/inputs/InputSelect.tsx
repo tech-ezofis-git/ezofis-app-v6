@@ -14,7 +14,8 @@ const InputSelect = forwardRef<HTMLButtonElement, Props>(
     const { filteredOptions, search, onSearch } = useLocalSearch(options)
 
     const handleChange = (value: Option[]) => {
-      onChange(value.length ? value[0] : null)
+      const list = value ?? []
+      onChange(list.length ? list[0] : null)
     }
 
     return (

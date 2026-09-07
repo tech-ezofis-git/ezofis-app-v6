@@ -82,7 +82,7 @@ const initialNodes: Node[] = [
       icon: 'logos:google-gmail',
       label: 'Gmail',
       subLabel: 'Send or receive emails',
-      toolType: 'Gmail',
+      toolType: 'gmail',
       type: 'trigger',
       warning: true,
     },
@@ -96,6 +96,8 @@ const initialNodes: Node[] = [
       iconColor: 'var(--color-secondary-9)',
       label: 'Workflow Success',
       subLabel: 'Automated Process End',
+      toolType: 'end',
+      type: 'end',
       warning: true,
     },
     id: initialEndId,
@@ -114,6 +116,10 @@ const initialEdges: Edge[] = [
 
 const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
   const isNew = workflowId === 'new'
+  const preloaded = isNew ? useWorkflowStore.getState() : null
+  const hasPreloadedGraph = Boolean(
+    preloaded?.loadedNodes?.length && preloaded.loadedEdges,
+  )
 
   const { data } = useQuery({
     ...getWorkflowQueryOptions(workflowId),
@@ -121,10 +127,10 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
   })
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>(
-    isNew ? initialNodes : [],
+    hasPreloadedGraph ? preloaded!.loadedNodes! : isNew ? initialNodes : [],
   )
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(
-    isNew ? initialEdges : [],
+    hasPreloadedGraph ? preloaded!.loadedEdges! : isNew ? initialEdges : [],
   )
   const [contextMenu, setContextMenu] = useState<{
     id: string
@@ -146,13 +152,23 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     selectNode,
   } = useWorkflowStore((state) => state)
 
-  // Reset store when workflowId changes (handled by key reset but good for global store)
+  // Existing workflows reset then load from the API. New workflows keep
+  // whatever the AI / manual create flow already put in the store — resetting
+  // here was wiping the generated name and description.
   useEffect(() => {
-    resetWorkflow()
     if (isNew) {
-      setNodes(initialNodes)
-      setEdges(initialEdges)
+      const { loadedEdges, loadedNodes } = useWorkflowStore.getState()
+      if (loadedNodes?.length && loadedEdges) {
+        setNodes(loadedNodes)
+        setEdges(loadedEdges)
+      } else {
+        setNodes(initialNodes)
+        setEdges(initialEdges)
+      }
+      return
     }
+
+    resetWorkflow()
     return () => {
       resetWorkflow()
     }
@@ -164,8 +180,10 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     if (flowJsonStr && !isNew) {
       try {
         const json =
-          typeof flowJsonStr === 'string' ? JSON.parse(flowJsonStr) : flowJsonStr
-        loadLegacyWorkflow(json)
+          typeof flowJsonStr === 'string'
+            ? JSON.parse(flowJsonStr)
+            : flowJsonStr
+        loadLegacyWorkflow(json, data)
       } catch (e) {
         console.error('Failed to parse workflow json', e)
       }
@@ -178,10 +196,11 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
     if (loadedNodes && loadedEdges) {
       setNodes(loadedNodes)
       setEdges(loadedEdges)
-      // Wait for nodes to render before fitting the viewport
-      requestAnimationFrame(() => {
-        fitView({ duration: 300, padding: 0.2 })
-      })
+      // Wait for nodes to render before fitting the viewport to show all nodes
+      const timer = setTimeout(() => {
+        fitView({ duration: 400, maxZoom: 1.0, padding: 0.2 })
+      }, 100)
+      return () => clearTimeout(timer)
     }
   }, [loadedNodes, loadedEdges, setNodes, setEdges, fitView])
 
@@ -335,15 +354,15 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
             deleteKeyCode={['Backspace', 'Delete']}
             edges={edges}
             edgeTypes={edgeTypes}
+            fitViewOptions={{ padding: 0.2 }}
             maxZoom={0.75}
             minZoom={0.25}
             nodes={nodes}
             nodeTypes={nodeTypes}
             panOnScroll={true}
-            fitView
-            fitViewOptions={{ padding: 0.2 }}
             proOptions={{ hideAttribution: true }}
             zoomOnScroll={false}
+            fitView
             defaultEdgeOptions={{
               type: 'custom',
             }}
@@ -405,7 +424,7 @@ const WorkflowBuilderCanvas = ({ workflowId }: { workflowId: string }) => {
           </div>
         )}
 
-        <WorkflowSettings />
+        <WorkflowSettings nodes={nodes} />
       </div>
     </div>
   )

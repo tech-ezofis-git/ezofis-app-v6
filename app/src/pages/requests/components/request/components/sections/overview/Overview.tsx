@@ -1,3 +1,4 @@
+import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
 import { SpecialZoomLevel, Viewer, Worker } from '@react-pdf-viewer/core'
 import { searchPlugin } from '@react-pdf-viewer/search'
@@ -20,27 +21,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import fileApi from '@/api/file/file'
 import BarLoader from '@/components/base/BarLoader'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Icon from '@/components/base/icon/Icon'
 import InputDate from '@/components/base/inputs/InputDate'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import showToast from '@/components/base/toast/showToast'
-import PaidActionApiTrigger from '@/components/playground/PaidActionApiTrigger'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
+import { isKanbanMissingMatch } from '@/pages/requests/helpers/kanbanBoard'
 import { useAttachments } from '@/pages/requests/hooks/useAttachments'
 import { useComments } from '@/pages/requests/hooks/useComments'
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import '@react-pdf-viewer/core/lib/styles/index.css'
 import {
   localizeRequestFieldLabel,
   localizeRequestStatus,
 } from '@/pages/requests/utils/localizeRequestUi'
-import '@react-pdf-viewer/core/lib/styles/index.css'
-import requestStore from '@/pages/requests/stores/useRequestStore'
 import '@react-pdf-viewer/search/lib/styles/index.css'
-import {
-  getMockDB,
-  startRelatedDocuments,
-  startSupplierVerification,
-} from '@/services/mockBackend'
+import { getMockDB, startSupplierVerification } from '@/services/mockBackend'
 import authUserStore from '@/stores/authUserStore'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import {
   buildFieldMetaMap,
@@ -578,7 +576,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) { }
+      } catch (e) {}
     }
   }
 
@@ -957,238 +955,14 @@ const hasComparableValue = (val: unknown) => {
   return normalized !== '' && normalized !== '-'
 }
 
-const AiRelatedDocsPromptBar = ({
-  onSearch,
-  supplierName,
-  initialText,
-}: {
-  onSearch: (prompt?: string) => void
-  supplierName?: string
-  initialText?: string
-  isComplete?: boolean
-}) => {
-  const defaultText = useMemo(() => {
-    if (initialText) return initialText
-    return supplierName
-      ? `Check for related purchase orders or invoices for ${supplierName}.`
-      : 'Check for related purchase orders or invoices for this supplier.'
-  }, [initialText, supplierName])
-
-  const [promptText, setPromptText] = useState(defaultText)
-  const [isFocused, setIsFocused] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (initialText) {
-      setPromptText(initialText)
-    }
-  }, [initialText])
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      onSearch(promptText)
-    }
-  }
-
-  return (
-    <div
-      className={cn(
-        'flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-[var(--primary-3)] bg-[var(--surface-primary)] p-2 pl-3 shadow-xs border-l-4 border-l-[var(--primary-9)] transition-all duration-300 cursor-text',
-        isFocused
-          ? 'border-[var(--primary-5)] ring-2 ring-[var(--primary-4)]/25 shadow-md'
-          : 'hover:border-[var(--primary-4)]',
-      )}
-      onClick={() => textareaRef.current?.focus()}
-    >
-      <div className='flex flex-1 items-center gap-2.5 min-w-0'>
-        <AiBrandIcon className='size-4 shrink-0 text-[var(--primary-9)]' variant='outline-purple' />
-        <div className='flex-1 flex items-center min-w-0'>
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            className='w-full resize-none border-none bg-transparent p-0 text-xs font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:outline-none focus:ring-0 leading-relaxed overflow-hidden caret-[var(--primary-9)]'
-            placeholder='Describe what related documents you want to find...'
-            value={promptText}
-            onChange={(e) => setPromptText(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-      </div>
-
-      <button
-        type='button'
-        className='relative inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-3 py-1.5 text-xs font-bold text-[var(--primary-9)] shadow-xs transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
-        onClick={(e) => {
-          e.stopPropagation()
-          onSearch(promptText)
-        }}
-      >
-        <Icon name='tabler:wand' className='h-3.5 w-3.5' />
-        Check for matches
-      </button>
-    </div>
-  )
-}
-
-const AiRelatedDocsCompleteCard = ({
-  supplierName,
-  data,
-  attachedDocs,
-  setAttachedDocs,
-  onSearch,
-}: {
-  supplierName?: string
-  data: any
-  attachedDocs: Record<string, boolean>
-  setAttachedDocs: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
-  onSearch: (prompt?: string) => void
-}) => {
-  const initialText = useMemo(
-    () => `Related documents for ${supplierName || 'Northern Suppliers'}`,
-    [supplierName],
-  )
-  const [text, setText] = useState(initialText)
-  const [isEditing, setIsEditing] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  const isModified = text.trim() !== initialText.trim()
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      onSearch(text)
-    }
-  }
-
-  return (
-    <div className='mb-4 rounded-xl border border-[var(--primary-3)] border-l-4 border-l-[var(--primary-9)] bg-[var(--surface-primary)] p-3 shadow-xs transition-all hover:shadow-md animate-in fade-in zoom-in-95 duration-400 fill-mode-both'>
-      {/* Top Header Row: Editable Related Text + Matches Pill or Check for Matches Button */}
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 min-w-0'>
-        <div
-          className='flex flex-1 items-center gap-2.5 min-w-0 cursor-text'
-          onClick={() => textareaRef.current?.focus()}
-        >
-          <AiBrandIcon className='size-4 shrink-0 text-[var(--primary-9)]' variant='outline-purple' />
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            className='w-full resize-none border-none bg-transparent p-0 text-xs font-bold text-[var(--gray-13)] placeholder:text-[var(--gray-9)] focus:outline-none focus:ring-0 leading-relaxed overflow-hidden caret-[var(--primary-9)]'
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value)
-              setIsEditing(true)
-            }}
-            onFocus={() => setIsEditing(true)}
-            onBlur={() => {
-              if (!isModified) setIsEditing(false)
-            }}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-
-        <div className='flex items-center gap-2 shrink-0 self-end sm:self-center'>
-          {(isEditing || isModified) ? (
-            <button
-              type='button'
-              className='relative inline-flex shrink-0 animate-pulse items-center gap-1.5 rounded-lg border border-[var(--primary-4)] bg-[var(--primary-2)] px-3 py-1.5 text-xs font-bold text-[var(--primary-9)] shadow-xs transition-all hover:scale-[1.02] hover:bg-[var(--primary-3)] hover:text-[var(--primary-10)] active:scale-95'
-              onClick={() => onSearch(text)}
-            >
-              <Icon name='tabler:wand' className='h-3.5 w-3.5' />
-              Check for matches
-            </button>
-          ) : (
-            <span className='rounded-full bg-[var(--primary-2)] px-2.5 py-1 text-xs font-bold text-[var(--primary-9)] shrink-0'>
-              {data?.chips?.length ?? 0} matches
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Document Chips Row */}
-      <div className='flex flex-wrap items-center gap-2.5 pt-2.5 mt-2.5 border-t border-[var(--gray-3)]'>
-        {data?.chips?.map((rawChip: any, idx: number) => {
-          const chip = {
-            ...rawChip,
-            type: rawChip.type || (rawChip.id.includes('PO') ? 'PO' : 'INV'),
-            confidence: rawChip.confidence || (idx === 0 ? 92 : idx === 1 ? 88 : 74),
-            folderName:
-              rawChip.folderName ||
-              (rawChip.id.includes('PO') ? 'Procurement Ledger' : 'Vendor Archive'),
-          }
-          const isAttached = attachedDocs[chip.id]
-          return (
-            <div
-              className='flex items-center justify-between gap-3 rounded-lg border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-2 text-xs shadow-xs transition-all hover:scale-[1.02] hover:border-[var(--primary-4)] hover:bg-[var(--surface-primary)] hover:shadow-sm active:scale-98 animate-in fade-in slide-in-from-bottom-2 duration-400 fill-mode-both'
-              style={{ animationDelay: `${idx * 80}ms` }}
-              key={chip.id}
-            >
-              <div className='flex items-center gap-2 min-w-0'>
-                <Icon
-                  name='tabler:file-text'
-                  className='h-4 w-4 text-[var(--red-9)] shrink-0 mt-0.5 self-start'
-                />
-                <div className='flex flex-col min-w-0 gap-0.5'>
-                  <button
-                    className='font-bold text-[var(--gray-13)] hover:text-[var(--primary-9)] hover:underline truncate max-w-[150px] text-left transition-colors'
-                    title='View Document'
-                  >
-                    {chip.id}.pdf
-                  </button>
-
-                  {/* Folder Name Badge below file name */}
-                  <span
-                    className='inline-flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0 w-fit'
-                    title={`Folder: ${chip.folderName}`}
-                  >
-                    <Icon name='tabler:folder' className='h-3 w-3 text-[var(--primary-9)]' />
-                    {chip.folderName}
-                  </span>
-                </div>
-              </div>
-
-              <div className='flex items-center gap-2 shrink-0'>
-                <span className='text-[var(--gray-9)] tabular-nums text-xs font-medium shrink-0'>
-                  {chip.confidence}%
-                </span>
-
-                <button
-                  className={cn(
-                    'flex h-6 w-6 items-center justify-center rounded transition-all text-xs font-bold shrink-0 active:scale-90',
-                    isAttached
-                      ? 'bg-[var(--green-2)] text-[var(--green-9)]'
-                      : 'text-[var(--primary-9)] hover:bg-[var(--primary-2)]',
-                  )}
-                  title={isAttached ? 'Attached' : 'Attach to invoice'}
-                  onClick={() =>
-                    setAttachedDocs((prev) => ({
-                      ...prev,
-                      [chip.id]: !prev[chip.id],
-                    }))
-                  }
-                >
-                  <Icon
-                    name={isAttached ? 'tabler:check' : 'tabler:plus'}
-                    className='h-3.5 w-3.5'
-                  />
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 const FormCard = ({
+  fieldKey,
   highlight = false,
   icon: FieldIcon,
   invoiceValue,
   isLoading = false,
   label,
+  missing = false,
   options = [],
   poValue,
   score,
@@ -1198,6 +972,7 @@ const FormCard = ({
   onChange,
   onFocus,
 }: any) => {
+  const { t } = useLingui()
   const [isEditing, setIsEditing] = useState(false)
   const [localValue, setLocalValue] = useState(value)
   const [userEdited, setUserEdited] = useState(false)
@@ -1219,9 +994,9 @@ const FormCard = ({
   const isPerfectMatch = isUsingPo
   const effectiveScore =
     score !== undefined &&
-      score !== null &&
-      Number(score) < 100 &&
-      isPerfectMatch
+    score !== null &&
+    Number(score) < 100 &&
+    isPerfectMatch
       ? 100
       : score
 
@@ -1262,30 +1037,36 @@ const FormCard = ({
     if (norm === 'manual') {
       return (
         <span
-          title='Source: Manual Entry'
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--orange-3)] bg-[var(--orange-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--orange-10)]'
+          title={t`Source: Manual Entry`}
         >
-          <Icon name='lucide:pencil' className='h-2.5 w-2.5 text-[var(--orange-9)]' />
-          <span>Manual</span>
+          <Icon
+            className='h-2.5 w-2.5 text-[var(--orange-9)]'
+            name='lucide:pencil'
+          />
+          <span>{t`Manual`}</span>
         </span>
       )
     }
     if (norm === 'po_master' || norm === 'po') {
       return (
         <span
-          title='Source: PO Master (ERP/Excel Data)'
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-3)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--blue-10)]'
+          title={t`Source: PO Master (ERP/Excel Data)`}
         >
-          <Icon name='lucide:database' className='h-2.5 w-2.5 text-[var(--blue-9)]' />
-          <span>PO Master</span>
+          <Icon
+            className='h-2.5 w-2.5 text-[var(--blue-9)]'
+            name='lucide:database'
+          />
+          <span>{t`PO Master`}</span>
         </span>
       )
     }
     if (norm === 'ai' || norm === 'ai_agent') {
       return (
         <span
-          title='Source: AI Inferred'
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--primary-3)] bg-[var(--primary-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--primary-10)]'
+          title='Source: AI Inferred'
         >
           <AiBrandIcon className='size-[10px] shrink-0' />
           <span>AI</span>
@@ -1294,10 +1075,13 @@ const FormCard = ({
     }
     return (
       <span
-        title='Source: OCR Document'
         className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--teal-3)] bg-[var(--teal-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--teal-10)]'
+        title='Source: OCR Document'
       >
-        <Icon name='lucide:scan-text' className='h-2.5 w-2.5 text-[var(--teal-9)]' />
+        <Icon
+          className='h-2.5 w-2.5 text-[var(--teal-9)]'
+          name='lucide:scan-text'
+        />
         <span>OCR</span>
       </span>
     )
@@ -1345,9 +1129,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-          (opt: any) =>
-            String(opt.id).toLowerCase() === localValue.toLowerCase(),
-        ) || (localValue ? { id: localValue, name: localValue } : null)
+            (opt: any) =>
+              String(opt.id).toLowerCase() === localValue.toLowerCase(),
+          ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1394,8 +1178,10 @@ const FormCard = ({
   if (isEditing) {
     return (
       <div
+        data-field-id={fieldKey || label}
         className={cn(
           'group flex items-start gap-3 rounded-lg border border-[var(--primary-3)] bg-surface p-3 shadow-sm ring-1 ring-[var(--primary-3)]/20',
+          missing && 'border-red-8 bg-red-1 ring-red-4',
         )}
       >
         <div
@@ -1408,10 +1194,10 @@ const FormCard = ({
         </div>
         <div className='min-w-0 flex-1'>
           <div className='mb-0.5 flex items-center justify-between gap-2'>
-            <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate min-w-0'>
+            <p className='min-w-0 truncate text-[10px] font-semibold text-[var(--gray-11)]'>
               {label}
             </p>
-            <div className='flex items-center gap-1.5 shrink-0'>
+            <div className='flex shrink-0 items-center gap-1.5'>
               {isLoading ? (
                 <div className='h-3.5 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
               ) : (
@@ -1429,6 +1215,7 @@ const FormCard = ({
                       )}
                     >
                       <Icon
+                        className='h-2.5 w-2.5 shrink-0'
                         name={
                           Number(effectiveScore) >= 90
                             ? 'lucide:circle-check'
@@ -1436,7 +1223,6 @@ const FormCard = ({
                               ? 'lucide:alert-circle'
                               : 'lucide:alert-triangle'
                         }
-                        className='h-2.5 w-2.5 shrink-0'
                       />
                       <span>{Math.round(Number(effectiveScore))}%</span>
                     </span>
@@ -1449,6 +1235,11 @@ const FormCard = ({
           <div className='animate-in fade-in zoom-in-95 duration-200'>
             {inputElement}
           </div>
+          {missing ? (
+            <p className='mt-1 text-12 font-medium text-red-9'>
+              {t`This field is required.`}
+            </p>
+          ) : null}
         </div>
       </div>
     )
@@ -1457,8 +1248,10 @@ const FormCard = ({
   return (
     <button
       type='button'
+      data-field-id={fieldKey || label}
       className={cn(
         'group flex w-full cursor-pointer items-start gap-3 rounded-lg border border-none border-transparent bg-transparent p-3 text-left transition-all hover:border-[var(--gray-3)] hover:bg-surface hover:shadow-sm focus:ring-1 focus:ring-[var(--primary-3)]/50 focus:outline-none',
+        missing && 'border border-solid border-red-8 bg-red-1',
       )}
       onClick={() => {
         setIsEditing(true)
@@ -1475,10 +1268,10 @@ const FormCard = ({
       </div>
       <div className='min-w-0 flex-1'>
         <div className='mb-0.5 flex items-center justify-between gap-2'>
-          <p className='text-[10px] font-semibold text-[var(--gray-11)] truncate min-w-0'>
+          <p className='min-w-0 truncate text-[10px] font-semibold text-[var(--gray-11)]'>
             {label}
           </p>
-          <div className='flex items-center gap-1.5 shrink-0'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             {isLoading ? (
               <div className='h-3.5 w-12 animate-pulse rounded bg-[var(--gray-3)]' />
             ) : (
@@ -1496,6 +1289,7 @@ const FormCard = ({
                     )}
                   >
                     <Icon
+                      className='h-2.5 w-2.5 shrink-0'
                       name={
                         Number(effectiveScore) >= 90
                           ? 'lucide:circle-check'
@@ -1503,7 +1297,6 @@ const FormCard = ({
                             ? 'lucide:alert-circle'
                             : 'lucide:alert-triangle'
                       }
-                      className='h-2.5 w-2.5 shrink-0'
                     />
                     <span>{Math.round(Number(effectiveScore))}%</span>
                   </span>
@@ -1525,15 +1318,21 @@ const FormCard = ({
                   value === null ||
                   value === undefined ||
                   value === '') &&
-                'font-medium text-[var(--gray-9)]',
+                  'font-medium text-[var(--gray-9)]',
               )}
             >
               {value === null || value === undefined || value === ''
                 ? '-'
                 : value}
             </p>
+            {missing ? (
+              <p className='text-12 font-medium text-red-9'>
+                {t`This field is required.`}
+              </p>
+            ) : null}
             {canSwitchSources && (
               <div
+                className='group/suggest animate-in fade-in zoom-in-95 mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all duration-200 hover:bg-[var(--primary-2)] active:scale-98'
                 role='button'
                 tabIndex={0}
                 title={
@@ -1541,7 +1340,6 @@ const FormCard = ({
                     ? `Switch to Invoice: ${invoiceValue}`
                     : `Switch to PO: ${poValue}`
                 }
-                className='group/suggest mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all hover:bg-[var(--primary-2)] active:scale-98 animate-in fade-in zoom-in-95 duration-200'
                 onClick={(e) => {
                   e.stopPropagation()
                   applySourceValue(isUsingPo ? invoiceValue : poValue)
@@ -1555,11 +1353,14 @@ const FormCard = ({
                 }}
               >
                 <div className='flex min-w-0 items-center gap-1.5'>
-                  <AiBrandIcon className='size-[13px] shrink-0' variant='outline-purple' />
-                  <span className='font-semibold text-[var(--primary-9)] shrink-0'>
-                    {isUsingPo ? 'Invoice' : 'PO Master'}
+                  <AiBrandIcon
+                    className='size-[13px] shrink-0'
+                    variant='outline-purple'
+                  />
+                  <span className='shrink-0 font-semibold text-[var(--primary-9)]'>
+                    {isUsingPo ? t`Invoice` : t`PO Master`}
                   </span>
-                  <span className='text-[var(--primary-9)]/60 shrink-0'>·</span>
+                  <span className='shrink-0 text-[var(--primary-9)]/60'>·</span>
                   <span className='truncate font-bold text-[var(--gray-13)]'>
                     {isUsingPo ? invoiceValue : poValue}
                   </span>
@@ -1725,7 +1526,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--red-1)]/50',
       chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
       icon: 'tabler:x',
-      label: 'Reject Transaction',
+      label: staticT`Reject Transaction`,
     }
   }
   if (r.includes('WAIT')) {
@@ -1733,7 +1534,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--blue-1)]/50',
       chip: 'border border-[var(--blue-3)] bg-[var(--blue-1)] text-[var(--blue-9)]',
       icon: 'tabler:hourglass-high',
-      label: 'Wait for Balance',
+      label: staticT`Wait for Balance`,
     }
   }
   if (r.includes('CONTACT')) {
@@ -1741,7 +1542,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--purple-1)]/50',
       chip: 'border border-[var(--purple-3)] bg-[var(--purple-1)] text-[var(--purple-9)]',
       icon: 'tabler:message-circle',
-      label: 'Contact Vendor',
+      label: staticT`Contact Vendor`,
     }
   }
   if (r.includes('CANCEL')) {
@@ -1749,7 +1550,7 @@ const getRecommendationMeta = (rec?: string) => {
       bg: 'bg-[var(--red-1)]/50',
       chip: 'border border-[var(--red-3)] bg-[var(--red-1)] text-[var(--red-9)]',
       icon: 'tabler:ban',
-      label: 'Cancel Remaining',
+      label: staticT`Cancel Remaining`,
     }
   }
   return {
@@ -1797,9 +1598,8 @@ const toPlaygroundAmount = (value: any) => {
 }
 
 const Overview = (props: any) => {
-  const { t, i18n } = useLingui()
+  const { i18n, t } = useLingui()
   const {
-    actions,
     agentData,
     allowedLabels,
     formDefinition,
@@ -1814,10 +1614,12 @@ const Overview = (props: any) => {
     transactionId,
     workflowId,
     setFormModel,
-    onOpenPlayground,
   } = props
 
   const processingProcesses = requestStore((state) => state.processingProcesses)
+  const kanbanMissingFieldIds = requestStore(
+    (state) => state.kanbanMissingFieldIds,
+  )
   const matchingProc = useMemo(() => {
     return processingProcesses.find(
       (p) =>
@@ -1829,9 +1631,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-      selectedItem?.instanceId ||
-      processId ||
-      '',
+        selectedItem?.instanceId ||
+        processId ||
+        '',
     )
   }, [selectedItem, processId])
 
@@ -2037,18 +1839,6 @@ const Overview = (props: any) => {
     () => hasMatterValidationData(agentData),
     [agentData],
   )
-  const paidAction = useMemo(() => {
-    return (
-      actions?.find(
-        (act: any) => String(act?.label || '').toLowerCase() === 'paid',
-      ) || {
-        endpoint: 'https://demo.ezofis.com/V6Playground/apikey.html',
-        label: 'Paid',
-        // model: 'gemini-2.0-flash-exp',
-        // provider: 'gemini',
-      }
-    )
-  }, [actions])
   const analysisCardCount =
     3 +
     (showGlValidation ? 1 : 0) +
@@ -2057,6 +1847,22 @@ const Overview = (props: any) => {
 
   const [activeTab, setActiveTab] = useState('summary')
   const [activeDetailView, setActiveDetailView] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!kanbanMissingFieldIds?.length) return
+    setActiveTab('summary')
+    const timer = window.setTimeout(() => {
+      const target = kanbanMissingFieldIds
+        .map((id) =>
+          document.querySelector(`[data-field-id="${CSS.escape(id)}"]`),
+        )
+        .find((node) => node instanceof HTMLElement)
+      if (target instanceof HTMLElement) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 280)
+    return () => window.clearTimeout(timer)
+  }, [kanbanMissingFieldIds])
 
   // Document ID resolver
   const docId = useMemo(() => {
@@ -2095,19 +1901,6 @@ const Overview = (props: any) => {
     return db.documents[docId]?.supplierVerification || { status: 'not_run' }
   })
 
-  // Related Documents Check State
-  const [relatedDocsState, setRelatedDocsState] = useState<{
-    data?: any
-    status: 'not_run' | 'pending' | 'complete'
-  }>(() => {
-    if (!docId) return { status: 'not_run' }
-    const db = getMockDB()
-    return db.documents[docId]?.relatedDocuments || { status: 'not_run' }
-  })
-
-  // Attached Documents State
-  const [attachedDocs, setAttachedDocs] = useState<Record<string, boolean>>({})
-
   // Synchronize state when document ID changes
   useEffect(() => {
     if (!docId) return
@@ -2115,10 +1908,6 @@ const Overview = (props: any) => {
     setSupplierCheckState(
       db.documents[docId]?.supplierVerification || { status: 'not_run' },
     )
-    setRelatedDocsState(
-      db.documents[docId]?.relatedDocuments || { status: 'not_run' },
-    )
-    setAttachedDocs({})
   }, [docId])
 
   // Tab sync for external updates (e.g. cross-tab events)
@@ -2128,9 +1917,6 @@ const Overview = (props: any) => {
       const db = getMockDB()
       setSupplierCheckState(
         db.documents[docId]?.supplierVerification || { status: 'not_run' },
-      )
-      setRelatedDocsState(
-        db.documents[docId]?.relatedDocuments || { status: 'not_run' },
       )
     }
     window.addEventListener('storage', handleStorageChange)
@@ -2164,34 +1950,7 @@ const Overview = (props: any) => {
       setSupplierCheckState({ status: 'not_run' })
       showToast({
         message:
-          error?.message ||
-          t`Verification failed. 1 credit has been refunded.`,
-        variant: 'error',
-      })
-    }
-  }
-
-  // Related Documents Handler
-  const handleFindRelatedDocumentsClick = async (_customPrompt?: string) => {
-    if (!docId) return
-    try {
-      setRelatedDocsState({ status: 'pending' })
-
-      const result = await startRelatedDocuments(docId, supplierName)
-
-      setRelatedDocsState({
-        data: result,
-        status: 'complete',
-      })
-
-      showToast({
-        message: 'Successfully located related purchase orders and invoices.',
-        variant: 'success',
-      })
-    } catch (error: any) {
-      setRelatedDocsState({ status: 'not_run' })
-      showToast({
-        message: error?.message || 'Search failed. 1 credit has been refunded.',
+          error?.message || t`Verification failed. 1 credit has been refunded.`,
         variant: 'error',
       })
     }
@@ -2210,7 +1969,7 @@ const Overview = (props: any) => {
     )
   }, [formModel])
 
-  const apiPlaygroundContext = useMemo<ApiPlaygroundContext>(() => {
+  const invoiceSummary = useMemo(() => {
     const invoiceHeader =
       agentData?.['Extracted Invoice JSON']?.invoice_header || {}
     const amount = firstPlaygroundValue(
@@ -2242,7 +2001,7 @@ const Overview = (props: any) => {
       selectedItem?.vendor,
       supplierName === 'the supplier' ? '' : supplierName,
     )
-    const document = {
+    return {
       amount: toPlaygroundAmount(amount),
       currency: toPlaygroundString(
         firstPlaygroundValue(
@@ -2282,6 +2041,10 @@ const Overview = (props: any) => {
       ),
       vendor: toPlaygroundString(vendor),
     }
+  }, [agentData, formModel, poVal, selectedItem, supplierName])
+
+  const apiPlaygroundContext = useMemo<ApiPlaygroundContext>(() => {
+    const document = invoiceSummary
 
     return {
       endpoints: [
@@ -2318,7 +2081,13 @@ const Overview = (props: any) => {
         },
       ],
     }
-  }, [agentData, formModel, poVal, selectedItem, supplierName])
+  }, [invoiceSummary])
+
+  const setPlaygroundContext = usePlaygroundStore((state) => state.setContext)
+  useEffect(() => {
+    setPlaygroundContext(apiPlaygroundContext)
+    return () => setPlaygroundContext(null)
+  }, [apiPlaygroundContext, setPlaygroundContext])
 
   const [activeBackOrderTab, setActiveBackOrderTab] =
     useState<string>('current')
@@ -2329,10 +2098,19 @@ const Overview = (props: any) => {
     console.log('formModel:', formModel)
     console.log('allowedLabels:', allowedLabels)
   }, [formModel, allowedLabels])
-  const { data: attachmentData } = useAttachments(
+  const { data: attachmentData, refetch: refetchAttachments } = useAttachments(
     workflowId,
     resolvedInstanceId,
     true,
+  )
+  const attachedItemIds = useMemo(
+    () =>
+      new Set(
+        (attachmentData || [])
+          .map((file) => String(file.itemId ?? file.id ?? ''))
+          .filter(Boolean),
+      ),
+    [attachmentData],
   )
   const {
     data: commentsData,
@@ -3205,9 +2983,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-        selectedItem?.repositoryId ||
-        repositoryId ||
-        '',
+          selectedItem?.repositoryId ||
+          repositoryId ||
+          '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -3471,10 +3249,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                      No matching fields
-                    </div>
-                  )}
+                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                    No matching fields
+                  </div>
+                )}
               </div>
             </menu>
           )}
@@ -3494,9 +3272,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
                       analysisCardCount === 5 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -3620,14 +3398,14 @@ const Overview = (props: any) => {
                         align='left'
                         icon={Store}
                         isLoading={isCurrentlyProcessing}
-                        status={localizeRequestStatus(
-                          i18n,
-                          supplierCheckState.data?.status || 'Verified',
-                        )}
                         title={t`Supplier Verification`}
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          supplierCheckState.data?.status || 'Verified',
+                        )}
                         statusType={
                           supplierCheckState.data?.statusType || 'success'
                         }
@@ -3644,10 +3422,6 @@ const Overview = (props: any) => {
                         align='right'
                         icon={ListFilter}
                         isSelected={activeDetailView === 'gl_matching'}
-                        status={localizeRequestStatus(
-                          i18n,
-                          glValidationDisplay.status,
-                        )}
                         statusType={glValidationDisplay.statusType}
                         title={t`GL Account Matching`}
                         isLoading={
@@ -3655,6 +3429,10 @@ const Overview = (props: any) => {
                           (!glValidationDisplay?.account ||
                             glValidationDisplay.account === 'Not Available')
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          glValidationDisplay.status,
+                        )}
                         value={
                           glValidationDisplay.account ||
                           glValidationDisplay.status
@@ -3663,15 +3441,11 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                      backOrderDisplay?.status === 'Detected' ? (
+                    backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         align='right'
                         icon={PackageX}
                         isSelected={activeDetailView === 'back_order'}
-                        status={localizeRequestStatus(
-                          i18n,
-                          backOrderDisplay.status,
-                        )}
                         statusType={backOrderDisplay.statusType}
                         title={t`Back Order`}
                         value={backOrderDisplay.value}
@@ -3680,6 +3454,10 @@ const Overview = (props: any) => {
                           (!backOrderDisplay?.value ||
                             backOrderDisplay.value === '---')
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          backOrderDisplay.status,
+                        )}
                         onClick={() => {
                           setActiveDetailView('back_order')
                           setActiveBackOrderTab('current')
@@ -3715,10 +3493,6 @@ const Overview = (props: any) => {
                         align='right'
                         icon={Briefcase}
                         isSelected={activeDetailView === 'matter_validation'}
-                        status={localizeRequestStatus(
-                          i18n,
-                          matterValidationDisplay.status,
-                        )}
                         statusType={matterValidationDisplay.statusType}
                         title={t`Matter Validation`}
                         value={matterValidationDisplay.value}
@@ -3727,6 +3501,10 @@ const Overview = (props: any) => {
                           (!matterValidationDisplay?.value ||
                             matterValidationDisplay.value === '---')
                         }
+                        status={localizeRequestStatus(
+                          i18n,
+                          matterValidationDisplay.status,
+                        )}
                         onClick={() => setActiveDetailView('matter_validation')}
                       />
                     )}
@@ -3793,15 +3571,6 @@ const Overview = (props: any) => {
                           </button>
                         ))}
                       </div>
-                      {onOpenPlayground && (
-                        <div className='animate-in fade-in pb-2.5 duration-300'>
-                          <PaidActionApiTrigger
-                            action={paidAction}
-                            context={apiPlaygroundContext}
-                            onTrigger={onOpenPlayground}
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -3891,7 +3660,7 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             agentData?.duplicate_check?.status ||
-                            'No Duplicate',
+                              'No Duplicate',
                           )}
                           statusType={
                             agentData?.duplicate_check?.status === 'Duplicate'
@@ -3963,11 +3732,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'supplier_verification' && (
                         <DetailReportView
                           icon={Store}
+                          title={t`Supplier Verification Registry`}
                           status={localizeRequestStatus(
                             i18n,
                             supplierCheckState.data?.status || 'Verified',
                           )}
-                          title={t`Supplier Verification Registry`}
                           statusType={
                             supplierCheckState.data?.statusType || 'success'
                           }
@@ -4066,16 +3835,16 @@ const Overview = (props: any) => {
                                 </div>
                                 {(agentData?.gl_validation?.reason ||
                                   agentData?.gl_matching?.reason) && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                      <span className='font-semibold text-[var(--gray-11)]'>
-                                        Matching Rationale
-                                      </span>
-                                      <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                        {agentData?.gl_validation?.reason ||
-                                          agentData?.gl_matching?.reason}
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Matching Rationale
+                                    </span>
+                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                      {agentData?.gl_validation?.reason ||
+                                        agentData?.gl_matching?.reason}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -4159,11 +3928,11 @@ const Overview = (props: any) => {
                       {activeDetailView === 'matter_validation' && (
                         <DetailReportView
                           icon={Briefcase}
+                          title={t`Legal Matter Association Check`}
                           status={localizeRequestStatus(
                             i18n,
                             matterValidationDisplay?.status || 'Unknown',
                           )}
-                          title={t`Legal Matter Association Check`}
                           statusType={
                             matterValidationDisplay?.statusType || 'default'
                           }
@@ -4195,18 +3964,18 @@ const Overview = (props: any) => {
                                 )}
                                 {agentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                      <span className='font-semibold text-[var(--gray-11)]'>
-                                        Compliance Note
-                                      </span>
-                                      <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
-                                        {
-                                          agentData.matter_validation
-                                            .validation_details.reason
-                                        }
-                                      </span>
-                                    </div>
-                                  )}
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
+                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                      Compliance Note
+                                    </span>
+                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                      {
+                                        agentData.matter_validation
+                                          .validation_details.reason
+                                      }
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-4'>
@@ -4260,8 +4029,8 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ]?.recommendation
+                                        activeBackOrderTab
+                                      ]?.recommendation
                                 const recMeta =
                                   getRecommendationMeta(currentRec)
                                 return (
@@ -4321,8 +4090,8 @@ const Overview = (props: any) => {
                               activeBackOrderTab === 'current'
                                 ? backOrder
                                 : MOCK_PREVIOUS_BACKORDERS[
-                                activeBackOrderTab
-                                ] || {}
+                                    activeBackOrderTab
+                                  ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
                             const currencySymbol =
@@ -4394,8 +4163,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
@@ -4427,8 +4196,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                  activeBackOrderTab
-                                  ] || {}
+                                      activeBackOrderTab
+                                    ] || {}
 
                               const items =
                                 currentData?.missing_qty_by_item || []
@@ -4596,130 +4365,151 @@ const Overview = (props: any) => {
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                           {!formModel ||
-                            Object.keys(formModel).length === 0 ||
-                            !Object.values(formModel).some(
-                              hasMeaningfulScalarValue,
-                            )
+                          Object.keys(formModel).length === 0 ||
+                          !Object.values(formModel).some(
+                            hasMeaningfulScalarValue,
+                          )
                             ? [
-                              'Supplier Name',
-                              'Invoice Number',
-                              'Invoice Date',
-                              'Invoice Amount',
-                              'PO Number',
-                              'Payment Terms',
-                              'Currency',
-                              'Tax Amount',
-                            ].map((label) => (
-                              <FormCard
-                                icon={getFieldIcon(label)}
-                                isLoading={isCurrentlyProcessing}
-                                key={label}
-                                label={localizeRequestFieldLabel(i18n, label)}
-                                options={getOptions(label)}
-                                type={getFieldType(label)}
-                                value={'-'}
-                                onChange={(newVal: string) =>
-                                  handleFieldChange(label, newVal)
-                                }
-                                onFocus={(val: any) =>
-                                  handleFieldFocus(val, label)
-                                }
-                              />
-                            ))
-                            : Object.entries(formModel || {})
-                              .filter(([key, val]) => {
-                                if (typeof val === 'object' && val !== null) {
-                                  if ('Invoice Value' in val) {
-                                    return true
+                                'Supplier Name',
+                                'Invoice Number',
+                                'Invoice Date',
+                                'Invoice Amount',
+                                'PO Number',
+                                'Payment Terms',
+                                'Currency',
+                                'Tax Amount',
+                              ].map((label) => (
+                                <FormCard
+                                  fieldKey={label}
+                                  icon={getFieldIcon(label)}
+                                  isLoading={isCurrentlyProcessing}
+                                  key={label}
+                                  label={localizeRequestFieldLabel(i18n, label)}
+                                  missing={isKanbanMissingMatch(
+                                    kanbanMissingFieldIds,
+                                    label,
+                                  )}
+                                  options={getOptions(label)}
+                                  type={getFieldType(label)}
+                                  value={'-'}
+                                  onChange={(newVal: string) =>
+                                    handleFieldChange(label, newVal)
                                   }
-                                  return false
-                                }
-                                if (typeof val === 'string') {
-                                  const trimmed = val.trim()
-                                  if (
-                                    trimmed.startsWith('[') &&
-                                    trimmed.endsWith(']')
-                                  )
+                                  onFocus={(val: any) =>
+                                    handleFieldFocus(val, label)
+                                  }
+                                />
+                              ))
+                            : Object.entries(formModel || {})
+                                .filter(([key, val]) => {
+                                  if (typeof val === 'object' && val !== null) {
+                                    if ('Invoice Value' in val) {
+                                      return true
+                                    }
                                     return false
+                                  }
+                                  if (typeof val === 'string') {
+                                    const trimmed = val.trim()
+                                    if (
+                                      trimmed.startsWith('[') &&
+                                      trimmed.endsWith(']')
+                                    )
+                                      return false
+                                    if (
+                                      trimmed.startsWith('{') &&
+                                      trimmed.endsWith('}')
+                                    )
+                                      return false
+                                  }
+
                                   if (
-                                    trimmed.startsWith('{') &&
-                                    trimmed.endsWith('}')
+                                    !allowedLabels ||
+                                    allowedLabels.size === 0
+                                  ) {
+                                    return (
+                                      hasMeaningfulScalarValue(val) ||
+                                      isKanbanMissingMatch(
+                                        kanbanMissingFieldIds,
+                                        key,
+                                      )
+                                    )
+                                  }
+
+                                  return (
+                                    allowedLabels.has(key) ||
+                                    hasMeaningfulScalarValue(val) ||
+                                    isKanbanMissingMatch(
+                                      kanbanMissingFieldIds,
+                                      key,
+                                    )
                                   )
-                                    return false
-                                }
-
-                                if (
-                                  !allowedLabels ||
-                                  allowedLabels.size === 0
-                                ) {
-                                  return hasMeaningfulScalarValue(val)
-                                }
-
-                                return (
-                                  allowedLabels.has(key) ||
-                                  hasMeaningfulScalarValue(val)
-                                )
-                              })
-                              .map(([key, val]) => {
-                                const rawVal =
-                                  val &&
+                                })
+                                .map(([key, val]) => {
+                                  const rawVal =
+                                    val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                    ? val['Invoice Value']
-                                    : val
+                                      ? val['Invoice Value']
+                                      : val
 
-                                const fieldType = getFieldType(key)
-                                const displayValue =
-                                  fieldType === 'date' &&
+                                  const fieldType = getFieldType(key)
+                                  const displayValue =
+                                    fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                    ? null
-                                    : rawVal || '-'
+                                      ? null
+                                      : rawVal || '-'
 
-                                return (
-                                  <FormCard
-                                    icon={getFieldIcon(key)}
-                                    invoiceValue={
-                                      getFieldInvoiceValue(key) ?? displayValue
-                                    }
-                                    key={key}
-                                    label={localizeRequestFieldLabel(
-                                      i18n,
-                                      key,
-                                    )}
-                                    options={getOptions(key)}
-                                    poValue={getFieldPoValue(key)}
-                                    score={getFieldScore(key)}
-                                    type={fieldType}
-                                    value={displayValue}
-                                    highlight={(() => {
-                                      const normalized = key.toLowerCase()
-                                      if (normalized.includes('due date'))
-                                        return false
-                                      return (
-                                        normalized.includes('total') ||
-                                        normalized === 'due' ||
-                                        normalized.includes('total due')
-                                      )
-                                    })()}
-                                    isLoading={
-                                      isCurrentlyProcessing &&
-                                      (displayValue === null ||
-                                        displayValue === undefined ||
-                                        displayValue === '' ||
-                                        displayValue === '-')
-                                    }
-                                    onChange={(newVal: string) =>
-                                      handleFieldChange(key, newVal)
-                                    }
-                                    onFocus={(val: any) =>
-                                      handleFieldFocus(val, key)
-                                    }
-                                  />
-                                )
-                              })}
+                                  return (
+                                    <FormCard
+                                      fieldKey={key}
+                                      icon={getFieldIcon(key)}
+                                      key={key}
+                                      missing={isKanbanMissingMatch(
+                                        kanbanMissingFieldIds,
+                                        key,
+                                      )}
+                                      options={getOptions(key)}
+                                      poValue={getFieldPoValue(key)}
+                                      score={getFieldScore(key)}
+                                      type={fieldType}
+                                      value={displayValue}
+                                      highlight={(() => {
+                                        const normalized = key.toLowerCase()
+                                        if (normalized.includes('due date'))
+                                          return false
+                                        return (
+                                          normalized.includes('total') ||
+                                          normalized === 'due' ||
+                                          normalized.includes('total due')
+                                        )
+                                      })()}
+                                      invoiceValue={
+                                        getFieldInvoiceValue(key) ??
+                                        displayValue
+                                      }
+                                      isLoading={
+                                        isCurrentlyProcessing &&
+                                        (displayValue === null ||
+                                          displayValue === undefined ||
+                                          displayValue === '' ||
+                                          displayValue === '-')
+                                      }
+                                      label={localizeRequestFieldLabel(
+                                        i18n,
+                                        key,
+                                      )}
+                                      onChange={(newVal: string) =>
+                                        handleFieldChange(key, newVal)
+                                      }
+                                      onFocus={(val: any) =>
+                                        handleFieldFocus(val, key)
+                                      }
+                                    />
+                                  )
+                                })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -4775,7 +4565,7 @@ const Overview = (props: any) => {
                             className={cn(
                               'space-y-2.5',
                               poLineItems.length > 0 &&
-                              'border-t border-[var(--gray-3)] pt-4',
+                                'border-t border-[var(--gray-3)] pt-4',
                             )}
                           >
                             <div className='flex items-center justify-between'>
@@ -4832,58 +4622,32 @@ const Overview = (props: any) => {
                               </p>
                             </div>
                           ) : (
-                            <>
-                              {/* Related Documents Gated Section */}
-                              {relatedDocsState.status === 'not_run' && (
-                                <AiRelatedDocsPromptBar
-                                  supplierName={supplierName}
-                                  onSearch={(prompt) => handleFindRelatedDocumentsClick(prompt)}
-                                />
-                              )}
-                              {relatedDocsState.status === 'pending' && (
-                                <div className='mb-3 flex items-center justify-between rounded-lg border border-[var(--gray-3)] bg-[var(--surface-primary)] px-3 py-2 shadow-sm border-l-4 border-l-[var(--primary-9)] opacity-70 animate-in fade-in duration-300'>
-                                  <div className='flex items-center gap-2 text-xs text-[var(--gray-12)]'>
-                                    <AiBrandIcon
-                                      className='size-[16px] shrink-0 animate-pulse'
-                                    />
-                                    <span><strong className='font-semibold text-[var(--gray-13)]'>AI is searching</strong> — Checking for related purchase orders or invoices...</span>
-                                  </div>
-                                </div>
-                              )}
-                              {relatedDocsState.status === 'complete' && (
-                                <AiRelatedDocsCompleteCard
-                                  supplierName={supplierName}
-                                  data={relatedDocsState.data}
-                                  attachedDocs={attachedDocs}
-                                  setAttachedDocs={setAttachedDocs}
-                                  onSearch={(prompt) => handleFindRelatedDocumentsClick(prompt)}
-                                />
-                              )}
-
-                              <Attachments
-                                enabled={true}
-                                formModel={formModel}
-                                instanceId={resolvedInstanceId}
-                                initialData={attachmentData || selectedItem?.attachments || []}
-                                processId={processId}
-                                selectedItem={selectedItem}
-                                transactionId={transactionId}
-                                workflowId={workflowId}
-                                mockAiDocs={Object.keys(attachedDocs).filter(k => attachedDocs[k])}
-                                repositoryId={
-                                  repositoryId || selectedItem?.repositoryId
-                                }
-                                onSelect={(file) =>
-                                  selectedFile?.id === file.id
-                                    ? (setIsViewerLoading(true),
-                                      setTimeout(
-                                        () => setIsViewerLoading(false),
-                                        500,
-                                      ))
-                                    : setSelectedFile(file)
-                                }
-                              />
-                            </>
+                            <Attachments
+                              enabled={true}
+                              formModel={formModel}
+                              instanceId={resolvedInstanceId}
+                              processId={processId}
+                              selectedItem={selectedItem}
+                              transactionId={transactionId}
+                              workflowId={workflowId}
+                              initialData={
+                                attachmentData ||
+                                selectedItem?.attachments ||
+                                []
+                              }
+                              repositoryId={
+                                repositoryId || selectedItem?.repositoryId
+                              }
+                              onSelect={(file) =>
+                                selectedFile?.id === file.id
+                                  ? (setIsViewerLoading(true),
+                                    setTimeout(
+                                      () => setIsViewerLoading(false),
+                                      500,
+                                    ))
+                                  : setSelectedFile(file)
+                              }
+                            />
                           )}
                         </div>
                       )}

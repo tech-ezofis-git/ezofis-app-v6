@@ -598,8 +598,11 @@ export function DocumentSigningPage({
   }, [overlayOnly, isInline, openPickerKey])
 
   useLayoutEffect(() => {
-    if (!isInline || !showPicker) {
+    if (!isInline) {
       setPickerPanelPos(null)
+      return
+    }
+    if (!showPicker && !pickerPanelPos) {
       return
     }
     const update = () => {
@@ -958,31 +961,137 @@ export function DocumentSigningPage({
   readySignatureRef.current = hasReadySignatureForActiveTab
 
   const closeSignaturePicker = useCallback(() => {
-    const hasReady = readySignatureRef.current
-    if (!hasReady) {
-      setActiveSignature(null)
-      // Opened and closed with no signature — exit signing (hide footer).
-      // Keep signing only if something was already placed on the document.
-      const hasPlacedWork =
-        placements.length > 0 ||
-        Object.keys(fieldSignatures).length > 0 ||
-        assignments.length > 0 ||
-        savedOnce
-      if (!hasPlacedWork) {
-        setShowPicker(false)
-        setValidationMessage('')
-        onBack?.()
+    setShowPicker(false)
+  }, [])
+
+  const handlePlaceSignature = async () => {
+    let sigToUse: ActiveSignature | null = null
+    let saveFlag = false
+    let nameToUse = ''
+    let typeToUse: SavedSignature['type'] = 'drawn'
+
+    if (activeTab === 'draw') {
+      const pad = signaturePadRef.current
+      if (!pad || pad.isEmpty()) {
+        notifySigningError(t`Draw your signature before placing it.`)
         return
       }
+      const imageDataUrl = pad.toDataURL('image/png')
+      sigToUse = { source: 'drawn', imageDataUrl, name: typedName.trim() || t`Drawn signature` }
+      saveFlag = saveDrawn
+      nameToUse = typedName.trim() || t`Drawn signature`
+      typeToUse = 'drawn'
+    } else if (activeTab === 'type') {
+      if (!typedName.trim()) {
+        notifySigningError(t`Enter your full name to create a typed signature.`)
+        return
+      }
+      const imageDataUrl = createTypedSignatureDataUrl(
+        typedName.trim(),
+        typedStyle.fontFamily,
+        signatureColor,
+      )
+      sigToUse = { source: 'typed', imageDataUrl, name: typedName.trim() }
+      saveFlag = saveTyped
+      nameToUse = typedName.trim()
+      typeToUse = 'typed'
+    } else if (activeTab === 'upload') {
+      if (!uploadedDataUrl) {
+        notifySigningError(t`Upload a signature image first.`)
+        return
+      }
+      sigToUse = {
+        source: 'uploaded',
+        imageDataUrl: uploadedDataUrl,
+        name: uploadedFileName || t`Uploaded signature`,
+      }
+      saveFlag = saveUploaded
+      nameToUse = uploadedFileName || t`Uploaded signature`
+      typeToUse = 'uploaded'
+    } else if (activeTab === 'saved') {
+      const savedSig = savedSignatures.find(s => s.id === selectedSavedId)
+      if (!savedSig) {
+        notifySigningError(t`Select a saved signature first.`)
+        return
+      }
+      sigToUse = {
+        source: 'saved',
+        imageDataUrl: savedSig.imageUrl,
+        signatureId: savedSig.id,
+        name: savedSig.name,
+      }
     }
-    setShowPicker(false)
-  }, [
-    placements.length,
-    fieldSignatures,
-    assignments.length,
-    savedOnce,
-    onBack,
-  ])
+
+    if (!sigToUse) return
+
+    let x = 50
+    let y = 100
+    if (layerHost) {
+      let scrollTop = 0
+      let clientHeight = layerHost.offsetHeight || 600
+      let clientWidth = layerHost.offsetWidth || 400
+
+      // Traverse up to find the scrollable container wrapping the PDF pages
+      let scrollParent: HTMLElement | null = null
+      let curr: HTMLElement | null = layerHost
+      while (curr) {
+        const style = window.getComputedStyle(curr)
+        const overflow = style.overflowY || style.overflow || ''
+        if ((overflow.includes('auto') || overflow.includes('scroll')) && curr.scrollHeight > curr.clientHeight) {
+          scrollParent = curr
+          break
+        }
+        curr = curr.parentElement
+      }
+
+      if (scrollParent) {
+        scrollTop = scrollParent.scrollTop
+        clientHeight = scrollParent.clientHeight
+        clientWidth = scrollParent.clientWidth
+      } else {
+        // Fallback: look for generic detail scroll classes in preview
+        const docScroll = document.querySelector('.ez-detail-scroll') as HTMLElement | null
+        if (docScroll) {
+          scrollTop = docScroll.scrollTop
+          clientHeight = docScroll.clientHeight
+          clientWidth = docScroll.clientWidth
+        }
+      }
+
+      const width = DEFAULT_PLACEMENT.width
+      const height = DEFAULT_PLACEMENT.height
+
+      x = Math.max(0, (clientWidth - width) / 2)
+      y = clamp(scrollTop + (clientHeight - height) / 2, 0, Math.max(0, layerHost.offsetHeight - height))
+    }
+
+    const box: PlacedSignature = {
+      id: nextBoxId('sig'),
+      signature: sigToUse,
+      x,
+      y,
+      width: DEFAULT_PLACEMENT.width,
+      height: DEFAULT_PLACEMENT.height,
+    }
+
+    setSelectedBoxId(box.id)
+    commitSnapshot([...placements, box], assignments)
+    
+    if (saveFlag && onSaveSignature && sigToUse.imageDataUrl) {
+      await onSaveSignature({
+        name: nameToUse || typeToUse || 'Signature',
+        type: typeToUse || 'drawn',
+        imageUrl: sigToUse.imageDataUrl,
+      })
+    }
+
+    showToast({
+      message: t`Signature placed on document.`,
+      variant: 'success',
+    })
+
+    if (isInline) setShowPicker(false)
+  }
 
   closeSignaturePickerRef.current = closeSignaturePicker
 
@@ -1216,7 +1325,11 @@ export function DocumentSigningPage({
     if ((event.target as HTMLElement).closest('[data-signature-placement]')) {
       return
     }
-    placeSignatureAt(event.clientX, event.clientY)
+    // Only allow placing blank fields on document click in assign mode.
+    // In create/signing mode, own signatures are placed explicitly via "Place Signature" button.
+    if (workspaceMode === 'assign') {
+      placeSignatureAt(event.clientX, event.clientY)
+    }
   }
 
   const constrainPlacement = useCallback(
@@ -2087,19 +2200,12 @@ export function DocumentSigningPage({
 
   const placementOverlayNodes = (
     <>
-      {((workspaceMode === 'create' &&
-        hasReadySignatureForActiveTab &&
-        !fieldSigning) ||
-        (workspaceMode === 'assign' && readyToMarkAssignment)) && (
+      {workspaceMode === 'assign' && readyToMarkAssignment && (
         <div
           className='absolute inset-0 z-10 cursor-crosshair'
           style={{ pointerEvents: 'auto' }}
           onClick={handleDocumentClick}
-          aria-label={
-            workspaceMode === 'assign'
-              ? t`Click to mark assignee signature place`
-              : t`Click to place signature`
-          }
+          aria-label={t`Click to mark assignee signature place`}
         />
       )}
 
@@ -2336,12 +2442,17 @@ export function DocumentSigningPage({
         {typeof document !== 'undefined'
           ? createPortal(
               <AnimatePresence>
-                {showPicker && pickerPanelPos ? (
+                {pickerPanelPos ? (
                   <motion.div
                     ref={pickerPanelRef}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    className='fixed z-[200] flex max-h-[min(70vh,560px)] w-[380px] flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xl backdrop-blur-md'
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{
+                      opacity: showPicker ? 1 : 0,
+                      scale: showPicker ? 1 : 0.95,
+                      y: showPicker ? 0 : 10,
+                    }}
+                    className={`fixed z-[200] flex max-h-[min(70vh,560px)] w-[380px] flex-col overflow-hidden rounded-xl border border-gray-3 bg-surface shadow-2xl backdrop-blur-md ${
+                      !showPicker ? 'pointer-events-none invisible' : ''
+                    }`}
                     initial={{ opacity: 0, scale: 0.95, y: 10 }}
                     style={{ left: pickerPanelPos.left, top: pickerPanelPos.top }}
                     transition={{ duration: 0.15 }}
@@ -2412,18 +2523,12 @@ export function DocumentSigningPage({
                           >
                             {typedName.trim() || 'Your signature'}
                           </div>
-                          <div className='flex items-center justify-between gap-3'>
-                            <label className='flex shrink-0 items-center gap-2 text-[12px] text-gray-10'>
-                              <input
-                                type='checkbox'
-                                checked={saveTyped}
-                                onChange={(event) =>
-                                  setSaveTyped(event.target.checked)
-                                }
-                              />
-                              {t`Save for reuse`}
-                            </label>
-                            <div className='flex flex-wrap justify-end gap-2'>
+
+                          <div className='space-y-1.5'>
+                            <span className='block text-[12px] font-semibold text-gray-10 text-left'>
+                              Signature style
+                            </span>
+                            <div className='flex flex-wrap gap-2 justify-start'>
                               {TYPED_STYLES.map((style) => (
                                 <Tooltip
                                   content={style.label}
@@ -2447,6 +2552,28 @@ export function DocumentSigningPage({
                                 </Tooltip>
                               ))}
                             </div>
+                          </div>
+
+                          <div className='flex items-center justify-between gap-3 pt-2 border-t border-gray-2'>
+                            <label className='flex shrink-0 items-center gap-2 text-[12px] text-gray-10'>
+                              <input
+                                type='checkbox'
+                                checked={saveTyped}
+                                onChange={(event) =>
+                                  setSaveTyped(event.target.checked)
+                                }
+                              />
+                              {t`Save for reuse`}
+                            </label>
+                            {typedName.trim() !== '' && (
+                              <button
+                                type='button'
+                                className={primaryButtonClass}
+                                onClick={handlePlaceSignature}
+                              >
+                                {t`Place Signature`}
+                              </button>
+                            )}
                           </div>
                         </div>
                       ) : null}
@@ -2496,86 +2623,127 @@ export function DocumentSigningPage({
                               />
                               {t`Save for reuse`}
                             </label>
-                            <Tooltip content='Clear' position='top'>
-                              <button
-                                type='button'
-                                className={iconButtonClass}
-                                aria-label={t`Clear`}
-                                onClick={() => {
-                                  signaturePadRef.current?.clear()
-                                  setHasDrawnStroke(false)
-                                  setActiveSignature(null)
-                                }}
-                              >
-                                <Eraser className='h-4 w-4' />
-                              </button>
-                            </Tooltip>
+                            <div className='flex items-center gap-2'>
+                              {hasDrawnStroke && (
+                                <button
+                                  type='button'
+                                  className={primaryButtonClass}
+                                  onClick={handlePlaceSignature}
+                                >
+                                  {t`Place Signature`}
+                                </button>
+                              )}
+                              <Tooltip content='Clear' position='top'>
+                                <button
+                                  type='button'
+                                  className={iconButtonClass}
+                                  aria-label={t`Clear`}
+                                  onClick={() => {
+                                    signaturePadRef.current?.clear()
+                                    setHasDrawnStroke(false)
+                                    setActiveSignature(null)
+                                  }}
+                                >
+                                  <Eraser className='h-4 w-4' />
+                                </button>
+                              </Tooltip>
+                            </div>
                           </div>
                         </div>
                       ) : null}
 
                       {activeTab === 'upload' ? (
                         <div className={`${panelSectionClass} space-y-3`}>
-                          <Tooltip
-                            content='Kindly upload the signature'
-                            disabled={Boolean(uploadedDataUrl)}
-                            position='top'
-                            opened={!uploadedDataUrl ? true : false}
-                          >
-                            <div
-                              className={`flex min-h-28 w-[348px] max-w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 text-center transition-colors ${
-                                isDragOver
-                                  ? 'border-blue-8 bg-blue-2'
-                                  : 'border-gray-4 bg-gray-1'
-                              }`}
-                              onDragOver={(event) => {
-                                event.preventDefault()
-                                setIsDragOver(true)
-                              }}
-                              onDragLeave={() => setIsDragOver(false)}
-                              onDrop={onDropUpload}
-                              onClick={() => fileInputRef.current?.click()}
-                            >
-                              <Upload className='h-5 w-5 text-gray-9' />
-                              <p className='mt-2 text-[13px] font-semibold text-gray-13'>
-                                {uploadedDataUrl
-                                  ? 'Signature uploaded'
-                                  : 'Kindly upload the signature'}
-                              </p>
-                              <p className='mt-1 text-[11px] text-gray-9'>
-                                PNG, JPG up to 5 MB
-                              </p>
-                              <input
-                                ref={fileInputRef}
-                                type='file'
-                                accept='image/png,image/jpeg,image/jpg'
-                                className='hidden'
-                                onChange={onFileInputChange}
-                              />
+                          {uploadedDataUrl ? (
+                            <div className='space-y-3'>
+                              <div className='flex items-center justify-between'>
+                                <span className='text-[12px] font-semibold text-gray-10'>
+                                  Signature uploaded
+                                </span>
+                                <button
+                                  type='button'
+                                  className='text-[12px] font-semibold text-[var(--accent-primary)] hover:text-blue-11 transition-colors'
+                                  onClick={() => {
+                                    setUploadedDataUrl(null)
+                                    setUploadedFileName('')
+                                    setActiveSignature(null)
+                                  }}
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                              <div className='flex h-28 items-center justify-center rounded-xl border border-gray-3 bg-gray-1 p-3'>
+                                <img
+                                  src={uploadedDataUrl}
+                                  alt='Uploaded signature'
+                                  className='max-h-full max-w-full object-contain'
+                                />
+                              </div>
                             </div>
-                          </Tooltip>
+                          ) : (
+                            <Tooltip
+                              content='Kindly upload the signature'
+                              disabled={Boolean(uploadedDataUrl)}
+                              position='top'
+                              opened={!uploadedDataUrl ? true : false}
+                            >
+                              <div
+                                className={`flex min-h-28 w-[348px] max-w-full cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed px-4 text-center transition-colors ${
+                                  isDragOver
+                                    ? 'border-blue-8 bg-blue-2'
+                                    : 'border-gray-4 bg-gray-1'
+                                }`}
+                                onDragOver={(event) => {
+                                  event.preventDefault()
+                                  setIsDragOver(true)
+                                }}
+                                onDragLeave={() => setIsDragOver(false)}
+                                onDrop={onDropUpload}
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                <Upload className='h-5 w-5 text-gray-9' />
+                                <p className='mt-2 text-[13px] font-semibold text-gray-13'>
+                                  Kindly upload the signature
+                                </p>
+                                <p className='mt-1 text-[11px] text-gray-9'>
+                                  PNG, JPG up to 5 MB
+                                </p>
+                                <input
+                                  ref={fileInputRef}
+                                  type='file'
+                                  accept='image/png,image/jpeg,image/jpg'
+                                  className='hidden'
+                                  onChange={onFileInputChange}
+                                />
+                              </div>
+                            </Tooltip>
+                          )}
                           {uploadError ? (
-                            <p className='text-[12px] font-medium text-red-10'>
+                            <p className='text-[12px] font-medium text-red-10' role='alert'>
                               {uploadError}
                             </p>
                           ) : null}
-                          {uploadedDataUrl ? (
-                            <img
-                              src={uploadedDataUrl}
-                              alt='Uploaded signature'
-                              className='max-h-24 rounded-lg border border-gray-3 object-contain'
-                            />
-                          ) : null}
-                          <label className='flex items-center gap-2 text-[12px] text-gray-10'>
-                            <input
-                              type='checkbox'
-                              checked={saveUploaded}
-                              onChange={(event) =>
-                                setSaveUploaded(event.target.checked)
-                              }
-                            />
-                            {t`Save for reuse`}
-                          </label>
+                          <div className='flex items-center justify-between gap-3'>
+                            <label className='flex items-center gap-2 text-[12px] text-gray-10'>
+                              <input
+                                type='checkbox'
+                                checked={saveUploaded}
+                                onChange={(event) =>
+                                  setSaveUploaded(event.target.checked)
+                                }
+                              />
+                              {t`Save for reuse`}
+                            </label>
+                            {uploadedDataUrl && (
+                              <button
+                                type='button'
+                                className={primaryButtonClass}
+                                onClick={handlePlaceSignature}
+                              >
+                                {t`Place Signature`}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ) : null}
 
@@ -2586,27 +2754,40 @@ export function DocumentSigningPage({
                               No saved signatures yet.
                             </p>
                           ) : (
-                            savedSignatures.map((signature) => (
-                              <button
-                                key={signature.id}
-                                type='button'
-                                className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${
-                                  selectedSavedId === signature.id
-                                    ? 'border-blue-8 bg-blue-2'
-                                    : 'border-gray-3 hover:bg-gray-2'
-                                }`}
-                                onClick={() => void handleUseSaved(signature)}
-                              >
-                                <img
-                                  src={signature.imageUrl}
-                                  alt={signature.name}
-                                  className='h-10 w-24 object-contain'
-                                />
-                                <span className='min-w-0 flex-1 truncate text-[13px] font-semibold text-gray-13'>
-                                  {signature.name}
-                                </span>
-                              </button>
-                            ))
+                            <>
+                              {savedSignatures.map((signature) => (
+                                <button
+                                  key={signature.id}
+                                  type='button'
+                                  className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors ${
+                                    selectedSavedId === signature.id
+                                      ? 'border-blue-8 bg-blue-2'
+                                      : 'border-gray-3 hover:bg-gray-2'
+                                  }`}
+                                  onClick={() => void handleUseSaved(signature)}
+                                >
+                                  <img
+                                    src={signature.imageUrl}
+                                    alt={signature.name}
+                                    className='h-10 w-24 object-contain'
+                                  />
+                                  <span className='min-w-0 flex-1 truncate text-[13px] font-semibold text-gray-13'>
+                                    {signature.name}
+                                  </span>
+                                </button>
+                              ))}
+                              {selectedSavedId && (
+                                <div className='flex justify-end pt-1'>
+                                  <button
+                                    type='button'
+                                    className={primaryButtonClass}
+                                    onClick={handlePlaceSignature}
+                                  >
+                                    {t`Place Signature`}
+                                  </button>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       ) : null}
@@ -2994,15 +3175,26 @@ export function DocumentSigningPage({
                   </div>
                 </div>
 
-                <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
-                  <input
-                    type='checkbox'
-                    checked={saveTyped}
-                    onChange={(event) => setSaveTyped(event.target.checked)}
-                    className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
-                  />
-                  Save this signature
-                </label>
+                <div className='flex items-center justify-between gap-3'>
+                  <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
+                    <input
+                      type='checkbox'
+                      checked={saveTyped}
+                      onChange={(event) => setSaveTyped(event.target.checked)}
+                      className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
+                    />
+                    Save this signature
+                  </label>
+                  {typedName.trim() !== '' && (
+                    <button
+                      type='button'
+                      className={primaryButtonClass}
+                      onClick={handlePlaceSignature}
+                    >
+                      {t`Place Signature`}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -3094,15 +3286,26 @@ export function DocumentSigningPage({
                   </label>
                 </div>
 
-                <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
-                  <input
-                    type='checkbox'
-                    checked={saveDrawn}
-                    onChange={(event) => setSaveDrawn(event.target.checked)}
-                    className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
-                  />
-                  Save this signature
-                </label>
+                <div className='flex items-center justify-between gap-3'>
+                  <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
+                    <input
+                      type='checkbox'
+                      checked={saveDrawn}
+                      onChange={(event) => setSaveDrawn(event.target.checked)}
+                      className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
+                    />
+                    Save this signature
+                  </label>
+                  {hasDrawnStroke && (
+                    <button
+                      type='button'
+                      className={primaryButtonClass}
+                      onClick={handlePlaceSignature}
+                    >
+                      {t`Place Signature`}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -3186,15 +3389,26 @@ export function DocumentSigningPage({
                   </div>
                 ) : null}
 
-                <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
-                  <input
-                    type='checkbox'
-                    checked={saveUploaded}
-                    onChange={(event) => setSaveUploaded(event.target.checked)}
-                    className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
-                  />
-                  Save this signature
-                </label>
+                <div className='flex items-center justify-between gap-3'>
+                  <label className='flex items-center gap-2 text-[12px] text-[var(--text-secondary)]'>
+                    <input
+                      type='checkbox'
+                      checked={saveUploaded}
+                      onChange={(event) => setSaveUploaded(event.target.checked)}
+                      className='h-4 w-4 rounded border-[var(--border-default)] accent-[var(--accent-primary)]'
+                    />
+                    Save this signature
+                  </label>
+                  {uploadedDataUrl && (
+                    <button
+                      type='button'
+                      className={primaryButtonClass}
+                      onClick={handlePlaceSignature}
+                    >
+                      {t`Place Signature`}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : null}
 
@@ -3209,104 +3423,117 @@ export function DocumentSigningPage({
                     </p>
                   </div>
                 ) : (
-                  savedSignatures.map((signature) => {
-                    const selected = selectedSavedId === signature.id
-                    const confirming = deleteConfirmId === signature.id
-                    return (
-                      <div
-                        key={signature.id}
-                        className={`rounded-xl border p-3 transition-all duration-150 ${
-                          selected
-                            ? 'border-[var(--accent-primary)] bg-[var(--accent-soft)]'
-                            : 'border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--surface-hover)]'
-                        }`}
-                        onClick={() => handleUseSaved(signature)}
-                      >
-                        <button
-                          type='button'
-                          className='w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]'
-                          onClick={() => setSelectedSavedId(signature.id)}
+                  <>
+                    {savedSignatures.map((signature) => {
+                      const selected = selectedSavedId === signature.id
+                      const confirming = deleteConfirmId === signature.id
+                      return (
+                        <div
+                          key={signature.id}
+                          className={`rounded-xl border p-3 transition-all duration-150 ${
+                            selected
+                              ? 'border-[var(--accent-primary)] bg-[var(--accent-soft)]'
+                              : 'border-[var(--border-default)] bg-[var(--surface-primary)] hover:bg-[var(--surface-hover)]'
+                          }`}
+                          onClick={() => handleUseSaved(signature)}
                         >
-                          <div className='flex h-16 items-center justify-center rounded-lg bg-[var(--surface-muted)] px-3'>
-                            <img
-                              src={signature.imageUrl}
-                              alt={`${signature.name} signature`}
-                              className='max-h-12 max-w-full object-contain'
-                            />
-                          </div>
-                          <div className='mt-2 flex items-center justify-between gap-2'>
-                            <div className='min-w-0'>
-                              <p className='truncate text-[13px] font-semibold'>
-                                {signature.name}
-                              </p>
-                              <p className='text-[11px] capitalize text-[var(--text-muted)]'>
-                                {signature.type}
-                              </p>
+                          <button
+                            type='button'
+                            className='w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)]'
+                            onClick={() => setSelectedSavedId(signature.id)}
+                          >
+                            <div className='flex h-16 items-center justify-center rounded-lg bg-[var(--surface-muted)] px-3'>
+                              <img
+                                src={signature.imageUrl}
+                                alt={`${signature.name} signature`}
+                                className='max-h-12 max-w-full object-contain'
+                              />
                             </div>
-                            {selected ? (
-                              <span className='rounded-full bg-[var(--accent-primary)] px-2 py-0.5 text-[10px] font-bold text-white'>
-                                Selected
-                              </span>
-                            ) : null}
-                             <button
-                              type='button'
-                              className={controlButtonClass}
-                              aria-label={`Delete ${signature.name}`}
-                              onClick={() => setDeleteConfirmId(signature.id)}
-                            >
-                              <Trash2 className='h-3.5 w-3.5' />
-                            </button>
-                          </div>
-                        </button>
+                            <div className='mt-2 flex items-center justify-between gap-2'>
+                              <div className='min-w-0'>
+                                <p className='truncate text-[13px] font-semibold'>
+                                  {signature.name}
+                                </p>
+                                <p className='text-[11px] capitalize text-[var(--text-muted)]'>
+                                  {signature.type}
+                                </p>
+                              </div>
+                              {selected ? (
+                                <span className='rounded-full bg-[var(--accent-primary)] px-2 py-0.5 text-[10px] font-bold text-white'>
+                                  Selected
+                                </span>
+                              ) : null}
+                               <button
+                                type='button'
+                                className={controlButtonClass}
+                                aria-label={`Delete ${signature.name}`}
+                                onClick={() => setDeleteConfirmId(signature.id)}
+                              >
+                                <Trash2 className='h-3.5 w-3.5' />
+                              </button>
+                            </div>
+                          </button>
 
-                        {confirming ? (
-                          <div className='mt-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-muted)] p-2'>
-                            <p className='text-[12px] font-medium'>{t`Delete this signature?`}</p>
-                            <div className='mt-2 flex gap-2'>
+                          {confirming ? (
+                            <div className='mt-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-muted)] p-2'>
+                              <p className='text-[12px] font-medium'>{t`Delete this signature?`}</p>
+                              <div className='mt-2 flex gap-2'>
+                                <button
+                                  type='button'
+                                  className={controlButtonClass}
+                                  onClick={() => setDeleteConfirmId(null)}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type='button'
+                                  className={`${controlButtonClass} text-[var(--error-main)]`}
+                                  onClick={async () => {
+                                    await onDeleteSavedSignature?.(signature.id)
+                                    setDeleteConfirmId(null)
+                                    if (selectedSavedId === signature.id) {
+                                      setSelectedSavedId(null)
+                                    }
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            false&& (<div className='mt-3 flex gap-2'>
+                              <button
+                                type='button'
+                                className={`${primaryButtonClass} h-8 flex-1 px-3 text-[12px]`}
+                                onClick={() => void handleUseSaved(signature)}
+                              >
+                                Use
+                              </button>
                               <button
                                 type='button'
                                 className={controlButtonClass}
-                                onClick={() => setDeleteConfirmId(null)}
+                                aria-label={`Delete ${signature.name}`}
+                                onClick={() => setDeleteConfirmId(signature.id)}
                               >
-                                Cancel
+                                <Trash2 className='h-3.5 w-3.5' />
                               </button>
-                              <button
-                                type='button'
-                                className={`${controlButtonClass} text-[var(--error-main)]`}
-                                onClick={async () => {
-                                  await onDeleteSavedSignature?.(signature.id)
-                                  setDeleteConfirmId(null)
-                                  if (selectedSavedId === signature.id) {
-                                    setSelectedSavedId(null)
-                                  }
-                                }}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          false&& (<div className='mt-3 flex gap-2'>
-                            <button
-                              type='button'
-                              className={`${primaryButtonClass} h-8 flex-1 px-3 text-[12px]`}
-                              onClick={() => void handleUseSaved(signature)}
-                            >
-                              Use
-                            </button>
-                            <button
-                              type='button'
-                              className={controlButtonClass}
-                              aria-label={`Delete ${signature.name}`}
-                              onClick={() => setDeleteConfirmId(signature.id)}
-                            >
-                              <Trash2 className='h-3.5 w-3.5' />
-                            </button>
-                          </div>)
-                        )}
+                            </div>)
+                          )}
+                        </div>
+                      )
+                    })}
+                    {selectedSavedId && (
+                      <div className='flex justify-end pt-1'>
+                        <button
+                          type='button'
+                          className={primaryButtonClass}
+                          onClick={handlePlaceSignature}
+                        >
+                          {t`Place Signature`}
+                        </button>
                       </div>
-                    )
-                  })
+                    )}
+                  </>
                 )}
               </div>
             ) : null}

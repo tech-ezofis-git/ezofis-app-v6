@@ -4,13 +4,14 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import { workflowsApiV6 } from '@/api/v6/workflows'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { parseUtcDate } from '@/utils/utcDate'
-// import IconButton from '@/components/base/button/IconButton'
 
 dayjs.extend(relativeTime)
 
@@ -73,6 +74,7 @@ type Props = {
   repositoryId?: string | number
   transactionId?: number | string
   workflowId?: number
+  onClose?: () => void
   refetch?: () => Promise<void>
 }
 
@@ -85,6 +87,7 @@ export default function Comments({
   processId,
   refetch: propRefetch,
   workflowId,
+  onClose,
 }: Props) {
   const { t } = useLingui()
   const { session } = authUserStore.getState()
@@ -125,19 +128,11 @@ export default function Comments({
   const [draft, setDraft] = useState('')
 
   const listRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const scrollToBottom = () => {
     if (listRef.current)
       listRef.current.scrollTop = listRef.current.scrollHeight
   }
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
-    }
-  }, [draft])
 
   useEffect(() => {
     if (!enabled) return
@@ -178,22 +173,39 @@ export default function Comments({
     !posting && !!workflowId && !!targetInstanceId && draft.trim().length > 0
 
   return (
-    <div className='relative mx-auto mt-0 flex h-full w-full flex-col overflow-hidden font-sans transition-all duration-300'>
-      {/* Header - Compact (removed legacy commented snippet) */}
+    <div
+      className={
+        onClose
+          ? 'flex h-full min-h-0 w-full flex-col font-sans'
+          : 'relative mx-auto mt-0 flex h-full w-full flex-col overflow-hidden font-sans transition-all duration-300'
+      }
+    >
+      {onClose && (
+        <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+          <span className='text-xs font-semibold text-gray-12'>
+            {t`Comments`} ({sortedComments.length})
+          </span>
+          <IconButton
+            ariaLabel={t`Close`}
+            icon='tabler:x'
+            size='sm'
+            variant='ghost'
+            onClick={onClose}
+          />
+        </div>
+      )}
 
-      {/* Chat Feed */}
       <div
-        className='flex-1 space-y-4 overflow-y-auto scroll-smooth bg-transparent px-4 py-3'
+        className='min-h-0 flex-1 space-y-4 overflow-y-auto scroll-smooth px-4 pt-4 pb-3'
         ref={listRef}
-        style={{ minHeight: 0 }}
       >
         {sortedComments.length === 0 && !isLoading && (
-          <div className='text-gray-400 flex h-full flex-col items-center justify-center'>
+          <div className='flex h-full flex-col items-center justify-center text-gray-8'>
             <Icon
               className='mb-2 size-8 opacity-50'
               name='tabler:messages-off'
             />
-            <span className='text-13'>No comments yet</span>
+            <span className='text-13'>{t`No comments yet`}</span>
           </div>
         )}
 
@@ -202,10 +214,10 @@ export default function Comments({
             c?.createdByEmail === currentUserEmail ||
             (c?.createdBy && c.createdBy === session?.id)
           const name = isMe
-            ? 'You'
+            ? t`You`
             : isUuid(c?.createdByName || '')
-              ? 'User'
-              : (c?.createdByName ?? c?.createdByEmail ?? 'User')
+              ? t`User`
+              : (c?.createdByName ?? c?.createdByEmail ?? t`User`)
           const fileIds = extractFileIds(c)
           const timeDisplay = c?.createdAt
             ? formatDatetime(
@@ -219,10 +231,9 @@ export default function Comments({
 
           return (
             <div
-              className='flex items-start gap-3 py-1'
+              className='flex items-start gap-3'
               key={`${c?.id ?? idx}`}
             >
-              {/* Avatar */}
               <div
                 className={cn(
                   'flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold',
@@ -232,22 +243,28 @@ export default function Comments({
                 {initials}
               </div>
 
-              {/* Comment Body */}
               <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-                {/* Header (Name & Time) */}
-                <div className='flex items-baseline gap-2'>
-                  <span className='text-13 font-bold text-gray-13'>{name}</span>
-                  <span className='text-11 font-medium text-gray-9'>
-                    {timeDisplay}
-                  </span>
+                <div className='flex min-w-0 items-baseline gap-2'>
+                  <Tooltip
+                    className='min-w-0 max-w-full flex-1 justify-start'
+                    content={name}
+                    position='top'
+                  >
+                    <span className='block min-w-0 truncate text-[13px] font-bold text-gray-13'>
+                      {name}
+                    </span>
+                  </Tooltip>
+                  {timeDisplay && (
+                    <span className='shrink-0 text-[11px] font-medium text-gray-9'>
+                      {timeDisplay}
+                    </span>
+                  )}
                 </div>
 
-                {/* Text */}
-                <div className='text-13 leading-relaxed font-medium whitespace-pre-wrap text-gray-11'>
+                <div className='text-[13px] leading-relaxed font-medium break-words whitespace-pre-wrap text-gray-12'>
                   {formatCommentText(c?.comments)}
                 </div>
 
-                {/* File Attachments */}
                 {!!fileIds.length && (
                   <div className='mt-1 flex flex-wrap gap-1.5'>
                     {fileIds.map((fid: any) => {
@@ -259,10 +276,13 @@ export default function Comments({
                         : `Doc-${fid}`
                       return (
                         <div
-                          className='flex items-center gap-1 rounded-md border border-gray-4 bg-gray-2 px-1.5 py-0.5 text-11 font-semibold text-gray-11'
+                          className='flex items-center gap-1 rounded-md border border-gray-4 bg-gray-2 px-1.5 py-0.5 text-[11px] font-semibold text-gray-12'
                           key={String(fid)}
                         >
-                          <Icon className='size-3' name='tabler:file' />
+                          <Icon
+                            className='size-3 text-primary-9'
+                            name='tabler:file'
+                          />
                           <span className='max-w-[120px] truncate'>
                             {fileName}
                           </span>
@@ -277,18 +297,16 @@ export default function Comments({
         })}
       </div>
 
-      {/* Input Area */}
-      <div className='border-t border-gray-3 bg-transparent px-4 py-3'>
+      <div className='shrink-0 border-t border-gray-3 px-3 pt-2 pb-2'>
         <div className='flex flex-col gap-2'>
-          {/* File Picker (Conditional) */}
           {!!fileOptions.length && (
             <div className='relative w-full'>
               <select
-                className='w-full cursor-pointer appearance-none rounded border-none bg-gray-1 py-1 pr-4 pl-6 text-11 font-semibold text-gray-11 transition-colors outline-none hover:bg-gray-2'
+                className='w-full cursor-pointer appearance-none rounded-xl border border-gray-3 bg-surface py-1.5 pr-4 pl-6 text-[11px] font-semibold text-gray-11 outline-none transition-colors hover:bg-gray-2'
                 value={String(attachFileId)}
                 onChange={(e) => setAttachFileId(e.target.value)}
               >
-                <option value=''>Attach file (optional)...</option>
+                <option value=''>{t`Attach file (optional)...`}</option>
                 {fileOptions.map((f) => (
                   <option key={String(f.id)} value={String(f.id)}>
                     {f.label}
@@ -296,32 +314,28 @@ export default function Comments({
                 ))}
               </select>
               <Icon
-                className='absolute top-1.5 left-1.5 size-3 text-gray-9'
+                className='absolute top-1/2 left-1.5 size-3 -translate-y-1/2 text-gray-9'
                 name='tabler:paperclip'
               />
             </div>
           )}
 
-          {/* Textarea & Send Button */}
-          <div className='flex items-center gap-3'>
-            {/* Current User Avatar */}
+          <div className='flex items-center gap-2.5'>
             <div
               className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold',
+                'flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold',
                 getAvatarColors(myInitials, true),
               )}
             >
               {myInitials}
             </div>
 
-            {/* Input Box */}
-            <div className='flex-1 overflow-hidden rounded-xl border border-gray-3 bg-gray-1 transition-all focus-within:border-primary-7 focus-within:bg-surface focus-within:ring-1 focus-within:ring-primary-4'>
+            <div className='flex min-w-0 flex-1 items-center overflow-hidden rounded-xl border border-gray-4 bg-surface transition-all focus-within:border-primary-6 focus-within:ring-1 focus-within:ring-primary-4'>
               <textarea
-                className='w-full resize-none bg-transparent px-3 py-2 text-13 font-medium text-gray-12 placeholder:text-gray-8 focus:outline-none'
+                className='w-full resize-none bg-transparent px-3 py-2 text-[13px] leading-5 font-medium text-gray-13 placeholder:text-gray-9 focus:outline-none'
+                disabled={posting}
                 placeholder={t`Add a comment...`}
-                ref={textareaRef}
-                rows={1}
-                style={{ lineHeight: '1.4', minHeight: '36px' }}
+                rows={3}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
@@ -333,12 +347,13 @@ export default function Comments({
               />
             </div>
 
-            {/* Send Button */}
             <button
+              aria-label={t`Send comment`}
               disabled={!canSend}
               title={t`Send comment`}
+              type='button'
               className={cn(
-                'flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-xl bg-primary-9 text-13 font-bold text-text-on-accent transition-all active:scale-95',
+                'flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-9 text-text-on-accent transition-all active:scale-95',
                 canSend
                   ? 'cursor-pointer hover:opacity-90'
                   : 'cursor-not-allowed opacity-45',
@@ -348,7 +363,7 @@ export default function Comments({
               {posting ? (
                 <div className='size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white' />
               ) : (
-                <Icon className='size-4.5' name='tabler:send' />
+                <Icon className='size-4' name='tabler:send' />
               )}
             </button>
           </div>

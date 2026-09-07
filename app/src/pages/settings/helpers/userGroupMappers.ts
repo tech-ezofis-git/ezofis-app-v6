@@ -40,8 +40,9 @@ export type SettingsUser = {
   passwordExpiryDays: number
   phoneNumber: string
   role: string
-  status: 'active' | 'inactive' | 'pending'
+  status: 'active' | 'inactive' | 'pending' | 'draft'
   username: string
+  wizardDraftId?: string
 }
 
 const toArray = (value: unknown): any[] => {
@@ -80,6 +81,7 @@ const normalizeStatus = (value: unknown): SettingsUser['status'] => {
     return 'inactive'
   }
   if (text === 'pending') return 'pending'
+  if (text === 'draft') return 'draft'
   return 'active'
 }
 
@@ -239,10 +241,10 @@ export const applyGroupMembershipsToUsers = (
   users: SettingsUser[],
   groups: SettingsGroup[],
 ): SettingsUser[] => {
-  if (!users.length || !groups.length) return users
+  if (!users?.length || !groups?.length) return users
 
   return users.map((user) => {
-    if (user.groups.length) return user
+    if ((user.groups ?? []).length) return user
 
     const userId = String(user.id)
     const email = user.email.trim().toLowerCase()

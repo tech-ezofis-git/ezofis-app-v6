@@ -39,6 +39,104 @@ const FOLDER_DATA_TYPES = [
 
 type FolderAiProvider = 'qwen' | 'gemini' | 'local'
 
+const ACRONYMS = new Set([
+  'AP',
+  'AR',
+  'HR',
+  'PO',
+  'IT',
+  'ERP',
+  'ID',
+  'VAT',
+  'GST',
+  'SLA',
+  'KPI',
+  'DMS',
+  'CRM',
+  'API',
+])
+
+export function shortenFolderName(input: string): string {
+  if (!input) return 'Custom Folder'
+
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/^(create|build|make|generate|design|setup|new)\s+(a|an|the)?\s*/i, '')
+    .replace(/^(a|an|the)\s+/i, '')
+    .replace(/\s+(folder|repository|system|process|layout)\s+for\s+/i, ' ')
+    .replace(/\s+for\s+/i, ' ')
+    .replace(/\s+(with|to|that|which|and)\s+.*$/i, '')
+    .replace(/[^a-zA-Z0-9\s&/-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!cleaned) cleaned = input.trim().split('.')[0]
+
+  const words = cleaned.split(/\s+/).filter(Boolean)
+  if (words.length > 1 && words[words.length - 1].toLowerCase() === 'folder') {
+    words.pop()
+  }
+
+  let shortWords = words.slice(0, 3)
+  if (shortWords.length > 0 && ['&', '-', '/'].includes(shortWords[shortWords.length - 1])) {
+    shortWords.pop()
+  }
+
+  let result = shortWords.join(' ')
+  if (result.length > 25) {
+    result = result.slice(0, 25).trim()
+  }
+
+  if (!result) return 'Custom Folder'
+
+  return result
+    .split(' ')
+    .map((w) => {
+      const upper = w.toUpperCase()
+      if (ACRONYMS.has(upper)) return upper
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    })
+    .join(' ')
+}
+
+export function shortenDescription(input: string, maxChars = 75): string {
+  if (!input) return ''
+
+  let cleaned = input
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(
+      /^(this\s+(is\s+a\s+)?(folder|repository|form|workflow|process)\s+(designed|built|created)\s+to\s+)/i,
+      'Folder to ',
+    )
+    .replace(/^an?\s+(automated|end-to-end)\s+/i, '')
+    .replace(
+      /^this\s+(folder|repository)\s+(allows|stores|manages|captures|collects)\s+/i,
+      'Folder to $2 ',
+    )
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (cleaned.includes('.')) {
+    const firstSentence = cleaned.split('.')[0].trim()
+    if (firstSentence.length >= 12) {
+      cleaned = firstSentence + '.'
+    }
+  }
+
+  if (!cleaned.endsWith('.') && !cleaned.endsWith('!') && !cleaned.endsWith('?')) {
+    cleaned += '.'
+  }
+
+  if (cleaned.length > maxChars) {
+    const trimmed = cleaned.slice(0, maxChars)
+    const lastSpace = trimmed.lastIndexOf(' ')
+    cleaned = (lastSpace > 15 ? trimmed.slice(0, lastSpace) : trimmed).trim() + '...'
+  }
+
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+}
+
 function resolveFolderAiProvider(): FolderAiProvider {
   const configured = String(
     import.meta.env.VITE_FOLDER_AI_PROVIDER || '',
@@ -60,37 +158,33 @@ function buildFolderConfigPrompt(
   reference?: FolderConfigReference | null,
 ) {
   const referenceHint = reference
-    ? `
-
-The user attached a reference file named "${reference.name}" (${reference.mimeType}).
-Use it as context to infer a practical folder name, description, and fields that match the document.`
+    ? `\nThe user attached a reference file named "${reference.name}" (${reference.mimeType}). Use it to infer folder setup.`
     : ''
 
   return `You help design document management folder configurations.
 User request: "${prompt}"${referenceHint}
 
-Return a practical folder setup for this use case.
-- folderName should be short and clear
-- description should explain the folder purpose
-- fields should cover documents and metadata needed for this folder
+Guidelines:
+- "folderName": Keep it very short, clean, proper spacing, and meaningful (1-3 words max, e.g. "AP Invoice", "HR Documents", "Contracts").
+- "description": Keep it short and concise (1 simple sentence, max 8-10 words, ~60 chars max). Do NOT write long text paragraphs.
+- "fields": cover essential metadata for this folder
 - includeInFolderStructure=true for hierarchy levels (e.g. Employee, Document Type)
 - includeInFolderStructure=false for document metadata fields (e.g. Employee ID, Payslip Month)
-- Prefer these dataType values: ${FOLDER_DATA_TYPES.join(', ')}
-- Prefer iconKey values like: building, document, folder, user, calendar, dollar
-- reply should be 1-2 short sentences explaining the folder purpose and how fields are organized (e.g. by customer/document type). Do not list every field.
+- Prefer dataType values: ${FOLDER_DATA_TYPES.join(', ')}
+- reply: 1 short sentence summarizing folder purpose.
 
-Respond with ONLY a JSON object (no markdown) using this shape:
+Respond ONLY with valid JSON using this shape:
 {
-  "folderName": string,
-  "description": string,
-  "reply": string,
+  "folderName": "Short Name",
+  "description": "Short 1-sentence description",
+  "reply": "Short summary",
   "fields": [
     {
-      "fieldName": string,
-      "dataType": string,
-      "includeInFolderStructure": boolean,
-      "isMandatory": boolean,
-      "iconKey": string
+      "fieldName": "Field Name",
+      "dataType": "SHORT_TEXT",
+      "includeInFolderStructure": false,
+      "isMandatory": true,
+      "iconKey": "document"
     }
   ]
 }`
@@ -104,8 +198,13 @@ function normalizeSuggestion(
     throw new Error('AI returned an invalid folder configuration')
   }
 
+  const folderName = shortenFolderName(String(result.folderName))
+  const description = shortenDescription(
+    String(result.description || `Folder setup for ${folderName.toLowerCase()}.`),
+  )
+
   return {
-    description: String(result.description || ''),
+    description,
     fields: result.fields.map((field: FolderConfigField) => ({
       dataType: normalizeFolderDataType(field.dataType),
       fieldName: String(field.fieldName || 'Field').trim(),
@@ -113,10 +212,10 @@ function normalizeSuggestion(
       includeInFolderStructure: Boolean(field.includeInFolderStructure),
       isMandatory: Boolean(field.isMandatory),
     })),
-    folderName: String(result.folderName).trim(),
+    folderName,
     reply:
       String(result.reply || '').trim() ||
-      `I've prepared a folder setup for "${result.folderName}".`,
+      `Prepared folder setup for "${folderName}".`,
     source,
   }
 }
@@ -133,7 +232,7 @@ async function generateFolderConfigViaQwen(
   const messages = [
     {
       content:
-        'You are a document management assistant. Always respond with valid JSON only.',
+        'You are an enterprise document management architect. Always respond with valid JSON only.',
       role: 'system' as const,
     },
     ...history.map((message) => ({
@@ -160,11 +259,6 @@ async function generateFolderConfigViaQwen(
   }
 }
 
-/**
- * Folder AI entry point used by Document Repository setup and AiFolderBuilder.
- * Provider is selected via VITE_FOLDER_AI_PROVIDER (`qwen` | `gemini` | `local`).
- * Gemini implementation remains intact and is used when provider is `gemini`.
- */
 export const generateFolderConfig = async (
   prompt: string,
   history: Array<{ role: 'user' | 'assistant'; text: string }> = [],
@@ -177,7 +271,8 @@ export const generateFolderConfig = async (
   }
 
   if (provider === 'gemini') {
-    return generateFolderConfigViaGemini(prompt, history, reference)
+    const suggestion = await generateFolderConfigViaGemini(prompt, history, reference)
+    return normalizeSuggestion(suggestion, 'gemini')
   }
 
   return generateFolderConfigViaQwen(prompt, history, reference)

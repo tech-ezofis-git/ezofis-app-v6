@@ -1,3 +1,4 @@
+import { t as staticT } from '@lingui/macro'
 import { useLingui } from '@lingui/react/macro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
@@ -7,57 +8,57 @@ import cn from '@/utils/cn'
 // System template columns schema with metadata
 export const SYSTEM_TEMPLATE_COLUMNS = [
   {
-    desc: 'Unique PO Identifier',
+    desc: staticT`Unique PO Identifier`,
     key: 'PO Number',
-    label: 'Purchase Order #',
+    label: staticT`Purchase Order #`,
     required: true,
   },
   {
-    desc: 'Entity supplying goods',
+    desc: staticT`Entity supplying goods`,
     key: 'Supplier',
-    label: 'Supplier',
+    label: staticT`Supplier`,
     required: true,
   },
   {
-    desc: 'Supplier physical billing address',
+    desc: staticT`Supplier physical billing address`,
     key: 'Supplier Address',
-    label: 'Supplier Address',
+    label: staticT`Supplier Address`,
     required: true,
   },
   {
-    desc: 'Shipping destination address',
+    desc: staticT`Shipping destination address`,
     key: 'Ship To Address',
-    label: 'Ship To Address',
+    label: staticT`Ship To Address`,
     required: true,
   },
   {
-    desc: 'Document creation date',
+    desc: staticT`Document creation date`,
     key: 'PO Date',
-    label: 'Issue Date',
+    label: staticT`Issue Date`,
     required: true,
   },
   {
-    desc: 'Gross currency value',
+    desc: staticT`Gross currency value`,
     key: 'PO Amount',
-    label: 'Total Amount',
+    label: staticT`Total Amount`,
     required: true,
   },
   {
-    desc: 'Invoicing terms and conditions',
+    desc: staticT`Invoicing terms and conditions`,
     key: 'Terms',
-    label: 'Payment Terms',
+    label: staticT`Payment Terms`,
     required: false,
   },
   {
-    desc: 'PO issuer or procurement contact',
+    desc: staticT`PO issuer or procurement contact`,
     key: 'Buyer',
-    label: 'Buyer',
+    label: staticT`Buyer`,
     required: false,
   },
   {
-    desc: 'Transactional currency',
+    desc: staticT`Transactional currency`,
     key: 'Currency',
-    label: 'Currency',
+    label: staticT`Currency`,
     required: false,
   },
 ] as const

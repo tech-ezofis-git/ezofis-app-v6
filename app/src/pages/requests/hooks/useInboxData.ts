@@ -9,7 +9,48 @@ import {
 } from '../utils/inboxList.utils'
 import { getActionsForActivity } from '../utils/workflow.utils'
 
-const transformProcess = (
+const toFiniteCount = (value: unknown): number | null => {
+  const count = Number(value)
+  return Number.isFinite(count) && count >= 0 ? count : null
+}
+
+const unwrapListPayload = (raw: unknown): Record<string, unknown> => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const record = raw as Record<string, unknown>
+  if (Array.isArray(record.items) || record.totalCount != null) return record
+  if (
+    record.data &&
+    typeof record.data === 'object' &&
+    !Array.isArray(record.data)
+  ) {
+    return record.data as Record<string, unknown>
+  }
+  return record
+}
+
+const readListItems = (payload: Record<string, unknown>): any[] =>
+  Array.isArray(payload.items) ? payload.items : []
+
+const readListTotalCount = (
+  payload: Record<string, unknown>,
+  itemCount: number,
+): number => {
+  const meta =
+    payload.meta && typeof payload.meta === 'object'
+      ? (payload.meta as Record<string, unknown>)
+      : null
+  const fromApi =
+    toFiniteCount(payload.totalCount) ??
+    toFiniteCount(payload.TotalCount) ??
+    toFiniteCount(payload.totalItems) ??
+    toFiniteCount(payload.total) ??
+    toFiniteCount(meta?.totalCount) ??
+    toFiniteCount(meta?.totalItems)
+  if (fromApi != null && (fromApi > 0 || itemCount === 0)) return fromApi
+  return itemCount
+}
+
+export const transformProcess = (
   process: any,
   groupKey: string,
   originalIndex: number,
@@ -87,17 +128,28 @@ const transformProcess = (
     status,
   }
 
+  const listTab = process._listTab || activeTab
+  const canMove = listTab === 'Inbox' || listTab === 'Exceptions'
+
   const dynamicFields = fieldsSource
   let actions: any[] = []
-  if (activeTab === 'Inbox' || activeTab === 'Exceptions') {
+  if (listTab === 'Inbox' || listTab === 'Exceptions' || listTab === 'Sent') {
     actions = getActionsForActivity(
       process.activityId,
       selectedWorkflow?.flowJson,
     )
   }
   const processId = process.workflowInstanceId || process.processId
+  const referenceNumber =
+    process.referenceNumber == null
+      ? ''
+      : String(process.referenceNumber).trim()
+  const formEntryId = process.formEntryId
   const requestNo =
-    process.referenceNumber ||
+    referenceNumber ||
+    (formEntryId !== undefined && formEntryId !== null && formEntryId !== ''
+      ? `REQ-${formEntryId}`
+      : '') ||
     (processId && typeof processId === 'string'
       ? `REQ-${processId.substring(0, 8).toUpperCase()}`
       : '') ||
@@ -139,7 +191,9 @@ const transformProcess = (
     _actions: actions,
     _agentData: parsedAgentResponse ? [parsedAgentResponse] : [],
     _agentResponse: parsedAgentResponse,
-    _groupKey: groupKey || activeTab,
+    _canMove: canMove,
+    _groupKey: groupKey || listTab,
+    _listTab: listTab,
     _originalIndex: originalIndex,
     documentNumber: requestNo,
     id: processId || process.id,
@@ -185,6 +239,30 @@ const transformProcess = (
   }
 }
 
+const listItemKey = (item: any): string =>
+  String(item?.workflowInstanceId || item?.processId || item?.id || '')
+
+const mergeKanbanLists = (
+  inboxItems: any[],
+  sentItems: any[],
+  completedItems: any[],
+) => {
+  const seen = new Set<string>()
+  const merged: any[] = []
+  const add = (items: any[], listTab: string) => {
+    for (const item of items) {
+      const key = listItemKey(item)
+      if (key && seen.has(key)) continue
+      if (key) seen.add(key)
+      merged.push({ ...item, _listTab: listTab })
+    }
+  }
+  add(inboxItems, 'Inbox')
+  add(sentItems, 'Sent')
+  add(completedItems, 'Closed')
+  return merged
+}
+
 const fetchInboxDataFn = async (
   activeTab: string,
   workflowId: string,
@@ -192,6 +270,53 @@ const fetchInboxDataFn = async (
   pageSize: number,
 ) => {
   switch (activeTab) {
+    case 'Kanban': {
+      const [inboxRes, sentRes, completedRes] = await Promise.all([
+        workflowsApiV6.getInboxList(workflowId, page, pageSize),
+        workflowsApiV6.getSentList(workflowId, page, pageSize),
+        workflowsApiV6.getCompletedList(workflowId, page, pageSize),
+      ])
+
+      if (inboxRes.error && sentRes.error && completedRes.error) {
+        throw new Error(inboxRes.error || sentRes.error || completedRes.error)
+      }
+
+      const inboxPayload = unwrapListPayload(
+        inboxRes.error ? {} : inboxRes.data,
+      )
+      const sentPayload = unwrapListPayload(sentRes.error ? {} : sentRes.data)
+      const completedPayload = unwrapListPayload(
+        completedRes.error ? {} : completedRes.data,
+      )
+      const inboxItems = inboxRes.error ? [] : readListItems(inboxPayload)
+      const sentItems = sentRes.error ? [] : readListItems(sentPayload)
+      const completedItems = completedRes.error
+        ? []
+        : readListItems(completedPayload)
+      const merged = mergeKanbanLists(inboxItems, sentItems, completedItems)
+      const totalItems =
+        (inboxRes.error
+          ? 0
+          : readListTotalCount(inboxPayload, inboxItems.length)) +
+        (sentRes.error
+          ? 0
+          : readListTotalCount(sentPayload, sentItems.length)) +
+        (completedRes.error
+          ? 0
+          : readListTotalCount(completedPayload, completedItems.length))
+
+      return {
+        data: [
+          {
+            key: 'root',
+            value: merged,
+          },
+        ],
+        meta: {
+          totalItems: totalItems || merged.length,
+        },
+      }
+    }
     case 'Sent': {
       const sentRes = await workflowsApiV6.getSentList(
         workflowId,
@@ -201,17 +326,17 @@ const fetchInboxDataFn = async (
       if (sentRes.error) {
         throw new Error(sentRes.error)
       }
-      const responseData = sentRes.data || {}
+      const payload = unwrapListPayload(sentRes.data)
+      const items = readListItems(payload)
       return {
         data: [
           {
             key: 'root',
-            value: responseData.items || [],
+            value: items,
           },
         ],
         meta: {
-          totalItems:
-            responseData.totalCount || responseData.items?.length || 0,
+          totalItems: readListTotalCount(payload, items.length),
         },
       }
     }
@@ -224,17 +349,17 @@ const fetchInboxDataFn = async (
       if (completedRes.error) {
         throw new Error(completedRes.error)
       }
-      const responseData = completedRes.data || {}
+      const payload = unwrapListPayload(completedRes.data)
+      const items = readListItems(payload)
       return {
         data: [
           {
             key: 'root',
-            value: responseData.items || [],
+            value: items,
           },
         ],
         meta: {
-          totalItems:
-            responseData.totalCount || responseData.items?.length || 0,
+          totalItems: readListTotalCount(payload, items.length),
         },
       }
     }
@@ -247,12 +372,14 @@ const fetchInboxDataFn = async (
       if (sentRes.error) throw new Error(sentRes.error)
       if (completedRes.error) throw new Error(completedRes.error)
 
-      const sentItems = sentRes.data?.items || []
-      const completedItems = completedRes.data?.items || []
+      const sentPayload = unwrapListPayload(sentRes.data)
+      const completedPayload = unwrapListPayload(completedRes.data)
+      const sentItems = readListItems(sentPayload)
+      const completedItems = readListItems(completedPayload)
       const combinedData = [...sentItems, ...completedItems]
       const totalItems =
-        (sentRes.data?.totalCount || sentItems.length) +
-        (completedRes.data?.totalCount || completedItems.length)
+        readListTotalCount(sentPayload, sentItems.length) +
+        readListTotalCount(completedPayload, completedItems.length)
 
       return {
         data: [
@@ -277,17 +404,17 @@ const fetchInboxDataFn = async (
       if (v6Res.error) {
         throw new Error(v6Res.error)
       }
-      const responseData = v6Res.data || {}
+      const payload = unwrapListPayload(v6Res.data)
+      const items = readListItems(payload)
       return {
         data: [
           {
             key: 'root',
-            value: responseData.items || [],
+            value: items,
           },
         ],
         meta: {
-          totalItems:
-            responseData.totalCount || responseData.items?.length || 0,
+          totalItems: readListTotalCount(payload, items.length),
         },
       }
     }
@@ -375,6 +502,7 @@ export const useInboxData = (
 ) => {
   return useQuery({
     enabled: !!selectedWorkflow?.id,
+    gcTime: 5 * 60 * 1000,
     queryKey: [
       'inbox',
       selectedWorkflow?.id,
@@ -384,6 +512,8 @@ export const useInboxData = (
       activeTab,
       filterClauses,
     ],
+    retry: 1,
+    staleTime: 10000,
 
     queryFn: async () => {
       const workflowId = selectedWorkflow?.id
@@ -479,11 +609,14 @@ export const useInboxData = (
               .filter((group) => group.items.length > 0)
           : groupedData
 
+      let tabTotalItems = totalItems > 0 ? totalItems : inboxTabCount
+      if (activeTab === 'Exceptions') tabTotalItems = exceptionsCount
+
       return {
         data: filteredGroupedData,
         exceptionsCount,
         inboxTabCount,
-        totalItems,
+        totalItems: tabTotalItems,
       }
     },
   })

@@ -1,8 +1,9 @@
+import type { NavigateOptions } from '@tanstack/react-router'
 import { useMsal } from '@azure/msal-react'
+import { useLingui } from '@lingui/react/macro'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useSearch } from '@tanstack/react-router'
-import { useLingui } from '@lingui/react/macro'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
@@ -21,9 +22,54 @@ import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
+import cn from '@/utils/cn'
+import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 import { redirectAfterLogin } from '../utils/redirectAfterLogin'
+
+export type SignedInIdentity = {
+  accessToken: string
+  email: string
+  identity: Record<string, unknown>
+  tenantId?: string
+}
+
+export type SignInBranding = {
+  favicon?: string
+  name: string
+}
+
 interface Props {
+  branding?: SignInBranding
+  persistIdentity?: boolean
+  showForgotPassword?: boolean
+  showSocial?: boolean
+  socialProviders?: Array<'Google' | 'Microsoft'>
+  tenantId?: string
   onChangeView: () => void
+  onSignedIn?: (result: SignedInIdentity) => void | Promise<void>
+}
+
+const asIdentityRecord = (value: unknown) =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+
+const extractAccessToken = (payload: unknown): string => {
+  const record = asIdentityRecord(payload)
+  if (!record) return ''
+  const nested =
+    asIdentityRecord(record.identity) ||
+    asIdentityRecord(record.data) ||
+    asIdentityRecord(record.result)
+  const candidates = [
+    record.accessToken,
+    record.token,
+    record.access_token,
+    nested?.accessToken,
+    nested?.token,
+    nested?.access_token,
+  ]
+  return candidates.map((item) => String(item || '').trim()).find(Boolean) || ''
 }
 
 type TenantOption = {
@@ -33,9 +79,19 @@ type TenantOption = {
   value: number | string
 }
 
-const SignInForm = ({ onChangeView }: Props) => {
+const SignInForm = ({
+  branding,
+  persistIdentity = true,
+  showForgotPassword,
+  showSocial = true,
+  socialProviders,
+  tenantId: brandingTenantId,
+  onChangeView,
+  onSignedIn,
+}: Props) => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  const isWhiteLabel = useIsWhiteLabel()
   const { instance: msalInstance } = useMsal()
   console.log(onChangeView)
   const search: any = useSearch({ strict: false })
@@ -144,6 +200,34 @@ const SignInForm = ({ onChangeView }: Props) => {
     await redirectAfterLogin({ navigate, redirectTo, shareTenantId })
   }
 
+  const completeSignIn = async (
+    data: unknown,
+    signedEmail: string,
+    usedTenantId?: string | number,
+  ) => {
+    if (onSignedIn) {
+      const identity = asIdentityRecord(data) || {}
+      const accessToken = extractAccessToken(data)
+      if (!accessToken) {
+        setError(t`Sign in succeeded but no access token was returned.`)
+        return
+      }
+      showToast({ message: t`Successfully logged in`, variant: 'success' })
+      await onSignedIn({
+        accessToken,
+        email: String(identity.email || signedEmail),
+        identity,
+        tenantId: String(
+          identity.tenantId || usedTenantId || brandingTenantId || '',
+        ),
+      })
+      return
+    }
+
+    showToast({ message: t`Successfully logged in`, variant: 'success' })
+    await handleLoggedNavigation()
+  }
+
   // === EMAIL + PASSWORD LOGIN (with tenant + social support) ===
   const signInSocial = async (
     tenantId?: number | string,
@@ -156,10 +240,12 @@ const SignInForm = ({ onChangeView }: Props) => {
       loginType: sType,
     }
 
-    const targetTenantId = tenantId || shareTenantId || undefined
+    const targetTenantId =
+      tenantId || shareTenantId || brandingTenantId || undefined
     const { data, error, status } = await apiRouter.socialLogin(
       payload,
       targetTenantId,
+      { persistIdentity },
     )
 
     if (error) {
@@ -181,7 +267,7 @@ const SignInForm = ({ onChangeView }: Props) => {
     } else {
       setShowTenantListModal(false)
       setTenantList([])
-      await handleLoggedNavigation()
+      await completeSignIn(data, sEmail, targetTenantId)
     }
   }
 
@@ -208,10 +294,12 @@ const SignInForm = ({ onChangeView }: Props) => {
         password,
       }
 
-      const targetTenantId = tenantId || shareTenantId || undefined
+      const targetTenantId =
+        tenantId || shareTenantId || brandingTenantId || undefined
       const { data, error, status } = await apiRouter.login(
         payload,
         targetTenantId,
+        { persistIdentity },
       )
 
       if (error) {
@@ -229,10 +317,6 @@ const SignInForm = ({ onChangeView }: Props) => {
       }
 
       if (status === 300 && Array.isArray(data)) {
-        showToast({
-          message: t`User found with multiple tenants`,
-          variant: 'warning',
-        })
         const mapped: TenantOption[] = data.map((tenant: any) => ({
           email: tenant.email,
           id: tenant.id,
@@ -242,10 +326,9 @@ const SignInForm = ({ onChangeView }: Props) => {
         setTenantList(mapped)
         setShowTenantListModal(true)
       } else {
-        showToast({ message: t`Successfully logged in`, variant: 'success' })
         setShowTenantListModal(false)
         setTenantList([])
-        await handleLoggedNavigation()
+        await completeSignIn(data, email, targetTenantId)
       }
     } catch (e: any) {
       console.error(e)
@@ -410,12 +493,28 @@ const SignInForm = ({ onChangeView }: Props) => {
     setError(null)
   }
 
-  const forgotPassword = () => navigate({ to: '/forgot-password' })
+  const forgotPassword = () =>
+    navigate({
+      to: resolveAuthPath(
+        '/forgot-password',
+        isWhiteLabel,
+      ) as NavigateOptions['to'],
+    })
+
+  const showGoogle = !socialProviders || socialProviders.includes('Google')
+  const showMicrosoft =
+    !socialProviders || socialProviders.includes('Microsoft')
 
   // === derived welcome texts (matches Vue copy) ===
   let welcomeDescription = t`Hi, Welcome!`
   if (!checkTenant) {
-    const appName = isOnpremiseTenant ? 'APP' : 'EZOFIS'
+    const appName = branding?.name
+      ? branding.name
+      : isWhiteLabel
+        ? 'your workspace'
+        : isOnpremiseTenant
+          ? 'APP'
+          : 'EZOFIS'
     welcomeDescription = t`Hi, Welcome back to ${appName}`
   }
 
@@ -557,7 +656,21 @@ const SignInForm = ({ onChangeView }: Props) => {
 
   return (
     <>
-      <IconIllustrated icon='tabler:user' />
+      {branding?.favicon ? (
+        <div className='mb-2 flex w-full justify-center'>
+          <div className='flex size-20 items-center justify-center rounded-full bg-gray-3'>
+            <div className='relative size-16 overflow-hidden rounded-full bg-surface shadow-xs'>
+              <img
+                alt=''
+                className='absolute inset-0 m-auto size-[calc(100%-1.5rem)] object-contain'
+                src={branding.favicon}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <IconIllustrated icon='tabler:user' />
+      )}
       <Title
         className='text-center'
         description={welcomeDescription}
@@ -578,11 +691,13 @@ const SignInForm = ({ onChangeView }: Props) => {
               <div className='space-y-4'>
                 <InputText
                   label={t`Email`}
-                  placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
+                  }
+                  placeholder={
+                    isWhiteLabel ? 'hello@example.com' : 'hello@ezofis.com'
                   }
                   onChange={(v) => {
                     setEmail(v)
@@ -626,11 +741,13 @@ const SignInForm = ({ onChangeView }: Props) => {
               <div className='space-y-4'>
                 <InputText
                   label={t`Email`}
-                  placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
+                  }
+                  placeholder={
+                    isWhiteLabel ? 'hello@example.com' : 'hello@ezofis.com'
                   }
                   onChange={(v) => {
                     setEmail(v)
@@ -657,7 +774,7 @@ const SignInForm = ({ onChangeView }: Props) => {
       ) : (
         // === Generic / AD login flow ===
         <>
-          <div className='-mt-2 space-y-4'>
+          <div className={cn(branding ? 'mt-2 space-y-5' : '-mt-2 space-y-4')}>
             {checkAdLogin ? (
               <>
                 {/* AD Login: username + password */}
@@ -699,11 +816,13 @@ const SignInForm = ({ onChangeView }: Props) => {
                 {/* Regular login: Email / Username + password */}
                 <InputText
                   label={t`Email / Username`}
-                  placeholder='hello@ezofis.com'
                   // size='lg'
                   value={email}
                   leftSection={
                     <Icon className='text-gray-8' name='tabler:mail' />
+                  }
+                  placeholder={
+                    isWhiteLabel ? 'hello@example.com' : 'hello@ezofis.com'
                   }
                   onChange={(v) => {
                     setEmail(v)
@@ -734,8 +853,13 @@ const SignInForm = ({ onChangeView }: Props) => {
           </div>
 
           {/* Remember / Forgot (mirrors Vue's conditional forgot; here always on except AD) */}
-          {!checkAdLogin && checkForgot && (
-            <div className='mt-3 flex items-center justify-between gap-4'>
+          {!checkAdLogin && (showForgotPassword ?? checkForgot) && (
+            <div
+              className={cn(
+                'flex items-center justify-between gap-4',
+                branding ? 'mt-5' : 'mt-3',
+              )}
+            >
               <InputCheckbox
                 checked={rememberMe}
                 label={t`Keep me logged in`}
@@ -754,7 +878,7 @@ const SignInForm = ({ onChangeView }: Props) => {
           )}
 
           <Button
-            className='mt-4 w-full justify-center'
+            className={cn('w-full justify-center', branding ? 'mt-6' : 'mt-4')}
             label={t`Sign In`}
             loading={loading}
             size='lg'
@@ -764,15 +888,22 @@ const SignInForm = ({ onChangeView }: Props) => {
           {error && <Alert className='mt-2' text={error} variant='primary' />}
 
           {/* Social section – Vue used <SocialAuths>, here we expose Google + Microsoft directly */}
-          {!checkAdLogin && (
+          {!checkAdLogin && showSocial && (showGoogle || showMicrosoft) ? (
             <>
-              <Divider label={t`Or`} />
-              <div className='space-y-3'>
-                <GoogleButton onClick={handleGoogleLogin} />
-                <MicrosoftButton onClick={handleMicrosoftLogin} />
+              <Divider
+                className={branding ? 'mt-6' : undefined}
+                label={t`Or`}
+              />
+              <div className={cn(branding ? 'mt-5 space-y-4' : 'space-y-3')}>
+                {showGoogle ? (
+                  <GoogleButton onClick={handleGoogleLogin} />
+                ) : null}
+                {showMicrosoft ? (
+                  <MicrosoftButton onClick={handleMicrosoftLogin} />
+                ) : null}
               </div>
             </>
-          )}
+          ) : null}
         </>
       )}
     </>

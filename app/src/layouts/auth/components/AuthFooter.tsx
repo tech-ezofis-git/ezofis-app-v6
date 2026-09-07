@@ -1,9 +1,20 @@
+import cn from '@/utils/cn'
+import { useIsWhiteLabel } from '@/utils/whiteLabel'
 import ThemeSwitcher from './ThemeSwitcher'
 
 const AuthFooter = () => {
+  const isWhiteLabel = useIsWhiteLabel()
+
   return (
-    <div className='flex items-center justify-between gap-4'>
-      <div className='text-13 text-gray-10'>© 2026 EZOFIS</div>
+    <div
+      className={cn(
+        'flex items-center gap-4',
+        isWhiteLabel ? 'justify-end' : 'justify-between',
+      )}
+    >
+      {!isWhiteLabel && (
+        <div className='text-13 text-gray-10'>© 2026 EZOFIS</div>
+      )}
       <ThemeSwitcher />
     </div>
   )

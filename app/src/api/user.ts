@@ -1,5 +1,5 @@
 import authUserStore from '../stores/authUserStore'
-import { axiosCrypto, axiosV6 } from './axios'
+import { axiosV6 } from './axios'
 
 export interface UserListData {
   [key: string]: any
@@ -62,7 +62,7 @@ export const getGroupList = async (criteria = '', value = '') => {
   }
 
   try {
-    const response = await axiosCrypto.post(
+    const response = await axiosV6.post(
       '/group/list',
       JSON.stringify({ criteria, value }),
     )

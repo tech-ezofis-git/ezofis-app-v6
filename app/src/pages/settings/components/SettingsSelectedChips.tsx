@@ -1,3 +1,4 @@
+import { useLingui } from '@lingui/react/macro'
 import IconButton from '@/components/base/button/IconButton'
 import cn from '@/utils/cn'
 import type { SettingsOption } from '../helpers/userGroupMappers'
@@ -21,7 +22,8 @@ export default function SettingsSelectedChips({
   items,
   onRemove,
 }: SettingsSelectedChipsProps) {
-  if (!items.length) return null
+  const { t } = useLingui()
+  if (!items?.length) return null
 
   return (
     <div
@@ -31,20 +33,20 @@ export default function SettingsSelectedChips({
       )}
     >
       <div className='ez-scrollbar flex max-h-36 flex-wrap gap-2 overflow-y-auto'>
-        {items.map((item) => {
+        {items.map((item, index) => {
           const initials = getInitials(item.name)
 
           return (
             <div
               className='inline-flex h-8 max-w-full items-center gap-2 rounded-lg border border-primary-4/60 bg-gradient-to-r from-primary-3/70 to-primary-2/90 px-2.5 py-1 text-xs font-semibold text-gray-13 shadow-2xs transition hover:border-primary-8 hover:from-primary-3 hover:to-primary-3/80'
-              key={item.id}
+              key={`${String(item.id)}-${index}`}
             >
               <span className='flex h-5.5 w-5.5 shrink-0 items-center justify-center rounded-full border border-primary-4/50 bg-white text-[10px] font-bold tracking-tight text-primary-11 shadow-2xs'>
                 {initials}
               </span>
               <span className='truncate'>{item.name}</span>
               <IconButton
-                ariaLabel={`Remove ${item.name}`}
+                ariaLabel={t`Remove ${item.name}`}
                 className='size-4 shrink-0 text-gray-9 hover:bg-primary-4/50 hover:text-gray-13'
                 color='gray'
                 icon='lucide:x'

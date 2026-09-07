@@ -1,17 +1,27 @@
-import clsx, { type ClassValue } from 'clsx'
-import { useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import clsx, { type ClassValue } from 'clsx'
+import { useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import type { RepositoryFieldSchema } from '@/pages/requests/utils/repoFolderMetadata'
 import fileApi from '@/api/file/file'
-import { workflowsApiV6 } from '@/api/v6/workflows'
+import Button from '@/components/base/button/Button'
+import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
+import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   type AttachmentItem,
   useAttachments,
 } from '@/pages/requests/hooks/useAttachments'
+import {
+  planRepositoryFolderMetadata,
+  uploadInstanceAttachment,
+} from '@/pages/requests/utils/instanceAttachmentUpload'
+import { toUploadMetadata } from '@/pages/requests/utils/repoFolderMetadata'
 import authUserStore from '@/stores/authUserStore'
 import { formatUtcToLocalDate } from '@/utils/utcDate'
+import AttachmentSplitView from '../../generic-overview/AttachmentSplitView'
+import RelatedDocumentsFinder from '../overview/RelatedDocumentsFinder'
 
 type FileLike = AttachmentItem
 
@@ -25,8 +35,9 @@ type Props = {
   repositoryId?: number | string
   selectedChecklistName?: string | null
   selectedItem?: any
+  showRelatedFinder?: boolean
   transactionId?: number | string
-  workflowId?: number
+  workflowId?: number | string
   onClose?: () => void
   onOpenComments?: (file: AttachmentItem) => void
   onOpenHistory?: (file: AttachmentItem) => void
@@ -34,7 +45,6 @@ type Props = {
     files: Array<{ id: string | number; name: string }>,
   ) => void
   onSelect?: (file: AttachmentItem) => void
-  mockAiDocs?: string[]
 }
 
 function cn(...inputs: ClassValue[]) {
@@ -77,7 +87,7 @@ function resolveApiBaseUrl() {
   return String(v || '').replace(/\/$/, '')
 }
 
-const getExt = (file?: AttachmentItem) => {
+export const getExt = (file?: AttachmentItem) => {
   if (!file) return ''
 
   // 1. Try to extract from filePath if it exists and has a dot
@@ -153,28 +163,41 @@ const formatBytes = (bytes?: number) => {
 //     return allowed.includes(ext.toLowerCase())
 // }
 
-const getFileIcon = (ext: string): string => {
+export const getFileIcon = (fileNameOrExt: string): string => {
+  if (!fileNameOrExt) return 'vscode-icons:file-type-text'
+  const parts = fileNameOrExt.split('.')
+  const ext = (parts.length > 1 ? parts.pop() || '' : fileNameOrExt)
+    .toLowerCase()
+    .trim()
+    .replace(/^\./, '')
+
   const iconMap: Record<string, string> = {
-    csv: 'tabler:file-type-csv',
-    doc: 'tabler:file-type-doc',
-    docx: 'tabler:file-type-doc',
-    gif: 'tabler:photo',
-    jpeg: 'tabler:photo',
-    jpg: 'tabler:photo',
-    pdf: 'vscode-icons:file-type-pdf2',
-    png: 'tabler:photo',
-    ppt: 'tabler:file-type-ppt',
-    pptx: 'tabler:file-type-ppt',
-    rtf: 'tabler:file-text',
-    txt: 'tabler:file-type-txt',
-    webp: 'tabler:photo',
-    xls: 'tabler:file-type-xls',
-    xlsx: 'tabler:file-type-xls',
+    '7z': 'vscode-icons:file-type-zip',
+    'csv': 'vscode-icons:file-type-excel',
+    'doc': 'vscode-icons:file-type-word',
+    'docx': 'vscode-icons:file-type-word',
+    'gif': 'vscode-icons:file-type-image',
+    'jpeg': 'vscode-icons:file-type-image',
+    'jpg': 'vscode-icons:file-type-image',
+    'json': 'vscode-icons:file-type-json',
+    'pdf': 'vscode-icons:file-type-pdf2',
+    'png': 'vscode-icons:file-type-image',
+    'ppt': 'vscode-icons:file-type-powerpoint',
+    'pptx': 'vscode-icons:file-type-powerpoint',
+    'rar': 'vscode-icons:file-type-zip',
+    'rtf': 'vscode-icons:file-type-text',
+    'svg': 'vscode-icons:file-type-image',
+    'txt': 'vscode-icons:file-type-text',
+    'webp': 'vscode-icons:file-type-image',
+    'xls': 'vscode-icons:file-type-excel',
+    'xlsx': 'vscode-icons:file-type-excel',
+    'xml': 'vscode-icons:file-type-xml',
+    'zip': 'vscode-icons:file-type-zip',
   }
-  return iconMap[ext] || 'tabler:file'
+  return iconMap[ext] || 'vscode-icons:file-type-text'
 }
 
-const getFileIconClasses = (ext: string) => {
+export const getFileIconClasses = (ext: string) => {
   const map: Record<string, { badge: string; wrap: string }> = {
     doc: {
       badge: 'bg-blue-2 text-blue-11 ring-blue-8/30',
@@ -235,38 +258,26 @@ export default function Attachments({
   canUpload = true,
   enabled = true,
   formModel,
+  initialData,
   instanceId,
   processId,
   repositoryId,
   selectedItem,
+  // Hidden for now; pass showRelatedFinder={true} to restore Find related documents.
+  showRelatedFinder = false,
   workflowId,
-  onSelect,
+  onClose,
   onOpenHistory,
   onOpenMailShare,
-  mockAiDocs,
-  initialData,
+  onSelect,
 }: Props & { initialData?: any[] }) {
   const { t } = useLingui()
   const targetInstanceId = instanceId || processId
   const {
-    data: _files = [],
+    data: files = [],
     isLoading,
     refetch,
   } = useAttachments(workflowId, targetInstanceId, enabled, initialData)
-
-  const files = [
-    ...(mockAiDocs || []).map((docId) => ({
-      id: `mock-${docId}`,
-      name: `${docId}.pdf`,
-      contentType: 'application/pdf',
-      createdAt: new Date().toISOString(),
-      uploadedBy: 'AI Match',
-      isAiMatch: true,
-      fileSize: 0,
-      repositoryId: '',
-    })),
-    ..._files,
-  ]
 
   console.log('[Attachments] Loaded files list:', files)
   const { session } = authUserStore.getState()
@@ -276,22 +287,199 @@ export default function Attachments({
 
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // A locally-picked file awaiting the indexing split-view — shown whenever
+  // the repository defines folder-structure fields, so the uploader can
+  // review inherited values and fill any missing/mandatory ones before the
+  // file is actually posted. Same split-view the Overview form-field
+  // upload uses.
+  const [pendingUpload, setPendingUpload] = useState<{
+    baseMetadata: Record<string, string>
+    file: File
+    folderFields: RepositoryFieldSchema[]
+  } | null>(null)
+
+  const attachedIds = useMemo(() => {
+    const set = new Set<string>()
+    files.forEach((f: any) => {
+      if (f.itemId) set.add(String(f.itemId))
+      if (f.id) set.add(String(f.id))
+    })
+    return set
+  }, [files])
+
+  const getValueFromKeys = (obj: any, keys: string[]): string => {
+    if (!obj) return ''
+    for (const k of keys) {
+      const val = obj[k]
+      if (val !== undefined && val !== null) {
+        if (typeof val === 'object' && 'Invoice Value' in val) {
+          return String(val['Invoice Value'] ?? '')
+        }
+        return String(val)
+      }
+    }
+    return ''
+  }
+
+  const invoiceAmount = getValueFromKeys(formModel, [
+    'Invoice Amount',
+    'invoice_amount',
+    'Amount',
+    'amount',
+    'Total',
+    'total',
+  ])
+  const invoiceNumber = getValueFromKeys(formModel, [
+    'Invoice Number',
+    'invoice_number',
+    'Invoice No',
+    'invoice_no',
+    'Inv Number',
+  ])
+  const poNumber = getValueFromKeys(formModel, [
+    'PO Number',
+    'po_number',
+    'PO No',
+    'po_no',
+    'Purchase Order',
+    'pono',
+    'poNumber',
+  ])
+  const supplierName = getValueFromKeys(formModel, [
+    'Supplier Name',
+    'supplier_name',
+    'Vendor Name',
+    'vendor_name',
+    'Supplier',
+    'Vendor',
+  ])
+
+  // Legacy AP-style metadata, matched off the workflow's own form fields
+  // (Invoice/PO/Supplier...). Kept as a base layer so Accounts Payable
+  // repositories — whose fields really are named this way — keep working
+  // unchanged; for a generic workflow none of these match anything and the
+  // repository's OWN field schema (below) is what actually fills the
+  // required folder-structure values instead of leaving them blank.
+  const buildLegacyApMetadata = () => {
+    const getValueFromKeys = (obj: any, keys: string[]): string => {
+      if (!obj) return ''
+      for (const k of keys) {
+        const val = obj[k]
+        if (val !== undefined && val !== null) {
+          if (typeof val === 'object' && 'Invoice Value' in val) {
+            return String(val['Invoice Value'] ?? '')
+          }
+          return String(val)
+        }
+      }
+      return ''
+    }
+
+    const rawAmount = getValueFromKeys(formModel, [
+      'Invoice Amount',
+      'invoice_amount',
+      'Amount',
+      'amount',
+      'Total',
+      'total',
+    ])
+    const parsedAmount = Number(rawAmount.replace(/[^0-9.-]+/g, ''))
+    const amountVal = Number.isNaN(parsedAmount) ? 0 : parsedAmount
+
+    return {
+      Amount: amountVal,
+      Department: getValueFromKeys(formModel, ['Department', 'department']),
+      DocumentDate: getValueFromKeys(formModel, [
+        'Invoice Date',
+        'invoice_date',
+        'Document Date',
+        'document_date',
+        'Date',
+        'date',
+      ]),
+      DocumentType:
+        getValueFromKeys(formModel, [
+          'Document Type',
+          'document_type',
+          'Doc Type',
+          'doc_type',
+        ]) || 'Invoice',
+      InvoiceNumber: getValueFromKeys(formModel, [
+        'Invoice Number',
+        'invoice_number',
+        'Invoice No',
+        'invoice_no',
+        'Inv Number',
+      ]),
+      PoNumber: getValueFromKeys(formModel, [
+        'PO Number',
+        'po_number',
+        'PO No',
+        'po_no',
+        'Purchase Order',
+        'pono',
+        'poNumber',
+        'PO No.',
+      ]),
+      RiskLevel: getValueFromKeys(formModel, [
+        'Risk Level',
+        'risk_level',
+        'Risk',
+        'risk',
+      ]),
+      Source: getValueFromKeys(formModel, ['Source', 'source']) || 'Upload',
+      Status:
+        getValueFromKeys(formModel, ['Status', 'status']) ||
+        selectedItem?.status ||
+        selectedItem?.state ||
+        '',
+      Supplier: getValueFromKeys(formModel, [
+        'Supplier Name',
+        'supplier_name',
+        'Vendor Name',
+        'vendor_name',
+        'Supplier',
+        'Vendor',
+      ]),
+    }
+  }
+
+  const performUpload = async (
+    file: File,
+    extraMetadata: Record<string, unknown> = {},
+  ) => {
+    if (!workflowId || !targetInstanceId || !repositoryId) return
+
+    setIsUploading(true)
+    try {
+      const metadata = { ...buildLegacyApMetadata(), ...extraMetadata }
+      const res = await uploadInstanceAttachment(
+        workflowId,
+        targetInstanceId,
+        repositoryId,
+        file,
+        metadata,
+      )
+
+      if (res.error) {
+        console.error(
+          '[Attachments] Upload failed with response error:',
+          res.error,
+        )
+      } else {
+        await refetch()
+      }
+    } catch (err) {
+      console.error('Error uploading file:', err)
+    } finally {
+      setIsUploading(false)
+      setPendingUpload(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    console.log(
-      '[Attachments] Selected file:',
-      file?.name,
-      'Size:',
-      file?.size,
-      'Type:',
-      file?.type,
-    )
-    console.log('[Attachments] Upload Context:', {
-      repositoryId,
-      targetInstanceId,
-      workflowId,
-    })
 
     if (
       !file ||
@@ -315,121 +503,71 @@ export default function Attachments({
 
     setIsUploading(true)
     try {
-      const getValueFromKeys = (obj: any, keys: string[]): string => {
-        if (!obj) return ''
-        for (const k of keys) {
-          const val = obj[k]
-          if (val !== undefined && val !== null) {
-            if (typeof val === 'object' && 'Invoice Value' in val) {
-              return String(val['Invoice Value'] ?? '')
-            }
-            return String(val)
+      // Every attachment already on this instance shares the same folder,
+      // so its metadata seeds every level except the deepest one (the
+      // field that actually varies per document — see
+      // repoFolderMetadata.ts). Only that field needs asking about.
+      const existingItem = files.find((f) => f.itemId)
+      const { baseMetadata, folderFields } = await planRepositoryFolderMetadata(
+        String(repositoryId),
+        existingItem
+          ? {
+            itemId: existingItem.itemId,
+            repositoryId: existingItem.repositoryId || repositoryId,
           }
-        }
-        return ''
-      }
-
-      const rawAmount = getValueFromKeys(formModel, [
-        'Invoice Amount',
-        'invoice_amount',
-        'Amount',
-        'amount',
-        'Total',
-        'total',
-      ])
-      const parsedAmount = Number(rawAmount.replace(/[^0-9.-]+/g, ''))
-      const amountVal = Number.isNaN(parsedAmount) ? 0 : parsedAmount
-
-      const metadataObj = {
-        Amount: amountVal,
-        Department: getValueFromKeys(formModel, ['Department', 'department']),
-        DocumentDate: getValueFromKeys(formModel, [
-          'Invoice Date',
-          'invoice_date',
-          'Document Date',
-          'document_date',
-          'Date',
-          'date',
-        ]),
-        DocumentType:
-          getValueFromKeys(formModel, [
-            'Document Type',
-            'document_type',
-            'Doc Type',
-            'doc_type',
-          ]) || 'Invoice',
-        InvoiceNumber: getValueFromKeys(formModel, [
-          'Invoice Number',
-          'invoice_number',
-          'Invoice No',
-          'invoice_no',
-          'Inv Number',
-        ]),
-        PoNumber: getValueFromKeys(formModel, [
-          'PO Number',
-          'po_number',
-          'PO No',
-          'po_no',
-          'Purchase Order',
-          'pono',
-          'poNumber',
-          'PO No.',
-        ]),
-        RiskLevel: getValueFromKeys(formModel, [
-          'Risk Level',
-          'risk_level',
-          'Risk',
-          'risk',
-        ]),
-        Source: getValueFromKeys(formModel, ['Source', 'source']) || 'Upload',
-        Status:
-          getValueFromKeys(formModel, ['Status', 'status']) ||
-          selectedItem?.status ||
-          selectedItem?.state ||
-          '',
-        Supplier: getValueFromKeys(formModel, [
-          'Supplier Name',
-          'supplier_name',
-          'Vendor Name',
-          'vendor_name',
-          'Supplier',
-          'Vendor',
-        ]),
-      }
-
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('repositoryId', String(repositoryId))
-      formData.append('repositoryld', String(repositoryId)) // Support backend field typo
-      formData.append('metadata', JSON.stringify(metadataObj))
-
-      const res = await workflowsApiV6.addInstanceAttachment(
-        workflowId,
-        targetInstanceId,
-        formData,
+          : undefined,
       )
 
-      console.log('[Attachments] Upload response:', res)
-      if (res.error) {
-        console.error(
-          '[Attachments] Upload failed with response error:',
-          res.error,
-        )
-      } else {
-        console.log('[Attachments] Upload succeeded, refetching...')
+      if (folderFields.length > 0) {
+        setIsUploading(false)
+        setPendingUpload({ baseMetadata, file, folderFields })
+        return
       }
 
-      if (fileInputRef.current) fileInputRef.current.value = ''
-      await refetch()
+      await performUpload(file, baseMetadata)
     } catch (err) {
-      console.error('Error uploading file:', err)
-    } finally {
+      console.error('Error preparing upload:', err)
       setIsUploading(false)
     }
   }
 
-  const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
+  const handleConfirmUpload = async (values: Record<string, string>) => {
+    if (!pendingUpload) return
+    const metadata = toUploadMetadata(pendingUpload.folderFields, values)
+    await performUpload(pendingUpload.file, metadata)
+  }
+
+  const getMimeTypeFromBase64 = (base64: string): string => {
+    if (base64.startsWith('/9j/')) return 'image/jpeg'
+    if (base64.startsWith('iVBORw0KGgo')) return 'image/png'
+    return 'application/pdf'
+  }
+
+  const formatBase64Url = (base64: string, mimeType: string): string => {
+    return base64.startsWith('data:')
+      ? base64
+      : `data:${mimeType};base64,${base64}`
+  }
+
+  const handleOpenFile = async (e: React.MouseEvent, file: FileLike) => {
     e.stopPropagation()
+    if (onSelect) {
+      onSelect(file)
+      return
+    }
+
+    const localUrl = (file as any)._localFileUrl || (file as any).localUrl
+    if (localUrl) {
+      window.open(localUrl, '_blank')
+      return
+    }
+
+    if ((file as any).rawFile instanceof File) {
+      const url = URL.createObjectURL((file as any).rawFile)
+      window.open(url, '_blank')
+      return
+    }
+
     const repoId = String(file.repositoryId || repositoryId || '').trim()
     const itemId = String(file.itemId || file.id || '').trim()
 
@@ -441,91 +579,189 @@ export default function Attachments({
 
     if (isUuid(repoId) && isUuid(itemId)) {
       try {
-        const response = await fileApi.viewBinaryV6(repoId, itemId, 'download')
+        const response = await fileApi.viewBinaryV6(repoId, itemId)
         if (response?.data instanceof Blob) {
           const url = window.URL.createObjectURL(response.data)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = file.name || 'download'
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-          window.URL.revokeObjectURL(url)
-        } else {
-          console.error('File binary data not found or invalid format.')
+          window.open(url, '_blank')
+          return
         }
       } catch (err) {
-        console.error('Error downloading attachment:', err)
+        console.error('Error viewing V6 attachment:', err)
       }
     } else {
-      const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
-      window.open(url, '_blank')
+      const rId = Number(repoId)
+      if (!Number.isNaN(rId) && rId > 0) {
+        try {
+          const tId = session?.tenantId ? Number(session.tenantId) : 2
+          const uId = session?.id ? String(session.id) : '2'
+          const response = await fileApi.viewBinary(
+            tId,
+            uId,
+            rId,
+            Number(itemId || file.id || 0),
+            2,
+          )
+          const base64 = response?.data?.file || response?.data
+          if (typeof base64 === 'string') {
+            const mimeType = getMimeTypeFromBase64(base64)
+            const url = formatBase64Url(base64, mimeType)
+            const win = window.open()
+            if (win) {
+              win.document.write(
+                `<iframe src="${url}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`,
+              )
+            }
+            return
+          }
+        } catch (err) {
+          console.error('Error viewing legacy binary attachment:', err)
+        }
+      }
     }
+
+    const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+    window.open(url, '_blank')
   }
 
+  const handleDownload = async (e: React.MouseEvent, file: FileLike) => {
+  e.stopPropagation()
+  const repoId = String(file.repositoryId || repositoryId || '').trim()
+  const itemId = String(file.itemId || file.id || '').trim()
+
+  const isUuid = (val: string): boolean => {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      val,
+    )
+  }
+
+  if (isUuid(repoId) && isUuid(itemId)) {
+    try {
+      const response = await fileApi.viewBinaryV6(repoId, itemId, 'download')
+      if (response?.data instanceof Blob) {
+        const url = window.URL.createObjectURL(response.data)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = file.name || 'download'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+      } else {
+        console.error('File binary data not found or invalid format.')
+      }
+    } catch (err) {
+      console.error('Error downloading attachment:', err)
+    }
+  } else {
+    const url = buildDownloadUrl({ apiBaseUrl, file, tenantId, userId })
+    window.open(url, '_blank')
+  }
+}
+
+if (pendingUpload) {
+  // Attachments is embedded in narrow containers (a 380px side panel, a
+  // portal detail column, ...), too tight for a document preview +
+  // indexing form. Escape to a full-page takeover, same as the Overview
+  // form-field upload's indexing step, regardless of where this instance
+  // is mounted.
   return (
-    <div className='relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'>
-      <input
-        className='hidden'
-        ref={fileInputRef}
-        type='file'
-        onChange={onFileChange}
+    <div className='fixed inset-0 z-[100] flex h-full min-h-0 w-full flex-col bg-surface font-sans'>
+      <AttachmentSplitView
+        file={pendingUpload.file}
+        folderFields={pendingUpload.folderFields}
+        isSubmitting={isUploading}
+        metadata={pendingUpload.baseMetadata}
+        repositoryId={repositoryId}
+        title={pendingUpload.file.name}
+        onClose={() => {
+          setPendingUpload(null)
+          if (fileInputRef.current) fileInputRef.current.value = ''
+        }}
+        onConfirm={handleConfirmUpload}
       />
+    </div>
+  )
+}
 
-      {/* Upload Zone (Large dashed container when no files exist) */}
-      {canUpload && !isLoading && files.length === 0 && (
-        <div className='mb-4 shrink-0'>
-          <button
-            disabled={isUploading}
-            className={cn(
-              'flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-4 bg-surface px-4 py-5 text-center transition-all hover:border-primary-4 hover:bg-primary-2/10 active:scale-98',
-              isUploading && 'pointer-events-none opacity-60',
-            )}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {isUploading ? (
-              <Icon
-                className='size-6 animate-spin text-primary-9'
-                name='tabler:loader'
-              />
-            ) : (
-              <Icon className='size-6 text-gray-9' name='tabler:upload' />
-            )}
-            <div className='flex flex-col gap-0.5'>
-              <span className='text-13 font-bold text-gray-12'>
-                {isUploading ? 'Uploading...' : 'Upload attachment'}
-              </span>
-              <span className='text-11 text-gray-8'>Select file here</span>
-            </div>
-          </button>
+return (
+  <div
+    className={
+      onClose
+        ? 'flex h-full min-h-0 w-full flex-col font-sans'
+        : 'relative mx-auto mt-0 flex h-full w-full flex-col font-sans transition-all duration-300'
+    }
+  >
+    <input
+      className='hidden'
+      ref={fileInputRef}
+      type='file'
+      onChange={onFileChange}
+    />
+
+    {onClose && (
+      <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3 py-2.5'>
+        <span className='text-xs font-semibold text-gray-12'>
+          {t`Attachments`} ({files.length})
+        </span>
+        <div className='flex items-center gap-1'>
+          {canUpload && !isLoading && (
+            <Button
+              disabled={isUploading}
+              icon='tabler:upload'
+              label={isUploading ? t`Uploading...` : t`Upload`}
+              loading={isUploading}
+              size='sm'
+              type='button'
+              onClick={() => fileInputRef.current?.click()}
+            />
+          )}
+          <IconButton
+            ariaLabel={t`Close`}
+            icon='tabler:x'
+            size='sm'
+            variant='ghost'
+            onClick={onClose}
+          />
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Header Row (Small top-right button when attachments exist) */}
-      {canUpload && !isLoading && files.length > 0 && (
-        <div className='mt-2.5 mb-3 flex shrink-0 items-center justify-between'>
-          <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)]'></h4>
-          <button
+    <div
+      className={
+        onClose
+          ? 'relative min-h-0 flex-1 overflow-y-auto px-4 py-4'
+          : 'contents'
+      }
+    >
+
+      {showRelatedFinder ? (
+        <RelatedDocumentsFinder
+          agentData={selectedItem || formModel}
+          attachedIds={attachedIds}
+          instanceId={targetInstanceId}
+          invoiceAmount={invoiceAmount}
+          invoiceNumber={invoiceNumber}
+          poNumber={poNumber}
+          repositoryId={repositoryId}
+          supplierName={supplierName}
+          workflowId={
+            workflowId != null ? Number(workflowId) || undefined : undefined
+          }
+          onAttached={refetch}
+        />
+      ) : null}
+
+      {canUpload && !isLoading && !onClose && (
+        <div className='mb-3 flex shrink-0 justify-end'>
+          <Button
             disabled={isUploading}
-            className={cn(
-              'flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--gray-3)] bg-surface px-2.5 py-1 text-[11px] font-semibold text-[var(--gray-12)] transition-all hover:bg-[var(--gray-2)] active:scale-95',
-              isUploading && 'pointer-events-none opacity-60',
-            )}
+            icon='tabler:upload'
+            label={isUploading ? t`Uploading...` : t`Upload`}
+            loading={isUploading}
+            size='sm'
+            type='button'
             onClick={() => fileInputRef.current?.click()}
-          >
-            {isUploading ? (
-              <Icon
-                className='size-3.5 animate-spin text-[var(--primary-9)]'
-                name='tabler:loader'
-              />
-            ) : (
-              <Icon
-                className='size-3.5 text-[var(--gray-9)]'
-                name='tabler:upload'
-              />
-            )}
-            <span>{isUploading ? 'Uploading...' : 'Upload attachment'}</span>
-          </button>
+          />
         </div>
       )}
 
@@ -534,17 +770,19 @@ export default function Attachments({
         {isLoading && files.length === 0 ? (
           <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
             <Icon className='mb-2 size-6 animate-spin' name='tabler:loader' />
-            <span className='text-12'>Loading attachments...</span>
+            <span className='text-12'>{t`Loading attachments...`}</span>
           </div>
         ) : files.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
-            <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-gray-2'>
-              <Icon className='size-6 text-gray-7' name='tabler:file-off' />
+          !canUpload && (
+            <div className='flex flex-col items-center justify-center py-10 text-gray-8'>
+              <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-gray-2'>
+                <Icon className='size-6 text-gray-7' name='tabler:file-off' />
+              </div>
+              <span className='text-13 font-medium text-gray-10'>
+                No attachments found
+              </span>
             </div>
-            <span className='text-13 font-medium text-gray-10'>
-              No attachments found
-            </span>
-          </div>
+          )
         ) : (
           files.map((file) => {
             const ext = getExt(file)
@@ -561,7 +799,7 @@ export default function Attachments({
               <div
                 className='group flex cursor-pointer items-start gap-3 rounded-xl border border-gray-1 bg-surface p-3 transition-all hover:border-blue-4 hover:shadow-sm'
                 key={file.id}
-                onClick={() => onSelect?.(file)}
+                onClick={(e) => handleOpenFile(e, file)}
               >
                 <div
                   className={cn(
@@ -575,14 +813,18 @@ export default function Attachments({
                 <div className='min-w-0 flex-1'>
                   <div className='flex flex-wrap items-baseline gap-1.5'>
                     <span
-                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:underline'
+                      className='line-clamp-1 text-13 font-semibold break-all text-gray-12 transition-all group-hover:line-clamp-none hover:text-primary-9 hover:underline cursor-pointer'
                       title={displayTitle}
+                      onClick={(e) => handleOpenFile(e, file)}
                     >
                       {displayTitle}
                     </span>
                     {file.isAiMatch && (
-                      <span className='inline-flex items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)] shrink-0'>
-                        <AiBrandIcon className='size-3 shrink-0' variant='outline-purple' />
+                      <span className='inline-flex shrink-0 items-center gap-1 rounded bg-[var(--primary-2)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--primary-9)]'>
+                        <AiBrandIcon
+                          className='size-3 shrink-0'
+                          variant='outline-purple'
+                        />
                         Added via AI match
                       </span>
                     )}
@@ -592,31 +834,30 @@ export default function Attachments({
                       </span>
                     )}
                   </div>
-                  <div className='mt-0.5 flex items-center gap-2 flex-wrap'>
-                    <span className='inline-flex items-center gap-1 rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
-                      <Icon name='tabler:folder' className='size-3 text-[var(--primary-9)]' />
-                      {(file as any).folderName || (file.isAiMatch ? 'Procurement Ledger' : 'Main Repository')}
-                    </span>
+                  <div className='mt-0.5 flex min-w-0 items-center gap-2'>
                     {file.isAiMatch ? (
                       <span className='text-[11px] text-[var(--gray-9)]'>
                         Added just now · from AI cross-reference
                       </span>
                     ) : (
                       <>
-                        <span className='text-[11px] text-gray-8'>
+                        <span className='shrink-0 text-[11px] text-gray-8'>
                           {file.createdAt
                             ? formatUtcToLocalDate(file.createdAt)
                             : 'Unknown date'}
                         </span>
                         {file.uploadedBy && (
                           <>
-                            <span className='size-0.5 rounded-full bg-gray-4' />
-                            <span
-                              className='line-clamp-1 max-w-[120px] text-[11px] font-medium text-gray-9'
-                              title={file.uploadedBy}
+                            <span className='size-0.5 shrink-0 rounded-full bg-gray-4' />
+                            <Tooltip
+                              className='min-w-0 max-w-full flex-1 justify-start'
+                              content={file.uploadedBy}
+                              position='top'
                             >
-                              {file.uploadedBy}
-                            </span>
+                              <span className='block min-w-0 w-full truncate text-[11px] font-medium text-gray-9'>
+                                {file.uploadedBy}
+                              </span>
+                            </Tooltip>
                           </>
                         )}
                       </>
@@ -637,7 +878,8 @@ export default function Attachments({
         )}
       </div>
     </div>
-  )
+  </div>
+)
 }
 
 // Download URL

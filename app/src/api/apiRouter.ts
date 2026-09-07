@@ -1,26 +1,10 @@
 import { axiosV6 } from './axios'
 import { authApiV6 } from './v6/auth'
 
-/**
- * Helper to determine API version based on origin or other configs.
- * Modify this logic to suit your specific tenant check.
- */
-export const getApiVersion = (): 'v5' | 'v6' => {
-  if (globalThis.window !== undefined) {
-    const origin = globalThis.location.origin
-    // Example logic: if the origin contains 'localhost:3000', use the V6 API
-    // Adjust this to your actual condition
-    if (origin.includes('localhost:3001')) {
-      return 'v6'
-    }
-  }
-  return 'v5' // Default to V5
-}
-
 // --- AUTH ROUTER ---
 
 export const signUp = async (payload: any) => {
-  // Map the generic/v5 payload to the specific V6 payload interface
+  // Map generic payload to the specific V6 payload interface
   const v6Payload = {
     appVersion: '1.0.0',
     databaseName: null,
@@ -47,14 +31,21 @@ export const verifyMailOTP = async (payload: any) => {
   return await authApiV6.verifyMailOTP(payload)
 }
 
-export const login = async (payload: any, tenantId?: string | number) => {
+export const login = async (
+  payload: any,
+  tenantId?: string | number,
+  options?: { persistIdentity?: boolean },
+) => {
   // If tenantId is already provided (from selection UI), go straight to login
   if (tenantId) {
-    return await authApiV6.login({
-      email: payload.email,
-      password: payload.password,
-      tenantId: String(tenantId),
-    })
+    return await authApiV6.login(
+      {
+        email: payload.email,
+        password: payload.password,
+        tenantId: String(tenantId),
+      },
+      options,
+    )
   }
 
   // Otherwise, first fetch tenants for this email
@@ -81,21 +72,31 @@ export const login = async (payload: any, tenantId?: string | number) => {
   }
 
   // Only one tenant, proceed to login automatically
-  return await authApiV6.login({
-    email: payload.email,
-    password: payload.password,
-    tenantId: tenants[0].tenantId,
-  })
+  return await authApiV6.login(
+    {
+      email: payload.email,
+      password: payload.password,
+      tenantId: tenants[0].tenantId,
+    },
+    options,
+  )
 }
 
-export const socialLogin = async (payload: any, tenantId?: string | number) => {
+export const socialLogin = async (
+  payload: any,
+  tenantId?: string | number,
+  options?: { persistIdentity?: boolean },
+) => {
   // If tenantId is already provided, go straight to social login
   if (tenantId) {
-    return await authApiV6.socialLogin({
-      email: payload.email,
-      provider: (payload.loginType || payload.provider || '').toUpperCase(),
-      tenantId: String(tenantId),
-    })
+    return await authApiV6.socialLogin(
+      {
+        email: payload.email,
+        provider: (payload.loginType || payload.provider || '').toUpperCase(),
+        tenantId: String(tenantId),
+      },
+      options,
+    )
   }
 
   // Otherwise, first fetch tenants for this email
@@ -121,11 +122,14 @@ export const socialLogin = async (payload: any, tenantId?: string | number) => {
   }
 
   // Only one tenant, proceed to social login automatically
-  return await authApiV6.socialLogin({
-    email: payload.email,
-    provider: (payload.loginType || payload.provider || '').toUpperCase(),
-    tenantId: tenants[0].tenantId,
-  })
+  return await authApiV6.socialLogin(
+    {
+      email: payload.email,
+      provider: (payload.loginType || payload.provider || '').toUpperCase(),
+      tenantId: tenants[0].tenantId,
+    },
+    options,
+  )
 }
 
 export const userSession = async () => {
@@ -195,7 +199,6 @@ export const apiRouter = {
   socialLogin,
   userSession,
   verifyMailOTP,
-  getApiVersion,
 }
 
 export default apiRouter

@@ -37,7 +37,8 @@ const PageTitle = () => {
   const foldersBreadcrumbs = useFoldersTopbarStore((state) => state.breadcrumbs)
   const foldersNavigate = useFoldersTopbarStore((state) => state.onNavigate)
 
-  const current = matches[matches.length - 1]
+  const routeMatches = matches ?? []
+  const current = routeMatches.at(-1)
   const routeId = String(current?.routeId ?? '')
   const isFormEntriesRoute = routeId === '/_app/forms_/$formId/entries'
   const isSettingsRoute =
@@ -177,7 +178,7 @@ const PageTitle = () => {
       )
     }
 
-    if (isSettingsRoute && settingsBreadcrumbs.length) {
+    if (isSettingsRoute && settingsBreadcrumbs?.length) {
       return (
         <SettingsBreadcrumbs
           items={settingsBreadcrumbs}
@@ -186,7 +187,20 @@ const PageTitle = () => {
       )
     }
 
-    if (isFoldersRoute && foldersBreadcrumbs.length) {
+    const isFormsListRoute = routeId === '/_app/forms'
+    if (
+      (isFormsListRoute || isWorkflowsRoute) &&
+      settingsBreadcrumbs.length > 1
+    ) {
+      return (
+        <SettingsBreadcrumbs
+          items={settingsBreadcrumbs}
+          onNavigate={settingsNavigate}
+        />
+      )
+    }
+
+    if (isFoldersRoute && foldersBreadcrumbs?.length) {
       return (
         <SettingsBreadcrumbs
           items={foldersBreadcrumbs}

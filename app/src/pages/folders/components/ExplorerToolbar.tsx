@@ -160,11 +160,7 @@ export function ExplorerToolbar({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      if (filterMode === 'files') {
-        onFileSearchChange?.(searchQuery)
-        return
-      }
-      // folders | both → folder browse search
+      onFileSearchChange?.(searchQuery)
       onFolderSearchChange?.(searchQuery)
     }, 300)
 
@@ -258,13 +254,7 @@ export function ExplorerToolbar({
         itemFilterFields={itemFilterFields}
         refreshing={refreshing}
         repositoryId={repositoryId}
-        searchPlaceholder={
-          filterMode === 'files'
-            ? t`Search files...`
-            : filterMode === 'both'
-              ? t`Search folders and files...`
-              : t`Search folders...`
-        }
+        searchPlaceholder={t`Search by name or metadata...`}
         searchQuery={searchQuery}
         view={view}
         onFilterChange={handleFilterChange}

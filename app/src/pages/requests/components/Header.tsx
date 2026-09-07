@@ -5,6 +5,7 @@ import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
+import cn from '@/utils/cn'
 import type { IRequestMeta } from '../types'
 interface Props {
   // New Props
@@ -23,6 +24,8 @@ interface Props {
     onClick: () => void
   }[]
   exceptionsCount?: number
+  hideListTabs?: boolean
+  isAccountsPayable?: boolean
   metaData?: IRequestMeta
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
@@ -33,6 +36,8 @@ const Header = ({
   activeTab,
   allWorkflows,
   exceptionsCount,
+  hideListTabs = false,
+  isAccountsPayable = true,
   isLoading,
   metaData,
   workflow,
@@ -43,39 +48,69 @@ const Header = ({
   const processedCount =
     Number(metaData?.completedCount ?? 0) + Number(metaData?.sentCount ?? 0)
   const inboxCount = Number(metaData?.inboxCount ?? 0)
+  const sentCount = Number(metaData?.sentCount ?? 0)
+  const completedCount = Number(metaData?.completedCount ?? 0)
   const resolvedExceptionsCount = exceptionsCount ?? 0
 
   console.log(allWorkflows)
 
   return (
-    <div className='flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6'>
-      <Tabs
-        color='primary'
-        tabClassName='py-3.5'
-        value={activeTab}
-        onChange={(val) => setActiveTab(val as string)}
-      >
-        <Tab
-          label={
-            isLoading ? t`Invoices` : t`Invoices (${inboxCount})`
-          }
-          value='Inbox'
-        />
-        <Tab
-          value='Exceptions'
-          label={
-            isLoading
-              ? t`Exceptions`
-              : t`Exceptions (${resolvedExceptionsCount})`
-          }
-        />
-        <Tab
-          label={
-            isLoading ? t`Processed` : t`Processed (${processedCount})`
-          }
-          value='Processed'
-        />
-      </Tabs>
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-6 border-b border-gray-3 px-6',
+        hideListTabs ? 'py-2.5' : '',
+      )}
+    >
+      {hideListTabs ? (
+        <p className='text-15 font-semibold text-gray-13'>{t`Process Overview`}</p>
+      ) : (
+        <Tabs
+          color='primary'
+          tabClassName='py-3.5'
+          value={activeTab}
+          onChange={(val) => setActiveTab(val as string)}
+        >
+          {isAccountsPayable ? (
+            <>
+              <Tab
+                label={isLoading ? t`Invoices` : t`Invoices (${inboxCount})`}
+                value='Inbox'
+              />
+              <Tab
+                value='Exceptions'
+                label={
+                  isLoading
+                    ? t`Exceptions`
+                    : t`Exceptions (${resolvedExceptionsCount})`
+                }
+              />
+              <Tab
+                value='Processed'
+                label={
+                  isLoading ? t`Processed` : t`Processed (${processedCount})`
+                }
+              />
+            </>
+          ) : (
+            <>
+              <Tab
+                label={isLoading ? t`Inbox` : t`Inbox (${inboxCount})`}
+                value='Inbox'
+              />
+              <Tab
+                label={isLoading ? t`Sent` : t`Sent (${sentCount})`}
+                value='Sent'
+              />
+              <Tab
+                value='Closed'
+                label={
+                  isLoading ? t`Completed` : t`Completed (${completedCount})`
+                }
+              />
+            </>
+          )}
+        </Tabs>
+      )}
 
       <div className='flex items-center gap-2'>
         <InputSelect

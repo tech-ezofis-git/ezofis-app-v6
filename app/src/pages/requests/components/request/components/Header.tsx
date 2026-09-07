@@ -6,20 +6,22 @@ import { getUserListQueryOptions } from '@/api/userQueries'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
+import Indicator from '@/components/base/Indicator'
 import InputCheckbox from '@/components/base/inputs/InputCheckbox'
 import OverlayHeaderWrapper from '@/components/base/overlay/OverlayHeaderWrapper'
 import showToast from '@/components/base/toast/showToast'
 import Tooltip from '@/components/base/Tooltip'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 // import InputSelect from '@/components/base/inputs/InputSelect'
 import { localizeRequestStatus } from '@/pages/requests/utils/localizeRequestUi'
 import cn from '@/utils/cn'
+import { parseUtcDate } from '@/utils/utcDate'
 
 interface HeaderProps {
   isLoading: boolean
   raisedAt: any
   requestNo: string
-  rightView: 'analysis' | 'comments' | 'attachments' | 'forms'
+  rightView: 'overview' | 'history' | 'attachments' | 'comments'
   actions?: any[]
   agentData?: any
   approveLoading?: boolean
@@ -30,23 +32,29 @@ interface HeaderProps {
   hideActions?: boolean
   isEditing?: boolean
   isProcessing?: boolean
+  lastActionAt?: any
   percent?: number
   poNumber?: string
   poValue?: string | number
   raisedBy?: any
   showApprove?: boolean
+  /** Generic (non-Accounts-Payable) requests: show only the ticket number
+   * and action buttons — no PO/currency badges, status pill, AI Insights,
+   * or Share, all of which are AP-specific or not yet wired for a generic
+   * workflow instance. */
+  simple?: boolean
+  assigneeLabel?: string
   stage?: any
   status?: string
   ticketUserId?: string
   totalAmount?: string
   setRightView: (
-    view: 'analysis' | 'comments' | 'attachments' | 'forms',
+    view: 'overview' | 'history' | 'attachments' | 'comments',
   ) => void
   onApprove?: (action: string) => void
   onBack?: () => void
   onManualCorrection?: () => void
   onNext?: () => void
-  onOpenPlayground?: (context: any) => void
   onPrev?: () => void
   onShare?: (
     shares: { action: number; email: string }[],
@@ -77,6 +85,7 @@ const getInitials = (user: any): string => {
 }
 
 const getDisplayName = (user: any): string => {
+  if (typeof user === 'string') return user
   const first = user.firstName || user.FirstName || ''
   const last = user.lastName || user.LastName || ''
   if (first && last) return `${first} ${last}`
@@ -93,38 +102,76 @@ const getDisplayName = (user: any): string => {
 const getEmail = (user: any): string =>
   user.email || user.Email || user.loginName || ''
 
-// const roleOptions = [
-//   { id: 'View', name: 'View' },
-//   { id: 'Verify', name: 'Verify' },
-//   { id: 'Approve', name: 'Approve' },
-//   { id: 'Paid', name: 'Paid' },
-// ]
+const formatElapsedTime = (startDateStr?: string | number | Date) => {
+  if (!startDateStr) return ''
+  // Bare ISO datetimes from the API are UTC without a Z/offset — parse as
+  // UTC first, otherwise the browser reads them as local time and the
+  // elapsed value is off by the local UTC offset.
+  const parsed = parseUtcDate(startDateStr)
+  if (!parsed) return ''
+  const start = parsed.getTime()
+  const now = new Date().getTime()
+  const diffMs = Math.max(0, now - start)
+
+  const diffMins = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffDays > 0) {
+    const remHours = diffHours % 24
+    return `${diffDays}d ${remHours}h running`
+  }
+  if (diffHours > 0) {
+    const remMins = diffMins % 60
+    return `${diffHours}h ${remMins}m running`
+  }
+  if (diffMins > 0) {
+    return `${diffMins}m running`
+  }
+  return 'Just now'
+}
+
+const formatRaisedDate = (dateStr?: string | number | Date) => {
+  if (!dateStr) return ''
+  const d = parseUtcDate(dateStr)
+  if (!d) return String(dateStr)
+  return d.toLocaleDateString(undefined, {
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 const Header: React.FC<HeaderProps> = ({
   actions,
   agentData,
   approveLoading,
-  attachmentCount: _attachmentCount,
-  commentsCount: _commentsCount,
+  attachmentCount = 0,
+  commentsCount = 0,
   currency,
   enableAIInsights = true,
   hideActions: _hideActions,
   isEditing = false,
   isLoading: _isLoading,
   isProcessing = false,
+  lastActionAt,
   percent,
   poNumber,
   poValue,
-  raisedAt: _raisedAt,
-  raisedBy: _raisedBy,
+  raisedAt,
+  raisedBy,
   requestNo,
-  rightView: _rightView,
+  rightView,
   showApprove: _showApprove,
-  stage: _stage,
+  simple = false,
+  assigneeLabel,
+  stage,
   status = 'Pending Review',
   ticketUserId,
   totalAmount,
-  setRightView: _setRightView,
+  setRightView,
   onApprove,
   onBack,
   onManualCorrection: _onManualCorrection,
@@ -132,9 +179,16 @@ const Header: React.FC<HeaderProps> = ({
   onPrev,
   onShare,
 }) => {
-  const { t, i18n } = useLingui()
+  const { i18n, t } = useLingui()
   const queryClient = useQueryClient()
   const [showAIInsights, setShowAIInsights] = React.useState(false)
+
+  const raisedByDisplay =
+    typeof raisedBy === 'object' && raisedBy
+      ? getDisplayName(raisedBy)
+      : raisedBy
+        ? String(raisedBy)
+        : null
   const [showShare, setShowShare] = React.useState(false)
   const [shareSearch, setShareSearch] = React.useState('')
   const [shareMessage, setShareMessage] = React.useState('')
@@ -345,6 +399,12 @@ const Header: React.FC<HeaderProps> = ({
     agentData?.reason ||
     agentData?.summary ||
     agentData?.['Extracted Invoice JSON']?.reason ||
+    agentData?.['Extracted Invoice JSON']?.summary ||
+    agentData?.decision_reason ||
+    agentData?.po_matching?.reason ||
+    agentData?.po_matching?.summary ||
+    agentData?.message ||
+    (agentData?.decision ? `Decision: ${agentData.decision}` : '') ||
     ''
 
   const renderHighlightedContent = (text: string) => {
@@ -400,6 +460,216 @@ const Header: React.FC<HeaderProps> = ({
 
   console.log('Action value', actions)
 
+  if (simple) {
+    const rightViewTabs: {
+      count: number
+      icon: string
+      id: 'overview' | 'history' | 'attachments' | 'comments'
+      label: string
+    }[] = [
+        { count: 0, icon: 'tabler:history', id: 'history', label: t`History` },
+        {
+          count: attachmentCount,
+          icon: 'tabler:paperclip',
+          id: 'attachments',
+          label: t`Attachments`,
+        },
+        {
+          count: commentsCount,
+          icon: 'tabler:message-circle',
+          id: 'comments',
+          label: t`Comments`,
+        },
+      ]
+
+    return (
+      <OverlayHeaderWrapper className='h-14 flex-nowrap justify-between gap-3 overflow-hidden px-4'>
+        <div className='flex min-w-0 flex-1 items-center gap-2 overflow-hidden'>
+          <IconButton
+            className='shrink-0 cursor-pointer hover:bg-gray-2'
+            color='gray'
+            icon='tabler:arrow-left'
+            size='sm'
+            variant='ghost'
+            onClick={onBack}
+          />
+          <div className='flex min-w-0 items-center gap-2 overflow-hidden'>
+            <Tooltip content={t`Previous Request`} position='bottom'>
+              <IconButton
+                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onPrev}
+                icon='tabler:chevron-left'
+                size='sm'
+                variant='ghost'
+                onClick={onPrev}
+              />
+            </Tooltip>
+            <h1 className='shrink-0 text-[15px] font-semibold tracking-tight whitespace-nowrap text-gray-13'>
+              {requestNo}
+            </h1>
+            <Tooltip content={t`Next Request`} position='bottom'>
+              <IconButton
+                className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+                color='gray'
+                disabled={!onNext}
+                icon='tabler:chevron-right'
+                size='sm'
+                variant='ghost'
+                onClick={onNext}
+              />
+            </Tooltip>
+
+            {stage && (
+              <Tooltip
+                className='min-w-0 max-w-[11rem]'
+                content={String(stage)}
+                position='bottom'
+              >
+                <span className='inline-flex min-w-0 max-w-full items-center rounded-md border border-purple-3 bg-purple-1 px-2 py-0.5 text-[11px] font-semibold text-purple-9 shadow-2xs'>
+                  <span className='truncate'>{stage}</span>
+                </span>
+              </Tooltip>
+            )}
+
+            {assigneeLabel && (
+              <Tooltip
+                className='min-w-0 max-w-[16rem]'
+                content={assigneeLabel}
+                position='bottom'
+              >
+                <span className='inline-flex min-w-0 max-w-full items-center gap-1 rounded-md border border-gray-3 bg-gray-1 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
+                  <Icon className='size-3 shrink-0' name='lucide:user' />
+                  <span className='min-w-0 truncate'>{assigneeLabel}</span>
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+
+        <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
+          {(raisedByDisplay || raisedAt || lastActionAt) && (
+            <div className='hidden min-w-0 max-w-[28rem] items-center gap-2.5 border-r border-gray-3 pr-3 text-[12px] text-gray-11 md:flex'>
+              {raisedByDisplay && (
+                <Tooltip
+                  className='min-w-0 max-w-[9rem] lg:max-w-[12rem]'
+                  content={String(raisedByDisplay)}
+                  position='bottom'
+                >
+                  <div className='flex min-w-0 max-w-full items-center gap-1.5'>
+                    <Icon
+                      className='size-3.5 shrink-0 text-gray-9'
+                      name='lucide:user'
+                    />
+                    <span className='min-w-0 truncate font-medium text-gray-12'>
+                      {raisedByDisplay}
+                    </span>
+                  </div>
+                </Tooltip>
+              )}
+
+              {raisedAt && (
+                <div
+                  className='hidden shrink-0 items-center gap-1.5 whitespace-nowrap lg:flex'
+                  title={t`Raised Date`}
+                >
+                  <Icon
+                    className='size-3.5 shrink-0 text-gray-9'
+                    name='lucide:calendar'
+                  />
+                  <span>{formatRaisedDate(raisedAt)}</span>
+                </div>
+              )}
+
+              {(lastActionAt || raisedAt) && (
+                <div
+                  className='flex shrink-0 items-center gap-1.5 rounded-full border border-orange-4 bg-orange-2 px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-orange-11'
+                  title={t`Time running from last action`}
+                >
+                  <Icon className='size-3 shrink-0 text-orange-9' name='lucide:clock' />
+                  <span>{formatElapsedTime(lastActionAt || raisedAt)}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <div className='flex shrink-0 items-center gap-1'>
+            {rightViewTabs.map((tab) => (
+              <Tooltip content={tab.label} key={tab.id} position='bottom'>
+                <button
+                  aria-label={tab.label}
+                  type='button'
+                  className={cn(
+                    'flex size-8 cursor-pointer items-center justify-center rounded-lg transition-all hover:bg-gray-2 active:scale-95',
+                    rightView === tab.id
+                      ? 'bg-primary-2 text-primary-11'
+                      : 'text-gray-10',
+                  )}
+                  onClick={() => setRightView(tab.id)}
+                >
+                  <Indicator
+                    disabled={tab.count === 0}
+                    label={tab.count > 0 ? tab.count : undefined}
+                    offset={0.1}
+                  >
+                    <Icon className='size-4' name={tab.icon} />
+                  </Indicator>
+                </button>
+              </Tooltip>
+            ))}
+          </div>
+
+          {!isProcessing && actions && actions.length > 0 && (
+            <div className='flex shrink-0 items-center gap-2 border-l border-gray-3 pl-3'>
+              {actions.map((action: any) => {
+                const label = String(action?.label || '').toLowerCase()
+                let btnColor:
+                  | 'gray'
+                  | 'primary'
+                  | 'secondary'
+                  | 'red'
+                  | 'green' = 'primary'
+                let borderClass =
+                  'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+                let defaultIcon = action?.icon
+                if (!defaultIcon) {
+                  if (label.includes('approve')) defaultIcon = 'lucide:check'
+                  else if (label.includes('reject')) defaultIcon = 'lucide:x'
+                  else defaultIcon = 'lucide:arrow-right'
+                }
+                if (label.includes('approve')) {
+                  btnColor = 'green'
+                  borderClass =
+                    'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
+                } else if (label.includes('reject')) {
+                  btnColor = 'red'
+                  borderClass =
+                    'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
+                }
+                return (
+                  <Button
+                    color={btnColor}
+                    icon={defaultIcon}
+                    iconClass='size-4'
+                    key={action?.value}
+                    label={action?.label}
+                    loading={approveLoading}
+                    size='md'
+                    variant='subtle'
+                    className={cn(
+                      borderClass,
+                      'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                    )}
+                    onClick={() => onApprove?.(action?.value)}
+                  />
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </OverlayHeaderWrapper>
+    )
+  }
+
   return (
     <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
@@ -449,108 +719,108 @@ const Header: React.FC<HeaderProps> = ({
               {status &&
                 (isProcessing && percent !== undefined
                   ? (() => {
-                      const styles = getProgressStyles(percent)
-                      return (
+                    const styles = getProgressStyles(percent)
+                    return (
+                      <div
+                        className={cn(
+                          'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
+                          styles.badge,
+                        )}
+                      >
+                        {/* Progress Fill Layer */}
                         <div
+                          style={{ width: `${percent}%` }}
                           className={cn(
-                            'animate-in fade-in zoom-in-95 relative overflow-hidden rounded-full border px-3 py-1 text-[11px] font-semibold transition-all duration-300',
-                            styles.badge,
+                            'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
+                            styles.fill,
                           )}
-                        >
-                          {/* Progress Fill Layer */}
-                          <div
-                            style={{ width: `${percent}%` }}
-                            className={cn(
-                              'absolute inset-y-0 left-0 transition-all duration-500 ease-out',
-                              styles.fill,
-                            )}
-                          />
+                        />
 
-                          {/* Content Layer */}
-                          <span className='relative z-10 flex items-center gap-1.5'>
-                            {percent < 100 && (
-                              <Icon
-                                name='tabler:loader-2'
-                                className={cn(
-                                  'h-3.5 w-3.5 animate-spin',
-                                  styles.icon,
-                                )}
-                              />
-                            )}
-                            <span>{localizeRequestStatus(i18n, status)}</span>
-                          </span>
-                        </div>
-                      )
-                    })()
-                  : (() => {
-                      const dec = String(status || '').toUpperCase()
-                      let iconName = ''
-                      let badgeColorClass = ''
-                      let isLoaderIcon = false
-
-                      if (
-                        dec === 'APPROVED' ||
-                        dec === 'MATCHED' ||
-                        dec === 'VERIFIED'
-                      ) {
-                        iconName = 'tabler:circle-check'
-                        badgeColorClass =
-                          'border-[var(--green-9)] bg-[var(--green-9)] text-white'
-                      } else if (
-                        dec === 'REJECTED' ||
-                        dec === 'NO MATCH' ||
-                        dec === 'NOT MATCHED'
-                      ) {
-                        iconName = 'tabler:alert-circle'
-                        badgeColorClass =
-                          'border-[var(--red-9)] bg-[var(--red-9)] text-white'
-                      } else if (
-                        dec === 'PARTIALLY APPROVED' ||
-                        dec === 'PARTIALLY_APPROVED' ||
-                        dec === 'PARTIALLY MATCHED' ||
-                        dec === 'PARTIAL MATCH'
-                      ) {
-                        iconName = 'tabler:alert-triangle'
-                        badgeColorClass =
-                          'border-transparent bg-[var(--orange-9)] text-white'
-                      } else if (
-                        dec.includes('ANALYZING') ||
-                        dec.includes('FINALIZING') ||
-                        dec.includes('FETCHING') ||
-                        dec.includes('INITIATING') ||
-                        dec.includes('SETTING UP')
-                      ) {
-                        iconName = 'tabler:loader-2'
-                        badgeColorClass =
-                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
-                        isLoaderIcon = true
-                      } else {
-                        if (_showApprove) {
-                          return null
-                        }
-                        iconName = 'tabler:clock'
-                        badgeColorClass =
-                          'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
-                      }
-
-                      return (
-                        <span
-                          className={cn(
-                            'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
-                            badgeColorClass,
+                        {/* Content Layer */}
+                        <span className='relative z-10 flex items-center gap-1.5'>
+                          {percent < 100 && (
+                            <Icon
+                              name='tabler:loader-2'
+                              className={cn(
+                                'h-3.5 w-3.5 animate-spin',
+                                styles.icon,
+                              )}
+                            />
                           )}
-                        >
-                          <Icon
-                            name={iconName}
-                            className={cn(
-                              'h-3.5 w-3.5',
-                              isLoaderIcon && 'animate-spin',
-                            )}
-                          />
                           <span>{localizeRequestStatus(i18n, status)}</span>
                         </span>
-                      )
-                    })())}
+                      </div>
+                    )
+                  })()
+                  : (() => {
+                    const dec = String(status || '').toUpperCase()
+                    let iconName = ''
+                    let badgeColorClass = ''
+                    let isLoaderIcon = false
+
+                    if (
+                      dec === 'APPROVED' ||
+                      dec === 'MATCHED' ||
+                      dec === 'VERIFIED'
+                    ) {
+                      iconName = 'tabler:circle-check'
+                      badgeColorClass =
+                        'border-[var(--green-9)] bg-[var(--green-9)] text-white'
+                    } else if (
+                      dec === 'REJECTED' ||
+                      dec === 'NO MATCH' ||
+                      dec === 'NOT MATCHED'
+                    ) {
+                      iconName = 'tabler:alert-circle'
+                      badgeColorClass =
+                        'border-[var(--red-9)] bg-[var(--red-9)] text-white'
+                    } else if (
+                      dec === 'PARTIALLY APPROVED' ||
+                      dec === 'PARTIALLY_APPROVED' ||
+                      dec === 'PARTIALLY MATCHED' ||
+                      dec === 'PARTIAL MATCH'
+                    ) {
+                      iconName = 'tabler:alert-triangle'
+                      badgeColorClass =
+                        'border-transparent bg-[var(--orange-9)] text-white'
+                    } else if (
+                      dec.includes('ANALYZING') ||
+                      dec.includes('FINALIZING') ||
+                      dec.includes('FETCHING') ||
+                      dec.includes('INITIATING') ||
+                      dec.includes('SETTING UP')
+                    ) {
+                      iconName = 'tabler:loader-2'
+                      badgeColorClass =
+                        'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                      isLoaderIcon = true
+                    } else {
+                      if (_showApprove) {
+                        return null
+                      }
+                      iconName = 'tabler:clock'
+                      badgeColorClass =
+                        'border-[var(--orange-9)] bg-[var(--orange-9)] text-white'
+                    }
+
+                    return (
+                      <span
+                        className={cn(
+                          'animate-in fade-in zoom-in-95 flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold transition-all duration-300',
+                          badgeColorClass,
+                        )}
+                      >
+                        <Icon
+                          name={iconName}
+                          className={cn(
+                            'h-3.5 w-3.5',
+                            isLoaderIcon && 'animate-spin',
+                          )}
+                        />
+                        <span>{localizeRequestStatus(i18n, status)}</span>
+                      </span>
+                    )
+                  })())}
             </div>
           </div>
         </div>
@@ -587,9 +857,9 @@ const Header: React.FC<HeaderProps> = ({
             return Number.isNaN(num)
               ? '0.00'
               : num.toLocaleString(undefined, {
-                  maximumFractionDigits: 2,
-                  minimumFractionDigits: 2,
-                })
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              })
           }
 
           const currDisplay = getCurrencyDisplay(currency || '')
@@ -671,7 +941,7 @@ const Header: React.FC<HeaderProps> = ({
                     ? 'border-[var(--primary-6)] bg-[var(--primary-1)] text-[var(--primary-9)]'
                     : 'border-[var(--gray-3)] bg-surface text-[var(--gray-11)] hover:border-[var(--gray-5)] hover:text-[var(--gray-13)]',
                   isProcessing &&
-                    'pointer-events-none animate-pulse opacity-70',
+                  'pointer-events-none animate-pulse opacity-70',
                 )}
                 onClick={() =>
                   !isProcessing && setShowAIInsights(!showAIInsights)
@@ -701,30 +971,30 @@ const Header: React.FC<HeaderProps> = ({
                   >
                     <div className='flex flex-col gap-4'>
                       {/* AI Insights Section */}
-                      {insightContent && (
-                        <div className='flex flex-col'>
-                          <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
-                            <div className='flex items-center gap-2'>
-                              <AiBrandIcon
-                                className='size-[20px] text-[var(--primary-9)]'
-                              />
-                              <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
-                                {t`Invoice Decision Details`}
-                              </span>
-                            </div>
-                            <button
-                              aria-label={t`Close AI Insights`}
-                              className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
-                              onClick={() => setShowAIInsights(false)}
-                            >
-                              <Icon className='size-4' name='lucide:x' />
-                            </button>
+                      <div className='flex flex-col'>
+                        <div className='mb-3 flex items-center justify-between gap-3 border-b border-[var(--gray-2)] pb-2.5'>
+                          <div className='flex items-center gap-2'>
+                            <AiBrandIcon
+                              className='size-[20px] text-[var(--primary-9)]'
+                            />
+                            <span className='text-[14px] font-semibold text-[var(--gray-13)]'>
+                              {t`Invoice Decision Details`}
+                            </span>
                           </div>
-                          <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
-                            {renderHighlightedContent(insightContent)}
-                          </p>
+                          <button
+                            aria-label={t`Close AI Insights`}
+                            className='flex shrink-0 cursor-pointer items-center justify-center rounded-lg p-1 text-[var(--gray-8)] transition-all hover:bg-[var(--gray-2)] hover:text-[var(--gray-12)] active:scale-95'
+                            onClick={() => setShowAIInsights(false)}
+                          >
+                            <Icon className='size-4' name='lucide:x' />
+                          </button>
                         </div>
-                      )}
+                        <p className='text-[13px] leading-relaxed font-medium text-[var(--gray-12)]'>
+                          {insightContent
+                            ? renderHighlightedContent(insightContent)
+                            : t`No decision details available for this request.`}
+                        </p>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -902,17 +1172,17 @@ const Header: React.FC<HeaderProps> = ({
                                   (u: any) =>
                                     String(
                                       u.userId ||
-                                        u.id ||
-                                        u.value ||
-                                        u.loginName ||
-                                        u.email,
+                                      u.id ||
+                                      u.value ||
+                                      u.loginName ||
+                                      u.email,
                                     ) ===
                                     String(
                                       su.userId ||
-                                        su.id ||
-                                        su.value ||
-                                        su.loginName ||
-                                        su.email,
+                                      su.id ||
+                                      su.value ||
+                                      su.loginName ||
+                                      su.email,
                                     ),
                                 ),
                             ),
@@ -920,17 +1190,17 @@ const Header: React.FC<HeaderProps> = ({
                           .sort((a: any, b: any) => {
                             const aId = String(
                               a.userId ||
-                                a.id ||
-                                a.value ||
-                                a.loginName ||
-                                a.email,
+                              a.id ||
+                              a.value ||
+                              a.loginName ||
+                              a.email,
                             )
                             const bId = String(
                               b.userId ||
-                                b.id ||
-                                b.value ||
-                                b.loginName ||
-                                b.email,
+                              b.id ||
+                              b.value ||
+                              b.loginName ||
+                              b.email,
                             )
                             const aSelected = !!selectedUsersToShare[aId]
                             const bSelected = !!selectedUsersToShare[bId]
@@ -941,10 +1211,10 @@ const Header: React.FC<HeaderProps> = ({
                           .map((user: any) => {
                             const id = String(
                               user.userId ||
-                                user.id ||
-                                user.value ||
-                                user.loginName ||
-                                user.email,
+                              user.id ||
+                              user.value ||
+                              user.loginName ||
+                              user.email,
                             )
                             const name = getDisplayName(user)
                             const email = getEmail(user)
@@ -956,7 +1226,7 @@ const Header: React.FC<HeaderProps> = ({
                               ticketUserId &&
                               (String(user.userId) === String(ticketUserId) ||
                                 String(user.id) ===
-                                  String(ticketUserId.toLowerCase()) ||
+                                String(ticketUserId.toLowerCase()) ||
                                 String(user.value) === String(ticketUserId) ||
                                 String(user.loginName) === String(ticketUserId))
                             // console.log(user, ticketUserId?.toLowerCase(), "Selected user session")
@@ -967,7 +1237,7 @@ const Header: React.FC<HeaderProps> = ({
                                   'group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition-all hover:bg-[var(--gray-2)]/50',
                                   isShared && 'opacity-90',
                                   isSelectedToShare &&
-                                    'bg-[var(--primary-2)]/30',
+                                  'bg-[var(--primary-2)]/30',
                                   isOwner && 'bg-[var(--primary-1)]/40',
                                 )}
                               >
@@ -1108,11 +1378,11 @@ const Header: React.FC<HeaderProps> = ({
                                                 ?.permission ||
                                                 globalShareRole.id) ===
                                                 opt.id && (
-                                                <Icon
-                                                  className='size-3.5 text-[var(--primary-9)]'
-                                                  name='lucide:check'
-                                                />
-                                              )}
+                                                  <Icon
+                                                    className='size-3.5 text-[var(--primary-9)]'
+                                                    name='lucide:check'
+                                                  />
+                                                )}
                                             </button>
                                           ))}
                                         </div>
@@ -1148,7 +1418,7 @@ const Header: React.FC<HeaderProps> = ({
                             <InputCheckbox
                               checked={sendNotification}
                               className='cursor-pointer'
-                              onChange={() => {}}
+                              onChange={() => { }}
                             />
                             <span className='text-[13px] font-medium text-[var(--gray-13)] select-none'>
                               {t`Send notification`}
@@ -1220,101 +1490,104 @@ const Header: React.FC<HeaderProps> = ({
                 )}
               </AnimatePresence>
             </div>
-          )}
+          )
+          }
 
-          {!isProcessing && (
-            <div className='flex items-center gap-2'>
-              {isEditing && (
-                <Button
-                  className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
-                  color='primary'
-                  icon='lucide:save'
-                  iconClass='size-4'
-                  label={t`Save`}
-                  loading={approveLoading}
-                  size='md'
-                  variant='solid'
-                  onClick={() => onApprove?.('Save')}
-                />
-              )}
+          {
+            !isProcessing && (
+              <div className='flex items-center gap-2'>
+                {isEditing && (
+                  <Button
+                    className='h-8 justify-center rounded-lg border border-primary-4 px-3.5 text-[13px] font-semibold shadow-sm transition-shadow hover:border-primary-6 hover:shadow-md'
+                    color='primary'
+                    icon='lucide:save'
+                    iconClass='size-4'
+                    label={t`Save`}
+                    loading={approveLoading}
+                    size='md'
+                    variant='solid'
+                    onClick={() => onApprove?.('Save')}
+                  />
+                )}
 
-              {actions?.map((action: any) => {
-                const label = String(action?.label || '').toLowerCase()
-                let btnColor:
-                  | 'gray'
-                  | 'primary'
-                  | 'secondary'
-                  | 'red'
-                  | 'green' = 'primary'
-                const btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' =
-                  'subtle'
-                let borderClass =
-                  'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
+                {actions?.map((action: any) => {
+                  const label = String(action?.label || '').toLowerCase()
+                  let btnColor:
+                    | 'gray'
+                    | 'primary'
+                    | 'secondary'
+                    | 'red'
+                    | 'green' = 'primary'
+                  const btnVariant: 'solid' | 'outline' | 'subtle' | 'ghost' =
+                    'subtle'
+                  let borderClass =
+                    'border-primary-4 hover:border-primary-6 shadow-sm hover:shadow-md transition-shadow'
 
-                let defaultIcon = action?.icon
-                if (!defaultIcon) {
+                  let defaultIcon = action?.icon
+                  if (!defaultIcon) {
+                    if (
+                      label === 'approved' ||
+                      label === 'approve' ||
+                      label.includes('approve')
+                    ) {
+                      defaultIcon = 'lucide:check'
+                    } else if (
+                      label === 'rejected' ||
+                      label === 'reject' ||
+                      label.includes('reject')
+                    ) {
+                      defaultIcon = 'lucide:x'
+                    } else {
+                      defaultIcon = 'lucide:arrow-right'
+                    }
+                  }
+
                   if (
                     label === 'approved' ||
                     label === 'approve' ||
                     label.includes('approve')
                   ) {
-                    defaultIcon = 'lucide:check'
+                    btnColor = 'green'
+                    borderClass =
+                      'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
                   } else if (
                     label === 'rejected' ||
                     label === 'reject' ||
                     label.includes('reject')
                   ) {
-                    defaultIcon = 'lucide:x'
-                  } else {
-                    defaultIcon = 'lucide:arrow-right'
+                    btnColor = 'red'
+                    borderClass =
+                      'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
                   }
-                }
 
-                if (
-                  label === 'approved' ||
-                  label === 'approve' ||
-                  label.includes('approve')
-                ) {
-                  btnColor = 'green'
-                  borderClass =
-                    'border-green-4 hover:border-green-6 shadow-sm hover:shadow-md transition-shadow'
-                } else if (
-                  label === 'rejected' ||
-                  label === 'reject' ||
-                  label.includes('reject')
-                ) {
-                  btnColor = 'red'
-                  borderClass =
-                    'border-red-4 hover:border-red-6 shadow-sm hover:shadow-md transition-shadow'
-                }
-
-                return (
-                  <div
-                    className='flex items-center gap-1.5'
-                    key={action?.value}
-                  >
-                    <Button
-                      color={btnColor}
-                      icon={defaultIcon}
-                      iconClass='size-4'
-                      label={action?.label}
-                      loading={approveLoading}
-                      size='md'
-                      variant={btnVariant}
-                      className={cn(
-                        borderClass,
-                        'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
-                      )}
-                      onClick={() => onApprove?.(action?.value)}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </OverlayHeaderWrapper>
+                  return (
+                    <div
+                      className='flex items-center gap-1.5'
+                      key={action?.value}
+                    >
+                      <Button
+                        color={btnColor}
+                        icon={defaultIcon}
+                        iconClass='size-4'
+                        label={action?.label}
+                        loading={approveLoading}
+                        size='md'
+                        variant={btnVariant}
+                        className={cn(
+                          borderClass,
+                          'h-8 justify-center rounded-lg px-3.5 text-[13px] font-semibold',
+                        )}
+                        onClick={() => onApprove?.(action?.value)}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          }
+        </div >
+      </div >
+    </OverlayHeaderWrapper >
   )
 }
 

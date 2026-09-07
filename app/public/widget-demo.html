@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EZOFIS Widget Integration Portal</title>
+  
+  <!-- EZOFIS Official Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" href="/mark.png">
+
+  <!-- Official EZOFIS Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* EZOFIS Official Theme Design Tokens */
+    :root {
+      --surface-primary: #ffffff;
+      --surface-secondary: #f6f6f9;
+      --bg-dashboard: #f6f3fb;
+      
+      --text-primary: #1f2937;
+      --text-secondary: #4d4d73;
+      --text-muted: #8181a0;
+      
+      --border-default: #e6e6ef;
+      --border-strong: #dadae5;
+      --border-focus: #9c89ff;
+      
+      --accent-primary: #7c5cff;
+      --accent-hover: #6a4cf0;
+      --accent-soft: #f3f0ff;
+      --accent-ring: rgba(124, 92, 255, 0.2);
+      
+      --success-main: #30a46c;
+      --success-soft: #e6f6eb;
+      
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+      --shadow-panel: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--surface-secondary);
+      color: var(--text-primary);
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-viewport {
+      max-width: 1280px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 14px 20px;
+      overflow: hidden;
+    }
+
+    /* Top Brand Header */
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-default);
+      flex-shrink: 0;
+    }
+
+    .brand-identity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-mark {
+      height: 30px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 20px;
+      background-color: var(--border-default);
+    }
+
+    .brand-title-group h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .brand-title-group p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Standardized Toolbar Control Bar */
+    .control-toolbar {
+      background: var(--surface-primary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: 8px 14px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .item-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* Standard Segmented Module Navigation Tabs */
+    .segmented-tabs {
+      display: inline-flex;
+      align-items: center;
+      background: var(--surface-secondary);
+      padding: 3px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-default);
+      gap: 2px;
+      height: 34px;
+    }
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 26px;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-primary);
+      font-weight: 600;
+      background: var(--surface-primary);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Action Buttons */
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 14px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-default);
+      background: var(--surface-primary);
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-action:hover {
+      background: var(--surface-secondary);
+      border-color: var(--border-strong);
+    }
+
+    .btn-action.dark {
+      background: #1f2937;
+      color: #ffffff;
+      border-color: #1f2937;
+    }
+
+    .btn-action.dark:hover {
+      background: #111827;
+    }
+
+    .btn-action.primary {
+      background: var(--accent-primary);
+      color: #ffffff;
+      border-color: var(--accent-primary);
+    }
+
+    .btn-action.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Code Snippet Drawer Panel */
+    .snippet-drawer {
+      background: #1f2937;
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: none;
+      box-shadow: var(--shadow-panel);
+      border: 1px solid #374151;
+      flex-shrink: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #374151;
+    }
+
+    .snippet-format-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .format-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #9ca3af;
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .format-btn:hover {
+      color: #ffffff;
+      background: #374151;
+    }
+
+    .format-btn.active {
+      color: #ffffff;
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .drawer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #ffffff;
+      background: var(--success-main);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .copy-btn:hover {
+      background: #2b9a66;
+    }
+
+    .copy-btn.secondary {
+      background: #3b82f6;
+    }
+
+    .copy-btn.secondary:hover {
+      background: #2563eb;
+    }
+
+    /* Code View Displays Full Height (No Scroll Limit) */
+    pre.code-view {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #7dd3fc;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow: visible;
+    }
+
+    /* Embedded Canvas Area */
+    .embedded-canvas {
+      background: var(--surface-primary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      overflow: hidden;
+      box-shadow: var(--shadow-panel);
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .embedded-frame-wrapper {
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--surface-secondary);
+    }
+  </style>
+
+  <!-- STEP 1: Include the EZOFIS Widget SDK -->
+  <script src="/ezofis-widget.js"></script>
+</head>
+<body>
+
+  <div class="app-viewport">
+    
+    <!-- Top Header -->
+    <header class="brand-header">
+      <div class="brand-identity">
+        <img src="/mark.png" alt="EZOFIS Logo Mark" class="logo-mark" />
+        <div class="header-divider"></div>
+        <div class="brand-title-group">
+          <h1>EZOFIS Widget Integration</h1>
+          <p>Embed Folders, Workflows & Dashboards into external applications.</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="control-toolbar">
+      
+      <div class="toolbar-left">
+        <!-- Module Navigation Tabs -->
+        <div class="toolbar-item">
+          <span class="item-label">Module:</span>
+          <div class="segmented-tabs">
+            <button id="tab-folders" class="tab-btn active" onclick="switchModule('folders')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              <span>Folders</span>
+            </button>
+            <button id="tab-requests" class="tab-btn" onclick="switchModule('requests')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg>
+              <span>Workflows</span>
+            </button>
+            <button id="tab-dashboard" class="tab-btn" onclick="switchModule('dashboard')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              <span>Dashboard</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-group">
+        <button id="btn-toggle-code" class="btn-action dark" onclick="toggleCodeDrawer()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+          <span id="code-btn-text">View & Copy Code</span>
+        </button>
+
+        <button class="btn-action primary" onclick="launchFloatingWidget()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span>Floating Launcher</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Code Snippet Drawer -->
+    <div id="code-drawer" class="snippet-drawer">
+      <div class="drawer-header">
+        <div class="snippet-format-tabs">
+          <button id="fmt-url" class="format-btn active" onclick="switchFormat('url')">🔗 Embed URL</button>
+          <button id="fmt-sdk" class="format-btn" onclick="switchFormat('sdk')">⚡ Widget SDK</button>
+          <button id="fmt-iframe" class="format-btn" onclick="switchFormat('iframe')">🖼️ HTML Iframe</button>
+        </div>
+
+        <div class="drawer-actions">
+          <button id="btn-copy-url" class="copy-btn secondary" onclick="copyEmbedUrlOnly()">
+            🔗 Copy Embed URL
+          </button>
+          <button id="btn-copy-code" class="copy-btn" onclick="copyCurrentSnippet()">
+            <span id="copy-btn-label">📋 Copy Snippet</span>
+          </button>
+        </div>
+      </div>
+      <pre id="code-display" class="code-view"></pre>
+    </div>
+
+    <!-- Embedded Canvas Area -->
+    <div class="embedded-canvas">
+      <div id="ezofis-widget-mount" class="embedded-frame-wrapper"></div>
+    </div>
+
+  </div>
+
+  <script>
+    function decodeEzofisBase64(stored) {
+      try {
+        return decodeURIComponent(escape(atob(stored)));
+      } catch (e) {
+        return stored;
+      }
+    }
+
+    function getLoggedInUserEmail() {
+      try {
+        const storedSession = localStorage.getItem('session');
+        if (storedSession) {
+          const decoded = decodeEzofisBase64(storedSession);
+          const parsed = JSON.parse(decoded);
+          if (parsed && parsed.email) {
+            return parsed.email;
+          }
+          if (parsed && parsed.state && parsed.state.session && parsed.state.session.email) {
+            return parsed.state.session.email;
+          }
+        }
+      } catch (e) {}
+
+      try {
+        const storedIdentity = localStorage.getItem('identity');
+        if (storedIdentity) {
+          const decoded = decodeEzofisBase64(storedIdentity);
+          const parsed = JSON.parse(decoded);
+          if (parsed && parsed.email) {
+            return parsed.email;
+          }
+        }
+      } catch (e) {}
+
+      return 'raja@ezofis.com';
+    }
+
+    const USER_EMAIL = getLoggedInUserEmail();
+    let activeModule = 'folders';
+    let activeFormat = 'url';
+    let inlineWidgetInstance = null;
+    let floatingWidgetInstance = null;
+    let isCodeDrawerVisible = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      switchModule('folders');
+    });
+
+    function getDirectEmbedUrl(moduleName) {
+      const baseUrl = window.location.origin;
+      return `${baseUrl}/embed/${moduleName}?email=${encodeURIComponent(USER_EMAIL)}`;
+    }
+
+    function generateCodeSnippet(moduleName, format) {
+      const embedUrl = getDirectEmbedUrl(moduleName);
+
+      if (format === 'url') {
+        return embedUrl;
+      } else if (format === 'iframe') {
+        return `<iframe\n  src="${embedUrl}"\n  width="100%"\n  height="660px"\n  frameborder="0"\n  allow="clipboard-read; clipboard-write; camera; microphone"\n  title="EZOFIS ${moduleName}"\n><\/iframe>`;
+      } else {
+        return `<!-- 1. Load EZOFIS Widget SDK -->\n<script src="${window.location.origin}/ezofis-widget.js"><\/script>\n\n<!-- 2. Widget Mount Point -->\n<div id="ezofis-widget-container" style="width: 100%; height: 100%; min-height: 600px;"><\/div>\n\n<!-- 3. Initialize EZOFIS Widget -->\n<script>\n  const loggedInEmail = '${USER_EMAIL}';\n\n  EzofisWidget.init({\n    page: '${moduleName}',\n    email: loggedInEmail,\n    mode: 'inline',\n    target: '#ezofis-widget-container'\n  });\n<\/script>`;
+      }
+    }
+
+    function switchFormat(fmt) {
+      activeFormat = fmt;
+      ['url', 'sdk', 'iframe'].forEach(f => {
+        const btn = document.getElementById(`fmt-${f}`);
+        if (btn) btn.classList.toggle('active', f === fmt);
+      });
+      document.getElementById('code-display').innerText = generateCodeSnippet(activeModule, activeFormat);
+    }
+
+    function switchModule(moduleName) {
+      activeModule = moduleName;
+
+      ['folders', 'requests', 'dashboard'].forEach(mod => {
+        const tabEl = document.getElementById(`tab-${mod}`);
+        if (tabEl) {
+          tabEl.classList.toggle('active', mod === moduleName);
+        }
+      });
+
+      document.getElementById('code-display').innerText = generateCodeSnippet(moduleName, activeFormat);
+
+      if (inlineWidgetInstance && inlineWidgetInstance.destroy) {
+        inlineWidgetInstance.destroy();
+      }
+
+      inlineWidgetInstance = EzofisWidget.init({
+        page: moduleName,
+        email: USER_EMAIL,
+        mode: 'inline',
+        target: '#ezofis-widget-mount',
+        height: '100%'
+      });
+
+      if (floatingWidgetInstance && floatingWidgetInstance.switchPage) {
+        floatingWidgetInstance.switchPage(moduleName);
+      }
+    }
+
+    function toggleCodeDrawer() {
+      isCodeDrawerVisible = !isCodeDrawerVisible;
+      const drawer = document.getElementById('code-drawer');
+      const btnLabel = document.getElementById('code-btn-text');
+
+      if (isCodeDrawerVisible) {
+        drawer.style.display = 'block';
+        btnLabel.innerText = 'Hide Code';
+        document.getElementById('code-display').innerText = generateCodeSnippet(activeModule, activeFormat);
+      } else {
+        drawer.style.display = 'none';
+        btnLabel.innerText = 'View & Copy Code';
+      }
+    }
+
+    function copyEmbedUrlOnly() {
+      const url = getDirectEmbedUrl(activeModule);
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('btn-copy-url');
+        const prevText = btn.innerHTML;
+        btn.innerHTML = '✅ URL Copied!';
+        setTimeout(() => {
+          btn.innerHTML = prevText;
+        }, 2000);
+      }).catch(err => {
+        console.error('Copy URL failed:', err);
+      });
+    }
+
+    function copyCurrentSnippet() {
+      const codeText = generateCodeSnippet(activeModule, activeFormat);
+      navigator.clipboard.writeText(codeText).then(() => {
+        const copyLabel = document.getElementById('copy-btn-label');
+        const prevText = copyLabel.innerText;
+        copyLabel.innerText = 'Copied!';
+        setTimeout(() => {
+          copyLabel.innerText = prevText;
+        }, 2000);
+      }).catch(err => {
+        console.error('Clipboard copy failed:', err);
+      });
+    }
+
+    function launchFloatingWidget() {
+      if (!floatingWidgetInstance) {
+        floatingWidgetInstance = EzofisWidget.init({
+          page: activeModule,
+          email: USER_EMAIL,
+          mode: 'floating',
+          brandColor: '#7c5cff'
+        });
+      }
+      if (floatingWidgetInstance && floatingWidgetInstance.open) {
+        floatingWidgetInstance.open();
+      }
+    }
+  </script>
+
+</body>
+</html>

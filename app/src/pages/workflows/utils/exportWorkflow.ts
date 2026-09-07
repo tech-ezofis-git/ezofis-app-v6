@@ -1,58 +1,144 @@
 import type { Edge, Node } from '@xyflow/react'
+import { ensureStartAndEndNodes } from '@/services/ai/workflowConfig'
 import useWorkflowStore from '../stores/useWorkflowStore'
+import { NODE_TOOL_TYPE, normalizeNodeToolType } from './nodeToolTypes'
 
 const mapToolTypeToLegacyType = (
   toolType: string | undefined,
   nodeData: any,
+  nodeIndex: number,
+  totalNodes: number,
 ): string => {
-  if (!toolType) return 'NODE'
-  const t = toolType.toLowerCase()
-  if (t === 'ocr agent' || t === 'ocr') return 'OCR'
-  if (t === 'ap agent' || t === 'ap_agent') return 'AP_AGENT'
-  if (t === 'condition') return 'CONDITION'
+  const explicitType = String(nodeData.type || '').toUpperCase()
+
+  if (explicitType === 'START') return 'START'
+  if (explicitType === 'END') return 'END'
+  if (explicitType === 'CONDITION') return 'CONDITION'
+  if (explicitType === 'OCR') return 'OCR'
+  if (explicitType === 'AP_AGENT') return 'AP_AGENT'
+
+  if (nodeIndex === 0) return 'START'
   if (
-    t === 'manual user' ||
+    nodeIndex === totalNodes - 1 &&
+    (explicitType === 'ACTION' || explicitType === 'END')
+  )
+    return 'END'
+
+  if (!toolType) {
+    if (explicitType && explicitType !== 'ACTION') return explicitType
+    return 'INTERNAL_ACTOR'
+  }
+  const t = normalizeNodeToolType(toolType)
+  if (t === NODE_TOOL_TYPE.OCR_AGENT || t === 'ocr') return 'OCR'
+  if (t === NODE_TOOL_TYPE.AP_AGENT) return 'AP_AGENT'
+  if (t === NODE_TOOL_TYPE.KYC_AGENT) return 'KYC_AGENT'
+  if (t === NODE_TOOL_TYPE.PROCUREMENT_AGENT) return 'PROCUREMENT_AGENT'
+  if (t === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) return 'DOCUMENT_GENERATE_AGENT'
+  if (t === NODE_TOOL_TYPE.CONDITION) return 'CONDITION'
+  if (
+    t === NODE_TOOL_TYPE.MANUAL_USER ||
     t === 'verifier' ||
     t === 'actor' ||
     t === 'internal_actor'
   )
-    return 'INTERNAL_ACTOR'
+    return nodeIndex === 0 ? 'START' : 'INTERNAL_ACTOR'
   if (t === 'trigger' || t === 'initiator' || t === 'start') return 'START'
-  if (t === 'gmail' || t === 'outlook') return 'START'
-  if (t === 'action' || t === 'end') return 'END'
-  return (nodeData.type || 'NODE').toUpperCase()
+  if (t === NODE_TOOL_TYPE.GMAIL || t === NODE_TOOL_TYPE.OUTLOOK) return 'START'
+  if (t === NODE_TOOL_TYPE.END || t === 'action') return 'END'
+  return (nodeData.type || 'INTERNAL_ACTOR').toUpperCase()
 }
 
 export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
   const storeState = useWorkflowStore.getState()
 
-  const blocks = nodes.map((node) => {
+  const rawBlocks = nodes.map((node, index) => {
     const data = (node.data || {}) as any
-    const toolType = data.toolType
+    const toolType = normalizeNodeToolType(data.toolType)
 
     // Base settings to be included in the legacy 'settings' object
     const settings: any = {
       label: data.label || '',
+      ...(data.settings || {}),
       ...data,
     }
+    delete settings.settings
 
     // Map users and groups back to legacy arrays of IDs
-    if (data.selectedUsers) {
-      settings.users = data.selectedUsers.map((u: any) => u.id)
+    if (Array.isArray(data.selectedUsers)) {
+      settings.users = data.selectedUsers.map((u: any) =>
+        typeof u === 'object' ? String(u.id ?? u.value ?? u) : String(u),
+      )
       delete settings.selectedUsers
-    } else if (!settings.users) {
-      settings.users = []
+    } else if (Array.isArray(data.users)) {
+      settings.users = data.users.map((u: any) =>
+        typeof u === 'object' ? String(u.id ?? u.value ?? u) : String(u),
+      )
+    } else {
+      settings.users = Array.isArray(settings.users)
+        ? settings.users.map((u: any) =>
+            typeof u === 'object' ? String(u.id ?? u.value ?? u) : String(u),
+          )
+        : []
     }
 
-    if (data.selectedGroups) {
-      settings.groups = data.selectedGroups.map((g: any) => g.id)
+    if (Array.isArray(data.selectedGroups)) {
+      settings.groups = data.selectedGroups.map((g: any) =>
+        typeof g === 'object' ? String(g.id ?? g.value ?? g) : String(g),
+      )
       delete settings.selectedGroups
-    } else if (!settings.groups) {
-      settings.groups = []
+    } else if (Array.isArray(data.groups)) {
+      settings.groups = data.groups.map((g: any) =>
+        typeof g === 'object' ? String(g.id ?? g.value ?? g) : String(g),
+      )
+    } else {
+      settings.groups = Array.isArray(settings.groups)
+        ? settings.groups.map((g: any) =>
+            typeof g === 'object' ? String(g.id ?? g.value ?? g) : String(g),
+          )
+        : []
+    }
+
+    // Normalize Manual User (INTERNAL_ACTOR) option-array fields to plain IDs
+    const toIdArray = (val: any): string[] =>
+      Array.isArray(val)
+        ? val.map((v: any) => (typeof v === 'object' ? String(v.id ?? v.value ?? v) : String(v)))
+        : []
+
+    if (Array.isArray(data.internalForwardUser)) {
+      settings.internalForwardUser = toIdArray(data.internalForwardUser)
+    }
+    if (Array.isArray(data.internalForwardGroup)) {
+      settings.internalForwardGroup = toIdArray(data.internalForwardGroup)
+    }
+    if (Array.isArray(data.generatePDFFields)) {
+      settings.generatePDFFields = toIdArray(data.generatePDFFields)
+    }
+    if (Array.isArray(data.generateCSVFields)) {
+      settings.generateCSVFields = toIdArray(data.generateCSVFields)
+    }
+    if (data.dynamicUserField && typeof data.dynamicUserField === 'object') {
+      settings.dynamicUserField = String(
+        (data.dynamicUserField as any).id ?? '',
+      )
+    }
+    if (Array.isArray(data.formEditControls)) {
+      settings.formEditControls = data.formEditControls.map((r: any) => ({
+        formFields: Array.isArray(r.formFields) ? r.formFields : [],
+        userId: String(r.userId ?? ''),
+      }))
+    }
+    if (Array.isArray(data.formSecureControls)) {
+      settings.formSecureControls = data.formSecureControls.map((r: any) => ({
+        formFields: Array.isArray(r.formFields) ? r.formFields : [],
+        userId: String(r.userId ?? ''),
+      }))
     }
 
     // Reconstruct nested settings for specific types
-    if (toolType === 'gmail' || toolType === 'outlook') {
+    if (
+      toolType === NODE_TOOL_TYPE.GMAIL ||
+      toolType === NODE_TOOL_TYPE.OUTLOOK
+    ) {
       settings.mailInitiate = {
         conditions: {
           fromAddress: data.fromMailAddresses?.map((a: any) => a.id) || [],
@@ -81,11 +167,11 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     }
 
     // Ensure tool-specific nested objects exist
-    if (toolType?.includes('ocr')) {
+    if (toolType === NODE_TOOL_TYPE.OCR_AGENT || toolType.includes('ocr')) {
       settings.ocrAgent = settings.ocrAgent || {}
       if (data.connectorId) settings.ocrAgent.connectorId = data.connectorId
     }
-    if (toolType?.includes('ap agent')) {
+    if (toolType === NODE_TOOL_TYPE.AP_AGENT) {
       const existingApAgent = settings.apAgent || {}
       const features: string[] = Array.isArray(existingApAgent.features)
         ? [...existingApAgent.features]
@@ -118,17 +204,22 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       settings.apAgent = {
         ...existingApAgent,
         connectorId: data.connectorId ?? existingApAgent.connectorId ?? '',
-        decisionApprove: data.thresholds?.approved ?? existingApAgent.decisionApprove,
-        decisionPartial: data.thresholds?.partial ?? existingApAgent.decisionPartial,
+        decisionApprove:
+          data.thresholds?.approved ?? existingApAgent.decisionApprove,
+        decisionPartial:
+          data.thresholds?.partial ?? existingApAgent.decisionPartial,
         decisionReject:
           data.thresholds?.reject ?? existingApAgent.decisionReject ?? 0,
         features,
         fieldScore,
         formId: formId ?? existingApAgent.formId ?? '',
         resource:
-          existingApAgent.resource || (formId ? 'FORM' : existingApAgent.resource),
+          existingApAgent.resource ||
+          (formId ? 'FORM' : existingApAgent.resource),
         vendorMasterId:
-          data.vendorSource?.id ?? data.vendorSource ?? existingApAgent.vendorMasterId,
+          data.vendorSource?.id ??
+          data.vendorSource ??
+          existingApAgent.vendorMasterId,
         vendorValidationRequired: !!(
           data.vendorMustExist ??
           data.vendorSource?.id ??
@@ -153,6 +244,27 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       delete settings.backOrderDetection
     }
 
+    settings.generatePDF = Boolean(data.generatePDF)
+    if (!Array.isArray(settings.generatePDFFields)) {
+      settings.generatePDFFields = []
+    }
+    if (data.generatePDF) {
+      const rawTemplate = data.pdfTemplateJson ?? data.pdfTemplate
+      if (typeof rawTemplate === 'string' && rawTemplate.trim()) {
+        try {
+          settings.pdfTemplate = JSON.parse(rawTemplate)
+          delete settings.pdfTemplateJson
+        } catch {
+          settings.pdfTemplateJson = rawTemplate
+        }
+      } else if (rawTemplate && typeof rawTemplate === 'object') {
+        settings.pdfTemplate = rawTemplate
+      }
+    } else {
+      delete settings.pdfTemplate
+      delete settings.pdfTemplateJson
+    }
+
     // Clean up internal UI fields
     delete settings.toolType
     delete settings.icon
@@ -170,28 +282,32 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       id: node.id,
       left: Math.round(node.position.x),
       top: Math.round(node.position.y),
-      type: mapToolTypeToLegacyType(toolType, data),
+      type: mapToolTypeToLegacyType(toolType, data, index, nodes.length),
       width: node.measured?.width ?? 175,
       settings,
     }
   })
 
-  const rules = edges.map((edge) => {
+  const rawRules = edges.map((edge) => {
     const edgeData = edge.data || {}
+    const actionName = edgeData.action || edgeData.proceedAction || 'Submit'
     return {
+      ...edgeData,
+      action: actionName,
       confirm: edgeData.confirm ?? false,
       fromBlockId: edge.source,
       id: edge.id,
       left: 0,
       passwordAccess: edgeData.passwordAccess ?? false,
-      proceedAction: edgeData.proceedAction || edgeData.action || 'Submit',
+      proceedAction: actionName,
       remarks: edgeData.remarks ?? false,
       signature: edgeData.signature ?? false,
       toBlockId: edge.target,
       top: 0,
-      ...edgeData,
     }
   })
+
+  const { blocks, rules } = ensureStartAndEndNodes(rawBlocks, rawRules)
 
   return {
     blocks,
@@ -213,13 +329,14 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
           repositoryId: storeState.folder,
           type: storeState.initiateUsing,
         },
-        kanbanSettings: [],
+        kanbanSettings: storeState.kanbanSettings || [],
         linkMasterFormId: 0,
         name: storeState.workflowName,
         ocr: {
           credit: 0,
           required: false,
         },
+        previewValues: storeState.previewValues,
         processNumberPrefix: JSON.stringify(storeState.prefixSegments),
         scheduleReport: {},
         slaRules: [],
@@ -242,7 +359,9 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       },
       publish: {
         publishOption:
-          storeState.workflowStatus === 'published' ? 'PUBLISHED' : 'DRAFT',
+          String(storeState.workflowStatus || '').toUpperCase() === 'PUBLISHED'
+            ? 'PUBLISHED'
+            : 'DRAFT',
         publishSchedule: '',
         unpublishSchedule: '',
       },

@@ -5,6 +5,7 @@ import workflowsApiV6 from '@/api/v6/workflows'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import showToast from '@/components/base/toast/showToast'
+import { getSettingsReturnPath } from '@/pages/settings/helpers/settingsNavigation'
 import useWorkflowStore from '../../stores/useWorkflowStore'
 import { exportWorkflow } from '../../utils/exportWorkflow'
 
@@ -16,7 +17,7 @@ const BuilderHeader = () => {
     useWorkflowStore((state) => state)
   const [isSaving, setIsSaving] = useState(false)
 
-  const handleSave = async () => {
+  const handleSave = async (targetStatus?: 'draft' | 'published') => {
     if (!workflowId) {
       showToast({
         message: 'No active workflow ID found to save.',
@@ -25,14 +26,31 @@ const BuilderHeader = () => {
       return
     }
 
+    const currentStatus = targetStatus || useWorkflowStore.getState().workflowStatus
+    const isPublished = String(currentStatus).toLowerCase() === 'published'
+
+    useWorkflowStore.getState().setWorkflowStatus(isPublished ? 'published' : 'draft')
+
     setIsSaving(true)
     try {
       const exportedJson = exportWorkflow(getNodes(), getEdges())
 
+      if (!exportedJson.settings) (exportedJson as any).settings = {}
+      if (!exportedJson.settings.publish) (exportedJson.settings as any).publish = {}
+      exportedJson.settings.publish.publishOption = isPublished ? 'PUBLISHED' : 'DRAFT'
+
       const payload = {
+        description: workflowDescription || '',
         name: workflowName,
+        status: isPublished ? 'PUBLISHED' : 'DRAFT',
         workflowJson: exportedJson,
       }
+
+      console.log(
+        '📌 [Workflow Builder] Saving Workflow JSON Payload:',
+        JSON.stringify(payload, null, 2),
+      )
+      console.log('📌 [Workflow Builder] Raw Workflow JSON object:', exportedJson)
 
       let response
       if (workflowId === 'new') {
@@ -48,12 +66,16 @@ const BuilderHeader = () => {
 
       if (error) {
         showToast({
-          message: `Failed to save workflow: ${error}`,
+          message: `Failed to ${isPublished ? 'publish' : 'save'} workflow: ${error}`,
           variant: 'error',
         })
       } else {
+        useWorkflowStore.getState().setWorkflowStatus(isPublished ? 'published' : 'draft')
         showToast({
-          message: 'Workflow saved successfully',
+          message:
+            isPublished
+              ? 'Workflow published successfully'
+              : 'Workflow saved successfully',
           variant: 'success',
         })
         const newId = data?.id || (typeof data === 'string' ? data : null)
@@ -75,6 +97,8 @@ const BuilderHeader = () => {
     }
   }
 
+  const isPublished = String(workflowStatus).toLowerCase() === 'published'
+
   return (
     <header className='flex h-16 items-center justify-between border-b border-gray-3 bg-white px-4'>
       <div className='flex items-center gap-4'>
@@ -82,7 +106,11 @@ const BuilderHeader = () => {
           color='gray'
           icon='lucide:chevron-left'
           variant='ghost'
-          onClick={() => navigate({ to: '/workflows' })}
+          onClick={() =>
+            navigate({
+              to: getSettingsReturnPath('workflow-configuration') ?? '/workflows',
+            })
+          }
         />
         <div className='flex flex-col'>
           <div className='flex items-center gap-2'>
@@ -110,22 +138,23 @@ const BuilderHeader = () => {
           color='gray'
           icon='lucide:settings'
           variant='ghost'
-          onClick={useWorkflowStore((state) => state.openSettings)}
+          onClick={() => useWorkflowStore.getState().openSettings()}
         />
         <Button
           color='gray'
-          disabled={workflowStatus === 'published'}
+          disabled={isPublished}
           icon='lucide:play'
           label='Test Run'
           variant='outline'
-          onClick={useWorkflowStore((state) => state.startTestRun)}
+          onClick={() => useWorkflowStore.getState().startTestRun()}
         />
         <Button
+          className='cursor-pointer font-medium'
           disabled={isSaving}
           icon='lucide:save'
           label='Save'
           loading={isSaving}
-          onClick={handleSave}
+          onClick={() => handleSave()}
         />
       </div>
     </header>

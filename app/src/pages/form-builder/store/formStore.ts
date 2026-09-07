@@ -2,6 +2,7 @@ import { notifications } from '@mantine/notifications'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import formApi from '@/api/form/form'
+import { getField } from '@/helpers/new-field'
 
 export const generateId = () => {
   try {
@@ -14,7 +15,13 @@ export const generateId = () => {
   }
 }
 
-export type FormLayout = 'typeform' | 'grid' | 'full'
+export type FormLayout =
+  | 'SINGLE'
+  | 'CLASSIC'
+  | 'ACCORDION'
+  | 'typeform'
+  | 'grid'
+  | 'full'
 
 export interface FormStore {
   activePanelId: string | null
@@ -22,7 +29,6 @@ export interface FormStore {
   addFieldPosition: { index: number; panelId: string } | null
   conversationalMode: boolean
   coordinator: string
-  copiedQuestion: Question | null
   description: string
   footerText: string
   formType: FormType
@@ -40,14 +46,10 @@ export interface FormStore {
   previewMode: 'typeform' | 'grid' | 'full'
   publishStatus: PublishStatus
   secondaryPanels: Panel[]
-  selectionType: 'general' | 'question' | 'welcome' | 'thank_you'
+  selectionType: 'general' | 'question'
   showHeaderFooter: boolean
-  showThankYouPage: boolean
-  showWelcomePage: boolean
   sidebarView: 'explorer' | 'fields'
-  thankYouPage: WelcomePageSettings
   uid: string
-  welcomePage: WelcomePageSettings
   closedMessage?: string
   // Phase 4: Management
   responseLimit?: number
@@ -66,9 +68,11 @@ export interface FormStore {
   loadForm: (data: any) => void
   movePanel: (id: string, direction: 'up' | 'down') => void
   moveQuestion: (id: string, toPanelId: string, index: number) => void
-  pasteQuestion: (panelId: string, index: number) => void
   resetForm: () => void
-  saveForm: (targetStatus?: PublishStatus) => Promise<boolean>
+  saveForm: (
+    targetStatus?: PublishStatus,
+    formId?: string,
+  ) => Promise<{ createdFormId?: string; success: boolean }>
   updatePanel: (id: string, updates: Partial<Panel['settings']>) => void
   updateQuestion: (id: string, updates: any) => void
   setActivePanelId: (id: string | null) => void
@@ -77,8 +81,6 @@ export interface FormStore {
   setClosedMessage: (message: string) => void
   setConversationalMode: (enabled: boolean) => void
   setCoordinator: (coordinator: string) => void
-  // Actions
-  setCopiedQuestion: (question: Question | null) => void
   setDescription: (description: string) => void
   setFormType: (type: FormType) => void
   setHeaderFooter: (updates: {
@@ -97,15 +99,9 @@ export interface FormStore {
   setPublishStatus: (status: PublishStatus) => void
   setResponseLimit: (limit: number | undefined) => void
   setSchedule: (start?: string, end?: string) => void
-  setSelectionType: (
-    type: 'general' | 'question' | 'welcome' | 'thank_you',
-  ) => void
-  setShowThankYouPage: (show: boolean) => void
-  setShowWelcomePage: (show: boolean) => void
+  setSelectionType: (type: 'general' | 'question') => void
   setSidebarOpen: (open: boolean) => void
   setSidebarView: (view: 'explorer' | 'fields') => void
-  setThankYouPage: (updates: Partial<WelcomePageSettings>) => void
-  setWelcomePage: (updates: Partial<WelcomePageSettings>) => void
 }
 
 export type FormType = 'WORKFLOW' | 'FEEDBACK' | 'MASTER'
@@ -156,6 +152,9 @@ export interface Question {
         masterFormColumn: any[]
         masterFormId: number
       }
+      // TABLE fields only: id of a FILE_UPLOAD field on the same form whose
+      // OCR-extracted line items should be offered for import into this table.
+      lineItemSourceFieldId?: string
       validateTypeKeyword?: string
     }
     general: {
@@ -190,7 +189,6 @@ export interface Question {
       autoGenerateValue?: { enabled?: boolean; prefix: string; suffix: string }
       bulkActionsEnabled?: boolean
       childFieldType?: string
-      columns?: any[]
       countryCodeSearchEnabled?: boolean
       currencyOptionsType?: 'ALL' | 'SPECIFIC'
       currencyParentFieldId?: string
@@ -209,7 +207,7 @@ export interface Question {
       fileInStageOnly?: boolean
       fixedRowCount?: number
       formulaTokens?: {
-        type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION'
+        type: 'FIELD' | 'OPERATOR' | 'NUMBER' | 'FUNCTION' | 'TABLE_SUM'
         value: string
       }[]
       iconCount?: number
@@ -239,6 +237,8 @@ export interface Question {
       prefixLabel?: string
       preventNegative?: boolean
       qrCodeEnabled?: boolean
+      repositoryField?: string
+      repositoryId?: string
       requireFirst?: boolean
       requireLast?: boolean
       requirePostalCode?: boolean
@@ -258,6 +258,21 @@ export interface Question {
       tableColumns?: Array<{
         id: string
         name: string
+        settings?: {
+          lookupSettings?: {
+            repositoryField?: string
+            repositoryId?: string
+          }
+          specific?: {
+            customOptions?: string
+            formulaTokens?: Array<{
+              type: 'FIELD' | 'FUNCTION' | 'NUMBER' | 'OPERATOR' | 'TABLE_SUM'
+              value: string
+            }>
+            placeholder?: string
+          }
+          validation?: { fieldRule?: 'OPTIONAL' | 'REQUIRED' }
+        }
         size: 'SMALL' | 'MEDIUM' | 'LARGE'
         type: QuestionType
       }>
@@ -269,6 +284,8 @@ export interface Question {
     }
     validation: {
       allowedFileTypes?: string[]
+      // Field IDs to auto-fill from this FILE_UPLOAD field's OCR extraction
+      assignOtherControls?: string[]
       contentRule?: string
       correctAnswer?: string
       // Date Limits
@@ -293,6 +310,7 @@ export interface Question {
       pattern?: string
       rangeType?: 'MIN_FIXED_MAX_FLEX' | 'MIN_FLEX_MAX_FIXED' | 'CUSTOM'
       requireCurrencyUnit?: boolean
+      requiredValidation?: 'ANY' | 'ALL'
       // Time specific
       timeFormat?: '12' | '24'
       timeLimitType?: 'NONE' | 'MIN_TIME' | 'MAX_TIME' | 'RANGE'
@@ -344,13 +362,6 @@ export type QuestionType =
 
 export type QuestionWidth = 'col-3' | 'col-4' | 'col-6' | 'col-12'
 
-export interface WelcomePageSettings {
-  buttonText: string
-  description: string
-  enabled: boolean
-  title: string
-}
-
 const initialState = {
   activePanelId: null,
   activeQuestionId: null,
@@ -358,7 +369,6 @@ const initialState = {
   closedMessage: 'This form is currently closed.',
   conversationalMode: false,
   coordinator: '',
-  copiedQuestion: null,
   description: '',
   footerText: '',
   formType: 'WORKFLOW' as const,
@@ -381,22 +391,8 @@ const initialState = {
   secondaryPanels: [],
   selectionType: 'general' as const,
   showHeaderFooter: false,
-  showThankYouPage: false,
-  showWelcomePage: false,
-  sidebarView: 'explorer' as const,
-  thankYouPage: {
-    buttonText: 'Submit',
-    description: 'Your submission has been received.',
-    enabled: true,
-    title: 'Thank you!',
-  },
+  sidebarView: 'fields' as const,
   uid: '',
-  welcomePage: {
-    buttonText: 'Start',
-    description: 'Welcome to our form.',
-    enabled: true,
-    title: 'Welcome',
-  },
 }
 
 export const useFormStore = create<FormStore>()(
@@ -442,43 +438,220 @@ export const useFormStore = create<FormStore>()(
 
       appendAIResponse: (data) =>
         set((state) => {
-          if (!data) return state
+          if (!data || data.action === 'INFO') return state
 
-          const panels = (data.panels || []).map((p: any) => ({
-            fields: (p.fields || []).map((f: any) => ({
-              ...f,
-              id: generateId(),
-              label: f.label || f.title || 'Untitled Field',
-              type: (f.type || 'SHORT_TEXT').toUpperCase(),
+          // Explicit whole-form wipe - only the AI action the user asked for
+          // by name ("remove/clear the form") reaches this branch.
+          if (data.action === 'REMOVE_FORM') {
+            return {
+              ...state,
+              activeQuestionId: null,
+              panels: [],
+              selectionType: 'general',
+            }
+          }
+
+          const removedFieldIds = new Set<string>(
+            Array.isArray(data.removedFieldIds) ? data.removedFieldIds : [],
+          )
+          const removedPanelIds = new Set<string>(
+            Array.isArray(data.removedPanelIds) ? data.removedPanelIds : [],
+          )
+          const aiPanels: any[] = data.panels || []
+
+          const mergeField = (existingField: Question, f: any): Question => {
+            const fieldLabel = f.label || f.title || existingField.label
+            const fieldType = (
+              f.type ||
+              existingField.type ||
+              'SHORT_TEXT'
+            ).toUpperCase() as QuestionType
+            const isMandatory =
+              f.isMandatory !== undefined
+                ? f.isMandatory
+                : f.settings?.validation?.fieldRule
+                  ? f.settings.validation.fieldRule === 'MANDATORY'
+                  : (existingField.settings?.validation
+                      ?.fieldRule as string) === 'MANDATORY'
+
+            return {
+              ...existingField,
+              label: fieldLabel,
+              type: fieldType,
               settings: {
-                aiSettings: f.settings?.aiSettings || {},
+                ...existingField.settings,
                 general: {
+                  ...existingField.settings?.general,
+                  placeholder:
+                    f.placeholder ??
+                    f.settings?.general?.placeholder ??
+                    existingField.settings?.general?.placeholder ??
+                    '',
+                  size:
+                    f.size ??
+                    f.settings?.general?.size ??
+                    existingField.settings?.general?.size ??
+                    'col-6',
+                },
+                specific: {
+                  ...existingField.settings?.specific,
+                  customOptions: Array.isArray(f.options)
+                    ? f.options.join('\n')
+                    : Array.isArray(f.settings?.specific?.options)
+                      ? f.settings.specific.options.join('\n')
+                      : (f.settings?.specific?.customOptions ??
+                        existingField.settings?.specific?.customOptions ??
+                        ''),
+                },
+                validation: {
+                  ...existingField.settings?.validation,
+                  fieldRule: (isMandatory
+                    ? 'MANDATORY'
+                    : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
+                },
+              },
+            }
+          }
+
+          const buildNewField = (f: any): Question => {
+            const fieldLabel = f.label || f.title || 'Untitled Field'
+            const fieldType = (
+              f.type || 'SHORT_TEXT'
+            ).toUpperCase() as QuestionType
+            const baseField = getField(fieldType)
+            const isMandatory = Boolean(
+              f.isMandatory ||
+              f.settings?.validation?.fieldRule === 'MANDATORY',
+            )
+
+            return {
+              ...baseField,
+              id: f.id || baseField.id,
+              label: fieldLabel,
+              type: fieldType,
+              settings: {
+                ...baseField.settings,
+                general: {
+                  ...baseField.settings?.general,
                   hideLabel: f.settings?.general?.hideLabel ?? false,
-                  placeholder: f.settings?.general?.placeholder || '',
-                  size: f.settings?.general?.size || 'col-12',
+                  placeholder:
+                    f.placeholder || f.settings?.general?.placeholder || '',
+                  size: f.size || f.settings?.general?.size || 'col-6',
                   tooltip: f.settings?.general?.tooltip || '',
                   visibility: f.settings?.general?.visibility || 'NORMAL',
                 },
-                lookupSettings: f.settings?.lookupSettings || {},
                 specific: {
+                  ...baseField.settings?.specific,
                   ...f.settings?.specific,
-                  customOptions: Array.isArray(f.settings?.specific?.options)
-                    ? f.settings.specific.options.join('\n')
-                    : f.settings?.specific?.customOptions || '',
-                  tableColumns: f.settings?.specific?.tableColumns || [],
+                  customOptions: Array.isArray(f.options)
+                    ? f.options.join('\n')
+                    : Array.isArray(f.settings?.specific?.options)
+                      ? f.settings.specific.options.join('\n')
+                      : f.settings?.specific?.customOptions || '',
                 },
                 validation: {
-                  fieldRule: f.settings?.validation?.fieldRule || 'OPTIONAL',
+                  fieldRule: (isMandatory
+                    ? 'MANDATORY'
+                    : 'OPTIONAL') as Question['settings']['validation']['fieldRule'],
                   ...f.settings?.validation,
                 },
               },
-            })),
-            id: generateId(),
-            settings: {
-              description: p.settings?.description || p.description || '',
-              title: p.settings?.title || p.title || 'Untitled Section',
-            },
-          }))
+            }
+          }
+
+          // Fields the AI didn't mention are kept exactly as-is; only ids in
+          // removedFieldIds are dropped, and unmatched AI fields are appended.
+          const mergePanelFields = (
+            existingFields: Question[],
+            aiFields: any[],
+          ): Question[] => {
+            const matched = new Set<any>()
+
+            const kept = existingFields
+              .filter((ef) => !removedFieldIds.has(ef.id))
+              .map((ef) => {
+                const label = (ef.label || '').toLowerCase().trim()
+                const match = aiFields.find(
+                  (f) =>
+                    !matched.has(f) &&
+                    ((f.id && f.id === ef.id) ||
+                      (!f.id &&
+                        label &&
+                        (f.label || f.title || '').toLowerCase().trim() ===
+                          label)),
+                )
+                if (!match) return ef
+                matched.add(match)
+                return mergeField(ef, match)
+              })
+
+            const added = aiFields
+              .filter(
+                (f) => !matched.has(f) && !(f.id && removedFieldIds.has(f.id)),
+              )
+              .map(buildNewField)
+
+            return [...kept, ...added]
+          }
+
+          const findAiPanel = (existingPanel: Panel) => {
+            const title = (
+              existingPanel.settings?.title ||
+              (existingPanel as any).title ||
+              ''
+            )
+              .toLowerCase()
+              .trim()
+            return aiPanels.find(
+              (p) =>
+                (existingPanel.id && p.id && p.id === existingPanel.id) ||
+                (!p.id &&
+                  title &&
+                  (p.settings?.title || p.title || '').toLowerCase().trim() ===
+                    title),
+            )
+          }
+
+          const matchedAiPanels = new Set<any>()
+
+          // Sections the AI didn't mention are kept exactly as-is; only ids in
+          // removedPanelIds are dropped.
+          const mergedExistingPanels = state.panels
+            .filter((p) => !removedPanelIds.has(p.id))
+            .map((p) => {
+              const match = findAiPanel(p)
+              if (!match) return p
+              matchedAiPanels.add(match)
+
+              return {
+                ...p,
+                fields: mergePanelFields(p.fields, match.fields || []),
+                settings: {
+                  ...p.settings,
+                  description:
+                    match.settings?.description ??
+                    match.description ??
+                    p.settings?.description ??
+                    '',
+                  title:
+                    match.settings?.title || match.title || p.settings?.title,
+                },
+              }
+            })
+
+          const newPanels = aiPanels
+            .filter(
+              (p) =>
+                !matchedAiPanels.has(p) && !(p.id && removedPanelIds.has(p.id)),
+            )
+            .map((p) => ({
+              fields: (p.fields || []).map(buildNewField),
+              id: p.id || generateId(),
+              settings: {
+                description: p.settings?.description || p.description || '',
+                title: p.settings?.title || p.title || 'Untitled Section',
+              },
+            }))
 
           return {
             ...state,
@@ -487,17 +660,8 @@ export const useFormStore = create<FormStore>()(
             formType: data.formType || state.formType,
             layout: data.layout || state.layout,
             name: data.name || state.name,
-            panels: panels.length > 0 ? panels : state.panels,
+            panels: [...mergedExistingPanels, ...newPanels],
             selectionType: 'general',
-            showThankYouPage:
-              data.thankYouPage?.enabled ?? state.showThankYouPage,
-            showWelcomePage: data.welcomePage?.enabled ?? state.showWelcomePage,
-            thankYouPage: data.thankYouPage
-              ? { ...state.thankYouPage, ...data.thankYouPage }
-              : state.thankYouPage,
-            welcomePage: data.welcomePage
-              ? { ...state.welcomePage, ...data.welcomePage }
-              : state.welcomePage,
           }
         }),
 
@@ -588,10 +752,29 @@ export const useFormStore = create<FormStore>()(
             ? genSettings.type
             : 'WORKFLOW',
           hubLinkIds: json.settings?.hubLinkIds || [],
-          layout: genSettings.layout || 'typeform',
+          isPreviewOpen: false,
+          isPublishOpen: false,
+          isSidebarOpen: false,
+          layout: (() => {
+            const l = String(genSettings.layout || 'CLASSIC').toUpperCase()
+            if (l === 'TYPEFORM' || l === 'STEPPER' || l === 'SINGLE')
+              return 'SINGLE'
+            if (l === 'GRID' || l === 'CLASSIC') return 'CLASSIC'
+            if (l === 'FULL' || l === 'ACCORDION') return 'ACCORDION'
+            return 'CLASSIC'
+          })(),
           name: genSettings.name || 'Untitled Form',
           panels: json.panels || [],
-          publishStatus: json.settings?.publish?.publishOption || 'DRAFT',
+          publishStatus: (() => {
+            const raw =
+              data?.publishOption ||
+              data?.status ||
+              json.settings?.publish?.publishOption
+            const str = String(raw).toUpperCase()
+            return str === 'PUBLISHED' || raw === 1 || raw === '1'
+              ? 'PUBLISHED'
+              : 'DRAFT'
+          })(),
           secondaryPanels: json.secondaryPanels || [],
           uid: data.uid || json.uid || generateId(),
         })
@@ -630,43 +813,31 @@ export const useFormStore = create<FormStore>()(
           }
         }),
 
-      pasteQuestion: (panelId, index) =>
-        set((state) => {
-          if (!state.copiedQuestion) return state
-
-          const newQuestion = {
-            ...state.copiedQuestion,
-            id: generateId(),
-            label: `${state.copiedQuestion.label} (Copy)`,
-          }
-
-          const newPanels = state.panels.map((p) => {
-            if (p.id !== panelId) return p
-            const newFields = [...p.fields]
-            newFields.splice(index, 0, newQuestion)
-            return { ...p, fields: newFields }
-          })
-
-          return { activeQuestionId: newQuestion.id, panels: newPanels }
-        }),
       resetForm: () => set({ ...initialState, uid: generateId() }),
-      saveForm: async (targetStatus) => {
+      saveForm: async (targetStatus, formId) => {
         const state = get()
         const currentStatus = targetStatus || state.publishStatus
+        const isPublished = String(currentStatus).toUpperCase() === 'PUBLISHED'
 
-        if (targetStatus) {
-          set({ publishStatus: targetStatus })
-        }
+        set({ publishStatus: isPublished ? 'PUBLISHED' : 'DRAFT' })
 
         const formSchema = cleanFormPayload({
           ...state,
-          publishStatus: currentStatus,
+          publishStatus: isPublished ? 'PUBLISHED' : 'DRAFT',
         })
 
         const payload = {
+          description: state.description || '',
           formJson: formSchema,
           name: state.name || 'Untitled Form',
+          status: isPublished ? 'PUBLISHED' : 'DRAFT',
         }
+
+        console.log(
+          '📌 [Form Builder] Saving Form JSON Payload:',
+          JSON.stringify(payload, null, 2),
+        )
+        console.log('📌 [Form Builder] Raw Form JSON object:', formSchema)
 
         const hasFields = state.panels.some((p) => p.fields.length > 0)
         if (!hasFields) {
@@ -676,24 +847,13 @@ export const useFormStore = create<FormStore>()(
               'Please add at least one field to your form before saving.',
             title: 'Empty Form',
           })
-          return false
+          return { success: false }
         }
 
         try {
-          let response
-          const path = window.location.pathname
-          const isCreation =
-            path === '/form-builder' ||
-            path === '/form-builder/' ||
-            path.endsWith('/form-builder')
-
-          if (!isCreation) {
-            const parts = path.split('/')
-            const formId = parts[parts.length - 1]
-            response = await formApi.updateForm(formId, payload)
-          } else {
-            response = await formApi.createForm(payload)
-          }
+          const response = formId
+            ? await formApi.updateForm(formId, payload)
+            : await formApi.createForm(payload)
 
           if (response.error) {
             notifications.show({
@@ -701,7 +861,7 @@ export const useFormStore = create<FormStore>()(
               message: response.error,
               title: 'Error Saving Form',
             })
-            return false
+            return { success: false }
           }
 
           notifications.show({
@@ -710,28 +870,28 @@ export const useFormStore = create<FormStore>()(
             title: 'Success!',
           })
 
-          const createdFormId =
-            response.data?.id ??
-            response.data?.formId ??
-            (typeof response.data === 'string' ? response.data : null)
+          const createdFormId = formId
+            ? undefined
+            : (response.data?.id ??
+              response.data?.formId ??
+              (typeof response.data === 'string' ? response.data : undefined))
 
-          if (isCreation && createdFormId) {
-            window.location.replace(`/form-builder/${createdFormId}`)
-          }
-          return true
+          return { createdFormId, success: true }
         } catch (error) {
           notifications.show({
             color: 'red',
             message: 'An unexpected error occurred while saving.',
             title: 'Unexpected Error',
           })
-          return false
+          return { success: false }
         }
       },
       updatePanel: (id, updates) =>
         set((state) => ({
           panels: state.panels.map((p) =>
-            p.id === id ? { ...p, settings: { ...p.settings, ...updates } } : p,
+            p.id === id
+              ? { ...p, settings: { ...(p.settings || {}), ...updates } }
+              : p,
           ),
         })),
 
@@ -755,8 +915,6 @@ export const useFormStore = create<FormStore>()(
       setConversationalMode: (conversationalMode) =>
         set({ conversationalMode }),
       setCoordinator: (coordinator) => set({ coordinator }),
-      // Clipboard Actions
-      setCopiedQuestion: (copiedQuestion) => set({ copiedQuestion }),
       setDescription: (description) => set({ description }),
       setFormType: (formType) => set({ formType }),
       setHeaderFooter: (updates) =>
@@ -783,29 +941,27 @@ export const useFormStore = create<FormStore>()(
       setSchedule: (scheduleStart, scheduleEnd) =>
         set({ scheduleEnd, scheduleStart }),
       setSelectionType: (selectionType) => set({ selectionType }),
-      setShowThankYouPage: (showThankYouPage) => set({ showThankYouPage }),
-      setShowWelcomePage: (showWelcomePage) => set({ showWelcomePage }),
 
       // Sidebar Actions
       setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
-
       setSidebarView: (sidebarView) => set({ sidebarView }),
-
-      setThankYouPage: (updates) =>
-        set((state) => ({
-          thankYouPage: { ...state.thankYouPage, ...updates },
-        })),
-
-      // Page Settings Actions
-      setWelcomePage: (updates) =>
-        set((state) => ({
-          welcomePage: { ...state.welcomePage, ...updates },
-        })),
     }),
-
     {
       name: 'form-builder-storage-v3',
       version: 3,
+      partialize: (state) => {
+        // Exclude transient UI drawer flags from localStorage persistence
+        const {
+          activePanelId,
+          activeQuestionId,
+          addFieldPosition,
+          isPreviewOpen,
+          isPublishOpen,
+          isSidebarOpen,
+          ...rest
+        } = state
+        return rest
+      },
     },
   ),
 )

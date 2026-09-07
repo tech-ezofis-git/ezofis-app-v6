@@ -65,7 +65,18 @@ const PageEmptyState = ({
         title: title ?? 'No results found',
       }
 
-  const showCreateAction = variant === 'initial'
+  const showCreateAction =
+    variant === 'initial' && Boolean(emptyStateProps.onPrimaryAction)
+  const resolvedTitle =
+    title ??
+    (showCreateAction
+      ? content.title
+      : (content.titleWithoutAction ?? content.title))
+  const resolvedDescription =
+    description ??
+    (showCreateAction
+      ? content.description
+      : (content.descriptionWithoutAction ?? content.description))
 
   return (
     <div
@@ -76,9 +87,9 @@ const PageEmptyState = ({
       )}
     >
       <EmptyState
-        description={description ?? content.description}
+        description={resolvedDescription}
         icon={icon ?? content.icon}
-        title={title ?? content.title}
+        title={resolvedTitle}
         primaryActionLabel={
           showCreateAction
             ? (emptyStateProps.primaryActionLabel ?? content.primaryActionLabel)

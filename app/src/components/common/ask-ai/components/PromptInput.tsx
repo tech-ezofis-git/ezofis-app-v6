@@ -36,15 +36,11 @@ const PromptInput = () => {
       <div
         className={`rounded border bg-surface-muted transition-colors focus-within:border-primary-9 ${isLoading ? 'pointer-events-none border-gray-3 opacity-50' : 'border-gray-4'}`}
       >
-        <div className='p-2 text-xs font-medium'>
-          {isLoading
-            ? 'Generating form...'
-            : `${credits} of 15 calls remaining`}{' '}
-          •{' '}
-          <span className='cursor-pointer hover:text-gray-13 hover:underline'>
-            Upgrade
-          </span>
-        </div>
+        {isLoading ? (
+          <div className='p-2 text-xs font-medium text-primary-9 animate-pulse'>
+            Generating form...
+          </div>
+        ) : null}
 
         <div className='rounded border-t border-gray-4 bg-surface p-2'>
           <Textarea

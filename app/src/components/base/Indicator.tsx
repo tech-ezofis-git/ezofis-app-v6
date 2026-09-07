@@ -10,6 +10,7 @@ interface Props {
   className?: string
   color?: IndicatorColor
   disabled?: boolean
+  label?: ReactNode
   offset?: number
   position?: IndicatorProps['position']
   size?: number
@@ -27,18 +28,26 @@ const Indicator = ({
   className,
   color = 'primary',
   disabled,
+  label,
   offset,
   position,
-  size = 5,
+  size,
 }: Props) => {
+  // A plain dot (no label) stays tiny (5px). A labeled badge (e.g. a count)
+  // needs enough height for its own text, otherwise Mantine's fixed
+  // `height: var(--indicator-size)` clips to the dot size and the
+  // horizontal-only label padding makes it read as an oval instead of a
+  // circle — 16 is enough for one or two digits to sit in a true circle.
+  const resolvedSize = size ?? (label !== undefined ? 16 : 5)
   return (
     <Base
       className={className}
       disabled={disabled}
+      label={label}
       offset={offset}
       position={position}
       processing={animate}
-      size={size}
+      size={resolvedSize}
       classNames={{
         indicator: colorClassName[color],
       }}

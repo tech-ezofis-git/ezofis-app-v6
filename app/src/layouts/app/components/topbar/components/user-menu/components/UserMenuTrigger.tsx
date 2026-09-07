@@ -2,15 +2,12 @@ import { useLingui } from '@lingui/react/macro'
 import Avatar from '@/components/base/Avatar'
 import Tooltip from '@/components/base/Tooltip'
 import authUserStore from '@/stores/authUserStore'
+import useProfileImage from '@/hooks/useProfileImage'
 
 const UserMenuTrigger = () => {
   const { t } = useLingui()
-  const API_URI = import.meta.env?.VITE_BASE_URL
   const session = authUserStore((state) => state.session)
-
-  const imageUrl = session
-    ? `${API_URI}/user/avatar/${session.tenantId}/${session.id}`
-    : ''
+  const imageUrl = useProfileImage()
 
   const getInitials = () => {
     if (!session) return 'U'

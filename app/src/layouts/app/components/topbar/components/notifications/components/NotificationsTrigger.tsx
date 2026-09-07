@@ -8,8 +8,12 @@ interface Props {
   unreadCount?: number
 }
 
-const NotificationsTrigger = ({ isNotificationsOpened = false, unreadCount = 0 }: Props) => {
+const NotificationsTrigger = ({
+  isNotificationsOpened = false,
+  unreadCount = 0,
+}: Props) => {
   const { t } = useLingui()
+  // const label = unreadCount > 99 ? '99+' : unreadCount > 0 ? String(unreadCount) : undefined
 
   return (
     <Tooltip

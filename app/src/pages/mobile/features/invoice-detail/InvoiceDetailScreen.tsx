@@ -367,7 +367,7 @@ export function InvoiceDetailScreen({ onBack }: InvoiceDetailScreenProps) {
                   icon={
                     <Icon
                       className='size-4 text-[var(--gray-9)]'
-                      name='History'
+                      name='RotateCcw'
                     />
                   }
                   message='No history yet'

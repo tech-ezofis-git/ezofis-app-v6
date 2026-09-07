@@ -5,6 +5,7 @@ import IconIllustrated from '@/components/base/icon/IconIllustrated'
 import InputText from '@/components/base/inputs/InputText'
 import Title from '@/components/base/Title'
 import useResendTimer from '@/layouts/auth/hooks/useResendTimer'
+import { useIsWhiteLabel } from '@/utils/whiteLabel'
 
 interface Props {
   email: string
@@ -12,6 +13,7 @@ interface Props {
 
 const SendEmailForm = ({ email }: Props) => {
   const [loading, setLoading] = useState(false)
+  const isWhiteLabel = useIsWhiteLabel()
   const { elapsed, resendLabel, resetTimer } = useResendTimer()
 
   const resendLink = () => {
@@ -34,8 +36,10 @@ const SendEmailForm = ({ email }: Props) => {
 
       <InputText
         leftSection={<Icon className='text-gray-8' name='lucide:mail' />}
-        value={email || 'charles@ezofis.com'}
         disabled
+        value={
+          email || (isWhiteLabel ? 'charles@example.com' : 'charles@ezofis.com')
+        }
         onChange={() => {}}
       />
 

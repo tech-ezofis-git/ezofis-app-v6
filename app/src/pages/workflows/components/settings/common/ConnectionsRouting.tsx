@@ -2,6 +2,11 @@ import { type Node, useEdges, useNodes, useReactFlow } from '@xyflow/react'
 import { useState } from 'react'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
+import InputSwitch from '@/components/base/inputs/InputSwitch'
+import {
+  getNodeToolType,
+  NODE_TOOL_TYPE,
+} from '@/pages/workflows/utils/nodeToolTypes'
 import SettingsSection from './SettingsSection'
 
 interface ConnectionsRoutingProps {
@@ -10,9 +15,14 @@ interface ConnectionsRoutingProps {
 
 interface ConnectionWithData {
   action: string
+  confirm: boolean
   edgeId: string
+  passwordAccess: boolean
+  remarks: boolean
+  signature: boolean
   targetId: string
   targetLabel: string
+  targetToolType: string
 }
 
 const routingActionOptions = [
@@ -21,6 +31,9 @@ const routingActionOptions = [
   { id: 3, name: 'Reject' },
   { id: 4, name: 'Verify' },
 ]
+
+const getRoutingAction = (data: Record<string, unknown> | undefined) =>
+  String(data?.action || data?.proceedAction || '')
 
 export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -31,8 +44,20 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
   const onUpdateAction = (edgeId: string, action: string) => {
     setEdges((eds) =>
       eds.map((e) =>
-        e.id === edgeId ? { ...e, data: { ...e.data, action } } : e,
+        e.id === edgeId
+          ? { ...e, data: { ...e.data, action, proceedAction: action } }
+          : e,
       ),
+    )
+  }
+
+  const onUpdateFlag = (
+    edgeId: string,
+    key: 'remarks' | 'confirm' | 'passwordAccess' | 'signature',
+    value: boolean,
+  ) => {
+    setEdges((eds) =>
+      eds.map((e) => (e.id === edgeId ? { ...e, data: { ...e.data, [key]: value } } : e)),
     )
   }
 
@@ -44,30 +69,45 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
     new Set([
       ...routingActionOptions.map((o) => o.name),
       ...edges
-        .filter((e) => e.data?.action)
-        .map((e) => e.data?.action as string),
+        .map((e) => getRoutingAction(e.data as Record<string, unknown>))
+        .filter(Boolean),
     ]),
   ).map((name, index) => ({ id: index + 1, name }))
 
-  const connections: ConnectionWithData[] = outgoingEdges.map((edge) => {
-    const targetNode = nodes.find((n) => n.id === edge.target)
-    return {
-      action: (edge.data?.action as string) || '',
-      edgeId: edge.id,
-      targetId: edge.target,
-      targetLabel: (targetNode?.data?.label as string) || 'Unknown Node',
-    }
-  })
+  const connections: ConnectionWithData[] = outgoingEdges
+    .filter((edge) => nodes.some((n) => n.id === edge.target))
+    .map((edge) => {
+      const targetNode = nodes.find((n) => n.id === edge.target)
+      const edgeData = (edge.data || {}) as Record<string, unknown>
+      return {
+        action: getRoutingAction(edgeData),
+        confirm: !!edgeData.confirm,
+        edgeId: edge.id,
+        passwordAccess: !!edgeData.passwordAccess,
+        remarks: !!edgeData.remarks,
+        signature: !!edgeData.signature,
+        targetId: edge.target,
+        targetLabel: (targetNode?.data?.label as string) || 'Next Step',
+        targetToolType: getNodeToolType(targetNode?.data),
+      }
+    })
 
   const getTargetDescription = (conn: ConnectionWithData) => {
-    const label = conn.targetLabel.toLowerCase()
-    if (label.includes('success'))
+    if (conn.targetToolType === NODE_TOOL_TYPE.END)
       return 'Complete the workflow on this pathway'
-    if (label.includes('ap agent')) return 'Route to AP Agent for processing'
-    if (label.includes('ocr agent')) return 'Route to OCR Agent for extraction'
-    if (label.includes('ftp agent'))
+    if (conn.targetToolType === NODE_TOOL_TYPE.AP_AGENT)
+      return 'Route to AP Agent for processing'
+    if (conn.targetToolType === NODE_TOOL_TYPE.OCR_AGENT)
+      return 'Route to OCR Agent for extraction'
+    if (conn.targetToolType === NODE_TOOL_TYPE.FTP_AGENT)
       return 'Route to FTP Agent for file transfer'
-    if (label.includes('manual user'))
+    if (conn.targetToolType === NODE_TOOL_TYPE.KYC_AGENT)
+      return 'Route to KYC Agent for identity verification'
+    if (conn.targetToolType === NODE_TOOL_TYPE.PROCUREMENT_AGENT)
+      return 'Route to Procurement Agent for requisition processing'
+    if (conn.targetToolType === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT)
+      return 'Route to Document Generate Agent for doc creation'
+    if (conn.targetToolType === NODE_TOOL_TYPE.MANUAL_USER)
       return 'Route for manual user intervention'
     return `Define behavior when routing to ${conn.targetLabel}`
   }
@@ -121,6 +161,45 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
                     }
                   }}
                 />
+              </div>
+
+              <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1'>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Remarks required</span>
+                  <InputSwitch
+                    checked={conn.remarks}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'remarks', checked)
+                    }
+                  />
+                </div>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Confirmation dialog</span>
+                  <InputSwitch
+                    checked={conn.confirm}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'confirm', checked)
+                    }
+                  />
+                </div>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Password verification</span>
+                  <InputSwitch
+                    checked={conn.passwordAccess}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'passwordAccess', checked)
+                    }
+                  />
+                </div>
+                <div className='flex items-center justify-between'>
+                  <span className='text-12 text-gray-11'>Signature required</span>
+                  <InputSwitch
+                    checked={conn.signature}
+                    onChange={(checked) =>
+                      onUpdateFlag(conn.edgeId, 'signature', checked)
+                    }
+                  />
+                </div>
               </div>
             </div>
           ))

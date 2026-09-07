@@ -368,15 +368,15 @@ export default function LineItemTable({
               )
             } else if (col.type === 'description') {
               headerContent = (
-                <span className={getLineItemTextClass()}>Description</span>
+                <span className={getLineItemTextClass()}>{t`Description`}</span>
               )
             } else if (col.type === 'qty') {
               headerContent = (
-                <span className={getLineItemTextClass(true)}>Qty</span>
+                <span className={getLineItemTextClass(true)}>{t`Qty`}</span>
               )
             } else if (col.type === 'rate') {
               headerContent = (
-                <span className={getLineItemTextClass(true)}>Rate</span>
+                <span className={getLineItemTextClass(true)}>{t`Rate`}</span>
               )
             } else if (col.type === 'amount') {
               headerContent = (
@@ -386,7 +386,7 @@ export default function LineItemTable({
                     'flex flex-col items-end gap-0.5',
                   )}
                 >
-                  <span>Amount</span>
+                  <span>{t`Amount`}</span>
                   {currencyStr ? (
                     <span className='text-[10px] leading-none opacity-70'>
                       ({currencyStr})
@@ -396,7 +396,7 @@ export default function LineItemTable({
               )
             } else if (col.type === 'score') {
               headerContent = (
-                <span className={getLineItemTextClass(true)}>Score</span>
+                <span className={getLineItemTextClass(true)}>{t`Score`}</span>
               )
             } else if (col.type === 'action') {
               headerContent = handleAddItem ? (

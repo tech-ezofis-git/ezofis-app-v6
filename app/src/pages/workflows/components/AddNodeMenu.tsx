@@ -4,16 +4,19 @@ import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { generateId } from '../utils/generateId'
+import { NODE_TOOL_TYPE, type NodeToolType } from '../utils/nodeToolTypes'
 
 interface IntegrationItem {
   bgColor: string
-  category: TabType | 'utility' // keeping utility for type safety if needed, but mainly mapping to new tabs
+  category: TabType | 'utility'
   description: string
   icon: string
   iconColor: string
   label: string
+  toolType: NodeToolType
   type: 'popular' | 'highlight'
   actions?: string[]
+  nodeType?: 'action' | 'end' | 'trigger'
 }
 
 type TabType = 'explore' | 'apps' | 'agents' | 'triggers'
@@ -71,8 +74,10 @@ const AddNodeMenu = () => {
               iconColor: item.iconColor,
               label: item.label,
               subLabel: item.description,
-              toolType: item.label,
-              type: item.category === 'triggers' ? 'trigger' : 'action',
+              toolType: item.toolType,
+              type:
+                item.nodeType ??
+                (item.category === 'triggers' ? 'trigger' : 'action'),
             },
           }
         }
@@ -106,8 +111,10 @@ const AddNodeMenu = () => {
               iconColor: item.iconColor,
               label: item.label,
               subLabel: item.description,
-              toolType: item.label,
-              type: item.category === 'triggers' ? 'trigger' : 'action',
+              toolType: item.toolType,
+              type:
+                item.nodeType ??
+                (item.category === 'triggers' ? 'trigger' : 'action'),
             },
             id: newNodeId,
             // Align X with source, Place Y at source Y + GAP
@@ -229,6 +236,7 @@ const AddNodeMenu = () => {
       icon: 'logos:google-gmail',
       iconColor: '',
       label: 'Gmail',
+      toolType: NODE_TOOL_TYPE.GMAIL,
       type: 'popular',
     },
     {
@@ -239,6 +247,7 @@ const AddNodeMenu = () => {
       icon: 'vscode-icons:file-type-outlook',
       iconColor: '',
       label: 'Outlook',
+      toolType: NODE_TOOL_TYPE.OUTLOOK,
       type: 'popular',
     },
     {
@@ -248,6 +257,7 @@ const AddNodeMenu = () => {
       icon: 'logos:slack-icon',
       iconColor: '',
       label: 'Slack',
+      toolType: NODE_TOOL_TYPE.SLACK,
       type: 'popular',
     },
     {
@@ -257,6 +267,7 @@ const AddNodeMenu = () => {
       icon: 'logos:microsoft-teams',
       iconColor: '',
       label: 'Teams',
+      toolType: NODE_TOOL_TYPE.TEAMS,
       type: 'popular',
     },
 
@@ -268,6 +279,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:scan-text',
       iconColor: '#2563eb',
       label: 'OCR Agent',
+      toolType: NODE_TOOL_TYPE.OCR_AGENT,
       type: 'popular',
     },
     {
@@ -277,6 +289,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:receipt-text',
       iconColor: '#059669',
       label: 'AP Agent',
+      toolType: NODE_TOOL_TYPE.AP_AGENT,
       type: 'popular',
     },
     {
@@ -286,6 +299,37 @@ const AddNodeMenu = () => {
       icon: 'lucide:server',
       iconColor: '#7c3aed',
       label: 'FTP Agent',
+      toolType: NODE_TOOL_TYPE.FTP_AGENT,
+      type: 'popular',
+    },
+    {
+      bgColor: 'bg-amber-50',
+      category: 'agents',
+      description: 'Verify identity & compliance documents',
+      icon: 'lucide:shield-check',
+      iconColor: '#d97706',
+      label: 'KYC Agent',
+      toolType: NODE_TOOL_TYPE.KYC_AGENT,
+      type: 'popular',
+    },
+    {
+      bgColor: 'bg-teal-50',
+      category: 'agents',
+      description: 'Automate requisitions & vendor POs',
+      icon: 'lucide:shopping-bag',
+      iconColor: '#0d9488',
+      label: 'Procurement Agent',
+      toolType: NODE_TOOL_TYPE.PROCUREMENT_AGENT,
+      type: 'popular',
+    },
+    {
+      bgColor: 'bg-indigo-50',
+      category: 'agents',
+      description: 'Generate PDF & Word docs from templates',
+      icon: 'lucide:file-text',
+      iconColor: '#4f46e5',
+      label: 'Document Generate Agent',
+      toolType: NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT,
       type: 'popular',
     },
     {
@@ -295,6 +339,7 @@ const AddNodeMenu = () => {
       icon: 'logos:google-drive',
       iconColor: '',
       label: 'Google Drive',
+      toolType: NODE_TOOL_TYPE.GOOGLE_DRIVE,
       type: 'popular',
     },
     {
@@ -304,6 +349,7 @@ const AddNodeMenu = () => {
       icon: 'logos:microsoft-onedrive',
       iconColor: '',
       label: 'OneDrive',
+      toolType: NODE_TOOL_TYPE.ONEDRIVE,
       type: 'popular',
     },
 
@@ -315,6 +361,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:file-input',
       iconColor: '#ea580c',
       label: 'Form Submission',
+      toolType: NODE_TOOL_TYPE.FORM_SUBMISSION,
       type: 'highlight',
     },
     {
@@ -324,6 +371,7 @@ const AddNodeMenu = () => {
       icon: 'lucide:user',
       iconColor: '#ec4899',
       label: 'Manual User',
+      toolType: NODE_TOOL_TYPE.MANUAL_USER,
       type: 'highlight',
     },
     {
@@ -333,6 +381,18 @@ const AddNodeMenu = () => {
       icon: 'lucide:split',
       iconColor: '#f97316',
       label: 'Condition',
+      toolType: NODE_TOOL_TYPE.CONDITION,
+      type: 'highlight',
+    },
+    {
+      bgColor: 'bg-secondary-3',
+      category: 'triggers',
+      description: 'Mark this branch as complete',
+      icon: 'lucide:party-popper',
+      iconColor: 'var(--color-secondary-9)',
+      label: 'End',
+      nodeType: 'end',
+      toolType: NODE_TOOL_TYPE.END,
       type: 'highlight',
     },
   ]
@@ -436,6 +496,11 @@ const AddNodeMenu = () => {
                 <button
                   className='group flex items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--primary-1)] active:scale-[0.98]'
                   key={i}
+                  title={
+                    item.description
+                      ? `${item.label} - ${item.description}`
+                      : item.label
+                  }
                   onClick={() => handleItemSelect(item)}
                 >
                   <div
@@ -451,7 +516,10 @@ const AddNodeMenu = () => {
                       }
                     />
                   </div>
-                  <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)]'>
+                  <span
+                    className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] truncate'
+                    title={item.label}
+                  >
                     {item.label}
                   </span>
                 </button>
@@ -473,10 +541,15 @@ const AddNodeMenu = () => {
                 <button
                   className='group flex items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--primary-1)] active:scale-[0.98]'
                   key={i}
+                  title={
+                    item.description
+                      ? `${item.label} - ${item.description}`
+                      : item.label
+                  }
                   onClick={() => handleItemSelect(item)}
                 >
                   <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${item.bgColor}`}
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${item.bgColor}`}
                   >
                     <Icon
                       className='h-4 w-4'
@@ -484,7 +557,10 @@ const AddNodeMenu = () => {
                       style={{ color: item.iconColor }}
                     />
                   </div>
-                  <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)]'>
+                  <span
+                    className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] truncate'
+                    title={item.label}
+                  >
                     {item.label}
                   </span>
                 </button>
@@ -492,35 +568,36 @@ const AddNodeMenu = () => {
             </div>
           </div>
         ) : (
-          // Standard List View for Search or Specific Tabs
-          <div className='flex flex-col gap-1'>
+          // 2-Column Grid View for Search or Specific Tabs (Matching All tab list style)
+          <div className='grid grid-cols-2 gap-x-6 gap-y-2'>
             {filteredIntegrations.map((item, i) => (
               <button
-                className='group flex items-center gap-3 rounded-xl p-2 text-left transition-all duration-200 hover:scale-[1.01] hover:bg-[var(--primary-1)] active:scale-[0.99]'
+                className='group flex items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--primary-1)] active:scale-[0.98]'
                 key={i}
+                title={
+                  item.description
+                    ? `${item.label} - ${item.description}`
+                    : item.label
+                }
                 onClick={() => handleItemSelect(item)}
               >
                 <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${item.bgColor === 'bg-transparent' ? '' : item.bgColor}`}
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${item.bgColor === 'bg-transparent' ? '' : item.bgColor}`}
                 >
                   <Icon
                     name={item.icon}
                     style={{ color: item.iconColor }}
                     className={
-                      item.bgColor === 'bg-transparent' ? 'h-6 w-6' : 'h-5 w-5'
+                      item.bgColor === 'bg-transparent' ? 'h-5 w-5' : 'h-4 w-4'
                     }
                   />
                 </div>
-                <div className='flex flex-col'>
-                  <span className='text-gray-900 text-sm font-medium group-hover:text-[var(--primary-9)]'>
-                    {item.label}
-                  </span>
-                  {search && (
-                    <span className='text-gray-500 text-xs'>
-                      {item.description}
-                    </span>
-                  )}
-                </div>
+                <span
+                  className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] truncate'
+                  title={item.label}
+                >
+                  {item.label}
+                </span>
               </button>
             ))}
           </div>

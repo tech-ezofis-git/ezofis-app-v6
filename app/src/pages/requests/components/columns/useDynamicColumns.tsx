@@ -1,3 +1,5 @@
+import { t } from '@lingui/macro'
+import dayjs from 'dayjs'
 import React, { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { Column } from '@/components/base/data-table/types'
@@ -7,9 +9,9 @@ import IconButton from '@/components/base/button/IconButton'
 // import { generateDummySummary } from '@/pages/requests/utils/dummyData'
 // import { motion, AnimatePresence } from 'framer-motion'
 import Icon from '@/components/base/icon/Icon'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import Menu from '@/components/base/menu/Menu'
 import MenuItem from '@/components/base/menu/MenuItem'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import RequestStatusBadge from '@/components/common/RequestStatusBadge'
 import {
   buildTableMeta,
@@ -20,12 +22,17 @@ import {
   isTableType,
 } from '@/pages/requests/utils/dynamicTable.utils'
 import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
-import { safeParse } from '@/pages/requests/utils/workflow.utils'
+import {
+  getGenericStageInfo,
+  isAccountsPayableWorkflow,
+  safeParse,
+} from '@/pages/requests/utils/workflow.utils'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
-import dayjs from 'dayjs'
+import { parseUtcDate } from '@/utils/utcDate'
 import type { WorkflowOption } from '../../types'
 import requestStore from '../../stores/useRequestStore'
+import GenericStagePill from '../GenericStagePill'
 import HoverExpandableText from '../HoverExpandableText'
 import DynamicTableCell from './components/DynamicTableCell'
 // ✅ Your generic FileSheet (React version)
@@ -39,7 +46,7 @@ const LINK_TEXT =
 
 const wrap = (content: React.ReactNode) => <WrapOnHoverCell value={content} />
 
-const resolveFormJson = (
+export const resolveFormJson = (
   workflow: WorkflowOption | null,
 ): Record<string, any> | any[] | null => {
   if (!workflow?.formJson) return null
@@ -55,7 +62,13 @@ const resolveFormJson = (
     }
   }
 
-  return [raw]
+  // Already an object (getFormDataById parses formJson before it lands on
+  // selectedWorkflow) — return it as-is, matching the string branch's
+  // shape. Wrapping it in [raw] here used to break getFormPanels(): it
+  // only pulls `.panels` off a plain object, not off an array, so the
+  // wrapped form's real panels were silently dropped and every dynamic
+  // column/chip that reads them (grid card, table columns) came back empty.
+  return raw
 }
 
 // ✅ Local component for summary badges with hover cards
@@ -732,6 +745,21 @@ const extractInvoiceDate = (row: any): string => {
   return '-'
 }
 
+// Prefer the API's `referenceNumber` when it has a value. Empty / missing
+// `referenceNumber` keeps the short sequential `REQ-${formEntryId}` id
+// (REQ-1, REQ-2, ...).
+export const extractGenericRequestNumber = (row: any): string => {
+  if (!row) return '-'
+  const referenceNumber =
+    row.referenceNumber == null ? '' : String(row.referenceNumber).trim()
+  if (referenceNumber) return referenceNumber
+  const entryId = row.formEntryId
+  if (entryId !== undefined && entryId !== null && entryId !== '') {
+    return `REQ-${entryId}`
+  }
+  return row.requestNo || '-'
+}
+
 const extractInvoiceNumber = (row: any): string => {
   if (!row) return '-'
 
@@ -819,16 +847,12 @@ const computeDueDateInfo = (
   return { calculationText, calculationTheme, termsDisplay }
 }
 
-const isStandardField = (field: any, label: string) => {
+export const isStandardField = (field: any, label: string) => {
   const lowerLabel = String(label || '').toLowerCase()
   const type = String(field.type ?? '').toUpperCase()
 
   // Skip file uploads and table controls — not useful as list/filter columns
-  if (
-    type === 'FILE_UPLOAD' ||
-    type === 'DYNAMIC_TABLE' ||
-    type === 'TABLE'
-  ) {
+  if (type === 'FILE_UPLOAD' || type === 'DYNAMIC_TABLE' || type === 'TABLE') {
     return true
   }
 
@@ -920,10 +944,10 @@ const StatusCell = ({
   const parsedForm = getParsedFormData(row)
   const rawDecision = String(
     parsedForm['2MH_BMDFEVKsU0uAQjoI1'] ||
-    agentData?.decision ||
-    row.decision ||
-    row.status ||
-    '',
+      agentData?.decision ||
+      row.decision ||
+      row.status ||
+      '',
   ).toUpperCase()
 
   let iconName = 'tabler:clock'
@@ -1255,7 +1279,7 @@ const renderDynamicCell = (
   return renderCellByType(type, rawVal, row)
 }
 
-const getFormPanels = (form: any) => {
+export const getFormPanels = (form: any) => {
   if (!form) return []
   const panels =
     !Array.isArray(form) && Array.isArray(form?.panels) ? form.panels : []
@@ -1271,11 +1295,13 @@ const getBaseColumns = (
   selectedItem: any,
   activeTab: string | undefined,
   onRowClick: (item: any, tab: string) => void,
+  isAccountsPayable: boolean,
+  workflow: WorkflowOption | null,
 ): Column[] => {
   const columns: Column[] = [
     {
       id: 'requestNo',
-      label: 'Invoice Number',
+      label: isAccountsPayable ? t`Invoice Number` : t`Request No`,
       size: 260,
       renderCell: (row: any, index = 0) => (
         <div className='flex min-w-0 items-center gap-3'>
@@ -1301,7 +1327,9 @@ const getBaseColumns = (
                     }
                   }}
                 >
-                  {extractInvoiceNumber(row)}
+                  {isAccountsPayable
+                    ? extractInvoiceNumber(row)
+                    : extractGenericRequestNumber(row)}
                 </button>
               }
             />
@@ -1315,6 +1343,87 @@ const getBaseColumns = (
   ]
 
   if (selectedItem) {
+    return columns
+  }
+
+  if (!isAccountsPayable) {
+    columns.push(
+      {
+        id: 'status',
+        label: t`Current Stage`,
+        size: 220,
+        renderCell: (row: any) => {
+          const { currentLabel, isTerminal, previousLabel } =
+            getGenericStageInfo(workflow, row)
+          return (
+            <GenericStagePill
+              currentLabel={currentLabel}
+              isTerminal={isTerminal}
+              previousLabel={previousLabel}
+            />
+          )
+        },
+      },
+      {
+        id: 'raisedBy',
+        label: t`Raised By`,
+        size: 180,
+        renderCell: (row: any) => (
+          <HoverExpandableText
+            className='text-[13px] font-medium text-[var(--gray-11)]'
+            fallbackText='-'
+            normalMaxWidthClass='max-w-[160px]'
+            text={
+              row?.transactionCreatedByEmail ||
+              row?.createdByName ||
+              row?.createdByEmail ||
+              row?.raisedBy ||
+              row?.createdBy ||
+              row?.userName ||
+              '-'
+            }
+          />
+        ),
+      },
+      {
+        id: 'lastActionAt',
+        label: t`Time Running`,
+        size: 160,
+        renderCell: (row: any) => {
+          const lastActionAt =
+            row?.lastActionDate ||
+            row?.lastAction?.createdAt ||
+            row?.updatedAt ||
+            row?.transactionCreatedAt ||
+            row?.createdAtUtc ||
+            row?.raisedAt ||
+            row?.createdAt
+          // Bare ISO datetimes from the API are UTC without a Z/offset —
+          // parse as UTC first, otherwise the browser reads them as local
+          // time and the "ago" value is off by the local UTC offset.
+          const parsedLastActionAt = parseUtcDate(lastActionAt)
+          const ms = parsedLastActionAt
+            ? Math.abs(Date.now() - parsedLastActionAt.getTime())
+            : Number.NaN
+          let runningStr = '-'
+          if (!Number.isNaN(ms)) {
+            const mins = Math.floor(ms / 60000)
+            const hours = Math.floor(mins / 60)
+            const days = Math.floor(hours / 24)
+            if (days > 0) runningStr = `${days}d ${hours % 24}h ago`
+            else if (hours > 0) runningStr = `${hours}h ${mins % 60}m ago`
+            else if (mins > 0) runningStr = `${mins}m ago`
+            else runningStr = 'Just now'
+          }
+          return (
+            <span className='inline-flex items-center gap-1.5 rounded-full border border-orange-3 bg-orange-1 px-2.5 py-0.5 text-[11px] font-medium text-orange-11'>
+              <Icon className='size-3 text-orange-9' name='tabler:clock' />
+              <span>{runningStr}</span>
+            </span>
+          )
+        },
+      },
+    )
     return columns
   }
 
@@ -1429,7 +1538,7 @@ const getBaseColumns = (
     },
     {
       id: 'raisedBy',
-      label: 'Raised By',
+      label: t`Raised By`,
       size: 200,
       renderCell: (row: any) => {
         const supplierName =
@@ -1437,11 +1546,11 @@ const getBaseColumns = (
           row?.vendor ||
           row?.['UtfgJy6Z0qyfRC5Bclf-c'] ||
           row?.raisedBy ||
-          'Unknown Supplier'
+          t`Unknown Supplier`
         return (
           <HoverExpandableText
             className='text-[13px] font-medium text-[var(--gray-11)]'
-            fallbackText='Unknown Supplier'
+            fallbackText={t`Unknown Supplier`}
             normalMaxWidthClass='max-w-[180px]'
             text={supplierName}
           />
@@ -1450,7 +1559,7 @@ const getBaseColumns = (
     },
     {
       id: 'glCodeCategory',
-      label: 'GL & Category',
+      label: t`GL & Category`,
       size: 220,
       renderCell: (row: any) => {
         const glNumber = findGLNumber(row)
@@ -1481,7 +1590,7 @@ const getBaseColumns = (
   if (activeTab !== 'Processed') {
     columns.push({
       id: 'aiInsight',
-      label: 'AI Insight',
+      label: t`AI Insight`,
       size: 260,
       renderCell: (_row: any) => {
         const agentData =
@@ -1494,7 +1603,7 @@ const getBaseColumns = (
         if (!aiInsight) {
           return (
             <span className='text-[13px] font-semibold text-[var(--gray-9)]'>
-              N/A
+              {t`N/A`}
             </span>
           )
         }
@@ -1520,7 +1629,7 @@ const getBaseColumns = (
   columns.push(
     {
       id: 'poNumber',
-      label: 'PO Number',
+      label: t`PO Number`,
       size: 160,
       renderCell: (row: any) => {
         const poNum = extractPONumber(row)
@@ -1534,7 +1643,7 @@ const getBaseColumns = (
     },
     {
       id: 'termsDueDate',
-      label: 'Due & Terms',
+      label: t`Due & Terms`,
       size: 120,
       renderCell: (row: any) => {
         const terms = extractPaymentTerms(row)
@@ -1561,7 +1670,7 @@ const getBaseColumns = (
     },
     {
       id: 'amount',
-      label: 'Total Value',
+      label: t`Total Value`,
       size: 110,
       renderCell: (row: any) => {
         const amtStr = findInvoiceAmount(row)
@@ -1575,7 +1684,7 @@ const getBaseColumns = (
               })}`
             ) : (
               <span className='text-[13px] font-semibold text-[var(--gray-9)]'>
-                N/A
+                {t`N/A`}
               </span>
             )}
           </span>
@@ -1584,7 +1693,7 @@ const getBaseColumns = (
     },
     {
       id: 'invoiceDate',
-      label: 'Invoice Date',
+      label: t`Invoice Date`,
       size: 140,
       renderCell: (row: any) => {
         const rawDate = extractInvoiceDate(row)
@@ -1612,7 +1721,7 @@ const getBaseColumns = (
   return columns
 }
 
-const buildDynamicColumns = (
+export const buildDynamicColumns = (
   allPanels: any[],
   selectedItem: any,
   tableMetaByParentId: Map<string, any>,
@@ -1653,7 +1762,14 @@ export const useDynamicColumns = (
   activeTab?: string,
 ) => {
   return useMemo(() => {
-    const columns = getBaseColumns(selectedItem, activeTab, onRowClick)
+    const isAccountsPayable = isAccountsPayableWorkflow(workflow)
+    const columns = getBaseColumns(
+      selectedItem,
+      activeTab,
+      onRowClick,
+      isAccountsPayable,
+      workflow,
+    )
 
     const form = resolveFormJson(workflow)
     if (!form) {
@@ -1677,7 +1793,10 @@ export const useDynamicColumns = (
       selectedItem,
       tableMetaByParentId,
     )
-    columns.push(...dynamicCols)
+    // Generic workflows can have arbitrarily many form fields — keep the
+    // list scannable by showing only the first few as columns, same spot
+    // AP fills with its fixed PO/amount/date columns.
+    columns.push(...(isAccountsPayable ? dynamicCols : dynamicCols.slice(0, 3)))
 
     if (!selectedItem) {
       columns.push(makeActionsColumn(onRowClick))
@@ -1694,7 +1813,7 @@ function makeActionsColumn(
     hideHeader: true,
     id: 'actions',
     isDisplayColumn: true,
-    label: 'Actions',
+    label: t`Actions`,
     size: 80,
     renderCell: (row: any) => {
       const attachmentCount = Number(row?.attachmentCount ?? 0)

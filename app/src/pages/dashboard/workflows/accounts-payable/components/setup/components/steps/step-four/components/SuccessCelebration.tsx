@@ -6,6 +6,8 @@ import requestStore from '@/pages/requests/stores/useRequestStore'
 import { useNavigate } from '@tanstack/react-router'
 
 type SuccessCelebrationProps = {
+  buttonIcon?: string
+  buttonLabel?: string
   description?: string
   loadingLabel?: string
   onCreateRequest?: () => void
@@ -13,6 +15,8 @@ type SuccessCelebrationProps = {
 }
 
 export default function SuccessCelebration({
+  buttonIcon = 'tabler:plus',
+  buttonLabel = 'Create Request',
   description = 'Your Accounts Payable workspace is ready.\nStart by creating your first request.',
   loadingLabel = 'Loading request workspace...',
   onCreateRequest,
@@ -205,8 +209,8 @@ export default function SuccessCelebration({
               onClick={handleCreateRequest}
               type='button'
             >
-              <Icon className='size-4' name='tabler:plus' />
-              <span>Create Request</span>
+              {buttonIcon && <Icon className='size-4' name={buttonIcon} />}
+              <span>{buttonLabel}</span>
             </button>
           </motion.div>
         </div>

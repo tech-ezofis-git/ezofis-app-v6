@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as EncryptedNameRouteImport } from './routes/$encryptedName'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
 import { Route as PlaygroundRouteRouteImport } from './routes/playground/route'
 import { Route as EmbedRouteRouteImport } from './routes/embed/route'
@@ -45,6 +46,7 @@ import { Route as StoriesInputRadioRouteImport } from './routes/stories/input-ra
 import { Route as StoriesInputPinRouteImport } from './routes/stories/input-pin'
 import { Route as StoriesInputPasswordRouteImport } from './routes/stories/input-password'
 import { Route as StoriesInputNumberRouteImport } from './routes/stories/input-number'
+import { Route as StoriesInputDateTimeRouteImport } from './routes/stories/input-date-time'
 import { Route as StoriesInputDateRouteImport } from './routes/stories/input-date'
 import { Route as StoriesInputCheckboxGroupRouteImport } from './routes/stories/input-checkbox-group'
 import { Route as StoriesInputCheckboxCardRouteImport } from './routes/stories/input-checkbox-card'
@@ -67,12 +69,15 @@ import { Route as StoriesAiIconRouteImport } from './routes/stories/ai-icon'
 import { Route as StoriesAccordionRouteImport } from './routes/stories/accordion'
 import { Route as StoriesAlertRouteImport } from './routes/stories/Alert'
 import { Route as SignRequestSplatRouteImport } from './routes/sign-request/$'
+import { Route as PortalsPortalIdRouteImport } from './routes/portals_.$portalId'
+import { Route as PortalPortalIdRouteImport } from './routes/portal/$portalId'
 import { Route as OnBoardingTokenRouteImport } from './routes/on-boarding/$token'
 import { Route as FormBuilderFormIdRouteImport } from './routes/form-builder/$formId'
 import { Route as EmbedRequestsRouteImport } from './routes/embed/requests'
 import { Route as EmbedFoldersRouteImport } from './routes/embed/folders'
 import { Route as EmbedDashboardRouteImport } from './routes/embed/dashboard'
 import { Route as AppWorkflowsRouteImport } from './routes/_app/workflows'
+import { Route as AppWorkflowChatRouteImport } from './routes/_app/workflow-chat'
 import { Route as AppTrashRouteImport } from './routes/_app/trash'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
@@ -85,7 +90,11 @@ import { Route as AppFormsRouteImport } from './routes/_app/forms'
 import { Route as AppFoldersRouteImport } from './routes/_app/folders'
 import { Route as AuthSignUpIndexRouteImport } from './routes/_auth/sign-up/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
+import { Route as AuthSetupIndexRouteImport } from './routes/_auth/setup/index'
 import { Route as AuthResetPasswordIndexRouteImport } from './routes/_auth/reset-password/index'
+import { Route as AuthRecoverIndexRouteImport } from './routes/_auth/recover/index'
+import { Route as AuthNewuserIndexRouteImport } from './routes/_auth/newuser/index'
+import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.$formId.entries'
@@ -93,6 +102,11 @@ import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EncryptedNameRoute = EncryptedNameRouteImport.update({
+  id: '/$encryptedName',
+  path: '/$encryptedName',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StoriesRouteRoute = StoriesRouteRouteImport.update({
@@ -270,6 +284,11 @@ const StoriesInputNumberRoute = StoriesInputNumberRouteImport.update({
   path: '/input-number',
   getParentRoute: () => StoriesRouteRoute,
 } as any)
+const StoriesInputDateTimeRoute = StoriesInputDateTimeRouteImport.update({
+  id: '/input-date-time',
+  path: '/input-date-time',
+  getParentRoute: () => StoriesRouteRoute,
+} as any)
 const StoriesInputDateRoute = StoriesInputDateRouteImport.update({
   id: '/input-date',
   path: '/input-date',
@@ -382,6 +401,16 @@ const SignRequestSplatRoute = SignRequestSplatRouteImport.update({
   path: '/sign-request/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortalsPortalIdRoute = PortalsPortalIdRouteImport.update({
+  id: '/portals_/$portalId',
+  path: '/portals/$portalId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalPortalIdRoute = PortalPortalIdRouteImport.update({
+  id: '/portal/$portalId',
+  path: '/portal/$portalId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnBoardingTokenRoute = OnBoardingTokenRouteImport.update({
   id: '/on-boarding/$token',
   path: '/on-boarding/$token',
@@ -410,6 +439,11 @@ const EmbedDashboardRoute = EmbedDashboardRouteImport.update({
 const AppWorkflowsRoute = AppWorkflowsRouteImport.update({
   id: '/workflows',
   path: '/workflows',
+  getParentRoute: () => AppRouteRoute,
+} as any)
+const AppWorkflowChatRoute = AppWorkflowChatRouteImport.update({
+  id: '/workflow-chat',
+  path: '/workflow-chat',
   getParentRoute: () => AppRouteRoute,
 } as any)
 const AppTrashRoute = AppTrashRouteImport.update({
@@ -472,9 +506,29 @@ const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
   path: '/sign-in/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const AuthSetupIndexRoute = AuthSetupIndexRouteImport.update({
+  id: '/setup/',
+  path: '/setup/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
 const AuthResetPasswordIndexRoute = AuthResetPasswordIndexRouteImport.update({
   id: '/reset-password/',
   path: '/reset-password/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthRecoverIndexRoute = AuthRecoverIndexRouteImport.update({
+  id: '/recover/',
+  path: '/recover/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthNewuserIndexRoute = AuthNewuserIndexRouteImport.update({
+  id: '/newuser/',
+  path: '/newuser/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
@@ -498,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
@@ -509,12 +564,15 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
+  '/workflow-chat': typeof AppWorkflowChatRoute
   '/workflows': typeof AppWorkflowsRoute
   '/embed/dashboard': typeof EmbedDashboardRoute
   '/embed/folders': typeof EmbedFoldersRoute
   '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/portal/$portalId': typeof PortalPortalIdRoute
+  '/portals/$portalId': typeof PortalsPortalIdRoute
   '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
@@ -537,6 +595,7 @@ export interface FileRoutesByFullPath {
   '/stories/input-checkbox-card': typeof StoriesInputCheckboxCardRoute
   '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
   '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-date-time': typeof StoriesInputDateTimeRoute
   '/stories/input-number': typeof StoriesInputNumberRoute
   '/stories/input-password': typeof StoriesInputPasswordRoute
   '/stories/input-pin': typeof StoriesInputPinRoute
@@ -569,7 +628,11 @@ export interface FileRoutesByFullPath {
   '/stories/': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/newuser': typeof AuthNewuserIndexRoute
+  '/recover': typeof AuthRecoverIndexRoute
   '/reset-password': typeof AuthResetPasswordIndexRoute
+  '/setup': typeof AuthSetupIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
   '/forms/$formId/entries': typeof AppFormsFormIdEntriesRoute
@@ -577,6 +640,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
+  '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
@@ -588,12 +652,15 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
+  '/workflow-chat': typeof AppWorkflowChatRoute
   '/workflows': typeof AppWorkflowsRoute
   '/embed/dashboard': typeof EmbedDashboardRoute
   '/embed/folders': typeof EmbedFoldersRoute
   '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/portal/$portalId': typeof PortalPortalIdRoute
+  '/portals/$portalId': typeof PortalsPortalIdRoute
   '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
@@ -616,6 +683,7 @@ export interface FileRoutesByTo {
   '/stories/input-checkbox-card': typeof StoriesInputCheckboxCardRoute
   '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
   '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-date-time': typeof StoriesInputDateTimeRoute
   '/stories/input-number': typeof StoriesInputNumberRoute
   '/stories/input-password': typeof StoriesInputPasswordRoute
   '/stories/input-pin': typeof StoriesInputPinRoute
@@ -648,7 +716,11 @@ export interface FileRoutesByTo {
   '/stories': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
+  '/login': typeof AuthLoginIndexRoute
+  '/newuser': typeof AuthNewuserIndexRoute
+  '/recover': typeof AuthRecoverIndexRoute
   '/reset-password': typeof AuthResetPasswordIndexRoute
+  '/setup': typeof AuthSetupIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/sign-up': typeof AuthSignUpIndexRoute
   '/forms/$formId/entries': typeof AppFormsFormIdEntriesRoute
@@ -660,6 +732,7 @@ export interface FileRoutesById {
   '/embed': typeof EmbedRouteRouteWithChildren
   '/playground': typeof PlaygroundRouteRoute
   '/stories': typeof StoriesRouteRouteWithChildren
+  '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
   '/_app/folders': typeof AppFoldersRoute
   '/_app/forms': typeof AppFormsRoute
@@ -671,12 +744,15 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/trash': typeof AppTrashRoute
+  '/_app/workflow-chat': typeof AppWorkflowChatRoute
   '/_app/workflows': typeof AppWorkflowsRoute
   '/embed/dashboard': typeof EmbedDashboardRoute
   '/embed/folders': typeof EmbedFoldersRoute
   '/embed/requests': typeof EmbedRequestsRoute
   '/form-builder/$formId': typeof FormBuilderFormIdRoute
   '/on-boarding/$token': typeof OnBoardingTokenRoute
+  '/portal/$portalId': typeof PortalPortalIdRoute
+  '/portals_/$portalId': typeof PortalsPortalIdRoute
   '/sign-request/$': typeof SignRequestSplatRoute
   '/stories/Alert': typeof StoriesAlertRoute
   '/stories/accordion': typeof StoriesAccordionRoute
@@ -699,6 +775,7 @@ export interface FileRoutesById {
   '/stories/input-checkbox-card': typeof StoriesInputCheckboxCardRoute
   '/stories/input-checkbox-group': typeof StoriesInputCheckboxGroupRoute
   '/stories/input-date': typeof StoriesInputDateRoute
+  '/stories/input-date-time': typeof StoriesInputDateTimeRoute
   '/stories/input-number': typeof StoriesInputNumberRoute
   '/stories/input-password': typeof StoriesInputPasswordRoute
   '/stories/input-pin': typeof StoriesInputPinRoute
@@ -731,7 +808,11 @@ export interface FileRoutesById {
   '/stories/': typeof StoriesIndexRoute
   '/_app/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
   '/_auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
+  '/_auth/login/': typeof AuthLoginIndexRoute
+  '/_auth/newuser/': typeof AuthNewuserIndexRoute
+  '/_auth/recover/': typeof AuthRecoverIndexRoute
   '/_auth/reset-password/': typeof AuthResetPasswordIndexRoute
+  '/_auth/setup/': typeof AuthSetupIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_auth/sign-up/': typeof AuthSignUpIndexRoute
   '/_app/forms_/$formId/entries': typeof AppFormsFormIdEntriesRoute
@@ -742,6 +823,7 @@ export interface FileRouteTypes {
     | '/embed'
     | '/playground'
     | '/stories'
+    | '/$encryptedName'
     | '/auth'
     | '/folders'
     | '/forms'
@@ -753,12 +835,15 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/trash'
+    | '/workflow-chat'
     | '/workflows'
     | '/embed/dashboard'
     | '/embed/folders'
     | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/portal/$portalId'
+    | '/portals/$portalId'
     | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
@@ -781,6 +866,7 @@ export interface FileRouteTypes {
     | '/stories/input-checkbox-card'
     | '/stories/input-checkbox-group'
     | '/stories/input-date'
+    | '/stories/input-date-time'
     | '/stories/input-number'
     | '/stories/input-password'
     | '/stories/input-pin'
@@ -813,7 +899,11 @@ export interface FileRouteTypes {
     | '/stories/'
     | '/my-account/{-$slug}'
     | '/forgot-password'
+    | '/login'
+    | '/newuser'
+    | '/recover'
     | '/reset-password'
+    | '/setup'
     | '/sign-in'
     | '/sign-up'
     | '/forms/$formId/entries'
@@ -821,6 +911,7 @@ export interface FileRouteTypes {
   to:
     | '/embed'
     | '/playground'
+    | '/$encryptedName'
     | '/auth'
     | '/folders'
     | '/forms'
@@ -832,12 +923,15 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/trash'
+    | '/workflow-chat'
     | '/workflows'
     | '/embed/dashboard'
     | '/embed/folders'
     | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/portal/$portalId'
+    | '/portals/$portalId'
     | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
@@ -860,6 +954,7 @@ export interface FileRouteTypes {
     | '/stories/input-checkbox-card'
     | '/stories/input-checkbox-group'
     | '/stories/input-date'
+    | '/stories/input-date-time'
     | '/stories/input-number'
     | '/stories/input-password'
     | '/stories/input-pin'
@@ -892,7 +987,11 @@ export interface FileRouteTypes {
     | '/stories'
     | '/my-account/{-$slug}'
     | '/forgot-password'
+    | '/login'
+    | '/newuser'
+    | '/recover'
     | '/reset-password'
+    | '/setup'
     | '/sign-in'
     | '/sign-up'
     | '/forms/$formId/entries'
@@ -903,6 +1002,7 @@ export interface FileRouteTypes {
     | '/embed'
     | '/playground'
     | '/stories'
+    | '/$encryptedName'
     | '/auth'
     | '/_app/folders'
     | '/_app/forms'
@@ -914,12 +1014,15 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/tasks'
     | '/_app/trash'
+    | '/_app/workflow-chat'
     | '/_app/workflows'
     | '/embed/dashboard'
     | '/embed/folders'
     | '/embed/requests'
     | '/form-builder/$formId'
     | '/on-boarding/$token'
+    | '/portal/$portalId'
+    | '/portals_/$portalId'
     | '/sign-request/$'
     | '/stories/Alert'
     | '/stories/accordion'
@@ -942,6 +1045,7 @@ export interface FileRouteTypes {
     | '/stories/input-checkbox-card'
     | '/stories/input-checkbox-group'
     | '/stories/input-date'
+    | '/stories/input-date-time'
     | '/stories/input-number'
     | '/stories/input-password'
     | '/stories/input-pin'
@@ -974,7 +1078,11 @@ export interface FileRouteTypes {
     | '/stories/'
     | '/_app/my-account/{-$slug}'
     | '/_auth/forgot-password/'
+    | '/_auth/login/'
+    | '/_auth/newuser/'
+    | '/_auth/recover/'
     | '/_auth/reset-password/'
+    | '/_auth/setup/'
     | '/_auth/sign-in/'
     | '/_auth/sign-up/'
     | '/_app/forms_/$formId/entries'
@@ -986,9 +1094,12 @@ export interface RootRouteChildren {
   EmbedRouteRoute: typeof EmbedRouteRouteWithChildren
   PlaygroundRouteRoute: typeof PlaygroundRouteRoute
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
+  EncryptedNameRoute: typeof EncryptedNameRoute
   AuthRoute: typeof AuthRoute
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
+  PortalPortalIdRoute: typeof PortalPortalIdRoute
+  PortalsPortalIdRoute: typeof PortalsPortalIdRoute
   SignRequestSplatRoute: typeof SignRequestSplatRoute
   WorkflowBuilderWorkflowIdRoute: typeof WorkflowBuilderWorkflowIdRoute
   FormBuilderIndexRoute: typeof FormBuilderIndexRoute
@@ -1002,6 +1113,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$encryptedName': {
+      id: '/$encryptedName'
+      path: '/$encryptedName'
+      fullPath: '/$encryptedName'
+      preLoaderRoute: typeof EncryptedNameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stories': {
@@ -1249,6 +1367,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoriesInputNumberRouteImport
       parentRoute: typeof StoriesRouteRoute
     }
+    '/stories/input-date-time': {
+      id: '/stories/input-date-time'
+      path: '/input-date-time'
+      fullPath: '/stories/input-date-time'
+      preLoaderRoute: typeof StoriesInputDateTimeRouteImport
+      parentRoute: typeof StoriesRouteRoute
+    }
     '/stories/input-date': {
       id: '/stories/input-date'
       path: '/input-date'
@@ -1403,6 +1528,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignRequestSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portals_/$portalId': {
+      id: '/portals_/$portalId'
+      path: '/portals/$portalId'
+      fullPath: '/portals/$portalId'
+      preLoaderRoute: typeof PortalsPortalIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal/$portalId': {
+      id: '/portal/$portalId'
+      path: '/portal/$portalId'
+      fullPath: '/portal/$portalId'
+      preLoaderRoute: typeof PortalPortalIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/on-boarding/$token': {
       id: '/on-boarding/$token'
       path: '/on-boarding/$token'
@@ -1443,6 +1582,13 @@ declare module '@tanstack/react-router' {
       path: '/workflows'
       fullPath: '/workflows'
       preLoaderRoute: typeof AppWorkflowsRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/workflow-chat': {
+      id: '/_app/workflow-chat'
+      path: '/workflow-chat'
+      fullPath: '/workflow-chat'
+      preLoaderRoute: typeof AppWorkflowChatRouteImport
       parentRoute: typeof AppRouteRoute
     }
     '/_app/trash': {
@@ -1529,11 +1675,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_auth/setup/': {
+      id: '/_auth/setup/'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof AuthSetupIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
     '/_auth/reset-password/': {
       id: '/_auth/reset-password/'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof AuthResetPasswordIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/recover/': {
+      id: '/_auth/recover/'
+      path: '/recover'
+      fullPath: '/recover'
+      preLoaderRoute: typeof AuthRecoverIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/newuser/': {
+      id: '/_auth/newuser/'
+      path: '/newuser'
+      fullPath: '/newuser'
+      preLoaderRoute: typeof AuthNewuserIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/login/': {
+      id: '/_auth/login/'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/_auth/forgot-password/': {
@@ -1571,6 +1745,7 @@ interface AppRouteRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppTrashRoute: typeof AppTrashRoute
+  AppWorkflowChatRoute: typeof AppWorkflowChatRoute
   AppWorkflowsRoute: typeof AppWorkflowsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppMyAccountChar123SlugChar125Route: typeof AppMyAccountChar123SlugChar125Route
@@ -1588,6 +1763,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
   AppTrashRoute: AppTrashRoute,
+  AppWorkflowChatRoute: AppWorkflowChatRoute,
   AppWorkflowsRoute: AppWorkflowsRoute,
   AppIndexRoute: AppIndexRoute,
   AppMyAccountChar123SlugChar125Route: AppMyAccountChar123SlugChar125Route,
@@ -1600,14 +1776,22 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 
 interface AuthRouteRouteChildren {
   AuthForgotPasswordIndexRoute: typeof AuthForgotPasswordIndexRoute
+  AuthLoginIndexRoute: typeof AuthLoginIndexRoute
+  AuthNewuserIndexRoute: typeof AuthNewuserIndexRoute
+  AuthRecoverIndexRoute: typeof AuthRecoverIndexRoute
   AuthResetPasswordIndexRoute: typeof AuthResetPasswordIndexRoute
+  AuthSetupIndexRoute: typeof AuthSetupIndexRoute
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
   AuthSignUpIndexRoute: typeof AuthSignUpIndexRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthForgotPasswordIndexRoute: AuthForgotPasswordIndexRoute,
+  AuthLoginIndexRoute: AuthLoginIndexRoute,
+  AuthNewuserIndexRoute: AuthNewuserIndexRoute,
+  AuthRecoverIndexRoute: AuthRecoverIndexRoute,
   AuthResetPasswordIndexRoute: AuthResetPasswordIndexRoute,
+  AuthSetupIndexRoute: AuthSetupIndexRoute,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
   AuthSignUpIndexRoute: AuthSignUpIndexRoute,
 }
@@ -1654,6 +1838,7 @@ interface StoriesRouteRouteChildren {
   StoriesInputCheckboxCardRoute: typeof StoriesInputCheckboxCardRoute
   StoriesInputCheckboxGroupRoute: typeof StoriesInputCheckboxGroupRoute
   StoriesInputDateRoute: typeof StoriesInputDateRoute
+  StoriesInputDateTimeRoute: typeof StoriesInputDateTimeRoute
   StoriesInputNumberRoute: typeof StoriesInputNumberRoute
   StoriesInputPasswordRoute: typeof StoriesInputPasswordRoute
   StoriesInputPinRoute: typeof StoriesInputPinRoute
@@ -1704,6 +1889,7 @@ const StoriesRouteRouteChildren: StoriesRouteRouteChildren = {
   StoriesInputCheckboxCardRoute: StoriesInputCheckboxCardRoute,
   StoriesInputCheckboxGroupRoute: StoriesInputCheckboxGroupRoute,
   StoriesInputDateRoute: StoriesInputDateRoute,
+  StoriesInputDateTimeRoute: StoriesInputDateTimeRoute,
   StoriesInputNumberRoute: StoriesInputNumberRoute,
   StoriesInputPasswordRoute: StoriesInputPasswordRoute,
   StoriesInputPinRoute: StoriesInputPinRoute,
@@ -1742,9 +1928,12 @@ const rootRouteChildren: RootRouteChildren = {
   EmbedRouteRoute: EmbedRouteRouteWithChildren,
   PlaygroundRouteRoute: PlaygroundRouteRoute,
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
+  EncryptedNameRoute: EncryptedNameRoute,
   AuthRoute: AuthRoute,
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
+  PortalPortalIdRoute: PortalPortalIdRoute,
+  PortalsPortalIdRoute: PortalsPortalIdRoute,
   SignRequestSplatRoute: SignRequestSplatRoute,
   WorkflowBuilderWorkflowIdRoute: WorkflowBuilderWorkflowIdRoute,
   FormBuilderIndexRoute: FormBuilderIndexRoute,

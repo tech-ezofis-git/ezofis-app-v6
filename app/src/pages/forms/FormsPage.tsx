@@ -26,6 +26,10 @@ import {
   matchesDateRangeValue,
   parseFilterValues,
 } from '@/utils/filterUtils'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
+import { useFormStore } from '@/pages/form-builder/store/formStore'
+import useSettingsOriginBreadcrumbs from '@/pages/settings/hooks/useSettingsOriginBreadcrumbs'
+import AiFormBuilder from './components/AiFormBuilder'
 import Table from './components/Table'
 
 const mapItem = (item: any) => ({
@@ -59,16 +63,43 @@ const findDeepData = (obj: any): any[] | null => {
   return null
 }
 
+const SESSION_KEY = 'ezofis_forms_table_state'
+
+function getStoredState() {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
+  }
+}
+
 const FormsPage = () => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  useSettingsOriginBreadcrumbs(t`Forms`)
   const queryClient = useQueryClient()
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const storedState = useMemo(() => getStoredState(), [])
+  const [page, setPage] = useState(storedState?.page ?? 1)
+  const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 10)
+  const [showAiBuilder, setShowAiBuilder] = useState(storedState?.showAiBuilder ?? false)
   const [deletingForm, setDeletingForm] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+    storedState?.activeFilters ?? {},
+  )
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ activeFilters, page, pageSize, showAiBuilder }),
+      )
+    } catch {
+      // ignore
+    }
+  }, [page, pageSize, activeFilters, showAiBuilder])
   const session = authUserStore((state) => state.session)
   const loggedInUser = session?.firstName
     ? `${session.firstName} ${session.lastName || ''}`.trim()
@@ -90,6 +121,7 @@ const FormsPage = () => {
     ...restState
   } = useDataTableState({
     initialVisibilityState,
+    storageKey: SESSION_KEY,
   })
 
   const groupBy = ''
@@ -184,13 +216,13 @@ const FormsPage = () => {
         id: 'type',
         label: t`Type`,
         size: 140,
-        renderCell: (row: any) => (
-          <FormTypeBadge
-            type={
-              (row._json?.settings?.general?.type || row.type) as Form['type']
-            }
-          />
-        ),
+        renderCell: (row: any) => {
+          const typeVal = row._json?.settings?.general?.type || row.type
+          if (!typeVal || String(typeVal).trim().toUpperCase() === 'ITEM') {
+            return null
+          }
+          return <FormTypeBadge type={typeVal as Form['type']} />
+        },
       },
       {
         id: 'createdBy',
@@ -435,7 +467,25 @@ const FormsPage = () => {
   }, [setExpandState])
 
   const openFormBuilder = () => {
+    useFormStore.getState().resetForm()
     navigate({ to: '/form-builder' })
+  }
+
+  if (showAiBuilder) {
+    return (
+      <AiFormBuilder
+        onBack={() => setShowAiBuilder(false)}
+        onManualCreate={openFormBuilder}
+        onApply={(payload) => {
+          if (payload) {
+            useFormStore.getState().loadForm(payload)
+          } else {
+            useFormStore.getState().resetForm()
+          }
+          void navigate({ to: '/form-builder' })
+        }}
+      />
+    )
   }
 
   return (
@@ -518,7 +568,17 @@ const FormsPage = () => {
           customSearchComponent={<TableSearch table={table as any} />}
           searchPlaceholder={t`Search forms...`}
           searchQuery=''
-          trailingActions={<TableExport table={table as any} />}
+          trailingActions={
+            <div className='flex items-center gap-2'>
+              <TableExport table={table as any} />
+              <Button
+                color='primary'
+                icon='lucide:plus'
+                label={t`New Form`}
+                onClick={() => setShowAiBuilder(true)}
+              />
+            </div>
+          }
           actionButtons={[
             {
               color: 'gray',
@@ -531,11 +591,6 @@ const FormsPage = () => {
               onClick: () => refetch(),
             },
           ]}
-          addButton={{
-            icon: 'lucide:plus',
-            tooltip: t`New Form`,
-            onClick: openFormBuilder,
-          }}
           filters={[
             {
               id: 'name',

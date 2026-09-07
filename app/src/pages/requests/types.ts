@@ -45,7 +45,9 @@ export interface InboxItem {
   status: string
   _actions?: ActionButton[]
   // Properties calculated during flattening
+  _canMove?: boolean
   _groupKey?: string
+  _listTab?: string
   _originalIndex?: number
   _subKey?: string
 }
@@ -64,10 +66,17 @@ export interface TableGroup {
   groupValue?: string
 }
 
+export type RequestViewMode = 'grid' | 'kanban' | 'table'
+
 export interface WorkflowOption {
   flowJson: string // The JSON string defining rules/actions
   id: number | string
   name: string
   wFormId: number | string
   formJson?: string // The JSON defining columns/fields
+  // Raw { blocks, rules, settings } object, when available — the real V6
+  // workflow detail response only returns this (no `flowJson` string), so
+  // block-shape checks like isAccountsPayableWorkflow() need this to work
+  // off real data, not just the (often-empty) flowJson string.
+  workflowJson?: any
 }

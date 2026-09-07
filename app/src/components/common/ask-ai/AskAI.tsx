@@ -21,6 +21,8 @@ import {
   type LucideIcon as LucideIconType,
   Mail,
   MailOpen,
+  Maximize2,
+  Minimize2,
   MoreHorizontal,
   Paperclip,
   Pencil,
@@ -35,6 +37,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
+import { WorkflowChatPage } from '@/pages/workflow-chat/WorkflowChatPage'
 import {
   type CSSProperties,
   type ReactElement,
@@ -55,6 +58,7 @@ import {
 } from './chatbotApi'
 import useAskAiActionStore from './stores/useAskAiActionStore'
 import useAskAIStore from './stores/useAskAIStore'
+import authUserStore from '@/stores/authUserStore'
 import type {
   AskAiAnswer,
   AskAiActionContext,
@@ -63,6 +67,7 @@ import type {
   AskAiCtaMode,
   AskAiTextBlock as TextBlock,
 } from './types'
+import type { WorkflowHistoryData } from '@/pages/workflow-chat/WorkflowChatPage'
 
 type HistoryItem = {
   createdAt: string
@@ -72,6 +77,8 @@ type HistoryItem = {
   messages: Message[]
   subtitle: string
   title: string
+  isWorkflow?: boolean
+  workflowState?: WorkflowHistoryData
 }
 
 type Message = {
@@ -103,24 +110,19 @@ type ViewMode = 'chat' | 'history'
 
 const suggestions = [
   {
-    label: 'Find recent supplier invoices.',
-    query: 'Show recent supplier invoices awaiting review',
+    description: 'Provide details and send for approval',
+    label: 'Submit a new request',
+    query: 'Initiate workflow',
   },
   {
-    label: 'Search for a purchase request.',
-    query: 'Find open purchase requests pending approval',
+    description: "Check status of requests you've submitted",
+    label: 'Track my requests',
+    query: 'Show my pending requests',
   },
   {
-    label: 'Locate a vendor payment document.',
-    query: 'Find payment documents and remittance advices for this month',
-  },
-  {
-    label: 'Check invoice matching status.',
-    query: 'Show invoices that need 2-way or 3-way matching',
-  },
-  {
-    label: 'Summarise AP documents this week.',
-    query: 'Summarise accounts payable documents and requests from this week',
+    description: 'Find files by name, folder, or content',
+    label: 'Search my documents',
+    query: 'Search my documents',
   },
 ]
 
@@ -201,6 +203,8 @@ const iconMap: Record<string, LucideIconType> = {
   lightning: Bolt,
   mail: Mail,
   mailOpen: MailOpen,
+  maximize: Maximize2,
+  minimize: Minimize2,
   more: MoreHorizontal,
   pdf: FileText,
   pencil: Pencil,
@@ -243,6 +247,8 @@ const legacyIconMap: Record<string, keyof typeof iconMap> = {
   'mingcute:loading-line': 'send',
   'mingcute:mail-line': 'mail',
   'mingcute:mail-open-line': 'mailOpen',
+  'mingcute:maximize-line': 'maximize',
+  'mingcute:minimize-line': 'minimize',
   'mingcute:more-2-line': 'more',
   'mingcute:pencil-line': 'pencil',
   'mingcute:question-line': 'question',
@@ -455,7 +461,10 @@ const StaggeredCards = ({
 }
 
 const AskAI = () => {
+  const session = authUserStore((state: any) => state.session)
   const isOpen = useAskAIStore((state: any) => state.isOpen)
+  const isMaximized = useAskAIStore((state: any) => state.isMaximized)
+  const toggleMaximize = useAskAIStore((state: any) => state.toggleMaximize)
   const close = useAskAIStore((state: any) => state.close)
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -469,6 +478,9 @@ const AskAI = () => {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [credits, setCredits] = useState(15)
+  const [isWorkflowMode, setIsWorkflowMode] = useState(false)
+  const [initialWorkflowAction, setInitialWorkflowAction] = useState<string | undefined>()
+  const [currentWorkflowHistoryData, setCurrentWorkflowHistoryData] = useState<WorkflowHistoryData | undefined>()
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   const hasMessages = messages.length > 0
@@ -529,6 +541,8 @@ const AskAI = () => {
     setInput('')
     setBusy(false)
     setView('chat')
+    setIsWorkflowMode(false)
+    setCurrentWorkflowHistoryData(undefined)
   }
 
   const openHistory = () => {
@@ -536,11 +550,50 @@ const AskAI = () => {
   }
 
   const loadHistory = (item: HistoryItem) => {
+    if (item.isWorkflow) {
+      setCurrentWorkflowHistoryData(item.workflowState)
+      setCurrentHistoryId(item.id)
+      setIsWorkflowMode(true)
+      setView('chat')
+      return
+    }
+
     setMessages(
       item.messages.map((m) => ({ ...m, isTyping: false, revealExtras: true })),
     )
     setCurrentHistoryId(item.id)
+    setIsWorkflowMode(false)
+    setCurrentWorkflowHistoryData(undefined)
     setView('chat')
+  }
+
+  const saveWorkflowHistory = (workflowState: WorkflowHistoryData) => {
+    const sessionId = currentHistoryId || uid()
+    if (!currentHistoryId) setCurrentHistoryId(sessionId)
+
+    // Find the last assistant message or user message for subtitle
+    const lastMsg = [...workflowState.messages].reverse().find(m => m.textContent || m.htmlContent)
+    let subtitleText = lastMsg?.textContent || lastMsg?.htmlContent || 'Workflow Assistant'
+    // clean up html tags for subtitle if needed
+    subtitleText = subtitleText.replace(/<[^>]*>?/gm, '').substring(0, 80)
+
+    setHistory((prev) => {
+      const existing = prev.find((item) => item.id === sessionId)
+      const updatedItem: HistoryItem = {
+        createdAt: existing?.createdAt || new Date().toLocaleString(),
+        creditsRemaining: existing?.creditsRemaining || 15,
+        creditsUsed: existing?.creditsUsed || 0,
+        id: sessionId,
+        messages: [],
+        subtitle: subtitleText,
+        title: existing?.title || workflowState.activeWorkflow?.name || 'Workflow Chat',
+        isWorkflow: true,
+        workflowState
+      }
+
+      const withoutCurrent = prev.filter((item) => item.id !== sessionId)
+      return [updatedItem, ...withoutCurrent].slice(0, 20)
+    })
   }
 
   const finishTyping = (messageId: string) => {
@@ -589,6 +642,41 @@ const AskAI = () => {
     const text = (value ?? input).trim()
     if (!text || busy) return
     if (credits <= 0) return
+
+    const lowerText = text.toLowerCase()
+    if (lowerText === 'initiate workflow' || lowerText === 'show my pending requests') {
+      setInitialWorkflowAction(text)
+      setIsWorkflowMode(true)
+      setInput('')
+      setView('chat')
+      return
+    }
+
+    if (
+      lowerText === 'search my documents' ||
+      lowerText === 'find open documents and requests'
+    ) {
+      const userMsg: Message = {
+        id: uid(),
+        role: 'user',
+        text: 'Search my documents',
+      }
+      const aiPromptMsg: Message = {
+        id: uid(),
+        isTyping: false,
+        revealExtras: true,
+        role: 'ai',
+        text: 'What document, folder, or keyword would you like to search for?',
+      }
+      setMessages((prev) => [
+        ...prev.filter((m) => m.role !== 'status'),
+        userMsg,
+        aiPromptMsg,
+      ])
+      setInput('')
+      setView('chat')
+      return
+    }
 
     const userMessage: Message = { id: uid(), role: 'user', text }
     const baseMessages = [
@@ -692,7 +780,10 @@ const AskAI = () => {
       {isOpen ? (
         <motion.aside
           animate={{ opacity: 1, x: 0 }}
-          className="fixed top-0 right-0 bottom-0 z-[9999] flex w-[420px] max-w-[calc(100vw-16px)] flex-col overflow-hidden border-l border-[var(--border)] bg-[var(--bg)] font-['Inter',system-ui,sans-serif] shadow-[-8px_0_24px_rgba(0,0,0,.06)]"
+          className={`fixed bottom-0 right-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${isMaximized
+            ? 'top-[56px] left-0 xl:left-[56px] w-auto max-w-none border-l border-[var(--border)]'
+            : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
+            }`}
           initial={{ opacity: 0.96, x: 28 }}
           style={shellStyle}
           transition={{ duration: 0.18, ease: 'easeOut' }}
@@ -721,7 +812,7 @@ const AskAI = () => {
 
             <div className='min-w-0 flex-1'>
               <div className='truncate text-[15px] font-semibold tracking-[-.2px] text-[var(--text1)]'>
-                {view === 'history' ? 'Chat History' : 'AI Chat'}
+                {view === 'history' ? 'Chat History' : 'AI Assistant'}
               </div>
               {aiStatusWord && (
                 <AnimatePresence mode='wait'>
@@ -739,16 +830,27 @@ const AskAI = () => {
               )}
             </div>
 
+            <HeaderIconButton
+              title={isMaximized ? 'Minimize' : 'Expand'}
+              onClick={toggleMaximize}
+            >
+              <UiIcon
+                className='text-[var(--text2)] group-hover:text-[var(--text1)]'
+                name={isMaximized ? 'minimize' : 'maximize'}
+                size={16}
+              />
+            </HeaderIconButton>
+
             {view === 'history' ? null : (
               <>
                 <HeaderIconButton
-                  disabled={!hasMessages && !busy}
-                  title='Clear chat'
+                  disabled={(!hasMessages && !busy) && !isWorkflowMode}
+                  title='New chat'
                   onClick={clearChat}
                 >
                   <UiIcon
                     className='text-[var(--text2)] group-hover:text-[var(--text1)]'
-                    name='trash'
+                    name='add'
                     size={16}
                   />
                 </HeaderIconButton>
@@ -771,84 +873,84 @@ const AskAI = () => {
             </HeaderIconButton>
           </div>
 
-          <div className='min-h-0 flex-1 overflow-y-auto scroll-smooth'>
-            {view === 'history' ? (
+          {view === 'history' ? (
+            <div className='min-h-0 flex-1 overflow-y-auto scroll-smooth'>
               <HistoryView
                 history={history}
                 onClear={clearChat}
                 onLoad={loadHistory}
               />
-            ) : !hasMessages ? (
-              <WelcomeView onSend={sendMessage} />
-            ) : (
-              <div className='pb-2'>
-                {messages.map((msg) => (
-                  <ChatMessage
-                    key={msg.id}
-                    msg={msg}
-                    onActionClick={() => applyAnswerAction(msg)}
-                    onTypingComplete={() => finishTyping(msg.id)}
-                    onTypingProgress={() =>
-                      bottomRef.current?.scrollIntoView({ behavior: 'auto' })
-                    }
-                  />
-                ))}
-                {busy && <CallingLoader />}
-                <div ref={bottomRef} />
-              </div>
-            )}
-          </div>
-
-          {view === 'chat' && (
+            </div>
+          ) : isWorkflowMode ? (
+            <div className='flex min-h-0 flex-1 flex-col'>
+              <WorkflowChatPage
+                embedded
+                initialState={currentWorkflowHistoryData}
+                initialAction={initialWorkflowAction}
+                isExpanded={isMaximized}
+                onSaveHistory={saveWorkflowHistory}
+              />
+            </div>
+          ) : (
             <>
-              <div className='shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 pt-2.5 pb-2'>
-                <div className='mb-2 text-[12.5px] text-[var(--text2)]'>
-                  <strong className='text-[var(--text1)]'>{credits}</strong> of{' '}
-                  <strong className='text-[var(--text1)]'>15</strong> calls
-                  remaining -{' '}
-                  <button
-                    className='font-medium text-[var(--purple)]'
-                    type='button'
-                  >
-                    Upgrade
-                  </button>
-                </div>
-              </div>
-
-              <div className='shrink-0 bg-[var(--bg)] px-4 pb-3.5'>
-                <div className='overflow-hidden rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
-                  <div className='px-3.5 pt-2.5 pb-1'>
-                    <textarea
-                      className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
-                      placeholder='Ask about invoices, documents, or requests...'
-                      rows={1}
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault()
-                          sendMessage()
+              <div className='min-h-0 flex-1 overflow-y-auto scroll-smooth'>
+                {!hasMessages ? (
+                  <WelcomeView onSend={sendMessage} />
+                ) : (
+                  <div className='pb-2'>
+                    {messages.map((msg) => (
+                      <ChatMessage
+                        key={msg.id}
+                        msg={msg}
+                        onActionClick={() => applyAnswerAction(msg)}
+                        onTypingComplete={() => finishTyping(msg.id)}
+                        onTypingProgress={() =>
+                          bottomRef.current?.scrollIntoView({ behavior: 'auto' })
                         }
-                      }}
-                    />
-                  </div>
-
-                  <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
-                    <button
-                      className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
-                      disabled={!canSend}
-                      title='Send'
-                      type='button'
-                      onClick={() => sendMessage()}
-                    >
-                      <UiIcon
-                        className='size-4'
-                        name='mingcute:send-plane-line'
                       />
-                    </button>
+                    ))}
+                    {busy && <CallingLoader />}
+                    <div ref={bottomRef} />
+                  </div>
+                )}
+              </div>
+
+              {view === 'chat' && (
+                <div className='shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 py-3.5'>
+                  <div className='overflow-hidden rounded-[14px] border border-[var(--border2)] bg-[var(--bg2)] focus-within:border-[var(--purple)] focus-within:shadow-[0_0_0_3px_rgba(131,0,230,.07)]'>
+                    <div className='px-3.5 pt-2.5 pb-1'>
+                      <textarea
+                        className='max-h-[100px] min-h-[34px] w-full resize-none bg-transparent text-[13.5px] leading-[1.5] text-[var(--text1)] outline-none placeholder:text-[var(--text3)]'
+                        placeholder='Ask me anything about your documents or requests...'
+                        rows={1}
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault()
+                            sendMessage()
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className='flex items-center justify-end gap-1.5 px-2 pb-2'>
+                      <button
+                        className={`grid size-8 place-items-center rounded-[9px] border transition ${canSend ? 'border-[var(--spark1)] bg-[var(--spark1)] text-white' : 'border-[var(--border2)] bg-[var(--bg3)] text-[var(--text3)] opacity-70'}`}
+                        disabled={!canSend}
+                        title='Send'
+                        type='button'
+                        onClick={() => sendMessage()}
+                      >
+                        <UiIcon
+                          className='size-4'
+                          name='mingcute:send-plane-line'
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </motion.aside>
@@ -858,22 +960,21 @@ const AskAI = () => {
 }
 
 const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
-  <div className='px-5 pt-7 pb-4'>
-    <div className='mb-5 text-[var(--gray-7)]'>
-      <Bot size={40} strokeWidth={1.75} />
+  <div className='px-5 pt-6 pb-4'>
+    <div className='mb-4 text-[var(--gray-7)]'>
+      <Bot size={36} strokeWidth={1.75} />
     </div>
-    <h2 className='mb-2 text-[19px] font-bold tracking-[-.3px] text-[var(--text1)]'>
-      How can I assist you?
+    <h2 className='mb-1.5 text-[18px] font-semibold tracking-[-.2px] text-[var(--text1)]'>
+      How can I help you today?
     </h2>
-    <p className='mb-[22px] text-[13.5px] leading-[1.55] text-[var(--text2)]'>
-      Search invoices, documents, and accounts payable requests - or ask me
-      anything.
+    <p className='mb-5 text-[13.5px] leading-[1.5] text-[var(--text2)]'>
+      Submit requests, track progress, and find documents — all in one place.
     </p>
-    <div className='flex flex-col'>
+    <div className='flex flex-col gap-2'>
       {suggestions.map((item, index) => (
         <motion.button
           animate={{ opacity: 1, x: 0 }}
-          className='flex items-center gap-3 border-b border-[var(--border)] px-1 py-[13px] text-left text-[13.5px] leading-[1.4] text-[var(--text1)] hover:rounded-[10px] hover:bg-[var(--bg2)]'
+          className='group flex items-start gap-3 rounded-xl border border-[var(--border)] bg-surface p-3 text-left transition-colors hover:border-[var(--spark1)] hover:bg-[var(--bg2)]'
           initial={{ opacity: 0, x: -8 }}
           key={item.query}
           transition={{ delay: 0.05 * index, duration: 0.25 }}
@@ -881,10 +982,17 @@ const WelcomeView = ({ onSend }: { onSend: (value: string) => void }) => (
           onClick={() => onSend(item.query)}
         >
           <UiIcon
-            className='size-[15px] shrink-0 text-[var(--text3)]'
+            className='mt-0.5 size-[15px] shrink-0 text-[var(--text3)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--purple)]'
             name='mingcute:arrow-right-line'
           />
-          <span>{item.label}</span>
+          <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
+            <span className='text-[13px] font-semibold text-[var(--text1)] group-hover:text-[var(--purple)]'>
+              {item.label}
+            </span>
+            <span className='text-[12px] font-normal leading-normal text-[var(--text2)]'>
+              {item.description}
+            </span>
+          </div>
         </motion.button>
       ))}
     </div>
@@ -934,8 +1042,8 @@ const HistoryView = ({
           >
             <div className='mb-1 flex items-center gap-2'>
               <UiIcon
-                className='text-[var(--purple)]'
-                name='history'
+                className={item.isWorkflow ? 'text-[var(--primary-main)]' : 'text-[var(--purple)]'}
+                name={item.isWorkflow ? 'bot' : 'history'}
                 size={15}
               />
               <span className='min-w-0 flex-1 truncate text-[13px] font-semibold text-[var(--text1)]'>
@@ -1004,17 +1112,17 @@ const ChatMessage = ({
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      className='px-[18px] py-3'
+      className='px-[18px] py-2.5'
       initial={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.22 }}
     >
-      <div className='flex items-start gap-2.5'>
-        <div className='mt-1 shrink-0 text-[var(--text2)]'>
-          <Bot size={16} strokeWidth={1.75} />
+      <div className='flex items-start gap-3'>
+        <div className='mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--purple-light)] text-[var(--purple)] shadow-xs'>
+          <Bot size={18} strokeWidth={1.75} />
         </div>
-        <div className='min-w-0 flex-1 pt-0.5 text-[13.5px] leading-[1.72] text-[var(--text1)]'>
+        <div className='min-w-0 flex-1 rounded-2xl rounded-tl-sm border border-[var(--border)] bg-[var(--bg2)] px-4 py-3 text-[13.5px] leading-relaxed text-[var(--text1)] shadow-xs'>
           {msg.isTyping ? (
-            <p className='mb-2.5 whitespace-pre-wrap'>
+            <p className='whitespace-pre-wrap'>
               <TypewriterReply
                 text={msg.text}
                 onComplete={onTypingComplete}
@@ -1023,24 +1131,29 @@ const ChatMessage = ({
             </p>
           ) : (
             paragraphs.map((p, i) => (
-              <p className='mb-2.5' key={`${p}-${i}`}>
+              <p
+                className={i < paragraphs.length - 1 ? 'mb-2.5' : ''}
+                key={`${p}-${i}`}
+              >
                 {p}
               </p>
             ))
           )}
 
           {showExtras && richBlocks.length > 0 && (
-            <StaggeredCards
-              items={richBlocks.map((block, index) => (
-                <AnswerBlock
-                  block={block}
-                  ctaMode={msg.ctaMode}
-                  key={`${block.type}-${index}`}
-                  onActionClick={onActionClick}
-                />
-              ))}
-              onProgress={onTypingProgress}
-            />
+            <div className='mt-3 border-t border-[var(--border)] pt-3'>
+              <StaggeredCards
+                items={richBlocks.map((block, index) => (
+                  <AnswerBlock
+                    block={block}
+                    ctaMode={msg.ctaMode}
+                    key={`${block.type}-${index}`}
+                    onActionClick={onActionClick}
+                  />
+                ))}
+                onProgress={onTypingProgress}
+              />
+            </div>
           )}
         </div>
       </div>

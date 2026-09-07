@@ -6,6 +6,7 @@ import Tooltip from '@/components/base/Tooltip'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
+import { clearOpenedFromSettings } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import cn from '@/utils/cn'
 
 interface Props extends Menu {
@@ -44,6 +45,7 @@ const MenuItem = ({ icon, iconClassName, label, route }: Props) => {
           )}
           onClick={() => {
             closeDemoForm()
+            clearOpenedFromSettings()
             if (route === '/') {
               exitSetupToDashboard()
             }

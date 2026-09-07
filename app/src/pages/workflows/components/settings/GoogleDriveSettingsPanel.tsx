@@ -6,13 +6,16 @@ import { getConnectionQueryOptions } from '@/api/connectorQueries'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import Input from '@/components/base/inputs/InputText'
-import authUserStore from '@/stores/authUserStore'
+import showToast from '@/components/base/toast/showToast'
 import cn from '@/utils/cn'
+import {
+  openWorkflowOAuthAuthorize,
+  parseOAuthConnectionSuccess,
+} from '@/pages/workflows/utils/oauthAuthorize'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
 
 const CONNECTOR_TYPE = 'GOOGLE_DRIVE'
-const PROVIDER = 'google' // Backend usually uses 'google' for drive too, matching the logo color
 
 export default function GoogleDriveSettingsPanel({
   node: initialNode,
@@ -21,7 +24,6 @@ export default function GoogleDriveSettingsPanel({
 }) {
   const { setNodes } = useReactFlow()
   const liveNodes = useNodes()
-  const session = authUserStore((state) => state.session)
   const queryClient = useQueryClient()
 
   // Find matching node in the live nodes array to ensure reactivity
@@ -76,7 +78,7 @@ export default function GoogleDriveSettingsPanel({
         const val = String(item.id)
         if (!seenValues.has(val)) {
           options.push({
-            label: item.name,
+            label: item.name || item.externalAccountEmail || val,
             value: val,
           })
           seenValues.add(val)
@@ -98,8 +100,16 @@ export default function GoogleDriveSettingsPanel({
         (c: any) => c.name === pendingConnectionName,
       )
       if (found) {
+        const label =
+          found.externalAccountEmail || found.name || pendingConnectionName
         updateNodeData('connection', String(found.id))
-        updateNodeData('connectionLabel', found.name)
+        updateNodeData('connectorId', String(found.id))
+        updateNodeData('connectionLabel', label)
+        updateNodeData(
+          'externalAccountEmail',
+          found.externalAccountEmail || '',
+        )
+        updateNodeData('account', found.externalAccountEmail || found.name)
         setPendingConnectionName(null)
         setIsConnecting(false)
         setIsCreatingConnection(false)
@@ -109,29 +119,50 @@ export default function GoogleDriveSettingsPanel({
     }
   }, [apiConnections, pendingConnectionName])
 
-  // Connection Success Listener
+  // Connection Success Listener — same payload as AP onboarding
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
-      if (event.data.type === 'CONNECTION_SUCCESS') {
-        const { connector } = event.data
+      if (event.data.type !== 'CONNECTION_SUCCESS') return
+
+      const { connector, connectorId, email, label } =
+        parseOAuthConnectionSuccess(event.data)
+
+      if (connectorId) {
+        updateNodeData('connection', connectorId)
+        updateNodeData('connectorId', connectorId)
+        updateNodeData('connectionLabel', label || newConnectionName)
+        updateNodeData('externalAccountEmail', email)
+        updateNodeData('account', email || connector)
+        setIsConnecting(false)
+        setIsCreatingConnection(false)
+        setIsConnectionOpen(false)
+        setNewConnectionName('')
+        setPendingConnectionName(null)
+      } else if (connector) {
         setPendingConnectionName(connector)
-        queryClient.invalidateQueries({
-          queryKey: ['connections', CONNECTOR_TYPE],
-        })
       }
+
+      queryClient.invalidateQueries({
+        queryKey: ['connections', CONNECTOR_TYPE],
+      })
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [queryClient])
+  }, [newConnectionName, queryClient])
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!newConnectionName.trim() || isConnecting) return
     setIsConnecting(true)
-    const tenantId = session?.tenantId
-    const url = `https://ezcloudauth.azurewebsites.net/api/authorize?tenantid=${tenantId}&envtype=trial&connectorname=${newConnectionName}&provider=${PROVIDER}&resulturl=${window.location.origin}/auth/`
-    window.open(url, '_blank')
+    const { error } = await openWorkflowOAuthAuthorize(
+      CONNECTOR_TYPE,
+      newConnectionName.trim(),
+    )
+    if (error) {
+      showToast({ message: error, variant: 'error' })
+      setIsConnecting(false)
+    }
   }
 
   const handlePathChange = (newVal: string) => {

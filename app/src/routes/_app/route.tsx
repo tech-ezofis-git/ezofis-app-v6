@@ -1,8 +1,10 @@
 // routes/_app/route.ts
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import AppLayout from '@/layouts/app/AppLayout'
+import { resolveSignInPath } from '@/lib/branding/session'
 import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import authUserStore from '@/stores/authUserStore'
+import { isPermissionVisible } from '@/utils/sessionPermissions'
 
 export const Route = createFileRoute('/_app')({
   component: RouteComponent,
@@ -13,7 +15,14 @@ export const Route = createFileRoute('/_app')({
     const { isAuthenticated, session } = authUserStore.getState()
 
     if (!isAuthenticated) {
-      // adjust path to your actual sign-in route under _auth
+      const signInPath = resolveSignInPath()
+      if (signInPath !== '/sign-in' && signInPath.startsWith('/')) {
+        throw redirect({
+          params: { encryptedName: signInPath.replace(/^\//, '') },
+          replace: true,
+          to: '/$encryptedName',
+        })
+      }
       throw redirect({
         replace: true,
         to: '/sign-in',
@@ -33,9 +42,10 @@ export const Route = createFileRoute('/_app')({
       const routeToPermissionKey: Record<string, string> = {
         '/': 'dashboard',
         '/folders': 'folder',
-        '/forms': 'forms',
-        '/requests': 'requests',
+        '/forms': 'form',
+        '/requests': 'request',
         '/settings': 'settings',
+        '/workflow-chat': 'workflow',
         '/workflows': 'workflow',
       }
 
@@ -48,30 +58,16 @@ export const Route = createFileRoute('/_app')({
       if (baseRoute) {
         const requiredPermissionKey = routeToPermissionKey[baseRoute]
 
-        // TEMP: allow Requests/Forms until role permission persistence is fixed
-        if (
-          requiredPermissionKey === 'requests' ||
-          requiredPermissionKey === 'forms'
-        ) {
-          return
-        }
+        if (!isPermissionVisible(requiredPermissionKey, sessionPermissions)) {
+          const firstAllowedRoute =
+            Object.keys(routeToPermissionKey).find((r) =>
+              isPermissionVisible(routeToPermissionKey[r], sessionPermissions),
+            ) || '/'
 
-        const permission = sessionPermissions.find(
-          (p) => p.key === requiredPermissionKey,
-        )
-
-        if (permission && permission.visible === false) {
-          const firstVisible = sessionPermissions.find((p) => p.visible)
-          const fallbackRoute = firstVisible
-            ? Object.keys(routeToPermissionKey).find(
-                (k) => routeToPermissionKey[k] === firstVisible.key,
-              ) || '/'
-            : '/'
-
-          if (location.pathname !== fallbackRoute) {
+          if (location.pathname !== firstAllowedRoute) {
             throw redirect({
               replace: true,
-              to: fallbackRoute,
+              to: firstAllowedRoute,
             })
           }
         }

@@ -36,7 +36,7 @@ export default function SettingsSection({
           <Icon
             name={icon}
             className={cn(
-              'animate-in zoom-in-50 h-4 w-4 transition-colors duration-300',
+              'animate-in zoom-in-50 h-4 w-4 transition-colors duration-300 duration-500',
               isOpen ? 'text-primary-9' : 'text-gray-8',
             )}
           />

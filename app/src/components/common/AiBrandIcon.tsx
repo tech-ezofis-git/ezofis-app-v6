@@ -9,9 +9,11 @@ export type AiBrandIconVariant =
   | 'outline-purple'
   | 'outline-blue'
   | 'outline-black'
+  | 'outline-white'
   | 'purple'
   | 'blue'
   | 'black'
+  | 'white'
   | 'curved-purple'
   | 'curved-purple-dark'
   | 'curved-purple-light'
@@ -25,7 +27,6 @@ interface AiBrandIconProps {
   variant?: AiBrandIconVariant
 }
 
-// Curved Path D string (from EZOFIS sparkles curved edition)
 const CURVED_PATH_D =
   'M 12.000 3.300 L 11.685 3.330 L 11.370 3.420 L 11.130 3.540 L 10.935 3.675 L 10.605 4.035 L 10.125 4.845 L 9.570 5.655 L 8.895 6.525 L 8.250 7.260 L 7.260 8.250 L 6.210 9.150 L 5.340 9.795 L 3.915 10.695 L 3.675 10.935 L 3.510 11.175 L 3.360 11.535 L 3.300 11.850 L 3.300 12.150 L 3.360 12.465 L 3.510 12.825 L 3.675 13.065 L 3.975 13.350 L 4.845 13.875 L 5.655 14.430 L 6.525 15.105 L 7.260 15.750 L 8.250 16.740 L 9.150 17.790 L 9.795 18.660 L 10.695 20.085 L 10.995 20.370 L 11.370 20.580 L 11.685 20.670 L 12.000 20.700 L 12.315 20.670 L 12.630 20.580 L 12.870 20.460 L 13.065 20.325 L 13.395 19.965 L 13.875 19.155 L 14.430 18.345 L 15.105 17.475 L 15.750 16.740 L 16.740 15.750 L 17.790 14.850 L 18.660 14.205 L 20.085 13.305 L 20.325 13.065 L 20.490 12.825 L 20.640 12.465 L 20.700 12.150 L 20.700 11.850 L 20.640 11.535 L 20.490 11.175 L 20.325 10.935 L 20.025 10.650 L 19.155 10.125 L 18.345 9.570 L 17.475 8.895 L 16.740 8.250 L 15.750 7.260 L 14.850 6.210 L 14.205 5.340 L 13.305 3.915 L 13.005 3.630 L 12.630 3.420 L 12.315 3.330 Z'
 
@@ -91,6 +92,10 @@ export default function AiBrandIcon({
       strokeColor = resolvedColorScheme === 'dark' ? '#FFFFFF' : '#000000'
       pathD = OUTLINE_PATH_D
       break
+    case 'outline-white':
+      strokeColor = '#FFFFFF'
+      pathD = OUTLINE_PATH_D
+      break
     case 'purple':
       strokeColor = '#8300E6'
       isFilled = true
@@ -101,6 +106,10 @@ export default function AiBrandIcon({
       break
     case 'black':
       strokeColor = resolvedColorScheme === 'dark' ? '#FFFFFF' : '#000000'
+      isFilled = true
+      break
+    case 'white':
+      strokeColor = '#FFFFFF'
       isFilled = true
       break
   }

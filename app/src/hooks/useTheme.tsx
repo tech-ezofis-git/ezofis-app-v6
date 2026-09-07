@@ -1,7 +1,7 @@
 import { useLingui } from '@lingui/react/macro'
 import { type MantineColorScheme, useMantineColorScheme } from '@mantine/core'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type ResolvedTheme, resolveTheme, type ThemeMode } from '@/lib/theme'
+import { applyResolvedTheme, getSystemTheme, type ResolvedTheme, resolveTheme, type ThemeMode } from '@/lib/theme'
 
 interface ColorSchemeOption {
   icon: string
@@ -58,12 +58,11 @@ export default function useTheme() {
   }, [colorScheme, syncResolvedScheme])
 
   const handleColorSchemeChange = (value: MantineColorScheme) => () => {
-    document.documentElement.classList.add('theme-transitions')
+    const resolved: ResolvedTheme =
+      value === 'auto' ? getSystemTheme() : (value as ResolvedTheme)
+    applyResolvedTheme(resolved)
     setColorScheme(value)
-
-    window.setTimeout(() => {
-      document.documentElement.classList.remove('theme-transitions')
-    }, 300)
+    setResolvedColorScheme(resolved)
   }
 
   const selectedColorScheme = ColorSchemeOptions.find(

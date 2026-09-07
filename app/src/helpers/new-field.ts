@@ -9,6 +9,13 @@ export const generateId = () => {
   }
 }
 
+const toTitleCase = (value: string) =>
+  value
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+
 export const getField = (fieldType: string) => {
   const id = generateId()
 
@@ -18,7 +25,7 @@ export const getField = (fieldType: string) => {
     label:
       fieldType.toLowerCase() === 'text_builder'
         ? 'Paragraph'
-        : fieldType.replace(/_/g, ' ').toLowerCase(),
+        : toTitleCase(fieldType.replace(/_/g, ' ')),
     type: fieldType.toUpperCase(),
     settings: {
       aiSettings: {
@@ -28,6 +35,7 @@ export const getField = (fieldType: string) => {
       general: {
         hideLabel: false,
         placeholder: '',
+        readOnly: false,
         size: 'col-6',
         tooltip: '',
         url: '',
@@ -42,7 +50,7 @@ export const getField = (fieldType: string) => {
         autoGenerateValue: { enabled: false, prefix: '', suffix: '' },
         customDefaultValue: '',
         customOptions: 'Option 1,Option 2,Option 3',
-        defaultValue: 'CUSTOM',
+        defaultValue: '',
         dividerStyle: 'SOLID',
         fibFields: [] as any[],
         matrixColumns: [] as any[],
@@ -51,13 +59,12 @@ export const getField = (fieldType: string) => {
         optionsSource: 'CUSTOM',
         optionsType: 'CUSTOM',
         separateOptionsUsing: 'COMMA',
-        tableColumns: [] as any[],
-        tableRowsType: 'ON_DEMAND',
       },
       validation: {
         allowedFileTypes: [] as string[],
         contentRule: '',
         fieldRule: 'OPTIONAL',
+        isCalculationEnabled: false,
         maxFileSize: 10,
         maximum: '',
         minimum: '',
@@ -67,14 +74,15 @@ export const getField = (fieldType: string) => {
 
   // Specific tweaks based on type
   const s = baseField.settings.specific as any
+  const v = baseField.settings.validation as any
   switch (fieldType.toUpperCase()) {
     case 'TABLE':
     case 'DYNAMIC_TABLE':
       s.tableColumns = [
         {
           id: generateId(),
-          label: 'Column 1',
-          size: 'col-6',
+          name: 'Column 1',
+          size: 'MEDIUM',
           type: 'SHORT_TEXT',
         },
       ]
@@ -100,21 +108,61 @@ export const getField = (fieldType: string) => {
     case 'PHONE_NUMBER':
       baseField.settings.validation.contentRule = 'PHONE'
       break
+    case 'SINGLE_CHOICE':
+      s.customOptions = 'Option 1,Option 2,Option 3'
+      s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 3
+      s.qrCodeEnabled = false
+      break
+    case 'MULTIPLE_CHOICE':
+      s.customOptions = 'Option 1,Option 2,Option 3'
+      s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 3
+      s.bulkActionsEnabled = false
+      v.requiredValidation = 'ANY'
+      break
     case 'YES_NO_TOGGLE':
       s.customOptions = 'Yes,No'
       s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 2
       break
     case 'SCORE':
       s.iconType = 'NUMBER'
       s.iconCount = 10
       break
+    case 'FILE_UPLOAD':
     case 'IMAGE_UPLOAD':
-      baseField.settings.validation.allowedFileTypes = ['IMAGE'] as string[]
+      baseField.settings.general.size = 'col-12'
+      if (fieldType.toUpperCase() === 'IMAGE_UPLOAD') {
+        baseField.settings.validation.allowedFileTypes = ['IMAGE'] as string[]
+      }
       break
     case 'CONSENT':
-      baseField.label = 'Consent'
-      s.customOptions = 'I agree to the terms and conditions'
+    case 'LEGAL':
+      baseField.label = fieldType.toUpperCase() === 'LEGAL' ? 'Legal Declaration' : 'Consent'
+      s.customOptions = fieldType.toUpperCase() === 'LEGAL' ? "I Accept,I don't Accept" : 'I agree to the terms and conditions'
       s.optionsType = 'CUSTOM'
+      s.optionsPerLine = 1
+      break
+    case 'DATE':
+      s.dateDefaultValueType = 'CUSTOM'
+      v.dateLimitType = 'NONE'
+      break
+    case 'TIME':
+      s.timeDefaultValueType = 'CUSTOM'
+      v.timeLimitType = 'NONE'
+      v.timeFormat = '12'
+      break
+    case 'DATE_TIME':
+      s.dateDefaultValueType = 'CUSTOM'
+      v.dateLimitType = 'NONE'
+      v.timeFormat = '12'
+      break
+    case 'CALCULATED':
+      s.formulaTokens = []
+      baseField.settings.general.readOnly = true
+      baseField.settings.general.visibility = 'READ_ONLY'
+      baseField.settings.validation.isCalculationEnabled = true
       break
   }
 

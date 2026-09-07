@@ -4,9 +4,12 @@ import { useEffect } from 'react'
 import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import ApiPlaygroundPanel from '@/components/playground/ApiPlaygroundPanel'
+import BrandingSync from '@/lib/branding/BrandingSync'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { useIsMobile } from '@/pages/mobile'
 import authUserStore from '@/stores/authUserStore'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import requestStore from '../../pages/requests/stores/useRequestStore'
 import NewRequest from './components/NewRequest'
 import RequestDemoForm from './components/RequestDemoForm'
@@ -18,12 +21,14 @@ interface Props {
   children: ReactNode
 }
 
-const AI_PANEL_WIDTH = 420
+const SIDE_PANEL_WIDTH = 420
 
 const AppLayout = ({ children }: Props) => {
   const isNewRequestOpen = requestStore((state) => state.newRequest)
   const closeNewRequest = requestStore((state) => state.closeNewRequest)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+  const isAskAIMaximized = useAskAIStore((state: any) => state.isMaximized)
+  const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
   const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
   const { pathname } = useLocation()
@@ -94,6 +99,7 @@ const AppLayout = ({ children }: Props) => {
   if (isMobile) {
     return (
       <div className='flex min-h-dvh flex-col bg-surface-secondary'>
+        <BrandingSync />
         <div className='flex h-dvh min-h-0 flex-1 flex-col overflow-hidden'>
           {children}
         </div>
@@ -103,12 +109,16 @@ const AppLayout = ({ children }: Props) => {
 
   return (
     <>
+      <BrandingSync />
       <Sidebar />
 
       <div
         className='flex h-svh flex-col transition-[margin-right] duration-200 xl:ml-[56px]'
         style={{
-          marginRight: isAskAIOpen ? AI_PANEL_WIDTH : 0,
+          marginRight:
+            (isAskAIOpen && !isAskAIMaximized) || isPlaygroundOpen
+              ? SIDE_PANEL_WIDTH
+              : 0,
         }}
       >
         <Topbar />
@@ -125,6 +135,7 @@ const AppLayout = ({ children }: Props) => {
         </div>
       </div>
       <AskAI />
+      <ApiPlaygroundPanel />
     </>
   )
 }

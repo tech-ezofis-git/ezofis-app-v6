@@ -16,7 +16,8 @@ const InputSelectAsync = forwardRef<HTMLButtonElement, Props>(
       useAsyncOptions(getQueryOptions)
 
     const handleChange = (value: Option[]) => {
-      onChange(value.length ? value[0] : null)
+      const list = value ?? []
+      onChange(list.length ? list[0] : null)
     }
 
     return (

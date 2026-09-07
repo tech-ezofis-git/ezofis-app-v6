@@ -59,13 +59,13 @@ export const mapDraftUserToCreatePayload = (
     'Employee Id': user.employeeId,
     'firstName': user.firstName,
     'forcePasswordResetOnLogin': user.forcePasswordReset ? 'Yes' : 'No',
-    'group': user.groups,
+    'group': user.groups ?? [],
     'Job Title': user.jobTitle,
     'lastName': user.lastName,
     'location': user.location,
     'LoginType': mapLoginTypeToApi(user.loginType),
     'Manager': user.manager,
-    'MFA Methods': user.mfaMethods.join(', '),
+    'MFA Methods': (user.mfaMethods ?? []).join(', '),
     'MFAuthentication': user.mfaEnabled ? 'Yes' : 'No',
     'passwordExpiryDays': user.passwordExpiryDays,
     'phoneNo': user.phoneNumber,
@@ -73,7 +73,7 @@ export const mapDraftUserToCreatePayload = (
     'userName': user.username || user.email.split('@')[0] || '',
   }
 
-  if (user.loginType === 'Password' && user.password.trim()) {
+  if (user.loginType === 'Password' && user.password?.trim()) {
     payload.password = user.password
   }
 
@@ -87,7 +87,7 @@ export const mapDraftUserToUpdatePayload = (
   const payload = mapDraftUserToCreatePayload(current)
 
   // Password is not returned from the API; only send it when reset is enabled.
-  if (!(current.resetPassword && current.password.trim())) {
+  if (!(current.resetPassword && current.password?.trim())) {
     delete payload.password
   }
 

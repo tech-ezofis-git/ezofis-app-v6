@@ -1,0 +1,483 @@
+import { useLingui } from '@lingui/react/macro'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import showToast from '@/components/base/toast/showToast'
+import { AnimateSlideUp } from '@/components/common/animations'
+import {
+  getPortalConfig,
+  type PortalConfig,
+} from '@/pages/settings/helpers/portalConfigStorage'
+import PortalDetail from './components/PortalDetail'
+import PortalHome from './components/PortalHome'
+import PortalLogin from './components/PortalLogin'
+import PortalPicker from './components/PortalPicker'
+import PortalShell from './components/PortalShell'
+import PortalWizard from './components/PortalWizard'
+import { applyPortalBranding } from './helpers/portalBranding'
+import {
+  listPortalSubmissions,
+  PORTAL_STATUS_TONE,
+  type PortalSubmission,
+} from './helpers/portalSubmissions'
+import {
+  listPortalWorkflowSummaries,
+  portalWorkflowLabel,
+  type PortalWorkflowSummary,
+} from './helpers/portalWorkflows'
+import usePortalSessionStore, {
+  type PortalAuthUser,
+} from './stores/usePortalSessionStore'
+
+type PortalPageProps = {
+  portalId: string
+}
+
+type PortalView = 'detail' | 'home' | 'picker' | 'wizard'
+
+const readPortalJsonIdsFromUrl = () => {
+  if (typeof window === 'undefined') return {}
+  const params = new URLSearchParams(window.location.search)
+  const tenantId = params.get('tenantId') || undefined
+  const userId = params.get('userId') || undefined
+  return {
+    tenantId: tenantId || undefined,
+    userId: userId || undefined,
+  }
+}
+
+const PortalPage = ({ portalId }: PortalPageProps) => {
+  const { t } = useLingui()
+  const session = usePortalSessionStore((state) => state.sessions[portalId])
+  const setSession = usePortalSessionStore((state) => state.setSession)
+  const clearSession = usePortalSessionStore((state) => state.clearSession)
+
+  const [portal, setPortal] = useState<PortalConfig | null>(null)
+  const [loadingPortal, setLoadingPortal] = useState(true)
+  const hasMultipleWorkflows = (portal?.workflows.length || 0) > 1
+  const [view, setView] = useState<PortalView>('home')
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<string | null>(
+    null,
+  )
+  const [submissions, setSubmissions] = useState<PortalSubmission[]>([])
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false)
+  const [workflowSummaries, setWorkflowSummaries] = useState<
+    PortalWorkflowSummary[]
+  >([])
+  const [loadingWorkflows, setLoadingWorkflows] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<PortalSubmission | null>(null)
+  const [submissionsTick, setSubmissionsTick] = useState(0)
+  const [wizardChrome, setWizardChrome] = useState<{
+    canSubmit: boolean
+    stageLabel?: string
+    submitLabel: string
+    submitting: boolean
+    title: string
+  } | null>(null)
+  const wizardSubmitRef = useRef<() => void>(() => {})
+  const handleWizardChromeChange = useCallback(
+    (
+      chrome: {
+        canSubmit: boolean
+        stageLabel?: string
+        submitLabel: string
+        submitting: boolean
+        title: string
+        onSubmit: () => void
+      } | null,
+    ) => {
+      if (chrome) wizardSubmitRef.current = chrome.onSubmit
+      setWizardChrome((prev) => {
+        if (!chrome) return prev ? null : prev
+        if (
+          prev?.canSubmit === chrome.canSubmit &&
+          prev?.stageLabel === chrome.stageLabel &&
+          prev?.submitLabel === chrome.submitLabel &&
+          prev?.submitting === chrome.submitting &&
+          prev?.title === chrome.title
+        ) {
+          return prev
+        }
+        return {
+          canSubmit: chrome.canSubmit,
+          submitLabel: chrome.submitLabel,
+          submitting: chrome.submitting,
+          title: chrome.title,
+        }
+      })
+    },
+    [],
+  )
+  const [detailChrome, setDetailChrome] = useState<{
+    acting: boolean
+    actions: { label: string; value: string }[]
+  } | null>(null)
+  const detailActionRef = useRef<(value: string) => void>(() => {})
+  const handleDetailChromeChange = useCallback(
+    (
+      chrome: {
+        acting: boolean
+        actions: { label: string; value: string }[]
+        onAction: (value: string) => void
+      } | null,
+    ) => {
+      if (chrome) detailActionRef.current = chrome.onAction
+      setDetailChrome((prev) => {
+        if (!chrome) return prev ? null : prev
+        if (
+          prev?.acting === chrome.acting &&
+          prev.actions.length === chrome.actions.length &&
+          prev.actions.every(
+            (action, index) =>
+              action.label === chrome.actions[index]?.label &&
+              action.value === chrome.actions[index]?.value,
+          )
+        ) {
+          return prev
+        }
+        return { acting: chrome.acting, actions: chrome.actions }
+      })
+    },
+    [],
+  )
+
+  const selectedWorkflow = useMemo(
+    () =>
+      portal?.workflows.find(
+        (workflow) => String(workflow.id) === String(selectedWorkflowId),
+      ) || null,
+    [portal, selectedWorkflowId],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    setLoadingPortal(true)
+    setPortal(null)
+
+    void getPortalConfig(portalId, readPortalJsonIdsFromUrl())
+      .then((result) => {
+        if (cancelled) return
+        setPortal(result.data)
+        if (result.data) {
+          const multiple = result.data.workflows.length > 1
+          setSelectedWorkflowId(
+            !multiple && result.data.workflows[0]
+              ? String(result.data.workflows[0].id)
+              : null,
+          )
+        }
+        if (result.error) {
+          showToast({ message: result.error, variant: 'error' })
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingPortal(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [portalId])
+
+  useEffect(() => {
+    if (!portal) return
+    applyPortalBranding(portal.branding)
+    const title = portal.branding?.brandName || portal.name || 'EZOFIS Portal'
+    document.title = title
+  }, [portal])
+
+  useEffect(() => {
+    if (!portal || !session) return
+
+    let cancelled = false
+    setLoadingWorkflows(true)
+    void listPortalWorkflowSummaries({
+      tenantId: portal.tenantId,
+      userId: session.userId,
+      workflows: portal.workflows,
+    })
+      .then((summaries) => {
+        if (!cancelled) setWorkflowSummaries(summaries)
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingWorkflows(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [portal, session])
+
+  useEffect(() => {
+    if (!portal || !session || !selectedWorkflow) {
+      setSubmissions([])
+      return
+    }
+
+    let cancelled = false
+    setLoadingSubmissions(true)
+    void listPortalSubmissions({
+      tenantId: portal.tenantId,
+      workflows: [selectedWorkflow],
+    })
+      .then((result) => {
+        if (cancelled) return
+        if (result.error) {
+          showToast({ message: result.error, variant: 'error' })
+        }
+        setSubmissions(result.submissions)
+      })
+      .catch(() => {
+        if (cancelled) return
+        showToast({
+          message: t`Unable to load submissions for the selected workflows.`,
+          variant: 'error',
+        })
+        setSubmissions([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSubmissions(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [portal, selectedWorkflow, session, submissionsTick, t])
+
+  const handleAuthenticated = (user: PortalAuthUser) => {
+    setSession(portalId, user)
+    setSelectedSubmission(null)
+    setView('home')
+    setSelectedWorkflowId(
+      (portal?.workflows.length || 0) > 1
+        ? null
+        : portal?.workflows[0]
+          ? String(portal.workflows[0].id)
+          : null,
+    )
+  }
+
+  const startNewSubmission = (workflowId?: string) => {
+    if (!portal) return
+    const allowed = (
+      workflowSummaries.length > 0
+        ? workflowSummaries
+        : portal.workflows.map((workflow) => ({
+            canCreate: true,
+            id: String(workflow.id),
+            name: portalWorkflowLabel(workflow),
+          }))
+    ).filter((workflow) => workflow.canCreate !== false)
+
+    const targetId = workflowId || selectedWorkflowId
+    const target =
+      allowed.find((workflow) => String(workflow.id) === String(targetId)) ||
+      (allowed.length === 1 ? allowed[0] : null)
+
+    if (target) {
+      setSelectedWorkflowId(String(target.id))
+      setSelectedSubmission(null)
+      setView('wizard')
+      return
+    }
+
+    if (!allowed.length) return
+    setView('picker')
+  }
+
+  const openWorkflow = (workflowId: string) => {
+    setSelectedWorkflowId(workflowId)
+    setSelectedSubmission(null)
+    setView('home')
+  }
+
+  const backToWorkflows = () => {
+    setSelectedWorkflowId(null)
+    setSelectedSubmission(null)
+    setSubmissions([])
+    setView('home')
+  }
+
+  if (loadingPortal) {
+    return (
+      <div className='flex min-h-svh flex-col items-center justify-center gap-2 bg-surface px-6 text-center'>
+        <p className='text-15 font-semibold text-gray-13'>{t`Loading portal`}</p>
+        <p className='max-w-sm text-13 text-gray-10'>
+          {t`Fetching the latest portal configuration.`}
+        </p>
+      </div>
+    )
+  }
+
+  if (!portal) {
+    return (
+      <div className='flex min-h-svh flex-col items-center justify-center gap-2 bg-surface px-6 text-center'>
+        <p className='text-15 font-semibold text-gray-13'>{t`Portal not found`}</p>
+        <p className='max-w-sm text-13 text-gray-10'>
+          {t`This portal link is invalid or has not been published yet.`}
+        </p>
+      </div>
+    )
+  }
+
+  const needsApplicationLogin =
+    portal.loginType === 'applicationLogin' && !session?.accessToken
+
+  if (!session || needsApplicationLogin) {
+    return <PortalLogin portal={portal} onAuthenticated={handleAuthenticated} />
+  }
+
+  const selectedWorkflowName = portalWorkflowLabel(
+    workflowSummaries.find(
+      (workflow) => workflow.id === String(selectedWorkflowId),
+    ) ||
+      selectedWorkflow ||
+      {},
+  )
+
+  const displayName = session.displayName || session.username
+  const fallbackSummaries =
+    workflowSummaries.length > 0
+      ? workflowSummaries
+      : portal.workflows.map((workflow) => ({
+          canCreate: true,
+          completedCount: 0,
+          description: '',
+          id: String(workflow.id),
+          inboxCount: 0,
+          name: portalWorkflowLabel(workflow),
+          sentCount: 0,
+          startActionLabel: 'Submit',
+          total: 0,
+          workflow: null,
+        }))
+  const selectedSummary = fallbackSummaries.find(
+    (workflow) => workflow.id === String(selectedWorkflowId),
+  )
+  const canCreateSubmission = selectedWorkflowId
+    ? selectedSummary?.canCreate !== false
+    : fallbackSummaries.some((workflow) => workflow.canCreate !== false)
+
+  let content = (
+    <PortalHome
+      canCreateSubmission={canCreateSubmission}
+      displayName={displayName}
+      loadingSubmissions={loadingSubmissions}
+      loadingWorkflows={loadingWorkflows}
+      showWorkflowCards={hasMultipleWorkflows && !selectedWorkflowId}
+      submissions={submissions}
+      workflowName={selectedWorkflowName}
+      workflows={fallbackSummaries}
+      onBackToWorkflows={hasMultipleWorkflows ? backToWorkflows : undefined}
+      onNewSubmission={() => startNewSubmission()}
+      onOpenSubmission={(submission) => {
+        setSelectedSubmission(submission)
+        setView('detail')
+      }}
+      onOpenWorkflow={openWorkflow}
+    />
+  )
+
+  if (view === 'picker') {
+    content = (
+      <PortalPicker
+        loading={loadingWorkflows}
+        workflows={fallbackSummaries}
+        onBack={() => setView('home')}
+        onSelectWorkflow={(id) => startNewSubmission(id)}
+      />
+    )
+  } else if (view === 'wizard' && selectedWorkflowId) {
+    content = (
+      <PortalWizard
+        workflowId={selectedWorkflowId}
+        workflowName={selectedWorkflowName}
+        onCancel={() => setView('home')}
+        onChromeChange={handleWizardChromeChange}
+        onSubmitted={() => {
+          setSubmissionsTick((tick) => tick + 1)
+          setView('home')
+        }}
+      />
+    )
+  } else if (view === 'detail' && selectedSubmission) {
+    content = (
+      <PortalDetail
+        submission={selectedSubmission}
+        userId={session.userId}
+        onChromeChange={handleDetailChromeChange}
+        onMoved={() => {
+          setSubmissionsTick((tick) => tick + 1)
+          setSelectedSubmission(null)
+          setView('home')
+        }}
+      />
+    )
+  }
+
+  return (
+    <PortalShell
+      email={session.username}
+      fill={view === 'detail' || view === 'wizard'}
+      portal={portal}
+      detail={
+        view === 'detail' && selectedSubmission
+          ? {
+              acting: Boolean(detailChrome?.acting),
+              actions: detailChrome?.actions || [],
+              requestNo: selectedSubmission.requestNo,
+              status: selectedSubmission.status,
+              statusClassName: PORTAL_STATUS_TONE[selectedSubmission.status],
+              onAction: (value) => detailActionRef.current(value),
+              onBack: () => {
+                setSelectedSubmission(null)
+                setView('home')
+              },
+            }
+          : null
+      }
+      wizard={
+        view === 'wizard'
+          ? {
+              canSubmit: Boolean(wizardChrome?.canSubmit),
+              stageLabel: wizardChrome?.stageLabel,
+              submitLabel: wizardChrome?.submitLabel,
+              submitting: Boolean(wizardChrome?.submitting),
+              title:
+                wizardChrome?.title ||
+                selectedWorkflowName ||
+                t`New Submission`,
+              onCancel: () => setView('home'),
+              onSubmit: () => wizardSubmitRef.current(),
+            }
+          : null
+      }
+      onSignOut={() => {
+        clearSession(portalId)
+        setSelectedSubmission(null)
+        setSelectedWorkflowId(
+          hasMultipleWorkflows
+            ? null
+            : portal.workflows[0]
+              ? String(portal.workflows[0].id)
+              : null,
+        )
+        setSubmissions([])
+        setView('home')
+      }}
+    >
+      <AnimateSlideUp
+        key={view}
+        className={
+          view === 'detail' || view === 'wizard'
+            ? 'flex h-full min-h-0 flex-1 flex-col'
+            : undefined
+        }
+      >
+        {content}
+      </AnimateSlideUp>
+    </PortalShell>
+  )
+}
+
+PortalPage.displayName = 'PortalPage'
+export default PortalPage

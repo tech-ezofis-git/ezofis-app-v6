@@ -1,16 +1,24 @@
+import { useLingui } from '@lingui/react/macro'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import formApi from '@/api/form/form'
+import {
+  getGroupListQueryOptions,
+  getUserListQueryOptions,
+} from '@/api/userQueries'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
 import { AnimateFadeIn } from '@/components/common/animations'
-import ApiPlayground, {
-  type ApiPlaygroundContext,
-} from '@/components/playground/ApiPlayground'
 import { queryClient } from '@/lib/tanstack-query/queryClient'
+import { applyCalculatedFields } from '@/pages/form-builder/helpers/formula'
+import { extractGenericRequestNumber } from '@/pages/requests/components/columns/useDynamicColumns'
 import authUserStore from '@/stores/authUserStore'
-import cn from '@/utils/cn'
+import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import workflowApi from '../../../../api/workflow/workflow'
+import { useAttachments } from '../../hooks/useAttachments'
+import { useComments } from '../../hooks/useComments'
 import { useRequestDetail } from '../../hooks/useRequestDetails'
 import requestStore from '../../stores/useRequestStore'
 import {
@@ -18,6 +26,20 @@ import {
   isMatrixFieldType,
   isTableType,
 } from '../../utils/dynamicTable.utils'
+import { setFieldForAttachment } from '../../utils/fieldAttachmentMap'
+import { isAccountsPayableWorkflow } from '../../utils/workflow.utils'
+import {
+  attachmentToFormFileValue,
+  getFirstFileUploadField,
+  getFirstReceivedAttachment,
+  getFormPanels,
+  getWorkflowRepositoryId,
+  hasStoredFileValue,
+  isFileUploadField,
+  seedGmailFirstFileUpload,
+  shouldSeedFirstFileUploadFromAttachment,
+} from '../workflow-request/utils/gmailFormAttachment'
+import GenericRequestOverview from './components/generic-overview/GenericRequestOverview'
 import Header from './components/Header'
 import Overview from './components/sections/overview/Overview'
 
@@ -494,15 +516,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-          String(p.processId || p.id) === jobKey
-            ? {
-              ...p,
-              apAgentJobId: null,
-              id: jobData.instanceId,
-              processId: jobData.instanceId,
-            }
-            : p,
-        )
+            String(p.processId || p.id) === jobKey
+              ? {
+                  ...p,
+                  apAgentJobId: null,
+                  id: jobData.instanceId,
+                  processId: jobData.instanceId,
+                }
+              : p,
+          )
         : state.processingProcesses
 
       return {
@@ -621,7 +643,9 @@ const useJobPolling = (
   }, [onJobData])
 
   const isPollingExternally = useMemo(() => {
-    return processingProcesses.some((p) => String(p.apAgentJobId) === String(apAgentJobId))
+    return processingProcesses.some(
+      (p) => String(p.apAgentJobId) === String(apAgentJobId),
+    )
   }, [processingProcesses, apAgentJobId])
 
   const jobKey = apAgentJobId ? `job-${apAgentJobId}` : ''
@@ -743,6 +767,25 @@ const mergeInvoiceHeader = (cleanFields: any, invoiceHeader: any) => {
   }
 }
 
+// Generic (non-Accounts-Payable) tickets keep their form data field-id-keyed
+// (the shape WorkflowFormRenderer/FieldRenderer read and write, same as the
+// New Request compose flow) rather than the AP flow's label-keyed formModel.
+const safeParseFormData = (formData: unknown): Record<string, any> => {
+  if (!formData) return {}
+  if (typeof formData === 'object') {
+    return (formData as any).fields || formData || {}
+  }
+  if (typeof formData === 'string') {
+    try {
+      const parsed = JSON.parse(formData)
+      return parsed?.fields || parsed || {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
+
 const parseCleanFields = (
   activeItem: any,
   selectedWorkflow: any,
@@ -808,6 +851,7 @@ const Request = ({
   onNext?: () => void
   onPrev?: () => void
 }) => {
+  const { t } = useLingui()
   const {
     activeTabValue,
     closeRequest,
@@ -825,6 +869,30 @@ const Request = ({
   const selectedItem = item || storeSelectedItem
   const resolvedWorkflowId =
     selectedWorkflow?.id || workflowId || selectedWorkflowId
+  const isGenericWorkflow = !isAccountsPayableWorkflow(rawWorkflowData)
+
+  // Fetched once here (rather than separately inside the header badge and
+  // the overview's own Attachments panel) so the header's attachment count,
+  // the overview's file-field display, and the Attachments panel list all
+  // agree on the same data.
+  const genericInstanceId =
+    selectedItem?.workflowInstanceId || selectedItem?.processId
+  const { data: genericAttachments, refetch: refetchGenericAttachments } =
+    useAttachments(
+      resolvedWorkflowId,
+      genericInstanceId,
+      isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
+    )
+
+  // Same idea as genericAttachments above - keep the header's comment
+  // count and the Comments panel reading from the same live list instead
+  // of the stale selectedItem.commentsCount from the list row.
+  const { data: genericComments, refetch: refetchGenericComments } =
+    useComments(
+      resolvedWorkflowId,
+      genericInstanceId,
+      isGenericWorkflow && !!resolvedWorkflowId && !!genericInstanceId,
+    )
 
   const [activeTab, setActiveTab] = useState<string>(
     activeTabValue || 'Overview',
@@ -851,11 +919,11 @@ const Request = ({
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [rightView, setRightView] = useState<
-    'analysis' | 'comments' | 'attachments' | 'forms'
-  >('analysis')
+    'overview' | 'history' | 'attachments' | 'comments'
+  >('overview')
   const [isEditing, setIsEditing] = useState<boolean>(false)
-  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false)
-  const [playgroundContext, setPlaygroundContext] = useState<any>(null)
+  const openPlayground = usePlaygroundStore((state) => state.open)
+  const setPlaygroundContext = usePlaygroundStore((state) => state.setContext)
 
   // Determine if it was known to be processing initially
   const initialProcessing =
@@ -945,7 +1013,11 @@ const Request = ({
   const hasAgentData = agentDataList.length > 0
 
   const currentAgentData = useMemo(() => {
-    return agentDataList.find((a: any) => a.id === selectedAgentId) || {}
+    return (
+      agentDataList.find((a: any) => a.id === selectedAgentId) ||
+      agentDataList[0] ||
+      {}
+    )
   }, [agentDataList, selectedAgentId])
 
   const invoiceHeader =
@@ -984,10 +1056,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-      request.review ||
-      request._agentData?.[0]?.decision ||
-      request.completedAtUtc
-    )
+        request.review ||
+        request._agentData?.[0]?.decision ||
+        request.completedAtUtc
+      )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1011,17 +1083,13 @@ const Request = ({
     ? request.stageType === 'AP_AGENT'
     : selectedItem?.stageType === 'AP_AGENT'
 
+  const currentActivityId = request?.activityId || selectedItem?.activityId
+
   const dynamicRules = useMemo(() => {
     const rules = rawWorkflowData?.workflowJson?.rules || []
-    const currentActivityId = request?.activityId || selectedItem?.activityId
-
-    console.log('--- USER DEBUG ---')
-    console.log('activityId:', currentActivityId)
-    console.log('workflowJson:', rawWorkflowData?.workflowJson)
-
     if (!currentActivityId) return []
     return rules.filter((rule: any) => rule.fromBlockId === currentActivityId)
-  }, [rawWorkflowData, request?.activityId, selectedItem?.activityId])
+  }, [rawWorkflowData, currentActivityId])
 
   const ruleActions = useMemo(() => {
     return dynamicRules.map((rule: any) => {
@@ -1033,36 +1101,251 @@ const Request = ({
     })
   }, [dynamicRules])
 
+  // Steps carry per-activity assignment (assignedToUserId); block
+  // settings.users is the same data as authored in the workflow builder.
+  // Only the user the current stage is actually assigned to should see the
+  // action buttons for it.
+  const assignedUserIds = useMemo(() => {
+    if (!currentActivityId) return []
+
+    const step = (rawWorkflowData?.steps || []).find(
+      (s: any) => s.activityId === currentActivityId,
+    )
+    if (step?.assignedToUserId) return [String(step.assignedToUserId)]
+
+    const block = (rawWorkflowData?.workflowJson?.blocks || []).find(
+      (b: any) => b.id === currentActivityId,
+    )
+    return (block?.settings?.users || []).map(String)
+  }, [rawWorkflowData, currentActivityId])
+
+  const isAssignedToCurrentUser = useMemo(() => {
+    if (assignedUserIds.length === 0) return true
+    const currentUserId = authUserStore.getState().session?.id
+    return !!currentUserId && assignedUserIds.includes(String(currentUserId))
+  }, [assignedUserIds])
+
+  // The current activity's block carries the Manual User (INTERNAL_ACTOR)
+  // settings authored in the workflow builder - assignment mode, checklist
+  // items, document/signature requirements, mandatory fields.
+  const currentBlock = useMemo(() => {
+    if (!currentActivityId) return null
+    return (
+      (rawWorkflowData?.workflowJson?.blocks || []).find(
+        (b: any) => b.id === currentActivityId,
+      ) || null
+    )
+  }, [rawWorkflowData, currentActivityId])
+
+  console.log('[Pending with] activityId:', currentActivityId)
+  console.log('[Pending with] matched block:', currentBlock)
+  const currentBlockSettings: Record<string, any> = currentBlock?.settings || {}
+
+  const assignedGroupIds = useMemo(
+    () => (currentBlockSettings.groups || []).map(String),
+    [currentBlockSettings],
+  )
+
+  const { data: allUsersForAssignee } = useQuery(getUserListQueryOptions())
+  const { data: allGroupsForAssignee } = useQuery(getGroupListQueryOptions())
+
+  const assigneeLabel = useMemo(() => {
+    if (!currentBlock) return undefined
+    const names: string[] = []
+    if (assignedUserIds.length && Array.isArray(allUsersForAssignee)) {
+      assignedUserIds.forEach((id: string) => {
+        const u = (allUsersForAssignee as any[]).find(
+          (candidate) => String(candidate.id ?? candidate.value) === id,
+        )
+        if (u) {
+          names.push(
+            u.name || u.value || u.loginName || u.email || `User ${id}`,
+          )
+        }
+      })
+    }
+    if (assignedGroupIds.length && Array.isArray(allGroupsForAssignee)) {
+      assignedGroupIds.forEach((id: string) => {
+        const g = (allGroupsForAssignee as any[]).find(
+          (candidate) => String(candidate.groupId ?? candidate.id) === id,
+        )
+        if (g) names.push(g.groupName || g.name || `Group ${id}`)
+      })
+    }
+    if (currentBlockSettings.isManagerEnabled) names.push('Manager')
+    if (currentBlockSettings.isToRequesterEnabled) names.push('Requester')
+    if (currentBlockSettings.isCoordinatorEnabled) names.push('Coordinator')
+    if (currentBlockSettings.isDynamicUserEnabled)
+      names.push('Dynamically assigned user')
+    if (currentBlockSettings.isMasterUserEnabled)
+      names.push('Master table lookup')
+    if (!names.length) return undefined
+    return `Pending with ${names.join(', ')}`
+  }, [
+    currentBlock,
+    currentBlockSettings,
+    assignedUserIds,
+    assignedGroupIds,
+    allUsersForAssignee,
+    allGroupsForAssignee,
+  ])
+
+  // Task-requirement gating state (Checklist / Signature), from the Manual
+  // User node's Phase-1 settings - reset whenever the active stage changes.
+  const [checklistChecked, setChecklistChecked] = useState<
+    Record<string, boolean>
+  >({})
+  const [signatureConfirmed, setSignatureConfirmed] = useState(false)
+  useEffect(() => {
+    setChecklistChecked({})
+    setSignatureConfirmed(false)
+  }, [currentActivityId, selectedItem?.transactionId])
+
   const headerActions = useMemo(() => {
-    console.log('[RULE_ACTIONS_DEBUG] --- headerActions recalculating ---')
-    console.log('[RULE_ACTIONS_DEBUG] isApAgentStage:', isApAgentStage)
-    console.log('[RULE_ACTIONS_DEBUG] request activityId:', request?.activityId)
-    console.log(
-      '[RULE_ACTIONS_DEBUG] selectedItem activityId:',
-      selectedItem?.activityId,
-    )
-    console.log(
-      '[RULE_ACTIONS_DEBUG] rawWorkflowData rules:',
-      rawWorkflowData?.workflowJson?.rules,
-    )
-    console.log(
-      '[RULE_ACTIONS_DEBUG] dynamicRules (matching fromBlockId):',
-      dynamicRules,
-    )
-    console.log('[RULE_ACTIONS_DEBUG] ruleActions:', ruleActions)
-    console.log('[RULE_ACTIONS_DEBUG] fallback actions:', actions)
     if (isApAgentStage) return []
+    // Sent/Closed are read-only views of a request that has already moved
+    // on to (or past) another assignee — only the Inbox view, where the
+    // request is actually pending with the current user, can act on it.
+    if (requestListTab !== 'Inbox') return []
+    if (!isAssignedToCurrentUser) return []
     return ruleActions.length > 0 ? ruleActions : actions
   }, [
     isApAgentStage,
+    requestListTab,
+    isAssignedToCurrentUser,
     ruleActions,
     actions,
-    request?.activityId,
-    selectedItem?.activityId,
-    rawWorkflowData,
   ])
 
   const [formModel, setFormModel] = useState<any>({})
+  const [genericFormModel, setGenericFormModel] = useState<Record<string, any>>(
+    {},
+  )
+
+  const resolvedRequestNo = useMemo(() => {
+    if (isGenericWorkflow) {
+      const genericNo = extractGenericRequestNumber(selectedItem)
+      return genericNo === '-' ? 'REQ - ...' : genericNo
+    }
+    return (
+      formModel?.['Invoice Number'] ||
+      formModel?.['Invoice No'] ||
+      formModel?.['invoice_number'] ||
+      formModel?.['invoice_no'] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+        'Invoice No'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+        'invoice_no'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+        'Invoice Number'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+        'invoice_number'
+      ] ||
+      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+        'invoice_num'
+      ] ||
+      currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
+      selectedItem?.reqNo ||
+      selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
+      selectedItem?.invoiceNumber ||
+      selectedItem?.requestNo ||
+      'REQ - ...'
+    )
+  }, [isGenericWorkflow, selectedItem, formModel, currentAgentData])
+
+  useEffect(() => {
+    if (!isGenericWorkflow) return
+    const activeItem = request || selectedItem
+    const parsed = safeParseFormData(activeItem?.formData)
+    setGenericFormModel((prev) => {
+      const next = { ...parsed }
+      for (const [key, value] of Object.entries(prev)) {
+        if (hasStoredFileValue(value) && !hasStoredFileValue(next[key])) {
+          next[key] = value
+        }
+      }
+      return applyCalculatedFields(
+        getFormPanels(rawWorkflowData),
+        seedGmailFirstFileUpload(
+          next,
+          rawWorkflowData,
+          genericAttachments,
+          activeItem?.activityId,
+          rawWorkflowData?.repositoryId || activeItem?.repositoryId,
+        ),
+      )
+    })
+  }, [
+    genericAttachments,
+    isGenericWorkflow,
+    rawWorkflowData,
+    request,
+    selectedItem?.activityId,
+    selectedItem?.formData,
+    selectedItem?.repositoryId,
+    selectedItem?.transactionId,
+  ])
+
+  useEffect(() => {
+    if (!isGenericWorkflow) return
+    if (
+      !shouldSeedFirstFileUploadFromAttachment(
+        rawWorkflowData,
+        (request || selectedItem)?.activityId,
+      )
+    ) {
+      return
+    }
+    const firstField = getFirstFileUploadField(getFormPanels(rawWorkflowData))
+    if (!isFileUploadField(firstField)) return
+    const firstReceived = getFirstReceivedAttachment(genericAttachments)
+    const stored = attachmentToFormFileValue(
+      firstReceived,
+      getWorkflowRepositoryId(
+        rawWorkflowData,
+        rawWorkflowData?.repositoryId ||
+          selectedItem?.repositoryId ||
+          request?.repositoryId,
+      ),
+    )
+    if (!stored) return
+
+    setGenericFormModel((prev) =>
+      applyCalculatedFields(
+        getFormPanels(rawWorkflowData),
+        seedGmailFirstFileUpload(
+          prev,
+          rawWorkflowData,
+          genericAttachments,
+          (request || selectedItem)?.activityId,
+          stored.repositoryId,
+        ),
+      ),
+    )
+
+    const instanceKey = String(genericInstanceId || '')
+    if (instanceKey) {
+      setFieldForAttachment(instanceKey, stored.itemId, firstField.id)
+    }
+  }, [
+    genericAttachments,
+    genericInstanceId,
+    isGenericWorkflow,
+    rawWorkflowData,
+    request,
+    selectedItem,
+  ])
+
+  const handleGenericFieldChange = (fieldId: string, value: any) =>
+    setGenericFormModel((prev) =>
+      applyCalculatedFields(getFormPanels(rawWorkflowData), {
+        ...prev,
+        [fieldId]: value,
+      }),
+    )
 
   const allowedLabels = useMemo(() => {
     const activeItem = request || selectedItem
@@ -1103,12 +1386,15 @@ const Request = ({
   ])
 
   useEffect(() => {
-    if (hasAgentData && agentDataList.length > 0) {
-      setSelectedAgentId(agentDataList[0].id)
+    if (agentDataList.length > 0) {
+      const exists = agentDataList.some((a: any) => a.id === selectedAgentId)
+      if (!exists) {
+        setSelectedAgentId(agentDataList[0].id)
+      }
     } else {
       setSelectedAgentId(null)
     }
-  }, [request?._agentData, hasAgentData])
+  }, [agentDataList, selectedAgentId])
 
   useEffect(() => {
     const activeItem = request || selectedItem
@@ -1157,11 +1443,64 @@ const Request = ({
   }, [hasAgentData, activeTabValue])
 
   const handleMoveNext = async (action: string) => {
+    const checklistItems: { id: string; label: string; required: boolean }[] =
+      Array.isArray(currentBlockSettings.checklistItems)
+        ? currentBlockSettings.checklistItems
+        : []
+    const missingChecklistItem = checklistItems.find(
+      (item) => item.required && !checklistChecked[item.id],
+    )
+    if (missingChecklistItem) {
+      showToast({
+        message: t`Please complete the checklist item "${missingChecklistItem.label}" before proceeding.`,
+        variant: 'error',
+      })
+      return
+    }
+    if (
+      currentBlockSettings.documentRequired &&
+      genericAttachments.length === 0
+    ) {
+      showToast({
+        message: t`At least one attachment is required before proceeding.`,
+        variant: 'error',
+      })
+      return
+    }
+    if (currentBlockSettings.userSignature && !signatureConfirmed) {
+      showToast({
+        message: t`Please confirm your signature before proceeding.`,
+        variant: 'error',
+      })
+      return
+    }
+    const mandatoryFields: string[] = Array.isArray(
+      currentBlockSettings.mandatoryFields,
+    )
+      ? currentBlockSettings.mandatoryFields
+      : []
+    if (mandatoryFields.length) {
+      const activeModel = isGenericWorkflow ? genericFormModel : formModel
+      const missingField = mandatoryFields.find((fieldId) => {
+        const val = activeModel?.[fieldId]
+        return val === undefined || val === null || val === ''
+      })
+      if (missingField) {
+        showToast({
+          message: t`Please fill all mandatory fields before proceeding.`,
+          variant: 'error',
+        })
+        return
+      }
+    }
+
     try {
       setSubmitting(true)
 
       let fields: any = {}
-      if (Object.keys(formModel).length > 0) {
+      if (isGenericWorkflow) {
+        fields = genericFormModel
+      } else if (Object.keys(formModel).length > 0) {
         fields = mapFormModelToPayloadFields(
           formModel,
           selectedWorkflow,
@@ -1191,8 +1530,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-              selectedItem?.agentResponse || request?.agentResponse || {},
-            ),
+                selectedItem?.agentResponse || request?.agentResponse || {},
+              ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1244,17 +1583,20 @@ const Request = ({
 
       if (response?.error) {
         showToast({
-          message: `Failed to proceed request: ${response.error}`,
+          message: t`Failed to proceed request: ${response.error}`,
           variant: 'error',
         })
         return
       }
 
+      // Invalidate notifications query so new ticket notifications load immediately
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] })
+
       showToast({
         message:
           action.toLowerCase() === 'submit'
-            ? 'Request submitted successfully'
-            : `Request action "${action}" completed successfully`,
+            ? t`Request ${resolvedRequestNo} submitted successfully`
+            : t`Request ${resolvedRequestNo} action "${action}" completed successfully`,
         variant: 'success',
       })
 
@@ -1286,13 +1628,14 @@ const Request = ({
       console.log(rawWorkflowData)
       const payload = {
         formData: {
-          fields:
-            Object.keys(formModel).length > 0
+          fields: isGenericWorkflow
+            ? genericFormModel
+            : Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                formModel,
-                selectedWorkflow,
-                request?._formDefinition,
-              )
+                  formModel,
+                  selectedWorkflow,
+                  request?._formDefinition,
+                )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -1310,8 +1653,8 @@ const Request = ({
         showToast({
           message:
             action === 'Save'
-              ? `Failed to save request: ${response.error}`
-              : `Failed to submit request: ${response.error}`,
+              ? t`Failed to save request: ${response.error}`
+              : t`Failed to submit request: ${response.error}`,
           variant: 'error',
         })
         return
@@ -1320,8 +1663,8 @@ const Request = ({
       showToast({
         message:
           action === 'Save'
-            ? 'Request saved successfully'
-            : 'Request submitted successfully',
+            ? t`Request saved successfully`
+            : t`Request submitted successfully`,
         variant: 'success',
       })
 
@@ -1338,7 +1681,7 @@ const Request = ({
     } catch (e: any) {
       console.error(e)
       showToast({
-        message: `An error occurred: ${e.message || e}`,
+        message: t`An error occurred: ${e.message || e}`,
         variant: 'error',
       })
     } finally {
@@ -1447,53 +1790,29 @@ const Request = ({
               selectedItem?.vendor ||
               '',
           }
-          setPlaygroundContext({
+          const context: ApiPlaygroundContext = {
             actionName: action?.label || 'Paid',
             document: docInfo,
             endpoint:
               action?.endpoint ||
               'https://demo.ezofis.com/V6Playground/apikey.html',
-            // model: action?.model || 'gemini-2.0-flash-exp',
-            // provider: action?.provider || 'gemini',
             requestPayload: docInfo,
-          })
-          setIsPlaygroundOpen(true)
+          }
+          setPlaygroundContext(context)
+          openPlayground()
         }
       } catch (err) {
         console.error('Error parsing autoOpenPlaygroundAction:', err)
       }
     }
-  }, [selectedItem, formModel, currency, poVal])
-
-  const handleOpenPlayground = (ctx: ApiPlaygroundContext = {}) => {
-    const docInfo = {
-      amount: selectedItem?.amount || formModel?.['Invoice Amount'] || 0,
-      currency: currency || formModel?.['Currency'] || 'USD',
-      invoiceNumber:
-        formModel?.['Invoice Number'] ||
-        formModel?.['Invoice No'] ||
-        selectedItem?.invoiceNumber ||
-        '',
-      poNumber: poVal || selectedItem?.purchaseOrderNumber || '',
-      requestNo: selectedItem?.requestNo || selectedItem?.reqNo || '',
-      vendor:
-        formModel?.['Supplier Name'] ||
-        formModel?.['Vendor Name'] ||
-        selectedItem?.vendor ||
-        '',
-    }
-    const document = {
-      ...docInfo,
-      ...(ctx.document || {}),
-    }
-
-    setPlaygroundContext({
-      ...ctx,
-      document,
-      requestPayload: ctx.requestPayload || ctx.payload || document,
-    })
-    setIsPlaygroundOpen(true)
-  }
+  }, [
+    selectedItem,
+    formModel,
+    currency,
+    poVal,
+    setPlaygroundContext,
+    openPlayground,
+  ])
 
   const agentDecision = currentAgentData?.decision || selectedItem?.decision
 
@@ -1556,12 +1875,7 @@ const Request = ({
     statusBadge = 'Preparing your request...'
   } else {
     // If job completed but we don't have agentDecision yet, show a loader status
-    if (
-      isCurrentlyProcessing &&
-      apAgentJobId &&
-      jobStatus &&
-      !agentDecision
-    ) {
+    if (isCurrentlyProcessing && apAgentJobId && jobStatus && !agentDecision) {
       statusBadge = 'Finalizing Results...'
     } else {
       statusBadge = finalStatusBadge
@@ -1587,7 +1901,7 @@ const Request = ({
 
     if (!instanceId) {
       showToast({
-        message: 'No instance ID available to share',
+        message: t`No instance ID available to share`,
         variant: 'error',
       })
       return false
@@ -1607,28 +1921,27 @@ const Request = ({
           ),
         )
       }
-      showToast({ message: 'Request shared successfully', variant: 'success' })
+      showToast({ message: t`Request shared successfully`, variant: 'success' })
       return true
     } catch (error) {
       console.error('Failed to share:', error)
-      showToast({ message: 'Failed to share request', variant: 'error' })
+      showToast({ message: t`Failed to share request`, variant: 'error' })
       return false
     }
   }
 
   return (
     <div
-      className={`flex w-full flex-col p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-[calc(100vh-85px)]'}`}
+      className={`flex min-h-0 w-full flex-col overflow-hidden p-0 ${hideActions ? 'bg-grey-2 h-full p-4' : 'h-full'}`}
     >
       <div className='sticky top-0 z-50 border-b border-[var(--gray-3)] bg-surface px-2'>
         <Header
           actions={headerActions}
           agentData={currentAgentData}
           approveLoading={submitting}
-          attachmentCount={selectedItem?.attachmentCount || 0}
-          commentsCount={selectedItem?.commentsCount || 0}
+          assigneeLabel={assigneeLabel}
           currency={currency}
-          enableAIInsights={requestListTab !== 'Processed'}
+          enableAIInsights={true}
           hideActions={hideActions}
           isEditing={isEditing}
           isLoading={isLoading}
@@ -1636,37 +1949,76 @@ const Request = ({
           percent={jobStatus?.percent}
           poNumber={poVal}
           poValue={poValue}
-          raisedAt={request?.createdAt}
+          requestNo={resolvedRequestNo}
           rightView={rightView}
           showApprove={requestListTab === 'Inbox'}
+          simple={isGenericWorkflow}
           status={statusBadge}
           totalAmount={totalAmount}
-          requestNo={
-            formModel?.['Invoice Number'] ||
-            formModel?.['Invoice No'] ||
-            formModel?.['invoice_number'] ||
-            formModel?.['invoice_no'] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice No'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_no'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'Invoice Number'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_number'
-            ] ||
-            currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-            'invoice_num'
-            ] ||
-            currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
-            selectedItem?.reqNo ||
-            selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
-            selectedItem?.invoiceNumber ||
-            selectedItem?.requestNo ||
-            'REQ - ...'
+          attachmentCount={
+            isGenericWorkflow
+              ? genericAttachments.length
+              : selectedItem?.attachmentCount || 0
+          }
+          commentsCount={
+            isGenericWorkflow
+              ? genericComments.length
+              : selectedItem?.commentsCount || 0
+          }
+          lastActionAt={
+            selectedItem?.lastActionDate ||
+            selectedItem?.lastAction?.date ||
+            selectedItem?.lastAction?.createdAt ||
+            selectedItem?.lastActionAt ||
+            selectedItem?.updatedAt ||
+            selectedItem?.actionDate ||
+            selectedItem?.transactionCreatedAt ||
+            selectedItem?.createdAtUtc ||
+            selectedItem?.createdAt ||
+            request?.updatedAt ||
+            request?.transactionCreatedAt ||
+            request?.createdAtUtc ||
+            request?.createdAt
+          }
+          raisedAt={
+            selectedItem?.transactionCreatedAt ||
+            selectedItem?.createdAtUtc ||
+            selectedItem?.createdAt ||
+            selectedItem?.createdOn ||
+            selectedItem?.raisedAt ||
+            selectedItem?.date ||
+            request?.transactionCreatedAt ||
+            request?.createdAtUtc ||
+            request?.createdAt
+          }
+          raisedBy={
+            selectedItem?.transactionCreatedByEmail ||
+            selectedItem?.createdByName ||
+            selectedItem?.createdByEmail ||
+            selectedItem?.createdBy ||
+            selectedItem?.raisedBy ||
+            selectedItem?.userName ||
+            selectedItem?.creatorName ||
+            request?.transactionCreatedByEmail ||
+            request?.createdByName ||
+            request?.createdBy ||
+            request?.userName ||
+            authUserStore.getState().session?.name
+          }
+          stage={
+            // `lastActionStageName` is the stage the request came FROM (the
+            // last completed action), not where it currently sits — so it
+            // must rank behind the actual current-stage fields, only used
+            // as a last-resort fallback if none of those are populated.
+            selectedItem?.currentStage ||
+            selectedItem?.stageName ||
+            selectedItem?.stage ||
+            selectedItem?.stepName ||
+            request?.currentStage ||
+            request?.stageName ||
+            request?.stage ||
+            selectedItem?.lastActionStageName ||
+            request?.lastActionStageName
           }
           ticketUserId={
             selectedItem?.userId ||
@@ -1679,55 +2031,68 @@ const Request = ({
           onBack={onBack || closeRequest}
           onManualCorrection={() => setIsEditing(!isEditing)}
           onNext={onNext}
-          onOpenPlayground={handleOpenPlayground}
           onPrev={onPrev}
           onShare={handleShare}
         />
       </div>
 
-      {/* Tab Content + Playground Drawer */}
+      {/* Tab Content */}
       <div className='flex min-h-0 w-full flex-1 overflow-hidden'>
-        <div
-          className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden transition-all duration-300 ease-in-out',
-            isPlaygroundOpen ? 'w-full lg:w-[75%]' : 'w-full',
-          )}
-        >
+        <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           <AnimateFadeIn
             className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'
             delay={0.6}
           >
-            <Overview
-              actions={headerActions}
-              agentData={currentAgentData}
-              allowedLabels={allowedLabels}
-              formDefinition={request?._formDefinition}
-              formModel={formModel}
-              isFourthItem={isFourthItem}
-              isProcessing={isCurrentlyProcessing || isLoading}
-              isThirdItem={isThirdItem}
-              processId={Number(selectedItem?.processId)}
-              repositoryId={Number(rawWorkflowData?.repositoryId)}
-              rightView={rightView}
-              selectedItem={request || selectedItem}
-              selectedWorkflow={selectedWorkflow}
-              transactionId={selectedItem?.transactionId as any}
-              workflowId={resolvedWorkflowId}
-              setFormModel={setFormModel}
-              setRightView={setRightView}
-              onOpenPlayground={handleOpenPlayground}
-            />
+            {isGenericWorkflow ? (
+              <GenericRequestOverview
+                attachments={genericAttachments}
+                checklistChecked={checklistChecked}
+                comments={genericComments}
+                documentRequired={!!currentBlockSettings.documentRequired}
+                formModel={genericFormModel}
+                rawWorkflowData={rawWorkflowData}
+                rightView={rightView}
+                selectedItem={request || selectedItem}
+                signatureConfirmed={signatureConfirmed}
+                userSignatureRequired={!!currentBlockSettings.userSignature}
+                viewOnly={requestListTab !== 'Inbox'}
+                checklistItems={
+                  Array.isArray(currentBlockSettings.checklistItems)
+                    ? currentBlockSettings.checklistItems
+                    : []
+                }
+                setRightView={setRightView}
+                onAttachmentsChanged={refetchGenericAttachments}
+                onChecklistToggle={(id, checked) =>
+                  setChecklistChecked((prev) => ({ ...prev, [id]: checked }))
+                }
+                onCommentsChanged={refetchGenericComments}
+                onFieldChange={handleGenericFieldChange}
+                onSignatureToggle={setSignatureConfirmed}
+              />
+            ) : (
+              <Overview
+                actions={headerActions}
+                agentData={currentAgentData}
+                allowedLabels={allowedLabels}
+                formDefinition={request?._formDefinition}
+                formModel={formModel}
+                isFourthItem={isFourthItem}
+                isProcessing={isCurrentlyProcessing || isLoading}
+                isThirdItem={isThirdItem}
+                processId={Number(selectedItem?.processId)}
+                repositoryId={Number(rawWorkflowData?.repositoryId)}
+                rightView={rightView}
+                selectedItem={request || selectedItem}
+                selectedWorkflow={selectedWorkflow}
+                transactionId={selectedItem?.transactionId as any}
+                workflowId={resolvedWorkflowId}
+                setFormModel={setFormModel}
+                setRightView={setRightView}
+              />
+            )}
           </AnimateFadeIn>
         </div>
-
-        {isPlaygroundOpen && (
-          <div className='animate-in slide-in-from-right flex h-full w-full min-w-[320px] shrink-0 flex-col overflow-hidden border-l border-[var(--gray-3)] bg-surface duration-300 ease-in-out lg:w-[25%]'>
-            <ApiPlayground
-              context={playgroundContext}
-              onClose={() => setIsPlaygroundOpen(false)}
-            />
-          </div>
-        )}
       </div>
     </div>
   )

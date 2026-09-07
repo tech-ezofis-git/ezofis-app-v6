@@ -2,8 +2,6 @@ import { useLingui } from '@lingui/react/macro'
 import { useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import workflowsApiV6 from '@/api/v6/workflows'
-import useTheme from '@/hooks/useTheme'
-import AiBrandIcon from '@/components/common/AiBrandIcon'
 import sample1 from '@/assets/Sample Invoices/inv-1.pdf'
 import sample1Img from '@/assets/Sample Invoices/inv-1.png'
 import sample10 from '@/assets/Sample Invoices/inv-10.pdf'
@@ -25,6 +23,8 @@ import sample8Img from '@/assets/Sample Invoices/inv-8.png'
 import sample9 from '@/assets/Sample Invoices/inv-9.pdf'
 import sample9Img from '@/assets/Sample Invoices/inv-9.png'
 import showToast from '@/components/base/toast/showToast'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
+import useTheme from '@/hooks/useTheme'
 import requestStore from '@/pages/requests/stores/useRequestStore'
 import Icon from '../../../../../../components/base/icon/Icon'
 import {
@@ -33,7 +33,15 @@ import {
   AnimateSlideUp,
   AnimateStagger,
 } from '../../../../../../components/common/animations'
-import { IMAGE_ACCEPT, isImage, isPdf, MAX_SIZE, PDF_ACCEPT } from './utils'
+import {
+  DOCUMENT_ACCEPT,
+  IMAGE_ACCEPT,
+  isImage,
+  isPdf,
+  isSupportedDocument,
+  MAX_SIZE,
+  PDF_ACCEPT,
+} from './utils'
 
 type SampleDocument = {
   description: string
@@ -467,10 +475,10 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
 
   const getUploadErrorMessage = (files: File[]): string => {
     const tooLarge = files.some((f) => f.size > MAX_SIZE)
-    if (tooLarge) return t`File is too large. Max size is 4MB.`
-    const invalidType = files.some((f) => !isPdf(f) && !isImage(f))
+    if (tooLarge) return t`File is too large. Max size is 50MB.`
+    const invalidType = files.some((f) => !isSupportedDocument(f))
     if (invalidType)
-      return t`Invalid file type. Please upload a PDF or Image.`
+      return t`Invalid file type. Please upload a supported document.`
     return t`No valid files selected.`
   }
 
@@ -544,6 +552,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         transactionId,
       )
       const items = (inboxRes.data?.items || []) as Array<{
+        formEntryId?: string | number
         id?: string | number
         processId?: string | number
         referenceNumber?: string
@@ -558,9 +567,19 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
         }) || items[0]
 
       if (foundItem) {
+        const referenceNumber =
+          foundItem.referenceNumber == null
+            ? ''
+            : String(foundItem.referenceNumber).trim()
+        const formEntryId = foundItem.formEntryId
         return {
           requestNo:
-            foundItem.referenceNumber ||
+            referenceNumber ||
+            (formEntryId !== undefined &&
+            formEntryId !== null &&
+            formEntryId !== ''
+              ? `REQ-${formEntryId}`
+              : '') ||
             `REQ-${processId.substring(0, 8).toUpperCase()}` ||
             foundItem.requestNo ||
             t`New Request`,
@@ -582,7 +601,7 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
   ) => {
     const files = Array.from(fileList ?? [])
     const validFiles = files.filter(
-      (f) => (isPdf(f) || isImage(f)) && f.size <= MAX_SIZE,
+      (f) => isSupportedDocument(f) && f.size <= MAX_SIZE,
     )
 
     console.log('Files selected:', files)
@@ -868,14 +887,14 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                       <span className='text-[var(--primary-9)]'>{t`browse`}</span>
                     </h2>
                     <p className='text-xs font-medium text-[var(--gray-9)]'>
-                      {t`Supports PDF and Images · Max 4 MB`}
+                      {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB`}
                     </p>
                   </div>
                 </AnimateStagger>
               )}
 
               <input
-                accept={`${PDF_ACCEPT},${IMAGE_ACCEPT}`}
+                accept={DOCUMENT_ACCEPT}
                 className='hidden'
                 ref={invoiceInputRef}
                 type='file'
@@ -912,10 +931,11 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                     disabled={uploadStatus === 'uploading'}
                     key={doc.fileName}
                     type='button'
-                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${isSelected
+                    className={`group/card relative z-10 flex w-[156px] shrink-0 flex-col overflow-visible rounded-lg border bg-surface text-left shadow-sm transition-all duration-300 hover:z-50 ${
+                      isSelected
                         ? 'scale-[1.02] border-green-8 ring-2 ring-green-3 ring-offset-0'
                         : 'border-[var(--gray-3)] hover:-translate-y-1.5 hover:scale-[1.02] hover:border-[var(--primary-6)] hover:shadow-md active:translate-y-0 active:scale-98'
-                      } disabled:cursor-not-allowed disabled:opacity-50`}
+                    } disabled:cursor-not-allowed disabled:opacity-50`}
                     onClick={() => handleSampleSelect(doc)}
                   >
                     <SampleThumbnail
@@ -962,7 +982,10 @@ const FileUpload = ({ onClose }: { onClose?: () => void }) => {
                     className={`flex size-10 items-center justify-center rounded-lg shadow-sm ${item.color} transition-transform duration-300 group-hover:scale-105`}
                   >
                     {item.icon === 'tabler:sparkles' ? (
-                      <AiBrandIcon className='size-5 transition-transform duration-300 group-hover:rotate-6' variant='outline-purple' />
+                      <AiBrandIcon
+                        className='size-5 transition-transform duration-300 group-hover:rotate-6'
+                        variant='outline-purple'
+                      />
                     ) : (
                       <Icon
                         className='size-5 transition-transform duration-300 group-hover:rotate-6'

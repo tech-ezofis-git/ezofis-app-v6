@@ -3,7 +3,7 @@ import authUserStore from '../stores/authUserStore'
 import { setToLocalStorage } from '../utils/local-storage'
 import apiRouter from './apiRouter'
 // src/api/authApi.ts
-import { _axios, axiosCrypto } from './axios'
+import { _axios } from './axios'
 import { authApiV6 } from './v6/auth'
 
 // Vite-style env (adjust name to your setup)
@@ -111,7 +111,7 @@ const getSession = async (identityKeys?: IdentityKeys) => {
   }
 
   try {
-    const { data, status } = await axiosCrypto.get(
+    const { data, status } = await _axios.get(
       '/authentication/userSession',
       {
         // Optional: you could pass the token here for immediate use,
@@ -232,7 +232,7 @@ const testDBConnection = async (payload: any) => {
   }
 
   try {
-    const { status } = await axiosCrypto.post(
+    const { status } = await _axios.post(
       '/authentication/testConnection',
       JSON.stringify(payload),
     )
@@ -255,7 +255,7 @@ const updateDBConnection = async (payload: any) => {
   }
 
   try {
-    const { status } = await axiosCrypto.post(
+    const { status } = await _axios.post(
       '/authentication/updateConnection',
       JSON.stringify(payload),
     )
@@ -278,7 +278,7 @@ const validatePassword = async (payload: any) => {
   }
 
   try {
-    const { status } = await axiosCrypto.post(
+    const { status } = await _axios.post(
       '/authentication/validatePassword',
       JSON.stringify(payload),
     )
