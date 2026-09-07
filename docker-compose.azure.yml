@@ -28,13 +28,11 @@ services:
       REDIS_URL: redis://redis:6379/0
       DATABASE_POOL_MIN_SIZE: "1"
       DATABASE_POOL_MAX_SIZE: "3"
-      EZOFIS_API_BASE: ${EZOFIS_API_BASE:-https://cloud.ezofis.com/api}
-      EZOFIS_ENV: ${EZOFIS_ENV:-live}
-      EZOFIS_LOGIN_EMAIL: ${EZOFIS_LOGIN_EMAIL}
-      EZOFIS_LOGIN_PASSWORD: ${EZOFIS_LOGIN_PASSWORD}
-      DATABASE_URL: ${DATABASE_URL}
-      CATALOG_DATABASE_URL: ${CATALOG_DATABASE_URL}
-      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
+      # Azure App Service does not interpolate ${VAR} from App Settings.
+      # Empty ${EZOFIS_LOGIN_*} / ${DATABASE_URL} would override injected secrets.
+      # Login, Postgres, and blob CS come from App Settings (or env_file locally).
+      EZOFIS_API_BASE: http://app/api
+      EZOFIS_ENV: live
     depends_on:
       - redis
 

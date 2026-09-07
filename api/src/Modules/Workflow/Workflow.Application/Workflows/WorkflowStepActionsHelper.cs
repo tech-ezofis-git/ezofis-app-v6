@@ -101,9 +101,13 @@ public static class WorkflowStepActionsHelper
     private static string NormalizeAction(string value) =>
         string.Join(' ', value.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
+    private static string CompactAction(string normalized) =>
+        string.Join(' ', normalized.ToUpperInvariant().Replace('-', ' ').Replace('_', ' ')
+            .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
     private static string? GetActionBucket(string normalized)
     {
-        var upper = normalized.ToUpperInvariant();
+        var upper = CompactAction(normalized);
         if (upper is "APPROVE" or "APPROVED")
             return "APPROVE";
         if (upper is "REJECT" or "REJECTED")
@@ -112,6 +116,11 @@ public static class WorkflowStepActionsHelper
             return "PARTIAL_APPROVE";
         if (upper.Contains("PARTIAL", StringComparison.Ordinal) && upper.Contains("MATCH", StringComparison.Ordinal))
             return "PARTIAL_MATCH";
+        // Check "NOT MATCHED" before "MATCH" — the former contains "MATCH".
+        if (upper is "NOT MATCHED" or "NO MATCH" or "NO MATCHED" or "UNMATCHED")
+            return "NO_MATCH";
+        if (upper is "NON INVOICE")
+            return "NON_INVOICE";
         if (upper is "VERIFY" or "VERIFIED")
             return "VERIFY";
         if (upper is "MATCH" or "MATCHED")

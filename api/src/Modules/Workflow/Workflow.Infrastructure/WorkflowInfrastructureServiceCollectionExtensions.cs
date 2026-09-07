@@ -82,6 +82,7 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IEmailIngestService, EmailIngestService>();
         services.AddScoped<IWorkflowEmailIngestLinker, WorkflowEmailIngestLinker>();
         services.AddScoped<IMasterResolveService, MasterResolveService>();
+        services.AddScoped<IApAgentMasterLookupService, ApAgentMasterLookupService>();
         services.AddScoped<RunEmailIngestPollJob>();
         services.AddScoped<IWorkflowSecurityService, WorkflowSecurityService>();
         services.AddScoped<IWorkflowInitiationService, WorkflowInitiationService>();
