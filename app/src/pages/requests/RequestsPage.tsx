@@ -7,6 +7,7 @@ import formApi from '@/api/form/form'
 import requestApi from '@/api/requests/requests'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
+  type WorkflowOptionItem,
 } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
@@ -180,33 +181,46 @@ const RequestsPage = () => {
   // --- 3. HANDLERS ---
   const loadWorkflowList = useCallback(async () => {
     setWorkflowLoadStatus('loading')
+    const procurementOption: WorkflowOptionItem = {
+      disabled: false,
+      id: 'procurement',
+      name: 'Procurement',
+    }
     try {
       const { data, error } = await workflowsApiV6.getWorkflows()
       if (error) throw new Error(error)
 
       const options = mapPublishedWorkflowListToOptions(data)
+      if (!options.some((opt) => String(opt.id).toLowerCase() === 'procurement')) {
+        options.push(procurementOption)
+      }
       if (options.length > 0) {
         setAllWorkflow(options)
-        // Re-select whatever workflow was last active instead of always
-        // defaulting to the first one — this page remounts (and loses its
-        // local `workflow` state) whenever the user navigates away and
-        // back, or when the New Request panel opens/closes.
-        const lastId = getLastSelectedWorkflowId()
-        const restored =
-          lastId && options.find((opt) => String(opt.id) === String(lastId))
-        setWorkflow(restored || options[0])
+        setWorkflow(options[0])
       } else {
-        setAllWorkflow([])
-        setWorkflow(null)
-        setSelectedWorkflow(null)
-        setWorkflowLoadStatus('empty')
+        setAllWorkflow([procurementOption])
+        setWorkflow(procurementOption)
+        setSelectedWorkflow({
+          flowJson: '',
+          formJson: '',
+          id: 'procurement',
+          name: 'Procurement',
+          wFormId: '',
+        })
+        setWorkflowLoadStatus('ready')
       }
       setIsLoading(false)
     } catch {
-      setAllWorkflow([])
-      setWorkflow(null)
-      setSelectedWorkflow(null)
-      setWorkflowLoadStatus('empty')
+      setAllWorkflow([procurementOption])
+      setWorkflow(procurementOption)
+      setSelectedWorkflow({
+        flowJson: '',
+        formJson: '',
+        id: 'procurement',
+        name: 'Procurement',
+        wFormId: '',
+      })
+      setWorkflowLoadStatus('ready')
       setIsLoading(false)
     }
   }, [])
@@ -235,6 +249,23 @@ const RequestsPage = () => {
   const loadSelectedWorkflow = useCallback(
     async (workflowId: string, workflowName?: string) => {
       setWorkflowLoadStatus('loading')
+      if (String(workflowId).toLowerCase() === 'procurement') {
+        setSelectedWorkflow({
+          flowJson: '',
+          formJson: '',
+          id: 'procurement',
+          name: 'Procurement',
+          wFormId: '',
+        })
+        setMetaData({
+          completedCount: '0',
+          inboxCount: '0',
+          sentCount: '0',
+        })
+        setWorkflowLoadStatus('ready')
+        setIsLoading(false)
+        return
+      }
       try {
         const [workflowRes, countRes] = await Promise.all([
           workflowsApiV6.getWorkflowById(workflowId),
@@ -695,6 +726,7 @@ const RequestsPage = () => {
   const session = useAuthUserStore((s) => s.session)
 
   const canCreateNewRequest = useMemo(() => {
+    if (workflow?.id === 'procurement' || selectedWorkflow?.id === 'procurement') return false
     // AP workflows always allow "+ New Request"
     if (isAccountsPayable) return true
 
@@ -747,7 +779,7 @@ const RequestsPage = () => {
               activeTab={activeTab}
               allWorkflows={allWorkflow}
               exceptionsCount={inboxResult?.exceptionsCount}
-              hideListTabs={viewMode === 'kanban'}
+              hideListTabs={viewMode === 'kanban' || workflow?.id === 'procurement'}
               isAccountsPayable={isAccountsPayable}
               isLoading={isLoading}
               metaData={metaData}
@@ -785,7 +817,16 @@ const RequestsPage = () => {
             />
           )}
           {!selectedItem &&
-            (showWorkflowEmpty ? (
+            (workflow?.id === 'procurement' ? (
+              <div className='flex h-full w-full flex-1 overflow-hidden border-0'>
+                <iframe
+                  allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+                  className='h-full w-full border-0'
+                  src='https://arasuezofis-pr-agent.hf.space/'
+                  title='Procurement'
+                />
+              </div>
+            ) : showWorkflowEmpty ? (
               <PageEmptyState page='requests' variant='unavailable' />
             ) : (
               <InboxList

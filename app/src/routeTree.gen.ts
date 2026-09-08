@@ -96,6 +96,7 @@ import { Route as AuthRecoverIndexRouteImport } from './routes/_auth/recover/ind
 import { Route as AuthNewuserIndexRouteImport } from './routes/_auth/newuser/index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login/index'
 import { Route as AuthForgotPasswordIndexRouteImport } from './routes/_auth/forgot-password/index'
+import { Route as AppReportsReportIdRouteImport } from './routes/_app/reports_.$reportId'
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.$formId.entries'
 
@@ -536,6 +537,11 @@ const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
   path: '/forgot-password/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const AppReportsReportIdRoute = AppReportsReportIdRouteImport.update({
+  id: '/reports_/$reportId',
+  path: '/reports/$reportId',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppMyAccountChar123SlugChar125Route =
   AppMyAccountChar123SlugChar125RouteImport.update({
     id: '/my-account/{-$slug}',
@@ -627,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
+  '/reports/$reportId': typeof AppReportsReportIdRoute
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/newuser': typeof AuthNewuserIndexRoute
@@ -715,6 +722,7 @@ export interface FileRoutesByTo {
   '/on-boarding': typeof OnBoardingIndexRoute
   '/stories': typeof StoriesIndexRoute
   '/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
+  '/reports/$reportId': typeof AppReportsReportIdRoute
   '/forgot-password': typeof AuthForgotPasswordIndexRoute
   '/login': typeof AuthLoginIndexRoute
   '/newuser': typeof AuthNewuserIndexRoute
@@ -807,6 +815,7 @@ export interface FileRoutesById {
   '/on-boarding/': typeof OnBoardingIndexRoute
   '/stories/': typeof StoriesIndexRoute
   '/_app/my-account/{-$slug}': typeof AppMyAccountChar123SlugChar125Route
+  '/_app/reports_/$reportId': typeof AppReportsReportIdRoute
   '/_auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
   '/_auth/login/': typeof AuthLoginIndexRoute
   '/_auth/newuser/': typeof AuthNewuserIndexRoute
@@ -898,6 +907,7 @@ export interface FileRouteTypes {
     | '/on-boarding'
     | '/stories/'
     | '/my-account/{-$slug}'
+    | '/reports/$reportId'
     | '/forgot-password'
     | '/login'
     | '/newuser'
@@ -986,6 +996,7 @@ export interface FileRouteTypes {
     | '/on-boarding'
     | '/stories'
     | '/my-account/{-$slug}'
+    | '/reports/$reportId'
     | '/forgot-password'
     | '/login'
     | '/newuser'
@@ -1077,6 +1088,7 @@ export interface FileRouteTypes {
     | '/on-boarding/'
     | '/stories/'
     | '/_app/my-account/{-$slug}'
+    | '/_app/reports_/$reportId'
     | '/_auth/forgot-password/'
     | '/_auth/login/'
     | '/_auth/newuser/'
@@ -1717,6 +1729,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_app/reports_/$reportId': {
+      id: '/_app/reports_/$reportId'
+      path: '/reports/$reportId'
+      fullPath: '/reports/$reportId'
+      preLoaderRoute: typeof AppReportsReportIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/my-account/{-$slug}': {
       id: '/_app/my-account/{-$slug}'
       path: '/my-account/{-$slug}'
@@ -1749,6 +1768,7 @@ interface AppRouteRouteChildren {
   AppWorkflowsRoute: typeof AppWorkflowsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppMyAccountChar123SlugChar125Route: typeof AppMyAccountChar123SlugChar125Route
+  AppReportsReportIdRoute: typeof AppReportsReportIdRoute
   AppFormsFormIdEntriesRoute: typeof AppFormsFormIdEntriesRoute
 }
 
@@ -1767,6 +1787,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppWorkflowsRoute: AppWorkflowsRoute,
   AppIndexRoute: AppIndexRoute,
   AppMyAccountChar123SlugChar125Route: AppMyAccountChar123SlugChar125Route,
+  AppReportsReportIdRoute: AppReportsReportIdRoute,
   AppFormsFormIdEntriesRoute: AppFormsFormIdEntriesRoute,
 }
 

@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ClipboardList,
   Code2,
+  FileBarChart2,
   FileText,
   FolderOpen,
   GitFork,
@@ -17,6 +18,7 @@ import {
 import React, { useEffect, useMemo, useState } from 'react'
 import { refreshUserSession } from '@/api/v6/auth'
 import ColorPreference from '@/pages/my-account/components/color-preference/ColorPreference'
+import ReportBuilderSettingsPage from '@/pages/report-builder/components/ReportBuilderSettingsPage'
 import authUserStore from '@/stores/authUserStore'
 import {
   isAnyPermissionVisible,
@@ -55,6 +57,7 @@ const SETTINGS_PAGES = new Set([
   'group-management',
   'playground',
   'portal-configuration',
+  'report-builder',
   'roles-permissions',
   'settings',
   'user-management',
@@ -66,6 +69,7 @@ const CONFIGURATION_SETTINGS_KEYS = [
   'form-configuration',
   'workflow-configuration',
   'portal-configuration',
+  'report-builder',
 ]
 
 const ACCESS_SETTINGS_KEYS = [
@@ -200,6 +204,14 @@ export default function SettingsMain() {
     )
   }
 
+  if (activePage === 'report-builder') {
+    return (
+      <SettingsDetailShell>
+        <ReportBuilderSettingsPage onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
+  }
+
   if (activePage === 'branding') {
     if (!isAdmin) {
       return <SettingsLanding onOpenPage={setActivePage} />
@@ -286,6 +298,12 @@ function SettingsLanding({
         key: 'portal-configuration',
         permissionKeys: ['portal'],
         title: t`Portal Configuration`,
+      },
+      {
+        description: t`Build and configure custom reports`,
+        icon: FileBarChart2,
+        key: 'report-builder',
+        title: t`Report Builder`,
       },
       {
         description: t`Add, edit, and manage platform users. Configure authentication and assign roles.`,
@@ -399,31 +417,6 @@ function SettingsLanding({
   )
 }
 
-function SettingsModuleGroup({
-  items,
-  onOpen,
-  title,
-}: {
-  items: SettingsItem[]
-  onOpen: (item: SettingsItem) => void
-  title: string
-}) {
-  if (!items.length) return null
-
-  return (
-    <section className='flex flex-col gap-3'>
-      <h2 className='text-[11px] font-semibold tracking-[0.12em] text-primary-9 uppercase'>
-        {title}
-      </h2>
-      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-        {items.map((item) => (
-          <SettingsModuleCard item={item} key={item.key} onOpen={onOpen} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function SettingsModuleCard({
   item,
   onOpen,
@@ -459,5 +452,30 @@ function SettingsModuleCard({
         strokeWidth={1.8}
       />
     </button>
+  )
+}
+
+function SettingsModuleGroup({
+  items,
+  title,
+  onOpen,
+}: {
+  items: SettingsItem[]
+  title: string
+  onOpen: (item: SettingsItem) => void
+}) {
+  if (!items.length) return null
+
+  return (
+    <section className='flex flex-col gap-3'>
+      <h2 className='text-[11px] font-semibold tracking-[0.12em] text-primary-9 uppercase'>
+        {title}
+      </h2>
+      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+        {items.map((item) => (
+          <SettingsModuleCard item={item} key={item.key} onOpen={onOpen} />
+        ))}
+      </div>
+    </section>
   )
 }

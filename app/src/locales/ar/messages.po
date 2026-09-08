@@ -115,7 +115,7 @@ msgid "{0} people"
 msgstr "{0} أشخاص"
 
 #. placeholder {0}: doc.fileName
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:96
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:104
 msgid "{0} preview"
 msgstr "معاينة {0}"
 
@@ -285,8 +285,8 @@ msgid "≥ $10k"
 msgstr "≥ $10k"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:442
-msgid "✨ Recommend dashboard design"
-msgstr "✨ التوصية بتصميم لوحة القيادة"
+#~ msgid "✨ Recommend dashboard design"
+#~ msgstr "✨ التوصية بتصميم لوحة القيادة"
 
 #: src/pages/requests/components/QuickFilters.tsx:103
 #: src/pages/requests/components/QuickFilters.tsx:218
@@ -388,7 +388,7 @@ msgstr "9 موردين"
 msgid "91% average"
 msgstr "متوسط 91%"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:622
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:641
 msgid "A maximum of 5 files can be processed at once. Only the first 5 will be processed."
 msgstr "يمكن معالجة 5 ملفات كحد أقصى دفعة واحدة. سيتم معالجة أول 5 فقط."
 
@@ -405,7 +405,7 @@ msgstr "الصيغ المقبولة: CSV، XLSX"
 msgid "Access"
 msgstr "وصول"
 
-#: src/pages/settings/SettingsMain.tsx:365
+#: src/pages/settings/SettingsMain.tsx:383
 msgid "Access Control"
 msgstr "التحكم في الوصول"
 
@@ -431,7 +431,7 @@ msgstr "تاريخ انتهاء الحساب"
 msgid "Accounts Payable"
 msgstr "الحسابات الدائنة"
 
-#: src/pages/dashboard/DashboardPage.tsx:147
+#: src/pages/dashboard/DashboardPage.tsx:157
 msgid "Accounts Payable Automation"
 msgstr "أتمتة الحسابات الدائنة"
 
@@ -456,7 +456,8 @@ msgstr "الإجراء مطلوب"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1949
 #: src/pages/forms/FormEntriesPage.tsx:1274
 #: src/pages/forms/FormsPage.tsx:263
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1814
+#: src/pages/reports/components/ReportsListView.tsx:157
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1816
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:661
 #: src/pages/settings/components/Menus.tsx:414
@@ -496,8 +497,7 @@ msgstr "الدليل النشط"
 #~ msgid "Active Suppliers"
 #~ msgstr "الموردون النشطون"
 
-#: src/pages/portal/components/PortalDetail.tsx:353
-#: src/pages/portal/components/PortalWizard.tsx:280
+#: src/pages/portal/components/PortalDetail.tsx:354
 #: src/pages/settings/components/credits/Credits.tsx:447
 #: src/pages/settings/components/credits/Credits.tsx:448
 #: src/pages/settings/components/credits/Credits.tsx:925
@@ -538,6 +538,10 @@ msgstr "إضافة \"{query}\""
 msgid "Add a comment..."
 msgstr "أضف تعليقاً..."
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:173
+msgid "Add a message to include in the email body"
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:59
 msgid "Add a note for the approver"
 msgstr "أضف ملاحظة للموافق"
@@ -561,6 +565,19 @@ msgstr "أضف مستخدمًا لمنح حق الوصول إلى النظام �
 #: src/pages/folders/components/SignRequestAssignForm.tsx:236
 msgid "Add at least one user to assign."
 msgstr "أضف مستخدماً واحداً على الأقل للتعيين."
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:171
+msgid "Add calculated field"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:273
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:284
+msgid "Add card"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:144
+msgid "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
+msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:728
 msgid "Add condition"
@@ -600,6 +617,14 @@ msgstr "إضافة حقل"
 #: src/pages/forms/components/AiFormBuilder.tsx:453
 #~ msgid "Add Field"
 #~ msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:28
+msgid "Add fields to see a live preview of the report table."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:67
+msgid "Add filter"
+msgstr ""
 
 #: src/pages/requests/components/QuickFilters.tsx:261
 msgid "Add Filter"
@@ -652,6 +677,10 @@ msgstr "إضافة البوابة"
 msgid "Add Row"
 msgstr "إضافة صف"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:50
+msgid "Add rule"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1197
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1203
 msgid "Add to related"
@@ -661,7 +690,7 @@ msgstr "إضافة إلى ذات الصلة"
 msgid "Add User"
 msgstr "إضافة مستخدم"
 
-#: src/pages/settings/SettingsMain.tsx:278
+#: src/pages/settings/SettingsMain.tsx:296
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
 msgstr "أضف وعدّل وأدر مستخدمي المنصة. قم بتكوين المصادقة وتعيين الأدوار."
 
@@ -692,12 +721,12 @@ msgstr "التقادم"
 #~ msgstr "التقادم ومراقبة العمليات"
 
 #: src/pages/dashboard/DashboardPage.tsx:204
-msgid "AI Builder"
-msgstr ""
+#~ msgid "AI Builder"
+#~ msgstr ""
 
 #: src/pages/dashboard/DashboardPage.tsx:210
-msgid "AI Builder (New API)"
-msgstr ""
+#~ msgid "AI Builder (New API)"
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:42
 msgid "AI Confidence Score"
@@ -707,7 +736,8 @@ msgstr "درجة الثقة بالذكاء الاصطناعي"
 msgid "AI Context"
 msgstr "سياق الذكاء الاصطناعي"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:729
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:990
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:653
 msgid "AI Dashboard Designer"
 msgstr "مصمم لوحة القيادة بالذكاء الاصطناعي"
 
@@ -719,7 +749,7 @@ msgstr "قرار منظمة العفو الدولية"
 msgid "AI Extract"
 msgstr "استخراج بالذكاء الاصطناعي"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:446
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:454
 msgid "AI EXTRACTION"
 msgstr "الاستخراج بالذكاء الاصطناعي"
 
@@ -736,7 +766,7 @@ msgstr "منشئ المجلدات بالذكاء الاصطناعي"
 msgid "AI generated"
 msgstr "تم إنشاؤه بالذكاء الاصطناعي"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1591
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1593
 msgid "AI Insight"
 msgstr "انسايت الذكاء الاصطناعي"
 
@@ -749,8 +779,8 @@ msgid "AI is analysing the document..."
 msgstr "الذكاء الاصطناعي يحلل المستند..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:805
-msgid "AI is generating customized layout sections..."
-msgstr "يقوم الذكاء الاصطناعي بإنشاء أقسام تخطيط مخصصة..."
+#~ msgid "AI is generating customized layout sections..."
+#~ msgstr "يقوم الذكاء الاصطناعي بإنشاء أقسام تخطيط مخصصة..."
 
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:46
 msgid "AI Recommendation"
@@ -805,7 +835,7 @@ msgstr "تحليل المستندات التي تم إنشاؤها بواسطة 
 msgid "AI-generated insights"
 msgstr "رؤى مولّدة بالذكاء الاصطناعي"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:447
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:455
 msgid "AI-powered extraction in seconds"
 msgstr "استخراج مدعوم بالذكاء الاصطناعي في ثوانٍ"
 
@@ -830,7 +860,7 @@ msgstr "محاذاة رؤوس CSV/XLSX مع مخطط ربط قاعدة البي�
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
-#: src/pages/requests/components/InboxList.tsx:1884
+#: src/pages/requests/components/InboxList.tsx:1891
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:623
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:547
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:620
@@ -912,7 +942,7 @@ msgid "Amount: {0}"
 msgstr "المبلغ: {0}"
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:1680
+#: src/pages/requests/components/request/Request.tsx:1684
 msgid "An error occurred: {0}"
 msgstr "حدث خطأ: {0}"
 
@@ -921,7 +951,7 @@ msgstr "حدث خطأ: {0}"
 msgid "Analysis"
 msgstr "التحليل"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:460
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:468
 msgid "ANALYTICS"
 msgstr "التحليلات"
 
@@ -939,8 +969,8 @@ msgid "Analyzing context & keywords"
 msgstr "جاري تحليل السياق والكلمات المفتاحية"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:808
-msgid "Analyzing data structures for {repositoryName}..."
-msgstr "جارٍ تحليل بنيات البيانات لـ {repositoryName}..."
+#~ msgid "Analyzing data structures for {repositoryName}..."
+#~ msgstr "جارٍ تحليل بنيات البيانات لـ {repositoryName}..."
 
 #: src/pages/folders/components/Upload/Upload.tsx:1808
 msgid "Analyzing document..."
@@ -954,7 +984,7 @@ msgstr "جاري تحليل الملف وربط الحقول..."
 msgid "Analyzing folder metadata…"
 msgstr "جارٍ تحليل البيانات التعريفية للمجلد..."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:724
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:743
 msgid "Analyzing Invoice..."
 msgstr "جاري تحليل الفاتورة..."
 
@@ -966,7 +996,7 @@ msgstr "جاري تحليل الفاتورة..."
 msgid "Analyzing spatial layout"
 msgstr "جاري تحليل التخطيط المكاني"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:733
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:752
 msgid "Analyzing Supplier..."
 msgstr "جاري تحليل المورد..."
 
@@ -1004,7 +1034,7 @@ msgstr "أي قيمة"
 msgid "AP agent"
 msgstr "وكيل AP"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:795
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:814
 msgid "AP Agent"
 msgstr "وكيل الحسابات الدائنة"
 
@@ -1060,7 +1090,8 @@ msgstr "إلحاق الطابع الزمني لكل إصدار"
 msgid "Application Sign in"
 msgstr "تسجيل دخول التطبيق"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:270
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1071
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:699
 msgid "Apply & Preview"
 msgstr ""
 
@@ -1110,6 +1141,7 @@ msgid "Archived"
 msgstr "مؤرشف"
 
 #: src/pages/forms/FormsPage.tsx:505
+#: src/pages/reports/components/ReportsListView.tsx:223
 msgid "Are you sure you want to delete"
 msgstr "هل أنت متأكد أنك تريد الحذف"
 
@@ -1206,7 +1238,7 @@ msgstr "حرف كبير واحد على الأقل (A-Z)"
 msgid "At least one attachment is required"
 msgstr "مطلوب مرفق واحد على الأقل"
 
-#: src/pages/requests/components/request/Request.tsx:1461
+#: src/pages/requests/components/request/Request.tsx:1465
 msgid "At least one attachment is required before proceeding."
 msgstr "مطلوب مرفق واحد على الأقل قبل المتابعة."
 
@@ -1226,25 +1258,24 @@ msgstr "إرفاق ملف (اختياري)..."
 #~ msgid "Attach to invoice"
 #~ msgstr ""
 
-#: src/pages/portal/components/PortalDetail.tsx:287
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:657
+#: src/pages/portal/components/PortalDetail.tsx:288
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:710
 msgid "Attachment"
 msgstr "مرفق"
 
-#: src/pages/portal/components/PortalDetail.tsx:336
-#: src/pages/portal/components/PortalWizard.tsx:279
-#: src/pages/portal/components/PortalWizard.tsx:1139
+#: src/pages/portal/components/PortalDetail.tsx:337
+#: src/pages/portal/components/PortalWizard.tsx:1066
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3496
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3532
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "المرفقات"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:179
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:41
-#: src/pages/settings/SettingsMain.tsx:317
+#: src/pages/settings/SettingsMain.tsx:335
 msgid "Audit & Monitoring"
 msgstr "التدقيق والمراقبة"
 
@@ -1271,7 +1302,7 @@ msgstr "المصادقة مطلوبة. الرجاء تسجيل الدخول مر
 msgid "Authenticator App"
 msgstr "تطبيق المصادقة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3586
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3622
 msgid "Authorized Amount"
 msgstr "المبلغ المصرح به"
 
@@ -1301,6 +1332,10 @@ msgstr "تم التحقق تلقائياً"
 msgid "Automate Your Full AP Workflow — Request a Demo"
 msgstr "قم بأتمتة سير عمل الحسابات الدائنة بالكامل — اطلب عرضاً توضيحياً"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:69
+msgid "Automated delivery"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:376
 msgid "Automatic backups and versioning support"
 msgstr "النسخ الاحتياطي التلقائي ودعم الإصدارات"
@@ -1313,6 +1348,15 @@ msgstr "مزامنة البيانات الوصفية للملف تلقائيًا
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:990
 msgid "Automatically links file columns"
 msgstr "يربط أعمدة الملف تلقائياً"
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:37
+msgid "Automatically run and email this report on a recurring basis."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:167
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:119
+msgid "Available fields"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:338
 #~ msgid "Average approval time increased by 1.2 days month over month, now averaging 6.1 days."
@@ -1361,8 +1405,8 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:907
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3974
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:908
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4010
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1375,12 +1419,12 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:775
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:817
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
-#: src/pages/settings/components/SettingsWizardLayout.tsx:202
+#: src/pages/settings/components/SettingsWizardLayout.tsx:205
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:112
 msgid "Back"
 msgstr "رجوع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3414
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3450
 msgid "Back Order"
 msgstr "طلب متأخر"
 
@@ -1388,9 +1432,13 @@ msgstr "طلب متأخر"
 msgid "Back Order Detected"
 msgstr "تم اكتشاف الطلب الخلفي"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:867
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1094
 msgid "Back to Configuration"
 msgstr "العودة إلى التكوين"
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:734
+msgid "Back to Designer"
+msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:1517
 msgid "Back to Entries"
@@ -1404,6 +1452,14 @@ msgstr "Back to نموذجs"
 msgid "Back to PO Setup"
 msgstr "العودة إلى إعداد أمر الشراء"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:691
+msgid "Back to Prompt"
+msgstr ""
+
+#: src/pages/reports/ReportDetailPage.tsx:29
+msgid "Back to Reports"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2088
 msgid "Back to review"
 msgstr "العودة إلى المراجعة"
@@ -1416,7 +1472,7 @@ msgstr "العودة لتسجيل الدخول"
 msgid "Back to workflows"
 msgstr "العودة إلى سير العمل"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:382
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:390
 msgid "Backorder"
 msgstr "طلب متأخر"
 
@@ -1437,7 +1493,7 @@ msgstr "أساسي"
 msgid "Between"
 msgstr "بين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3847
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3883
 msgid "Billing Terms"
 msgstr "شروط الفوترة"
 
@@ -1468,7 +1524,7 @@ msgstr "تم حفظ تفضيلات العلامة التجارية بنجاح!"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:603
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:39
-#: src/pages/settings/SettingsMain.tsx:299
+#: src/pages/settings/SettingsMain.tsx:317
 msgid "Branding"
 msgstr "العلامة التجارية"
 
@@ -1487,7 +1543,7 @@ msgstr "مسار التنقل"
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
 #: src/pages/folders/components/Upload/Upload.tsx:1665
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:868
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:887
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:168
 #: src/pages/requests/components/workflow-request/components/CompactDropzone.tsx:72
@@ -1502,6 +1558,18 @@ msgstr "تصفح"
 msgid "browse files"
 msgstr "تصفح الملفات"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:185
+msgid "Build a custom report from any of your organization's data domains."
+msgstr ""
+
+#: src/pages/settings/SettingsMain.tsx:290
+msgid "Build and configure custom reports"
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:199
+msgid "Build manually"
+msgstr ""
+
 #: src/pages/forms/components/AiFormBuilder.tsx:266
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:446
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:124
@@ -1509,6 +1577,7 @@ msgstr "تصفح الملفات"
 msgid "Build Manually"
 msgstr "بناء يدويا"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:64
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:418
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:434
 msgid "Build with AI"
@@ -1565,8 +1634,8 @@ msgid "By customer"
 msgstr "حسب العميل"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:445
-msgid "By department performance"
-msgstr "حسب أداء القسم"
+#~ msgid "By department performance"
+#~ msgstr "حسب أداء القسم"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:960
 msgid "By document type"
@@ -1577,12 +1646,12 @@ msgid "By employee"
 msgstr "حسب الموظف"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:443
-msgid "By monthly trend analytics"
-msgstr "من خلال تحليلات الاتجاه الشهرية"
+#~ msgid "By monthly trend analytics"
+#~ msgstr "من خلال تحليلات الاتجاه الشهرية"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:444
-msgid "By risk & compliance"
-msgstr "حسب المخاطر والامتثال"
+#~ msgid "By risk & compliance"
+#~ msgstr "حسب المخاطر والامتثال"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:952
 msgid "By supplier / vendor"
@@ -1591,6 +1660,15 @@ msgstr "حسب المورد / البائع"
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:20
 msgid "Calculated"
 msgstr "محسوب"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:90
+msgid "Calculated Field"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:34
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:55
+msgid "Calculation"
+msgstr ""
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:68
 msgid "Camera access was denied or is unavailable."
@@ -1604,7 +1682,7 @@ msgstr "يمكنه التعديل"
 msgid "Can View"
 msgstr "يمكنه العرض"
 
-#: src/pages/portal/components/PortalWizard.tsx:739
+#: src/pages/portal/components/PortalWizard.tsx:685
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:855
 msgid "Can't upload: this workflow has no repository configured."
 msgstr "لا يمكن التحميل: لم يتم تكوين مستودع لسير العمل هذا."
@@ -1620,6 +1698,7 @@ msgstr "لا يمكن التحميل: لم يتم تكوين مستودع لسي
 #: src/pages/forms/FormEntriesPage.tsx:2086
 #: src/pages/forms/FormsPage.tsx:525
 #: src/pages/my-account/components/profile/Profile.tsx:20
+#: src/pages/reports/components/ReportsListView.tsx:238
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:221
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
@@ -1628,10 +1707,11 @@ msgstr "لا يمكن التحميل: لم يتم تكوين مستودع لسي
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:447
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:199
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:263
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:270
 msgid "Cancel"
 msgstr "إلغاء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1536
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1553
 msgid "Cancel Remaining"
 msgstr "إلغاء المتبقية"
 
@@ -1654,6 +1734,14 @@ msgstr "لا يمكن إلغاء هذه المشاركة"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:96
 msgid "Capture"
 msgstr "التقاط"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:222
+msgid "Card color"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:210
+msgid "Card name"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1023
 #~ msgid "Cash leaving the building, month by month"
@@ -1683,18 +1771,27 @@ msgstr "النقد هذا الأسبوع"
 msgid "Category"
 msgstr "الفئة"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:149
+msgid "CC"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:261
 msgid "ccy"
 msgstr "العملة"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:634
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:709
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:870
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:513
 msgid "Centralized repository for all incoming documentation and related analytics."
 msgstr "مستودع مركزي لجميع الوثائق الواردة والتحليلات ذات الصلة."
 
 #: src/pages/forms/components/AiFormBuilder.tsx:199
 msgid "Change"
 msgstr "يتغير"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:304
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:244
+msgid "Change field..."
+msgstr ""
 
 #: src/pages/my-account/components/preferences/components/ChangeLanguage.tsx:17
 msgid "Change Language"
@@ -1728,7 +1825,8 @@ msgstr "تغيير إلى حقل عادي"
 msgid "Changed your mind?"
 msgstr "هل غيرت رأيك؟"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:260
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1039
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:681
 msgid "Charts"
 msgstr ""
 
@@ -1765,12 +1863,20 @@ msgid "Choose a workflow to view its submissions."
 msgstr "اختر سير عمل لعرض التقديمات الخاصة به."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:795
-msgid "Choose an AI design option or describe your dashboard needs"
-msgstr "اختر أحد خيارات تصميم الذكاء الاصطناعي أو قم بوصف احتياجات لوحة المعلومات الخاصة بك"
+#~ msgid "Choose an AI design option or describe your dashboard needs"
+#~ msgstr "اختر أحد خيارات تصميم الذكاء الاصطناعي أو قم بوصف احتياجات لوحة المعلومات الخاصة بك"
 
 #: src/components/base/data-table/actions/TableSearch.tsx:159
 msgid "Choose column"
 msgstr "اختر العمود"
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:67
+msgid "Choose columns"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:19
+msgid "Choose fields"
+msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:1925
 msgid "Choose File"
@@ -1847,7 +1953,7 @@ msgstr "انقر على شريحة لفتح القائمة المطابقة"
 msgid "Click a supplier's bar to drill down"
 msgstr "انقر على شريط المورد للتفاصيل"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:898
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:917
 msgid "Click any preview to process"
 msgstr "انقر على أي معاينة للمعالجة"
 
@@ -1878,7 +1984,7 @@ msgstr "انقر لتحديد موضع توقيع المعيَّن"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:582
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:635
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:719
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:189
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:790
@@ -1919,9 +2025,24 @@ msgstr "طي"
 msgid "Column & Row Extraction"
 msgstr "استخراج الأعمدة والصفوف"
 
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:21
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:42
+msgid "Column Label"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step2ColumnMapping.tsx:69
 msgid "Column Mapping"
 msgstr "ربط الأعمدة"
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:47
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:90
+msgid "Column Type"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:27
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:48
+msgid "Column Width (px)"
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:662
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1341
@@ -1950,7 +2071,7 @@ msgstr "قريباً"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3501
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3537
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "التعليقات"
@@ -1963,7 +2084,7 @@ msgstr "التعليقات"
 msgid "Complete"
 msgstr "اكتمال"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:348
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:356
 msgid "Complete document match."
 msgstr "تطابق كامل للمستند."
 
@@ -1984,12 +2105,12 @@ msgid "Complete setup to start your AP automation."
 msgstr "أكمل الإعداد لبدء أتمتة حسابات المدفوعات الخاصة بك."
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:710
-#: src/pages/requests/components/Header.tsx:96
+#: src/pages/requests/components/Header.tsx:107
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1403
 msgid "Completed"
 msgstr "المكتمل"
 
-#: src/pages/requests/components/Header.tsx:96
+#: src/pages/requests/components/Header.tsx:107
 msgid "Completed ({completedCount})"
 msgstr "المكتمل ({completedCount})"
 
@@ -2006,6 +2127,13 @@ msgstr "اكتمل في 0.9 ث"
 #: src/pages/folders/components/AiSummaryView.tsx:349
 msgid "Compliance & Risk Assessment"
 msgstr "تقييم الامتثال والمخاطر"
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:50
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:56
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:93
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:99
+msgid "Computed Status"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1182
 #~ msgid "Concentration of invoice liabilities"
@@ -2030,7 +2158,7 @@ msgid "Confidence Score"
 msgstr "نقاط الثقة"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:141
-#: src/pages/settings/SettingsMain.tsx:360
+#: src/pages/settings/SettingsMain.tsx:378
 msgid "Configuration"
 msgstr "التكوين"
 
@@ -2079,10 +2207,9 @@ msgstr "تكوين الأذونات"
 #~ msgid "Configure user account details, business hierarchy, and permissions"
 #~ msgstr "قم بتكوين تفاصيل حساب المستخدم والتسلسل الهرمي للأعمال والصلاحيات"
 
-#. placeholder {0}: config?.sections.filter((s) => s.enabled !== false).length || 0
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:651
-msgid "Configured Dashboard Sections ({0} Components Selected)"
-msgstr "أقسام لوحة المعلومات التي تم تكوينها ({0} المكونات المحددة)"
+#~ msgid "Configured Dashboard Sections ({0} Components Selected)"
+#~ msgstr "أقسام لوحة المعلومات التي تم تكوينها ({0} المكونات المحددة)"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:78
 msgid "Confirm"
@@ -2120,7 +2247,7 @@ msgstr "اتصال {0}"
 msgid "Connect {providerLabel}"
 msgstr "اتصال {providerLabel}"
 
-#: src/pages/dashboard/DashboardPage.tsx:150
+#: src/pages/dashboard/DashboardPage.tsx:160
 msgid "Connect email, ERP, and storage to start invoice processing."
 msgstr "اربط البريد الإلكتروني وERP والتخزين لبدء معالجة الفواتير."
 
@@ -2161,7 +2288,7 @@ msgstr "اسم الاتصال"
 msgid "Connector"
 msgstr "الموصل"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1528
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1545
 msgid "Contact Vendor"
 msgstr "اتصل بالمورد"
 
@@ -2187,13 +2314,19 @@ msgstr "يتضمن"
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:987
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:847
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:840
-#: src/pages/settings/components/SettingsWizardLayout.tsx:77
+#: src/pages/settings/components/SettingsWizardLayout.tsx:79
 #: src/pages/sign-in/components/SignInForm.tsx:762
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
 msgid "Continue"
 msgstr "متابعة"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:716
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1086
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:714
+msgid "Continue from configuration to generate KPIs and charts from your prompt."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:971
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:635
 msgid "Continue to Dashboard Designer"
 msgstr "تابع إلى مصمم لوحة المعلومات"
 
@@ -2279,6 +2412,24 @@ msgstr "تعذر إنشاء تكوين المجلد. حاول مرة أخرى."
 msgid "Could not read that file."
 msgstr "لا يمكن قراءة هذا الملف."
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:187
+msgid "Couldn't load fields for this form. Try again."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:183
+msgid "Couldn't load forms. Try again."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:284
+msgid "Couldn't load groups. Try again."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:261
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:124
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:152
+msgid "Couldn't load users. Try again."
+msgstr ""
+
 #: src/pages/folders/components/CollaboraEditor.tsx:279
 msgid "Couldn't open the document editor."
 msgstr "تعذر فتح محرر المستندات."
@@ -2311,7 +2462,7 @@ msgstr "إنشاء وصول للمتابعة"
 msgid "Create access to sign"
 msgstr "إنشاء وصول للتوقيع"
 
-#: src/pages/settings/SettingsMain.tsx:256
+#: src/pages/settings/SettingsMain.tsx:268
 msgid "Create and manage forms with fields, validation, and data collection."
 msgstr "أنشئ وأدر النماذج بالحقول والتحقق وجمع البيانات."
 
@@ -2323,7 +2474,7 @@ msgstr "أنشئ وأدر النماذج بالحقول والتحقق وجمع 
 msgid "Create branded portals with login methods and connected workflows."
 msgstr "أنشئ بوابات بعلامتك التجارية مع طرق تسجيل الدخول ومهام سير العمل المرتبطة."
 
-#: src/pages/settings/SettingsMain.tsx:272
+#: src/pages/settings/SettingsMain.tsx:284
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr "أنشئ بوابات بعلامتك التجارية، وقم بتكوين طرق تسجيل الدخول، واربط مهام سير العمل."
 
@@ -2332,7 +2483,7 @@ msgid "Create Group"
 msgstr "إنشاء مجموعة"
 
 #: src/pages/settings/components/GroupManagement.tsx:589
-#: src/pages/settings/SettingsMain.tsx:284
+#: src/pages/settings/SettingsMain.tsx:302
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr "أنشئ مجموعات منطقية لتنظيم المستخدمين حسب الفريق أو القسم أو الوظيفة."
 
@@ -2417,7 +2568,7 @@ msgstr "مخطط الجدول الزمني للرصيد"
 
 #: src/pages/settings/components/credits/Credits.tsx:563
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:43
-#: src/pages/settings/SettingsMain.tsx:305
+#: src/pages/settings/SettingsMain.tsx:323
 msgid "Credit Usage"
 msgstr "استخدام الرصيد"
 
@@ -2462,7 +2613,7 @@ msgstr "حرج"
 #~ msgid "Critical Exceptions"
 #~ msgstr "استثناءات حرجة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3644
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3680
 msgid "Cross-Check Status"
 msgstr "حالة الفحص المتقاطع"
 
@@ -2474,7 +2625,7 @@ msgstr "جاري الإسناد الترافقي للسجلات"
 msgid "CSV File"
 msgstr "ملف CSV"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:175
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:199
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:485
 msgid "Currencies"
 msgstr "العملات"
@@ -2493,7 +2644,7 @@ msgstr "الدور الحالي"
 
 #: src/pages/folders/components/DocumentsListView.tsx:441
 #: src/pages/folders/components/FolderTable.tsx:712
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1351
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1353
 msgid "Current Stage"
 msgstr "المرحلة الحالية"
 
@@ -2514,22 +2665,22 @@ msgid "Custom Email Configuration (IMAP)"
 msgstr "تكوين البريد الإلكتروني المخصص (IMAP)"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:448
-#: src/pages/requests/components/InboxList.tsx:1219
-#: src/pages/requests/components/InboxList.tsx:1289
+#: src/pages/requests/components/InboxList.tsx:1220
+#: src/pages/requests/components/InboxList.tsx:1290
 msgid "Custom Range"
 msgstr "نطاق مخصص"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:904
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1141
 msgid "Customize Design"
 msgstr "تخصيص التصميم"
 
-#: src/pages/settings/SettingsMain.tsx:296
+#: src/pages/settings/SettingsMain.tsx:314
 msgid "Customize logos, brand colors, and visual identity across the platform."
 msgstr "خصص الشعارات وألوان العلامة التجارية والهوية المرئية عبر المنصة."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:730
-msgid "Customize operational sections, analytics tiles, and visual components."
-msgstr "قم بتخصيص الأقسام التشغيلية ومربعات التحليلات والمكونات المرئية."
+#~ msgid "Customize operational sections, analytics tiles, and visual components."
+#~ msgstr "قم بتخصيص الأقسام التشغيلية ومربعات التحليلات والمكونات المرئية."
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2183
 msgid "Daily cash requirements for approved invoices"
@@ -2551,32 +2702,53 @@ msgstr "داكن"
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:20
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:77
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:570
 msgid "Dashboard"
 msgstr "لوحة المعلومات"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:815
-msgid "Dashboard Components"
-msgstr "مكونات لوحة القيادة"
+#~ msgid "Dashboard Components"
+#~ msgstr "مكونات لوحة القيادة"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:695
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:925
 msgid "Dashboard Configuration"
 msgstr "تكوين لوحة القيادة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:307
-msgid "Dashboard layout updated!"
-msgstr "تم تحديث تخطيط لوحة المعلومات!"
+#~ msgid "Dashboard layout updated!"
+#~ msgstr "تم تحديث تخطيط لوحة المعلومات!"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:887
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:805
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1164
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:769
+msgid "Dashboard preview"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:726
+msgid "Dashboard Preview"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1116
 msgid "Dashboard Preview & Activation"
 msgstr "معاينة وتنشيط لوحة التحكم"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:147
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:491
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:335
 msgid "Dashboard preview updated!"
 msgstr ""
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:420
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:614
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:629
 msgid "Dashboard saved and activated for {repositoryName}!"
 msgstr "تم حفظ لوحة التحكم وتنشيطها لـ {repositoryName}!"
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:349
+msgid "Dashboard saved for {repositoryName}!"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:892
+msgid "Dashboard schema not generated yet"
+msgstr ""
 
 #: src/pages/settings/components/AuditMonitoring.tsx:142
 msgid "Data Access"
@@ -2623,6 +2795,10 @@ msgstr "تاريخ التعديل"
 msgid "Date To"
 msgstr "التاريخ To"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:67
+msgid "Day"
+msgstr ""
+
 #: src/pages/settings/components/Folders/retentionMockData.ts:72
 msgid "days"
 msgstr "أيام"
@@ -2638,6 +2814,10 @@ msgstr "حدد كيفية تتبع مراجعات المستندات عند تح
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3296
 msgid "Default"
 msgstr "افتراضي"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:111
+msgid "Default color"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:36
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSystem.tsx:130
@@ -2664,7 +2844,7 @@ msgstr "تحديد قاعدة الاحتفاظ"
 #~ msgid "Define role details, access scopes, and permission privilege matrices"
 #~ msgstr "حدد تفاصيل الدور ونطاقات الوصول ومصفوفات امتيازات الصلاحيات"
 
-#: src/pages/settings/SettingsMain.tsx:290
+#: src/pages/settings/SettingsMain.tsx:308
 msgid "Define roles and configure granular permissions across all modules."
 msgstr "حدد الأدوار وقم بتكوين أذونات تفصيلية عبر جميع الوحدات."
 
@@ -2676,6 +2856,7 @@ msgstr "تحديد القاعدة"
 #: src/pages/folders/components/FolderTable.tsx:833
 #: src/pages/folders/components/FolderTable.tsx:1204
 #: src/pages/forms/FormsPage.tsx:292
+#: src/pages/reports/components/RowActionsMenu.tsx:57
 #: src/pages/requests/components/Table.tsx:119
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:496
@@ -2694,6 +2875,10 @@ msgstr "تحديد القاعدة"
 #: src/pages/workflows/components/Table.tsx:145
 msgid "Delete"
 msgstr "حذف"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:194
+msgid "Delete card"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:70
 msgid "Delete files or folders"
@@ -2719,6 +2904,10 @@ msgstr "حذف نهائيا"
 #: src/pages/settings/components/PortalConfiguration.tsx:641
 msgid "Delete Portal"
 msgstr "حذف البوابة"
+
+#: src/pages/reports/components/ReportsListView.tsx:221
+msgid "Delete Report"
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:567
 msgid "Delete Role"
@@ -2760,7 +2949,7 @@ msgstr "جارٍ حذف النموذج..."
 msgid "Demo data selected. This data will be used for invoice processing."
 msgstr "تم تحديد بيانات تجريبية. ستُستخدم هذه البيانات لمعالجة الفواتير."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:140
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:164
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:453
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:841
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1944
@@ -2781,12 +2970,21 @@ msgstr "القسم والتسلسل الهرمي للأعمال"
 #~ msgstr "الإنفاق حسب القسم"
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:215
-msgid "Describe how you'd like the {repositoryName} dashboard organized, then apply to preview."
-msgstr ""
+#~ msgid "Describe how you'd like the {repositoryName} dashboard organized, then apply to preview."
+#~ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1723
 msgid "Describe structure or fields…"
 msgstr "صف الهيكل أو الحقول…"
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:586
+msgid "Describe the dashboard you want to create."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:961
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:625
+msgid "Describe the dashboard you want to create..."
+msgstr ""
 
 #: src/pages/forms/components/AiFormBuilder.tsx:207
 msgid "Describe the form you want to create..."
@@ -2799,6 +2997,10 @@ msgstr "صف الغرض من هذا المجلد..."
 #: src/pages/settings/components/GroupManagement.tsx:846
 msgid "Describe the purpose of this group..."
 msgstr "صف الغرض من هذه المجموعة..."
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:92
+msgid "Describe the report you want"
+msgstr ""
 
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:147
 msgid "Describe the workflow you want to create..."
@@ -2821,10 +3023,11 @@ msgid "Describe what this retention policy manages and why."
 msgstr "قم بوصف ما تديره سياسة الاحتفاظ هذه ولماذا."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:766
-msgid "Describe your custom dashboard design or metric requirements..."
-msgstr "قم بوصف تصميم لوحة المعلومات المخصصة أو متطلبات القياس..."
+#~ msgid "Describe your custom dashboard design or metric requirements..."
+#~ msgstr "قم بوصف تصميم لوحة المعلومات المخصصة أو متطلبات القياس..."
 
 #: src/pages/forms/FormsPage.tsx:204
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:223
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:371
 #: src/pages/settings/components/credits/Credits.tsx:498
@@ -2862,7 +3065,7 @@ msgstr "الوصف قيد الانتظار"
 msgid "Deselect All"
 msgstr "قم بإلغاء تحديد الكل"
 
-#: src/pages/settings/SettingsMain.tsx:264
+#: src/pages/settings/SettingsMain.tsx:276
 msgid "Design and configure automated workflows and process routing."
 msgstr "صمم وقم بتكوين مهام سير العمل المؤتمتة وتوجيه العمليات."
 
@@ -2873,6 +3076,10 @@ msgstr "عمل الوجهة"
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:702
 msgid "Destination Action"
 msgstr "عمل الوجهة"
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:66
+msgid "Details"
+msgstr ""
 
 #. placeholder {0}: response?.headers.length
 #. placeholder {1}: response?.rowCount
@@ -2896,7 +3103,7 @@ msgstr "رفع مباشر"
 msgid "Disabled"
 msgstr "عاجز"
 
-#: src/pages/requests/components/InboxList.tsx:1881
+#: src/pages/requests/components/InboxList.tsx:1888
 #: src/pages/requests/components/QuickFilters.tsx:156
 #: src/pages/requests/components/request/components/sections/overview/components/discrepancies/Discrepancies.tsx:56
 #: src/pages/requests/utils/localizeRequestUi.ts:26
@@ -2919,7 +3126,7 @@ msgstr "هل تحتاج إلى تخطيط موارد المؤسسات (ERP) أو
 msgid "Doc agent"
 msgstr "وكيل الوثيقة"
 
-#: src/pages/portal/components/PortalWizard.tsx:166
+#: src/pages/portal/components/PortalWizard.tsx:160
 msgid "Document"
 msgstr "وثيقة"
 
@@ -2927,7 +3134,7 @@ msgstr "وثيقة"
 msgid "Document attached"
 msgstr "الوثيقة مرفقة"
 
-#: src/pages/portal/components/PortalWizard.tsx:415
+#: src/pages/portal/components/PortalWizard.tsx:361
 msgid "Document attached. Please confirm the details on the next steps."
 msgstr "الوثيقة مرفقة. يرجى تأكيد التفاصيل في الخطوات التالية."
 
@@ -2948,7 +3155,7 @@ msgstr "معلومات الوثيقة"
 msgid "Document ingested via email"
 msgstr "تم استيعاب المستند عبر البريد الإلكتروني"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3564
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3600
 msgid "Document Mapping"
 msgstr "ربط المستند"
 
@@ -3044,6 +3251,16 @@ msgstr "سيتم إخفاء المستندات عندما:"
 msgid "Documents will be shown when:"
 msgstr "سيتم عرض المستندات عندما:"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:129
+#: src/pages/reports/components/ReportsListView.tsx:133
+#: src/pages/reports/components/ReportsListView.tsx:278
+msgid "Domain"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:141
+msgid "Domain:"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:55
 msgid "Don't have a PO file ready? Use our template to ensure your data matches our system."
 msgstr "ليس لديك ملف أمر شراء جاهز؟ استخدم قالبنا لضمان تطابق بياناتك مع نظامنا."
@@ -3060,7 +3277,7 @@ msgstr "ليس لديك حساب؟"
 msgid "Done"
 msgstr "تم"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:934
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1183
 msgid "Done Customizing"
 msgstr "تم التخصيص"
 
@@ -3117,6 +3334,7 @@ msgstr "جاري التنزيل..."
 msgid "DPO"
 msgstr "DPO"
 
+#: src/components/common/ReportStatusBadge.tsx:27
 #: src/pages/forms/FormsPage.tsx:607
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1093
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3347
@@ -3180,7 +3398,7 @@ msgstr "إسقاط الملفات، أو"
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
 #: src/pages/folders/components/Upload/Upload.tsx:1663
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:867
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:886
 msgid "Drop your file here, or"
 msgstr "أفلت ملفك هنا، أو"
 
@@ -3200,7 +3418,7 @@ msgstr "اسقاط"
 #~ msgid "Dual axis spending trend comparison"
 #~ msgstr "مقارنة اتجاه الإنفاق بمحورين"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1644
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1646
 msgid "Due & Terms"
 msgstr "الاستحقاق والشروط"
 
@@ -3211,36 +3429,37 @@ msgstr "تاريخ الاستحقاق"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:843
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1946
 #: src/pages/folders/components/StartWorkflowView.tsx:175
-#: src/pages/requests/components/InboxList.tsx:1869
+#: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Due Date"
 msgstr "تاريخ الاستحقاق"
 
-#: src/pages/requests/components/InboxList.tsx:1215
+#: src/pages/requests/components/InboxList.tsx:1216
 msgid "Due in Next 1 Month"
 msgstr "مستحق في الشهر 1 القادم"
 
-#: src/pages/requests/components/InboxList.tsx:1213
+#: src/pages/requests/components/InboxList.tsx:1214
 msgid "Due in Next 15 Days"
 msgstr "مستحق خلال الـ 15 يومًا القادمة"
 
-#: src/pages/requests/components/InboxList.tsx:1211
+#: src/pages/requests/components/InboxList.tsx:1212
 msgid "Due in Next 7 Days"
 msgstr "مستحق في الأيام السبعة القادمة"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:134
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1881
-#: src/pages/requests/components/InboxList.tsx:1209
+#: src/pages/requests/components/InboxList.tsx:1210
 msgid "Due Today"
 msgstr "مستحق اليوم"
 
+#: src/pages/reports/components/RowActionsMenu.tsx:51
 #: src/pages/requests/utils/localizeRequestUi.ts:32
 msgid "Duplicate"
 msgstr "مكرر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3287
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3323
 msgid "Duplicate Detection"
 msgstr "اكتشاف التكرار"
 
@@ -3248,7 +3467,7 @@ msgstr "اكتشاف التكرار"
 msgid "Duplicate invoice watch"
 msgstr "مراقبة الفواتير المكررة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3623
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3659
 msgid "Duplicate Payment Check"
 msgstr "فحص الدفع المكرر"
 
@@ -3288,6 +3507,14 @@ msgstr "على سبيل المثال الاحتفاظ بالعقود منتهي�
 msgid "e.g. Finance Team"
 msgstr "مثال: فريق المالية"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:112
+msgid "e.g. Outstanding Invoices"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:211
+msgid "e.g. PDA Preparation"
+msgstr ""
+
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:655
 msgid "e.g. Pure Agentic"
 msgstr "على سبيل المثال وكيل نقي"
@@ -3299,6 +3526,10 @@ msgstr "على سبيل المثال التقارير"
 #: src/pages/settings/components/Menus.tsx:767
 msgid "e.g. Reports"
 msgstr "على سبيل المثال التقارير"
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:100
+msgid "e.g. Show me overdue invoices grouped by vendor"
+msgstr ""
 
 #: src/features/builder/components/FieldSidebar.tsx:114
 #~ msgid "e.g. Type here..."
@@ -3312,7 +3543,7 @@ msgstr "على سبيل المثال التقارير"
 msgid "Each batch needs manual confirmation before it runs."
 msgstr "تحتاج كل دفعة إلى تأكيد يدوي قبل تشغيلها."
 
-#: src/pages/portal/components/PortalWizard.tsx:439
+#: src/pages/portal/components/PortalWizard.tsx:385
 msgid "Each file must be 10 MB or smaller."
 msgstr "يجب أن يكون حجم كل ملف 10 ميغابايت أو أصغر."
 
@@ -3320,17 +3551,23 @@ msgstr "يجب أن يكون حجم كل ملف 10 ميغابايت أو أصغ�
 msgid "Each signer needs a name and email."
 msgstr "يحتاج كل موقّع إلى اسم وبريد إلكتروني."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:640
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:675
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:793
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:875
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:900
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:518
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:539
+#: src/pages/dashboard/DashboardPage.tsx:194
+#: src/pages/dashboard/DashboardPage.tsx:199
 #: src/pages/forms/FormEntriesPage.tsx:1297
 #: src/pages/forms/FormsPage.tsx:281
+#: src/pages/reports/components/RowActionsMenu.tsx:41
 #: src/pages/requests/components/Table.tsx:113
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2166
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2295
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2314
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2333
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2354
-#: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:206
+#: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:195
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:353
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3409
 #: src/pages/settings/components/Folders/FolderRetention.tsx:190
@@ -3344,6 +3581,10 @@ msgstr "يحتاج كل موقّع إلى اسم وبريد إلكتروني."
 #: src/pages/workflows/components/Table.tsx:133
 msgid "Edit"
 msgstr "تعديل"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:186
+msgid "Edit card"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
 msgid "Edit Document"
@@ -3407,13 +3648,17 @@ msgstr "تحرير إعداد القائمة"
 msgid "Edit Metadata"
 msgstr "تعديل البيانات الوصفية"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:930
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1178
 msgid "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 msgstr "وضع التحرير نشط - انقر فوق دائرة الاختيار في أي قسم، أو لوحة مؤشرات الأداء الرئيسية، أو سطر رؤية الذكاء الاصطناعي، أو بطاقة الرسم البياني لإلغاء تحديد العناصر غير المرغوب فيها. قم بالتبديل إلى وضع العرض لمعاينة التخطيط المخصص الخاص بك."
 
 #: src/pages/settings/components/PortalConfiguration.tsx:1109
 msgid "Edit Portal"
 msgstr "تحرير البوابة"
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:186
+msgid "Edit Report"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:314
 msgid "Edit retention policy"
@@ -3476,6 +3721,10 @@ msgstr "عنوان البريد الإلكتروني"
 msgid "Email and password"
 msgstr "البريد الإلكتروني وكلمة المرور"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:114
+msgid "Email content"
+msgstr ""
+
 #: src/pages/sign-in/components/SignInForm.tsx:347
 #: src/pages/sign-in/components/SignInForm.tsx:365
 msgid "Email is required"
@@ -3537,6 +3786,15 @@ msgstr "ينتهي ب"
 msgid "Enter {label}"
 msgstr "أدخل {label}"
 
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:112
+msgid "Enter a card name."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:361
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:119
+msgid "Enter a dashboard prompt before continuing."
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:235
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:253
 msgid "Enter a policy name to continue."
@@ -3575,6 +3833,10 @@ msgstr "أدخل اسم العائلة"
 msgid "Enter phone number"
 msgstr "أدخل رقم الهاتف"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:591
+msgid "Enter Prompt"
+msgstr ""
+
 #: src/pages/portal/components/PortalLogin.tsx:348
 msgid "Enter the 6-digit OTP to verify your identity"
 msgstr "أدخل كلمة مرور OTP المكونة من 6 أرقام للتحقق من هويتك"
@@ -3594,6 +3856,10 @@ msgstr "أدخل اسم المستخدم."
 #: src/pages/settings/components/ManageUser.tsx:2306
 msgid "Enter username"
 msgstr "أدخل اسم المستخدم"
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:124
+msgid "Enter value"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:3113
 msgid "Enter your full name"
@@ -3648,7 +3914,7 @@ msgstr "ستُستخدم بيانات ERP للتحقق من الفواتير ا�
 msgid "ERP Settings"
 msgstr "إعدادات تخطيط موارد المؤسسات"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:759
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:778
 msgid "Error starting workflow"
 msgstr "خطأ في بدء سير العمل"
 
@@ -3702,13 +3968,13 @@ msgstr "جدول Excel"
 msgid "Exception uploading file: {detail}"
 msgstr "استثناء أثناء رفع الملف: {detail}"
 
-#: src/pages/requests/components/Header.tsx:72
-#: src/pages/requests/components/InboxList.tsx:2026
+#: src/pages/requests/components/Header.tsx:83
+#: src/pages/requests/components/InboxList.tsx:2053
 #: src/pages/requests/utils/localizeRequestUi.ts:36
 msgid "Exceptions"
 msgstr "الاستثناءات"
 
-#: src/pages/requests/components/Header.tsx:73
+#: src/pages/requests/components/Header.tsx:84
 msgid "Exceptions ({resolvedExceptionsCount})"
 msgstr "الاستثناءات ({resolvedExceptionsCount})"
 
@@ -3740,14 +4006,14 @@ msgstr "يجب أن تكون أيام الانتهاء 1 على الأقل."
 msgid "Expiry / Due Date"
 msgstr "تاريخ انتهاء الصلاحية / الاستحقاق"
 
-#: src/pages/settings/SettingsMain.tsx:308
+#: src/pages/settings/SettingsMain.tsx:326
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "استكشف واختبر ونقح نقاط نهاية واجهة برمجة التطبيقات بطلبات مباشرة واستجابات نموذجية."
 
 #: src/pages/folders/components/Upload/Upload.tsx:2061
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1918
+#: src/pages/requests/components/InboxList.tsx:1925
 msgid "Export"
 msgstr "تصدير"
 
@@ -3782,7 +4048,7 @@ msgid "EXTRACTED"
 msgstr "مستخرج"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1906
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3486
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3522
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "البيانات المستخرجة"
@@ -3796,10 +4062,10 @@ msgstr "جاري استخراج البيانات"
 msgid "Extracting data from document..."
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:552
-#: src/pages/portal/components/PortalWizard.tsx:785
-#: src/pages/portal/components/PortalWizard.tsx:1148
-#: src/pages/portal/components/PortalWizard.tsx:1154
+#: src/pages/portal/components/PortalWizard.tsx:498
+#: src/pages/portal/components/PortalWizard.tsx:731
+#: src/pages/portal/components/PortalWizard.tsx:1075
+#: src/pages/portal/components/PortalWizard.tsx:1081
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:927
 msgid "Extracting data from the document…"
@@ -3888,7 +4154,8 @@ msgstr "فشل تنزيل القالب"
 msgid "Failed to enqueue background import: {0}"
 msgstr "فشل إدراج استيراد الخلفية: {0}"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:55
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:386
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:139
 msgid "Failed to generate dashboard schema"
 msgstr ""
 
@@ -3945,13 +4212,17 @@ msgstr "فشل تحميل الدور"
 msgid "Failed to load role permissions"
 msgstr "فشل تحميل أذونات الدور"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:781
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:800
 msgid "Failed to load sample document."
 msgstr "فشل تحميل مستند العينة."
 
 #: src/pages/settings/components/ManageUser.tsx:807
 msgid "Failed to load user draft."
 msgstr "فشل تحميل مسودة المستخدم."
+
+#: src/pages/requests/components/KanbanView.tsx:314
+msgid "Failed to move this request."
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3627
 msgid "Failed to parse Excel file"
@@ -3965,12 +4236,13 @@ msgstr "فشل تحليل الملف"
 msgid "Failed to parse file. Please upload a valid CSV or Excel file."
 msgstr "فشل تحليل الملف. يرجى رفع ملف CSV أو Excel صالح."
 
-#: src/pages/portal/components/PortalDetail.tsx:225
+#: src/pages/portal/components/PortalDetail.tsx:226
 msgid "Failed to proceed request:"
 msgstr "فشلت متابعة الطلب:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1582
+#: src/pages/requests/components/KanbanView.tsx:302
+#: src/pages/requests/components/request/Request.tsx:1586
 msgid "Failed to proceed request: {0}"
 msgstr "فشلت متابعة الطلب: {0}"
 
@@ -3992,7 +4264,7 @@ msgid "Failed to save preferences: {message}"
 msgstr "فشل حفظ التفضيلات: {message}"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1652
+#: src/pages/requests/components/request/Request.tsx:1656
 msgid "Failed to save request: {0}"
 msgstr "فشل حفظ الطلب: {0}"
 
@@ -4000,7 +4272,7 @@ msgstr "فشل حفظ الطلب: {0}"
 msgid "Failed to send OTP. Please try again."
 msgstr "فشل إرسال OTP. يرجى المحاولة مرة أخرى."
 
-#: src/pages/requests/components/request/Request.tsx:1924
+#: src/pages/requests/components/request/Request.tsx:1928
 msgid "Failed to share request"
 msgstr "فشلت مشاركة الطلب"
 
@@ -4009,7 +4281,7 @@ msgid "Failed to start the workflow. Please try again."
 msgstr "فشل في بدء سير العمل. يرجى المحاولة مرة أخرى."
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1653
+#: src/pages/requests/components/request/Request.tsx:1657
 msgid "Failed to submit request: {0}"
 msgstr "فشل إرسال الطلب: {0}"
 
@@ -4022,10 +4294,10 @@ msgstr "فشل تحديث المجلد: {0}"
 msgid "Failed to upload master file to the server"
 msgstr "فشل في تحميل الملف الرئيسي إلى الخادم"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:417
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:440
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:495
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:519
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:459
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:482
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:537
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:561
 msgid "Failed to upload the file."
 msgstr "فشل تحميل الملف."
 
@@ -4053,6 +4325,7 @@ msgstr "تفاصيل الجلب.."
 msgid "Fetching the latest portal configuration."
 msgstr "جارٍ جلب أحدث تكوين للبوابة الإلكترونية."
 
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:88
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:902
 msgid "Field"
 msgstr "مجال"
@@ -4068,6 +4341,11 @@ msgstr "اسم الحقل"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4086
 msgid "Field Name"
 msgstr "اسم الحقل"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:296
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:236
+msgid "Field settings"
+msgstr ""
 
 #: src/features/builder/components/FieldSidebar.tsx:73
 #~ msgid "Field Settings"
@@ -4086,6 +4364,8 @@ msgstr "حقول"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
 #: src/pages/folders/components/Upload/Upload.tsx:1927
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:67
+#: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
 #: src/pages/settings/components/Folders/DmsSettings.tsx:342
 msgid "Fields"
@@ -4136,7 +4416,7 @@ msgid "File is too large. Max size is 4MB."
 msgstr "الملف كبير جداً. الحد الأقصى للحجم 4 ميجابايت."
 
 #: src/pages/folders/components/Upload/Upload.tsx:1101
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:470
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:478
 msgid "File is too large. Max size is 50MB."
 msgstr "الملف كبير جدًا. الحد الأقصى للحجم هو 50 ميجابايت."
 
@@ -4181,6 +4461,8 @@ msgid "Files must be under 5MB"
 msgstr "يجب أن يكون حجم الملفات أقل من 5 ميغابايت"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:236
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:68
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:61
 msgid "Filters"
 msgstr "عوامل التصفية"
 
@@ -4196,7 +4478,7 @@ msgstr "جاري إنهاء استيراد السجلات..."
 msgid "Finalizing Results..."
 msgstr "جاري إنهاء النتائج..."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:135
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:159
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:447
 msgid "Financial Year"
 msgstr "السنة المالية"
@@ -4250,7 +4532,7 @@ msgstr "المجلد «{folderName}» جاهز. تابع لاختيار مزود
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:879
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:164
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
-#: src/pages/settings/SettingsMain.tsx:253
+#: src/pages/settings/SettingsMain.tsx:265
 msgid "Folder Configuration"
 msgstr "تكوين المجلد"
 
@@ -4424,6 +4706,7 @@ msgstr "إدخالات النموذج"
 #~ msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:590
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:99
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1260
 msgid "Format"
 msgstr "الصيغة"
@@ -4432,9 +4715,13 @@ msgstr "الصيغة"
 #: src/pages/forms/components/Table.tsx:57
 #: src/pages/forms/FormsPage.tsx:80
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:32
-#: src/pages/settings/SettingsMain.tsx:261
+#: src/pages/settings/SettingsMain.tsx:273
 msgid "Forms"
 msgstr "النماذج"
+
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:68
+msgid "Formula"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:479
 #~ msgid "Found in {0}"
@@ -4452,7 +4739,7 @@ msgstr "وجدت في بيانات أمر الشراء الرئيسي الخاص
 msgid "Full name"
 msgstr "الاسم الكامل"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:352
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:360
 msgid "Fully Matched"
 msgstr "مطابقة كاملة"
 
@@ -4468,9 +4755,17 @@ msgstr "مطابقة كاملة"
 #~ msgid "Gemini unavailable — used local folder setup fallback."
 #~ msgstr "Gemini غير متاح — تم استخدام إعداد مجلد محلي احتياطي."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:874
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1100
 msgid "Generate Dashboard Design"
 msgstr "إنشاء تصميم لوحة القيادة"
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:986
+msgid "Generate KPIs and charts from your prompt, then load live data."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:110
+msgid "Generate plan"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:384
 msgid "Generate with AI"
@@ -4485,10 +4780,13 @@ msgstr "إنشاء باستخدام الذكاء الاصطناعي"
 msgid "Generated by AI"
 msgstr "مُولَّد بالذكاء الاصطناعي"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:247
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:999
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:662
 msgid "Generating dashboard schema..."
 msgstr ""
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:952
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:616
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1878
 msgid "Generating description…"
 msgstr "جاري إنشاء الوصف…"
@@ -4505,21 +4803,25 @@ msgstr "جاري إنشاء الحقول الموصى بها…"
 msgid "Get a quick overview of the setup process before connecting your tools."
 msgstr "احصل على نظرة عامة سريعة على عملية الإعداد قبل توصيل أدواتك."
 
-#: src/pages/dashboard/DashboardPage.tsx:169
+#: src/pages/dashboard/DashboardPage.tsx:206
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/WelcomeMessage.tsx:26
 #: src/pages/dashboard/workflows/accounts-payable/components/SetupCallout.tsx:34
 msgid "Get Started"
 msgstr "ابدأ"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1560
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:103
+msgid "Give your report a name, pick the data domain, and describe what it covers."
+msgstr ""
+
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1562
 msgid "GL & Category"
 msgstr "GL والفئة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3390
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3426
 msgid "GL Account Matching"
 msgstr "مطابقة حساب دفتر الأستاذ"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3775
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3811
 msgid "GL Account Matching Report"
 msgstr "تقرير مطابقة حساب دفتر الأستاذ"
 
@@ -4604,6 +4906,10 @@ msgstr "إجمالي قيمة العملة"
 msgid "Group"
 msgstr "المجموعة"
 
+#: src/pages/report-builder/hooks/useUserGroupOptions.ts:79
+msgid "Group {id}"
+msgstr ""
+
 #: src/pages/settings/components/ManageUser.tsx:143
 msgid "Group Assignment"
 msgstr "تعيين المجموعة"
@@ -4623,7 +4929,7 @@ msgstr "تفاصيل المجموعة"
 #: src/pages/settings/components/GroupManagement.tsx:590
 #: src/pages/settings/components/GroupManagement.tsx:819
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:27
-#: src/pages/settings/SettingsMain.tsx:287
+#: src/pages/settings/SettingsMain.tsx:305
 msgid "Group Management"
 msgstr "إدارة المجموعات"
 
@@ -4669,11 +4975,11 @@ msgstr "المجموعات"
 msgid "Guidelines validated"
 msgstr "تم التحقق من الإرشادات"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:372
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:380
 msgid "Handwritten"
 msgstr "مكتوب بخط اليد"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:369
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:377
 msgid "Handwritten Invoice"
 msgstr "فاتورة مكتوبة بخط اليد"
 
@@ -4729,7 +5035,7 @@ msgstr "مرحباً، أهلاً بك!"
 #~ msgid "Hidden"
 #~ msgstr "مخفي"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:511
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:705
 msgid "Hidden in View"
 msgstr "مخفي في العرض"
 
@@ -4765,7 +5071,7 @@ msgstr "دقة عالية"
 #~ msgid "High Risk"
 #~ msgstr "مخاطر عالية"
 
-#: src/pages/requests/components/InboxList.tsx:1898
+#: src/pages/requests/components/InboxList.tsx:1905
 #: src/pages/requests/utils/localizeRequestUi.ts:27
 msgid "High Value"
 msgstr "قيمة عالية"
@@ -4778,13 +5084,13 @@ msgstr "قيمة عالية (≥10 آلاف دولار)"
 msgid "Highest Credit Consumption"
 msgstr "أعلى استهلاك للرصيد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3639
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3675
 msgid "Historical Match Results"
 msgstr "نتائج المطابقة التاريخية"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:579
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3506
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3542
 msgid "History"
 msgstr "السجل"
 
@@ -4812,8 +5118,8 @@ msgid "How should this data be applied?"
 msgstr "كيف ينبغي تطبيق هذه البيانات؟"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:741
-msgid "How should your dashboard be organized? Choose a template or describe your custom design."
-msgstr "كيف ينبغي تنظيم لوحة القيادة الخاصة بك؟ اختر قالبًا أو قم بوصف تصميمك المخصص."
+#~ msgid "How should your dashboard be organized? Choose a template or describe your custom design."
+#~ msgstr "كيف ينبغي تنظيم لوحة القيادة الخاصة بك؟ اختر قالبًا أو قم بوصف تصميمك المخصص."
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:728
 msgid "How this policy behaves"
@@ -4860,7 +5166,7 @@ msgid "Import extracted items"
 msgstr "استيراد العناصر المستخرجة"
 
 #: src/pages/requests/components/buttons/UploadPoButton.tsx:14
-#: src/pages/requests/components/InboxList.tsx:1925
+#: src/pages/requests/components/InboxList.tsx:1932
 msgid "Import PO Data"
 msgstr "استيراد بيانات أمر الشراء"
 
@@ -4889,7 +5195,11 @@ msgstr "استورد سجلاتك عبر CSV أو Excel."
 msgid "In progress"
 msgstr "قيد التقدم"
 
-#: src/pages/portal/components/PortalProgressCard.tsx:75
+#: src/pages/requests/components/KanbanView.tsx:201
+msgid "In Progress"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:54
 msgid "In progress..."
 msgstr "في تَقَدم..."
 
@@ -4902,12 +5212,12 @@ msgid "Inactive"
 msgstr "غير نشط"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:174
-#: src/pages/requests/components/Header.tsx:86
+#: src/pages/requests/components/Header.tsx:97
 #: src/pages/requests/utils/localizeRequestUi.ts:35
 msgid "Inbox"
 msgstr "الوارد"
 
-#: src/pages/requests/components/Header.tsx:86
+#: src/pages/requests/components/Header.tsx:97
 msgid "Inbox ({inboxCount})"
 msgstr "الوارد ({inboxCount})"
 
@@ -4975,19 +5285,19 @@ msgstr "الجدول الزمني للاستيراد"
 msgid "Initializing upload..."
 msgstr "جاري تهيئة الرفع..."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:670
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:689
 msgid "Initiating..."
 msgstr "جاري البدء..."
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:49
+#: src/layouts/app/components/sidebar/Sidebar.tsx:54
 msgid "Insights"
 msgstr "رؤى"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:461
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:469
 msgid "Insights into your liabilities."
 msgstr "رؤى حول التزاماتك."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:448
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:456
 msgid "Instant Processing"
 msgstr "معالجة فورية"
 
@@ -5006,7 +5316,7 @@ msgstr "اندماج"
 msgid "Integrations"
 msgstr "التكامل"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:453
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:461
 msgid "INTELLIGENCE"
 msgstr "الذكاء"
 
@@ -5014,16 +5324,16 @@ msgstr "الذكاء"
 msgid "Intelligence Profile"
 msgstr "الملف الاستخباراتي"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:794
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:813
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:711
 msgid "Intelligent"
 msgstr "ذكي"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:899
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1126
 msgid "Interactive Dashboard Preview"
 msgstr "معاينة لوحة المعلومات التفاعلية"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:888
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1113
 msgid "Interactive preview of your customized dashboard design for {repositoryName}."
 msgstr "معاينة تفاعلية لتصميم لوحة التحكم المخصصة لـ {repositoryName}."
 
@@ -5032,7 +5342,7 @@ msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "نوع ملف غير صالح. يرجى رفع PDF أو صورة."
 
 #: src/pages/folders/components/Upload/Upload.tsx:1103
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:473
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:481
 msgid "Invalid file type. Please upload a supported document."
 msgstr "نوع الملف غير صالح. يرجى تحميل وثيقة معتمدة."
 
@@ -5064,12 +5374,12 @@ msgstr "مدعو"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:839
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1942
-#: src/pages/portal/components/PortalWizard.tsx:166
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1344
+#: src/pages/portal/components/PortalWizard.tsx:160
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1361
 msgid "Invoice"
 msgstr "الفاتورة"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:118
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:126
 msgid "INVOICE"
 msgstr "فاتورة"
 
@@ -5090,7 +5400,7 @@ msgstr "فاتورة #"
 msgid "Invoice Amount"
 msgstr "مبلغ الفاتورة"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1694
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1696
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
 #: src/pages/requests/utils/localizeRequestUi.ts:8
@@ -5109,12 +5419,12 @@ msgstr "ستُقرأ رسائل الفواتير من هذا البريد الو
 msgid "Invoice Error"
 msgstr "خطأ في الفاتورة"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:428
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:436
 msgid "Invoice exceeds PO value."
 msgstr "تتجاوز الفاتورة قيمة أمر الشراء."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2084
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4521
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4577
 msgid "Invoice Line Items"
 msgstr "بنود الفاتورة"
 
@@ -5122,7 +5432,7 @@ msgstr "بنود الفاتورة"
 msgid "Invoice matched against approved master"
 msgstr "تمت مطابقة الفاتورة مع السجل الرئيسي المعتمد"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1302
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1304
 #: src/pages/requests/utils/localizeRequestUi.ts:7
 msgid "Invoice Number"
 msgstr "رقم الفاتورة"
@@ -5144,7 +5454,7 @@ msgstr "ملخص الفاتورة"
 msgid "Invoice Value"
 msgstr "قيمة الفاتورة"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:398
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:406
 msgid "Invoice value reduced."
 msgstr "تم تقليل قيمة الفاتورة."
 
@@ -5152,11 +5462,11 @@ msgstr "تم تقليل قيمة الفاتورة."
 msgid "invoices"
 msgstr "فواتير"
 
-#: src/pages/requests/components/Header.tsx:65
+#: src/pages/requests/components/Header.tsx:76
 msgid "Invoices"
 msgstr "الفواتير"
 
-#: src/pages/requests/components/Header.tsx:65
+#: src/pages/requests/components/Header.tsx:76
 msgid "Invoices ({inboxCount})"
 msgstr "الفواتير ({inboxCount})"
 
@@ -5251,6 +5561,10 @@ msgstr "يونيو"
 #~ msgid "Just 3 suppliers account for 19% of unpaid liabilities, led by Harbor Point Consulting at $686.5K."
 #~ msgstr "3 موردين فقط يمثلون 19% من الالتزامات غير المدفوعة، يتصدرهم Harbor Point Consulting بمبلغ 686.5 ألف دولار."
 
+#: src/components/common/DynamicFilter.tsx:844
+msgid "Kanban View"
+msgstr ""
+
 #: src/pages/sign-in/components/SignInForm.tsx:865
 msgid "Keep me logged in"
 msgstr "ابقني متصلاً"
@@ -5269,7 +5583,8 @@ msgstr "الكلمة الرئيسية / الحقل"
 msgid "Kindly draw the signature"
 msgstr "يرجى رسم التوقيع"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:253
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1009
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:672
 msgid "KPIs"
 msgstr ""
 
@@ -5307,6 +5622,7 @@ msgstr "L2: {0}"
 msgid "L3 Approval"
 msgstr "موافقة L3"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:76
 #: src/pages/settings/components/Menus.tsx:623
 #: src/pages/settings/components/Menus.tsx:639
 #: src/pages/settings/components/Menus.tsx:671
@@ -5351,7 +5667,7 @@ msgstr "آخر تسجيل دخول"
 msgid "last month"
 msgstr "الشهر الماضي"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:133
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:157
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:445
 msgid "Last month"
 msgstr "الشهر الماضي"
@@ -5385,7 +5701,7 @@ msgstr "مجلد العقود القانونية"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "القانوني لديه أطول دورة اعتماد في العرض الحالي، بمتوسط 8.0 أيام لكل فاتورة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3895
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
 msgid "Legal Matter Association Check"
 msgstr "فحص ارتباط المسألة القانونية"
 
@@ -5463,11 +5779,11 @@ msgstr "مطابقة بنود السطر"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3491
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3527
 msgid "Line Items"
 msgstr "بنود السطر"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:422
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:430
 msgid "Line Variance"
 msgstr "تباين السطر"
 
@@ -5483,7 +5799,7 @@ msgstr "تم نسخ الرابط"
 #~ msgid "Link document"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:454
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:462
 msgid "Link invoices to POs with precision."
 msgstr "اربط الفواتير بأوامر الشراء بدقة."
 
@@ -5509,6 +5825,19 @@ msgstr "يسرد كل مستند مطابق للتأكيد قبل تشغيل ا�
 #~ msgid "LIVE"
 #~ msgstr "مباشر"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:723
+msgid "Live dashboard generated from your selected widgets."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:175
+msgid "Live dashboard HTML was empty."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:353
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:292
+msgid "Live preview"
+msgstr ""
+
 #: src/pages/portal/components/PortalActivity.tsx:66
 msgid "Loading activity..."
 msgstr "جارٍ تحميل النشاط..."
@@ -5517,7 +5846,7 @@ msgstr "جارٍ تحميل النشاط..."
 msgid "Loading attachments..."
 msgstr "جارٍ تحميل المرفقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4565
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4621
 msgid "Loading Attachments..."
 msgstr "جاري تحميل المرفقات..."
 
@@ -5526,7 +5855,7 @@ msgstr "جاري تحميل المرفقات..."
 msgid "Loading comments..."
 msgstr "جاري تحميل التعليقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4608
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4664
 msgid "Loading Comments..."
 msgstr "جاري تحميل التعليقات..."
 
@@ -5539,10 +5868,21 @@ msgstr "جاري تحميل المستند..."
 msgid "Loading field data…"
 msgstr "جارٍ تحميل البيانات الميدانية..."
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:185
+msgid "Loading fields..."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:143
 msgid "Loading form…"
 msgstr "جارٍ تحميل النموذج..."
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:179
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:190
+msgid "Loading forms..."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:279
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:287
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:569
 #: src/pages/settings/components/ManageUser.tsx:2157
 msgid "Loading groups..."
@@ -5552,9 +5892,14 @@ msgstr "جارٍ تحميل المجموعات..."
 msgid "Loading history..."
 msgstr "جارٍ تحميل السجل..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4637
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4693
 msgid "Loading History..."
 msgstr "جاري تحميل السجل..."
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1160
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:765
+msgid "Loading live dashboard data..."
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:1241
 msgid "Loading menus..."
@@ -5581,6 +5926,10 @@ msgstr "جارٍ تحميل المستندات ذات الصلة…"
 msgid "Loading roles..."
 msgstr "جارٍ تحميل الأدوار..."
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:552
+msgid "Loading saved dashboard..."
+msgstr ""
+
 #: src/pages/sign-in/components/ShareSignInForm.tsx:237
 msgid "Loading share details..."
 msgstr "جارٍ تحميل تفاصيل المشاركة…"
@@ -5602,6 +5951,12 @@ msgid "Loading users & groups..."
 msgstr "جارٍ تحميل المستخدمين والمجموعات..."
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:320
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:255
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:259
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:118
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:128
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:147
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:155
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:544
 msgid "Loading users..."
 msgstr "جاري تحميل المستخدمين..."
@@ -5749,7 +6104,7 @@ msgstr "إلزامي"
 msgid "Mandatory — click to make optional"
 msgstr "إلزامي — انقر لجعله اختيارياً"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1044
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1047
 msgid "Manual"
 msgstr "يدوي"
 
@@ -5836,6 +6191,10 @@ msgstr "وضع كمقروء"
 msgid "Mark at least one signature place on the document before sending."
 msgstr "حدد موضعاً واحداً للتوقيع على الأقل قبل الإرسال."
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:53
+msgid "Master"
+msgstr ""
+
 #: src/pages/forms/components/GenericFormImportModal.tsx:491
 msgid "Master Data Update"
 msgstr "تحديث البيانات الرئيسية"
@@ -5913,16 +6272,16 @@ msgstr "نتيجة المباراة"
 msgid "Match:"
 msgstr "مباراة:"
 
-#: src/pages/requests/components/InboxList.tsx:1876
+#: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3266
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3551
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3302
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3587
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "مطابق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3793
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3829
 msgid "Matched GL Account"
 msgstr "حساب دفتر الأستاذ المطابق"
 
@@ -5948,7 +6307,7 @@ msgstr "جاري مطابقة تفاصيل أمر الشراء"
 #~ msgid "Matching supplier records..."
 #~ msgstr "مطابقة سجلات الموردين..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3461
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3497
 msgid "Matter Validation"
 msgstr "التحقق من المسألة"
 
@@ -6035,6 +6394,7 @@ msgid "Menus will appear here once navigation items are available."
 msgstr "ستظهر القوائم هنا بمجرد توفر عناصر التنقل."
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:432
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:172
 msgid "Message"
 msgstr "الرسالة"
 
@@ -6124,12 +6484,14 @@ msgid "Mobile Preview"
 msgstr "معاينة الجوال"
 
 #: src/pages/forms/FormsPage.tsx:249
+#: src/pages/reports/components/ReportsListView.tsx:141
 #: src/pages/workflows/components/Table.tsx:101
 msgid "Modified At"
 msgstr "تم التعديل في"
 
 #: src/pages/forms/FormsPage.tsx:242
 #: src/pages/forms/FormsPage.tsx:619
+#: src/pages/reports/components/ReportsListView.tsx:147
 #: src/pages/workflows/components/Table.tsx:94
 #: src/pages/workflows/components/Table.tsx:467
 msgid "Modified By"
@@ -6160,11 +6522,11 @@ msgstr "تعديل حقول البيانات التعريفية"
 msgid "Module access & privilege matrix"
 msgstr "وصول الوحدات ومصفوفة الامتيازات"
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:60
+#: src/layouts/app/components/sidebar/Sidebar.tsx:65
 msgid "Modules"
 msgstr "الوحدات"
 
-#: src/pages/settings/SettingsMain.tsx:302
+#: src/pages/settings/SettingsMain.tsx:320
 msgid "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 msgstr "راقب استهلاك الرصيد واتجاهات الاستخدام والنشاط حسب الوحدة عبر المنصة."
 
@@ -6226,7 +6588,7 @@ msgstr "المصادقة متعددة العوامل"
 msgid "Multiple conditions set on field ({0})."
 msgstr "تم تعيين شروط متعددة في الحقل ({0})."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:408
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:416
 msgid "Multiple pricing differences."
 msgstr "فروقات متعددة في الأسعار."
 
@@ -6249,8 +6611,8 @@ msgstr "إرسالاتي"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:89
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:109
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1604
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1685
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1606
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1687
 msgid "N/A"
 msgstr "غ/م"
 
@@ -6264,6 +6626,7 @@ msgstr "غير متوفر (لا توجد قيمة مطلوبة)"
 #: src/pages/forms/FormEntriesPage.tsx:2148
 #: src/pages/forms/FormsPage.tsx:169
 #: src/pages/forms/FormsPage.tsx:597
+#: src/pages/reports/components/ReportsListView.tsx:120
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:618
 #: src/pages/settings/components/ManageUser.tsx:1125
@@ -6290,6 +6653,18 @@ msgstr "قم بتسمية هذه السياسة ووصفها"
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:318
 msgid "Name this policy and describe what it governs for folder \"{folderName}\"."
 msgstr "قم بتسمية هذه السياسة ووصف ما تحكمه للمجلد \"{folderName}\"."
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:66
+msgid "Name, domain & sharing"
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:68
+msgid "Narrow down rows"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:62
+msgid "Narrow down which rows this report includes. Leave empty to include every row."
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:80
 msgid "Net 30 Days"
@@ -6322,12 +6697,12 @@ msgstr "إعداد القائمة الجديدة"
 msgid "New Password"
 msgstr "كلمة مرور جديدة"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:566
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:669
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:585
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:688
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:129
-#: src/pages/requests/RequestsPage.tsx:733
+#: src/pages/requests/RequestsPage.tsx:762
 msgid "New Request"
 msgstr "طلب جديد"
 
@@ -6337,7 +6712,7 @@ msgstr "طلب جديد"
 
 #: src/pages/portal/components/PortalHome.tsx:217
 #: src/pages/portal/components/PortalPicker.tsx:54
-#: src/pages/portal/components/PortalWizard.tsx:842
+#: src/pages/portal/components/PortalWizard.tsx:788
 #: src/pages/portal/PortalPage.tsx:448
 msgid "New Submission"
 msgstr "تقديم جديد"
@@ -6483,7 +6858,7 @@ msgstr "لا توجد مستندات تتطابق حاليًا مع هذه ال�
 msgid "No documents found"
 msgstr "لم يتم العثور على مستندات"
 
-#: src/pages/requests/components/InboxList.tsx:1217
+#: src/pages/requests/components/InboxList.tsx:1218
 msgid "No Due Date"
 msgstr "No Due التاريخ"
 
@@ -6491,7 +6866,7 @@ msgstr "No Due التاريخ"
 msgid "No Duplicate"
 msgstr "لا تكرار"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3302
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3338
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "لم يتم اكتشاف تكرارات"
@@ -6513,9 +6888,18 @@ msgstr "لا توجد بيانات ميدانية متاحة لهذه الوثي
 msgid "No fields found"
 msgstr "لم يتم العثور على حقول"
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:222
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:162
+msgid "No fields selected yet."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:84
 msgid "No files added yet"
 msgstr "لم تتم إضافة أي ملفات حتى الآن"
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:75
+msgid "No filters added. This report will include all rows."
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:387
 #~ msgid "No folder by that name"
@@ -6525,18 +6909,26 @@ msgstr "لم تتم إضافة أي ملفات حتى الآن"
 msgid "No folder security policies found. Click 'Add Policy' to configure access rules."
 msgstr "لم يتم العثور على سياسات أمان المجلد. انقر فوق \"إضافة سياسة\" لتكوين قواعد الوصول."
 
-#: src/pages/portal/components/PortalDetail.tsx:330
+#: src/pages/portal/components/PortalDetail.tsx:331
 #: src/pages/portal/components/PortalSubmissionDetails.tsx:96
 msgid "No form fields found for this request."
 msgstr "لم يتم العثور على حقول النموذج لهذا الطلب."
 
-#: src/pages/portal/components/PortalWizard.tsx:1130
+#: src/pages/portal/components/PortalWizard.tsx:1057
 msgid "No form panels found for this request."
 msgstr "لم يتم العثور على لوحات نماذج لهذا الطلب."
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:213
+msgid "No forms found for this source type."
+msgstr ""
 
 #: src/pages/settings/components/ManageUser.tsx:2194
 msgid "No groups available from the API yet."
 msgstr "لا توجد مجموعات متاحة من API حتى الآن."
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:297
+msgid "No groups found."
+msgstr ""
 
 #: src/pages/settings/components/GroupManagement.tsx:646
 msgid "No groups yet"
@@ -6546,7 +6938,7 @@ msgstr "لا توجد مجموعات حتى الآن"
 msgid "No history found"
 msgstr "لم يتم العثور على التاريخ"
 
-#: src/pages/requests/components/request/Request.tsx:1900
+#: src/pages/requests/components/request/Request.tsx:1904
 msgid "No instance ID available to share"
 msgstr "لا يوجد معرف مثيل متاح للمشاركة"
 
@@ -6608,6 +7000,11 @@ msgstr "لا توجد حقول بيانات وصفية متاحة"
 msgid "No methods"
 msgstr "لا توجد طرق"
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:189
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:129
+msgid "No more fields to add."
+msgstr ""
+
 #: src/layouts/app/components/topbar/components/notifications/Notifications.tsx:188
 msgid "No notifications"
 msgstr "لا توجد إشعارات"
@@ -6624,7 +7021,7 @@ msgstr "لم يتم منح أي أذونات"
 msgid "No permissions to configure"
 msgstr "لا أذونات للتكوين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3277
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3313
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "لم يتم العثور على أمر شراء"
@@ -6636,6 +7033,10 @@ msgstr "لا توجد بوابات بعد"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:574
 msgid "No preview rows available in this file."
 msgstr "لا توجد صفوف معاينة في هذا الملف."
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:773
+msgid "No preview yet"
+msgstr ""
 
 #: src/pages/folders/components/AiSummaryView.tsx:401
 msgid "No recommendations available."
@@ -6661,6 +7062,10 @@ msgstr "لم يتم تكوين حقول المستودع."
 msgid "No repository items found"
 msgstr "لم يتم العثور على عناصر المستودع"
 
+#: src/pages/requests/components/KanbanView.tsx:436
+msgid "No requests in this stage"
+msgstr ""
+
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:341
 msgid "No results for “{debouncedQuery}”."
 msgstr "لا توجد نتائج لـ «{debouncedQuery}»."
@@ -6681,6 +7086,10 @@ msgstr "لم يتم تكوين سياسات الاحتفاظ حتى الآن. ا
 #: src/pages/settings/components/RolesPermissions.tsx:1713
 msgid "No roles yet"
 msgstr "لا يوجد أدوار بعد"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:65
+msgid "No rules yet. Values without a matching rule use the default color below."
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:3420
 msgid "No saved signatures"
@@ -6770,6 +7179,11 @@ msgstr "لم يتم العثور على أعمدة تم تحميلها."
 msgid "No user assignments yet"
 msgstr "لا يوجد تعيينات للمستخدم حتى الآن"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:271
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:143
+msgid "No users found."
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:434
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:588
 msgid "No users or groups assigned"
@@ -6784,7 +7198,7 @@ msgid "No users yet"
 msgstr "لا يوجد مستخدمين حتى الآن"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1104
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:474
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:482
 msgid "No valid files selected."
 msgstr "لم يتم تحديد ملفات صالحة."
 
@@ -6828,10 +7242,10 @@ msgstr "لا يساوي"
 msgid "Not mapped"
 msgstr "غير مرتبط"
 
-#: src/pages/requests/components/InboxList.tsx:1887
+#: src/pages/requests/components/InboxList.tsx:1894
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3267
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3552
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3303
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3588
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "غير مطابق"
@@ -6840,13 +7254,17 @@ msgstr "غير مطابق"
 msgid "Not now"
 msgstr "ليس الآن"
 
+#: src/pages/reports/components/ReportKpiCards.tsx:44
+msgid "Not scheduled"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:18
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:31
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:38
 msgid "Not selected"
 msgstr "غير محدد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3314
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3350
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "غير مُتحقق"
@@ -6979,10 +7397,22 @@ msgstr "جارٍ فتح تسجيل الدخول…"
 msgid "Opening sign request..."
 msgstr "جارٍ فتح طلب التوقيع…"
 
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:98
+msgid "Operator"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:515
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:653
 msgid "Optional — click to make mandatory"
 msgstr "اختياري — انقر لجعله إلزامياً"
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:93
+msgid "Optional — skip this and build it manually, or describe it here and we'll draft a starting point."
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:63
+msgid "Optional AI head start"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:257
 msgid "Optional Field"
@@ -7040,6 +7470,11 @@ msgstr "أوراكل لتخطيط موارد المؤسسات"
 msgid "Order"
 msgstr "طلب"
 
+#: src/pages/requests/components/KanbanView.tsx:187
+#: src/pages/requests/components/KanbanView.tsx:192
+msgid "Other"
+msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2288
 msgid "Other signer"
 msgstr "موقّع آخر"
@@ -7056,13 +7491,13 @@ msgstr "تم تحديد Outlook. انقر على اتصال Outlook لربط ح�
 msgid "Outstanding payables by supplier"
 msgstr "الذمم الدائنة المستحقة حسب المورد"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:432
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:440
 msgid "Overcharged"
 msgstr "مبالغ فيه"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:140
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:705
-#: src/pages/requests/components/InboxList.tsx:1207
+#: src/pages/requests/components/InboxList.tsx:1208
 #: src/pages/requests/components/QuickFilters.tsx:132
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Overdue"
@@ -7102,7 +7537,7 @@ msgstr "موافق عليه جزئياً"
 msgid "PARTIALLY APPROVED"
 msgstr "تمت الموافقة عليه جزئيًا"
 
-#: src/pages/requests/components/InboxList.tsx:1889
+#: src/pages/requests/components/InboxList.tsx:1896
 #: src/pages/requests/components/request/components/sections/history/History.tsx:328
 #: src/pages/requests/utils/localizeRequestUi.ts:22
 msgid "Partially Matched"
@@ -7161,7 +7596,7 @@ msgstr "يجب أن تكون كلمة المرور 6 أحرف على الأقل"
 msgid "Passwords do not match"
 msgstr "كلمتا المرور غير متطابقتين"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:462
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:470
 msgid "Payables Overview"
 msgstr "نظرة عامة على الدائنين"
 
@@ -7173,7 +7608,7 @@ msgstr "تقويم المدفوعات"
 msgid "Payment Channel"
 msgstr "قناة الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3842
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3878
 msgid "Payment Deadlines"
 msgstr "مواعيد الدفع"
 
@@ -7191,12 +7626,12 @@ msgstr "طريقة الدفع"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3437
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3473
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "شروط الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3836
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
 msgid "Payment Terms Analysis"
 msgstr "تحليل شروط الدفع"
 
@@ -7224,7 +7659,7 @@ msgstr "سمك القلم"
 msgid "Pending"
 msgstr "قيد الانتظار"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:378
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:386
 msgid "Pending delivery items."
 msgstr "بنود التسليم المعلقة."
 
@@ -7236,7 +7671,7 @@ msgstr "المدفوعات المعلقة"
 msgid "Pending Review"
 msgstr "قيد المراجعة"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:338
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:346
 msgid "Perfect PO validation."
 msgstr "تحقق مثالي من أمر الشراء."
 
@@ -7287,6 +7722,10 @@ msgstr "اختر كيفية استيراد الفواتير للبدء. يمكن
 msgid "Pick one import strategy. Nothing is saved until the next step confirms it."
 msgstr "اختر استراتيجية استيراد واحدة. ولا يتم حفظ أي شيء حتى تؤكده الخطوة التالية."
 
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:20
+msgid "Pick which fields appear in this report, then configure column labels, calculations, and computed status."
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2275
 msgid "Pipeline drops across lifecycle steps"
 msgstr "انخفاضات المسار عبر مراحل دورة الحياة"
@@ -7322,11 +7761,18 @@ msgstr "العمود النائب 1"
 msgid "Placeholder Column 2"
 msgstr "العمود النائب 2"
 
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:49
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:57
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:92
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:100
+msgid "Plain Value"
+msgstr ""
+
 #: src/pages/settings/SettingsMain.tsx:341
 #~ msgid "Platform and monitoring"
 #~ msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:370
+#: src/pages/settings/SettingsMain.tsx:388
 msgid "Platform Management"
 msgstr "إدارة المنصة"
 
@@ -7335,7 +7781,7 @@ msgid "Playground"
 msgstr "ساحة التجربة"
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:45
-#: src/pages/settings/SettingsMain.tsx:311
+#: src/pages/settings/SettingsMain.tsx:329
 msgid "Playground API"
 msgstr "واجهة برمجة تطبيقات بيئة الاختبار"
 
@@ -7347,16 +7793,16 @@ msgstr "واجهة برمجة تطبيقات بيئة الاختبار"
 #~ msgid "Please attach a file to continue."
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3333
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3369
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "يرجى النقر على «تحقق» للتحقق من شرعية هذا المورد ومنع الاحتيال."
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:1454
+#: src/pages/requests/components/request/Request.tsx:1455
 msgid "Please complete the checklist item \"{0}\" before proceeding."
 msgstr "الرجاء إكمال عنصر قائمة التحقق \"{0}\" قبل المتابعة."
 
-#: src/pages/requests/components/request/Request.tsx:1468
+#: src/pages/requests/components/request/Request.tsx:1472
 msgid "Please confirm your signature before proceeding."
 msgstr "يرجى تأكيد توقيعك قبل المتابعة."
 
@@ -7368,17 +7814,21 @@ msgstr "يرجى وصف النموذج الذي تريد إنشاءه"
 msgid "Please describe what workflow you want to create"
 msgstr "يرجى وصف سير العمل الذي تريد إنشاءه"
 
-#: src/pages/requests/components/request/Request.tsx:1486
+#: src/pages/requests/components/request/Request.tsx:1490
 msgid "Please fill all mandatory fields before proceeding."
 msgstr "يرجى ملء جميع الحقول الإلزامية قبل المتابعة."
 
-#: src/pages/portal/components/PortalWizard.tsx:893
+#: src/pages/portal/components/PortalWizard.tsx:839
 msgid "Please fill in required field(s): {list}"
 msgstr "يرجى ملء الحقول المطلوبة: {list}"
 
 #: src/pages/portal/components/PortalWizard.tsx:762
 #~ msgid "Please fill in required field(s): {missing}"
 #~ msgstr ""
+
+#: src/pages/requests/components/KanbanView.tsx:249
+msgid "Please fill required field(s): {names}"
+msgstr ""
 
 #. placeholder {0}: labels[0]
 #: src/pages/settings/helpers/requiredFieldErrors.ts:15
@@ -7489,7 +7939,7 @@ msgstr "يرجى رفع ملف بيانات PO (CSV أو XLSX) لبدء التك
 msgid "Please wait a moment"
 msgstr "يرجى الانتظار لحظة"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:853
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:872
 msgid "Please wait while we process your document"
 msgstr "يرجى الانتظار أثناء معالجة مستندك"
 
@@ -7513,7 +7963,7 @@ msgstr "PNG أو SVG أو JPG، بحجم يصل إلى 5 ميجابايت"
 msgid "PO #"
 msgstr "رقم طلب الشراء"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:203
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:227
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:513
 #: src/pages/requests/components/QuickFilters.tsx:309
 msgid "PO Amount"
@@ -7531,12 +7981,12 @@ msgstr "نجح استيراد PO!"
 msgid "PO issuer or procurement contact"
 msgstr "مصدر أمر الشراء أو جهة اتصال المشتريات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4470
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4526
 msgid "PO Line Items"
 msgstr "بنود أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1058
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1344
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1061
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1361
 msgid "PO Master"
 msgstr "بو ماستر"
 
@@ -7558,22 +8008,22 @@ msgstr "تم استلام ملف PO الرئيسي"
 msgid "PO Master Update"
 msgstr "تحديث PO الرئيسي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3259
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3295
 msgid "PO Matching"
 msgstr "مطابقة أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3548
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3584
 msgid "PO Matching Analysis"
 msgstr "تحليل مطابقة أمر الشراء"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1630
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1632
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "PO Number"
 msgstr "رقم أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3569
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3605
 msgid "PO Number (Extracted)"
 msgstr "رقم أمر الشراء (مستخرج)"
 
@@ -7599,7 +8049,7 @@ msgstr "قيمة أمر الشراء"
 msgid "PO VALUE"
 msgstr "قيمة أمر الشراء"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:342
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:350
 msgid "PO Verified"
 msgstr "تم التحقق من PO"
 
@@ -7632,7 +8082,7 @@ msgstr "اسم السياسة *"
 #: src/pages/settings/components/PortalConfiguration.tsx:654
 #: src/pages/settings/components/PortalConfiguration.tsx:1106
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
-#: src/pages/settings/SettingsMain.tsx:275
+#: src/pages/settings/SettingsMain.tsx:287
 msgid "Portal Configuration"
 msgstr "تكوين البوابة"
 
@@ -7764,7 +8214,7 @@ msgstr "الطلب السابق"
 msgid "Previous step"
 msgstr "الخطوة السابقة"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:412
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:420
 msgid "Price Variance"
 msgstr "تباين السعر"
 
@@ -7794,17 +8244,25 @@ msgstr "عناصر فواتير ذات أولوية تتطلب اهتمامًا 
 msgid "Priority"
 msgstr "الأولوية"
 
+#: src/pages/reports/components/ReportsListView.tsx:205
+msgid "Private to me"
+msgstr ""
+
 #: src/pages/folders/components/Upload/Upload.tsx:1693
 msgid "Process documents faster with our agentic pipeline"
 msgstr "عالج المستندات أسرع مع خط أنابيب الوكلاء لدينا"
 
-#: src/pages/requests/components/Header.tsx:79
-#: src/pages/requests/components/InboxList.tsx:2028
+#: src/pages/requests/components/Header.tsx:65
+msgid "Process Overview"
+msgstr ""
+
+#: src/pages/requests/components/Header.tsx:90
+#: src/pages/requests/components/InboxList.tsx:2055
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 msgid "Processed"
 msgstr "المعالجة"
 
-#: src/pages/requests/components/Header.tsx:79
+#: src/pages/requests/components/Header.tsx:90
 msgid "Processed ({processedCount})"
 msgstr "المعالجة ({processedCount})"
 
@@ -7813,7 +8271,7 @@ msgid "Processing"
 msgstr "قيد المعالجة"
 
 #. placeholder {0}: uploadProgressText.fileName
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:852
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:871
 msgid "Processing \"{0}\""
 msgstr "جاري معالجة «{0}»"
 
@@ -7860,7 +8318,7 @@ msgstr "مركز الربح"
 #~ msgid "Profitability & Cash Position"
 #~ msgstr "الربحية والوضع النقدي"
 
-#: src/pages/portal/components/PortalProgressCard.tsx:24
+#: src/pages/portal/components/PortalProgressCard.tsx:62
 msgid "Progress"
 msgstr "تقدم"
 
@@ -7876,6 +8334,7 @@ msgstr "المتوقع"
 msgid "Properties"
 msgstr "ملكيات"
 
+#: src/components/common/ReportStatusBadge.tsx:21
 #: src/pages/forms/FormsPage.tsx:606
 #: src/pages/workflows/components/Table.tsx:454
 msgid "Published"
@@ -7886,8 +8345,8 @@ msgid "Purchase Order #"
 msgstr "أمر شراء #"
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:220
-msgid "Put overdue first in red. Donut on the left in blue..."
-msgstr ""
+#~ msgid "Put overdue first in red. Donut on the left in blue..."
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:153
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:375
@@ -7898,11 +8357,11 @@ msgstr "الكمية"
 msgid "Quantity"
 msgstr "كمية"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:418
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:426
 msgid "Quantity line discrepancy."
 msgstr "تناقض في سطر الكمية."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:134
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:158
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:446
 msgid "Quarter"
 msgstr "ربع"
@@ -7928,7 +8387,7 @@ msgstr "مساعدة سريعة"
 msgid "Quick Hint"
 msgstr "تلميح سريع"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:895
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:914
 msgid "Quick Try"
 msgstr "تجربة سريعة"
 
@@ -7936,8 +8395,8 @@ msgstr "تجربة سريعة"
 msgid "Raised At"
 msgstr "مرفوع عند"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1367
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1539
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1369
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1541
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "مرفوع بواسطة"
@@ -7983,6 +8442,10 @@ msgstr "لوحة معلومات فورية"
 msgid "Received"
 msgstr "مستلم"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:120
+msgid "Recipients"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:119
 msgid "Recognizing table structures"
 msgstr "جاري التعرف على هياكل الجداول"
@@ -8010,12 +8473,21 @@ msgstr "سجلات"
 msgid "Records matched successfully"
 msgstr "تمت مطابقة السجلات بنجاح"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:49
+msgid "Recurrence"
+msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2847
 #: src/pages/folders/components/DocumentSigningPage.tsx:2962
 #: src/pages/folders/components/DocumentSigningPage.tsx:2967
 msgid "Redo"
 msgstr "إعادة"
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:786
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1133
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:743
+#: src/pages/dashboard/DashboardPage.tsx:182
+#: src/pages/dashboard/DashboardPage.tsx:189
 #: src/pages/folders/components/FolderFilterBar.tsx:708
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 #: src/pages/forms/FormEntriesPage.tsx:2126
@@ -8024,7 +8496,7 @@ msgstr "إعادة"
 #: src/pages/portal/components/PortalHome.tsx:434
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
-#: src/pages/requests/components/InboxList.tsx:1909
+#: src/pages/requests/components/InboxList.tsx:1916
 #: src/pages/settings/components/AuditMonitoring.tsx:193
 #: src/pages/settings/components/credits/Credits.tsx:899
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2136
@@ -8049,6 +8521,8 @@ msgstr "تحديث المعاينة"
 msgid "Refreshing..."
 msgstr "منعش..."
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:940
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:606
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2001
 msgid "Regenerate"
 msgstr "إعادة إنشاء"
@@ -8061,7 +8535,7 @@ msgstr "خيارات إقامة البيانات الإقليمية"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "تحليل الحجم والإنفاق الإقليمي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1512
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1529
 msgid "Reject Transaction"
 msgstr "رفض المعاملة"
 
@@ -8135,8 +8609,8 @@ msgid "Rename"
 msgstr "إعادة تسمية"
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:279
-msgid "Rendering dashboard preview..."
-msgstr ""
+#~ msgid "Rendering dashboard preview..."
+#~ msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:738
 msgid "Replace"
@@ -8155,11 +8629,58 @@ msgstr "استبدال البيانات الموجودة"
 msgid "Replace File"
 msgstr "استبدال الملف"
 
+#: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:45
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:186
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:203
+#: src/pages/settings/SettingsMain.tsx:293
+msgid "Report Builder"
+msgstr ""
+
+#: src/pages/reports/components/ReportsListView.tsx:248
+msgid "Report deleted successfully"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:102
+msgid "Report details"
+msgstr ""
+
+#: src/pages/reports/components/ReportsListView.tsx:167
+msgid "Report duplicated"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:111
+msgid "Report Name"
+msgstr ""
+
+#: src/pages/reports/ReportDetailPage.tsx:26
+msgid "Report not found."
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:154
+msgid "Report published"
+msgstr ""
+
+#: src/pages/reports/components/ReportsListView.tsx:173
+msgid "Report run started"
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:154
+msgid "Report saved as draft"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:167
+msgid "Report subject line"
+msgstr ""
+
+#: src/layouts/app/components/sidebar/Sidebar.tsx:38
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:189
+#: src/pages/reports/components/Table.tsx:52
+#: src/pages/reports/ReportsPage.tsx:12
 msgid "Reports"
 msgstr "التقارير"
 
-#: src/pages/dashboard/DashboardPage.tsx:158
+#: src/pages/dashboard/DashboardPage.tsx:168
 #: src/pages/folders/components/DocumentsListView.tsx:824
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:801
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:697
@@ -8170,7 +8691,7 @@ msgstr "المستودع"
 msgid "Repository and document are required."
 msgstr "المستودع والمستند مطلوبان."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:696
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:920
 msgid "Repository context and business scope."
 msgstr "سياق المستودع ونطاق الأعمال."
 
@@ -8187,20 +8708,24 @@ msgid "Repository ID is missing. Cannot upload."
 msgstr "معرف المستودع مفقود. لا يمكن الرفع."
 
 #. placeholder {0}: submission.requestNo
-#: src/pages/portal/components/PortalDetail.tsx:234
+#: src/pages/portal/components/PortalDetail.tsx:235
 msgid "Request {0} action \"{action}\" completed successfully"
 msgstr ""
 
 #. placeholder {0}: submission.requestNo
-#: src/pages/portal/components/PortalDetail.tsx:233
+#: src/pages/portal/components/PortalDetail.tsx:234
 msgid "Request {0} submitted successfully"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:1595
+#: src/pages/requests/components/KanbanView.tsx:308
+msgid "Request {requestNo} moved successfully"
+msgstr ""
+
+#: src/pages/requests/components/request/Request.tsx:1599
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:1594
+#: src/pages/requests/components/request/Request.tsx:1598
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr ""
 
@@ -8214,12 +8739,12 @@ msgstr "اطلب عرضاً توضيحياً"
 #~ msgid "Request action \"{action}\" completed successfully"
 #~ msgstr "اكتمل إجراء الطلب \"{action}\" بنجاح"
 
-#: src/pages/portal/components/PortalWizard.tsx:905
-#: src/pages/portal/components/PortalWizard.tsx:958
+#: src/pages/portal/components/PortalWizard.tsx:851
+#: src/pages/portal/components/PortalWizard.tsx:904
 msgid "Request created. You can track it from My Submissions."
 msgstr "تم إنشاء الطلب. يمكنك تتبع ذلك من التقديمات الخاصة بي."
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1302
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1304
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:28
 msgid "Request No"
 msgstr "رقم الطلب"
@@ -8228,22 +8753,22 @@ msgstr "رقم الطلب"
 msgid "Request Owner"
 msgstr "مالك الطلب"
 
-#: src/pages/requests/components/request/Request.tsx:1662
+#: src/pages/requests/components/request/Request.tsx:1666
 msgid "Request saved successfully"
 msgstr "تم حفظ الطلب بنجاح"
 
 #: src/pages/requests/components/request/components/Header.tsx:392
-#: src/pages/requests/components/request/Request.tsx:1920
+#: src/pages/requests/components/request/Request.tsx:1924
 msgid "Request shared successfully"
 msgstr "تمت مشاركة الطلب بنجاح"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:194
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:218
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:502
 #: src/pages/requests/components/QuickFilters.tsx:265
 msgid "Request Status"
 msgstr "طلب Status"
 
-#: src/pages/requests/components/request/Request.tsx:1663
+#: src/pages/requests/components/request/Request.tsx:1667
 msgid "Request submitted successfully"
 msgstr "تم إرسال الطلب بنجاح"
 
@@ -8252,7 +8777,8 @@ msgid "Request submitted."
 msgstr "تم تقديم الطلب."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
-#: src/pages/requests/components/InboxList.tsx:2029
+#: src/pages/requests/components/InboxList.tsx:2051
+#: src/pages/requests/components/InboxList.tsx:2056
 #: src/pages/requests/components/Table.tsx:178
 msgid "Requests"
 msgstr "الطلبات"
@@ -8271,7 +8797,7 @@ msgstr "تتطلب تأكيدًا يدويًا قبل التشغيل"
 msgid "Required"
 msgstr "مطلوب"
 
-#: src/pages/portal/components/PortalWizard.tsx:877
+#: src/pages/portal/components/PortalWizard.tsx:823
 msgid "Required field"
 msgstr "الحقل المطلوب"
 
@@ -8539,7 +9065,7 @@ msgstr "الأدوار"
 #: src/pages/settings/components/RolesPermissions.tsx:877
 #: src/pages/settings/components/RolesPermissions.tsx:1658
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
-#: src/pages/settings/SettingsMain.tsx:293
+#: src/pages/settings/SettingsMain.tsx:311
 msgid "Roles & Permissions"
 msgstr "الأدوار والصلاحيات"
 
@@ -8580,6 +9106,10 @@ msgstr "الصف 1"
 msgid "rows"
 msgstr "صفوف"
 
+#: src/pages/reports/components/OverviewTab.tsx:260
+msgid "Rows"
+msgstr ""
+
 #: src/pages/forms/components/GenericFormImportModal.tsx:596
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1267
 msgid "Rows Detected"
@@ -8603,6 +9133,10 @@ msgstr "عمل القاعدة"
 msgid "Rules"
 msgstr "قواعد"
 
+#: src/pages/reports/components/RowActionsMenu.tsx:36
+msgid "Run now"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:111
 #~ msgid "Same value {invoiceAmount}"
 #~ msgstr ""
@@ -8614,7 +9148,7 @@ msgstr "تم تنزيل نموذج النموذج بنجاح"
 #: src/pages/folders/components/CollaboraEditor.tsx:253
 #: src/pages/my-account/components/profile/Profile.tsx:21
 #: src/pages/requests/components/request/components/Header.tsx:1505
-#: src/pages/settings/components/SettingsWizardLayout.tsx:78
+#: src/pages/settings/components/SettingsWizardLayout.tsx:80
 msgid "Save"
 msgstr "حفظ"
 
@@ -8626,9 +9160,17 @@ msgstr "حفظ وإضافة آخر"
 msgid "Save & Exit"
 msgstr "حفظ والخروج"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:219
+msgid "Save & Publish instead"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1973
 msgid "Save & Regenerate Fields"
 msgstr "حفظ وتجديد الحقول"
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:190
+msgid "Save as Draft"
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:2043
 msgid "Save Assignments"
@@ -8644,7 +9186,8 @@ msgstr "حفظ العلامة التجارية"
 msgid "Save Changes"
 msgstr "حفظ التغييرات"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:911
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1149
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:754
 msgid "Save Dashboard"
 msgstr "حفظ لوحة القيادة"
 
@@ -8718,7 +9261,7 @@ msgstr "تمت إزالة التوقيع المحفوظ."
 #: src/pages/folders/components/EditMetadataView.tsx:387
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:976
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:829
-#: src/pages/settings/components/SettingsWizardLayout.tsx:211
+#: src/pages/settings/components/SettingsWizardLayout.tsx:214
 msgid "Saving..."
 msgstr "جارٍ الحفظ..."
 
@@ -8739,9 +9282,19 @@ msgstr "مسح QR / الباركود"
 msgid "Scan QR code to select"
 msgstr "مسح رمز الاستجابة السريعة لتحديد"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:368
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:376
 msgid "Scanned handwritten bill."
 msgstr "فاتورة ممسوحة مكتوبة بخط اليد."
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:69
+#: src/pages/reports/components/ReportKpiCards.tsx:43
+#: src/pages/reports/components/RowActionsMenu.tsx:46
+msgid "Schedule"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:36
+msgid "Schedule delivery"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:66
 msgid "Schedule Payment"
@@ -8827,12 +9380,12 @@ msgstr "بحث في الأعمدة..."
 msgid "Search created by..."
 msgstr "البحث الذي تم إنشاؤه بواسطة..."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:183
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:207
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:491
 msgid "Search currency..."
 msgstr "بحث currency..."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:148
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:172
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:459
 #: src/pages/settings/components/ManageUser.tsx:1589
 msgid "Search department..."
@@ -8854,6 +9407,8 @@ msgstr "البحث في البريد الإلكتروني..."
 msgid "Search entries..."
 msgstr "بحث entries..."
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:178
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:122
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:664
 msgid "Search fields..."
 msgstr "حقول البحث..."
@@ -8892,11 +9447,11 @@ msgstr "بحث forms..."
 msgid "Search icons"
 msgstr "أيقونات البحث"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:592
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:947
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:827
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1195
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:639
-#: src/pages/requests/components/InboxList.tsx:1841
+#: src/pages/requests/components/InboxList.tsx:1848
 msgid "Search invoice, supplier, PO..."
 msgstr "ابحث عن فاتورة، مورد، أمر شراء..."
 
@@ -8942,11 +9497,19 @@ msgstr "أذونات البحث..."
 msgid "Search PO range..."
 msgstr "بحث PO range..."
 
+#: src/pages/reports/components/ReportsListView.tsx:263
+msgid "Search reports..."
+msgstr ""
+
 #: src/pages/portal/components/PortalPicker.tsx:62
 msgid "Search request types…"
 msgstr "أنواع طلبات البحث..."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:171
+#: src/pages/reports/components/OverviewTab.tsx:222
+msgid "Search rows..."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:195
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:481
 #: src/pages/requests/components/QuickFilters.tsx:278
 msgid "Search status..."
@@ -8956,7 +9519,7 @@ msgstr "بحث status..."
 msgid "Search submissions…"
 msgstr "بحث في التقديمات…"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:159
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:183
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:469
 msgid "Search supplier..."
 msgstr "بحث supplier..."
@@ -9016,7 +9579,7 @@ msgstr "القسم {0}"
 msgid "Security"
 msgstr "الأمان"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3672
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3708
 msgid "Security & Auditing Policy"
 msgstr "سياسة الأمان والتدقيق"
 
@@ -9048,14 +9611,27 @@ msgstr "حدد موصل {0}"
 msgid "Select a column…"
 msgstr "حدد عموداً…"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:131
+msgid "Select a data domain"
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:473
 msgid "Select a field..."
 msgstr "حدد حقلاً..."
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:191
+msgid "Select a form"
+msgstr ""
 
 #: src/pages/folders/components/FolderExplorer.tsx:309
 #: src/pages/folders/components/FolderExplorer.tsx:322
 msgid "Select a repository before uploading."
 msgstr "حدد مستودعًا قبل التحميل."
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:354
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:112
+msgid "Select a repository first."
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:261
 msgid "Select a retention trigger field."
@@ -9068,6 +9644,18 @@ msgstr "حدد التوقيع المحفوظ أولاً."
 #: src/pages/folders/components/DocumentSigningPage.tsx:2040
 msgid "Select a signer below, then click the document to mark one or more places."
 msgstr "حدد المُوقع أدناه، ثم انقر فوق المستند لتحديد مكان واحد أو أكثر."
+
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:29
+msgid "Select a source (or domain) in the Details step first."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:154
+msgid "Select a source type"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:188
+msgid "Select a source type first"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1611
 msgid "Select a user and mark at least one signature place on the document."
@@ -9107,6 +9695,14 @@ msgstr "حدد مستخدمًا أو مجموعة واحدة على الأقل �
 msgid "Select at least one user or group who will receive access permissions for this folder."
 msgstr "حدد مستخدمًا أو مجموعة واحدة على الأقل ستحصل على أذونات الوصول لهذا المجلد."
 
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:116
+msgid "Select at least one workflow stage."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:155
+msgid "Select CC recipients"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:662
 msgid "Select field..."
 msgstr "حدد الحقل..."
@@ -9131,6 +9727,10 @@ msgstr "حدد النماذج"
 msgid "Select forms..."
 msgstr "تحديد النماذج..."
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:287
+msgid "Select groups"
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:567
 msgid "Select Groups"
 msgstr "حدد المجموعات"
@@ -9152,8 +9752,12 @@ msgid "Select matching field..."
 msgstr "تحديد الحقل المطابق..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:798
-msgid "Select one of the recommendation chips above or enter a custom prompt in the input box. AI will generate layout options based on your selection."
-msgstr "حدد إحدى شرائح التوصيات أعلاه أو أدخل مطالبة مخصصة في مربع الإدخال. سيقوم الذكاء الاصطناعي بإنشاء خيارات التخطيط بناءً على اختيارك."
+#~ msgid "Select one of the recommendation chips above or enter a custom prompt in the input box. AI will generate layout options based on your selection."
+#~ msgstr "حدد إحدى شرائح التوصيات أعلاه أو أدخل مطالبة مخصصة في مربع الإدخال. سيقوم الذكاء الاصطناعي بإنشاء خيارات التخطيط بناءً على اختيارك."
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:250
+msgid "Select one or more stages"
+msgstr ""
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:320
 msgid "Select one user"
@@ -9191,6 +9795,10 @@ msgstr "اختر أو اكتب الموقع"
 msgid "Select password field"
 msgstr "حدد حقل كلمة المرور"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:128
+msgid "Select recipients"
+msgstr ""
+
 #: src/pages/settings/components/ManageUser.tsx:1845
 #: src/pages/settings/components/RolesPermissions.tsx:1791
 msgid "Select role"
@@ -9204,6 +9812,10 @@ msgstr "حدد الصف"
 msgid "Select Storage"
 msgstr "حدد التخزين"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:649
+msgid "Select suggested KPIs and charts from your data."
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:46
 msgid "Select target access"
 msgstr "حدد الوصول المستهدف"
@@ -9216,6 +9828,10 @@ msgstr "حدد مزود التخزين حيث يجب تخزين مستندات �
 #: src/pages/settings/components/PortalConfiguration.tsx:1211
 msgid "Select username / email field"
 msgstr "حدد اسم المستخدم / حقل البريد الإلكتروني"
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:259
+msgid "Select users"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:542
 #: src/pages/settings/components/RolesPermissions.tsx:788
@@ -9240,6 +9856,10 @@ msgstr "تحديد المستخدمين أو المجموعات..."
 msgid "Select users..."
 msgstr "حدد المستخدمين..."
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:776
+msgid "Select widgets in step 2, then click Apply & Preview to load live data."
+msgstr ""
+
 #: src/pages/folders/components/StartWorkflowView.tsx:79
 msgid "Select Workflow Template"
 msgstr "حدد قالب سير العمل"
@@ -9248,9 +9868,18 @@ msgstr "حدد قالب سير العمل"
 msgid "Select your preferred language"
 msgstr "حدد لغتك المفضلة"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:534
+msgid "Selected {enabledKpiCount} KPIs and {enabledChartCount} charts"
+msgstr ""
+
 #: src/pages/folders/components/EditMetadataView.tsx:365
 msgid "Selected Document"
 msgstr "المستند المحدد"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:216
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:156
+msgid "Selected fields"
+msgstr ""
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:161
 msgid "Selected user needs an email address."
@@ -9308,11 +9937,11 @@ msgstr "يرسل تنبيهًا إلى المالك المدرج في البيا
 msgid "Sends OTP to the Email"
 msgstr "يرسل OTP إلى البريد الإلكتروني"
 
-#: src/pages/requests/components/Header.tsx:90
+#: src/pages/requests/components/Header.tsx:101
 msgid "Sent"
 msgstr "المرسل"
 
-#: src/pages/requests/components/Header.tsx:90
+#: src/pages/requests/components/Header.tsx:101
 msgid "Sent ({sentCount})"
 msgstr "المرسل ({sentCount})"
 
@@ -9346,7 +9975,7 @@ msgstr "اضبط المشغل وأي شروط إضافية."
 msgid "Set up document security rules"
 msgstr "قم بإعداد قواعد أمان المستندات"
 
-#: src/pages/settings/SettingsMain.tsx:249
+#: src/pages/settings/SettingsMain.tsx:261
 msgid "Set up folders with custom fields, storage, security, and versioning."
 msgstr "قم بإعداد المجلدات بحقول مخصصة وتخزين وأمان وإصدارات."
 
@@ -9358,8 +9987,8 @@ msgstr "قم بإعداد أتمتة AP الخاصة بك"
 msgid "Set your brand name and colors"
 msgstr "قم بتعيين اسم علامتك التجارية وألوانها"
 
-#: src/pages/portal/components/PortalWizard.tsx:350
-#: src/pages/portal/components/PortalWizard.tsx:378
+#: src/pages/portal/components/PortalWizard.tsx:296
+#: src/pages/portal/components/PortalWizard.tsx:324
 msgid "setting up..."
 msgstr "إنشاء..."
 
@@ -9367,16 +9996,16 @@ msgstr "إنشاء..."
 msgid "Setting up..."
 msgstr "جاري الإعداد..."
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:55
+#: src/layouts/app/components/sidebar/Sidebar.tsx:60
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:89
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:878
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:163
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:19
 #: src/pages/settings/components/SettingsPageHeader.tsx:51
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
-#: src/pages/settings/components/SettingsWizardLayout.tsx:90
+#: src/pages/settings/components/SettingsWizardLayout.tsx:92
 #: src/pages/settings/hooks/useSettingsOriginBreadcrumbs.ts:25
-#: src/pages/settings/SettingsMain.tsx:340
+#: src/pages/settings/SettingsMain.tsx:358
 msgid "Settings"
 msgstr "الإعدادات"
 
@@ -9424,6 +10053,14 @@ msgstr "مشاركة الطلب"
 msgid "Share revoked"
 msgstr "تم إلغاء المشاركة"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:281
+msgid "Share with groups"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:257
+msgid "Share with users"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:410
 msgid "Shared drive compatibility"
 msgstr "توافق محرك الأقراص المشترك"
@@ -9432,6 +10069,15 @@ msgstr "توافق محرك الأقراص المشترك"
 #: src/pages/folders/components/FolderSharePopover.tsx:463
 msgid "Shared successfully"
 msgstr "تمت المشاركة بنجاح"
+
+#: src/pages/reports/components/ReportsListView.tsx:206
+msgid "Shared with me"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:236
+#: src/pages/reports/components/ReportsListView.tsx:273
+msgid "Sharing"
+msgstr ""
 
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/FolderSharePopover.tsx:1021
@@ -9666,7 +10312,7 @@ msgstr "تم تخطيه"
 msgid "Skipped (Will not be imported)"
 msgstr "تم التخطي (لن يتم استيراده)"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:455
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:463
 msgid "Smart PO Matching"
 msgstr "مطابقة PO ذكية"
 
@@ -9699,6 +10345,10 @@ msgstr "ترتيب الفرز"
 msgid "Sort Order *"
 msgstr "ترتيب الفرز *"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:149
+msgid "Source"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step2ColumnMapping.tsx:85
 msgid "Source Field"
 msgstr "حقل المصدر"
@@ -9711,7 +10361,15 @@ msgstr "ملف المصدر"
 msgid "Source File:"
 msgstr "ملف المصدر:"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1038
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:176
+msgid "Source Form"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:152
+msgid "Source Type"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1041
 msgid "Source: Manual Entry"
 msgstr "المصدر: الإدخال اليدوي"
 
@@ -9719,7 +10377,7 @@ msgstr "المصدر: الإدخال اليدوي"
 msgid "Source: OCR Document"
 msgstr "المصدر: وثيقة التعرف الضوئي على الحروف"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1052
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1055
 msgid "Source: PO Master (ERP/Excel Data)"
 msgstr "المصدر: أمر الشراء الرئيسي (ERP/بيانات Excel)"
 
@@ -9732,9 +10390,9 @@ msgid "Standard SLA timeline. No pricing exceptions found."
 msgstr "الجدول الزمني القياسي لاتفاقية مستوى الخدمة. لم يُعثر على استثناءات تسعير."
 
 #: src/pages/portal/components/PortalPicker.tsx:130
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:567
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:575
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:670
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:586
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:594
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:689
 msgid "Start"
 msgstr "بدء"
 
@@ -9791,11 +10449,15 @@ msgstr "الحالة"
 msgid "STATUS"
 msgstr "الحالة"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:46
+msgid "Status rules"
+msgstr ""
+
 #: src/pages/requests/components/QuickFilters.tsx:215
 msgid "Status: {val}"
 msgstr "الحالة: {val}"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:163
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:187
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:473
 msgid "Statuses"
 msgstr "الحالات"
@@ -9879,13 +10541,17 @@ msgstr "الإستراتيجية المطبقة:"
 msgid "Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations."
 msgstr "قم بتبسيط حسابات الدفع الخاصة بك من خلال مطابقة أوامر الشراء الذكية، والتوجيه الآلي للفواتير، والتكامل السلس."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:798
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:817
 msgid "Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility."
 msgstr "بسّط الحسابات الدائنة. عالج الفواتير تلقائياً وطابق أوامر الشراء واحصل على رؤية كاملة."
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:715
 msgid "Streamline your Purchase Orders. Automatically match columns, extract records, and configure ingestion logic."
 msgstr "بسّط أوامر الشراء. طابق الأعمدة تلقائياً واستخرج السجلات وكوّن منطق الاستيراد."
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:166
+msgid "Subject"
+msgstr ""
 
 #: src/pages/portal/components/PortalHome.tsx:400
 #~ msgid "Submission"
@@ -9903,7 +10569,7 @@ msgstr "التقديمات"
 #: src/pages/folders/components/DocumentDetailsView.tsx:1974
 #: src/pages/folders/components/DocumentDetailsView.tsx:1995
 #: src/pages/portal/components/PortalShell.tsx:120
-#: src/pages/portal/components/PortalWizard.tsx:843
+#: src/pages/portal/components/PortalWizard.tsx:789
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:108
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:121
 msgid "Submit"
@@ -9934,7 +10600,11 @@ msgstr "تم استيراد {successCount} إدخالات بنجاح!"
 msgid "Successfully logged in"
 msgstr "تم تسجيل الدخول بنجاح"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3788
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:891
+msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3824
 msgid "Suggested Allocation"
 msgstr "التوزيع المقترح"
 
@@ -9942,13 +10612,22 @@ msgstr "التوزيع المقترح"
 msgid "Suggested by AI"
 msgstr "مقترح من منظمة العفو الدولية"
 
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:136
+msgid "Suggested report plan"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1002
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:665
+msgid "Suggesting KPIs and charts for {repositoryName}..."
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:252
 msgid "supplier"
 msgstr "المورد"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:840
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1943
-#: src/pages/requests/components/InboxList.tsx:1859
+#: src/pages/requests/components/InboxList.tsx:1866
 #: src/pages/requests/components/QuickFilters.tsx:351
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:19
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:203
@@ -9960,7 +10639,7 @@ msgstr "المورد"
 msgid "Supplier Address"
 msgstr "عنوان المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3717
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3753
 msgid "Supplier Code"
 msgstr "رمز المورد"
 
@@ -9968,15 +10647,15 @@ msgstr "رمز المورد"
 #~ msgid "Supplier Concentration & Risk"
 #~ msgstr "تركز الموردين والمخاطر"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:362
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:370
 msgid "Supplier Conflict"
 msgstr "تعارض المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3712
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3748
 msgid "Supplier Details"
 msgstr "تفاصيل المورد"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:358
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:366
 msgid "Supplier details differ."
 msgstr "تفاصيل المورد مختلفة."
 
@@ -10009,22 +10688,22 @@ msgstr "رادار مخاطر الموردين"
 msgid "Supplier Trend Insight"
 msgstr "رؤية اتجاه المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3313
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3345
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3365
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3349
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3381
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3401
 msgid "Supplier Verification"
 msgstr "التحقق من المورد"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1910
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1946
 msgid "Supplier verification completed: {0}"
 msgstr "اكتمل التحقق من المورد: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3699
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3735
 msgid "Supplier Verification Registry"
 msgstr "سجل التحقق من المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3377
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3413
 msgid "Supplier verified"
 msgstr "تم التحقق من المورد"
 
@@ -10032,7 +10711,7 @@ msgstr "تم التحقق من المورد"
 msgid "Supplier: {val}"
 msgstr "المورد: {val}"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:152
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:176
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:463
 msgid "Suppliers"
 msgstr "الموردين"
@@ -10064,7 +10743,7 @@ msgid "Supports PDF and Images · Max 4 MB"
 msgstr "يدعم PDF والصور · الحد الأقصى 4 ميجابايت"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1669
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:871
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:890
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "يدعم ملفات PDF وWord وExcel وPowerPoint والصور والمستندات · بحد أقصى 50 ميجابايت"
 
@@ -10122,7 +10801,7 @@ msgstr "حقل النظام"
 msgid "System menus cannot be deleted"
 msgstr "لا يمكن حذف قوائم النظام"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3661
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3697
 msgid "System Response"
 msgstr "استجابة النظام"
 
@@ -10131,7 +10810,7 @@ msgid "Table"
 msgstr "جدول"
 
 #: src/components/common/CustomFilter.tsx:991
-#: src/components/common/DynamicFilter.tsx:829
+#: src/components/common/DynamicFilter.tsx:830
 msgid "Table View"
 msgstr "عرض الجدول"
 
@@ -10182,6 +10861,11 @@ msgstr "قالب ورفع"
 msgid "Tenant ID is missing."
 msgstr "معرّف المستأجر مفقود."
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:347
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:105
+msgid "Tenant is missing. Sign in again and retry."
+msgstr ""
+
 #: src/pages/folders/components/SignRequestAssignForm.tsx:202
 msgid "That email is already in the signing list."
 msgstr "هذا البريد موجود بالفعل في قائمة التوقيع."
@@ -10219,8 +10903,13 @@ msgstr "المظهر"
 msgid "These documents currently satisfy the rule and would move to"
 msgstr "تتوافق هذه المستندات حاليًا مع القاعدة وستنتقل إلى"
 
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:110
+msgid "Thinking..."
+msgstr ""
+
 #: src/pages/forms/FormEntriesPage.tsx:2073
 #: src/pages/forms/FormsPage.tsx:513
+#: src/pages/reports/components/ReportsListView.tsx:227
 msgid "This action is permanent and cannot be undone."
 msgstr "هذا الإجراء دائم ولا يمكن التراجع عنه."
 
@@ -10233,6 +10922,8 @@ msgid "This branded sign-in link is invalid or no longer available."
 msgstr "رابط تسجيل الدخول ذو العلامة التجارية هذا غير صالح أو لم يعد متاحًا."
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:101
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1240
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1330
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:261
 msgid "This field is required."
@@ -10260,7 +10951,7 @@ msgstr "لا يحتوي هذا المجلد على أية مجلدات أو مل
 msgid "This is taking a bit longer. You can safely navigate away; we'll notify you in the inbox once ready."
 msgstr "يستغرق الأمر وقتاً أطول قليلاً. يمكنك المغادرة بأمان؛ سنُعلمك في الوارد عند الجاهزية."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:132
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:156
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:444
 msgid "This month"
 msgstr "هذا الشهر"
@@ -10277,7 +10968,15 @@ msgstr "رابط البوابة هذا غير صالح أو لم يتم نشره
 msgid "This related document cannot be removed."
 msgstr "لا يمكن إزالة هذه الوثيقة ذات الصلة."
 
-#: src/pages/portal/components/PortalDetail.tsx:193
+#: src/pages/reports/components/OverviewTab.tsx:212
+msgid "This report has no fields configured yet."
+msgstr ""
+
+#: src/pages/requests/components/KanbanView.tsx:234
+msgid "This request can only move to a connected stage."
+msgstr ""
+
+#: src/pages/portal/components/PortalDetail.tsx:194
 msgid "This request is missing an instance id."
 msgstr "يفتقد هذا الطلب معرف المثيل."
 
@@ -10297,7 +10996,7 @@ msgstr "منطقة التوقيع هذه تخص مستخدماً آخر."
 msgid "This sign request link is invalid."
 msgstr "رابط طلب التوقيع هذا غير صالح."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:131
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:155
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:443
 msgid "This week"
 msgstr "هذا الاسبوع"
@@ -10307,7 +11006,7 @@ msgstr "هذا الاسبوع"
 msgid "This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets."
 msgstr "يحتوي هذا المصنف على ورقة عمل واحدة فقط. يتطلب استيراد PO بيانات الرأس وبنود السطر. يرجى رفع ملف Excel يحتوي على ورقتي عمل على الأقل."
 
-#: src/pages/portal/components/PortalWizard.tsx:1061
+#: src/pages/portal/components/PortalWizard.tsx:1007
 msgid "This workflow has no form configured."
 msgstr "لم يتم تكوين نموذج لسير العمل هذا."
 
@@ -10319,15 +11018,16 @@ msgstr "المطابقة الثلاثية"
 #~ msgid "Tile size reflects share of AP expenses"
 #~ msgstr "حجم البلاطة يعكس حصة مصاريف الحسابات الدائنة"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:79
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:14
 msgid "Time"
 msgstr "وقت"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3867
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3903
 msgid "Time Remaining"
 msgstr "الوقت المتبقي"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1388
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1390
 msgid "Time Running"
 msgstr "تشغيل الوقت"
 
@@ -10335,7 +11035,7 @@ msgstr "تشغيل الوقت"
 msgid "Time running from last action"
 msgstr "الوقت المنقضي من الإجراء الأخير"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:128
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:152
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:440
 msgid "Timeframe"
 msgstr "الإطار الزمني"
@@ -10349,6 +11049,10 @@ msgstr "الجدول الزمني"
 msgid "Timestamp Version"
 msgstr "إصدار الطابع الزمني"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:85
+msgid "Timezone"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1032
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "للبدء: ما اسم هذا الممجلد؟ استخدم اسماً تجارياً واضحاً، أو اختر مثالاً أدناه، أو صف فكرة مجلد كاملة لإنشاء إعداد متكامل."
@@ -10357,7 +11061,7 @@ msgstr "للبدء: ما اسم هذا الممجلد؟ استخدم اسماً 
 msgid "to Trash?"
 msgstr "إلى سلة المهملات؟"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:130
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:154
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:442
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2152
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2166
@@ -10434,6 +11138,10 @@ msgstr "إجمالي المدفوع"
 msgid "Total Records:"
 msgstr "إجمالي السجلات:"
 
+#: src/pages/reports/components/ReportKpiCards.tsx:31
+msgid "Total runs"
+msgstr ""
+
 #: src/pages/portal/components/PortalHome.tsx:118
 #~ msgid "Total submitted"
 #~ msgstr ""
@@ -10442,7 +11150,7 @@ msgstr "إجمالي السجلات:"
 msgid "Total Submitted"
 msgstr "إجمالي المقدم"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1671
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1673
 msgid "Total Value"
 msgstr "القيمة الإجمالية"
 
@@ -10572,7 +11280,7 @@ msgstr "غير قادر على نسخ الملخص"
 msgid "Unable to create sign request"
 msgstr "تعذر إنشاء طلب التوقيع"
 
-#: src/pages/portal/components/PortalWizard.tsx:967
+#: src/pages/portal/components/PortalWizard.tsx:913
 msgid "Unable to create this request."
 msgstr "غير قادر على إنشاء هذا الطلب."
 
@@ -10617,15 +11325,16 @@ msgstr "تعذر تحميل طلبات التوقيع"
 msgid "Unable to load submissions for the selected workflows."
 msgstr "غير قادر على تحميل عمليات الإرسال لمهام سير العمل المحددة."
 
-#: src/pages/portal/components/PortalDetail.tsx:77
+#: src/pages/portal/components/PortalDetail.tsx:78
 msgid "Unable to load this request."
 msgstr "غير قادر على تحميل هذا الطلب."
 
-#: src/pages/portal/components/PortalWizard.tsx:145
+#: src/pages/portal/components/PortalWizard.tsx:139
 msgid "Unable to load this workflow form."
 msgstr "غير قادر على تحميل نموذج سير العمل هذا."
 
-#: src/pages/portal/components/PortalDetail.tsx:241
+#: src/pages/portal/components/PortalDetail.tsx:242
+#: src/pages/requests/components/KanbanView.tsx:263
 msgid "Unable to move this request."
 msgstr "غير قادر على نقل هذا الطلب."
 
@@ -10633,9 +11342,9 @@ msgstr "غير قادر على نقل هذا الطلب."
 msgid "Unable to open sign request"
 msgstr "تعذر فتح طلب التوقيع"
 
-#: src/pages/portal/components/PortalWizard.tsx:424
-#: src/pages/portal/components/PortalWizard.tsx:588
-#: src/pages/portal/components/PortalWizard.tsx:812
+#: src/pages/portal/components/PortalWizard.tsx:370
+#: src/pages/portal/components/PortalWizard.tsx:534
+#: src/pages/portal/components/PortalWizard.tsx:758
 msgid "Unable to process this document."
 msgstr "غير قادر على معالجة هذا المستند."
 
@@ -10669,7 +11378,7 @@ msgstr "تعذر تعيين كلمة المرور"
 msgid "Unable to sign in"
 msgstr "تعذر تسجيل الدخول"
 
-#: src/pages/portal/components/PortalWizard.tsx:365
+#: src/pages/portal/components/PortalWizard.tsx:311
 msgid "Unable to start this workflow."
 msgstr "غير قادر على بدء سير العمل هذا."
 
@@ -10681,8 +11390,8 @@ msgstr "تعذر إرسال التوقيع. حاول مرة أخرى."
 msgid "Unable to update user"
 msgstr "غير قادر على تحديث المستخدم"
 
-#: src/pages/portal/components/PortalWizard.tsx:652
-#: src/pages/portal/components/PortalWizard.tsx:697
+#: src/pages/portal/components/PortalWizard.tsx:598
+#: src/pages/portal/components/PortalWizard.tsx:643
 msgid "Unable to upload {fileName}."
 msgstr "غير قادر على تحميل {fileName}."
 
@@ -10694,7 +11403,7 @@ msgstr "غير قادر على تحميل {fileName}."
 msgid "Unable to verify OTP"
 msgstr "غير قادر على التحقق من OTP"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:402
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:410
 msgid "Undercharged"
 msgstr "ناقص"
 
@@ -10724,10 +11433,14 @@ msgstr "خطأ غير معروف"
 msgid "Unknown Item"
 msgstr "عنصر غير معروف"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1547
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1551
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1549
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1553
 msgid "Unknown Supplier"
 msgstr "مورد غير معروف"
+
+#: src/pages/report-builder/hooks/useUserGroupOptions.ts:67
+msgid "Unknown User"
+msgstr ""
 
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:48
 msgid "Unread ({unreadCount})"
@@ -10761,9 +11474,17 @@ msgstr "بدون عنوان نموذج"
 msgid "Untitled policy"
 msgstr "سياسة بلا عنوان"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:119
+msgid "Untitled Report"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:348
 msgid "Up next"
 msgstr "التالي"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:273
+msgid "Update card"
+msgstr ""
 
 #: src/pages/settings/components/GroupManagement.tsx:818
 msgid "Update Group"
@@ -10861,7 +11582,7 @@ msgstr "تحميل الرمز المفضل"
 msgid "Upload Files"
 msgstr "رفع الملفات"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:810
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:829
 msgid "Upload invoice"
 msgstr "رفع فاتورة"
 
@@ -10907,11 +11628,11 @@ msgstr "توقيع مرفوع"
 
 #. placeholder {0}: uploadProgressText.current
 #. placeholder {1}: uploadProgressText.total
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:844
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:863
 msgid "Uploading & Processing ({0}/{1})..."
 msgstr "جاري الرفع والمعالجة ({0}/{1})..."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:845
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:864
 msgid "Uploading & Processing..."
 msgstr "جاري الرفع والمعالجة..."
 
@@ -10985,6 +11706,10 @@ msgstr "استخدم التخزين السحابي الآمن"
 msgid "Use the login password field from the master for authentication"
 msgstr "استخدم حقل كلمة مرور تسجيل الدخول من السيد للمصادقة"
 
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:160
+msgid "Use this plan"
+msgstr ""
+
 #: src/pages/folders/components/DocumentDetailsView.tsx:2251
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:219
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:220
@@ -11031,7 +11756,7 @@ msgstr "البريد الإلكتروني للمستخدم"
 #: src/pages/settings/components/ManageUser.tsx:1543
 #: src/pages/settings/components/ManageUser.tsx:2831
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:23
-#: src/pages/settings/SettingsMain.tsx:281
+#: src/pages/settings/SettingsMain.tsx:299
 msgid "User Management"
 msgstr "إدارة المستخدمين"
 
@@ -11125,9 +11850,17 @@ msgstr "تصديق"
 msgid "VALIDATION"
 msgstr "التحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3596
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3632
 msgid "Validation Log"
 msgstr "سجل التحقق"
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:123
+msgid "Value"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:71
+msgid "Value equals..."
+msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:686
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:299
@@ -11139,15 +11872,15 @@ msgstr "قيمة..."
 msgid "Vendor"
 msgstr "البائع"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:392
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:400
 msgid "Vendor Check"
 msgstr "فحص البائع"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:388
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:396
 msgid "Vendor identity mismatch."
 msgstr "عدم تطابق هوية البائع."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3577
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3613
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "اسم البائع"
@@ -11156,7 +11889,7 @@ msgstr "اسم البائع"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "موردون يحتاجون تواصلًا سريعًا أو حل استفسارات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1917
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1953
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "فشل التحقق. تم استرداد رصيد واحد."
 
@@ -11164,7 +11897,7 @@ msgstr "فشل التحقق. تم استرداد رصيد واحد."
 msgid "Verified"
 msgstr "مُتحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3328
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3364
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "تحقق"
@@ -11189,8 +11922,8 @@ msgstr "تحقق من السياسة التي تم تكوينها قبل تنش�
 msgid "Verify your security rules before applying settings."
 msgstr "تحقق من قواعد الأمان الخاصة بك قبل تطبيق الإعدادات."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3343
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3355
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3379
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3391
 msgid "Verifying..."
 msgstr "جاري التحقق..."
 
@@ -11216,7 +11949,7 @@ msgstr "تم حفظ استراتيجية الإصدارات. هل تحتاج ت�
 msgid "View"
 msgstr "عرض"
 
-#: src/pages/settings/SettingsMain.tsx:314
+#: src/pages/settings/SettingsMain.tsx:332
 msgid "View activity logs, security events, and configuration change history."
 msgstr "اعرض سجلات النشاط وأحداث الأمان وسجل تغييرات التكوين."
 
@@ -11229,7 +11962,7 @@ msgstr "عرض التفاصيل"
 msgid "View Line Items Table"
 msgstr "عرض Line Items Table"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:904
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1141
 msgid "View Mode"
 msgstr "وضع العرض"
 
@@ -11246,13 +11979,38 @@ msgstr "وضع العرض"
 msgid "vs last period"
 msgstr "مقابل الفترة الماضية"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1520
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1537
 msgid "Wait for Balance"
 msgstr "انتظر الرصيد"
+
+#: src/pages/portal/components/PortalProgressCard.tsx:43
+msgid "Waiting for {email} approval"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:48
+msgid "Waiting for agent review"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1603
 msgid "Waiting for field verification"
 msgstr "في انتظار التحقق من الحقل"
+
+#: src/pages/portal/components/PortalProgressCard.tsx:50
+msgid "Waiting for payment"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:45
+msgid "Waiting for user approval"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1083
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:711
+msgid "Waiting to generate dashboard schema"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:52
+msgid "Waiting to start"
+msgstr ""
 
 #: src/pages/settings/components/AuditMonitoring.tsx:150
 #: src/pages/settings/components/AuditMonitoring.tsx:287
@@ -11291,6 +12049,10 @@ msgstr "مرحبًا بك في {0}"
 msgid "Welcome to AP Automation Setup"
 msgstr "مرحبًا بك في إعداد أتمتة AP"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:224
+msgid "What does this report show?"
+msgstr ""
+
 #: src/pages/forms/components/AiFormBuilder.tsx:146
 msgid "What form shall we create?"
 msgstr "ما هو الشكل الذي يجب أن نخلقه؟"
@@ -11328,7 +12090,8 @@ msgstr "أي الموردين يحملون أكبر تعرض للمخاطر؟"
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr "ما استراتيجية الإصدارات التي يجب تطبيقها عند رفع نفس الملف مرة أخرى؟"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:716
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:54
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:735
 #: src/pages/settings/components/PortalConfiguration.tsx:977
 #: src/pages/settings/components/PortalConfiguration.tsx:985
 msgid "Workflow"
@@ -11348,15 +12111,19 @@ msgstr "تكوين مهام سير العمل"
 #~ msgid "Workflow Form"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:609
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:628
 msgid "Workflow ID is missing. Cannot start workflow."
 msgstr "معرف سير العمل مفقود. لا يمكن بدء سير العمل."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:527
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:248
+msgid "Workflow stages"
+msgstr ""
+
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:535
 msgid "Workflow started but did not return a valid instanceId or apAgentJobId."
 msgstr "بدأ سير العمل لكنه لم يُرجع instanceId أو apAgentJobId صالحاً."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:517
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:525
 msgid "Workflow started but did not return any data."
 msgstr "بدأ سير العمل لكنه لم يُرجع أي بيانات."
 
@@ -11368,7 +12135,7 @@ msgstr "بدأ سير العمل لكنه لم يُرجع أي بيانات."
 #: src/pages/settings/components/PortalConfiguration.tsx:1373
 #: src/pages/settings/components/PortalConfiguration.tsx:1527
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
-#: src/pages/settings/SettingsMain.tsx:269
+#: src/pages/settings/SettingsMain.tsx:281
 #: src/pages/workflows/components/Table.tsx:519
 #: src/pages/workflows/WorkflowsPage.tsx:13
 msgid "Workflows"
@@ -11395,6 +12162,7 @@ msgid "years"
 msgstr "سنين"
 
 #: src/pages/forms/FormsPage.tsx:559
+#: src/pages/reports/components/ReportsListView.tsx:254
 msgid "Yes, Delete"
 msgstr "نعم, Delete"
 
@@ -11457,10 +12225,12 @@ msgstr "تم إرسال توقيعك بنجاح. يمكنك إغلاق هذه ا
 msgid "your workspace"
 msgstr "مساحة العمل الخاصة بك"
 
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:284
 #: src/pages/folders/components/DocumentSigningPage.tsx:2930
 msgid "Zoom in"
 msgstr "تكبير"
 
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:272
 #: src/pages/folders/components/DocumentSigningPage.tsx:2916
 msgid "Zoom out"
 msgstr "تصغير"

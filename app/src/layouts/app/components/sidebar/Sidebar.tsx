@@ -33,6 +33,11 @@ const Sidebar = () => {
           permissionKey: 'folder',
           route: '/folders',
         },
+        {
+          icon: 'lucide:file-bar-chart-2',
+          label: t`Reports`,
+          route: '/reports',
+        },
         // {
         //   icon: 'lucide:git-branch',
         //   label: t`Workflows`,
@@ -80,4 +85,3 @@ const Sidebar = () => {
 
 Sidebar.displayName = 'Sidebar'
 export default Sidebar
-
