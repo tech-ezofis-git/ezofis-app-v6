@@ -501,7 +501,7 @@ export const useInboxData = (
   filterClauses: any[] = [],
 ) => {
   return useQuery({
-    enabled: !!selectedWorkflow?.id,
+    enabled: !!selectedWorkflow?.id && selectedWorkflow.id !== 'procurement',
     gcTime: 5 * 60 * 1000,
     queryKey: [
       'inbox',
@@ -517,7 +517,7 @@ export const useInboxData = (
 
     queryFn: async () => {
       const workflowId = selectedWorkflow?.id
-      if (!workflowId) {
+      if (!workflowId || workflowId === 'procurement') {
         return { data: [], meta: { totalItems: 0 } }
       }
 
