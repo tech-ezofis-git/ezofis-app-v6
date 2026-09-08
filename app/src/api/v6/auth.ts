@@ -230,9 +230,11 @@ export const login = async (
   return response
 }
 
-export const getSession = async () => {
+export const getSession = async (options?: { force?: boolean }) => {
+  const force = Boolean(options?.force)
+
   // After sign-in (or a prior call this page load), reuse cached session — no extra API hit.
-  if (hasFetchedUserSession) {
+  if (!force && hasFetchedUserSession) {
     return {
       data: authUserStore.getState().session,
       error: '',
@@ -240,17 +242,19 @@ export const getSession = async () => {
   }
 
   // Hard redirect after login sets this so the next page load skips a duplicate fetch.
-  try {
-    if (globalThis.sessionStorage?.getItem(USER_SESSION_REDIRECT_FLAG) === '1') {
-      globalThis.sessionStorage.removeItem(USER_SESSION_REDIRECT_FLAG)
-      hasFetchedUserSession = true
-      return {
-        data: authUserStore.getState().session,
-        error: '',
+  if (!force) {
+    try {
+      if (globalThis.sessionStorage?.getItem(USER_SESSION_REDIRECT_FLAG) === '1') {
+        globalThis.sessionStorage.removeItem(USER_SESSION_REDIRECT_FLAG)
+        hasFetchedUserSession = true
+        return {
+          data: authUserStore.getState().session,
+          error: '',
+        }
       }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
   }
 
   // Deduplicate concurrent callers (Strict Mode / sign-in + AppLayout race).
@@ -300,6 +304,10 @@ export const getSession = async () => {
 
   return inFlightUserSession
 }
+
+/** Always re-fetch /userSession (e.g. after role permission changes). */
+export const refreshUserSession = () => getSession({ force: true })
+
 
 export const socialLogin = async (
   payload: {
@@ -491,6 +499,7 @@ export const authApiV6 = {
   socialLogin,
   verifyMailOTP,
   getSession,
+  refreshUserSession,
   getSharePreview,
   getTenants,
   setSharePassword,

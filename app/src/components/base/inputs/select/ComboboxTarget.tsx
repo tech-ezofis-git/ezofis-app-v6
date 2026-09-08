@@ -48,6 +48,14 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
 
     const selectedIconKey = (firstValue as (Option & { iconKey?: string }) | null)
       ?.iconKey
+    const selectedRightIconKey = (
+      firstValue as (Option & { rightIconKey?: string }) | null
+    )?.rightIconKey
+
+    const trailingTypeIcon =
+      selectedRightIconKey?.includes(':') || selectedIconKey?.includes(':')
+        ? selectedRightIconKey || selectedIconKey
+        : undefined
 
     const _classNames = {
       description: classNames.description,
@@ -80,18 +88,40 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       />
     ) : undefined
 
-    let _rightSection = (
+    const chevron = (
       <Icon
         className='text-gray-10'
         name={rightSectionIcon || 'lucide:chevron-down'}
       />
+    )
+
+    let _rightSection: ReactNode = trailingTypeIcon ? (
+      <span className='flex items-center gap-1.5'>
+        <Icon
+          className='size-4 shrink-0 text-primary-9'
+          name={trailingTypeIcon}
+        />
+        {chevron}
+      </span>
+    ) : (
+      chevron
     )
     if (loading) {
       _rightSection = (
         <Icon className='animate-spin text-gray-10' name='fa:spinner' />
       )
     } else if (clearable && list.length && !locked) {
-      _rightSection = <ClearButton onClick={() => onChange([])} />
+      _rightSection = (
+        <span className='flex items-center gap-1.5'>
+          {trailingTypeIcon ? (
+            <Icon
+              className='size-4 shrink-0 text-primary-9'
+              name={trailingTypeIcon}
+            />
+          ) : null}
+          <ClearButton onClick={() => onChange([])} />
+        </span>
+      )
     }
 
     const children = useMemo(() => {
@@ -114,10 +144,16 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
           )
         }
 
+        // Prefer rightIconKey in the chevron cluster; only show leading iconKey when
+        // it is distinct from the trailing type icon.
+        const showLeadingIcon =
+          Boolean(selectedIconKey?.includes(':')) &&
+          selectedIconKey !== trailingTypeIcon
+
         return (
           <div className='flex min-w-0 items-center gap-2'>
-            {selectedIconKey?.includes(':') ? (
-              <Icon className='size-4 shrink-0' name={selectedIconKey} />
+            {showLeadingIcon ? (
+              <Icon className='size-4 shrink-0' name={selectedIconKey!} />
             ) : null}
             <div className='truncate text-13 font-normal text-gray-12'>
               {firstValue?.name}
@@ -164,6 +200,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       onChange,
       placeholder,
       selectedIconKey,
+      trailingTypeIcon,
       variant,
     ])
 
@@ -181,6 +218,9 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
           ref={ref}
           rightSection={_rightSection}
           rightSectionPointerEvents={clearable && !locked ? 'auto' : 'none'}
+          rightSectionWidth={
+            trailingTypeIcon && !loading ? (clearable && list.length && !locked ? 68 : 52) : undefined
+          }
           styles={{
             input: {
               cursor: locked ? 'not-allowed' : 'pointer',

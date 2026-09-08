@@ -108,7 +108,7 @@ type FolderTableDataTableSplitProps = {
 
   onAiSummary: (id: string) => void
 
-  onEditMetadata: (id: string) => void
+  onEditMetadata?: (id: string) => void
 
   onLoadMoreFolders?: () => void
 
@@ -127,6 +127,12 @@ type FolderTableDataTableSplitProps = {
   onUpload?: () => void
 
   onUploadFile?: (file: File) => void
+
+  permissions?: {
+    delete?: boolean
+    editMetadata?: boolean
+    upload?: boolean
+  }
 
   uploadDisabled?: boolean
 
@@ -297,6 +303,8 @@ export default function FolderTableDataTableSplit({
   onUpload,
 
   onUploadFile,
+
+  permissions,
 
   uploadDisabled = false,
 
@@ -484,6 +492,7 @@ export default function FolderTableDataTableSplit({
             onReload={onReload}
             onShare={onShare}
             onWorkflow={onWorkflow}
+            permissions={permissions}
           />
         ) : null}
 
@@ -588,6 +597,7 @@ function FileDataTableSection({
   onReload,
   onShare,
   onWorkflow,
+  permissions,
 }: {
   columns: DynamicRepositoryColumn[]
   fileFilters?: Record<string, string>
@@ -603,13 +613,17 @@ function FileDataTableSection({
   loading: boolean
   loadingPage: boolean
   onAiSummary: (id: string) => void
-  onEditMetadata: (id: string) => void
+  onEditMetadata?: (id: string) => void
   onOpenFile: (id: string) => void
   onPageChange?: (page: number, cursor?: string | null) => void
   onPageSizeChange?: (pageSize: number) => void
   onReload?: () => void
   onShare: (id: string) => void
   onWorkflow: (id: string) => void
+  permissions?: {
+    delete?: boolean
+    editMetadata?: boolean
+  }
 }) {
   const { t } = useLingui()
   const mergedFileFilters = useMemo(
@@ -810,11 +824,13 @@ function FileDataTableSection({
                   label={t`View Details`}
                   onClick={() => onOpenFile(fileId)}
                 />
-                <MenuItem
-                  icon='lucide:pencil'
-                  label={t`Edit Metadata`}
-                  onClick={() => onEditMetadata(fileId)}
-                />
+                {onEditMetadata && permissions?.editMetadata !== false ? (
+                  <MenuItem
+                    icon='lucide:pencil'
+                    label={t`Edit Metadata`}
+                    onClick={() => onEditMetadata(fileId)}
+                  />
+                ) : null}
                 <MenuItem
                   icon='lucide:bot'
                   label={t`AI Summary`}
@@ -825,13 +841,17 @@ function FileDataTableSection({
                   label={t`Share`}
                   onClick={() => onShare(fileId)}
                 />
-                <MenuDivider />
-                <MenuItem
-                  className='text-red-9'
-                  icon='lucide:trash-2'
-                  iconClass='text-red-9'
-                  label={t`Delete`}
-                />
+                {permissions?.delete !== false ? (
+                  <>
+                    <MenuDivider />
+                    <MenuItem
+                      className='text-red-9'
+                      icon='lucide:trash-2'
+                      iconClass='text-red-9'
+                      label={t`Delete`}
+                    />
+                  </>
+                ) : null}
               </Menu>
             </div>
           )
@@ -847,6 +867,7 @@ function FileDataTableSection({
     onOpenFile,
     onShare,
     onWorkflow,
+    permissions,
     t,
   ])
 

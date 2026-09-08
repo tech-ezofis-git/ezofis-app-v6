@@ -162,7 +162,9 @@ export default function FolderSecurity({
       items: [
         { key: 'settings', label: t`Settings` },
         { key: 'folder-configuration', label: t`Folder Configuration` },
-        { label: folderName ? t`Security` : t`Folder Security` },
+        {
+          label: folderName?.trim() ? folderName.trim() : t`Folder Security`,
+        },
       ],
       onNavigate: (key: string) => {
         if (key === 'settings') {
@@ -176,7 +178,7 @@ export default function FolderSecurity({
         }
       },
     }),
-    [folderName, onBack, onBackToSettings],
+    [folderName, onBack, onBackToSettings, t],
   )
 
   useSettingsTopbar(breadcrumbConfig)

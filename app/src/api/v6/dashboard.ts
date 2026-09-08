@@ -314,6 +314,18 @@ const asId = (value?: string | null) => {
   return trimmed
 }
 
+/** Prefer workflow_id; never send empty ids or both source keys together. */
+const buildDashboardSourceIds = (payload: {
+  repositoryId?: string | null
+  workflowId?: string | null
+}) => {
+  const workflowId = asId(payload.workflowId)
+  if (workflowId) return { workflow_id: workflowId }
+  const repositoryId = asId(payload.repositoryId)
+  if (repositoryId) return { repository_id: repositoryId }
+  return {}
+}
+
 const readStringField = (
   record: Record<string, unknown>,
   ...keys: string[]
@@ -349,8 +361,10 @@ export const suggestDashboardPrompt = async (
       data: {
         ...(sessionId ? { session_id: sessionId } : {}),
         tenant_id: asId(payload.tenantId),
-        ...(repositoryId ? { repository_id: repositoryId } : {}),
-        ...(workflowId ? { workflow_id: workflowId } : {}),
+        ...buildDashboardSourceIds({
+          repositoryId,
+          workflowId,
+        }),
       },
       headers: buildTenantHeaders(payload.tenantId),
       method: 'POST',
@@ -414,13 +428,16 @@ export const getDashboardSchema = async (payload: DashboardSchemaRequest) => {
   }
 
   try {
+    const sessionId = asId(payload.sessionId)
     const { data, status } = await axiosV6({
       data: {
         message: payload.message,
-        repository_id: payload.repositoryId,
-        session_id: payload.sessionId,
-        tenant_id: payload.tenantId,
-        workflow_id: payload.workflowId,
+        ...(sessionId ? { session_id: sessionId } : {}),
+        tenant_id: asId(payload.tenantId),
+        ...buildDashboardSourceIds({
+          repositoryId: payload.repositoryId,
+          workflowId: payload.workflowId,
+        }),
       },
       headers: buildTenantHeaders(payload.tenantId),
       method: 'POST',
@@ -485,12 +502,18 @@ export const saveDashboardSchema = async (
       data: {
         dashboard_json: dashboardResult,
         dashboard_result: dashboardResult,
-        repositoryId: payload.repositoryId,
-        repository_id: payload.repositoryId,
         tenantId: payload.tenantId,
         tenant_id: payload.tenantId,
-        workflowId: payload.workflowId,
-        workflow_id: payload.workflowId,
+        ...buildDashboardSourceIds({
+          repositoryId: payload.repositoryId,
+          workflowId: payload.workflowId,
+        }),
+        // camelCase aliases only when the matching snake_case source id is set
+        ...(asId(payload.workflowId)
+          ? { workflowId: asId(payload.workflowId) }
+          : asId(payload.repositoryId)
+            ? { repositoryId: asId(payload.repositoryId) }
+            : {}),
       },
       headers: buildTenantHeaders(payload.tenantId),
       method: 'POST',
@@ -534,10 +557,9 @@ export const getDashboardHtml = async (payload: DashboardDataRequest) => {
           ? { dashboard_json: payload.dashboard_json }
           : {}),
         ...(message ? { message } : {}),
-        ...(repositoryId ? { repository_id: repositoryId } : {}),
         ...(sessionId ? { session_id: sessionId } : {}),
         tenant_id: asId(payload.tenantId),
-        ...(workflowId ? { workflow_id: workflowId } : {}),
+        ...buildDashboardSourceIds({ repositoryId, workflowId }),
       },
       headers: buildTenantHeaders(payload.tenantId),
       method: 'POST',
@@ -580,12 +602,11 @@ export const getSavedDashboardSchema = async (payload: SavedDashboardLookup) => 
       method: 'GET',
       params: {
         tenantId: payload.tenantId,
-        ...(asId(payload.repositoryId)
-          ? { repositoryId: asId(payload.repositoryId) }
-          : {}),
         ...(asId(payload.workflowId)
           ? { workflowId: asId(payload.workflowId) }
-          : {}),
+          : asId(payload.repositoryId)
+            ? { repositoryId: asId(payload.repositoryId) }
+            : {}),
       },
       skipCancellation: true,
       timeout: DASHBOARD_API_TIMEOUT_MS,
@@ -742,16 +763,18 @@ export const loadSavedRepositoryDashboard = async (
     return response
   }
 
-  const repositoryId = asId(
-    payload.repositoryId || schema.repository_id || schema.repositoryId,
-  )
   const workflowId = asId(payload.workflowId || schema.workflow_id)
+  const repositoryId = workflowId
+    ? ''
+    : asId(
+        payload.repositoryId || schema.repository_id || schema.repositoryId,
+      )
 
   const dataRes = await getDashboardHtml({
     dashboard_json: schema,
-    repositoryId,
+    repositoryId: repositoryId || undefined,
     tenantId: payload.tenantId,
-    workflowId,
+    workflowId: workflowId || undefined,
   })
   response.html = dataRes.html
   if (!response.html) {

@@ -15,9 +15,12 @@ import {
   Users,
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
+import { refreshUserSession } from '@/api/v6/auth'
 import ColorPreference from '@/pages/my-account/components/color-preference/ColorPreference'
 import authUserStore from '@/stores/authUserStore'
-import { isPermissionVisible } from '@/utils/sessionPermissions'
+import {
+  isAnyPermissionVisible,
+} from '@/utils/sessionPermissions'
 import AuditMonitoring from './components/AuditMonitoring'
 import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
@@ -38,7 +41,8 @@ type SettingsItem = {
   href?: string
   icon: React.ElementType
   key: string
-  permissionKey?: string
+  /** One or more permission keys; visible if any match. */
+  permissionKeys?: string[]
   title: string
 }
 
@@ -77,10 +81,11 @@ const PLATFORM_SETTINGS_KEYS = [
   'audit-monitoring',
 ]
 
-const SETTINGS_PAGE_PERMISSIONS: Record<string, string> = {
-  'folder-configuration': 'folder',
-  'form-configuration': 'form',
-  'workflow-configuration': 'workflow',
+const SETTINGS_PAGE_PERMISSIONS: Record<string, string[]> = {
+  'folder-configuration': ['folder-create'],
+  'form-configuration': ['form'],
+  'workflow-configuration': ['workflow'],
+  'portal-configuration': ['portal'],
 }
 
 const pickSettingsItems = (items: SettingsItem[], keys: string[]) =>
@@ -93,7 +98,10 @@ export default function SettingsMain() {
   const isAdmin = session?.role?.toLowerCase() === 'admin'
   const sessionPermissions = session?.permissionKeys
   const canOpenSettingsPage = (page: string) =>
-    isPermissionVisible(SETTINGS_PAGE_PERMISSIONS[page], sessionPermissions)
+    isAnyPermissionVisible(
+      SETTINGS_PAGE_PERMISSIONS[page] || [],
+      sessionPermissions,
+    )
   const [activePage, setActivePage] = useState<string>(() => {
     try {
       const stored = sessionStorage.getItem('ezofis_settings_state')
@@ -243,13 +251,17 @@ function SettingsLanding({
     (state) => state.session?.permissionKeys,
   )
 
+  useEffect(() => {
+    void refreshUserSession()
+  }, [])
+
   const settingsItems: SettingsItem[] = useMemo(() => {
     const items: SettingsItem[] = [
       {
         description: t`Set up folders with custom fields, storage, security, and versioning.`,
         icon: FolderOpen,
         key: 'folder-configuration',
-        permissionKey: 'folder',
+        permissionKeys: ['folder-create'],
         title: t`Folder Configuration`,
       },
       {
@@ -257,7 +269,7 @@ function SettingsLanding({
         href: '/forms',
         icon: FileText,
         key: 'form-configuration',
-        permissionKey: 'form',
+        permissionKeys: ['form'],
         title: t`Forms`,
       },
       {
@@ -265,13 +277,14 @@ function SettingsLanding({
         href: '/workflows',
         icon: GitFork,
         key: 'workflow-configuration',
-        permissionKey: 'workflow',
+        permissionKeys: ['workflow'],
         title: t`Workflows`,
       },
       {
         description: t`Create branded portals, configure login methods, and connect workflows.`,
         icon: Globe,
         key: 'portal-configuration',
+        permissionKeys: ['portal'],
         title: t`Portal Configuration`,
       },
       {
@@ -319,7 +332,17 @@ function SettingsLanding({
     ]
     return items.filter((item) => {
       if (!isAdmin && item.key === 'branding') return false
-      return isPermissionVisible(item.permissionKey, sessionPermissions)
+      // Access Control + Platform Management stay admin-only so
+      // Settings configuration access only surfaces Configuration cards.
+      if (
+        !isAdmin &&
+        (ACCESS_SETTINGS_KEYS.includes(item.key) ||
+          PLATFORM_SETTINGS_KEYS.includes(item.key))
+      ) {
+        return false
+      }
+      if (!item.permissionKeys?.length) return true
+      return isAnyPermissionVisible(item.permissionKeys, sessionPermissions)
     })
   }, [i18n.locale, isAdmin, sessionPermissions, t])
 

@@ -11,6 +11,8 @@ import InputRadioIndicator from '../InputRadioIndicator'
 interface Props extends Option {
   icon?: string
   iconKey?: string
+  /** Shown on the trailing edge of the option row (e.g. folder / workflow). */
+  rightIconKey?: string
   isSelected?: boolean
   variant?: SelectVariant
 }
@@ -22,6 +24,7 @@ const ComboboxOption = ({
   id,
   isSelected,
   name,
+  rightIconKey,
   variant = 'single',
 }: Props) => {
   const _className = cn(
@@ -30,13 +33,13 @@ const ComboboxOption = ({
     disabled && 'cursor-not-allowed',
   )
 
-  const optionIcon = iconKey ? (
-    iconKey.includes(':') ? (
-      <Icon className='size-4 shrink-0' name={iconKey} />
-    ) : (
-      <DynamicIcon className='h-4 w-4 shrink-0 text-gray-11' name={iconKey} />
-    )
-  ) : null
+  const renderIcon = (key?: string, className = 'size-4 shrink-0 text-gray-11') => {
+    if (!key) return null
+    if (key.includes(':')) {
+      return <Icon className={className} name={key} />
+    }
+    return <DynamicIcon className={cn('h-4 w-4 shrink-0 text-gray-11', className)} name={key} />
+  }
 
   return (
     <Base.Option
@@ -51,7 +54,7 @@ const ComboboxOption = ({
         <InputRadioIndicator checked={isSelected} />
       )}
 
-      {optionIcon}
+      {renderIcon(iconKey)}
 
       <div className='min-w-0 flex-1'>
         <div className='truncate text-13 font-normal text-gray-12'>{name}</div>
@@ -61,6 +64,18 @@ const ComboboxOption = ({
           </div>
         )}
       </div>
+
+      {rightIconKey ? (
+        <span className='ml-auto flex shrink-0 items-center self-center pl-2'>
+          {renderIcon(
+            rightIconKey,
+            cn(
+              'size-4 shrink-0',
+              isSelected ? 'text-primary-9' : 'text-gray-10',
+            ),
+          )}
+        </span>
+      ) : null}
     </Base.Option>
   )
 }
