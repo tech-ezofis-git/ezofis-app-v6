@@ -88,8 +88,9 @@ const PLATFORM_SETTINGS_KEYS = [
 const SETTINGS_PAGE_PERMISSIONS: Record<string, string[]> = {
   'folder-configuration': ['folder-create'],
   'form-configuration': ['form'],
-  'workflow-configuration': ['workflow'],
   'portal-configuration': ['portal'],
+  'report-builder': ['report-builder'],
+  'workflow-configuration': ['workflow'],
 }
 
 const pickSettingsItems = (items: SettingsItem[], keys: string[]) =>
@@ -205,6 +206,9 @@ export default function SettingsMain() {
   }
 
   if (activePage === 'report-builder') {
+    if (!canOpenSettingsPage(activePage)) {
+      return <SettingsLanding onOpenPage={setActivePage} />
+    }
     return (
       <SettingsDetailShell>
         <ReportBuilderSettingsPage onBack={() => setActivePage('settings')} />
@@ -303,6 +307,7 @@ function SettingsLanding({
         description: t`Build and configure custom reports`,
         icon: FileBarChart2,
         key: 'report-builder',
+        permissionKeys: ['report-builder'],
         title: t`Report Builder`,
       },
       {

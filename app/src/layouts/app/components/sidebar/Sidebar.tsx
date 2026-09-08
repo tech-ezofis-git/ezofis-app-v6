@@ -36,6 +36,7 @@ const Sidebar = () => {
         {
           icon: 'lucide:file-bar-chart-2',
           label: t`Reports`,
+          permissionKey: 'report',
           route: '/reports',
         },
         // {

@@ -342,7 +342,9 @@ const DataTable = <TData,>({
             {showDataRows && (
               <Tbody>
                 {rows.map((row) => {
-                  const isGroup = (row.original as any)?.type === 'group'
+                  const isGroup =
+                    (row.original as any)?.rowType === 'group' ||
+                    (row.original as any)?.type === 'group'
                   const isExpanded = row.getIsExpanded()
 
                   if (isGroup) {

@@ -7,7 +7,9 @@ const columnHelper = createColumnHelper<Row>()
 
 const renderCell = (column: Column, info: CellContext<Row, unknown>) => {
   const value = info.getValue()
-  const isGroupRow = info.row.original.type === 'group'
+  const isGroupRow =
+    info.row.original.rowType === 'group' ||
+    info.row.original.type === 'group'
 
   if (isGroupRow) return ''
 
@@ -65,7 +67,8 @@ export default function transformColumns(
     },
     size: 200,
     cell: ({ row }) => {
-      const isGroupRow = row.original.type === 'group'
+      const isGroupRow =
+        row.original.rowType === 'group' || row.original.type === 'group'
 
       if (isGroupRow) {
         return (
@@ -109,14 +112,14 @@ export default function transformColumns(
     },
     size: 40,
     cell: ({ row }) => {
-      const type = row.original.type
-      // const groupCount = row.original.groupCount
+      const isGroup =
+        row.original.rowType === 'group' || row.original.type === 'group'
 
       const checked =
-        type === 'group'
+        isGroup
           ? row.getIsSomeSelected() || row.getIsAllSubRowsSelected()
           : row.getIsSelected()
-      const indeterminate = type === 'group' ? row.getIsSomeSelected() : false
+      const indeterminate = isGroup ? row.getIsSomeSelected() : false
 
       return (
         <div className='flex items-center justify-center'>

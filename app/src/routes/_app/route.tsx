@@ -43,6 +43,7 @@ export const Route = createFileRoute('/_app')({
         '/': 'dashboard',
         '/folders': 'folder',
         '/forms': 'form',
+        '/reports': 'report',
         '/requests': 'request',
         '/settings': 'settings',
         '/workflow-chat': 'workflow',
