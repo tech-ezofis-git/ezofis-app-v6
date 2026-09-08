@@ -11,9 +11,37 @@ import CustomFilter from '@/components/common/CustomFilter'
 import ReportStatusBadge from '@/components/common/ReportStatusBadge'
 import { REPORT_DOMAINS } from '@/pages/report-builder/constants'
 import useReportsStore from '@/pages/report-builder/stores/useReportsStore'
+import authUserStore from '@/stores/authUserStore'
 import { formatDatetime } from '@/utils/dayjs'
 import RowActionsMenu from './RowActionsMenu'
 import Table from './Table'
+
+type OwnershipScope = 'private' | 'shared' | ''
+
+/**
+ * A report is visible to the current user only if it's private (owned by
+ * this session) or explicitly shared with them — reports shared with other
+ * specific users (and not this one) are excluded. Group-shared reports are
+ * included as a best-effort since this app has no "my group memberships"
+ * API to check against.
+ */
+const isVisibleToUser = (report: Report, currentUserId: string): boolean => {
+  if (report.visibility === 'Private') return true
+  if (report.visibility === 'Selected Users')
+    return report.sharedUsers.includes(currentUserId)
+  if (report.visibility === 'Selected Groups')
+    return report.sharedGroups.length > 0
+  return false
+}
+
+const matchesOwnershipScope = (
+  report: Report,
+  scope: OwnershipScope,
+): boolean => {
+  if (!scope) return true
+  if (scope === 'private') return report.visibility === 'Private'
+  return report.visibility !== 'Private'
+}
 
 interface ReportsListViewProps {
   onCreateReport: () => void
@@ -34,9 +62,11 @@ const ReportsListView = ({
   const deleteReport = useReportsStore((state) => state.deleteReport)
   const duplicateReport = useReportsStore((state) => state.duplicateReport)
   const runReportNow = useReportsStore((state) => state.runReportNow)
+  const currentUserId = authUserStore((state) => state.session?.id) || ''
 
   const [search, setSearch] = useState('')
   const [domainFilter, setDomainFilter] = useState('')
+  const [ownershipFilter, setOwnershipFilter] = useState<OwnershipScope>('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [deletingReport, setDeletingReport] = useState<Report | null>(null)
@@ -45,8 +75,14 @@ const ReportsListView = ({
     storageKey: 'ezofis_reports_table_state',
   })
 
+  const myReports = useMemo(
+    () => reports.filter((report) => isVisibleToUser(report, currentUserId)),
+    [reports, currentUserId],
+  )
+
   const filteredReports = useMemo(() => {
-    return reports.filter((report) => {
+    return myReports.filter((report) => {
+      if (!matchesOwnershipScope(report, ownershipFilter)) return false
       if (domainFilter && report.domain !== domainFilter) return false
       if (search) {
         const query = search.toLowerCase()
@@ -58,7 +94,7 @@ const ReportsListView = ({
       }
       return true
     })
-  }, [reports, domainFilter, search])
+  }, [myReports, domainFilter, ownershipFilter, search])
 
   const paginatedReports = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -128,6 +164,26 @@ const ReportsListView = ({
         renderCell: (row: Report) => row.owner,
       },
       {
+        id: 'visibility',
+        label: t`Sharing`,
+        size: 150,
+        renderCell: (row: Report) => (
+          <span className='inline-flex items-center gap-1.5 text-13 text-gray-11'>
+            <Icon
+              className='size-3.5 text-gray-9'
+              name={
+                row.visibility === 'Private'
+                  ? 'lucide:lock'
+                  : 'lucide:users-round'
+              }
+            />
+            {row.visibility === 'Private'
+              ? t`Private to me`
+              : t`Shared with me`}
+          </span>
+        ),
+      },
+      {
         id: 'runs',
         label: t`Runs`,
         size: 90,
@@ -193,6 +249,10 @@ const ReportsListView = ({
     label: domain,
     value: domain,
   }))
+  const ownershipFilterOptions = [
+    { label: t`Private to me`, value: 'private' },
+    { label: t`Shared with me`, value: 'shared' },
+  ]
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
@@ -259,11 +319,19 @@ const ReportsListView = ({
 
         <div className='mb-3'>
           <CustomFilter
-            activeFilters={domainFilter ? { domain: domainFilter } : {}}
             searchPlaceholder={t`Search reports...`}
             searchQuery={search}
-            showReset={Boolean(search || domainFilter)}
+            showReset={Boolean(search || domainFilter || ownershipFilter)}
+            activeFilters={{
+              ...(domainFilter ? { domain: domainFilter } : {}),
+              ...(ownershipFilter ? { ownership: ownershipFilter } : {}),
+            }}
             filters={[
+              {
+                id: 'ownership',
+                label: t`Sharing`,
+                options: ownershipFilterOptions,
+              },
               {
                 id: 'domain',
                 label: t`Domain`,
@@ -275,10 +343,15 @@ const ReportsListView = ({
                 setDomainFilter(value)
                 setPage(1)
               }
+              if (id === 'ownership') {
+                setOwnershipFilter(value as OwnershipScope)
+                setPage(1)
+              }
             }}
             onReset={() => {
               setSearch('')
               setDomainFilter('')
+              setOwnershipFilter('')
               setPage(1)
             }}
             onSearchChange={(value) => {

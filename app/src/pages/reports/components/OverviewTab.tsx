@@ -1,14 +1,23 @@
 import { useLingui } from '@lingui/react/macro'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import type { Row } from '@/components/base/data-table/types'
+import type { Question } from '@/pages/form-builder/store/formStore'
 import type { ReportDomain } from '@/pages/report-builder/constants'
 import type { Report } from '@/pages/report-builder/types'
-import Table from '@/components/base/table/Table'
-import Tbody from '@/components/base/table/Tbody'
-import Td from '@/components/base/table/Td'
-import Th from '@/components/base/table/Th'
-import Thead from '@/components/base/table/Thead'
-import Tr from '@/components/base/table/Tr'
+import type { PreviewColumn } from '@/pages/report-builder/utils/previewSampleData'
+import TableExport from '@/components/base/data-table/actions/TableExport'
+import DataTable from '@/components/base/data-table/DataTable'
+import useDataTable from '@/components/base/data-table/hooks/useDataTable'
+import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
+import Pagination from '@/components/base/pagination/Pagination'
+import CustomFilter from '@/components/common/CustomFilter'
 import { DOMAIN_FIELDS, SAMPLE_ROWS } from '@/pages/report-builder/constants'
+import useReportSourceFields from '@/pages/report-builder/hooks/useReportSourceFields'
+import {
+  buildSampleRows,
+  sampleTypeForDomainFieldType,
+  sampleTypeForQuestionType,
+} from '@/pages/report-builder/utils/previewSampleData'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
 import StatusPill from './StatusPill'
 
@@ -16,59 +25,246 @@ interface Props {
   report: Report
 }
 
+const PAGE_SIZE = 10
+
 const OverviewTab = ({ report }: Props) => {
   const { t } = useLingui()
-  const sampleRows = SAMPLE_ROWS[report.domain as ReportDomain] || []
+  const [search, setSearch] = useState('')
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
-  const columns = useMemo(() => {
-    const fields = DOMAIN_FIELDS[report.domain as ReportDomain] || []
+  const isSourceForm = Boolean(report.sourceFormId)
+  const { fields: sourceFields } = useReportSourceFields(
+    isSourceForm ? report.sourceFormId : '',
+  )
+
+  const previewColumns: PreviewColumn[] = useMemo(() => {
+    if (isSourceForm) {
+      const allFields: Question[] = [...sourceFields, ...report.customFields]
+      return report.fields
+        .map((fieldId) => {
+          const field = allFields.find((f) => f.id === fieldId)
+          if (!field) return null
+          const setting = report.fieldSettings[fieldId]
+          return {
+            id: fieldId,
+            label: setting?.label || field.label,
+            sampleType: sampleTypeForQuestionType(field.type),
+          }
+        })
+        .filter((c): c is PreviewColumn => Boolean(c))
+    }
+
+    const domainFields = DOMAIN_FIELDS[report.domain as ReportDomain] || []
     return report.fields
-      .map((fieldId) => fields.find((f) => f.id === fieldId))
-      .filter((f): f is (typeof fields)[number] => Boolean(f))
-  }, [report.fields, report.domain])
+      .map((fieldId) => {
+        const field = domainFields.find((f) => f.id === fieldId)
+        if (!field) return null
+        const setting = report.fieldSettings[fieldId]
+        return {
+          id: fieldId,
+          label: setting?.label || field.label,
+          sampleType: sampleTypeForDomainFieldType(field.type),
+        }
+      })
+      .filter((c): c is PreviewColumn => Boolean(c))
+  }, [
+    isSourceForm,
+    sourceFields,
+    report.customFields,
+    report.fields,
+    report.fieldSettings,
+    report.domain,
+  ])
 
-  if (columns.length === 0) {
+  const sourceRows: Record<string, string>[] = useMemo(() => {
+    if (isSourceForm) return buildSampleRows(previewColumns)
+    return SAMPLE_ROWS[report.domain as ReportDomain] || []
+  }, [isSourceForm, previewColumns, report.domain])
+
+  // Any column whose values are categorical (a computed-status column, or a
+  // Choice/Select-typed source field) gets its own filter dropdown, built
+  // from the distinct values actually present in the row data.
+  const filterableColumns = useMemo(
+    () =>
+      previewColumns.filter(
+        (col) =>
+          report.fieldSettings[col.id]?.colType === 'status' ||
+          col.sampleType === 'choice',
+      ),
+    [previewColumns, report.fieldSettings],
+  )
+
+  const valueForColumn = (col: PreviewColumn, row: Record<string, string>) => {
+    const setting = report.fieldSettings[col.id]
+    if (setting?.colType === 'status') {
+      return resolveFieldStatus(setting, row)?.label
+    }
+    return row[col.id]
+  }
+
+  const filterDefinitions = useMemo(
+    () =>
+      filterableColumns.map((col) => {
+        const labels = new Set(
+          sourceRows
+            .map((row) => valueForColumn(col, row))
+            .filter((label): label is string => Boolean(label)),
+        )
+        return {
+          id: col.id,
+          label: col.label,
+          options: Array.from(labels).map((label) => ({
+            label,
+            value: label,
+          })),
+        }
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- valueForColumn is a stable closure over report/args passed explicitly
+    [filterableColumns, sourceRows],
+  )
+
+  const filteredRows = useMemo(() => {
+    return sourceRows.filter((row) => {
+      for (const col of filterableColumns) {
+        const activeValue = activeFilters[col.id]
+        if (activeValue && valueForColumn(col, row) !== activeValue) {
+          return false
+        }
+      }
+      if (search) {
+        const query = search.toLowerCase()
+        const matches = previewColumns.some((col) =>
+          String(row[col.id] ?? '')
+            .toLowerCase()
+            .includes(query),
+        )
+        if (!matches) return false
+      }
+      return true
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- valueForColumn is a stable closure over report/args passed explicitly
+  }, [sourceRows, search, filterableColumns, activeFilters, previewColumns])
+
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredRows.slice(start, start + pageSize)
+  }, [filteredRows, page, pageSize])
+
+  const rows = useMemo(
+    () => [
+      {
+        groupCount: paginatedRows.length,
+        groupId: 'all',
+        groupKey: '',
+        groupValue: '',
+        items: paginatedRows.map((row, index) => ({
+          ...row,
+          id: String(index),
+          name: '',
+        })),
+      },
+    ],
+    [paginatedRows],
+  )
+
+  const columns = useMemo(
+    () =>
+      previewColumns.map((col) => {
+        const setting = report.fieldSettings[col.id]
+        return {
+          id: col.id,
+          label: col.label,
+          size: 180,
+          renderCell: (row: Row) => {
+            if (setting?.colType === 'status') {
+              const status = resolveFieldStatus(
+                setting,
+                row as unknown as Record<string, string>,
+              )
+              return status ? (
+                <StatusPill color={status.color} label={status.label} />
+              ) : (
+                (row[col.id] as string) || '-'
+              )
+            }
+            return (row[col.id] as string) ?? '-'
+          },
+        }
+      }),
+    [previewColumns, report.fieldSettings],
+  )
+
+  const { searchState, ...restState } = useDataTableState({
+    storageKey: `ezofis_report_overview_table_state_${report.id}`,
+  })
+  const { table } = useDataTable({
+    columns,
+    enableRowSelection: false,
+    rows,
+    state: { searchState, ...restState },
+  })
+
+  if (previewColumns.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-4 py-16 text-center'>
+      <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-4 text-center'>
         <p className='text-13 text-gray-10'>{t`This report has no fields configured yet.`}</p>
       </div>
     )
   }
 
   return (
-    <div className='overflow-hidden rounded-xl border border-gray-3'>
-      <div className='ez-scrollbar overflow-x-auto'>
-        <Table>
-          <Thead>
-            <Tr>
-              {columns.map((field) => (
-                <Th key={field.id}>
-                  {report.fieldSettings[field.id]?.label || field.label}
-                </Th>
-              ))}
-            </Tr>
-          </Thead>
-          <Tbody>
-            {sampleRows.map((row, index) => (
-              <Tr key={index}>
-                {columns.map((field) => {
-                  const setting = report.fieldSettings[field.id]
-                  const status = resolveFieldStatus(setting, row)
-                  return (
-                    <Td key={field.id}>
-                      {status ? (
-                        <StatusPill color={status.color} label={status.label} />
-                      ) : (
-                        (row[field.id] ?? '-')
-                      )}
-                    </Td>
-                  )
-                })}
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
+    <div className='flex min-h-0 flex-1 flex-col gap-3'>
+      <CustomFilter
+        activeFilters={activeFilters}
+        filters={filterDefinitions}
+        searchPlaceholder={t`Search rows...`}
+        searchQuery={search}
+        showReset={Boolean(
+          search || Object.values(activeFilters).some(Boolean),
+        )}
+        trailingActions={
+          <TableExport fileName={report.name || 'report'} table={table} />
+        }
+        onFilterChange={(id, value) => {
+          setActiveFilters((prev) => ({ ...prev, [id]: value }))
+          setPage(1)
+        }}
+        onReset={() => {
+          setSearch('')
+          setActiveFilters({})
+          setPage(1)
+        }}
+        onSearchChange={(value) => {
+          setSearch(value)
+          setPage(1)
+        }}
+      />
+
+      <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
+        <DataTable
+          isLoading={false}
+          isReLoading={false}
+          pageSize={pageSize}
+          table={table}
+          hideActionBar
+          hideGrouping
+          stickyHeader
+          onReload={() => {}}
+        />
       </div>
+
+      <Pagination
+        className='shrink-0'
+        itemLabel={t`Rows`}
+        page={page}
+        pageSize={pageSize}
+        showPageNumbers={false}
+        totalItems={filteredRows.length}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
     </div>
   )
 }

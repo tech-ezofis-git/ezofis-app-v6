@@ -6,10 +6,6 @@ import {
   getMasterFormsQueryOptions,
   getWorkflowFormsQueryOptions,
 } from '@/api/form/queries'
-import {
-  getGroupListQueryOptions,
-  getUserListQueryOptions,
-} from '@/api/userQueries'
 import InputRadioCard from '@/components/base/inputs/InputRadioCard'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
@@ -18,6 +14,7 @@ import InputTextarea from '@/components/base/inputs/InputTextarea'
 import type { ReportVisibility } from '../../types'
 import { REPORT_DOMAINS } from '../../constants'
 import useReportForm from '../../hooks/useReportForm'
+import useUserGroupOptions from '../../hooks/useUserGroupOptions'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 
 const VISIBILITY_OPTIONS: {
@@ -91,43 +88,13 @@ const DetailsStep = () => {
   }, [draft.sourceType, masterFormsQuery.data, workflowFormsQuery.data])
 
   const {
-    data: rawUsers,
-    isError: isUsersError,
-    isLoading: isUsersLoading,
-  } = useQuery(getUserListQueryOptions())
-  const {
-    data: rawGroups,
-    isError: isGroupsError,
-    isLoading: isGroupsLoading,
-  } = useQuery(getGroupListQueryOptions())
-
-  const userOptions: Option[] = useMemo(() => {
-    const users = rawUsers as any[]
-    if (!Array.isArray(users)) return []
-    return users.map((u: any) => {
-      const name =
-        u.value ||
-        u.name ||
-        (u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : null) ||
-        u.loginName ||
-        u.displayName ||
-        u.email ||
-        t`Unknown User`
-      return { id: String(u.id ?? u.value), name: String(name) }
-    })
-  }, [rawUsers, t])
-
-  const groupOptions: Option[] = useMemo(() => {
-    const groups = rawGroups as any[]
-    if (!Array.isArray(groups)) return []
-    return groups.map((g: any) => {
-      const id = g.groupId ?? g.id ?? g.value
-      return {
-        id: String(id),
-        name: String(g.groupName || g.name || g.value || t`Group ${id}`),
-      }
-    })
-  }, [rawGroups, t])
+    groupOptions,
+    isGroupsError,
+    isGroupsLoading,
+    isUsersError,
+    isUsersLoading,
+    userOptions,
+  } = useUserGroupOptions()
 
   return (
     <div className='flex flex-col gap-6'>

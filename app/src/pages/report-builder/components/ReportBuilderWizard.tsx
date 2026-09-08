@@ -133,6 +133,15 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   const persistAndExit = (status: ReportStatus) => {
     setIsSaving(true)
     const report = buildReportFromDraft(status)
+
+    // `fields` holds ids internally (stable even if a column is renamed),
+    // but the console output should read as actual column names.
+    console.log('Report Builder — final report JSON:', {
+      ...report,
+      fields: report.fields.map(
+        (fieldId) => report.fieldSettings[fieldId]?.label || fieldId,
+      ),
+    })
     if (draft.editingReportId) {
       updateReport(draft.editingReportId, report)
     } else {

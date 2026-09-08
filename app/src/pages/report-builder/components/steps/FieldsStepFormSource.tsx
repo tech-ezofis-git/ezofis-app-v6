@@ -7,10 +7,11 @@ import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import { createFieldQuestions } from '@/pages/form-builder/helpers/field-utils'
-import type { PreviewColumn, PreviewSampleType } from './FieldsPreviewTable'
+import type { PreviewColumn } from './FieldsPreviewTable'
 import useReportSourceFields from '../../hooks/useReportSourceFields'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import { createDefaultFieldSetting } from '../../types'
+import { sampleTypeForQuestionType } from '../../utils/previewSampleData'
 import FieldsPreviewTable from './FieldsPreviewTable'
 import FormFieldSettingsPanel from './FormFieldSettingsPanel'
 
@@ -36,23 +37,7 @@ const QUESTION_TYPE_ICON: Record<string, string> = {
   TIME: 'lucide:clock',
 }
 
-const CHOICE_QUESTION_TYPES = new Set([
-  'SINGLE_SELECT',
-  'SINGLE_CHOICE',
-  'MULTIPLE_CHOICE',
-  'MULTI_SELECT',
-])
-
 const iconFor = (type: string) => QUESTION_TYPE_ICON[type] || 'lucide:circle'
-
-const sampleTypeFor = (field: Question): PreviewSampleType => {
-  if (field.type === 'CALCULATED') return 'calculated'
-  if (['NUMBER', 'CURRENCY_AMOUNT', 'COUNTER'].includes(field.type))
-    return 'number'
-  if (['DATE', 'DATE_TIME', 'TIME'].includes(field.type)) return 'date'
-  if (CHOICE_QUESTION_TYPES.has(field.type)) return 'choice'
-  return 'text'
-}
 
 /**
  * Form-driven field picker for Report Builder (requirements 6-10): fields
@@ -170,7 +155,7 @@ const FieldsStepFormSource = () => {
     return {
       id: field.id,
       label: setting?.label || field.label,
-      sampleType: sampleTypeFor(field),
+      sampleType: sampleTypeForQuestionType(field.type),
     }
   })
 
@@ -316,12 +301,12 @@ const FieldsStepFormSource = () => {
             <div className='flex items-center gap-2'>
               <div className='w-48'>
                 <InputSelect
+                  placeholder={t`Change field...`}
+                  value={null}
                   options={availableFields.map((f) => ({
                     id: f.id,
                     name: f.label,
                   }))}
-                  placeholder={t`Change field...`}
-                  value={null}
                   onChange={(option) => {
                     const nextField = availableFields.find(
                       (f) => f.id === option?.id,

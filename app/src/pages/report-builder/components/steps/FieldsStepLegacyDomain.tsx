@@ -5,10 +5,11 @@ import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import type { ReportDomain } from '../../constants'
-import type { PreviewColumn, PreviewSampleType } from './FieldsPreviewTable'
+import type { PreviewColumn } from './FieldsPreviewTable'
 import { DOMAIN_FIELDS } from '../../constants'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import { createDefaultFieldSetting } from '../../types'
+import { sampleTypeForDomainFieldType } from '../../utils/previewSampleData'
 import FieldSettingsPanel from './FieldSettingsPanel'
 import FieldsPreviewTable from './FieldsPreviewTable'
 
@@ -18,14 +19,6 @@ const FIELD_TYPE_ICON: Record<string, string> = {
   Number: 'lucide:hash',
   Text: 'lucide:type',
   User: 'lucide:user',
-}
-
-const SAMPLE_TYPE_BY_DOMAIN_TYPE: Record<string, PreviewSampleType> = {
-  Choice: 'choice',
-  Date: 'date',
-  Number: 'number',
-  Text: 'text',
-  User: 'user',
 }
 
 /**
@@ -114,7 +107,7 @@ const FieldsStepLegacyDomain = () => {
     return {
       id: field.id,
       label: setting?.label || field.label,
-      sampleType: SAMPLE_TYPE_BY_DOMAIN_TYPE[field.type] || 'text',
+      sampleType: sampleTypeForDomainFieldType(field.type),
     }
   })
 
@@ -248,12 +241,12 @@ const FieldsStepLegacyDomain = () => {
             <div className='flex items-center gap-2'>
               <div className='w-48'>
                 <InputSelect
+                  placeholder={t`Change field...`}
+                  value={null}
                   options={availableFields.map((f) => ({
                     id: f.id,
                     name: f.label,
                   }))}
-                  placeholder={t`Change field...`}
-                  value={null}
                   onChange={(option) => {
                     const nextField = availableFields.find(
                       (f) => f.id === option?.id,

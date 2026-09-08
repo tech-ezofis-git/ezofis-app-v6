@@ -5,13 +5,13 @@ import InputSwitch from '@/components/base/inputs/InputSwitch'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
 import type { ReportSchedule } from '../../types'
-import { MOCK_USERS } from '../../constants'
 import {
   SCHEDULE_DAY_OPTIONS,
   SCHEDULE_FORMAT_OPTIONS,
   SCHEDULE_RECURRENCE_OPTIONS,
   SCHEDULE_TIMEZONE_OPTIONS,
 } from '../../constants'
+import useUserGroupOptions from '../../hooks/useUserGroupOptions'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 
 const asOption = (list: { label: string; value: string }[], value: string) =>
@@ -23,6 +23,7 @@ const ScheduleStep = () => {
   const { t } = useLingui()
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
+  const { isUsersError, isUsersLoading, userOptions } = useUserGroupOptions()
 
   const updateSchedule = (patch: Partial<ReportSchedule>) => {
     setDraft({ schedule: { ...draft.schedule, ...patch } })
@@ -112,31 +113,51 @@ const ScheduleStep = () => {
           <div>
             <h4 className='mb-3 text-13 font-semibold text-gray-12'>{t`Email content`}</h4>
             <div className='flex flex-col gap-4'>
+              <div>
+                <InputSelectMultiple
+                  description={isUsersLoading ? t`Loading users...` : undefined}
+                  disabled={isUsersLoading}
+                  label={t`Recipients`}
+                  options={userOptions}
+                  error={
+                    isUsersError
+                      ? t`Couldn't load users. Try again.`
+                      : undefined
+                  }
+                  placeholder={
+                    isUsersLoading ? t`Loading users...` : t`Select recipients`
+                  }
+                  value={draft.schedule.recipients.map(
+                    (id) =>
+                      userOptions.find((u) => u.id === id) || { id, name: id },
+                  )}
+                  onChange={(values) =>
+                    updateSchedule({
+                      recipients: values.map((v) => String(v.id)),
+                    })
+                  }
+                />
+                {!isUsersLoading &&
+                  !isUsersError &&
+                  userOptions.length === 0 && (
+                    <p className='mt-1.5 text-12 text-gray-9'>{t`No users found.`}</p>
+                  )}
+              </div>
               <InputSelectMultiple
-                label={t`Recipients`}
-                placeholder={t`Select recipients`}
-                options={MOCK_USERS.map((u) => ({
-                  id: u.value,
-                  name: u.label,
-                }))}
-                value={draft.schedule.recipients.map((id) => ({
-                  id,
-                  name: id,
-                }))}
-                onChange={(values) =>
-                  updateSchedule({
-                    recipients: values.map((v) => String(v.id)),
-                  })
-                }
-              />
-              <InputSelectMultiple
+                description={isUsersLoading ? t`Loading users...` : undefined}
+                disabled={isUsersLoading}
                 label={t`CC`}
-                placeholder={t`Select CC recipients`}
-                value={draft.schedule.cc.map((id) => ({ id, name: id }))}
-                options={MOCK_USERS.map((u) => ({
-                  id: u.value,
-                  name: u.label,
-                }))}
+                options={userOptions}
+                error={
+                  isUsersError ? t`Couldn't load users. Try again.` : undefined
+                }
+                placeholder={
+                  isUsersLoading ? t`Loading users...` : t`Select CC recipients`
+                }
+                value={draft.schedule.cc.map(
+                  (id) =>
+                    userOptions.find((u) => u.id === id) || { id, name: id },
+                )}
                 onChange={(values) =>
                   updateSchedule({ cc: values.map((v) => String(v.id)) })
                 }

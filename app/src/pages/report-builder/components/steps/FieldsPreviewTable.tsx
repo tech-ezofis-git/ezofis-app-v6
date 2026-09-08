@@ -1,54 +1,16 @@
 import { useLingui } from '@lingui/react/macro'
 import Icon from '@/components/base/icon/Icon'
+import type { PreviewColumn } from '../../utils/previewSampleData'
+import { sampleValue } from '../../utils/previewSampleData'
 
-export interface PreviewColumn {
-  id: string
-  label: string
-  sampleType: PreviewSampleType
-  choiceLabels?: string[]
-}
-
-export type PreviewSampleType =
-  | 'calculated'
-  | 'choice'
-  | 'date'
-  | 'number'
-  | 'text'
-  | 'user'
+export type {
+  PreviewColumn,
+  PreviewSampleType,
+} from '../../utils/previewSampleData'
 
 interface Props {
   columns: PreviewColumn[]
   rowCount?: number
-}
-
-const SAMPLE_TEXT = [
-  'Acme Corp',
-  'Nimbus Traders',
-  'Delta Logistics',
-  'Orbit Retail',
-]
-const SAMPLE_USERS = ['A. Sharma', 'J. Fernandes', 'R. Gomez', 'K. Patel']
-const DEFAULT_CHOICES = ['Pending', 'Approved', 'On Hold', 'Completed']
-
-const sampleValue = (column: PreviewColumn, row: number): string => {
-  switch (column.sampleType) {
-    case 'number':
-      return (1200 + row * 340).toLocaleString()
-    case 'calculated':
-      return (1200 + row * 340 * 1.18).toFixed(2)
-    case 'date':
-      return new Date(Date.now() - row * 3 * 86400000).toLocaleDateString()
-    case 'choice': {
-      const labels = column.choiceLabels?.length
-        ? column.choiceLabels
-        : DEFAULT_CHOICES
-      return labels[row % labels.length]
-    }
-    case 'user':
-      return SAMPLE_USERS[row % SAMPLE_USERS.length]
-    default:
-      return SAMPLE_TEXT[row % SAMPLE_TEXT.length]
-  }
 }
 
 /**

@@ -178,21 +178,6 @@ export const SAMPLE_ROWS: Record<ReportDomain, Record<string, string>[]> = {
   ],
 }
 
-export const MOCK_USERS = [
-  { label: 'Meera Nair', value: 'meera.nair' },
-  { label: 'Ravi Kumar', value: 'ravi.kumar' },
-  { label: 'Sara Ahmed', value: 'sara.ahmed' },
-  { label: 'John Mathew', value: 'john.mathew' },
-  { label: 'Fatima Al-Sayed', value: 'fatima.alsayed' },
-]
-
-export const MOCK_GROUPS = [
-  { label: 'Finance Team', value: 'finance-team' },
-  { label: 'Operations Team', value: 'operations-team' },
-  { label: 'IT Administrators', value: 'it-admins' },
-  { label: 'Auditors', value: 'auditors' },
-]
-
 export const FILTER_OPERATORS = [
   { label: 'Equals', value: 'equals' },
   { label: 'Not Equals', value: 'notEquals' },
