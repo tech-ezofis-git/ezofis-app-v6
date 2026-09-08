@@ -1,5 +1,8 @@
+import type { ReactNode } from 'react'
+
 export interface Toast {
-  message: string
+  autoClose?: number | false
+  message: ReactNode
   toastTitle?: string
   variant?: ToastVariant
 }

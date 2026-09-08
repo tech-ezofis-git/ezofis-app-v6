@@ -67,7 +67,7 @@ type DocumentsListViewProps = {
   view: ExplorerView
   onAiSummary: (id: string) => void
   onBreadcrumbSelect: (id: string) => void
-  onEdit: (id: string) => void
+  onEdit?: (id: string) => void
   onFiltersChange?: (filters: Record<string, string>) => void
   onFilterMenuOpenChange?: (id: string | null) => void
   onOpenFile: (id: string) => void
@@ -79,6 +79,16 @@ type DocumentsListViewProps = {
   onShare: (id: string) => void
   onUpload?: () => void
   onUploadFile?: (file: File) => void
+  permissions?: {
+    delete?: boolean
+    download?: boolean
+    editDocument?: boolean
+    editMetadata?: boolean
+    print?: boolean
+    sendForSignature?: boolean
+    upload?: boolean
+    view?: boolean
+  }
   uploadDisabled?: boolean
   onWorkflow: (id: string) => void
   setView: (view: ExplorerView) => void
@@ -357,6 +367,7 @@ export function DocumentsListView({
   onShare,
   onUpload,
   onUploadFile,
+  permissions,
   uploadDisabled = false,
   onWorkflow,
   refreshing = false,
@@ -988,11 +999,13 @@ export function DocumentsListView({
             label={t`View Details`}
             onClick={() => closeAndRun(() => onOpenFile(openMenuId))}
           />
-          <MenuItem
-            icon='edit'
-            label={t`Edit Metadata`}
-            onClick={() => closeAndRun(() => onEdit(openMenuId))}
-          />
+          {onEdit && permissions?.editMetadata === true ? (
+            <MenuItem
+              icon='edit'
+              label={t`Edit Metadata`}
+              onClick={() => closeAndRun(() => onEdit(openMenuId))}
+            />
+          ) : null}
           <MenuItem
             icon='bot'
             label={t`AI Summary`}
@@ -1004,16 +1017,19 @@ export function DocumentsListView({
             onClick={() => closeAndRun(() => onShare(openMenuId))}
           />
 
-          <div className='my-2 border-t border-gray-3' />
-
-          <MenuItem
-            icon='trash'
-            label={t`Delete`}
-            danger
-            onClick={() =>
-              closeAndRun(() => console.log('delete file:', openMenuId))
-            }
-          />
+          {permissions?.delete === true ? (
+            <>
+              <div className='my-2 border-t border-gray-3' />
+              <MenuItem
+                icon='trash'
+                label={t`Delete`}
+                danger
+                onClick={() =>
+                  closeAndRun(() => console.log('delete file:', openMenuId))
+                }
+              />
+            </>
+          ) : null}
         </div>
       ) : null}
     </div>

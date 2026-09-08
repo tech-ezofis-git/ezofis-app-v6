@@ -112,6 +112,9 @@ const ComboboxOptions = ({
                   {...option}
                   iconKey={(option as Option & { iconKey?: string }).iconKey}
                   isSelected={isSelected(option.id)}
+                  rightIconKey={
+                    (option as Option & { rightIconKey?: string }).rightIconKey
+                  }
                   variant={variant}
                 />
               </div>
