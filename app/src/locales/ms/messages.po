@@ -115,7 +115,7 @@ msgid "{0} people"
 msgstr "{0} orang"
 
 #. placeholder {0}: doc.fileName
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:96
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:104
 msgid "{0} preview"
 msgstr "Pratonton {0}"
 
@@ -310,8 +310,8 @@ msgid "≥ $10k"
 msgstr "≥ $10k"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:442
-msgid "✨ Recommend dashboard design"
-msgstr "✨ Mengesyorkan reka bentuk papan pemuka"
+#~ msgid "✨ Recommend dashboard design"
+#~ msgstr "✨ Mengesyorkan reka bentuk papan pemuka"
 
 #: src/pages/requests/components/QuickFilters.tsx:103
 #: src/pages/requests/components/QuickFilters.tsx:218
@@ -413,7 +413,7 @@ msgstr "9 vendor"
 msgid "91% average"
 msgstr "91% purata"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:622
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:641
 msgid "A maximum of 5 files can be processed at once. Only the first 5 will be processed."
 msgstr "Maksimum 5 fail boleh diproses sekaligus. Hanya 5 yang pertama akan diproses."
 
@@ -430,7 +430,7 @@ msgstr "Format yang diterima: CSV, XLSX"
 msgid "Access"
 msgstr "Akses"
 
-#: src/pages/settings/SettingsMain.tsx:365
+#: src/pages/settings/SettingsMain.tsx:383
 msgid "Access Control"
 msgstr "Kawalan Akses"
 
@@ -456,7 +456,7 @@ msgstr "Tarikh Luput Akaun"
 msgid "Accounts Payable"
 msgstr "Akaun Belum Bayar"
 
-#: src/pages/dashboard/DashboardPage.tsx:147
+#: src/pages/dashboard/DashboardPage.tsx:157
 msgid "Accounts Payable Automation"
 msgstr "Automasi Akaun Pemiutang"
 
@@ -481,7 +481,8 @@ msgstr "Tindakan Diperlukan"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1949
 #: src/pages/forms/FormEntriesPage.tsx:1274
 #: src/pages/forms/FormsPage.tsx:263
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1814
+#: src/pages/reports/components/ReportsListView.tsx:157
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1816
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:661
 #: src/pages/settings/components/Menus.tsx:414
@@ -521,8 +522,7 @@ msgstr "Direktori Aktif"
 #~ msgid "Active Suppliers"
 #~ msgstr ""
 
-#: src/pages/portal/components/PortalDetail.tsx:353
-#: src/pages/portal/components/PortalWizard.tsx:280
+#: src/pages/portal/components/PortalDetail.tsx:354
 #: src/pages/settings/components/credits/Credits.tsx:447
 #: src/pages/settings/components/credits/Credits.tsx:448
 #: src/pages/settings/components/credits/Credits.tsx:925
@@ -563,6 +563,10 @@ msgstr "Tambah \"{query}\""
 msgid "Add a comment..."
 msgstr "Tambah komen..."
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:173
+msgid "Add a message to include in the email body"
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:59
 msgid "Add a note for the approver"
 msgstr "Tambahkan nota untuk pelulus"
@@ -586,6 +590,19 @@ msgstr "Tambahkan pengguna untuk memberikan akses kepada platform dan tetapkan k
 #: src/pages/folders/components/SignRequestAssignForm.tsx:236
 msgid "Add at least one user to assign."
 msgstr "Tambah sekurang-kurangnya seorang pengguna untuk diberikan."
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:171
+msgid "Add calculated field"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:273
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:284
+msgid "Add card"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:144
+msgid "Add cards to group workflow stages into Kanban columns. If no cards are saved, Requests shows one column per stage."
+msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:728
 msgid "Add condition"
@@ -625,6 +642,14 @@ msgstr "Tambah medan"
 #: src/pages/forms/components/AiFormBuilder.tsx:453
 #~ msgid "Add Field"
 #~ msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:28
+msgid "Add fields to see a live preview of the report table."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:67
+msgid "Add filter"
+msgstr ""
 
 #: src/pages/requests/components/QuickFilters.tsx:261
 msgid "Add Filter"
@@ -677,6 +702,10 @@ msgstr "Tambah Portal"
 msgid "Add Row"
 msgstr "Tambah Baris"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:50
+msgid "Add rule"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1197
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1203
 msgid "Add to related"
@@ -686,7 +715,7 @@ msgstr "Tambahkan pada yang berkaitan"
 msgid "Add User"
 msgstr "Tambah Pengguna"
 
-#: src/pages/settings/SettingsMain.tsx:278
+#: src/pages/settings/SettingsMain.tsx:296
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
 msgstr "Tambah, edit dan urus pengguna platform. Konfigurasikan pengesahan dan tetapkan peranan."
 
@@ -721,12 +750,12 @@ msgstr "penuaan"
 #~ msgstr ""
 
 #: src/pages/dashboard/DashboardPage.tsx:204
-msgid "AI Builder"
-msgstr ""
+#~ msgid "AI Builder"
+#~ msgstr ""
 
 #: src/pages/dashboard/DashboardPage.tsx:210
-msgid "AI Builder (New API)"
-msgstr ""
+#~ msgid "AI Builder (New API)"
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:42
 msgid "AI Confidence Score"
@@ -736,7 +765,8 @@ msgstr "Skor Keyakinan AI"
 msgid "AI Context"
 msgstr "Konteks AI"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:729
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:990
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:653
 msgid "AI Dashboard Designer"
 msgstr "Pereka Papan Pemuka AI"
 
@@ -748,7 +778,7 @@ msgstr "Keputusan AI"
 msgid "AI Extract"
 msgstr "Ekstrak AI"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:446
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:454
 msgid "AI EXTRACTION"
 msgstr "EKSTRAKSI AI"
 
@@ -765,7 +795,7 @@ msgstr "Pembina Folder AI"
 msgid "AI generated"
 msgstr "Dijana oleh AI"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1591
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1593
 msgid "AI Insight"
 msgstr "AI Insight"
 
@@ -778,8 +808,8 @@ msgid "AI is analysing the document..."
 msgstr "AI sedang menganalisis dokumen..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:805
-msgid "AI is generating customized layout sections..."
-msgstr "AI sedang menjana bahagian susun atur tersuai..."
+#~ msgid "AI is generating customized layout sections..."
+#~ msgstr "AI sedang menjana bahagian susun atur tersuai..."
 
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:46
 msgid "AI Recommendation"
@@ -830,7 +860,7 @@ msgstr "Analisis dokumen yang dihasilkan oleh AI"
 msgid "AI-generated insights"
 msgstr "Cerapan dijana AI"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:447
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:455
 msgid "AI-powered extraction in seconds"
 msgstr "Pengesanan dikuasakan AI dalam beberapa saat"
 
@@ -855,7 +885,7 @@ msgstr "Menjajarkan pengepala CSV/XLSX dengan skema pemetaan pangkalan data."
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:38
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
-#: src/pages/requests/components/InboxList.tsx:1884
+#: src/pages/requests/components/InboxList.tsx:1891
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:623
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:547
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:620
@@ -937,7 +967,7 @@ msgid "Amount: {0}"
 msgstr "Jumlah: {0}"
 
 #. placeholder {0}: e.message || e
-#: src/pages/requests/components/request/Request.tsx:1680
+#: src/pages/requests/components/request/Request.tsx:1684
 msgid "An error occurred: {0}"
 msgstr "Ralat berlaku: {0}"
 
@@ -946,7 +976,7 @@ msgstr "Ralat berlaku: {0}"
 msgid "Analysis"
 msgstr "Analisis"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:460
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:468
 msgid "ANALYTICS"
 msgstr "ANALITIK"
 
@@ -964,8 +994,8 @@ msgid "Analyzing context & keywords"
 msgstr "Menganalisis konteks & kata kunci"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:808
-msgid "Analyzing data structures for {repositoryName}..."
-msgstr "Menganalisis struktur data untuk {repositoryName}..."
+#~ msgid "Analyzing data structures for {repositoryName}..."
+#~ msgstr "Menganalisis struktur data untuk {repositoryName}..."
 
 #: src/pages/folders/components/Upload/Upload.tsx:1808
 msgid "Analyzing document..."
@@ -979,7 +1009,7 @@ msgstr "Menganalisis fail dan memetakan medan..."
 msgid "Analyzing folder metadata…"
 msgstr "Menganalisis metadata folder…"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:724
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:743
 msgid "Analyzing Invoice..."
 msgstr "Menganalisis Invois..."
 
@@ -991,7 +1021,7 @@ msgstr "Menganalisis Invois..."
 msgid "Analyzing spatial layout"
 msgstr "Menganalisis susun atur ruang"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:733
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:752
 msgid "Analyzing Supplier..."
 msgstr "Menganalisis Pembekal..."
 
@@ -1029,7 +1059,7 @@ msgstr "sebarang nilai"
 msgid "AP agent"
 msgstr "ejen AP"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:795
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:814
 msgid "AP Agent"
 msgstr "Agen AP"
 
@@ -1085,7 +1115,8 @@ msgstr "Tambahkan cap masa pada setiap versi"
 msgid "Application Sign in"
 msgstr "Log masuk Permohonan"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:270
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1071
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:699
 msgid "Apply & Preview"
 msgstr ""
 
@@ -1135,6 +1166,7 @@ msgid "Archived"
 msgstr "Diarkibkan"
 
 #: src/pages/forms/FormsPage.tsx:505
+#: src/pages/reports/components/ReportsListView.tsx:223
 msgid "Are you sure you want to delete"
 msgstr "Adakah anda pasti mahu memadam"
 
@@ -1231,7 +1263,7 @@ msgstr "Sekurang-kurangnya 1 huruf besar (A-Z)"
 msgid "At least one attachment is required"
 msgstr "Sekurang-kurangnya satu lampiran diperlukan"
 
-#: src/pages/requests/components/request/Request.tsx:1461
+#: src/pages/requests/components/request/Request.tsx:1465
 msgid "At least one attachment is required before proceeding."
 msgstr "Sekurang-kurangnya satu lampiran diperlukan sebelum meneruskan."
 
@@ -1251,25 +1283,24 @@ msgstr "Lampirkan fail (pilihan)..."
 #~ msgid "Attach to invoice"
 #~ msgstr ""
 
-#: src/pages/portal/components/PortalDetail.tsx:287
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:657
+#: src/pages/portal/components/PortalDetail.tsx:288
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:710
 msgid "Attachment"
 msgstr "Lampiran"
 
-#: src/pages/portal/components/PortalDetail.tsx:336
-#: src/pages/portal/components/PortalWizard.tsx:279
-#: src/pages/portal/components/PortalWizard.tsx:1139
+#: src/pages/portal/components/PortalDetail.tsx:337
+#: src/pages/portal/components/PortalWizard.tsx:1066
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3496
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3532
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "Lampiran"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:179
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:41
-#: src/pages/settings/SettingsMain.tsx:317
+#: src/pages/settings/SettingsMain.tsx:335
 msgid "Audit & Monitoring"
 msgstr "Audit & Pemantauan"
 
@@ -1296,7 +1327,7 @@ msgstr "Pengesahan diperlukan. Sila log masuk semula."
 msgid "Authenticator App"
 msgstr "Apl Pengesah"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3586
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3622
 msgid "Authorized Amount"
 msgstr "Jumlah Dibenarkan"
 
@@ -1326,6 +1357,10 @@ msgstr "AUTO-SAH"
 msgid "Automate Your Full AP Workflow — Request a Demo"
 msgstr "Automatikan Keseluruhan Aliran Kerja AP Anda — Minta Demo"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:69
+msgid "Automated delivery"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:376
 msgid "Automatic backups and versioning support"
 msgstr "Sandaran automatik dan sokongan versi"
@@ -1338,6 +1373,15 @@ msgstr "Penyegerakan metadata fail automatik"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:990
 msgid "Automatically links file columns"
 msgstr "Memautkan lajur fail secara automatik"
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:37
+msgid "Automatically run and email this report on a recurring basis."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:167
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:119
+msgid "Available fields"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:338
 #~ msgid "Average approval time increased by 1.2 days month over month, now averaging 6.1 days."
@@ -1386,8 +1430,8 @@ msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsof
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:907
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3974
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:908
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4010
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1400,12 +1444,12 @@ msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsof
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:775
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:817
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
-#: src/pages/settings/components/SettingsWizardLayout.tsx:202
+#: src/pages/settings/components/SettingsWizardLayout.tsx:205
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:112
 msgid "Back"
 msgstr "Kembali"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3414
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3450
 msgid "Back Order"
 msgstr "Pesanan Belakang"
 
@@ -1413,9 +1457,13 @@ msgstr "Pesanan Belakang"
 msgid "Back Order Detected"
 msgstr "Pesanan Belakang Dikesan"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:867
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1094
 msgid "Back to Configuration"
 msgstr "Kembali ke Konfigurasi"
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:734
+msgid "Back to Designer"
+msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:1517
 msgid "Back to Entries"
@@ -1429,6 +1477,14 @@ msgstr "Kembali ke Borang"
 msgid "Back to PO Setup"
 msgstr "Kembali ke Persediaan PO"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:691
+msgid "Back to Prompt"
+msgstr ""
+
+#: src/pages/reports/ReportDetailPage.tsx:29
+msgid "Back to Reports"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2088
 msgid "Back to review"
 msgstr "Kembali ke ulasan"
@@ -1441,7 +1497,7 @@ msgstr "Kembali ke Log Masuk"
 msgid "Back to workflows"
 msgstr "Kembali ke aliran kerja"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:382
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:390
 msgid "Backorder"
 msgstr "Pesanan belakang"
 
@@ -1462,7 +1518,7 @@ msgstr "asas"
 msgid "Between"
 msgstr "antara"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3847
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3883
 msgid "Billing Terms"
 msgstr "Syarat Pengebilan"
 
@@ -1493,7 +1549,7 @@ msgstr "Pilihan jenama berjaya disimpan!"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:603
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:39
-#: src/pages/settings/SettingsMain.tsx:299
+#: src/pages/settings/SettingsMain.tsx:317
 msgid "Branding"
 msgstr "Penjenamaan"
 
@@ -1512,7 +1568,7 @@ msgstr "Serbuk roti"
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
 #: src/pages/folders/components/Upload/Upload.tsx:1665
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:868
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:887
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step1TemplateUpload.tsx:168
 #: src/pages/requests/components/workflow-request/components/CompactDropzone.tsx:72
@@ -1527,6 +1583,18 @@ msgstr "Semak imbas"
 msgid "browse files"
 msgstr "menyemak imbas fail"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:185
+msgid "Build a custom report from any of your organization's data domains."
+msgstr ""
+
+#: src/pages/settings/SettingsMain.tsx:290
+msgid "Build and configure custom reports"
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:199
+msgid "Build manually"
+msgstr ""
+
 #: src/pages/forms/components/AiFormBuilder.tsx:266
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:446
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:124
@@ -1534,6 +1602,7 @@ msgstr "menyemak imbas fail"
 msgid "Build Manually"
 msgstr "Bina Secara Manual"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:64
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:418
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:434
 msgid "Build with AI"
@@ -1590,8 +1659,8 @@ msgid "By customer"
 msgstr "Oleh pelanggan"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:445
-msgid "By department performance"
-msgstr "Mengikut prestasi jabatan"
+#~ msgid "By department performance"
+#~ msgstr "Mengikut prestasi jabatan"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:960
 msgid "By document type"
@@ -1602,12 +1671,12 @@ msgid "By employee"
 msgstr "Oleh pekerja"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:443
-msgid "By monthly trend analytics"
-msgstr "Mengikut analisis trend bulanan"
+#~ msgid "By monthly trend analytics"
+#~ msgstr "Mengikut analisis trend bulanan"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:444
-msgid "By risk & compliance"
-msgstr "Dengan risiko & pematuhan"
+#~ msgid "By risk & compliance"
+#~ msgstr "Dengan risiko & pematuhan"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:952
 msgid "By supplier / vendor"
@@ -1616,6 +1685,15 @@ msgstr "Oleh pembekal / vendor"
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:20
 msgid "Calculated"
 msgstr "Dikira"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:90
+msgid "Calculated Field"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:34
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:55
+msgid "Calculation"
+msgstr ""
 
 #: src/components/common/barcode-scanner/BarcodeScannerPanel.tsx:68
 msgid "Camera access was denied or is unavailable."
@@ -1629,7 +1707,7 @@ msgstr "Boleh Edit"
 msgid "Can View"
 msgstr "Boleh Lihat"
 
-#: src/pages/portal/components/PortalWizard.tsx:739
+#: src/pages/portal/components/PortalWizard.tsx:685
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:855
 msgid "Can't upload: this workflow has no repository configured."
 msgstr "Tidak dapat memuat naik: aliran kerja ini tidak mempunyai repositori yang dikonfigurasikan."
@@ -1645,6 +1723,7 @@ msgstr "Tidak dapat memuat naik: aliran kerja ini tidak mempunyai repositori yan
 #: src/pages/forms/FormEntriesPage.tsx:2086
 #: src/pages/forms/FormsPage.tsx:525
 #: src/pages/my-account/components/profile/Profile.tsx:20
+#: src/pages/reports/components/ReportsListView.tsx:238
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:221
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
@@ -1653,10 +1732,11 @@ msgstr "Tidak dapat memuat naik: aliran kerja ini tidak mempunyai repositori yan
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:447
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:199
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:263
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:270
 msgid "Cancel"
 msgstr "Batal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1536
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1553
 msgid "Cancel Remaining"
 msgstr "Batal Baki"
 
@@ -1679,6 +1759,14 @@ msgstr "Tidak boleh membatalkan perkongsian ini"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:96
 msgid "Capture"
 msgstr "Tangkap"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:222
+msgid "Card color"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:210
+msgid "Card name"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1023
 #~ msgid "Cash leaving the building, month by month"
@@ -1708,18 +1796,27 @@ msgstr "Tunai Minggu Ini"
 msgid "Category"
 msgstr "kategori"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:149
+msgid "CC"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:261
 msgid "ccy"
 msgstr "ccy"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:634
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:709
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:870
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:513
 msgid "Centralized repository for all incoming documentation and related analytics."
 msgstr "Repositori berpusat untuk semua dokumentasi masuk dan analitik yang berkaitan."
 
 #: src/pages/forms/components/AiFormBuilder.tsx:199
 msgid "Change"
 msgstr "Berubah"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:304
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:244
+msgid "Change field..."
+msgstr ""
 
 #: src/pages/my-account/components/preferences/components/ChangeLanguage.tsx:17
 msgid "Change Language"
@@ -1753,7 +1850,8 @@ msgstr "Tukar ke medan biasa"
 msgid "Changed your mind?"
 msgstr "Berubah fikiran?"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:260
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1039
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:681
 msgid "Charts"
 msgstr ""
 
@@ -1790,16 +1888,24 @@ msgid "Choose a workflow to view its submissions."
 msgstr "Pilih aliran kerja untuk melihat penyerahannya."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:795
-msgid "Choose an AI design option or describe your dashboard needs"
-msgstr "Pilih pilihan reka bentuk AI atau huraikan keperluan papan pemuka anda"
+#~ msgid "Choose an AI design option or describe your dashboard needs"
+#~ msgstr "Pilih pilihan reka bentuk AI atau huraikan keperluan papan pemuka anda"
 
 #: src/components/base/data-table/actions/TableSearch.tsx:159
 msgid "Choose column"
 msgstr "Pilih lajur"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:67
+msgid "Choose columns"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:434
 #~ msgid "Choose Datatype"
 #~ msgstr "Pilih jenis data"
+
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:19
+msgid "Choose fields"
+msgstr ""
 
 #: src/pages/forms/FormEntriesPage.tsx:1925
 msgid "Choose File"
@@ -1876,7 +1982,7 @@ msgstr "Klik hirisan untuk membuka senarai sepadan"
 msgid "Click a supplier's bar to drill down"
 msgstr "Klik bar pembekal untuk meneliti"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:898
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:917
 msgid "Click any preview to process"
 msgstr "Klik mana-mana pratonton untuk proses"
 
@@ -1907,7 +2013,7 @@ msgstr "Klik untuk tandakan tempat tandatangan"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2470
 #: src/pages/folders/components/SignRequestAssignForm.tsx:527
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:582
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:635
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:719
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:189
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:790
@@ -1948,9 +2054,24 @@ msgstr "Kuncupkan"
 msgid "Column & Row Extraction"
 msgstr "Pengesanan Lajur & Baris"
 
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:21
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:42
+msgid "Column Label"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step2ColumnMapping.tsx:69
 msgid "Column Mapping"
 msgstr "Pemetaan Lajur"
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:47
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:90
+msgid "Column Type"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:27
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:48
+msgid "Column Width (px)"
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:662
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1341
@@ -1979,7 +2100,7 @@ msgstr "Akan Datang"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3501
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3537
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "Komen"
@@ -1992,7 +2113,7 @@ msgstr "Komen"
 msgid "Complete"
 msgstr "Lengkap"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:348
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:356
 msgid "Complete document match."
 msgstr "Padanan dokumen lengkap."
 
@@ -2013,12 +2134,12 @@ msgid "Complete setup to start your AP automation."
 msgstr "Lengkapkan tetapan untuk memulakan automasi AP anda."
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:710
-#: src/pages/requests/components/Header.tsx:96
+#: src/pages/requests/components/Header.tsx:107
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1403
 msgid "Completed"
 msgstr "Selesai"
 
-#: src/pages/requests/components/Header.tsx:96
+#: src/pages/requests/components/Header.tsx:107
 msgid "Completed ({completedCount})"
 msgstr "Selesai ({completedCount})"
 
@@ -2035,6 +2156,13 @@ msgstr "Selesai dalam 0.9s"
 #: src/pages/folders/components/AiSummaryView.tsx:349
 msgid "Compliance & Risk Assessment"
 msgstr "Penilaian Pematuhan & Risiko"
+
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:50
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:56
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:93
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:99
+msgid "Computed Status"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1182
 #~ msgid "Concentration of invoice liabilities"
@@ -2059,7 +2187,7 @@ msgid "Confidence Score"
 msgstr "Skor Keyakinan"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:141
-#: src/pages/settings/SettingsMain.tsx:360
+#: src/pages/settings/SettingsMain.tsx:378
 msgid "Configuration"
 msgstr "Konfigurasi"
 
@@ -2116,10 +2244,9 @@ msgstr "Konfigurasikan kebenaran"
 #~ msgid "Configure user account details, business hierarchy, and permissions"
 #~ msgstr ""
 
-#. placeholder {0}: config?.sections.filter((s) => s.enabled !== false).length || 0
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:651
-msgid "Configured Dashboard Sections ({0} Components Selected)"
-msgstr "Bahagian Papan Pemuka Dikonfigurasikan ({0} Komponen Dipilih)"
+#~ msgid "Configured Dashboard Sections ({0} Components Selected)"
+#~ msgstr "Bahagian Papan Pemuka Dikonfigurasikan ({0} Komponen Dipilih)"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:78
 msgid "Confirm"
@@ -2157,7 +2284,7 @@ msgstr "Sambungkan {0}"
 msgid "Connect {providerLabel}"
 msgstr "Sambungkan {providerLabel}"
 
-#: src/pages/dashboard/DashboardPage.tsx:150
+#: src/pages/dashboard/DashboardPage.tsx:160
 msgid "Connect email, ERP, and storage to start invoice processing."
 msgstr "Sambungkan e-mel, ERP dan storan untuk memulakan pemprosesan invois."
 
@@ -2198,7 +2325,7 @@ msgstr "Nama sambungan"
 msgid "Connector"
 msgstr "Penyambung"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1528
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1545
 msgid "Contact Vendor"
 msgstr "Hubungi Vendor"
 
@@ -2224,13 +2351,19 @@ msgstr "Mengandungi"
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:987
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:847
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:840
-#: src/pages/settings/components/SettingsWizardLayout.tsx:77
+#: src/pages/settings/components/SettingsWizardLayout.tsx:79
 #: src/pages/sign-in/components/SignInForm.tsx:762
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
 msgid "Continue"
 msgstr "Teruskan"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:716
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1086
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:714
+msgid "Continue from configuration to generate KPIs and charts from your prompt."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:971
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:635
 msgid "Continue to Dashboard Designer"
 msgstr "Teruskan ke Pereka Papan Pemuka"
 
@@ -2316,6 +2449,24 @@ msgstr "Tidak dapat menjana konfigurasi folder. Cuba lagi."
 msgid "Could not read that file."
 msgstr "Tidak dapat membaca fail itu."
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:187
+msgid "Couldn't load fields for this form. Try again."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:183
+msgid "Couldn't load forms. Try again."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:284
+msgid "Couldn't load groups. Try again."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:261
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:124
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:152
+msgid "Couldn't load users. Try again."
+msgstr ""
+
 #: src/pages/folders/components/CollaboraEditor.tsx:279
 msgid "Couldn't open the document editor."
 msgstr "Tidak dapat membuka editor dokumen."
@@ -2352,7 +2503,7 @@ msgstr "Cipta akses untuk menandatangani"
 #~ msgid "Create and manage folders with custom fields, storage, and versioning."
 #~ msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:256
+#: src/pages/settings/SettingsMain.tsx:268
 msgid "Create and manage forms with fields, validation, and data collection."
 msgstr "Cipta dan urus borang dengan medan, pengesahan dan pengumpulan data."
 
@@ -2364,7 +2515,7 @@ msgstr "Cipta dan urus borang dengan medan, pengesahan dan pengumpulan data."
 msgid "Create branded portals with login methods and connected workflows."
 msgstr "Cipta portal berjenama dengan kaedah log masuk dan aliran kerja yang disambungkan."
 
-#: src/pages/settings/SettingsMain.tsx:272
+#: src/pages/settings/SettingsMain.tsx:284
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr "Cipta portal berjenama, konfigurasikan kaedah log masuk dan sambungkan aliran kerja."
 
@@ -2377,7 +2528,7 @@ msgid "Create Group"
 msgstr "Cipta Kumpulan"
 
 #: src/pages/settings/components/GroupManagement.tsx:589
-#: src/pages/settings/SettingsMain.tsx:284
+#: src/pages/settings/SettingsMain.tsx:302
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr "Cipta kumpulan logik untuk menyusun pengguna mengikut pasukan, jabatan atau fungsi."
 
@@ -2462,7 +2613,7 @@ msgstr "Carta Garis Masa Kredit"
 
 #: src/pages/settings/components/credits/Credits.tsx:563
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:43
-#: src/pages/settings/SettingsMain.tsx:305
+#: src/pages/settings/SettingsMain.tsx:323
 msgid "Credit Usage"
 msgstr "Penggunaan Kredit"
 
@@ -2507,7 +2658,7 @@ msgstr "Kritikal"
 #~ msgid "Critical Exceptions"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3644
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3680
 msgid "Cross-Check Status"
 msgstr "Status Semak Silang"
 
@@ -2519,7 +2670,7 @@ msgstr "Rekod rujukan silang"
 msgid "CSV File"
 msgstr "Fail CSV"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:175
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:199
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:485
 msgid "Currencies"
 msgstr "Mata wang"
@@ -2538,7 +2689,7 @@ msgstr "Peranan Semasa"
 
 #: src/pages/folders/components/DocumentsListView.tsx:441
 #: src/pages/folders/components/FolderTable.tsx:712
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1351
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1353
 msgid "Current Stage"
 msgstr "Peringkat Semasa"
 
@@ -2559,22 +2710,22 @@ msgid "Custom Email Configuration (IMAP)"
 msgstr "Konfigurasi E-mel Tersuai (IMAP)"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:448
-#: src/pages/requests/components/InboxList.tsx:1219
-#: src/pages/requests/components/InboxList.tsx:1289
+#: src/pages/requests/components/InboxList.tsx:1220
+#: src/pages/requests/components/InboxList.tsx:1290
 msgid "Custom Range"
 msgstr "Julat Tersuai"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:904
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1141
 msgid "Customize Design"
 msgstr "Sesuaikan Reka Bentuk"
 
-#: src/pages/settings/SettingsMain.tsx:296
+#: src/pages/settings/SettingsMain.tsx:314
 msgid "Customize logos, brand colors, and visual identity across the platform."
 msgstr "Sesuaikan logo, warna jenama dan identiti visual merentas platform."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:730
-msgid "Customize operational sections, analytics tiles, and visual components."
-msgstr "Sesuaikan bahagian operasi, jubin analitik dan komponen visual."
+#~ msgid "Customize operational sections, analytics tiles, and visual components."
+#~ msgstr "Sesuaikan bahagian operasi, jubin analitik dan komponen visual."
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2183
 msgid "Daily cash requirements for approved invoices"
@@ -2596,32 +2747,53 @@ msgstr "Gelap"
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:20
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:77
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:570
 msgid "Dashboard"
 msgstr "Papan pemuka"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:815
-msgid "Dashboard Components"
-msgstr "Komponen Papan Pemuka"
+#~ msgid "Dashboard Components"
+#~ msgstr "Komponen Papan Pemuka"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:695
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:925
 msgid "Dashboard Configuration"
 msgstr "Konfigurasi Papan Pemuka"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:307
-msgid "Dashboard layout updated!"
-msgstr "Reka letak papan pemuka dikemas kini!"
+#~ msgid "Dashboard layout updated!"
+#~ msgstr "Reka letak papan pemuka dikemas kini!"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:887
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:805
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1164
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:769
+msgid "Dashboard preview"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:726
+msgid "Dashboard Preview"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1116
 msgid "Dashboard Preview & Activation"
 msgstr "Pratonton & Pengaktifan Papan Pemuka"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:147
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:491
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:335
 msgid "Dashboard preview updated!"
 msgstr ""
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:420
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:614
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:629
 msgid "Dashboard saved and activated for {repositoryName}!"
 msgstr "Papan pemuka disimpan dan diaktifkan untuk {repositoryName}!"
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:349
+msgid "Dashboard saved for {repositoryName}!"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:892
+msgid "Dashboard schema not generated yet"
+msgstr ""
 
 #: src/pages/settings/components/AuditMonitoring.tsx:142
 msgid "Data Access"
@@ -2668,6 +2840,10 @@ msgstr "Tarikh Diubah Suai"
 msgid "Date To"
 msgstr "Tarikh Kepada"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:67
+msgid "Day"
+msgstr ""
+
 #: src/pages/settings/components/Folders/retentionMockData.ts:72
 msgid "days"
 msgstr "hari"
@@ -2683,6 +2859,10 @@ msgstr "Tentukan cara semakan dokumen dijejaki apabila fail dikemas kini."
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3296
 msgid "Default"
 msgstr "Lalai"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:111
+msgid "Default color"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:36
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSystem.tsx:130
@@ -2709,7 +2889,7 @@ msgstr "Tentukan Peraturan Pengekalan"
 #~ msgid "Define role details, access scopes, and permission privilege matrices"
 #~ msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:290
+#: src/pages/settings/SettingsMain.tsx:308
 msgid "Define roles and configure granular permissions across all modules."
 msgstr "Tentukan peranan dan konfigurasikan keizinan terperinci merentas semua modul."
 
@@ -2729,6 +2909,7 @@ msgstr "Tentukan Peraturan"
 #: src/pages/folders/components/FolderTable.tsx:833
 #: src/pages/folders/components/FolderTable.tsx:1204
 #: src/pages/forms/FormsPage.tsx:292
+#: src/pages/reports/components/RowActionsMenu.tsx:57
 #: src/pages/requests/components/Table.tsx:119
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:496
@@ -2747,6 +2928,10 @@ msgstr "Tentukan Peraturan"
 #: src/pages/workflows/components/Table.tsx:145
 msgid "Delete"
 msgstr "Padam"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:194
+msgid "Delete card"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:70
 msgid "Delete files or folders"
@@ -2772,6 +2957,10 @@ msgstr "Padam Secara Kekal"
 #: src/pages/settings/components/PortalConfiguration.tsx:641
 msgid "Delete Portal"
 msgstr "Padam Portal"
+
+#: src/pages/reports/components/ReportsListView.tsx:221
+msgid "Delete Report"
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:567
 msgid "Delete Role"
@@ -2813,7 +3002,7 @@ msgstr "Memadamkan borang..."
 msgid "Demo data selected. This data will be used for invoice processing."
 msgstr "Data demo dipilih. Data ini akan digunakan untuk pemprosesan invois."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:140
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:164
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:453
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:841
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1944
@@ -2834,12 +3023,21 @@ msgstr "Jabatan & hierarki perniagaan"
 #~ msgstr ""
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:215
-msgid "Describe how you'd like the {repositoryName} dashboard organized, then apply to preview."
-msgstr ""
+#~ msgid "Describe how you'd like the {repositoryName} dashboard organized, then apply to preview."
+#~ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1723
 msgid "Describe structure or fields…"
 msgstr "Terangkan struktur atau bidang…"
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:586
+msgid "Describe the dashboard you want to create."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:961
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:625
+msgid "Describe the dashboard you want to create..."
+msgstr ""
 
 #: src/pages/forms/components/AiFormBuilder.tsx:207
 msgid "Describe the form you want to create..."
@@ -2852,6 +3050,10 @@ msgstr "Terangkan tujuan folder ini..."
 #: src/pages/settings/components/GroupManagement.tsx:846
 msgid "Describe the purpose of this group..."
 msgstr "Terangkan tujuan kumpulan ini..."
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:92
+msgid "Describe the report you want"
+msgstr ""
 
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:147
 msgid "Describe the workflow you want to create..."
@@ -2874,10 +3076,11 @@ msgid "Describe what this retention policy manages and why."
 msgstr "Terangkan perkara yang diuruskan oleh dasar pengekalan ini dan sebabnya."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:766
-msgid "Describe your custom dashboard design or metric requirements..."
-msgstr "Terangkan reka bentuk papan pemuka tersuai anda atau keperluan metrik..."
+#~ msgid "Describe your custom dashboard design or metric requirements..."
+#~ msgstr "Terangkan reka bentuk papan pemuka tersuai anda atau keperluan metrik..."
 
 #: src/pages/forms/FormsPage.tsx:204
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:223
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:152
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:371
 #: src/pages/settings/components/credits/Credits.tsx:498
@@ -2919,7 +3122,7 @@ msgstr "Penerangan belum selesai"
 msgid "Deselect All"
 msgstr "Nyahpilih Semua"
 
-#: src/pages/settings/SettingsMain.tsx:264
+#: src/pages/settings/SettingsMain.tsx:276
 msgid "Design and configure automated workflows and process routing."
 msgstr "Reka bentuk dan konfigurasikan aliran kerja automatik dan penghalaan proses."
 
@@ -2930,6 +3133,10 @@ msgstr "Tindakan destinasi"
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:702
 msgid "Destination Action"
 msgstr "Tindakan Destinasi"
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:66
+msgid "Details"
+msgstr ""
 
 #. placeholder {0}: response?.headers.length
 #. placeholder {1}: response?.rowCount
@@ -2953,7 +3160,7 @@ msgstr "Muat Naik Terus"
 msgid "Disabled"
 msgstr "Dilumpuhkan"
 
-#: src/pages/requests/components/InboxList.tsx:1881
+#: src/pages/requests/components/InboxList.tsx:1888
 #: src/pages/requests/components/QuickFilters.tsx:156
 #: src/pages/requests/components/request/components/sections/overview/components/discrepancies/Discrepancies.tsx:56
 #: src/pages/requests/utils/localizeRequestUi.ts:26
@@ -2976,7 +3183,7 @@ msgstr "Adakah anda memerlukan ERP atau penyepaduan sistem, atau perlukah penyep
 msgid "Doc agent"
 msgstr "Ejen doc"
 
-#: src/pages/portal/components/PortalWizard.tsx:166
+#: src/pages/portal/components/PortalWizard.tsx:160
 msgid "Document"
 msgstr "Dokumen"
 
@@ -2984,7 +3191,7 @@ msgstr "Dokumen"
 msgid "Document attached"
 msgstr "Dokumen dilampirkan"
 
-#: src/pages/portal/components/PortalWizard.tsx:415
+#: src/pages/portal/components/PortalWizard.tsx:361
 msgid "Document attached. Please confirm the details on the next steps."
 msgstr "Dokumen dilampirkan. Sila sahkan butiran pada langkah seterusnya."
 
@@ -3005,7 +3212,7 @@ msgstr "Maklumat Dokumen"
 msgid "Document ingested via email"
 msgstr "Dokumen ditelan melalui e-mel"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3564
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3600
 msgid "Document Mapping"
 msgstr "Pemetaan Dokumen"
 
@@ -3101,6 +3308,16 @@ msgstr "Dokumen akan disembunyikan apabila:"
 msgid "Documents will be shown when:"
 msgstr "Dokumen akan ditunjukkan apabila:"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:129
+#: src/pages/reports/components/ReportsListView.tsx:133
+#: src/pages/reports/components/ReportsListView.tsx:278
+msgid "Domain"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:141
+msgid "Domain:"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/PoLaunchModal.tsx:55
 msgid "Don't have a PO file ready? Use our template to ensure your data matches our system."
 msgstr "Tiada fail PO sedia? Gunakan templat kami untuk memastikan data anda sepadan dengan sistem kami."
@@ -3117,7 +3334,7 @@ msgstr "Belum ada akaun?"
 msgid "Done"
 msgstr "Selesai"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:934
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1183
 msgid "Done Customizing"
 msgstr "Selesai Menyesuaikan"
 
@@ -3174,6 +3391,7 @@ msgstr "Memuat turun..."
 msgid "DPO"
 msgstr "DPO"
 
+#: src/components/common/ReportStatusBadge.tsx:27
 #: src/pages/forms/FormsPage.tsx:607
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1093
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3347
@@ -3237,7 +3455,7 @@ msgstr "Lepaskan fail, atau"
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
 #: src/pages/folders/components/Upload/Upload.tsx:1663
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:867
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:886
 msgid "Drop your file here, or"
 msgstr "Lepaskan fail anda di sini, atau"
 
@@ -3257,7 +3475,7 @@ msgstr "Jatuh turun"
 #~ msgid "Dual axis spending trend comparison"
 #~ msgstr "Perbandingan trend perbelanjaan paksi berganda"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1644
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1646
 msgid "Due & Terms"
 msgstr "Tempoh & Terma"
 
@@ -3268,36 +3486,37 @@ msgstr "tarikh akhir"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:843
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1946
 #: src/pages/folders/components/StartWorkflowView.tsx:175
-#: src/pages/requests/components/InboxList.tsx:1869
+#: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Due Date"
 msgstr "Tarikh Akhir"
 
-#: src/pages/requests/components/InboxList.tsx:1215
+#: src/pages/requests/components/InboxList.tsx:1216
 msgid "Due in Next 1 Month"
 msgstr "Diperuntukkan dalam 1 Bulan Seterusnya"
 
-#: src/pages/requests/components/InboxList.tsx:1213
+#: src/pages/requests/components/InboxList.tsx:1214
 msgid "Due in Next 15 Days"
 msgstr "Diperuntukkan dalam 15 Hari Seterusnya"
 
-#: src/pages/requests/components/InboxList.tsx:1211
+#: src/pages/requests/components/InboxList.tsx:1212
 msgid "Due in Next 7 Days"
 msgstr "Diperuntukkan dalam 7 Hari Seterusnya"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:134
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1881
-#: src/pages/requests/components/InboxList.tsx:1209
+#: src/pages/requests/components/InboxList.tsx:1210
 msgid "Due Today"
 msgstr "Perlu Bayar Hari Ini"
 
+#: src/pages/reports/components/RowActionsMenu.tsx:51
 #: src/pages/requests/utils/localizeRequestUi.ts:32
 msgid "Duplicate"
 msgstr "Pendua"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3287
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3323
 msgid "Duplicate Detection"
 msgstr "Pengesanan Pendua"
 
@@ -3305,7 +3524,7 @@ msgstr "Pengesanan Pendua"
 msgid "Duplicate invoice watch"
 msgstr "Pemantauan invois pendua"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3623
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3659
 msgid "Duplicate Payment Check"
 msgstr "Semakan Pembayaran Pendua"
 
@@ -3353,6 +3572,14 @@ msgstr "cth. Pasukan Kewangan"
 #~ msgid "e.g. New York, NY"
 #~ msgstr ""
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:112
+msgid "e.g. Outstanding Invoices"
+msgstr ""
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:211
+msgid "e.g. PDA Preparation"
+msgstr ""
+
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:655
 msgid "e.g. Pure Agentic"
 msgstr "cth. Agentik Tulen"
@@ -3364,6 +3591,10 @@ msgstr "cth. laporan"
 #: src/pages/settings/components/Menus.tsx:767
 msgid "e.g. Reports"
 msgstr "cth. Laporan"
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:100
+msgid "e.g. Show me overdue invoices grouped by vendor"
+msgstr ""
 
 #: src/features/builder/components/FieldSidebar.tsx:114
 #~ msgid "e.g. Type here..."
@@ -3377,7 +3608,7 @@ msgstr "cth. Laporan"
 msgid "Each batch needs manual confirmation before it runs."
 msgstr "Setiap kelompok memerlukan pengesahan manual sebelum ia dijalankan."
 
-#: src/pages/portal/components/PortalWizard.tsx:439
+#: src/pages/portal/components/PortalWizard.tsx:385
 msgid "Each file must be 10 MB or smaller."
 msgstr "Setiap fail mestilah 10 MB atau lebih kecil."
 
@@ -3385,17 +3616,23 @@ msgstr "Setiap fail mestilah 10 MB atau lebih kecil."
 msgid "Each signer needs a name and email."
 msgstr "Setiap penandatangan memerlukan nama dan e-mel."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:640
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:675
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:793
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:875
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:900
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:518
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:539
+#: src/pages/dashboard/DashboardPage.tsx:194
+#: src/pages/dashboard/DashboardPage.tsx:199
 #: src/pages/forms/FormEntriesPage.tsx:1297
 #: src/pages/forms/FormsPage.tsx:281
+#: src/pages/reports/components/RowActionsMenu.tsx:41
 #: src/pages/requests/components/Table.tsx:113
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2166
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2295
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2314
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2333
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2354
-#: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:206
+#: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:195
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:353
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3409
 #: src/pages/settings/components/Folders/FolderRetention.tsx:190
@@ -3409,6 +3646,10 @@ msgstr "Setiap penandatangan memerlukan nama dan e-mel."
 #: src/pages/workflows/components/Table.tsx:133
 msgid "Edit"
 msgstr "Sunting"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:186
+msgid "Edit card"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
 msgid "Edit Document"
@@ -3480,13 +3721,17 @@ msgstr "Edit Persediaan Menu"
 msgid "Edit Metadata"
 msgstr "Edit Metadata"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:930
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1178
 msgid "Edit Mode Active — Click the check circle on any section, KPI tile, AI insight line, or chart card to unselect unwanted items. Switch to View Mode to preview your custom layout."
 msgstr "Mod Edit Aktif — Klik bulatan semak pada mana-mana bahagian, jubin KPI, garis cerapan AI atau kad carta untuk menyahpilih item yang tidak diingini. Tukar kepada Mod Paparan untuk melihat reka letak tersuai anda."
 
 #: src/pages/settings/components/PortalConfiguration.tsx:1109
 msgid "Edit Portal"
 msgstr "Edit Portal"
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:186
+msgid "Edit Report"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:314
 msgid "Edit retention policy"
@@ -3549,6 +3794,10 @@ msgstr "Alamat E-mel"
 msgid "Email and password"
 msgstr "E-mel dan kata laluan"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:114
+msgid "Email content"
+msgstr ""
+
 #: src/pages/sign-in/components/SignInForm.tsx:347
 #: src/pages/sign-in/components/SignInForm.tsx:365
 msgid "Email is required"
@@ -3610,6 +3859,15 @@ msgstr "Berakhir Dengan"
 msgid "Enter {label}"
 msgstr "Masukkan {label}"
 
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:112
+msgid "Enter a card name."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:361
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:119
+msgid "Enter a dashboard prompt before continuing."
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:235
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:253
 msgid "Enter a policy name to continue."
@@ -3648,6 +3906,10 @@ msgstr "Masukkan nama keluarga"
 msgid "Enter phone number"
 msgstr "Masukkan nombor telefon"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:591
+msgid "Enter Prompt"
+msgstr ""
+
 #: src/pages/portal/components/PortalLogin.tsx:348
 msgid "Enter the 6-digit OTP to verify your identity"
 msgstr "Masukkan OTP 6 digit untuk mengesahkan identiti anda"
@@ -3667,6 +3929,10 @@ msgstr "Masukkan nama pengguna."
 #: src/pages/settings/components/ManageUser.tsx:2306
 msgid "Enter username"
 msgstr "Masukkan nama pengguna"
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:124
+msgid "Enter value"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:3113
 msgid "Enter your full name"
@@ -3721,7 +3987,7 @@ msgstr "Data ERP akan digunakan untuk mengesahkan invois masuk untuk dipadankan 
 msgid "ERP Settings"
 msgstr "Tetapan ERP"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:759
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:778
 msgid "Error starting workflow"
 msgstr "Ralat memulakan aliran kerja"
 
@@ -3775,13 +4041,13 @@ msgstr "Hamparan Excel"
 msgid "Exception uploading file: {detail}"
 msgstr "Pengecualian memuat naik fail: {detail}"
 
-#: src/pages/requests/components/Header.tsx:72
-#: src/pages/requests/components/InboxList.tsx:2026
+#: src/pages/requests/components/Header.tsx:83
+#: src/pages/requests/components/InboxList.tsx:2053
 #: src/pages/requests/utils/localizeRequestUi.ts:36
 msgid "Exceptions"
 msgstr "Pengecualian"
 
-#: src/pages/requests/components/Header.tsx:73
+#: src/pages/requests/components/Header.tsx:84
 msgid "Exceptions ({resolvedExceptionsCount})"
 msgstr "Pengecualian ({resolvedExceptionsCount})"
 
@@ -3813,14 +4079,14 @@ msgstr "Tamat tempoh dalam beberapa hari mestilah sekurang-kurangnya 1."
 msgid "Expiry / Due Date"
 msgstr "Tarikh Luput / Tamat Tempoh"
 
-#: src/pages/settings/SettingsMain.tsx:308
+#: src/pages/settings/SettingsMain.tsx:326
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "Terokai, uji dan nyahpepijat titik akhir API dengan permintaan langsung dan sampel respons."
 
 #: src/pages/folders/components/Upload/Upload.tsx:2061
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1918
+#: src/pages/requests/components/InboxList.tsx:1925
 msgid "Export"
 msgstr "Eksport"
 
@@ -3855,7 +4121,7 @@ msgid "EXTRACTED"
 msgstr "DIEKSTRAK"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1906
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3486
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3522
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "Data Diekstrak"
@@ -3869,10 +4135,10 @@ msgstr "Mengekstrak data"
 msgid "Extracting data from document..."
 msgstr ""
 
-#: src/pages/portal/components/PortalWizard.tsx:552
-#: src/pages/portal/components/PortalWizard.tsx:785
-#: src/pages/portal/components/PortalWizard.tsx:1148
-#: src/pages/portal/components/PortalWizard.tsx:1154
+#: src/pages/portal/components/PortalWizard.tsx:498
+#: src/pages/portal/components/PortalWizard.tsx:731
+#: src/pages/portal/components/PortalWizard.tsx:1075
+#: src/pages/portal/components/PortalWizard.tsx:1081
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:75
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:927
 msgid "Extracting data from the document…"
@@ -3961,7 +4227,8 @@ msgstr "Gagal memuat turun templat"
 msgid "Failed to enqueue background import: {0}"
 msgstr "Gagal memasukkan import latar belakang: {0}"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:55
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:386
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:139
 msgid "Failed to generate dashboard schema"
 msgstr ""
 
@@ -4018,13 +4285,17 @@ msgstr "Gagal memuatkan peranan"
 msgid "Failed to load role permissions"
 msgstr "Gagal memuatkan kebenaran peranan"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:781
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:800
 msgid "Failed to load sample document."
 msgstr "Gagal memuatkan dokumen sampel."
 
 #: src/pages/settings/components/ManageUser.tsx:807
 msgid "Failed to load user draft."
 msgstr "Gagal memuatkan draf pengguna."
+
+#: src/pages/requests/components/KanbanView.tsx:314
+msgid "Failed to move this request."
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3627
 msgid "Failed to parse Excel file"
@@ -4038,12 +4309,13 @@ msgstr "Gagal menghuraikan fail"
 msgid "Failed to parse file. Please upload a valid CSV or Excel file."
 msgstr "Gagal menghuraikan fail. Sila muat naik fail CSV atau Excel yang sah."
 
-#: src/pages/portal/components/PortalDetail.tsx:225
+#: src/pages/portal/components/PortalDetail.tsx:226
 msgid "Failed to proceed request:"
 msgstr "Gagal meneruskan permintaan:"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1582
+#: src/pages/requests/components/KanbanView.tsx:302
+#: src/pages/requests/components/request/Request.tsx:1586
 msgid "Failed to proceed request: {0}"
 msgstr "Gagal meneruskan permintaan: {0}"
 
@@ -4065,7 +4337,7 @@ msgid "Failed to save preferences: {message}"
 msgstr "Gagal menyimpan pilihan: {message}"
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1652
+#: src/pages/requests/components/request/Request.tsx:1656
 msgid "Failed to save request: {0}"
 msgstr "Gagal menyimpan permintaan: {0}"
 
@@ -4073,7 +4345,7 @@ msgstr "Gagal menyimpan permintaan: {0}"
 msgid "Failed to send OTP. Please try again."
 msgstr "Gagal menghantar OTP. Sila cuba lagi."
 
-#: src/pages/requests/components/request/Request.tsx:1924
+#: src/pages/requests/components/request/Request.tsx:1928
 msgid "Failed to share request"
 msgstr "Gagal berkongsi permintaan"
 
@@ -4082,7 +4354,7 @@ msgid "Failed to start the workflow. Please try again."
 msgstr "Gagal memulakan aliran kerja. Sila cuba lagi."
 
 #. placeholder {0}: response.error
-#: src/pages/requests/components/request/Request.tsx:1653
+#: src/pages/requests/components/request/Request.tsx:1657
 msgid "Failed to submit request: {0}"
 msgstr "Gagal menyerahkan permintaan: {0}"
 
@@ -4095,10 +4367,10 @@ msgstr "Gagal mengemas kini folder: {0}"
 msgid "Failed to upload master file to the server"
 msgstr "Gagal memuat naik fail induk ke pelayan"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:417
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:440
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:495
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:519
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:459
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:482
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:537
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:561
 msgid "Failed to upload the file."
 msgstr "Gagal memuat naik fail."
 
@@ -4126,6 +4398,7 @@ msgstr "Mengambil Butiran.."
 msgid "Fetching the latest portal configuration."
 msgstr "Mengambil konfigurasi portal terkini."
 
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:88
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:902
 msgid "Field"
 msgstr "Padang"
@@ -4141,6 +4414,11 @@ msgstr "Nama medan"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4086
 msgid "Field Name"
 msgstr "Nama Medan"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:296
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:236
+msgid "Field settings"
+msgstr ""
 
 #: src/features/builder/components/FieldSidebar.tsx:73
 #~ msgid "Field Settings"
@@ -4159,6 +4437,8 @@ msgstr "medan"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
 #: src/pages/folders/components/Upload/Upload.tsx:1927
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:67
+#: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
 #: src/pages/settings/components/Folders/DmsSettings.tsx:342
 msgid "Fields"
@@ -4209,7 +4489,7 @@ msgid "File is too large. Max size is 4MB."
 msgstr "Fail terlalu besar. Saiz maksimum ialah 4MB."
 
 #: src/pages/folders/components/Upload/Upload.tsx:1101
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:470
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:478
 msgid "File is too large. Max size is 50MB."
 msgstr "Fail terlalu besar. Saiz maksimum ialah 50MB."
 
@@ -4254,6 +4534,8 @@ msgid "Files must be under 5MB"
 msgstr "Fail mestilah di bawah 5MB"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:236
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:68
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:61
 msgid "Filters"
 msgstr "Penapis"
 
@@ -4269,7 +4551,7 @@ msgstr "Memuktamadkan pengambilan rekod..."
 msgid "Finalizing Results..."
 msgstr "Memuktamadkan keputusan..."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:135
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:159
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:447
 msgid "Financial Year"
 msgstr "Tahun Kewangan"
@@ -4323,7 +4605,7 @@ msgstr "Folder “{folderName}” sedia. Teruskan untuk pilih pembekal storan."
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:879
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:164
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
-#: src/pages/settings/SettingsMain.tsx:253
+#: src/pages/settings/SettingsMain.tsx:265
 msgid "Folder Configuration"
 msgstr "Konfigurasi Folder"
 
@@ -4505,6 +4787,7 @@ msgstr "Penyertaan Borang"
 #~ msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:590
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:99
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1260
 msgid "Format"
 msgstr "Format"
@@ -4513,9 +4796,13 @@ msgstr "Format"
 #: src/pages/forms/components/Table.tsx:57
 #: src/pages/forms/FormsPage.tsx:80
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:32
-#: src/pages/settings/SettingsMain.tsx:261
+#: src/pages/settings/SettingsMain.tsx:273
 msgid "Forms"
 msgstr "Borang"
+
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:68
+msgid "Formula"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:479
 #~ msgid "Found in {0}"
@@ -4533,7 +4820,7 @@ msgstr "ditemui dalam data Master PO anda. Pilih caranya"
 msgid "Full name"
 msgstr "Nama penuh"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:352
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:360
 msgid "Fully Matched"
 msgstr "Sepenuhnya Padan"
 
@@ -4549,9 +4836,17 @@ msgstr "Sepenuhnya Padan"
 #~ msgid "Gemini unavailable — used local folder setup fallback."
 #~ msgstr ""
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:874
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1100
 msgid "Generate Dashboard Design"
 msgstr "Hasilkan Reka Bentuk Papan Pemuka"
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:986
+msgid "Generate KPIs and charts from your prompt, then load live data."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:110
+msgid "Generate plan"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:384
 msgid "Generate with AI"
@@ -4566,10 +4861,13 @@ msgstr "Hasilkan dengan AI"
 msgid "Generated by AI"
 msgstr "Dijana oleh AI"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:247
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:999
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:662
 msgid "Generating dashboard schema..."
 msgstr ""
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:952
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:616
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1878
 msgid "Generating description…"
 msgstr "Menjana penerangan…"
@@ -4586,21 +4884,25 @@ msgstr "Menjana medan yang disyorkan…"
 msgid "Get a quick overview of the setup process before connecting your tools."
 msgstr "Dapatkan gambaran keseluruhan pantas proses persediaan sebelum menyambungkan alatan anda."
 
-#: src/pages/dashboard/DashboardPage.tsx:169
+#: src/pages/dashboard/DashboardPage.tsx:206
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/WelcomeMessage.tsx:26
 #: src/pages/dashboard/workflows/accounts-payable/components/SetupCallout.tsx:34
 msgid "Get Started"
 msgstr "Mulakan"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1560
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:103
+msgid "Give your report a name, pick the data domain, and describe what it covers."
+msgstr ""
+
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1562
 msgid "GL & Category"
 msgstr "GL & Kategori"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3390
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3426
 msgid "GL Account Matching"
 msgstr "Padanan Akaun GL"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3775
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3811
 msgid "GL Account Matching Report"
 msgstr "Laporan Padanan Akaun GL"
 
@@ -4685,6 +4987,10 @@ msgstr "Nilai mata wang kasar"
 msgid "Group"
 msgstr "Kumpulan"
 
+#: src/pages/report-builder/hooks/useUserGroupOptions.ts:79
+msgid "Group {id}"
+msgstr ""
+
 #: src/pages/settings/components/ManageUser.tsx:143
 msgid "Group Assignment"
 msgstr "Tugasan Kumpulan"
@@ -4704,7 +5010,7 @@ msgstr "Butiran Kumpulan"
 #: src/pages/settings/components/GroupManagement.tsx:590
 #: src/pages/settings/components/GroupManagement.tsx:819
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:27
-#: src/pages/settings/SettingsMain.tsx:287
+#: src/pages/settings/SettingsMain.tsx:305
 msgid "Group Management"
 msgstr "Pengurusan Kumpulan"
 
@@ -4754,11 +5060,11 @@ msgstr "Kumpulan"
 msgid "Guidelines validated"
 msgstr "Garis panduan disahkan"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:372
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:380
 msgid "Handwritten"
 msgstr "Tulisan tangan"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:369
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:377
 msgid "Handwritten Invoice"
 msgstr "Invois Tulisan Tangan"
 
@@ -4814,7 +5120,7 @@ msgstr "Hai, Selamat Datang!"
 #~ msgid "Hidden"
 #~ msgstr ""
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:511
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:705
 msgid "Hidden in View"
 msgstr "Tersembunyi dalam Pandangan"
 
@@ -4850,7 +5156,7 @@ msgstr "Ketepatan Tinggi"
 #~ msgid "High Risk"
 #~ msgstr ""
 
-#: src/pages/requests/components/InboxList.tsx:1898
+#: src/pages/requests/components/InboxList.tsx:1905
 #: src/pages/requests/utils/localizeRequestUi.ts:27
 msgid "High Value"
 msgstr "Nilai Tinggi"
@@ -4863,13 +5169,13 @@ msgstr "Nilai Tinggi (≥$10k)"
 msgid "Highest Credit Consumption"
 msgstr "Penggunaan Kredit Tertinggi"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3639
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3675
 msgid "Historical Match Results"
 msgstr "Keputusan Perlawanan Sejarah"
 
-#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:579
+#: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3506
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3542
 msgid "History"
 msgstr "Sejarah"
 
@@ -4897,8 +5203,8 @@ msgid "How should this data be applied?"
 msgstr "Bagaimanakah data ini harus digunakan?"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:741
-msgid "How should your dashboard be organized? Choose a template or describe your custom design."
-msgstr "Bagaimanakah papan pemuka anda harus disusun? Pilih templat atau huraikan reka bentuk tersuai anda."
+#~ msgid "How should your dashboard be organized? Choose a template or describe your custom design."
+#~ msgstr "Bagaimanakah papan pemuka anda harus disusun? Pilih templat atau huraikan reka bentuk tersuai anda."
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:728
 msgid "How this policy behaves"
@@ -4945,7 +5251,7 @@ msgid "Import extracted items"
 msgstr "Import item yang diekstrak"
 
 #: src/pages/requests/components/buttons/UploadPoButton.tsx:14
-#: src/pages/requests/components/InboxList.tsx:1925
+#: src/pages/requests/components/InboxList.tsx:1932
 msgid "Import PO Data"
 msgstr "Import Data PO"
 
@@ -4974,7 +5280,11 @@ msgstr "Import rekod anda melalui CSV atau Excel."
 msgid "In progress"
 msgstr "Sedang berlangsung"
 
-#: src/pages/portal/components/PortalProgressCard.tsx:75
+#: src/pages/requests/components/KanbanView.tsx:201
+msgid "In Progress"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:54
 msgid "In progress..."
 msgstr "Sedang berlangsung..."
 
@@ -4987,12 +5297,12 @@ msgid "Inactive"
 msgstr "Tidak Aktif"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:174
-#: src/pages/requests/components/Header.tsx:86
+#: src/pages/requests/components/Header.tsx:97
 #: src/pages/requests/utils/localizeRequestUi.ts:35
 msgid "Inbox"
 msgstr "Peti Masuk"
 
-#: src/pages/requests/components/Header.tsx:86
+#: src/pages/requests/components/Header.tsx:97
 msgid "Inbox ({inboxCount})"
 msgstr "Peti Masuk ({inboxCount})"
 
@@ -5060,19 +5370,19 @@ msgstr "Garis masa pengingesan"
 msgid "Initializing upload..."
 msgstr "Memulakan muat naik..."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:670
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:689
 msgid "Initiating..."
 msgstr "Memulakan..."
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:49
+#: src/layouts/app/components/sidebar/Sidebar.tsx:54
 msgid "Insights"
 msgstr "Wawasan"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:461
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:469
 msgid "Insights into your liabilities."
 msgstr "Cerapan tentang liabiliti anda."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:448
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:456
 msgid "Instant Processing"
 msgstr "Pemprosesan Segera"
 
@@ -5091,7 +5401,7 @@ msgstr "Integrasi"
 msgid "Integrations"
 msgstr "Integrasi"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:453
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:461
 msgid "INTELLIGENCE"
 msgstr "KECERDASAN"
 
@@ -5099,16 +5409,16 @@ msgstr "KECERDASAN"
 msgid "Intelligence Profile"
 msgstr "Profil Perisikan"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:794
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:813
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:711
 msgid "Intelligent"
 msgstr "Pintar"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:899
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1126
 msgid "Interactive Dashboard Preview"
 msgstr "Pratonton Papan Pemuka Interaktif"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:888
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1113
 msgid "Interactive preview of your customized dashboard design for {repositoryName}."
 msgstr "Pratonton interaktif reka bentuk papan pemuka tersuai anda untuk {repositoryName}."
 
@@ -5117,7 +5427,7 @@ msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "Jenis fail tidak sah. Sila muat naik PDF atau Imej."
 
 #: src/pages/folders/components/Upload/Upload.tsx:1103
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:473
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:481
 msgid "Invalid file type. Please upload a supported document."
 msgstr "Jenis fail tidak sah. Sila muat naik dokumen yang disokong."
 
@@ -5149,12 +5459,12 @@ msgstr "Dijemput"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:839
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1942
-#: src/pages/portal/components/PortalWizard.tsx:166
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1344
+#: src/pages/portal/components/PortalWizard.tsx:160
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1361
 msgid "Invoice"
 msgstr "Invois"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:118
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:126
 msgid "INVOICE"
 msgstr "INVOIS"
 
@@ -5175,7 +5485,7 @@ msgstr "Invois #"
 msgid "Invoice Amount"
 msgstr "Jumlah Invois"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1694
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1696
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
 #: src/pages/requests/utils/localizeRequestUi.ts:8
@@ -5194,12 +5504,12 @@ msgstr "E-mel invois akan dibaca dari peti masuk ini dan dihantar untuk diproses
 msgid "Invoice Error"
 msgstr "Ralat Invois"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:428
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:436
 msgid "Invoice exceeds PO value."
 msgstr "Invois melebihi nilai PO."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2084
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4521
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4577
 msgid "Invoice Line Items"
 msgstr "Item Baris Invois"
 
@@ -5207,7 +5517,7 @@ msgstr "Item Baris Invois"
 msgid "Invoice matched against approved master"
 msgstr "Invois dipadankan dengan master diluluskan"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1302
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1304
 #: src/pages/requests/utils/localizeRequestUi.ts:7
 msgid "Invoice Number"
 msgstr "Nombor Invois"
@@ -5229,7 +5539,7 @@ msgstr "Ringkasan Invois"
 msgid "Invoice Value"
 msgstr "Nilai Invois"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:398
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:406
 msgid "Invoice value reduced."
 msgstr "Nilai invois dikurangkan."
 
@@ -5237,11 +5547,11 @@ msgstr "Nilai invois dikurangkan."
 msgid "invoices"
 msgstr "invois"
 
-#: src/pages/requests/components/Header.tsx:65
+#: src/pages/requests/components/Header.tsx:76
 msgid "Invoices"
 msgstr "Invois"
 
-#: src/pages/requests/components/Header.tsx:65
+#: src/pages/requests/components/Header.tsx:76
 msgid "Invoices ({inboxCount})"
 msgstr "Invois ({inboxCount})"
 
@@ -5336,6 +5646,10 @@ msgstr "Jun"
 #~ msgid "Just 3 suppliers account for 19% of unpaid liabilities, led by Harbor Point Consulting at $686.5K."
 #~ msgstr "Hanya 3 pembekal menyumbang 19% liabiliti belum dibayar, diketuai Harbor Point Consulting pada $686.5K."
 
+#: src/components/common/DynamicFilter.tsx:844
+msgid "Kanban View"
+msgstr ""
+
 #: src/pages/sign-in/components/SignInForm.tsx:865
 msgid "Keep me logged in"
 msgstr "Teruskan saya log masuk"
@@ -5354,7 +5668,8 @@ msgstr "Kata kunci / Medan"
 msgid "Kindly draw the signature"
 msgstr "Sila lukis tandatangan"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:253
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1009
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:672
 msgid "KPIs"
 msgstr ""
 
@@ -5392,6 +5707,7 @@ msgstr "L2: {0}"
 msgid "L3 Approval"
 msgstr "L3 Kelulusan"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:76
 #: src/pages/settings/components/Menus.tsx:623
 #: src/pages/settings/components/Menus.tsx:639
 #: src/pages/settings/components/Menus.tsx:671
@@ -5436,7 +5752,7 @@ msgstr "Log Masuk Terakhir"
 msgid "last month"
 msgstr "bulan lepas"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:133
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:157
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:445
 msgid "Last month"
 msgstr "bulan lepas"
@@ -5470,7 +5786,7 @@ msgstr "Folder kontrak undang-undang"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "Undang-undang mempunyai kitaran kelulusan terpanjang dalam paparan semasa, purata 8.0 hari setiap invois."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3895
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
 msgid "Legal Matter Association Check"
 msgstr "Semakan Perkaitan Matter Undang-undang"
 
@@ -5548,11 +5864,11 @@ msgstr "Pemadanan Item Baris"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3491
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3527
 msgid "Line Items"
 msgstr "Item Baris"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:422
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:430
 msgid "Line Variance"
 msgstr "Varians Baris"
 
@@ -5568,7 +5884,7 @@ msgstr "Pautan disalin"
 #~ msgid "Link document"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:454
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:462
 msgid "Link invoices to POs with precision."
 msgstr "Pautkan invois ke PO dengan ketepatan."
 
@@ -5594,6 +5910,19 @@ msgstr "Menyenaraikan setiap dokumen yang dipadankan untuk pengesahan sebelum ti
 #~ msgid "LIVE"
 #~ msgstr "LANGSUNG"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:723
+msgid "Live dashboard generated from your selected widgets."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:175
+msgid "Live dashboard HTML was empty."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:353
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:292
+msgid "Live preview"
+msgstr ""
+
 #: src/pages/portal/components/PortalActivity.tsx:66
 msgid "Loading activity..."
 msgstr "Memuatkan aktiviti..."
@@ -5602,7 +5931,7 @@ msgstr "Memuatkan aktiviti..."
 msgid "Loading attachments..."
 msgstr "Memuatkan lampiran..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4565
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4621
 msgid "Loading Attachments..."
 msgstr "Memuatkan Lampiran..."
 
@@ -5611,7 +5940,7 @@ msgstr "Memuatkan Lampiran..."
 msgid "Loading comments..."
 msgstr "Memuatkan komen..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4608
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4664
 msgid "Loading Comments..."
 msgstr "Memuatkan ulasan..."
 
@@ -5624,10 +5953,21 @@ msgstr "Memuatkan dokumen..."
 msgid "Loading field data…"
 msgstr "Memuatkan data medan…"
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:185
+msgid "Loading fields..."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:143
 msgid "Loading form…"
 msgstr "Memuatkan borang…"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:179
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:190
+msgid "Loading forms..."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:279
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:287
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:569
 #: src/pages/settings/components/ManageUser.tsx:2157
 msgid "Loading groups..."
@@ -5637,9 +5977,14 @@ msgstr "Memuatkan kumpulan..."
 msgid "Loading history..."
 msgstr "Memuatkan sejarah..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4637
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4693
 msgid "Loading History..."
 msgstr "Memuatkan Sejarah..."
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1160
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:765
+msgid "Loading live dashboard data..."
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:1241
 msgid "Loading menus..."
@@ -5666,6 +6011,10 @@ msgstr "Memuatkan dokumen berkaitan…"
 msgid "Loading roles..."
 msgstr "Memuatkan peranan..."
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:552
+msgid "Loading saved dashboard..."
+msgstr ""
+
 #: src/pages/sign-in/components/ShareSignInForm.tsx:237
 msgid "Loading share details..."
 msgstr "Memuatkan butiran kongsi…"
@@ -5687,6 +6036,12 @@ msgid "Loading users & groups..."
 msgstr "Memuatkan pengguna & kumpulan..."
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:320
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:255
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:259
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:118
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:128
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:147
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:155
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:544
 msgid "Loading users..."
 msgstr "Memuatkan pengguna..."
@@ -5834,7 +6189,7 @@ msgstr "Wajib"
 msgid "Mandatory — click to make optional"
 msgstr "Mandatori — klik untuk membuat pilihan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1044
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1047
 msgid "Manual"
 msgstr "Manual"
 
@@ -5925,6 +6280,10 @@ msgstr "Tandakan sebagai dibaca"
 msgid "Mark at least one signature place on the document before sending."
 msgstr "Tandakan sekurang-kurangnya satu tempat tandatangan pada dokumen sebelum menghantar."
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:53
+msgid "Master"
+msgstr ""
+
 #: src/pages/forms/components/GenericFormImportModal.tsx:491
 msgid "Master Data Update"
 msgstr "Kemas Kini Data Induk"
@@ -6002,16 +6361,16 @@ msgstr "Skor Perlawanan"
 msgid "Match:"
 msgstr "Padankan:"
 
-#: src/pages/requests/components/InboxList.tsx:1876
+#: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3266
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3551
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3302
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3587
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "dipadankan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3793
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3829
 msgid "Matched GL Account"
 msgstr "Akaun GL yang dipadankan"
 
@@ -6037,7 +6396,7 @@ msgstr "Butiran PO yang sepadan"
 #~ msgid "Matching supplier records..."
 #~ msgstr "Memadankan rekod pembekal..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3461
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3497
 msgid "Matter Validation"
 msgstr "Pengesahan Perkara"
 
@@ -6124,6 +6483,7 @@ msgid "Menus will appear here once navigation items are available."
 msgstr "Menu akan muncul di sini setelah item navigasi tersedia."
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:432
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:172
 msgid "Message"
 msgstr "Mesej"
 
@@ -6213,12 +6573,14 @@ msgid "Mobile Preview"
 msgstr "Pratonton Mudah Alih"
 
 #: src/pages/forms/FormsPage.tsx:249
+#: src/pages/reports/components/ReportsListView.tsx:141
 #: src/pages/workflows/components/Table.tsx:101
 msgid "Modified At"
 msgstr "Diubah suai Pada"
 
 #: src/pages/forms/FormsPage.tsx:242
 #: src/pages/forms/FormsPage.tsx:619
+#: src/pages/reports/components/ReportsListView.tsx:147
 #: src/pages/workflows/components/Table.tsx:94
 #: src/pages/workflows/components/Table.tsx:467
 msgid "Modified By"
@@ -6249,11 +6611,11 @@ msgstr "Ubah suai medan metadata"
 msgid "Module access & privilege matrix"
 msgstr "Akses modul & matriks keistimewaan"
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:60
+#: src/layouts/app/components/sidebar/Sidebar.tsx:65
 msgid "Modules"
 msgstr "Modul"
 
-#: src/pages/settings/SettingsMain.tsx:302
+#: src/pages/settings/SettingsMain.tsx:320
 msgid "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 msgstr "Pantau penggunaan kredit, trend penggunaan dan aktiviti mengikut modul merentas platform."
 
@@ -6315,7 +6677,7 @@ msgstr "Pengesahan Pelbagai Faktor"
 msgid "Multiple conditions set on field ({0})."
 msgstr "Berbilang syarat ditetapkan pada medan ({0})."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:408
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:416
 msgid "Multiple pricing differences."
 msgstr "Pelbagai perbezaan harga."
 
@@ -6338,8 +6700,8 @@ msgstr "Penyerahan Saya"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:89
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:109
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1604
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1685
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1606
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1687
 msgid "N/A"
 msgstr "T/B"
 
@@ -6353,6 +6715,7 @@ msgstr "N/A (Tiada nilai diperlukan)"
 #: src/pages/forms/FormEntriesPage.tsx:2148
 #: src/pages/forms/FormsPage.tsx:169
 #: src/pages/forms/FormsPage.tsx:597
+#: src/pages/reports/components/ReportsListView.tsx:120
 #: src/pages/requests/components/Table.tsx:27
 #: src/pages/settings/components/GroupManagement.tsx:618
 #: src/pages/settings/components/ManageUser.tsx:1125
@@ -6379,6 +6742,18 @@ msgstr "Namakan dan huraikan dasar ini"
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:318
 msgid "Name this policy and describe what it governs for folder \"{folderName}\"."
 msgstr "Namakan dasar ini dan huraikan perkara yang dikawal untuk folder \"{folderName}\"."
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:66
+msgid "Name, domain & sharing"
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:68
+msgid "Narrow down rows"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:62
+msgid "Narrow down which rows this report includes. Leave empty to include every row."
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:80
 msgid "Net 30 Days"
@@ -6420,12 +6795,12 @@ msgstr "Persediaan Menu Baharu"
 msgid "New Password"
 msgstr "Kata Laluan Baharu"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:566
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:669
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:585
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:688
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:129
-#: src/pages/requests/RequestsPage.tsx:733
+#: src/pages/requests/RequestsPage.tsx:762
 msgid "New Request"
 msgstr "Permintaan Baharu"
 
@@ -6435,7 +6810,7 @@ msgstr "Permintaan Baharu"
 
 #: src/pages/portal/components/PortalHome.tsx:217
 #: src/pages/portal/components/PortalPicker.tsx:54
-#: src/pages/portal/components/PortalWizard.tsx:842
+#: src/pages/portal/components/PortalWizard.tsx:788
 #: src/pages/portal/PortalPage.tsx:448
 msgid "New Submission"
 msgstr "Penyerahan Baru"
@@ -6581,7 +6956,7 @@ msgstr "Tiada dokumen yang sepadan dengan peraturan ini pada masa ini."
 msgid "No documents found"
 msgstr "Tiada dokumen dijumpai"
 
-#: src/pages/requests/components/InboxList.tsx:1217
+#: src/pages/requests/components/InboxList.tsx:1218
 msgid "No Due Date"
 msgstr "No Due Tarikh"
 
@@ -6589,7 +6964,7 @@ msgstr "No Due Tarikh"
 msgid "No Duplicate"
 msgstr "Tiada Pendua"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3302
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3338
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "Tiada pendua dikesan"
@@ -6611,9 +6986,18 @@ msgstr "Tiada data medan tersedia untuk dokumen ini."
 msgid "No fields found"
 msgstr "Tiada medan ditemui"
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:222
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:162
+msgid "No fields selected yet."
+msgstr ""
+
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:84
 msgid "No files added yet"
 msgstr "Tiada fail ditambah lagi"
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:75
+msgid "No filters added. This report will include all rows."
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:387
 #~ msgid "No folder by that name"
@@ -6627,18 +7011,26 @@ msgstr "Tiada dasar keselamatan folder ditemui. Klik 'Tambah Dasar' untuk mengko
 #~ msgid "No folders yet"
 #~ msgstr "No folders yet"
 
-#: src/pages/portal/components/PortalDetail.tsx:330
+#: src/pages/portal/components/PortalDetail.tsx:331
 #: src/pages/portal/components/PortalSubmissionDetails.tsx:96
 msgid "No form fields found for this request."
 msgstr "Tiada medan borang ditemui untuk permintaan ini."
 
-#: src/pages/portal/components/PortalWizard.tsx:1130
+#: src/pages/portal/components/PortalWizard.tsx:1057
 msgid "No form panels found for this request."
 msgstr "Tiada panel borang ditemui untuk permintaan ini."
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:213
+msgid "No forms found for this source type."
+msgstr ""
 
 #: src/pages/settings/components/ManageUser.tsx:2194
 msgid "No groups available from the API yet."
 msgstr "Tiada kumpulan tersedia daripada API lagi."
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:297
+msgid "No groups found."
+msgstr ""
 
 #: src/pages/settings/components/GroupManagement.tsx:646
 msgid "No groups yet"
@@ -6648,7 +7040,7 @@ msgstr "Tiada kumpulan lagi"
 msgid "No history found"
 msgstr "Tiada sejarah ditemui"
 
-#: src/pages/requests/components/request/Request.tsx:1900
+#: src/pages/requests/components/request/Request.tsx:1904
 msgid "No instance ID available to share"
 msgstr "Tiada ID contoh tersedia untuk dikongsi"
 
@@ -6710,6 +7102,11 @@ msgstr "Tiada medan metadata tersedia"
 msgid "No methods"
 msgstr "Tiada kaedah"
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:189
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:129
+msgid "No more fields to add."
+msgstr ""
+
 #: src/layouts/app/components/topbar/components/notifications/Notifications.tsx:188
 msgid "No notifications"
 msgstr "Tiada pemberitahuan"
@@ -6726,7 +7123,7 @@ msgstr "Tiada kebenaran diberikan"
 msgid "No permissions to configure"
 msgstr "Tiada kebenaran untuk mengkonfigurasi"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3277
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3313
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "Tiada PO Ditemui"
@@ -6738,6 +7135,10 @@ msgstr "Tiada portal lagi"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:574
 msgid "No preview rows available in this file."
 msgstr "Tiada baris pratonton tersedia dalam fail ini."
+
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:773
+msgid "No preview yet"
+msgstr ""
 
 #: src/pages/folders/components/AiSummaryView.tsx:401
 msgid "No recommendations available."
@@ -6763,6 +7164,10 @@ msgstr "Tiada medan repositori dikonfigurasi."
 msgid "No repository items found"
 msgstr "Tiada item repositori dijumpai"
 
+#: src/pages/requests/components/KanbanView.tsx:436
+msgid "No requests in this stage"
+msgstr ""
+
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:341
 msgid "No results for “{debouncedQuery}”."
 msgstr "Tiada hasil untuk “{debouncedQuery}”."
@@ -6783,6 +7188,10 @@ msgstr "Tiada dasar pengekalan dikonfigurasikan lagi. Klik 'Buat Dasar' untuk me
 #: src/pages/settings/components/RolesPermissions.tsx:1713
 msgid "No roles yet"
 msgstr "Tiada peranan lagi"
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:65
+msgid "No rules yet. Values without a matching rule use the default color below."
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:3420
 msgid "No saved signatures"
@@ -6873,6 +7282,11 @@ msgstr "Tiada lajur yang dimuat naik ditemui."
 msgid "No user assignments yet"
 msgstr "Tiada tugasan pengguna lagi"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:271
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:143
+msgid "No users found."
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:434
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:588
 msgid "No users or groups assigned"
@@ -6892,7 +7306,7 @@ msgid "No users yet"
 msgstr "Tiada pengguna lagi"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1104
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:474
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:482
 msgid "No valid files selected."
 msgstr "Tiada fail yang sah dipilih."
 
@@ -6936,10 +7350,10 @@ msgstr "Tidak Sama"
 msgid "Not mapped"
 msgstr "Tidak dipetakan"
 
-#: src/pages/requests/components/InboxList.tsx:1887
+#: src/pages/requests/components/InboxList.tsx:1894
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3267
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3552
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3303
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3588
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "Tidak Padan"
@@ -6948,13 +7362,17 @@ msgstr "Tidak Padan"
 msgid "Not now"
 msgstr "bukan sekarang"
 
+#: src/pages/reports/components/ReportKpiCards.tsx:44
+msgid "Not scheduled"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:18
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:31
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:38
 msgid "Not selected"
 msgstr "Tidak dipilih"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3314
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3350
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "Tidak Disahkan"
@@ -7087,10 +7505,22 @@ msgstr "Membuka log masuk..."
 msgid "Opening sign request..."
 msgstr "Membuka permintaan tanda..."
 
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:98
+msgid "Operator"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:515
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:653
 msgid "Optional — click to make mandatory"
 msgstr "Pilihan — klik untuk mewajibkan"
+
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:93
+msgid "Optional — skip this and build it manually, or describe it here and we'll draft a starting point."
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:63
+msgid "Optional AI head start"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:257
 msgid "Optional Field"
@@ -7148,6 +7578,11 @@ msgstr "Oracle ERP"
 msgid "Order"
 msgstr "Pesanan"
 
+#: src/pages/requests/components/KanbanView.tsx:187
+#: src/pages/requests/components/KanbanView.tsx:192
+msgid "Other"
+msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2288
 msgid "Other signer"
 msgstr "Penandatangan lain"
@@ -7164,13 +7599,13 @@ msgstr "Outlook dipilih. Klik Sambungkan Outlook untuk memautkan akaun anda."
 msgid "Outstanding payables by supplier"
 msgstr "Pemiutang tertunggak oleh pembekal"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:432
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:440
 msgid "Overcharged"
 msgstr "Terlebih caj"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:140
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:705
-#: src/pages/requests/components/InboxList.tsx:1207
+#: src/pages/requests/components/InboxList.tsx:1208
 #: src/pages/requests/components/QuickFilters.tsx:132
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Overdue"
@@ -7210,7 +7645,7 @@ msgstr "Diluluskan Separa"
 msgid "PARTIALLY APPROVED"
 msgstr "DILULUSKAN SEBAHAGIAN"
 
-#: src/pages/requests/components/InboxList.tsx:1889
+#: src/pages/requests/components/InboxList.tsx:1896
 #: src/pages/requests/components/request/components/sections/history/History.tsx:328
 #: src/pages/requests/utils/localizeRequestUi.ts:22
 msgid "Partially Matched"
@@ -7269,7 +7704,7 @@ msgstr "Kata laluan mestilah sekurang-kurangnya 6 aksara"
 msgid "Passwords do not match"
 msgstr "Kata laluan tidak sepadan"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:462
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:470
 msgid "Payables Overview"
 msgstr "Gambaran Keseluruhan Pemiutang"
 
@@ -7281,7 +7716,7 @@ msgstr "Kalendar pembayaran"
 msgid "Payment Channel"
 msgstr "Saluran Pembayaran"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3842
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3878
 msgid "Payment Deadlines"
 msgstr "Tarikh Akhir Pembayaran"
 
@@ -7299,12 +7734,12 @@ msgstr "Kaedah Pembayaran"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3437
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3473
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "Syarat Pembayaran"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3836
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
 msgid "Payment Terms Analysis"
 msgstr "Analisis Syarat Pembayaran"
 
@@ -7336,7 +7771,7 @@ msgstr "Lebar pen"
 msgid "Pending"
 msgstr "Menunggu"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:378
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:386
 msgid "Pending delivery items."
 msgstr "Item penghantaran belum selesai."
 
@@ -7348,7 +7783,7 @@ msgstr "Pembayaran Menunggu"
 msgid "Pending Review"
 msgstr "Menunggu Semakan"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:338
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:346
 msgid "Perfect PO validation."
 msgstr "Pengesahan PO yang sempurna."
 
@@ -7399,6 +7834,10 @@ msgstr "Pilih cara anda mengimport invois untuk bermula. Anda boleh menukar ini 
 msgid "Pick one import strategy. Nothing is saved until the next step confirms it."
 msgstr "Pilih satu strategi import. Tiada apa-apa disimpan sehingga langkah seterusnya mengesahkannya."
 
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:20
+msgid "Pick which fields appear in this report, then configure column labels, calculations, and computed status."
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2275
 msgid "Pipeline drops across lifecycle steps"
 msgstr "Saluran paip jatuh merentasi langkah kitaran hayat"
@@ -7434,11 +7873,18 @@ msgstr "Lajur Pemegang Tempat 1"
 msgid "Placeholder Column 2"
 msgstr "Lajur Pemegang Tempat 2"
 
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:49
+#: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:57
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:92
+#: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:100
+msgid "Plain Value"
+msgstr ""
+
 #: src/pages/settings/SettingsMain.tsx:341
 #~ msgid "Platform and monitoring"
 #~ msgstr ""
 
-#: src/pages/settings/SettingsMain.tsx:370
+#: src/pages/settings/SettingsMain.tsx:388
 msgid "Platform Management"
 msgstr "Pengurusan Platform"
 
@@ -7447,7 +7893,7 @@ msgid "Playground"
 msgstr "Taman permainan"
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:45
-#: src/pages/settings/SettingsMain.tsx:311
+#: src/pages/settings/SettingsMain.tsx:329
 msgid "Playground API"
 msgstr "API Playground"
 
@@ -7459,16 +7905,16 @@ msgstr "API Playground"
 #~ msgid "Please attach a file to continue."
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3333
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3369
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "Sila klik 'Sahkan' untuk menyemak sama ada pembekal ini sah dan mengelakkan penipuan."
 
 #. placeholder {0}: missingChecklistItem.label
-#: src/pages/requests/components/request/Request.tsx:1454
+#: src/pages/requests/components/request/Request.tsx:1455
 msgid "Please complete the checklist item \"{0}\" before proceeding."
 msgstr "Sila lengkapkan item senarai semak \"{0}\" sebelum meneruskan."
 
-#: src/pages/requests/components/request/Request.tsx:1468
+#: src/pages/requests/components/request/Request.tsx:1472
 msgid "Please confirm your signature before proceeding."
 msgstr "Sila sahkan tandatangan anda sebelum meneruskan."
 
@@ -7480,17 +7926,21 @@ msgstr "Sila terangkan bentuk yang ingin anda buat"
 msgid "Please describe what workflow you want to create"
 msgstr "Sila terangkan aliran kerja yang ingin anda buat"
 
-#: src/pages/requests/components/request/Request.tsx:1486
+#: src/pages/requests/components/request/Request.tsx:1490
 msgid "Please fill all mandatory fields before proceeding."
 msgstr "Sila isi semua medan wajib sebelum meneruskan."
 
-#: src/pages/portal/components/PortalWizard.tsx:893
+#: src/pages/portal/components/PortalWizard.tsx:839
 msgid "Please fill in required field(s): {list}"
 msgstr "Sila isikan medan yang diperlukan: {list}"
 
 #: src/pages/portal/components/PortalWizard.tsx:762
 #~ msgid "Please fill in required field(s): {missing}"
 #~ msgstr ""
+
+#: src/pages/requests/components/KanbanView.tsx:249
+msgid "Please fill required field(s): {names}"
+msgstr ""
 
 #. placeholder {0}: labels[0]
 #: src/pages/settings/helpers/requiredFieldErrors.ts:15
@@ -7601,7 +8051,7 @@ msgstr "Sila muat naik fail data PO anda (CSV atau XLSX) untuk memulakan konfigu
 msgid "Please wait a moment"
 msgstr "Sila tunggu sebentar"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:853
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:872
 msgid "Please wait while we process your document"
 msgstr "Sila tunggu sementara kami memproses dokumen anda"
 
@@ -7625,7 +8075,7 @@ msgstr "PNG, SVG atau JPG, sehingga 5MB"
 msgid "PO #"
 msgstr "PO #"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:203
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:227
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:513
 #: src/pages/requests/components/QuickFilters.tsx:309
 msgid "PO Amount"
@@ -7643,12 +8093,12 @@ msgstr "Pengambilan PO Berjaya!"
 msgid "PO issuer or procurement contact"
 msgstr "Pengeluar PO atau hubungan perolehan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4470
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4526
 msgid "PO Line Items"
 msgstr "Item Baris PO"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1058
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1344
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1061
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1361
 msgid "PO Master"
 msgstr "Guru PO"
 
@@ -7670,22 +8120,22 @@ msgstr "Fail Induk PO diterima"
 msgid "PO Master Update"
 msgstr "Kemas Kini Induk PO"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3259
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3295
 msgid "PO Matching"
 msgstr "Pemadanan PO"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3548
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3584
 msgid "PO Matching Analysis"
 msgstr "Analisis Pemadanan PO"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1630
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1632
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "PO Number"
 msgstr "Nombor PO"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3569
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3605
 msgid "PO Number (Extracted)"
 msgstr "Nombor PO (Diekstrak)"
 
@@ -7711,7 +8161,7 @@ msgstr "Nilai PO"
 msgid "PO VALUE"
 msgstr "NILAI PO"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:342
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:350
 msgid "PO Verified"
 msgstr "PO Disahkan"
 
@@ -7744,7 +8194,7 @@ msgstr "Nama Polisi *"
 #: src/pages/settings/components/PortalConfiguration.tsx:654
 #: src/pages/settings/components/PortalConfiguration.tsx:1106
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
-#: src/pages/settings/SettingsMain.tsx:275
+#: src/pages/settings/SettingsMain.tsx:287
 msgid "Portal Configuration"
 msgstr "Konfigurasi Portal"
 
@@ -7876,7 +8326,7 @@ msgstr "Permintaan Sebelumnya"
 msgid "Previous step"
 msgstr "Langkah sebelumnya"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:412
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:420
 msgid "Price Variance"
 msgstr "Varians Harga"
 
@@ -7906,17 +8356,25 @@ msgstr "Item invois berprioriti yang memerlukan perhatian hari ini"
 msgid "Priority"
 msgstr "Keutamaan"
 
+#: src/pages/reports/components/ReportsListView.tsx:205
+msgid "Private to me"
+msgstr ""
+
 #: src/pages/folders/components/Upload/Upload.tsx:1693
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Proses dokumen lebih pantas dengan saluran ejen kami"
 
-#: src/pages/requests/components/Header.tsx:79
-#: src/pages/requests/components/InboxList.tsx:2028
+#: src/pages/requests/components/Header.tsx:65
+msgid "Process Overview"
+msgstr ""
+
+#: src/pages/requests/components/Header.tsx:90
+#: src/pages/requests/components/InboxList.tsx:2055
 #: src/pages/requests/utils/localizeRequestUi.ts:37
 msgid "Processed"
 msgstr "Diproses"
 
-#: src/pages/requests/components/Header.tsx:79
+#: src/pages/requests/components/Header.tsx:90
 msgid "Processed ({processedCount})"
 msgstr "Diproses ({processedCount})"
 
@@ -7925,7 +8383,7 @@ msgid "Processing"
 msgstr "Diproses"
 
 #. placeholder {0}: uploadProgressText.fileName
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:852
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:871
 msgid "Processing \"{0}\""
 msgstr "Memproses \"{0}\""
 
@@ -7972,7 +8430,7 @@ msgstr "Pusat Untung"
 #~ msgid "Profitability & Cash Position"
 #~ msgstr "Keuntungan & Kedudukan Tunai"
 
-#: src/pages/portal/components/PortalProgressCard.tsx:24
+#: src/pages/portal/components/PortalProgressCard.tsx:62
 msgid "Progress"
 msgstr "Kemajuan"
 
@@ -7992,6 +8450,7 @@ msgstr "Hartanah"
 #~ msgid "Provide a name and details for this group."
 #~ msgstr ""
 
+#: src/components/common/ReportStatusBadge.tsx:21
 #: src/pages/forms/FormsPage.tsx:606
 #: src/pages/workflows/components/Table.tsx:454
 msgid "Published"
@@ -8002,8 +8461,8 @@ msgid "Purchase Order #"
 msgstr "Pesanan Belian #"
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:220
-msgid "Put overdue first in red. Donut on the left in blue..."
-msgstr ""
+#~ msgid "Put overdue first in red. Donut on the left in blue..."
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:153
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:375
@@ -8014,11 +8473,11 @@ msgstr "Kuantiti"
 msgid "Quantity"
 msgstr "Kuantiti"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:418
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:426
 msgid "Quantity line discrepancy."
 msgstr "Percanggahan garis kuantiti."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:134
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:158
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:446
 msgid "Quarter"
 msgstr "Suku"
@@ -8044,7 +8503,7 @@ msgstr "Bantuan Cepat"
 msgid "Quick Hint"
 msgstr "Petua Pantas"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:895
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:914
 msgid "Quick Try"
 msgstr "Cuba Cepat"
 
@@ -8052,8 +8511,8 @@ msgstr "Cuba Cepat"
 msgid "Raised At"
 msgstr "Dibesarkan Pada"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1367
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1539
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1369
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1541
 #: src/pages/requests/components/Table.tsx:69
 msgid "Raised By"
 msgstr "Dibesarkan Oleh"
@@ -8099,6 +8558,10 @@ msgstr "Papan Pemuka Masa Nyata"
 msgid "Received"
 msgstr "Diterima"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:120
+msgid "Recipients"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:119
 msgid "Recognizing table structures"
 msgstr "Mengenal struktur jadual"
@@ -8126,12 +8589,21 @@ msgstr "rekod"
 msgid "Records matched successfully"
 msgstr "Rekod berjaya dipadankan"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:49
+msgid "Recurrence"
+msgstr ""
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2847
 #: src/pages/folders/components/DocumentSigningPage.tsx:2962
 #: src/pages/folders/components/DocumentSigningPage.tsx:2967
 msgid "Redo"
 msgstr "Buat semula"
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:786
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1133
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:743
+#: src/pages/dashboard/DashboardPage.tsx:182
+#: src/pages/dashboard/DashboardPage.tsx:189
 #: src/pages/folders/components/FolderFilterBar.tsx:708
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 #: src/pages/forms/FormEntriesPage.tsx:2126
@@ -8140,7 +8612,7 @@ msgstr "Buat semula"
 #: src/pages/portal/components/PortalHome.tsx:434
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
-#: src/pages/requests/components/InboxList.tsx:1909
+#: src/pages/requests/components/InboxList.tsx:1916
 #: src/pages/settings/components/AuditMonitoring.tsx:193
 #: src/pages/settings/components/credits/Credits.tsx:899
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2136
@@ -8165,6 +8637,8 @@ msgstr "Muat semula Pratonton"
 msgid "Refreshing..."
 msgstr "Menyegarkan..."
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:940
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:606
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2001
 msgid "Regenerate"
 msgstr "Menjana semula"
@@ -8177,7 +8651,7 @@ msgstr "Pilihan residensi data serantau"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1512
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1529
 msgid "Reject Transaction"
 msgstr "Tolak Transaksi"
 
@@ -8251,8 +8725,8 @@ msgid "Rename"
 msgstr "Namakan semula"
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:279
-msgid "Rendering dashboard preview..."
-msgstr ""
+#~ msgid "Rendering dashboard preview..."
+#~ msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:738
 msgid "Replace"
@@ -8271,11 +8745,58 @@ msgstr "Gantikan data sedia ada"
 msgid "Replace File"
 msgstr "Ganti Fail"
 
+#: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:45
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:186
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:203
+#: src/pages/settings/SettingsMain.tsx:293
+msgid "Report Builder"
+msgstr ""
+
+#: src/pages/reports/components/ReportsListView.tsx:248
+msgid "Report deleted successfully"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:102
+msgid "Report details"
+msgstr ""
+
+#: src/pages/reports/components/ReportsListView.tsx:167
+msgid "Report duplicated"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:111
+msgid "Report Name"
+msgstr ""
+
+#: src/pages/reports/ReportDetailPage.tsx:26
+msgid "Report not found."
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:154
+msgid "Report published"
+msgstr ""
+
+#: src/pages/reports/components/ReportsListView.tsx:173
+msgid "Report run started"
+msgstr ""
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:154
+msgid "Report saved as draft"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:167
+msgid "Report subject line"
+msgstr ""
+
+#: src/layouts/app/components/sidebar/Sidebar.tsx:38
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:189
+#: src/pages/reports/components/Table.tsx:52
+#: src/pages/reports/ReportsPage.tsx:12
 msgid "Reports"
 msgstr "Laporan"
 
-#: src/pages/dashboard/DashboardPage.tsx:158
+#: src/pages/dashboard/DashboardPage.tsx:168
 #: src/pages/folders/components/DocumentsListView.tsx:824
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:801
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:697
@@ -8286,7 +8807,7 @@ msgstr "Repositori"
 msgid "Repository and document are required."
 msgstr "Repositori dan dokumen diperlukan."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:696
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:920
 msgid "Repository context and business scope."
 msgstr "Konteks repositori dan skop perniagaan."
 
@@ -8303,20 +8824,24 @@ msgid "Repository ID is missing. Cannot upload."
 msgstr "ID Repositori hilang. Tidak boleh muat naik."
 
 #. placeholder {0}: submission.requestNo
-#: src/pages/portal/components/PortalDetail.tsx:234
+#: src/pages/portal/components/PortalDetail.tsx:235
 msgid "Request {0} action \"{action}\" completed successfully"
 msgstr ""
 
 #. placeholder {0}: submission.requestNo
-#: src/pages/portal/components/PortalDetail.tsx:233
+#: src/pages/portal/components/PortalDetail.tsx:234
 msgid "Request {0} submitted successfully"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:1595
+#: src/pages/requests/components/KanbanView.tsx:308
+msgid "Request {requestNo} moved successfully"
+msgstr ""
+
+#: src/pages/requests/components/request/Request.tsx:1599
 msgid "Request {resolvedRequestNo} action \"{action}\" completed successfully"
 msgstr ""
 
-#: src/pages/requests/components/request/Request.tsx:1594
+#: src/pages/requests/components/request/Request.tsx:1598
 msgid "Request {resolvedRequestNo} submitted successfully"
 msgstr ""
 
@@ -8330,12 +8855,12 @@ msgstr "Minta Demo"
 #~ msgid "Request action \"{action}\" completed successfully"
 #~ msgstr "Minta tindakan \"{action}\" berjaya diselesaikan"
 
-#: src/pages/portal/components/PortalWizard.tsx:905
-#: src/pages/portal/components/PortalWizard.tsx:958
+#: src/pages/portal/components/PortalWizard.tsx:851
+#: src/pages/portal/components/PortalWizard.tsx:904
 msgid "Request created. You can track it from My Submissions."
 msgstr "Permintaan dibuat. Anda boleh menjejakinya daripada Penyerahan Saya."
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1302
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1304
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:28
 msgid "Request No"
 msgstr "Permintaan No"
@@ -8344,22 +8869,22 @@ msgstr "Permintaan No"
 msgid "Request Owner"
 msgstr "Pemilik Permintaan"
 
-#: src/pages/requests/components/request/Request.tsx:1662
+#: src/pages/requests/components/request/Request.tsx:1666
 msgid "Request saved successfully"
 msgstr "Permintaan berjaya disimpan"
 
 #: src/pages/requests/components/request/components/Header.tsx:392
-#: src/pages/requests/components/request/Request.tsx:1920
+#: src/pages/requests/components/request/Request.tsx:1924
 msgid "Request shared successfully"
 msgstr "Permintaan berjaya dikongsi"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:194
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:218
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:502
 #: src/pages/requests/components/QuickFilters.tsx:265
 msgid "Request Status"
 msgstr "Permintaan Status"
 
-#: src/pages/requests/components/request/Request.tsx:1663
+#: src/pages/requests/components/request/Request.tsx:1667
 msgid "Request submitted successfully"
 msgstr "Permintaan berjaya diserahkan"
 
@@ -8368,7 +8893,8 @@ msgid "Request submitted."
 msgstr "Permintaan diserahkan."
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:79
-#: src/pages/requests/components/InboxList.tsx:2029
+#: src/pages/requests/components/InboxList.tsx:2051
+#: src/pages/requests/components/InboxList.tsx:2056
 #: src/pages/requests/components/Table.tsx:178
 msgid "Requests"
 msgstr "Permintaan"
@@ -8387,7 +8913,7 @@ msgstr "Memerlukan pengesahan manual sebelum dijalankan"
 msgid "Required"
 msgstr "Wajib"
 
-#: src/pages/portal/components/PortalWizard.tsx:877
+#: src/pages/portal/components/PortalWizard.tsx:823
 msgid "Required field"
 msgstr "Medan yang diperlukan"
 
@@ -8655,7 +9181,7 @@ msgstr "Peranan"
 #: src/pages/settings/components/RolesPermissions.tsx:877
 #: src/pages/settings/components/RolesPermissions.tsx:1658
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
-#: src/pages/settings/SettingsMain.tsx:293
+#: src/pages/settings/SettingsMain.tsx:311
 msgid "Roles & Permissions"
 msgstr "Peranan & Keizinan"
 
@@ -8696,6 +9222,10 @@ msgstr "Baris 1"
 msgid "rows"
 msgstr "barisan"
 
+#: src/pages/reports/components/OverviewTab.tsx:260
+msgid "Rows"
+msgstr ""
+
 #: src/pages/forms/components/GenericFormImportModal.tsx:596
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1267
 msgid "Rows Detected"
@@ -8719,6 +9249,10 @@ msgstr "Tindakan Peraturan"
 msgid "Rules"
 msgstr "Peraturan"
 
+#: src/pages/reports/components/RowActionsMenu.tsx:36
+msgid "Run now"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:111
 #~ msgid "Same value {invoiceAmount}"
 #~ msgstr ""
@@ -8730,7 +9264,7 @@ msgstr "Templat sampel berjaya dimuat turun"
 #: src/pages/folders/components/CollaboraEditor.tsx:253
 #: src/pages/my-account/components/profile/Profile.tsx:21
 #: src/pages/requests/components/request/components/Header.tsx:1505
-#: src/pages/settings/components/SettingsWizardLayout.tsx:78
+#: src/pages/settings/components/SettingsWizardLayout.tsx:80
 msgid "Save"
 msgstr "Simpan"
 
@@ -8746,9 +9280,17 @@ msgstr "Simpan & Keluar"
 #~ msgid "Save & Next"
 #~ msgstr ""
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:219
+msgid "Save & Publish instead"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1973
 msgid "Save & Regenerate Fields"
 msgstr "Simpan & Jana Semula Medan"
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:190
+msgid "Save as Draft"
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:2043
 msgid "Save Assignments"
@@ -8764,7 +9306,8 @@ msgstr "Simpan Penjenamaan"
 msgid "Save Changes"
 msgstr "Simpan Perubahan"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:911
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1149
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:754
 msgid "Save Dashboard"
 msgstr "Simpan Papan Pemuka"
 
@@ -8838,7 +9381,7 @@ msgstr "Tandatangan yang disimpan dialih keluar."
 #: src/pages/folders/components/EditMetadataView.tsx:387
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:976
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:829
-#: src/pages/settings/components/SettingsWizardLayout.tsx:211
+#: src/pages/settings/components/SettingsWizardLayout.tsx:214
 msgid "Saving..."
 msgstr "Menyimpan..."
 
@@ -8859,9 +9402,19 @@ msgstr "Imbas QR / Kod Bar"
 msgid "Scan QR code to select"
 msgstr "Imbas kod QR untuk memilih"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:368
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:376
 msgid "Scanned handwritten bill."
 msgstr "Bil imbasan tulisan tangan."
+
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:69
+#: src/pages/reports/components/ReportKpiCards.tsx:43
+#: src/pages/reports/components/RowActionsMenu.tsx:46
+msgid "Schedule"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:36
+msgid "Schedule delivery"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:66
 msgid "Schedule Payment"
@@ -8947,12 +9500,12 @@ msgstr "Cari lajur..."
 msgid "Search created by..."
 msgstr "Carian dibuat oleh..."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:183
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:207
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:491
 msgid "Search currency..."
 msgstr "Cari mata wang..."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:148
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:172
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:459
 #: src/pages/settings/components/ManageUser.tsx:1589
 msgid "Search department..."
@@ -8974,6 +9527,8 @@ msgstr "Cari e-mel..."
 msgid "Search entries..."
 msgstr "Cari entri..."
 
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:178
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:122
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:664
 msgid "Search fields..."
 msgstr "Medan carian..."
@@ -9012,11 +9567,11 @@ msgstr "Cari borang..."
 msgid "Search icons"
 msgstr "Cari ikon"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:592
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:947
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:827
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1195
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:639
-#: src/pages/requests/components/InboxList.tsx:1841
+#: src/pages/requests/components/InboxList.tsx:1848
 msgid "Search invoice, supplier, PO..."
 msgstr "Cari invois, pembekal, PO..."
 
@@ -9062,11 +9617,19 @@ msgstr "Kebenaran carian..."
 msgid "Search PO range..."
 msgstr "Cari julat PO..."
 
+#: src/pages/reports/components/ReportsListView.tsx:263
+msgid "Search reports..."
+msgstr ""
+
 #: src/pages/portal/components/PortalPicker.tsx:62
 msgid "Search request types…"
 msgstr "Jenis permintaan carian…"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:171
+#: src/pages/reports/components/OverviewTab.tsx:222
+msgid "Search rows..."
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:195
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:481
 #: src/pages/requests/components/QuickFilters.tsx:278
 msgid "Search status..."
@@ -9076,7 +9639,7 @@ msgstr "Status carian..."
 msgid "Search submissions…"
 msgstr "Cari penyerahan…"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:159
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:183
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:469
 msgid "Search supplier..."
 msgstr "Cari pembekal..."
@@ -9136,7 +9699,7 @@ msgstr "Bahagian {0}"
 msgid "Security"
 msgstr "Keselamatan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3672
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3708
 msgid "Security & Auditing Policy"
 msgstr "Dasar Keselamatan & Pengauditan"
 
@@ -9181,14 +9744,27 @@ msgstr "Pilih penyambung {0}"
 msgid "Select a column…"
 msgstr "Pilih lajur…"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:131
+msgid "Select a data domain"
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:473
 msgid "Select a field..."
 msgstr "Pilih medan..."
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:191
+msgid "Select a form"
+msgstr ""
 
 #: src/pages/folders/components/FolderExplorer.tsx:309
 #: src/pages/folders/components/FolderExplorer.tsx:322
 msgid "Select a repository before uploading."
 msgstr "Pilih repositori sebelum memuat naik."
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:354
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:112
+msgid "Select a repository first."
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:261
 msgid "Select a retention trigger field."
@@ -9201,6 +9777,18 @@ msgstr "Pilih tandatangan yang disimpan dahulu."
 #: src/pages/folders/components/DocumentSigningPage.tsx:2040
 msgid "Select a signer below, then click the document to mark one or more places."
 msgstr "Pilih penandatangan di bawah, kemudian klik dokumen untuk menandakan satu atau lebih tempat."
+
+#: src/pages/report-builder/components/steps/FieldsStep.tsx:29
+msgid "Select a source (or domain) in the Details step first."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:154
+msgid "Select a source type"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:188
+msgid "Select a source type first"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1611
 msgid "Select a user and mark at least one signature place on the document."
@@ -9240,6 +9828,14 @@ msgstr "Pilih sekurang-kurangnya satu pengguna atau kumpulan untuk meneruskan."
 msgid "Select at least one user or group who will receive access permissions for this folder."
 msgstr "Pilih sekurang-kurangnya satu pengguna atau kumpulan yang akan menerima kebenaran akses untuk folder ini."
 
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:116
+msgid "Select at least one workflow stage."
+msgstr ""
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:155
+msgid "Select CC recipients"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1380
 #~ msgid "Select field icon"
 #~ msgstr ""
@@ -9268,6 +9864,10 @@ msgstr "Pilih Borang"
 msgid "Select forms..."
 msgstr "Pilih borang..."
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:287
+msgid "Select groups"
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:567
 msgid "Select Groups"
 msgstr "Pilih Kumpulan"
@@ -9289,8 +9889,12 @@ msgid "Select matching field..."
 msgstr "Pilih medan sepadan..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:798
-msgid "Select one of the recommendation chips above or enter a custom prompt in the input box. AI will generate layout options based on your selection."
-msgstr "Pilih salah satu cip pengesyoran di atas atau masukkan gesaan tersuai dalam kotak input. AI akan menjana pilihan susun atur berdasarkan pilihan anda."
+#~ msgid "Select one of the recommendation chips above or enter a custom prompt in the input box. AI will generate layout options based on your selection."
+#~ msgstr "Pilih salah satu cip pengesyoran di atas atau masukkan gesaan tersuai dalam kotak input. AI akan menjana pilihan susun atur berdasarkan pilihan anda."
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:250
+msgid "Select one or more stages"
+msgstr ""
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:320
 msgid "Select one user"
@@ -9328,6 +9932,10 @@ msgstr "Pilih atau taip lokasi"
 msgid "Select password field"
 msgstr "Pilih medan kata laluan"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:128
+msgid "Select recipients"
+msgstr ""
+
 #: src/pages/settings/components/ManageUser.tsx:1845
 #: src/pages/settings/components/RolesPermissions.tsx:1791
 msgid "Select role"
@@ -9349,6 +9957,10 @@ msgstr "Pilih Storan"
 #~ msgid "Select storage provider"
 #~ msgstr ""
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:649
+msgid "Select suggested KPIs and charts from your data."
+msgstr ""
+
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:46
 msgid "Select target access"
 msgstr "Pilih akses sasaran"
@@ -9361,6 +9973,10 @@ msgstr "Pilih pembekal storan di mana dokumen untuk folder ini harus disimpan."
 #: src/pages/settings/components/PortalConfiguration.tsx:1211
 msgid "Select username / email field"
 msgstr "Pilih medan nama pengguna / e-mel"
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:259
+msgid "Select users"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:542
 #: src/pages/settings/components/RolesPermissions.tsx:788
@@ -9402,6 +10018,10 @@ msgstr "Pilih pengguna atau kumpulan..."
 msgid "Select users..."
 msgstr "Pilih pengguna..."
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:776
+msgid "Select widgets in step 2, then click Apply & Preview to load live data."
+msgstr ""
+
 #: src/pages/folders/components/StartWorkflowView.tsx:79
 msgid "Select Workflow Template"
 msgstr "Pilih Templat Aliran Kerja"
@@ -9410,9 +10030,18 @@ msgstr "Pilih Templat Aliran Kerja"
 msgid "Select your preferred language"
 msgstr "Pilih bahasa pilihan anda"
 
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:534
+msgid "Selected {enabledKpiCount} KPIs and {enabledChartCount} charts"
+msgstr ""
+
 #: src/pages/folders/components/EditMetadataView.tsx:365
 msgid "Selected Document"
 msgstr "Dokumen Terpilih"
+
+#: src/pages/report-builder/components/steps/FieldsStepFormSource.tsx:216
+#: src/pages/report-builder/components/steps/FieldsStepLegacyDomain.tsx:156
+msgid "Selected fields"
+msgstr ""
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:161
 msgid "Selected user needs an email address."
@@ -9475,11 +10104,11 @@ msgstr "Menghantar makluman kepada pemilik yang disenaraikan pada setiap metadat
 msgid "Sends OTP to the Email"
 msgstr "Menghantar OTP ke E-mel"
 
-#: src/pages/requests/components/Header.tsx:90
+#: src/pages/requests/components/Header.tsx:101
 msgid "Sent"
 msgstr "Dihantar"
 
-#: src/pages/requests/components/Header.tsx:90
+#: src/pages/requests/components/Header.tsx:101
 msgid "Sent ({sentCount})"
 msgstr "Dihantar ({sentCount})"
 
@@ -9513,7 +10142,7 @@ msgstr "Tetapkan pencetus dan sebarang syarat tambahan."
 msgid "Set up document security rules"
 msgstr "Sediakan peraturan keselamatan dokumen"
 
-#: src/pages/settings/SettingsMain.tsx:249
+#: src/pages/settings/SettingsMain.tsx:261
 msgid "Set up folders with custom fields, storage, security, and versioning."
 msgstr "Sediakan folder dengan medan tersuai, storan, keselamatan dan versi."
 
@@ -9525,8 +10154,8 @@ msgstr "Sediakan Automasi AP Anda"
 msgid "Set your brand name and colors"
 msgstr "Tetapkan nama dan warna jenama anda"
 
-#: src/pages/portal/components/PortalWizard.tsx:350
-#: src/pages/portal/components/PortalWizard.tsx:378
+#: src/pages/portal/components/PortalWizard.tsx:296
+#: src/pages/portal/components/PortalWizard.tsx:324
 msgid "setting up..."
 msgstr "menyediakan..."
 
@@ -9534,16 +10163,16 @@ msgstr "menyediakan..."
 msgid "Setting up..."
 msgstr "Menyediakan..."
 
-#: src/layouts/app/components/sidebar/Sidebar.tsx:55
+#: src/layouts/app/components/sidebar/Sidebar.tsx:60
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:89
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:878
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:163
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:19
 #: src/pages/settings/components/SettingsPageHeader.tsx:51
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
-#: src/pages/settings/components/SettingsWizardLayout.tsx:90
+#: src/pages/settings/components/SettingsWizardLayout.tsx:92
 #: src/pages/settings/hooks/useSettingsOriginBreadcrumbs.ts:25
-#: src/pages/settings/SettingsMain.tsx:340
+#: src/pages/settings/SettingsMain.tsx:358
 msgid "Settings"
 msgstr "Tetapan"
 
@@ -9591,6 +10220,14 @@ msgstr "Permintaan Kongsi"
 msgid "Share revoked"
 msgstr "Perkongsian dibatalkan"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:281
+msgid "Share with groups"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:257
+msgid "Share with users"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:410
 msgid "Shared drive compatibility"
 msgstr "Keserasian pemacu dikongsi"
@@ -9599,6 +10236,15 @@ msgstr "Keserasian pemacu dikongsi"
 #: src/pages/folders/components/FolderSharePopover.tsx:463
 msgid "Shared successfully"
 msgstr "Dikongsi dengan jayanya"
+
+#: src/pages/reports/components/ReportsListView.tsx:206
+msgid "Shared with me"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:236
+#: src/pages/reports/components/ReportsListView.tsx:273
+msgid "Sharing"
+msgstr ""
 
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/FolderSharePopover.tsx:1021
@@ -9833,7 +10479,7 @@ msgstr "Dilangkau"
 msgid "Skipped (Will not be imported)"
 msgstr "Dilangkau (Tidak akan diimport)"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:455
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:463
 msgid "Smart PO Matching"
 msgstr "Padanan PO Pintar"
 
@@ -9866,6 +10512,10 @@ msgstr "Susunan"
 msgid "Sort Order *"
 msgstr "Susunan *"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:149
+msgid "Source"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step2ColumnMapping.tsx:85
 msgid "Source Field"
 msgstr "Medan Sumber"
@@ -9878,7 +10528,15 @@ msgstr "Fail Sumber"
 msgid "Source File:"
 msgstr "Fail Sumber:"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1038
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:176
+msgid "Source Form"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:152
+msgid "Source Type"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1041
 msgid "Source: Manual Entry"
 msgstr "Sumber: Kemasukan Manual"
 
@@ -9886,7 +10544,7 @@ msgstr "Sumber: Kemasukan Manual"
 msgid "Source: OCR Document"
 msgstr "Sumber: Dokumen OCR"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1052
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1055
 msgid "Source: PO Master (ERP/Excel Data)"
 msgstr "Sumber: Master PO (Data ERP/Excel)"
 
@@ -9899,9 +10557,9 @@ msgid "Standard SLA timeline. No pricing exceptions found."
 msgstr "Garis masa SLA standard. Tiada pengecualian harga dijumpai."
 
 #: src/pages/portal/components/PortalPicker.tsx:130
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:567
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:575
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:670
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:586
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:594
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:689
 msgid "Start"
 msgstr "Mula"
 
@@ -9965,11 +10623,15 @@ msgstr "Status"
 msgid "STATUS"
 msgstr "STATUS"
 
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:46
+msgid "Status rules"
+msgstr ""
+
 #: src/pages/requests/components/QuickFilters.tsx:215
 msgid "Status: {val}"
 msgstr "Status: {val}"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:163
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:187
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:473
 msgid "Statuses"
 msgstr "Status"
@@ -10053,13 +10715,17 @@ msgstr "Strategi Digunakan:"
 msgid "Streamline your Accounts Payable with intelligent PO matching, automated invoice routing, and seamless integrations."
 msgstr "Perkemas Akaun Pemiutang anda dengan padanan PO pintar, penghalaan invois automatik dan penyepaduan yang lancar."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:798
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:817
 msgid "Streamline your Accounts Payable. Automatically process invoices, match Purchase Orders, and gain complete visibility."
 msgstr "Perkemas Akaun Pemiutang anda. Memproses invois secara automatik, memadankan Pesanan Pembelian dan mendapatkan keterlihatan yang lengkap."
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:715
 msgid "Streamline your Purchase Orders. Automatically match columns, extract records, and configure ingestion logic."
 msgstr "Perkemas Pesanan Belian anda. Padankan lajur secara automatik, ekstrak rekod dan konfigurasikan logik pengingesan."
+
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:166
+msgid "Subject"
+msgstr ""
 
 #: src/pages/portal/components/PortalHome.tsx:400
 #~ msgid "Submission"
@@ -10077,7 +10743,7 @@ msgstr "penyerahan"
 #: src/pages/folders/components/DocumentDetailsView.tsx:1974
 #: src/pages/folders/components/DocumentDetailsView.tsx:1995
 #: src/pages/portal/components/PortalShell.tsx:120
-#: src/pages/portal/components/PortalWizard.tsx:843
+#: src/pages/portal/components/PortalWizard.tsx:789
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:108
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:121
 msgid "Submit"
@@ -10108,7 +10774,11 @@ msgstr "Berjaya mengimport entri {successCount}!"
 msgid "Successfully logged in"
 msgstr "Berjaya log masuk"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3788
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:891
+msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3824
 msgid "Suggested Allocation"
 msgstr "Cadangan Peruntukan"
 
@@ -10116,13 +10786,22 @@ msgstr "Cadangan Peruntukan"
 msgid "Suggested by AI"
 msgstr "Dicadangkan oleh AI"
 
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:136
+msgid "Suggested report plan"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1002
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:665
+msgid "Suggesting KPIs and charts for {repositoryName}..."
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:252
 msgid "supplier"
 msgstr "pembekal"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:840
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1943
-#: src/pages/requests/components/InboxList.tsx:1859
+#: src/pages/requests/components/InboxList.tsx:1866
 #: src/pages/requests/components/QuickFilters.tsx:351
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:19
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:203
@@ -10134,7 +10813,7 @@ msgstr "Pembekal"
 msgid "Supplier Address"
 msgstr "Alamat Pembekal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3717
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3753
 msgid "Supplier Code"
 msgstr "Kod Pembekal"
 
@@ -10142,15 +10821,15 @@ msgstr "Kod Pembekal"
 #~ msgid "Supplier Concentration & Risk"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:362
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:370
 msgid "Supplier Conflict"
 msgstr "Konflik Pembekal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3712
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3748
 msgid "Supplier Details"
 msgstr "Butiran Pembekal"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:358
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:366
 msgid "Supplier details differ."
 msgstr "Butiran pembekal berbeza."
 
@@ -10183,22 +10862,22 @@ msgstr "Radar Risiko Pembekal"
 msgid "Supplier Trend Insight"
 msgstr "Wawasan Trend Pembekal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3313
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3345
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3365
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3349
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3381
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3401
 msgid "Supplier Verification"
 msgstr "Pengesahan Pembekal"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1910
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1946
 msgid "Supplier verification completed: {0}"
 msgstr "Pengesahan pembekal selesai: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3699
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3735
 msgid "Supplier Verification Registry"
 msgstr "Daftar Pengesahan Pembekal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3377
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3413
 msgid "Supplier verified"
 msgstr "Pembekal disahkan"
 
@@ -10206,7 +10885,7 @@ msgstr "Pembekal disahkan"
 msgid "Supplier: {val}"
 msgstr "Pembekal: {val}"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:152
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:176
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:463
 msgid "Suppliers"
 msgstr "Pembekal"
@@ -10238,7 +10917,7 @@ msgid "Supports PDF and Images · Max 4 MB"
 msgstr "Menyokong PDF dan Imej · Maks 4 MB"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1669
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:871
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:890
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Menyokong PDF, Word, Excel, PowerPoint, Imej & Dokumen · Maks 50 MB"
 
@@ -10296,7 +10975,7 @@ msgstr "Medan Sistem"
 msgid "System menus cannot be deleted"
 msgstr "Menu sistem tidak boleh dipadamkan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3661
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3697
 msgid "System Response"
 msgstr "Respons Sistem"
 
@@ -10305,7 +10984,7 @@ msgid "Table"
 msgstr "Jadual"
 
 #: src/components/common/CustomFilter.tsx:991
-#: src/components/common/DynamicFilter.tsx:829
+#: src/components/common/DynamicFilter.tsx:830
 msgid "Table View"
 msgstr "Paparan Jadual"
 
@@ -10356,6 +11035,11 @@ msgstr "Templat & Muat Naik"
 msgid "Tenant ID is missing."
 msgstr "ID Penyewa tiada."
 
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:347
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:105
+msgid "Tenant is missing. Sign in again and retry."
+msgstr ""
+
 #: src/pages/folders/components/SignRequestAssignForm.tsx:202
 msgid "That email is already in the signing list."
 msgstr "E-mel itu sudah ada dalam senarai tandatangan."
@@ -10393,8 +11077,13 @@ msgstr "Tema"
 msgid "These documents currently satisfy the rule and would move to"
 msgstr "Dokumen ini pada masa ini memenuhi peraturan dan akan berpindah ke"
 
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:110
+msgid "Thinking..."
+msgstr ""
+
 #: src/pages/forms/FormEntriesPage.tsx:2073
 #: src/pages/forms/FormsPage.tsx:513
+#: src/pages/reports/components/ReportsListView.tsx:227
 msgid "This action is permanent and cannot be undone."
 msgstr "Tindakan ini kekal dan tidak boleh dibuat asal."
 
@@ -10407,6 +11096,8 @@ msgid "This branded sign-in link is invalid or no longer available."
 msgstr "Pautan log masuk berjenama ini tidak sah atau tidak tersedia lagi."
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:101
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1240
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1330
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:261
 msgid "This field is required."
@@ -10434,7 +11125,7 @@ msgstr "Folder ini belum lagi mengandungi sebarang folder atau fail."
 msgid "This is taking a bit longer. You can safely navigate away; we'll notify you in the inbox once ready."
 msgstr "Ini mengambil masa yang agak lama. Anda boleh menavigasi dengan selamat; kami akan memberitahu anda dalam peti masuk setelah bersedia."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:132
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:156
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:444
 msgid "This month"
 msgstr "bulan ini"
@@ -10451,7 +11142,15 @@ msgstr "Pautan portal ini tidak sah atau belum diterbitkan lagi."
 msgid "This related document cannot be removed."
 msgstr "Dokumen berkaitan ini tidak boleh dialih keluar."
 
-#: src/pages/portal/components/PortalDetail.tsx:193
+#: src/pages/reports/components/OverviewTab.tsx:212
+msgid "This report has no fields configured yet."
+msgstr ""
+
+#: src/pages/requests/components/KanbanView.tsx:234
+msgid "This request can only move to a connected stage."
+msgstr ""
+
+#: src/pages/portal/components/PortalDetail.tsx:194
 msgid "This request is missing an instance id."
 msgstr "Permintaan ini tiada id contoh."
 
@@ -10471,7 +11170,7 @@ msgstr "Kawasan tanda ini kepunyaan pengguna lain."
 msgid "This sign request link is invalid."
 msgstr "Pautan permintaan tanda ini tidak sah."
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:131
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:155
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:443
 msgid "This week"
 msgstr "minggu ini"
@@ -10481,7 +11180,7 @@ msgstr "minggu ini"
 msgid "This workbook contains only one worksheet. PO Import requires both Header and Line Item data. Please upload an Excel file containing at least two worksheets."
 msgstr "Buku kerja ini mengandungi hanya satu lembaran kerja. Import PO memerlukan data Pengepala dan Item Baris. Sila muat naik fail Excel yang mengandungi sekurang-kurangnya dua lembaran kerja."
 
-#: src/pages/portal/components/PortalWizard.tsx:1061
+#: src/pages/portal/components/PortalWizard.tsx:1007
 msgid "This workflow has no form configured."
 msgstr "Aliran kerja ini tidak mempunyai bentuk yang dikonfigurasikan."
 
@@ -10493,15 +11192,16 @@ msgstr "Padanan Tiga Hala"
 #~ msgid "Tile size reflects share of AP expenses"
 #~ msgstr ""
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:79
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:14
 msgid "Time"
 msgstr "Masa"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3867
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3903
 msgid "Time Remaining"
 msgstr "Masa Berbaki"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1388
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1390
 msgid "Time Running"
 msgstr "Masa Berjalan"
 
@@ -10509,7 +11209,7 @@ msgstr "Masa Berjalan"
 msgid "Time running from last action"
 msgstr "Masa berjalan dari tindakan terakhir"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:128
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:152
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:440
 msgid "Timeframe"
 msgstr "Jangka masa"
@@ -10523,6 +11223,10 @@ msgstr "Garis Masa"
 msgid "Timestamp Version"
 msgstr "Versi Cap Masa"
 
+#: src/pages/report-builder/components/steps/ScheduleStep.tsx:85
+msgid "Timezone"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1032
 msgid "To begin: what should this folder be named? Use a clear business name, choose an example below, or describe a full folder idea to generate a complete setup."
 msgstr "Untuk bermula: apakah nama folder ini? Gunakan nama perniagaan yang jelas, pilih contoh di bawah, atau terangkan idea folder penuh untuk jana persediaan lengkap."
@@ -10531,7 +11235,7 @@ msgstr "Untuk bermula: apakah nama folder ini? Gunakan nama perniagaan yang jela
 msgid "to Trash?"
 msgstr "ke Sampah?"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:130
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:154
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:442
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2152
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2166
@@ -10608,6 +11312,10 @@ msgstr "Jumlah Dibayar"
 msgid "Total Records:"
 msgstr "Jumlah Rekod:"
 
+#: src/pages/reports/components/ReportKpiCards.tsx:31
+msgid "Total runs"
+msgstr ""
+
 #: src/pages/portal/components/PortalHome.tsx:118
 #~ msgid "Total submitted"
 #~ msgstr ""
@@ -10616,7 +11324,7 @@ msgstr "Jumlah Rekod:"
 msgid "Total Submitted"
 msgstr "Jumlah Dihantar"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1671
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1673
 msgid "Total Value"
 msgstr "Jumlah Nilai"
 
@@ -10746,7 +11454,7 @@ msgstr "Tidak dapat menyalin ringkasan"
 msgid "Unable to create sign request"
 msgstr "Tidak dapat membuat permintaan tandatangan"
 
-#: src/pages/portal/components/PortalWizard.tsx:967
+#: src/pages/portal/components/PortalWizard.tsx:913
 msgid "Unable to create this request."
 msgstr "Tidak dapat membuat permintaan ini."
 
@@ -10791,15 +11499,16 @@ msgstr "Tidak dapat memuatkan permintaan tandatangan"
 msgid "Unable to load submissions for the selected workflows."
 msgstr "Tidak dapat memuatkan penyerahan untuk aliran kerja yang dipilih."
 
-#: src/pages/portal/components/PortalDetail.tsx:77
+#: src/pages/portal/components/PortalDetail.tsx:78
 msgid "Unable to load this request."
 msgstr "Tidak dapat memuatkan permintaan ini."
 
-#: src/pages/portal/components/PortalWizard.tsx:145
+#: src/pages/portal/components/PortalWizard.tsx:139
 msgid "Unable to load this workflow form."
 msgstr "Tidak dapat memuatkan borang aliran kerja ini."
 
-#: src/pages/portal/components/PortalDetail.tsx:241
+#: src/pages/portal/components/PortalDetail.tsx:242
+#: src/pages/requests/components/KanbanView.tsx:263
 msgid "Unable to move this request."
 msgstr "Tidak dapat mengalihkan permintaan ini."
 
@@ -10807,9 +11516,9 @@ msgstr "Tidak dapat mengalihkan permintaan ini."
 msgid "Unable to open sign request"
 msgstr "Tidak dapat membuka permintaan tandatangan"
 
-#: src/pages/portal/components/PortalWizard.tsx:424
-#: src/pages/portal/components/PortalWizard.tsx:588
-#: src/pages/portal/components/PortalWizard.tsx:812
+#: src/pages/portal/components/PortalWizard.tsx:370
+#: src/pages/portal/components/PortalWizard.tsx:534
+#: src/pages/portal/components/PortalWizard.tsx:758
 msgid "Unable to process this document."
 msgstr "Tidak dapat memproses dokumen ini."
 
@@ -10843,7 +11552,7 @@ msgstr "Tidak dapat tetapkan kata laluan"
 msgid "Unable to sign in"
 msgstr "Tidak dapat log masuk"
 
-#: src/pages/portal/components/PortalWizard.tsx:365
+#: src/pages/portal/components/PortalWizard.tsx:311
 msgid "Unable to start this workflow."
 msgstr "Tidak dapat memulakan aliran kerja ini."
 
@@ -10855,8 +11564,8 @@ msgstr "Tidak dapat hantar tandatangan. Sila cuba lagi."
 msgid "Unable to update user"
 msgstr "Tidak dapat mengemas kini pengguna"
 
-#: src/pages/portal/components/PortalWizard.tsx:652
-#: src/pages/portal/components/PortalWizard.tsx:697
+#: src/pages/portal/components/PortalWizard.tsx:598
+#: src/pages/portal/components/PortalWizard.tsx:643
 msgid "Unable to upload {fileName}."
 msgstr "Tidak dapat memuat naik {fileName}."
 
@@ -10868,7 +11577,7 @@ msgstr "Tidak dapat memuat naik {fileName}."
 msgid "Unable to verify OTP"
 msgstr "Tidak dapat mengesahkan OTP"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:402
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:410
 msgid "Undercharged"
 msgstr "Dicaj Kurang"
 
@@ -10898,10 +11607,14 @@ msgstr "Ralat tidak diketahui"
 msgid "Unknown Item"
 msgstr "Item Tidak Diketahui"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1547
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1551
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1549
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1553
 msgid "Unknown Supplier"
 msgstr "Pembekal Tidak Diketahui"
+
+#: src/pages/report-builder/hooks/useUserGroupOptions.ts:67
+msgid "Unknown User"
+msgstr ""
 
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:48
 msgid "Unread ({unreadCount})"
@@ -10935,9 +11648,17 @@ msgstr "Tanpa tajuk Borang"
 msgid "Untitled policy"
 msgstr "Dasar tanpa tajuk"
 
+#: src/pages/report-builder/components/ReportBuilderWizard.tsx:119
+msgid "Untitled Report"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:348
 msgid "Up next"
 msgstr "Seterusnya"
+
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:273
+msgid "Update card"
+msgstr ""
 
 #: src/pages/settings/components/GroupManagement.tsx:818
 msgid "Update Group"
@@ -11035,7 +11756,7 @@ msgstr "Muat naik favicon"
 msgid "Upload Files"
 msgstr "Muat Naik Fail"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:810
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:829
 msgid "Upload invoice"
 msgstr "Muat naik invois"
 
@@ -11081,11 +11802,11 @@ msgstr "Tandatangan dimuat naik"
 
 #. placeholder {0}: uploadProgressText.current
 #. placeholder {1}: uploadProgressText.total
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:844
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:863
 msgid "Uploading & Processing ({0}/{1})..."
 msgstr "Memuat naik & Memproses ({0}/{1})..."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:845
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:864
 msgid "Uploading & Processing..."
 msgstr "Memuat naik & Memproses..."
 
@@ -11159,6 +11880,10 @@ msgstr "Gunakan storan awan yang selamat"
 msgid "Use the login password field from the master for authentication"
 msgstr "Gunakan medan kata laluan log masuk daripada induk untuk pengesahan"
 
+#: src/pages/report-builder/components/steps/AskAiStep.tsx:160
+msgid "Use this plan"
+msgstr ""
+
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1906
 #~ msgid "Use this setup"
 #~ msgstr "Guna persediaan ini"
@@ -11209,7 +11934,7 @@ msgstr "Pengguna Email"
 #: src/pages/settings/components/ManageUser.tsx:1543
 #: src/pages/settings/components/ManageUser.tsx:2831
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:23
-#: src/pages/settings/SettingsMain.tsx:281
+#: src/pages/settings/SettingsMain.tsx:299
 msgid "User Management"
 msgstr "Pengurusan Pengguna"
 
@@ -11303,9 +12028,17 @@ msgstr "Pengesahan"
 msgid "VALIDATION"
 msgstr "PENGESAHAN"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3596
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3632
 msgid "Validation Log"
 msgstr "Log Pengesahan"
+
+#: src/pages/report-builder/components/steps/FiltersStep.tsx:123
+msgid "Value"
+msgstr ""
+
+#: src/pages/report-builder/components/steps/StatusRulesEditor.tsx:71
+msgid "Value equals..."
+msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:686
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:299
@@ -11317,15 +12050,15 @@ msgstr "Nilai..."
 msgid "Vendor"
 msgstr "Penjual"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:392
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:400
 msgid "Vendor Check"
 msgstr "Semakan Vendor"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:388
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:396
 msgid "Vendor identity mismatch."
 msgstr "Identiti vendor tidak sepadan."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3577
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3613
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "Nama Vendor"
@@ -11334,7 +12067,7 @@ msgstr "Nama Vendor"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "Vendor yang memerlukan hubungan segera atau penyelesaian pertanyaan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1917
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1953
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "Pengesahan gagal. 1 kredit telah dikembalikan."
 
@@ -11342,7 +12075,7 @@ msgstr "Pengesahan gagal. 1 kredit telah dikembalikan."
 msgid "Verified"
 msgstr "Disahkan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3328
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3364
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "Sahkan"
@@ -11367,8 +12100,8 @@ msgstr "Sahkan dasar yang dikonfigurasikan sebelum mengaktifkannya untuk \"{fold
 msgid "Verify your security rules before applying settings."
 msgstr "Sahkan peraturan keselamatan anda sebelum menggunakan tetapan."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3343
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3355
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3379
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3391
 msgid "Verifying..."
 msgstr "Mengesahkan..."
 
@@ -11394,7 +12127,7 @@ msgstr "Strategi versi disimpan. Adakah anda memerlukan integrasi ERP atau siste
 msgid "View"
 msgstr "Lihat"
 
-#: src/pages/settings/SettingsMain.tsx:314
+#: src/pages/settings/SettingsMain.tsx:332
 msgid "View activity logs, security events, and configuration change history."
 msgstr "Lihat log aktiviti, acara keselamatan dan sejarah perubahan konfigurasi."
 
@@ -11411,7 +12144,7 @@ msgstr "Lihat Butiran"
 msgid "View Line Items Table"
 msgstr "Lihat Jadual Item Baris"
 
-#: src/pages/dashboard/components/DashboardAiBuilder.tsx:904
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1141
 msgid "View Mode"
 msgstr "Mod Lihat"
 
@@ -11428,13 +12161,38 @@ msgstr "Mod Lihat"
 msgid "vs last period"
 msgstr "vs tempoh terakhir"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1520
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1537
 msgid "Wait for Balance"
 msgstr "Tunggu Baki"
+
+#: src/pages/portal/components/PortalProgressCard.tsx:43
+msgid "Waiting for {email} approval"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:48
+msgid "Waiting for agent review"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1603
 msgid "Waiting for field verification"
 msgstr "Menunggu pengesahan medan"
+
+#: src/pages/portal/components/PortalProgressCard.tsx:50
+msgid "Waiting for payment"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:45
+msgid "Waiting for user approval"
+msgstr ""
+
+#: src/pages/dashboard/components/DashboardAiBuilder.tsx:1083
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:711
+msgid "Waiting to generate dashboard schema"
+msgstr ""
+
+#: src/pages/portal/components/PortalProgressCard.tsx:52
+msgid "Waiting to start"
+msgstr ""
 
 #: src/pages/settings/components/AuditMonitoring.tsx:150
 #: src/pages/settings/components/AuditMonitoring.tsx:287
@@ -11473,6 +12231,10 @@ msgstr "Selamat datang ke {0}"
 msgid "Welcome to AP Automation Setup"
 msgstr "Selamat datang ke Persediaan Automasi AP"
 
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:224
+msgid "What does this report show?"
+msgstr ""
+
 #: src/pages/forms/components/AiFormBuilder.tsx:146
 msgid "What form shall we create?"
 msgstr "Apakah bentuk yang akan kita cipta?"
@@ -11510,7 +12272,8 @@ msgstr "Pembekal manakah yang membawa pendedahan risiko paling banyak?"
 msgid "Which versioning strategy should apply when the same file is uploaded again?"
 msgstr "Strategi versi yang manakah harus digunakan apabila fail yang sama dimuat naik semula?"
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:716
+#: src/pages/report-builder/components/steps/DetailsStep.tsx:54
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:735
 #: src/pages/settings/components/PortalConfiguration.tsx:977
 #: src/pages/settings/components/PortalConfiguration.tsx:985
 msgid "Workflow"
@@ -11530,15 +12293,19 @@ msgstr "Konfigurasi Aliran Kerja"
 #~ msgid "Workflow Form"
 #~ msgstr ""
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:609
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:628
 msgid "Workflow ID is missing. Cannot start workflow."
 msgstr "ID Aliran Kerja tiada. Tidak boleh memulakan aliran kerja."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:527
+#: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:248
+msgid "Workflow stages"
+msgstr ""
+
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:535
 msgid "Workflow started but did not return a valid instanceId or apAgentJobId."
 msgstr "Aliran kerja bermula tetapi tidak mengembalikan instanceId atau apAgentJobId yang sah."
 
-#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:517
+#: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:525
 msgid "Workflow started but did not return any data."
 msgstr "Aliran kerja bermula tetapi tidak mengembalikan sebarang data."
 
@@ -11550,7 +12317,7 @@ msgstr "Aliran kerja bermula tetapi tidak mengembalikan sebarang data."
 #: src/pages/settings/components/PortalConfiguration.tsx:1373
 #: src/pages/settings/components/PortalConfiguration.tsx:1527
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
-#: src/pages/settings/SettingsMain.tsx:269
+#: src/pages/settings/SettingsMain.tsx:281
 #: src/pages/workflows/components/Table.tsx:519
 #: src/pages/workflows/WorkflowsPage.tsx:13
 msgid "Workflows"
@@ -11577,6 +12344,7 @@ msgid "years"
 msgstr "tahun"
 
 #: src/pages/forms/FormsPage.tsx:559
+#: src/pages/reports/components/ReportsListView.tsx:254
 msgid "Yes, Delete"
 msgstr "Ya, Padam"
 
@@ -11639,10 +12407,12 @@ msgstr "Tandatangan anda berjaya dihantar. Anda boleh tutup halaman ini."
 msgid "your workspace"
 msgstr "ruang kerja anda"
 
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:284
 #: src/pages/folders/components/DocumentSigningPage.tsx:2930
 msgid "Zoom in"
 msgstr "Zum masuk"
 
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:272
 #: src/pages/folders/components/DocumentSigningPage.tsx:2916
 msgid "Zoom out"
 msgstr "Zum keluar"

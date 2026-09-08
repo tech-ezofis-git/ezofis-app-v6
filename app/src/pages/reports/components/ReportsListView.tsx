@@ -8,7 +8,6 @@ import useDataTableState from '@/components/base/data-table/hooks/useDataTableSt
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
-import ReportStatusBadge from '@/components/common/ReportStatusBadge'
 import { REPORT_DOMAINS } from '@/pages/report-builder/constants'
 import useReportsStore from '@/pages/report-builder/stores/useReportsStore'
 import authUserStore from '@/stores/authUserStore'
@@ -119,7 +118,7 @@ const ReportsListView = ({
       {
         id: 'name',
         label: t`Name`,
-        size: 220,
+        size: 240,
         renderCell: (row: Report) => (
           <span
             className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
@@ -132,68 +131,22 @@ const ReportsListView = ({
       {
         id: 'domain',
         label: t`Domain`,
-        size: 180,
+        size: 200,
         renderCell: (row: Report) => (
           <span className='text-gray-10'>{row.domain}</span>
         ),
       },
       {
-        id: 'status',
-        label: t`Status`,
-        size: 120,
-        renderCell: (row: Report) => <ReportStatusBadge status={row.status} />,
-      },
-      {
-        id: 'scheduled',
-        label: t`Scheduled`,
-        size: 110,
-        renderCell: (row: Report) =>
-          row.scheduled ? (
-            <span className='inline-flex items-center gap-1 text-secondary-11'>
-              <Icon className='size-3.5' name='lucide:calendar-clock' />
-              {t`Yes`}
-            </span>
-          ) : (
-            <span className='text-gray-9'>{t`No`}</span>
-          ),
-      },
-      {
-        id: 'owner',
-        label: t`Owner`,
-        size: 160,
-        renderCell: (row: Report) => row.owner,
-      },
-      {
-        id: 'visibility',
-        label: t`Sharing`,
-        size: 150,
-        renderCell: (row: Report) => (
-          <span className='inline-flex items-center gap-1.5 text-13 text-gray-11'>
-            <Icon
-              className='size-3.5 text-gray-9'
-              name={
-                row.visibility === 'Private'
-                  ? 'lucide:lock'
-                  : 'lucide:users-round'
-              }
-            />
-            {row.visibility === 'Private'
-              ? t`Private to me`
-              : t`Shared with me`}
-          </span>
-        ),
-      },
-      {
-        id: 'runs',
-        label: t`Runs`,
-        size: 90,
-        renderCell: (row: Report) => String(row.runs),
-      },
-      {
-        id: 'modified',
-        label: t`Modified`,
-        size: 170,
+        id: 'modifiedAt',
+        label: t`Modified At`,
+        size: 180,
         renderCell: (row: Report) => formatDatetime(row.modified, 'datetime'),
+      },
+      {
+        id: 'modifiedBy',
+        label: t`Modified By`,
+        size: 160,
+        renderCell: (row: Report) => row.owner || '-',
       },
       {
         className: 'p-1',
@@ -227,7 +180,6 @@ const ReportsListView = ({
         ),
       },
     ],
-
     [
       t,
       duplicateReport,
@@ -306,17 +258,6 @@ const ReportsListView = ({
       )}
 
       <div className='bg-gray-50/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
-        <div className='mb-3 flex flex-wrap items-center justify-between gap-3'>
-          <h2 className='text-15 font-semibold text-gray-13'>{t`Reports`}</h2>
-
-          <Button
-            color='primary'
-            icon='lucide:plus'
-            label={t`New Report`}
-            onClick={onCreateReport}
-          />
-        </div>
-
         <div className='mb-3'>
           <CustomFilter
             searchPlaceholder={t`Search reports...`}
