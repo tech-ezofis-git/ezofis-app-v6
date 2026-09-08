@@ -48,6 +48,8 @@ interface ReportsListViewProps {
   onEditReport: (report: Report) => void
   onOpenReport: (report: Report) => void
   onScheduleReport: (report: Report) => void
+  showCreateButton?: boolean
+  variant?: 'standalone' | 'settings'
 }
 
 const ReportsListView = ({
@@ -55,8 +57,13 @@ const ReportsListView = ({
   onEditReport,
   onOpenReport,
   onScheduleReport,
+  showCreateButton,
+  variant = 'standalone',
 }: ReportsListViewProps) => {
   const { t } = useLingui()
+
+  const shouldShowCreate =
+    showCreateButton ?? (variant === 'settings')
 
   const reports = useReportsStore((state) => state.reports)
   const deleteReport = useReportsStore((state) => state.deleteReport)
@@ -72,16 +79,21 @@ const ReportsListView = ({
   const [deletingReport, setDeletingReport] = useState<Report | null>(null)
 
   const { searchState, ...restState } = useDataTableState({
-    storageKey: 'ezofis_reports_table_state',
+    storageKey:
+      variant === 'settings'
+        ? 'ezofis_settings_reports_table_state'
+        : 'ezofis_reports_table_state',
   })
 
-  const myReports = useMemo(
-    () => reports.filter((report) => isVisibleToUser(report, currentUserId)),
-    [reports, currentUserId],
-  )
+  const baseReports = useMemo(() => {
+    if (variant === 'settings') {
+      return reports
+    }
+    return reports.filter((report) => isVisibleToUser(report, currentUserId))
+  }, [variant, reports, currentUserId])
 
   const filteredReports = useMemo(() => {
-    return myReports.filter((report) => {
+    return baseReports.filter((report) => {
       if (!matchesOwnershipScope(report, ownershipFilter)) return false
       if (domainFilter && report.domain !== domainFilter) return false
       if (search) {
@@ -94,7 +106,7 @@ const ReportsListView = ({
       }
       return true
     })
-  }, [myReports, domainFilter, ownershipFilter, search])
+  }, [baseReports, domainFilter, ownershipFilter, search])
 
   const paginatedReports = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -114,8 +126,81 @@ const ReportsListView = ({
     [paginatedReports],
   )
 
-  const columns: Column[] = useMemo(
-    () => [
+  const columns: Column[] = useMemo(() => {
+    if (variant === 'standalone') {
+      return [
+        {
+          id: 'name',
+          label: t`Name`,
+          size: 240,
+          renderCell: (row: Report) => (
+            <span
+              className='cursor-pointer font-medium transition-colors hover:text-gray-13 hover:underline'
+              onClick={() => onOpenReport(row)}
+            >
+              {row.name}
+            </span>
+          ),
+        },
+        {
+          id: 'domain',
+          label: t`Domain`,
+          size: 200,
+          renderCell: (row: Report) => (
+            <span className='text-gray-10'>{row.domain}</span>
+          ),
+        },
+        {
+          id: 'modifiedAt',
+          label: t`Modified At`,
+          size: 180,
+          renderCell: (row: Report) =>
+            formatDatetime(row.modified, 'datetime'),
+        },
+        {
+          id: 'modifiedBy',
+          label: t`Modified By`,
+          size: 160,
+          renderCell: (row: Report) => row.owner || '-',
+        },
+        {
+          className: 'p-1',
+          enableSorting: false,
+          hideHeader: true,
+          id: 'actions',
+          isDisplayColumn: true,
+          label: t`Actions`,
+          showMenu: false,
+          size: 40,
+          renderCell: (row: Report) => (
+            <div className='flex items-center justify-center'>
+              <RowActionsMenu
+                report={row}
+                onDelete={setDeletingReport}
+                onDuplicate={(r) => {
+                  duplicateReport(r.id)
+                  showToast({
+                    message: t`Report duplicated`,
+                    variant: 'success',
+                  })
+                }}
+                onEdit={onEditReport}
+                onRunNow={(r) => {
+                  runReportNow(r.id)
+                  showToast({
+                    message: t`Report run started`,
+                    variant: 'success',
+                  })
+                }}
+                onSchedule={onScheduleReport}
+              />
+            </div>
+          ),
+        },
+      ]
+    }
+
+    return [
       {
         id: 'name',
         label: t`Name`,
@@ -211,7 +296,10 @@ const ReportsListView = ({
               onDelete={setDeletingReport}
               onDuplicate={(r) => {
                 duplicateReport(r.id)
-                showToast({ message: t`Report duplicated`, variant: 'success' })
+                showToast({
+                  message: t`Report duplicated`,
+                  variant: 'success',
+                })
               }}
               onEdit={onEditReport}
               onRunNow={(r) => {
@@ -226,17 +314,16 @@ const ReportsListView = ({
           </div>
         ),
       },
-    ],
-
-    [
-      t,
-      duplicateReport,
-      runReportNow,
-      onEditReport,
-      onOpenReport,
-      onScheduleReport,
-    ],
-  )
+    ]
+  }, [
+    variant,
+    t,
+    duplicateReport,
+    runReportNow,
+    onEditReport,
+    onOpenReport,
+    onScheduleReport,
+  ])
 
   const { table } = useDataTable({
     columns,
@@ -306,19 +393,17 @@ const ReportsListView = ({
       )}
 
       <div className='bg-gray-50/50 flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
-        <div className='mb-3 flex flex-wrap items-center justify-between gap-3'>
-          <h2 className='text-15 font-semibold text-gray-13'>{t`Reports`}</h2>
-
-          <Button
-            color='primary'
-            icon='lucide:plus'
-            label={t`New Report`}
-            onClick={onCreateReport}
-          />
-        </div>
-
         <div className='mb-3'>
           <CustomFilter
+            addButton={
+              shouldShowCreate
+                ? {
+                    label: t`New Report`,
+                    tooltip: t`New Report`,
+                    onClick: onCreateReport,
+                  }
+                : undefined
+            }
             searchPlaceholder={t`Search reports...`}
             searchQuery={search}
             showReset={Boolean(search || domainFilter || ownershipFilter)}

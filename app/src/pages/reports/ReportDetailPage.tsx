@@ -3,10 +3,6 @@ import { useNavigate } from '@tanstack/react-router'
 import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
-import showToast from '@/components/base/toast/showToast'
-import ReportStatusBadge from '@/components/common/ReportStatusBadge'
-import { openReportBuilder } from '@/pages/report-builder/navigation'
-import useReportBuilderDraftStore from '@/pages/report-builder/stores/useReportBuilderDraftStore'
 import useReportsStore from '@/pages/report-builder/stores/useReportsStore'
 import OverviewTab from './components/OverviewTab'
 import ReportKpiCards from './components/ReportKpiCards'
@@ -21,10 +17,6 @@ const ReportDetailPage = ({ reportId }: Props) => {
 
   const report = useReportsStore((state) =>
     state.reports.find((r) => r.id === reportId),
-  )
-  const runReportNow = useReportsStore((state) => state.runReportNow)
-  const loadFromReport = useReportBuilderDraftStore(
-    (state) => state.loadFromReport,
   )
 
   if (!report) {
@@ -56,42 +48,10 @@ const ReportDetailPage = ({ reportId }: Props) => {
           <h1 className='truncate text-15 font-semibold text-gray-13'>
             {report.name}
           </h1>
-          <ReportStatusBadge status={report.status} />
           <span className='hidden items-center gap-1 text-12 text-gray-9 sm:inline-flex'>
             <Icon className='size-3.5' name='lucide:database' />
             {report.domain}
           </span>
-          <span className='hidden items-center gap-1 text-12 text-gray-9 md:inline-flex'>
-            <Icon className='size-3.5' name='lucide:play' />
-            {(() => {
-              const runs = report.runs
-              return t`${runs} runs`
-            })()}
-          </span>
-        </div>
-
-        <div className='flex shrink-0 items-center gap-2'>
-          <Button
-            color='gray'
-            icon='lucide:play'
-            label={t`Run now`}
-            size='sm'
-            variant='outline'
-            onClick={() => {
-              runReportNow(report.id)
-              showToast({ message: t`Report run started`, variant: 'success' })
-            }}
-          />
-          <Button
-            color='primary'
-            icon='lucide:edit'
-            label={t`Edit`}
-            size='sm'
-            onClick={() => {
-              loadFromReport(report)
-              openReportBuilder(navigate)
-            }}
-          />
         </div>
       </div>
 
@@ -105,3 +65,4 @@ const ReportDetailPage = ({ reportId }: Props) => {
 
 ReportDetailPage.displayName = 'ReportDetailPage'
 export default ReportDetailPage
+
