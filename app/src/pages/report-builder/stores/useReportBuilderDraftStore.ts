@@ -6,6 +6,7 @@ import type {
   ReportFieldSetting,
   ReportFilter,
   ReportSchedule,
+  ReportSourceType,
   ReportStatus,
   ReportVisibility,
 } from '../types'
@@ -25,7 +26,8 @@ export interface ReportDraft {
   sharedGroups: string[]
   sharedUsers: string[]
   sourceFormId: string
-  sourceType: 'Master' | 'Workflow' | ''
+  sourceId: string
+  sourceType: ReportSourceType
   status: ReportStatus
   visibility: ReportVisibility
 }
@@ -44,6 +46,7 @@ export const EMPTY_DRAFT: ReportDraft = {
   sharedGroups: [],
   sharedUsers: [],
   sourceFormId: '',
+  sourceId: '',
   sourceType: '',
   status: 'Draft',
   visibility: 'Private',
@@ -77,6 +80,7 @@ const useReportBuilderDraftStore = create<ReportBuilderDraftState>()(
             sharedGroups: report.sharedGroups,
             sharedUsers: report.sharedUsers,
             sourceFormId: report.sourceFormId ?? '',
+            sourceId: report.sourceId ?? '',
             sourceType: report.sourceType ?? '',
             status: report.status,
             visibility: report.visibility,

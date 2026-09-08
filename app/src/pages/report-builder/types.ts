@@ -7,6 +7,8 @@ export interface DomainField {
   type: ReportFieldType
 }
 
+export type ReportSourceType = 'Workflow' | 'Folder' | 'Master' | ''
+
 export interface Report {
   createdAt: string
   customFields: Question[]
@@ -24,8 +26,9 @@ export interface Report {
   scheduled: boolean
   sharedGroups: string[]
   sharedUsers: string[]
-  sourceFormId: string
-  sourceType: 'Master' | 'Workflow' | ''
+  sourceFormId?: string
+  sourceId?: string
+  sourceType: ReportSourceType
   status: ReportStatus
   visibility: ReportVisibility
 }

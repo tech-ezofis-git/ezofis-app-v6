@@ -56,7 +56,11 @@ const FieldsStepFormSource = () => {
     fields: sourceFields,
     isError,
     isLoading,
-  } = useReportSourceFields(draft.sourceFormId)
+  } = useReportSourceFields(
+    draft.sourceFormId,
+    draft.sourceType,
+    draft.sourceId,
+  )
   const allFields: Question[] = [...sourceFields, ...draft.customFields]
 
   const availableFields = allFields.filter(

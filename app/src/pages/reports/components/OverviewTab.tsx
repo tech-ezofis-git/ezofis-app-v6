@@ -34,14 +34,21 @@ const OverviewTab = ({ report }: Props) => {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
-  const isSourceForm = Boolean(report.sourceFormId)
+  const hasDynamicSource = Boolean(
+    report.sourceFormId || report.sourceId || report.sourceType,
+  )
   const { fields: sourceFields } = useReportSourceFields(
-    isSourceForm ? report.sourceFormId : '',
+    report.sourceFormId || report.sourceId || '',
+    report.sourceType,
+    report.sourceId,
   )
 
   const previewColumns: PreviewColumn[] = useMemo(() => {
-    if (isSourceForm) {
-      const allFields: Question[] = [...sourceFields, ...report.customFields]
+    if (hasDynamicSource || sourceFields.length > 0) {
+      const allFields: Question[] = [
+        ...sourceFields,
+        ...(report.customFields ?? []),
+      ]
       return report.fields
         .map((fieldId) => {
           const field = allFields.find((f) => f.id === fieldId)
@@ -70,7 +77,7 @@ const OverviewTab = ({ report }: Props) => {
       })
       .filter((c): c is PreviewColumn => Boolean(c))
   }, [
-    isSourceForm,
+    hasDynamicSource,
     sourceFields,
     report.customFields,
     report.fields,
@@ -79,9 +86,10 @@ const OverviewTab = ({ report }: Props) => {
   ])
 
   const sourceRows: Record<string, string>[] = useMemo(() => {
-    if (isSourceForm) return buildSampleRows(previewColumns)
+    if (hasDynamicSource || sourceFields.length > 0)
+      return buildSampleRows(previewColumns)
     return SAMPLE_ROWS[report.domain as ReportDomain] || []
-  }, [isSourceForm, previewColumns, report.domain])
+  }, [hasDynamicSource, sourceFields.length, previewColumns, report.domain])
 
   // Any column whose values are categorical (a computed-status column, or a
   // Choice/Select-typed source field) gets its own filter dropdown, built

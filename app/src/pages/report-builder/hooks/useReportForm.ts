@@ -4,7 +4,7 @@ import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
 
 export const reportDetailsSchema = z.object({
   description: z.string().optional(),
-  domain: z.string().min(1, 'Domain is required'),
+  domain: z.string().optional(),
   name: z.string().min(1, 'Report name is required'),
 })
 

@@ -20,13 +20,13 @@ const FieldsStep = () => {
         <p className='text-13 text-gray-10'>{t`Pick which fields appear in this report, then configure column labels, calculations, and computed status.`}</p>
       </div>
 
-      {draft.sourceFormId ? (
+      {draft.sourceFormId || draft.sourceId || draft.sourceType ? (
         <FieldsStepFormSource />
       ) : draft.domain ? (
         <FieldsStepLegacyDomain />
       ) : (
         <div className='rounded-xl border border-dashed border-gray-4 py-16 text-center text-13 text-gray-10'>
-          {t`Select a source (or domain) in the Details step first.`}
+          {t`Select a source in the Details step first.`}
         </div>
       )}
     </div>

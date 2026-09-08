@@ -2,17 +2,19 @@ import { useLingui } from '@lingui/react/macro'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import type { Option } from '@/types/option'
+import { getRepositoriesQueryOptions } from '@/api/folders/queries'
 import {
-  getMasterFormsQueryOptions,
-  getWorkflowFormsQueryOptions,
-} from '@/api/form/queries'
+  createPublishedWorkflowBrowsePayload,
+  mapPublishedBrowseResponseToOptions,
+  workflowsApiV6,
+} from '@/api/v6/workflows'
+import { getWorkflowListQueryOptions } from '@/api/workflow/queries'
 import InputRadioCard from '@/components/base/inputs/InputRadioCard'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSelectMultiple from '@/components/base/inputs/InputSelectMultiple'
 import InputText from '@/components/base/inputs/InputText'
 import InputTextarea from '@/components/base/inputs/InputTextarea'
-import type { ReportVisibility } from '../../types'
-import { REPORT_DOMAINS } from '../../constants'
+import type { ReportSourceType, ReportVisibility } from '../../types'
 import useReportForm from '../../hooks/useReportForm'
 import useUserGroupOptions from '../../hooks/useUserGroupOptions'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
@@ -44,48 +46,119 @@ const DetailsStep = () => {
   const { form, syncField } = useReportForm()
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
-  const domainOptions = REPORT_DOMAINS.map((domain) => ({
-    id: domain,
-    name: domain,
-  }))
 
   const sourceTypeOptions: Option[] = [
-    { id: 'Master', name: t`Master` },
     { id: 'Workflow', name: t`Workflow` },
+    { id: 'Folder', name: t`Folder` },
   ]
 
-  const masterFormsQuery = useQuery({
-    ...getMasterFormsQueryOptions(),
-    enabled: draft.sourceType === 'Master',
-  })
-  const workflowFormsQuery = useQuery({
-    ...getWorkflowFormsQueryOptions(),
+  const workflowBrowsePayload = useMemo(
+    () => createPublishedWorkflowBrowsePayload({ filterBy: [] }),
+    [],
+  )
+  const workflowsQuery = useQuery({
+    ...getWorkflowListQueryOptions(workflowBrowsePayload),
     enabled: draft.sourceType === 'Workflow',
   })
 
-  const isSourceFormsLoading =
-    draft.sourceType === 'Master'
-      ? masterFormsQuery.isLoading
-      : draft.sourceType === 'Workflow'
-        ? workflowFormsQuery.isLoading
-        : false
-  const isSourceFormsError =
-    draft.sourceType === 'Master'
-      ? masterFormsQuery.isError
-      : draft.sourceType === 'Workflow'
-        ? workflowFormsQuery.isError
-        : false
+  const workflowOptions: Option[] = useMemo(() => {
+    return mapPublishedBrowseResponseToOptions(workflowsQuery.data ?? null).map(
+      (w) => ({
+        id: String(w.id),
+        name: w.name || String(w.id),
+      }),
+    )
+  }, [workflowsQuery.data])
 
-  const sourceFormOptions: Option[] = useMemo(() => {
-    const forms: Array<{ id: number | string; name: string }> =
-      draft.sourceType === 'Workflow'
-        ? (workflowFormsQuery.data ?? [])
-        : draft.sourceType === 'Master'
-          ? (masterFormsQuery.data ?? [])
-          : []
-    if (!Array.isArray(forms)) return []
-    return forms.map((f) => ({ id: String(f.id), name: String(f.name) }))
-  }, [draft.sourceType, masterFormsQuery.data, workflowFormsQuery.data])
+  const foldersQuery = useQuery({
+    ...getRepositoriesQueryOptions(),
+    enabled: draft.sourceType === 'Folder',
+  })
+
+  const folderOptions: Option[] = useMemo(() => {
+    return (foldersQuery.data ?? []).map((f: any) => ({
+      id: String(f.id),
+      name: String(f.name),
+    }))
+  }, [foldersQuery.data])
+
+  const handleSelectWorkflow = async (option: Option | null) => {
+    if (!option) {
+      setDraft({
+        customFields: [],
+        domain: '',
+        fields: [],
+        fieldSettings: {},
+        filters: [],
+        sourceFormId: '',
+        sourceId: '',
+      })
+      syncField('domain', '')
+      return
+    }
+
+    const workflowId = String(option.id)
+    const workflowName = String(option.name)
+
+    let wFormId = ''
+    try {
+      const res = await workflowsApiV6.getWorkflowById(workflowId)
+      if (res.data) {
+        const wf = res.data
+        wFormId = String(
+          wf.formId ??
+            wf.wFormId ??
+            wf.settings?.general?.initiateUsing?.formId ??
+            '',
+        )
+      }
+    } catch (e) {
+      console.error('Failed to load workflow form id:', e)
+    }
+
+    setDraft({
+      customFields: [],
+      domain: workflowName,
+      fields: [],
+      fieldSettings: {},
+      filters: [],
+      sourceFormId: wFormId,
+      sourceId: workflowId,
+      sourceType: 'Workflow',
+    })
+    syncField('domain', workflowName)
+  }
+
+  const handleSelectFolder = (option: Option | null) => {
+    if (!option) {
+      setDraft({
+        customFields: [],
+        domain: '',
+        fields: [],
+        fieldSettings: {},
+        filters: [],
+        sourceFormId: '',
+        sourceId: '',
+      })
+      syncField('domain', '')
+      return
+    }
+
+    const folderId = String(option.id)
+    const folderName = String(option.name)
+
+    setDraft({
+      customFields: [],
+      domain: folderName,
+      fields: [],
+      fieldSettings: {},
+      filters: [],
+      sourceFormId: '',
+      sourceId: folderId,
+      sourceType: 'Folder',
+    })
+    syncField('domain', folderName)
+  }
 
   const {
     groupOptions,
@@ -100,7 +173,7 @@ const DetailsStep = () => {
     <div className='flex flex-col gap-6'>
       <div>
         <h3 className='mb-1 text-15 font-semibold text-gray-13'>{t`Report details`}</h3>
-        <p className='text-13 text-gray-10'>{t`Give your report a name, pick the data domain, and describe what it covers.`}</p>
+        <p className='text-13 text-gray-10'>{t`Give your report a name, select the data source, and configure sharing permissions.`}</p>
       </div>
 
       <form.Field
@@ -121,37 +194,14 @@ const DetailsStep = () => {
         )}
       />
 
-      <form.Field
-        name='domain'
-        children={(field) => (
-          <InputSelect
-            error={field.state.meta.errors[0]?.message}
-            label={t`Domain`}
-            options={domainOptions}
-            placeholder={t`Select a data domain`}
-            required
-            value={
-              field.state.value
-                ? { id: field.state.value, name: field.state.value }
-                : null
-            }
-            onChange={(option) => {
-              const value = option?.id ? String(option.id) : ''
-              field.handleChange(value)
-              syncField('domain', value)
-              setDraft({ fields: [], fieldSettings: {}, filters: [] })
-            }}
-          />
-        )}
-      />
-
       <div>
-        <p className='mb-2 text-13 font-medium text-gray-12'>{t`Source`}</p>
+        <p className='mb-2 text-13 font-medium text-gray-12'>{t`Data Source`}</p>
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
           <InputSelect
             label={t`Source Type`}
             options={sourceTypeOptions}
             placeholder={t`Select a source type`}
+            required
             value={
               draft.sourceType
                 ? sourceTypeOptions.find((o) => o.id === draft.sourceType) ||
@@ -159,60 +209,96 @@ const DetailsStep = () => {
                 : null
             }
             onChange={(option) => {
-              const value = (option?.id as 'Master' | 'Workflow' | '') || ''
+              const value = (option?.id as ReportSourceType) || ''
               setDraft({
                 customFields: [],
+                domain: '',
                 fields: [],
                 fieldSettings: {},
+                filters: [],
                 sourceFormId: '',
+                sourceId: '',
                 sourceType: value,
               })
+              syncField('domain', '')
             }}
           />
 
-          <div>
-            <InputSelect
-              disabled={!draft.sourceType || isSourceFormsLoading}
-              label={t`Source Form`}
-              options={sourceFormOptions}
-              description={
-                isSourceFormsLoading ? t`Loading forms...` : undefined
-              }
-              error={
-                isSourceFormsError
-                  ? t`Couldn't load forms. Try again.`
-                  : undefined
-              }
-              placeholder={
-                !draft.sourceType
-                  ? t`Select a source type first`
-                  : isSourceFormsLoading
-                    ? t`Loading forms...`
-                    : t`Select a form`
-              }
-              value={
-                draft.sourceFormId
-                  ? sourceFormOptions.find(
-                      (o) => o.id === draft.sourceFormId,
-                    ) || null
-                  : null
-              }
-              onChange={(option) => {
-                setDraft({
-                  customFields: [],
-                  fields: [],
-                  fieldSettings: {},
-                  sourceFormId: option?.id ? String(option.id) : '',
-                })
-              }}
-            />
-            {draft.sourceType &&
-              !isSourceFormsLoading &&
-              !isSourceFormsError &&
-              sourceFormOptions.length === 0 && (
-                <p className='mt-1.5 text-12 text-gray-9'>{t`No forms found for this source type.`}</p>
-              )}
-          </div>
+          {draft.sourceType === 'Workflow' && (
+            <div>
+              <InputSelect
+                disabled={workflowsQuery.isLoading}
+                label={t`Workflow`}
+                options={workflowOptions}
+                description={
+                  workflowsQuery.isLoading ? t`Loading workflows...` : undefined
+                }
+                error={
+                  workflowsQuery.isError
+                    ? t`Couldn't load workflows. Try again.`
+                    : undefined
+                }
+                placeholder={
+                  workflowsQuery.isLoading
+                    ? t`Loading workflows...`
+                    : t`Select a workflow`
+                }
+                required
+                value={
+                  draft.sourceId
+                    ? workflowOptions.find((o) => o.id === draft.sourceId) ||
+                      (draft.domain
+                        ? { id: draft.sourceId, name: draft.domain }
+                        : null)
+                    : null
+                }
+                onChange={handleSelectWorkflow}
+              />
+              {!workflowsQuery.isLoading &&
+                !workflowsQuery.isError &&
+                workflowOptions.length === 0 && (
+                  <p className='mt-1.5 text-12 text-gray-9'>{t`No published workflows found.`}</p>
+                )}
+            </div>
+          )}
+
+          {draft.sourceType === 'Folder' && (
+            <div>
+              <InputSelect
+                disabled={foldersQuery.isLoading}
+                label={t`Folder`}
+                options={folderOptions}
+                description={
+                  foldersQuery.isLoading ? t`Loading folders...` : undefined
+                }
+                error={
+                  foldersQuery.isError
+                    ? t`Couldn't load folders. Try again.`
+                    : undefined
+                }
+                placeholder={
+                  foldersQuery.isLoading
+                    ? t`Loading folders...`
+                    : t`Select a folder`
+                }
+                required
+                value={
+                  draft.sourceId
+                    ? folderOptions.find((o) => o.id === draft.sourceId) ||
+                      (draft.domain
+                        ? { id: draft.sourceId, name: draft.domain }
+                        : null)
+                    : null
+                }
+                onChange={handleSelectFolder}
+              />
+              {!foldersQuery.isLoading &&
+                !foldersQuery.isError &&
+                folderOptions.length === 0 && (
+                  <p className='mt-1.5 text-12 text-gray-9'>{t`No folders found.`}</p>
+                )}
+            </div>
+          )}
         </div>
       </div>
 

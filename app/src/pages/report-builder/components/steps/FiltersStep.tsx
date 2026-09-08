@@ -15,17 +15,26 @@ const FiltersStep = () => {
   const { t } = useLingui()
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const setDraft = useReportBuilderDraftStore((state) => state.setDraft)
-  const { fields: sourceFields } = useReportSourceFields(draft.sourceFormId)
+  const { fields: sourceFields, isLoading } = useReportSourceFields(
+    draft.sourceFormId,
+    draft.sourceType,
+    draft.sourceId,
+  )
 
-  const fieldOptions = draft.sourceFormId
-    ? [...sourceFields, ...draft.customFields].map((f) => ({
-        id: f.id,
-        name: f.label,
-      }))
-    : (DOMAIN_FIELDS[draft.domain as ReportDomain] || []).map((f) => ({
-        id: f.id,
-        name: f.label,
-      }))
+  const hasDynamicSource = Boolean(
+    draft.sourceType || draft.sourceId || draft.sourceFormId,
+  )
+
+  const fieldOptions =
+    hasDynamicSource || sourceFields.length > 0
+      ? [...sourceFields, ...draft.customFields].map((f) => ({
+          id: f.id,
+          name: f.label || f.id,
+        }))
+      : (DOMAIN_FIELDS[draft.domain as ReportDomain] || []).map((f) => ({
+          id: f.id,
+          name: f.label,
+        }))
 
   const addFilter = () => {
     setDraft({
@@ -85,10 +94,18 @@ const FiltersStep = () => {
                 key={filter.id}
               >
                 <InputSelect
+                  description={
+                    isLoading && fieldOptions.length === 0
+                      ? t`Loading fields...`
+                      : undefined
+                  }
                   label={t`Field`}
                   options={fieldOptions}
                   value={
-                    fieldOptions.find((o) => o.id === filter.field) || null
+                    fieldOptions.find((o) => o.id === filter.field) ||
+                    (filter.field
+                      ? { id: filter.field, name: filter.field }
+                      : null)
                   }
                   onChange={(option) =>
                     updateFilter(filter.id, { field: String(option?.id || '') })

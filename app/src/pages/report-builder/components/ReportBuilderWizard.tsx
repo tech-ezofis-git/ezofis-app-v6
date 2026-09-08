@@ -96,13 +96,25 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
   const isNextDisabled = useMemo(() => {
     if (stepIds[activeIndex] === 'details') {
-      return !draft.name.trim() || !draft.domain.trim()
+      return (
+        !draft.name.trim() ||
+        !draft.sourceType ||
+        (!draft.sourceId && !draft.domain.trim())
+      )
     }
     if (stepIds[activeIndex] === 'fields') {
       return draft.fields.length === 0
     }
     return false
-  }, [activeIndex, draft.domain, draft.fields.length, draft.name, stepIds])
+  }, [
+    activeIndex,
+    draft.domain,
+    draft.fields.length,
+    draft.name,
+    draft.sourceId,
+    draft.sourceType,
+    stepIds,
+  ])
 
   const buildReportFromDraft = (status: ReportStatus): Report => {
     const now = new Date().toISOString()
@@ -123,7 +135,10 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       scheduled: draft.scheduled,
       sharedGroups: draft.sharedGroups,
       sharedUsers: draft.sharedUsers,
-      sourceFormId: draft.sourceFormId,
+      ...(draft.sourceType === 'Workflow' && draft.sourceFormId
+        ? { sourceFormId: draft.sourceFormId }
+        : {}),
+      sourceId: draft.sourceId,
       sourceType: draft.sourceType,
       status,
       visibility: draft.visibility,
