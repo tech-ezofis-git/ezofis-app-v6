@@ -24,11 +24,30 @@ const FormTypeBadge = ({ type }: Props) => {
     }
   }, [type])
 
+  const label = useMemo(() => {
+    if (!type) return ''
+    const str = String(type).trim()
+    switch (str.toUpperCase()) {
+      case 'WORKFLOW':
+        return 'Workflow'
+      case 'FORM':
+        return 'Form'
+      case 'DOCUMENT':
+        return 'Document'
+      case 'DOCUMENT_FORM':
+        return 'Document Form'
+      case 'MASTER':
+        return 'Master'
+      default:
+        return str
+    }
+  }, [type])
+
   if (!type || String(type).trim().toUpperCase() === 'ITEM') {
     return null
   }
 
-  return <Badge color={color} label={type} />
+  return <Badge color={color} label={label} />
 }
 
 FormTypeBadge.displayName = 'FormTypeBadge'

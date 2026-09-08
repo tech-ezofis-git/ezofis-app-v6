@@ -165,11 +165,13 @@ const ROLE_PERMISSION_PAGES: RolePermissionPage[] = [
   { key: 'dashboard', name: 'Dashboard' },
   { key: 'request', name: 'Request' },
   { key: 'folder', name: 'Folder' },
+  { key: 'report', name: 'Reports' },
   { key: 'settings', name: 'Settings' },
   { key: 'workflow', name: 'Workflow', parentKey: 'settings' },
   { key: 'form', name: 'Form', parentKey: 'settings' },
   { key: 'folder-create', name: 'Folder creation', parentKey: 'settings' },
   { key: 'portal', name: 'Portal', parentKey: 'settings' },
+  { key: 'report-builder', name: 'Report builder', parentKey: 'settings' },
 ]
 
 const ROLE_PERMISSION_KEY_ALIASES: Record<string, string> = {
@@ -177,6 +179,11 @@ const ROLE_PERMISSION_KEY_ALIASES: Record<string, string> = {
   forms: 'form',
   'folder-creation': 'folder-create',
   'folder-configuration': 'folder-create',
+  report: 'report',
+  reports: 'report',
+  'report-builder': 'report-builder',
+  'report-builder-settings': 'report-builder',
+  reportbuilder: 'report-builder',
   request: 'request',
   requests: 'request',
   workflow: 'workflow',
@@ -784,7 +791,11 @@ function CreatePermissionMatrix({
                                 ? t`Show Forms in Settings → Configuration`
                                 : child.categoryKey === 'folder-create'
                                   ? t`Show Folder Configuration in Settings`
-                                  : t`Show Portal Configuration in Settings`}
+                                  : child.categoryKey === 'portal'
+                                    ? t`Show Portal Configuration in Settings`
+                                    : child.categoryKey === 'report-builder'
+                                      ? t`Show Report Builder in Settings → Configuration`
+                                      : t`Show ${child.category} in Settings`}
                           </div>
                         </div>
                         <div className='flex justify-center'>
@@ -1412,10 +1423,20 @@ function PermissionMatrix({
         meta: settingsHeaderMeta.start,
         minSize: 40,
         size: 240,
-        cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
+        cell: ({ getValue, row }) => (
+          <div
+            className={[
+              'flex items-center gap-2',
+              row.original.parentKey
+                ? 'pl-6 text-[var(--gray-11)]'
+                : 'text-[var(--gray-13)]',
+            ].join(' ')}
+          >
+            {row.original.parentKey ? (
+              <span className='text-[var(--gray-8)]'>└</span>
+            ) : null}
+            <span className='text-sm font-semibold'>{getValue()}</span>
+          </div>
         ),
       }),
       permissionColumnHelper.display({

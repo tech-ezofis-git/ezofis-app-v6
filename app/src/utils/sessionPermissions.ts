@@ -6,6 +6,11 @@ const PERMISSION_KEY_ALIASES: Record<string, string> = {
   folders: 'folder',
   forms: 'form',
   portals: 'portal',
+  report: 'report',
+  'report-builder': 'report-builder',
+  'report-builder-settings': 'report-builder',
+  reportbuilder: 'report-builder',
+  reports: 'report',
   requests: 'request',
   workflows: 'workflow',
 }

@@ -195,7 +195,6 @@ const DetailsStep = () => {
       />
 
       <div>
-        <p className='mb-2 text-13 font-medium text-gray-12'>{t`Data Source`}</p>
         <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
           <InputSelect
             label={t`Source Type`}
@@ -329,7 +328,15 @@ const DetailsStep = () => {
               key={option.value}
               label={option.value}
               size='sm'
-              onClick={() => setDraft({ visibility: option.value })}
+              onClick={() =>
+                setDraft({
+                  sharedGroups:
+                    option.value === 'Selected Groups' ? draft.sharedGroups : [],
+                  sharedUsers:
+                    option.value === 'Selected Users' ? draft.sharedUsers : [],
+                  visibility: option.value,
+                })
+              }
             />
           ))}
         </div>

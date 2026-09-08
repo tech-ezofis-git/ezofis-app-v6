@@ -7,18 +7,16 @@ import MenuItem from '@/components/base/menu/MenuItem'
 interface Props {
   report: Report
   onDelete: (report: Report) => void
-  onDuplicate: (report: Report) => void
+  onDuplicate?: (report: Report) => void
   onEdit: (report: Report) => void
-  onRunNow: (report: Report) => void
+  onRunNow?: (report: Report) => void
   onSchedule: (report: Report) => void
 }
 
 const RowActionsMenu = ({
   report,
   onDelete,
-  onDuplicate,
   onEdit,
-  onRunNow,
   onSchedule,
 }: Props) => {
   const { t } = useLingui()
@@ -32,11 +30,6 @@ const RowActionsMenu = ({
       }
     >
       <MenuItem
-        icon='lucide:play'
-        label={t`Run now`}
-        onClick={() => onRunNow(report)}
-      />
-      <MenuItem
         icon='lucide:edit'
         label={t`Edit`}
         onClick={() => onEdit(report)}
@@ -45,11 +38,6 @@ const RowActionsMenu = ({
         icon='lucide:calendar-clock'
         label={t`Schedule`}
         onClick={() => onSchedule(report)}
-      />
-      <MenuItem
-        icon='lucide:copy'
-        label={t`Duplicate`}
-        onClick={() => onDuplicate(report)}
       />
       <MenuItem
         icon='lucide:trash-2'

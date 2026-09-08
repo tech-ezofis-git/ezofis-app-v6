@@ -760,7 +760,7 @@ function KanbanCard({
         setDraggingId(null)
         dragItemRef.current = null
         setDropTargetId(null)
-        setHoveredRequestCard(false)
+        setIsCardHovered(false)
       }}
       onDragStart={(event) => {
         if (

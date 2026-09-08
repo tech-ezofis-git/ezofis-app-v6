@@ -10,15 +10,28 @@ export type {
 
 interface Props {
   columns: PreviewColumn[]
+  /** When set, isLoading/rows come from the live POST /preview call; when
+   * unset (e.g. the legacy domain-field path with no real backing table)
+   * the table falls back to synthetic sample data. */
+  isLive?: boolean
+  isLoading?: boolean
   rowCount?: number
+  rows?: Record<string, string>[]
 }
 
 /**
- * Read-only, synthetic-data preview of the report table as currently
- * configured — mirrors column labels/order from the field picker so users
- * can see the shape of their report without needing live row data.
+ * Preview of the report table as currently configured. Backed by a live
+ * POST /report-builder/preview call when the source form is known
+ * (`isLive`); otherwise falls back to synthetic sample data so users still
+ * see the shape of the table.
  */
-const FieldsPreviewTable = ({ columns, rowCount = 3 }: Props) => {
+const FieldsPreviewTable = ({
+  columns,
+  isLive = false,
+  isLoading = false,
+  rowCount = 3,
+  rows,
+}: Props) => {
   const { t } = useLingui()
 
   if (columns.length === 0) {
@@ -29,6 +42,8 @@ const FieldsPreviewTable = ({ columns, rowCount = 3 }: Props) => {
       </div>
     )
   }
+
+  const liveRows = rows?.slice(0, 5)
 
   return (
     <div className='ez-scrollbar overflow-x-auto rounded-lg border border-gray-3'>
@@ -46,18 +61,53 @@ const FieldsPreviewTable = ({ columns, rowCount = 3 }: Props) => {
           </tr>
         </thead>
         <tbody>
-          {Array.from({ length: rowCount }).map((_, row) => (
-            <tr className='border-b border-gray-2 last:border-0' key={row}>
-              {columns.map((column) => (
+          {isLive ? (
+            isLoading ? (
+              <tr>
                 <td
-                  className='px-3 py-2 whitespace-nowrap text-gray-12'
-                  key={column.id}
+                  className='px-3 py-6 text-center text-12 text-gray-9'
+                  colSpan={columns.length}
                 >
-                  {sampleValue(column, row)}
+                  {t`Loading preview...`}
                 </td>
-              ))}
-            </tr>
-          ))}
+              </tr>
+            ) : !liveRows || liveRows.length === 0 ? (
+              <tr>
+                <td
+                  className='px-3 py-6 text-center text-12 text-gray-9'
+                  colSpan={columns.length}
+                >
+                  {t`No matching rows.`}
+                </td>
+              </tr>
+            ) : (
+              liveRows.map((row, index) => (
+                <tr className='border-b border-gray-2 last:border-0' key={index}>
+                  {columns.map((column) => (
+                    <td
+                      className='px-3 py-2 whitespace-nowrap text-gray-12'
+                      key={column.id}
+                    >
+                      {row[column.label] ?? row[column.id] ?? '-'}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )
+          ) : (
+            Array.from({ length: rowCount }).map((_, row) => (
+              <tr className='border-b border-gray-2 last:border-0' key={row}>
+                {columns.map((column) => (
+                  <td
+                    className='px-3 py-2 whitespace-nowrap text-gray-12'
+                    key={column.id}
+                  >
+                    {sampleValue(column, row)}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

@@ -5,8 +5,12 @@ import type { SettingsWizardStep } from '@/pages/settings/components/SettingsWiz
 import showToast from '@/components/base/toast/showToast'
 import SettingsWizardLayout from '@/pages/settings/components/SettingsWizardLayout'
 import type { Report, ReportStatus } from '../types'
+import {
+  usePublishReportBuilderReportMutation,
+  useSaveReportBuilderReportMutation,
+} from '../hooks/useReportBuilderApi'
 import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
-import useReportsStore, { createReportId } from '../stores/useReportsStore'
+import { AnimateFadeIn } from '@/components/common/animations'
 import AskAiStep from './steps/AskAiStep'
 import DetailsStep from './steps/DetailsStep'
 import FieldsStep from './steps/FieldsStep'
@@ -38,8 +42,8 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
 
   const draft = useReportBuilderDraftStore((state) => state.draft)
   const resetDraft = useReportBuilderDraftStore((state) => state.resetDraft)
-  const addReport = useReportsStore((state) => state.addReport)
-  const updateReport = useReportsStore((state) => state.updateReport)
+  const saveReportMutation = useSaveReportBuilderReportMutation()
+  const publishReportMutation = usePublishReportBuilderReportMutation()
 
   const isEditing = Boolean(draft.editingReportId)
   const [isManualMode, setIsManualMode] = useState(isEditing)
@@ -126,15 +130,17 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       fields: draft.fields,
       fieldSettings: draft.fieldSettings,
       filters: draft.filters,
-      id: draft.editingReportId || createReportId(),
+      id: draft.editingReportId || '',
       modified: now,
       name: draft.name || t`Untitled Report`,
       owner: 'You',
       runs: 0,
       schedule: draft.schedule,
       scheduled: draft.scheduled,
-      sharedGroups: draft.sharedGroups,
-      sharedUsers: draft.sharedUsers,
+      sharedGroups:
+        draft.visibility === 'Selected Groups' ? draft.sharedGroups : [],
+      sharedUsers:
+        draft.visibility === 'Selected Users' ? draft.sharedUsers : [],
       ...(draft.sourceType === 'Workflow' && draft.sourceFormId
         ? { sourceFormId: draft.sourceFormId }
         : {}),
@@ -145,31 +151,33 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
     }
   }
 
-  const persistAndExit = (status: ReportStatus) => {
+  const persistAndExit = async (status: ReportStatus) => {
     setIsSaving(true)
     const report = buildReportFromDraft(status)
 
-    // `fields` holds ids internally (stable even if a column is renamed),
-    // but the console output should read as actual column names.
-    console.log('Report Builder — final report JSON:', {
-      ...report,
-      fields: report.fields.map(
-        (fieldId) => report.fieldSettings[fieldId]?.label || fieldId,
-      ),
-    })
-    if (draft.editingReportId) {
-      updateReport(draft.editingReportId, report)
-    } else {
-      addReport(report)
+    try {
+      const saved = await saveReportMutation.mutateAsync(report)
+      if (status === 'Published') {
+        await publishReportMutation.mutateAsync(saved.id)
+      }
+      resetDraft()
+      showToast({
+        message:
+          status === 'Published'
+            ? t`Report published`
+            : t`Report saved as draft`,
+        variant: 'success',
+      })
+      void navigate({ to: '/reports' })
+    } catch (error) {
+      showToast({
+        message:
+          error instanceof Error ? error.message : t`Failed to save report`,
+        variant: 'error',
+      })
+    } finally {
+      setIsSaving(false)
     }
-    resetDraft()
-    setIsSaving(false)
-    showToast({
-      message:
-        status === 'Published' ? t`Report published` : t`Report saved as draft`,
-      variant: 'success',
-    })
-    void navigate({ to: '/reports' })
   }
 
   const handleCancel = () => {
@@ -178,20 +186,32 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
   }
 
   const renderStep = () => {
+    let content: React.ReactNode = null
     switch (stepIds[activeIndex]) {
       case 'ask-ai':
-        return <AskAiStep />
+        content = <AskAiStep />
+        break
       case 'details':
-        return <DetailsStep />
+        content = <DetailsStep />
+        break
       case 'fields':
-        return <FieldsStep />
+        content = <FieldsStep />
+        break
       case 'filters':
-        return <FiltersStep />
+        content = <FiltersStep />
+        break
       case 'schedule':
-        return <ScheduleStep />
+        content = <ScheduleStep />
+        break
       default:
-        return null
+        content = null
     }
+
+    return (
+      <AnimateFadeIn key={stepIds[activeIndex]} className='flex flex-col gap-6 md:gap-7'>
+        {content}
+      </AnimateFadeIn>
+    )
   }
 
   return (
@@ -220,7 +240,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       onBackToSettings={handleCancel}
       onCancel={handleCancel}
       onNext={() => goToStep(Math.min(steps.length - 1, activeIndex + 1))}
-      onSave={() => persistAndExit('Draft')}
+      onSave={() => void persistAndExit('Draft')}
       onStepChange={goToStep}
     >
       {renderStep()}
@@ -229,7 +249,7 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
           <button
             className='text-13 font-medium text-primary-10 underline-offset-2 hover:underline'
             type='button'
-            onClick={() => persistAndExit('Published')}
+            onClick={() => void persistAndExit('Published')}
           >
             {t`Save & Publish instead`}
           </button>
