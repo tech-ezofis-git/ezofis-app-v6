@@ -45,6 +45,7 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
       <SettingsPageHeader title={t`Report Builder`} onBack={onBack} />
       <div className='min-h-0 flex-1 overflow-hidden'>
         <ReportsListView
+          variant='settings'
           onCreateReport={() => {
             resetDraft()
             openBuilder()
