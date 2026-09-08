@@ -8,6 +8,7 @@ import InputSelect from '@/components/base/inputs/InputSelect'
 import InputText from '@/components/base/inputs/InputText'
 import { createFieldQuestions } from '@/pages/form-builder/helpers/field-utils'
 import type { PreviewColumn } from './FieldsPreviewTable'
+import { useReportBuilderPreviewMutation } from '../../hooks/useReportBuilderApi'
 import useReportSourceFields from '../../hooks/useReportSourceFields'
 import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import { createDefaultFieldSetting } from '../../types'
@@ -162,6 +163,32 @@ const FieldsStepFormSource = () => {
       sampleType: sampleTypeForQuestionType(field.type),
     }
   })
+
+  const previewMutation = useReportBuilderPreviewMutation()
+  const [previewRows, setPreviewRows] = useState<
+    Record<string, string>[] | null
+  >(null)
+
+  useEffect(() => {
+    if (!draft.sourceFormId || draft.fields.length === 0) {
+      setPreviewRows(null)
+      return
+    }
+    const timer = setTimeout(() => {
+      previewMutation.mutate(draft, {
+        onError: () => setPreviewRows([]),
+        onSuccess: (result) => setPreviewRows(result.data?.rows ?? []),
+      })
+    }, 400)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- draft.fields/fieldSettings/filters cover what preview needs; previewMutation is stable
+  }, [
+    draft.sourceFormId,
+    draft.fields,
+    draft.fieldSettings,
+    draft.filters,
+    draft.domain,
+  ])
 
   return (
     <div className='flex flex-col gap-5'>
@@ -355,7 +382,12 @@ const FieldsStepFormSource = () => {
 
       <div className='flex flex-col gap-2'>
         <p className='text-13 font-medium text-gray-12'>{t`Live preview`}</p>
-        <FieldsPreviewTable columns={previewColumns} />
+        <FieldsPreviewTable
+          columns={previewColumns}
+          isLive={Boolean(draft.sourceFormId)}
+          isLoading={previewMutation.isPending}
+          rows={previewRows ?? undefined}
+        />
       </div>
     </div>
   )

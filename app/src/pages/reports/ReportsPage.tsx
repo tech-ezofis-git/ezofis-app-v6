@@ -4,6 +4,7 @@ import type { Report } from '@/pages/report-builder/types'
 import { openReportBuilder } from '@/pages/report-builder/navigation'
 import useReportBuilderDraftStore from '@/pages/report-builder/stores/useReportBuilderDraftStore'
 import useSettingsOriginBreadcrumbs from '@/pages/settings/hooks/useSettingsOriginBreadcrumbs'
+import { AnimateFadeIn } from '@/components/common/animations'
 import ReportsListView from './components/ReportsListView'
 
 const ReportsPage = () => {
@@ -43,12 +44,14 @@ const ReportsPage = () => {
   }
 
   return (
-    <ReportsListView
-      onCreateReport={handleCreate}
-      onEditReport={handleEdit}
-      onOpenReport={handleOpen}
-      onScheduleReport={handleSchedule}
-    />
+    <AnimateFadeIn className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
+      <ReportsListView
+        onCreateReport={handleCreate}
+        onEditReport={handleEdit}
+        onOpenReport={handleOpen}
+        onScheduleReport={handleSchedule}
+      />
+    </AnimateFadeIn>
   )
 }
 

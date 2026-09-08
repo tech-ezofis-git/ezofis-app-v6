@@ -1,12 +1,15 @@
 import { useLingui } from '@lingui/react/macro'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { getReportBuilderReportById } from '@/api/v6/reportBuilder'
+import showToast from '@/components/base/toast/showToast'
 import ReportsListView from '@/pages/reports/components/ReportsListView'
 import SettingsPageHeader from '@/pages/settings/components/SettingsPageHeader'
 import type { ReportBuilderStep } from '../navigation'
 import type { Report } from '../types'
 import { openReportBuilder } from '../navigation'
 import useReportBuilderDraftStore from '../stores/useReportBuilderDraftStore'
+import { AnimateFadeIn } from '@/components/common/animations'
 import ReportBuilderWizard from './ReportBuilderWizard'
 
 interface Props {
@@ -36,12 +39,29 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
     setView('builder')
   }
 
+  // The reports list only carries summary fields — load the full saved
+  // config (fields/fieldSettings/filters/schedule) before hydrating the
+  // wizard draft for edit/open/schedule.
+  const openReportForEdit = async (report: Report, step?: ReportBuilderStep) => {
+    const { data, error } = await getReportBuilderReportById(report.id)
+    if (error || !data) {
+      showToast({ message: error || t`Failed to load report`, variant: 'error' })
+      return
+    }
+    loadFromReport(data)
+    openBuilder(step)
+  }
+
   if (view === 'builder') {
-    return <ReportBuilderWizard onBack={() => setView('list')} />
+    return (
+      <AnimateFadeIn className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
+        <ReportBuilderWizard onBack={() => setView('list')} />
+      </AnimateFadeIn>
+    )
   }
 
   return (
-    <div className='flex h-full min-h-0 flex-col overflow-hidden'>
+    <AnimateFadeIn className='flex h-full min-h-0 flex-1 flex-col overflow-hidden'>
       <SettingsPageHeader title={t`Report Builder`} onBack={onBack} />
       <div className='min-h-0 flex-1 overflow-hidden'>
         <ReportsListView
@@ -50,21 +70,14 @@ const ReportBuilderSettingsPage = ({ onBack }: Props) => {
             resetDraft()
             openBuilder()
           }}
-          onEditReport={(report: Report) => {
-            loadFromReport(report)
-            openBuilder()
-          }}
-          onOpenReport={(report: Report) => {
-            loadFromReport(report)
-            openBuilder()
-          }}
-          onScheduleReport={(report: Report) => {
-            loadFromReport(report)
-            openBuilder('schedule')
-          }}
+          onEditReport={(report: Report) => void openReportForEdit(report)}
+          onOpenReport={(report: Report) => void openReportForEdit(report)}
+          onScheduleReport={(report: Report) =>
+            void openReportForEdit(report, 'schedule')
+          }
         />
       </div>
-    </div>
+    </AnimateFadeIn>
   )
 }
 

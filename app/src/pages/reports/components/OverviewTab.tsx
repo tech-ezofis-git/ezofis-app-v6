@@ -1,25 +1,21 @@
 import { useLingui } from '@lingui/react/macro'
 import { useMemo, useState } from 'react'
 import type { Row } from '@/components/base/data-table/types'
-import type { Question } from '@/pages/form-builder/store/formStore'
-import type { ReportDomain } from '@/pages/report-builder/constants'
 import type { Report } from '@/pages/report-builder/types'
-import type { PreviewColumn } from '@/pages/report-builder/utils/previewSampleData'
 import TableExport from '@/components/base/data-table/actions/TableExport'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
 import useDataTableState from '@/components/base/data-table/hooks/useDataTableState'
 import Pagination from '@/components/base/pagination/Pagination'
 import CustomFilter from '@/components/common/CustomFilter'
-import { DOMAIN_FIELDS, SAMPLE_ROWS } from '@/pages/report-builder/constants'
-import useReportSourceFields from '@/pages/report-builder/hooks/useReportSourceFields'
-import {
-  buildSampleRows,
-  sampleTypeForDomainFieldType,
-  sampleTypeForQuestionType,
-} from '@/pages/report-builder/utils/previewSampleData'
+import { useReportBuilderDataQuery } from '@/pages/report-builder/hooks/useReportBuilderApi'
 import { resolveFieldStatus } from '@/pages/report-builder/utils/resolveFieldStatus'
 import StatusPill from './StatusPill'
+
+interface OverviewColumn {
+  id: string
+  label: string
+}
 
 interface Props {
   report: Report
@@ -34,77 +30,46 @@ const OverviewTab = ({ report }: Props) => {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
-  const hasDynamicSource = Boolean(
-    report.sourceFormId || report.sourceId || report.sourceType,
-  )
-  const { fields: sourceFields } = useReportSourceFields(
-    report.sourceFormId || report.sourceId || '',
-    report.sourceType,
-    report.sourceId,
-  )
+  const { data: runResult, isLoading } = useReportBuilderDataQuery(report.id)
 
-  const previewColumns: PreviewColumn[] = useMemo(() => {
-    if (hasDynamicSource || sourceFields.length > 0) {
-      const allFields: Question[] = [
-        ...sourceFields,
-        ...(report.customFields ?? []),
-      ]
-      return report.fields
-        .map((fieldId) => {
-          const field = allFields.find((f) => f.id === fieldId)
-          if (!field) return null
-          const setting = report.fieldSettings[fieldId]
-          return {
-            id: fieldId,
-            label: setting?.label || field.label,
-            sampleType: sampleTypeForQuestionType(field.type),
-          }
-        })
-        .filter((c): c is PreviewColumn => Boolean(c))
-    }
-
-    const domainFields = DOMAIN_FIELDS[report.domain as ReportDomain] || []
-    return report.fields
-      .map((fieldId) => {
-        const field = domainFields.find((f) => f.id === fieldId)
-        if (!field) return null
-        const setting = report.fieldSettings[fieldId]
-        return {
-          id: fieldId,
-          label: setting?.label || field.label,
-          sampleType: sampleTypeForDomainFieldType(field.type),
-        }
-      })
-      .filter((c): c is PreviewColumn => Boolean(c))
-  }, [
-    hasDynamicSource,
-    sourceFields,
-    report.customFields,
-    report.fields,
-    report.fieldSettings,
-    report.domain,
-  ])
+  // The API keys columns/rows by label (see guide §7: "rows[] keys are the
+  // column labels, not GUIDs and not fields[].id"). Re-key each row by the
+  // internal field id so the existing status/calc lookups (which index
+  // fieldSettings by id) keep working unchanged.
+  const previewColumns: OverviewColumn[] = useMemo(() => {
+    const columns = runResult?.columns ?? []
+    return columns.map((col) => {
+      const fieldId =
+        report.fields.find(
+          (id) => report.fieldSettings[id]?.label === col.label,
+        ) || col.key
+      return { id: fieldId, label: col.label }
+    })
+  }, [runResult, report.fields, report.fieldSettings])
 
   const sourceRows: Record<string, string>[] = useMemo(() => {
-    if (hasDynamicSource || sourceFields.length > 0)
-      return buildSampleRows(previewColumns)
-    return SAMPLE_ROWS[report.domain as ReportDomain] || []
-  }, [hasDynamicSource, sourceFields.length, previewColumns, report.domain])
+    const rows = runResult?.rows ?? []
+    return rows.map((row) => {
+      const mapped: Record<string, string> = {}
+      previewColumns.forEach((col) => {
+        mapped[col.id] = row[col.label] ?? ''
+      })
+      return mapped
+    })
+  }, [runResult, previewColumns])
 
-  // Any column whose values are categorical (a computed-status column, or a
-  // Choice/Select-typed source field) gets its own filter dropdown, built
-  // from the distinct values actually present in the row data.
+  // Any column whose values are categorical (a computed-status column) gets
+  // its own filter dropdown, built from the distinct values actually present
+  // in the row data.
   const filterableColumns = useMemo(
     () =>
       previewColumns.filter(
-        (col) =>
-          report.fieldSettings[col.id]?.colType === 'status' ||
-          col.sampleType === 'choice',
+        (col) => report.fieldSettings[col.id]?.colType === 'status',
       ),
     [previewColumns, report.fieldSettings],
   )
 
-  const valueForColumn = (col: PreviewColumn, row: Record<string, string>) => {
+  const valueForColumn = (col: OverviewColumn, row: Record<string, string>) => {
     const setting = report.fieldSettings[col.id]
     if (setting?.colType === 'status') {
       return resolveFieldStatus(setting, row)?.label
@@ -214,7 +179,7 @@ const OverviewTab = ({ report }: Props) => {
     state: { searchState, ...restState },
   })
 
-  if (previewColumns.length === 0) {
+  if (!isLoading && previewColumns.length === 0) {
     return (
       <div className='flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-4 text-center'>
         <p className='text-13 text-gray-10'>{t`This report has no fields configured yet.`}</p>
@@ -252,7 +217,7 @@ const OverviewTab = ({ report }: Props) => {
 
       <div className='min-h-0 flex-1 overflow-hidden rounded-xl border border-gray-3'>
         <DataTable
-          isLoading={false}
+          isLoading={isLoading}
           isReLoading={false}
           pageSize={pageSize}
           table={table}

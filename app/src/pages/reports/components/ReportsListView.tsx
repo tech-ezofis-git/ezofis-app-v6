@@ -10,29 +10,15 @@ import showToast from '@/components/base/toast/showToast'
 import CustomFilter from '@/components/common/CustomFilter'
 import ReportStatusBadge from '@/components/common/ReportStatusBadge'
 import { REPORT_DOMAINS } from '@/pages/report-builder/constants'
-import useReportsStore from '@/pages/report-builder/stores/useReportsStore'
-import authUserStore from '@/stores/authUserStore'
+import {
+  useDeleteReportBuilderReportMutation,
+  useReportBuilderListQuery,
+} from '@/pages/report-builder/hooks/useReportBuilderApi'
 import { formatDatetime } from '@/utils/dayjs'
 import RowActionsMenu from './RowActionsMenu'
 import Table from './Table'
 
 type OwnershipScope = 'private' | 'shared' | ''
-
-/**
- * A report is visible to the current user only if it's private (owned by
- * this session) or explicitly shared with them — reports shared with other
- * specific users (and not this one) are excluded. Group-shared reports are
- * included as a best-effort since this app has no "my group memberships"
- * API to check against.
- */
-const isVisibleToUser = (report: Report, currentUserId: string): boolean => {
-  if (report.visibility === 'Private') return true
-  if (report.visibility === 'Selected Users')
-    return report.sharedUsers.includes(currentUserId)
-  if (report.visibility === 'Selected Groups')
-    return report.sharedGroups.length > 0
-  return false
-}
 
 const matchesOwnershipScope = (
   report: Report,
@@ -65,9 +51,12 @@ const ReportsListView = ({
   const shouldShowCreate =
     showCreateButton ?? (variant === 'settings')
 
-  const reports = useReportsStore((state) => state.reports)
-  const deleteReport = useReportsStore((state) => state.deleteReport)
-  const currentUserId = authUserStore((state) => state.session?.id) || ''
+  const {
+    data: reports = [],
+    error: listError,
+    isLoading,
+  } = useReportBuilderListQuery()
+  const deleteReportMutation = useDeleteReportBuilderReportMutation()
 
   const [search, setSearch] = useState('')
   const [domainFilter, setDomainFilter] = useState('')
@@ -83,15 +72,8 @@ const ReportsListView = ({
         : 'ezofis_reports_table_state',
   })
 
-  const baseReports = useMemo(() => {
-    if (variant === 'settings') {
-      return reports
-    }
-    return reports.filter((report) => isVisibleToUser(report, currentUserId))
-  }, [variant, reports, currentUserId])
-
   const filteredReports = useMemo(() => {
-    return baseReports.filter((report) => {
+    return reports.filter((report) => {
       if (!matchesOwnershipScope(report, ownershipFilter)) return false
       if (domainFilter && report.domain !== domainFilter) return false
       if (search) {
@@ -104,7 +86,7 @@ const ReportsListView = ({
       }
       return true
     })
-  }, [baseReports, domainFilter, ownershipFilter, search])
+  }, [reports, domainFilter, ownershipFilter, search])
 
   const paginatedReports = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -142,7 +124,7 @@ const ReportsListView = ({
         },
         {
           id: 'domain',
-          label: t`Domain`,
+          label: t`Source`,
           size: 200,
           renderCell: (row: Report) => (
             <span className='text-gray-10'>{row.domain}</span>
@@ -160,26 +142,6 @@ const ReportsListView = ({
           label: t`Modified By`,
           size: 160,
           renderCell: (row: Report) => row.owner || '-',
-        },
-        {
-          className: 'p-1',
-          enableSorting: false,
-          hideHeader: true,
-          id: 'actions',
-          isDisplayColumn: true,
-          label: t`Actions`,
-          showMenu: false,
-          size: 40,
-          renderCell: (row: Report) => (
-            <div className='flex items-center justify-center'>
-              <RowActionsMenu
-                report={row}
-                onDelete={setDeletingReport}
-                onEdit={onEditReport}
-                onSchedule={onScheduleReport}
-              />
-            </div>
-          ),
         },
       ]
     }
@@ -200,7 +162,7 @@ const ReportsListView = ({
       },
       {
         id: 'domain',
-        label: t`Domain`,
+        label: t`Source`,
         size: 180,
         renderCell: (row: Report) => (
           <span className='text-gray-10'>{row.domain}</span>
@@ -231,32 +193,6 @@ const ReportsListView = ({
         label: t`Owner`,
         size: 160,
         renderCell: (row: Report) => row.owner,
-      },
-      {
-        id: 'visibility',
-        label: t`Sharing`,
-        size: 160,
-        renderCell: (row: Report) => {
-          let label = t`Private`
-          let iconName = 'lucide:lock'
-
-          if (row.visibility === 'Selected Groups') {
-            const count = row.sharedGroups?.length || 0
-            label = `${count} ${count === 1 ? t`Group` : t`Groups`}`
-            iconName = 'lucide:users-round'
-          } else if (row.visibility === 'Selected Users') {
-            const count = row.sharedUsers?.length || 0
-            label = `${count} ${count === 1 ? t`User` : t`Users`}`
-            iconName = 'lucide:users'
-          }
-
-          return (
-            <span className='inline-flex items-center gap-1.5 text-13 text-gray-11'>
-              <Icon className='size-3.5 text-gray-9' name={iconName} />
-              {label}
-            </span>
-          )
-        },
       },
       {
         id: 'modified',
@@ -311,6 +247,17 @@ const ReportsListView = ({
 
   return (
     <div className='flex h-full min-h-0 flex-col'>
+      {listError && (
+        <div className='mx-6 mt-4 flex items-center gap-3 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11'>
+          <Icon className='size-5 shrink-0' name='lucide:triangle-alert' />
+          <p className='text-13'>
+            {listError instanceof Error
+              ? listError.message
+              : t`Failed to load reports.`}
+          </p>
+        </div>
+      )}
+
       {deletingReport && (
         <div className='animate-in fade-in slide-in-from-top-4 mx-6 mt-4 flex items-center justify-between gap-4 rounded-xl border border-red-3 bg-red-2 p-4 text-red-11 shadow-sm duration-300'>
           <div className='flex items-center gap-3'>
@@ -343,15 +290,28 @@ const ReportsListView = ({
             <Button
               color='red'
               icon='lucide:trash-2'
+              loading={deleteReportMutation.isPending}
               size='sm'
               variant='solid'
               onClick={() => {
-                deleteReport(deletingReport.id)
-                showToast({
-                  message: t`Report deleted successfully`,
-                  variant: 'success',
+                deleteReportMutation.mutate(deletingReport.id, {
+                  onError: (error) => {
+                    showToast({
+                      message:
+                        error instanceof Error
+                          ? error.message
+                          : t`Failed to delete report`,
+                      variant: 'error',
+                    })
+                  },
+                  onSuccess: () => {
+                    showToast({
+                      message: t`Report deleted successfully`,
+                      variant: 'success',
+                    })
+                    setDeletingReport(null)
+                  },
                 })
-                setDeletingReport(null)
               }}
             >
               {t`Yes, Delete`}
@@ -387,7 +347,7 @@ const ReportsListView = ({
               },
               {
                 id: 'domain',
-                label: t`Domain`,
+                label: t`Source`,
                 options: domainFilterOptions,
               },
             ]}
@@ -416,7 +376,7 @@ const ReportsListView = ({
 
         <div className='min-h-0 flex-1 overflow-hidden'>
           <Table
-            isLoading={false}
+            isLoading={isLoading}
             page={page}
             pageSize={pageSize}
             table={table}

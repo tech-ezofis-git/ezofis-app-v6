@@ -47,7 +47,7 @@ export const EMPTY_DRAFT: ReportDraft = {
   sharedUsers: [],
   sourceFormId: '',
   sourceId: '',
-  sourceType: '',
+  sourceType: 'Workflow',
   status: 'Draft',
   visibility: 'Private',
 }
