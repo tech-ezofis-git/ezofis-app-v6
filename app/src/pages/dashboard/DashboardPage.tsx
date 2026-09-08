@@ -91,7 +91,7 @@ const DashboardPage = () => {
               value: id,
             }
           })
-          .filter((opt) => Boolean(opt.value && opt.label))
+          .filter((opt: any) => Boolean(opt.value && opt.label))
 
         const workflowItems = Array.isArray(workflowRes?.data?.items)
           ? workflowRes.data.items
@@ -104,7 +104,7 @@ const DashboardPage = () => {
             selectId: `workflow:${workflow.id}`,
             value: String(workflow.id),
           }))
-          .filter((opt) => Boolean(opt.value && opt.label))
+          .filter((opt: any) => Boolean(opt.value && opt.label))
 
         const mapped = [...repoOptions, ...workflowOptions]
         if (!active) return
