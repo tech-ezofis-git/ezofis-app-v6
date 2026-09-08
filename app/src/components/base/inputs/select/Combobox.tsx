@@ -117,6 +117,9 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
         store={comboboxStore}
         transitionProps={{ transition: 'pop' }}
         width={width}
+        withinPortal
+        // Above Ask AI drawer (z-[9999]) and similar overlays so the menu is visible
+        zIndex={10050}
       >
         <ComboboxTarget
           {...rest}

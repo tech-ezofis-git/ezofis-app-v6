@@ -325,9 +325,10 @@ export function AiSummaryView({
                         {/* <p className='text-[13px] leading-5 text-gray-13'>
                           {fact.label}
                         </p> */}
-                        <p className=' text-[14px] leading-5 text-gray-10'>
-                          {fact.value}
-                        </p>
+                        <RichHtml
+                          className='text-[14px] leading-5 text-gray-10 [&_b]:font-semibold [&_strong]:font-semibold [&_u]:underline'
+                          html={fact.value}
+                        />
                       </div>
                     </div>
                   ))}
@@ -370,9 +371,10 @@ export function AiSummaryView({
                   ))}
                 </div>
               ) : data.complianceText ? (
-                <p className='text-[14px] leading-6 text-gray-13'>
-                  {data.complianceText}
-                </p>
+                <RichHtml
+                  className='text-[14px] leading-6 text-gray-13'
+                  html={data.complianceText}
+                />
               ) : (
                 <p className='text-[14px] text-gray-10'>
                   {t`No compliance assessment available.`}
@@ -392,7 +394,12 @@ export function AiSummaryView({
                       className='rounded-xl border border-orange-5 bg-orange-3 px-4 py-3 text-[14px] text-gray-13 transition-all hover:bg-orange-4'
                       key={recommendation}
                     >
-                      › {recommendation}
+                      ›{' '}
+                      <RichHtml
+                        as='span'
+                        className='inline'
+                        html={recommendation}
+                      />
                     </div>
                   ))}
                 </div>
@@ -405,9 +412,16 @@ export function AiSummaryView({
 
             <div className='animate-in fade-in slide-in-from-bottom-2 rounded-xl border border-blue-5 bg-blue-3 p-4 text-[14px] text-blue-11 duration-500'>
               <b>{t`Supplier Trend Insight`}</b>
-              <p className='mt-1 text-gray-10'>
-                {data.insight || t`No supplier trend insight available.`}
-              </p>
+              {data.insight ? (
+                <RichHtml
+                  className='mt-1 text-gray-10'
+                  html={data.insight}
+                />
+              ) : (
+                <p className='mt-1 text-gray-10'>
+                  {t`No supplier trend insight available.`}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -494,10 +508,45 @@ function AiSummaryLoading({
   )
 }
 
+function containsHtml(text: string) {
+  return /<\/?[a-z][\s\S]*>/i.test(text)
+}
+
+/** Allowlist simple formatting tags from AI output; strip everything else. */
+function sanitizeAiHtml(html: string) {
+  return html
+    .replace(/<(?!\/?(?:b|u|i|em|strong|br|p)\b)[^>]*>/gi, '')
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/javascript:/gi, '')
+}
+
+function RichHtml({
+  as = 'p',
+  className,
+  html,
+}: {
+  as?: 'p' | 'span'
+  className?: string
+  html: string
+}) {
+  const Tag = as
+  if (!containsHtml(html)) {
+    return <Tag className={className}>{html}</Tag>
+  }
+  return (
+    <Tag
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizeAiHtml(html) }}
+    />
+  )
+}
+
 function TypewriterText({ text }: { text: string }) {
   const [count, setCount] = useState(0)
+  const hasHtml = containsHtml(text)
 
   useEffect(() => {
+    if (hasHtml) return
     setCount(0)
     const timer = window.setInterval(() => {
       setCount((prev) => {
@@ -510,7 +559,16 @@ function TypewriterText({ text }: { text: string }) {
     }, 18)
 
     return () => window.clearInterval(timer)
-  }, [text])
+  }, [hasHtml, text])
+
+  if (hasHtml) {
+    return (
+      <RichHtml
+        className='text-[15px] leading-7 text-gray-13 [&_b]:font-semibold [&_strong]:font-semibold [&_u]:underline'
+        html={text}
+      />
+    )
+  }
 
   return (
     <p className='text-[15px] leading-7 text-gray-13'>

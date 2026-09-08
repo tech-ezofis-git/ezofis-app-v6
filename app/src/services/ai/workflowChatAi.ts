@@ -27,6 +27,8 @@ export interface ParsedDoc {
   label: string
   required: boolean
   accept?: string
+  panelIndex?: number
+  rawControl?: any
 }
 
 export interface ParsedField {
@@ -35,6 +37,7 @@ export interface ParsedField {
   required: boolean
   type: string // text, select, date, number, boolean, etc.
   options?: string[]
+  panelIndex?: number
   placeholder?: string
   question?: string
   rawControl?: any

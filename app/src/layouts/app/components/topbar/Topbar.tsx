@@ -12,6 +12,7 @@ const Topbar = () => {
   const { t } = useLingui()
   const openAskAI = useAskAIStore((state) => state.open)
   const isAskAIOpen = useAskAIStore((state) => state.isOpen)
+  const isAskAIMaximized = useAskAIStore((state) => state.isMaximized)
   const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
   const openPlayground = usePlaygroundStore((state) => state.open)
   const closePlayground = usePlaygroundStore((state) => state.close)
@@ -27,7 +28,7 @@ const Topbar = () => {
         <div className='flex items-center xl:hidden'>
           <SidebarToggle />
         </div>
-        <PageTitle />
+        {!isAskAIMaximized && <PageTitle />}
       </div>
 
       <div className='flex items-center'>

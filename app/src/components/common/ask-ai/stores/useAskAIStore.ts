@@ -37,15 +37,23 @@ type Store = {
   isLoading: boolean
   isMaximized: boolean
   isOpen: boolean
+  /** Path active when full-view opened — restore on minimize/close if no menu picked. */
+  returnPath: string | null
+  /** Menu selected while AI is full-view — preferred restore target. */
+  pendingPath: string | null
   messages: { content: string; data?: any; role: 'user' | 'assistant' }[]
   suggestion: string
   suggestions: string[]
-  close: () => void
+  close: () => string | null
+  /** Leave full-view (keep chat open as side panel). Used when picking a sidebar menu. */
+  exitFullView: () => void
   open: () => void
   sendMessage: (prompt: string) => Promise<void>
   sendSuggestion: (label: string) => void
+  setPendingPath: (path: string | null) => void
   setSuggestion: (suggestion: string) => void
-  toggleMaximize: () => void
+  /** Expand/collapse. Pass current pathname when expanding. Returns path to navigate on collapse. */
+  toggleMaximize: (currentPath?: string) => string | null
 }
 
 const useAskAIStore = create<Store>((set, get) => ({
@@ -54,9 +62,27 @@ const useAskAIStore = create<Store>((set, get) => ({
   isMaximized: false,
   isOpen: false,
   messages: [],
+  pendingPath: null,
+  returnPath: null,
   suggestion: '',
   suggestions: GENERIC_SUGGESTIONS.map((s) => s.label),
-  close: () => set({ isOpen: false }),
+  close: () => {
+    const { isMaximized, pendingPath, returnPath } = get()
+    const dest = isMaximized ? pendingPath || returnPath : null
+    set({
+      isMaximized: false,
+      isOpen: false,
+      pendingPath: null,
+      returnPath: null,
+    })
+    return dest
+  },
+  exitFullView: () =>
+    set({
+      isMaximized: false,
+      pendingPath: null,
+      returnPath: null,
+    }),
   open: () => set({ isOpen: true }),
   sendMessage: async (prompt: string) => {
     if (!prompt.trim()) return
@@ -134,9 +160,22 @@ const useAskAIStore = create<Store>((set, get) => ({
       ],
     }))
   },
-  toggleMaximize: () =>
-    set(({ isMaximized }) => ({ isMaximized: !isMaximized })),
+  setPendingPath: (path) => set({ pendingPath: path }),
   setSuggestion: (suggestion: string) => set({ suggestion }),
+  toggleMaximize: (currentPath) => {
+    const { isMaximized, pendingPath, returnPath } = get()
+    if (!isMaximized) {
+      set({
+        isMaximized: true,
+        pendingPath: null,
+        returnPath: currentPath || returnPath || null,
+      })
+      return null
+    }
+    const dest = pendingPath || returnPath
+    set({ isMaximized: false, pendingPath: null, returnPath: null })
+    return dest
+  },
 }))
 
 export default useAskAIStore
