@@ -67,8 +67,6 @@ const ReportsListView = ({
 
   const reports = useReportsStore((state) => state.reports)
   const deleteReport = useReportsStore((state) => state.deleteReport)
-  const duplicateReport = useReportsStore((state) => state.duplicateReport)
-  const runReportNow = useReportsStore((state) => state.runReportNow)
   const currentUserId = authUserStore((state) => state.session?.id) || ''
 
   const [search, setSearch] = useState('')
@@ -177,21 +175,7 @@ const ReportsListView = ({
               <RowActionsMenu
                 report={row}
                 onDelete={setDeletingReport}
-                onDuplicate={(r) => {
-                  duplicateReport(r.id)
-                  showToast({
-                    message: t`Report duplicated`,
-                    variant: 'success',
-                  })
-                }}
                 onEdit={onEditReport}
-                onRunNow={(r) => {
-                  runReportNow(r.id)
-                  showToast({
-                    message: t`Report run started`,
-                    variant: 'success',
-                  })
-                }}
                 onSchedule={onScheduleReport}
               />
             </div>
@@ -251,28 +235,28 @@ const ReportsListView = ({
       {
         id: 'visibility',
         label: t`Sharing`,
-        size: 150,
-        renderCell: (row: Report) => (
-          <span className='inline-flex items-center gap-1.5 text-13 text-gray-11'>
-            <Icon
-              className='size-3.5 text-gray-9'
-              name={
-                row.visibility === 'Private'
-                  ? 'lucide:lock'
-                  : 'lucide:users-round'
-              }
-            />
-            {row.visibility === 'Private'
-              ? t`Private to me`
-              : t`Shared with me`}
-          </span>
-        ),
-      },
-      {
-        id: 'runs',
-        label: t`Runs`,
-        size: 90,
-        renderCell: (row: Report) => String(row.runs),
+        size: 160,
+        renderCell: (row: Report) => {
+          let label = t`Private`
+          let iconName = 'lucide:lock'
+
+          if (row.visibility === 'Selected Groups') {
+            const count = row.sharedGroups?.length || 0
+            label = `${count} ${count === 1 ? t`Group` : t`Groups`}`
+            iconName = 'lucide:users-round'
+          } else if (row.visibility === 'Selected Users') {
+            const count = row.sharedUsers?.length || 0
+            label = `${count} ${count === 1 ? t`User` : t`Users`}`
+            iconName = 'lucide:users'
+          }
+
+          return (
+            <span className='inline-flex items-center gap-1.5 text-13 text-gray-11'>
+              <Icon className='size-3.5 text-gray-9' name={iconName} />
+              {label}
+            </span>
+          )
+        },
       },
       {
         id: 'modified',
@@ -294,21 +278,7 @@ const ReportsListView = ({
             <RowActionsMenu
               report={row}
               onDelete={setDeletingReport}
-              onDuplicate={(r) => {
-                duplicateReport(r.id)
-                showToast({
-                  message: t`Report duplicated`,
-                  variant: 'success',
-                })
-              }}
               onEdit={onEditReport}
-              onRunNow={(r) => {
-                runReportNow(r.id)
-                showToast({
-                  message: t`Report run started`,
-                  variant: 'success',
-                })
-              }}
               onSchedule={onScheduleReport}
             />
           </div>
@@ -318,8 +288,6 @@ const ReportsListView = ({
   }, [
     variant,
     t,
-    duplicateReport,
-    runReportNow,
     onEditReport,
     onOpenReport,
     onScheduleReport,

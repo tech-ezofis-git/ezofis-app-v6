@@ -56,7 +56,7 @@ const ReportDetailPage = ({ reportId }: Props) => {
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden p-4'>
-        <ReportKpiCards report={report} />
+        {/* <ReportKpiCards report={report} /> */}
         <OverviewTab report={report} />
       </div>
     </div>

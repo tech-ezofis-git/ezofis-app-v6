@@ -329,7 +329,15 @@ const DetailsStep = () => {
               key={option.value}
               label={option.value}
               size='sm'
-              onClick={() => setDraft({ visibility: option.value })}
+              onClick={() =>
+                setDraft({
+                  sharedGroups:
+                    option.value === 'Selected Groups' ? draft.sharedGroups : [],
+                  sharedUsers:
+                    option.value === 'Selected Users' ? draft.sharedUsers : [],
+                  visibility: option.value,
+                })
+              }
             />
           ))}
         </div>

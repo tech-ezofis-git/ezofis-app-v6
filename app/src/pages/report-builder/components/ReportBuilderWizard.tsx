@@ -133,8 +133,10 @@ const ReportBuilderWizard = ({ onBack }: Props) => {
       runs: 0,
       schedule: draft.schedule,
       scheduled: draft.scheduled,
-      sharedGroups: draft.sharedGroups,
-      sharedUsers: draft.sharedUsers,
+      sharedGroups:
+        draft.visibility === 'Selected Groups' ? draft.sharedGroups : [],
+      sharedUsers:
+        draft.visibility === 'Selected Users' ? draft.sharedUsers : [],
       ...(draft.sourceType === 'Workflow' && draft.sourceFormId
         ? { sourceFormId: draft.sourceFormId }
         : {}),
