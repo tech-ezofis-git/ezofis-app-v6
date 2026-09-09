@@ -117,7 +117,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
       const fields: PreviewField[] = []
       panels.forEach((panel: any) => {
-        ;(panel?.fields || []).forEach((field: any) => {
+        ; (panel?.fields || []).forEach((field: any) => {
           if (field.type === 'DIVIDER') return
           fields.push({
             key: String(field.name || field.id),
@@ -201,8 +201,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setPrefixSegments(
       hasSeparator
         ? prefixSegments.map((s) =>
-            s.key === 'seperator' ? { ...s, value } : s,
-          )
+          s.key === 'seperator' ? { ...s, value } : s,
+        )
         : [{ id: generateId(), key: 'seperator', value }, ...prefixSegments],
     )
   }
@@ -269,11 +269,10 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
               <button
                 key={opt.id}
                 type='button'
-                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
-                  active
+                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${active
                     ? 'bg-primary-9 text-white shadow-sm'
                     : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
-                }`}
+                  }`}
                 onClick={() => setWorkflowStatus(opt.id as any)}
               >
                 {opt.label}
@@ -337,11 +336,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             value={
               initiateUsing
                 ? {
-                    id: initiateUsing as any,
-                    name:
-                      initiateOptions.find((o: any) => o.id === initiateUsing)
-                        ?.name || '',
-                  }
+                  id: initiateUsing as any,
+                  name:
+                    initiateOptions.find((o: any) => o.id === initiateUsing)
+                      ?.name || '',
+                }
                 : null
             }
             onChange={(val: any) =>
@@ -358,11 +357,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             value={
               folder
                 ? {
-                    id: folder,
-                    name:
-                      folderOptions.find((f: any) => f.id == folder)?.name ||
-                      '',
-                  }
+                  id: folder,
+                  name:
+                    folderOptions.find((f: any) => f.id == folder)?.name ||
+                    '',
+                }
                 : null
             }
             onChange={(val: any) => setFolder(val?.id || null)}
@@ -377,10 +376,10 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             value={
               form
                 ? {
-                    id: form,
-                    name:
-                      workflowForms.find((f: any) => f.id == form)?.name || '',
-                  }
+                  id: form,
+                  name:
+                    workflowForms.find((f: any) => f.id == form)?.name || '',
+                }
                 : null
             }
             onChange={(val: any) => setForm(val?.id || null)}
@@ -388,7 +387,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
           {/* Field Selection */}
           <InputSelectMultiple
-            label='Field Selection'
+            label='Preview Selection'
             options={previewFieldOptions}
             placeholder='Search and select fields...'
             value={selectedPreviewOptions}
