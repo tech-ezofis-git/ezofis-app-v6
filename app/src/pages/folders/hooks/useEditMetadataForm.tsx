@@ -142,14 +142,18 @@ export const findSelectedOption = (
 ): SelectOption | null => {
   if (!value) return null
   const normalizedValue = value.toLowerCase()
-  return (
-    options.find(
-      (option) =>
-        String(option.value ?? '').toLowerCase() === normalizedValue ||
-        String(option.name).toLowerCase() === normalizedValue ||
-        String(option.id).toLowerCase() === normalizedValue,
-    ) || null
+  const found = options.find(
+    (option) =>
+      String(option.value ?? '').toLowerCase() === normalizedValue ||
+      String(option.name).toLowerCase() === normalizedValue ||
+      String(option.id).toLowerCase() === normalizedValue,
   )
+  if (found) return found
+  return {
+    id: value,
+    name: value,
+    value: value,
+  }
 }
 
 export function renderMetadataFieldControl(
@@ -185,11 +189,28 @@ export function renderMetadataFieldControl(
     fieldType === 'multiple_choice' ||
     options.length > 0
   ) {
+    const textVal = toTextValue(value)
+    const selectedOption = findSelectedOption(options, textVal)
+    const effectiveOptions =
+      selectedOption &&
+      !options.some(
+        (o) =>
+          String(o.value ?? '').toLowerCase() ===
+            String(selectedOption.value ?? '').toLowerCase() ||
+          String(o.name).toLowerCase() ===
+            selectedOption.name.toLowerCase() ||
+          String(o.id).toLowerCase() === String(selectedOption.id).toLowerCase(),
+      )
+        ? [...options, selectedOption]
+        : options
+
     return (
       <InputSelect
         label={label}
-        options={options}
-        value={findSelectedOption(options, toTextValue(value))}
+        options={effectiveOptions}
+        searchable
+        creatable
+        value={selectedOption}
         onChange={(selected: SelectOption | null) =>
           updateFieldValue(
             field.key,

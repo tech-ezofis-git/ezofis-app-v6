@@ -74,7 +74,7 @@ msgid "{0} credits, highest this period"
 msgstr "{0} crédits, le plus élevé cette période"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/folders/components/EditMetadataView.tsx:407
+#: src/pages/folders/components/EditMetadataView.tsx:429
 msgid "{0} fields"
 msgstr "{0} champs"
 
@@ -212,7 +212,7 @@ msgid "{filledCount} of {totalCount} fields ready"
 msgstr "{filledCount} champs sur {totalCount} sont prêts"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:1915
+#: src/pages/folders/components/Upload/Upload.tsx:1932
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr "{filledFieldsCount} champs sur {0} sont prêts"
 
@@ -353,7 +353,7 @@ msgstr "1. Reçu"
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1704
+#: src/pages/folders/components/Upload/Upload.tsx:1721
 msgid "100% Accuracy"
 msgstr "100 % de précision"
 
@@ -918,7 +918,7 @@ msgstr "Tous les dossiers"
 msgid "All options must be checked to fulfill requirements."
 msgstr "Toutes les options doivent être cochées pour répondre aux exigences."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:513
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:504
 msgid "All search results for “{searchLabel}”"
 msgstr "Tous les résultats de recherche pour « {searchLabel} »"
 
@@ -1009,7 +1009,7 @@ msgstr "Analyse du contexte et des mots-clés"
 #~ msgid "Analyzing data structures for {repositoryName}..."
 #~ msgstr "Analyse des structures de données pour {repositoryName}..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1812
+#: src/pages/folders/components/Upload/Upload.tsx:1829
 msgid "Analyzing document..."
 msgstr "Analyse du document..."
 
@@ -1059,7 +1059,7 @@ msgstr "N'importe quelle condition peut correspondre"
 msgid "Any file type"
 msgstr "Tout type de fichier"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1710
+#: src/pages/folders/components/Upload/Upload.tsx:1727
 msgid "Any Format"
 msgstr "N'importe quel format"
 
@@ -1443,10 +1443,10 @@ msgstr "Intégration du stockage Azure Blob pour les organisations utilisant Mic
 #: src/pages/folders/components/DocumentDetailsView.tsx:1770
 #: src/pages/folders/components/DocumentSigningPage.tsx:2901
 #: src/pages/folders/components/DocumentSigningPage.tsx:2904
-#: src/pages/folders/components/EditMetadataView.tsx:355
+#: src/pages/folders/components/EditMetadataView.tsx:377
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
-#: src/pages/folders/components/Upload/Upload.tsx:1599
+#: src/pages/folders/components/Upload/Upload.tsx:1616
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/portal/components/PortalBackButton.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:104
@@ -1591,7 +1591,7 @@ msgid "Breadcrumb"
 msgstr "Fil d'Ariane"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
-#: src/pages/folders/components/Upload/Upload.tsx:1669
+#: src/pages/folders/components/Upload/Upload.tsx:1686
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:887
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
@@ -1741,7 +1741,7 @@ msgstr "Impossible de télécharger : ce workflow n'a aucun référentiel confi
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:174
 #: src/pages/folders/components/StartWorkflowView.tsx:210
-#: src/pages/folders/components/Upload/Upload.tsx:2047
+#: src/pages/folders/components/Upload/Upload.tsx:2064
 #: src/pages/forms/components/GenericFormImportModal.tsx:856
 #: src/pages/forms/FormEntriesPage.tsx:377
 #: src/pages/forms/FormEntriesPage.tsx:1987
@@ -2444,7 +2444,7 @@ msgstr "Contrôlez l’accès au niveau du document en évaluant les champs de m
 msgid "Control with Readiness Timelines"
 msgstr "Contrôle avec chronologies de préparation"
 
-#: src/pages/folders/components/EditMetadataView.tsx:397
+#: src/pages/folders/components/EditMetadataView.tsx:419
 msgid "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 msgstr "Les contrôles sont générés uniquement à partir des définitions de champs du référentiel. Les valeurs vides ou manquantes restent vides en mode édition et s'affichent sous la forme « - » dans la vue grille/liste."
 
@@ -2456,8 +2456,8 @@ msgstr "Copié dans le presse-papiers"
 #~ msgid "Copy"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/folders/components/Upload/Upload.tsx:2012
+#: src/pages/folders/components/Upload/Upload.tsx:2027
+#: src/pages/folders/components/Upload/Upload.tsx:2029
 msgid "Copy JSON"
 msgstr "Copier JSON"
 
@@ -2480,7 +2480,6 @@ msgstr "Copier l'URL"
 msgid "Cost Center"
 msgstr "Centre de coûts"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:105
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:493
 msgid "Could not complete search."
 msgstr "Impossible de terminer la recherche."
@@ -3307,7 +3306,7 @@ msgstr "Numéro du document"
 msgid "Document owners are notified beforehand."
 msgstr "Les propriétaires de documents sont informés au préalable."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1852
+#: src/pages/folders/components/Upload/Upload.tsx:1869
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
 msgid "Document Preview"
@@ -3536,7 +3535,7 @@ msgstr "Supprimez des fichiers, ou"
 #~ msgstr "Déposez des images ici ou cliquez pour sélectionner des fichiers"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
-#: src/pages/folders/components/Upload/Upload.tsx:1667
+#: src/pages/folders/components/Upload/Upload.tsx:1684
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:886
 msgid "Drop your file here, or"
@@ -3797,7 +3796,7 @@ msgid "Edit Menu Setup"
 msgstr "Modifier la configuration du menu"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1006
-#: src/pages/folders/components/EditMetadataView.tsx:362
+#: src/pages/folders/components/EditMetadataView.tsx:384
 #: src/pages/folders/components/FolderTable.tsx:830
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
 msgid "Edit Metadata"
@@ -3935,9 +3934,9 @@ msgstr "Activé"
 msgid "Ends With"
 msgstr "Se termine par"
 
-#: src/pages/folders/components/EditMetadataView.tsx:327
-#: src/pages/folders/components/Upload/Upload.tsx:1514
-#: src/pages/folders/components/Upload/Upload.tsx:1533
+#: src/pages/folders/components/EditMetadataView.tsx:349
+#: src/pages/folders/components/Upload/Upload.tsx:1531
+#: src/pages/folders/components/Upload/Upload.tsx:1550
 msgid "Enter {label}"
 msgstr "Saisissez {label}"
 
@@ -4165,7 +4164,7 @@ msgstr "Expiration / Date d'échéance"
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "Explorez, testez et déboguez les points de terminaison d'API avec des requêtes en direct et des exemples de réponses."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2065
+#: src/pages/folders/components/Upload/Upload.tsx:2082
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1925
@@ -4185,8 +4184,8 @@ msgid "Export to Excel"
 msgstr "Exporter vers Excel"
 
 #: src/pages/folders/components/AiSummaryView.tsx:248
-#: src/pages/folders/components/Upload/Upload.tsx:1824
-#: src/pages/folders/components/Upload/Upload.tsx:2065
+#: src/pages/folders/components/Upload/Upload.tsx:1841
+#: src/pages/folders/components/Upload/Upload.tsx:2082
 msgid "Exporting..."
 msgstr "Exportation..."
 
@@ -4202,7 +4201,7 @@ msgstr "Extrait"
 msgid "EXTRACTED"
 msgstr "EXTRAIT"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1910
+#: src/pages/folders/components/Upload/Upload.tsx:1927
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3522
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
@@ -4226,11 +4225,11 @@ msgstr ""
 msgid "Extracting data from the document…"
 msgstr "Extraction des données du document…"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1956
+#: src/pages/folders/components/Upload/Upload.tsx:1973
 msgid "Extracting fields from document..."
 msgstr "Extraction des champs du document..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1914
+#: src/pages/folders/components/Upload/Upload.tsx:1931
 msgid "Extracting fields..."
 msgstr "Extraction des champs..."
 
@@ -4251,8 +4250,8 @@ msgstr "Extraction des métadonnées, vérification des doublons, validation de 
 msgid "Extracting textual metadata"
 msgstr "Extraction des métadonnées textuelles"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1514
-#: src/pages/folders/components/Upload/Upload.tsx:1533
+#: src/pages/folders/components/Upload/Upload.tsx:1531
+#: src/pages/folders/components/Upload/Upload.tsx:1550
 msgid "Extracting..."
 msgstr "Extraction..."
 
@@ -4537,7 +4536,7 @@ msgid "fields"
 msgstr "champs"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
-#: src/pages/folders/components/Upload/Upload.tsx:1931
+#: src/pages/folders/components/Upload/Upload.tsx:1948
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
 #: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
@@ -4622,7 +4621,7 @@ msgstr "Fichier téléversé avec succès"
 #: src/pages/folders/components/DocumentsListView.tsx:956
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
-#: src/pages/folders/components/Upload/Upload.tsx:1623
+#: src/pages/folders/components/Upload/Upload.tsx:1640
 msgid "Files"
 msgstr "Fichiers"
 
@@ -5432,7 +5431,7 @@ msgstr "Volumes de charge de travail entrants au cours des 6 derniers mois"
 msgid "Incremental Version"
 msgstr "Version incrémentielle"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1703
+#: src/pages/folders/components/Upload/Upload.tsx:1720
 msgid "Industry-leading extraction accuracy"
 msgstr "Précision d'extraction à la pointe de l'industrie"
 
@@ -5755,11 +5754,11 @@ msgstr "Janvier"
 msgid "Job Title"
 msgstr "Intitulé du poste"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1943
+#: src/pages/folders/components/Upload/Upload.tsx:1960
 msgid "JSON"
 msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1590
+#: src/pages/folders/components/Upload/Upload.tsx:1607
 msgid "JSON copied to clipboard."
 msgstr "JSON copié dans le presse-papiers."
 
@@ -5951,7 +5950,7 @@ msgstr "Configurons votre flux AP"
 msgid "Light"
 msgstr "Clair"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1698
+#: src/pages/folders/components/Upload/Upload.tsx:1715
 msgid "Lightning Fast"
 msgstr "Ultra rapide"
 
@@ -6530,7 +6529,7 @@ msgstr "Correspondant"
 msgid "Matched GL Account"
 msgstr "Compte GL correspondant"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:491
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:482
 msgid "Matched in:"
 msgstr "Correspondant à :"
 
@@ -6659,7 +6658,7 @@ msgstr "Champs de métadonnées"
 msgid "Metadata validated, no duplicates found"
 msgstr "Métadonnées validées, aucun doublon trouvé"
 
-#: src/pages/folders/components/EditMetadataView.tsx:396
+#: src/pages/folders/components/EditMetadataView.tsx:418
 msgid "Metadata Workspace:"
 msgstr "Espace de travail des métadonnées :"
 
@@ -7270,6 +7269,10 @@ msgstr "Aucun champ principal correspondant"
 msgid "No matching permissions found"
 msgstr "Aucune autorisation correspondante trouvée"
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:343
+msgid "No matching results found"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:80
 msgid "No matching rows."
 msgstr ""
@@ -7282,7 +7285,7 @@ msgstr "Aucun menu trouvé."
 msgid "No menus yet"
 msgstr "Pas encore de menus"
 
-#: src/pages/folders/components/EditMetadataView.tsx:426
+#: src/pages/folders/components/EditMetadataView.tsx:448
 msgid "No metadata fields available"
 msgstr "Aucun champ de métadonnées disponible"
 
@@ -7348,7 +7351,7 @@ msgstr "Aucun document connexe trouvé."
 #~ msgid "No related documents found. Try a different keyword or folder."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2000
+#: src/pages/folders/components/Upload/Upload.tsx:2017
 msgid "No repository fields configured."
 msgstr "Aucun champ de dépôt configuré."
 
@@ -7361,8 +7364,8 @@ msgid "No requests in this stage"
 msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
-msgid "No results for “{debouncedQuery}”."
-msgstr "Aucun résultat pour « {debouncedQuery} »."
+#~ msgid "No results for “{debouncedQuery}”."
+#~ msgstr "Aucun résultat pour « {debouncedQuery} »."
 
 #: src/pages/requests/components/QuickFilters.tsx:295
 #: src/pages/requests/components/QuickFilters.tsx:339
@@ -8517,7 +8520,7 @@ msgstr "Préparation de votre demande..."
 msgid "Preparing..."
 msgstr "Préparation..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:516
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:507
 msgid "Press"
 msgstr "Appuyez"
 
@@ -8589,7 +8592,7 @@ msgstr "Priorité"
 msgid "Private to me"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1697
+#: src/pages/folders/components/Upload/Upload.tsx:1714
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Traitez les documents plus rapidement avec notre pipeline agentique"
 
@@ -9055,7 +9058,7 @@ msgstr "Le dépôt et le document sont requis."
 msgid "Repository context and business scope."
 msgstr "Contexte du référentiel et portée commerciale."
 
-#: src/pages/folders/components/EditMetadataView.tsx:404
+#: src/pages/folders/components/EditMetadataView.tsx:426
 msgid "Repository Fields"
 msgstr "Champs du dépôt"
 
@@ -9193,7 +9196,7 @@ msgstr "Nécessite un numéro de téléphone"
 msgid "Resend OTP"
 msgstr "Renvoyer OTP"
 
-#: src/pages/folders/components/EditMetadataView.tsx:377
+#: src/pages/folders/components/EditMetadataView.tsx:399
 #: src/pages/forms/components/GenericFormImportModal.tsx:767
 msgid "Reset"
 msgstr "Réinitialiser"
@@ -9238,7 +9241,7 @@ msgstr "Restaurer"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entry"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:457
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:448
 msgid "Result"
 msgstr "Résultat"
 
@@ -9355,7 +9358,7 @@ msgstr "Vérifier et enregistrer les règles"
 msgid "Review Column Mapping"
 msgstr "Réviser le mappage des colonnes"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1818
+#: src/pages/folders/components/Upload/Upload.tsx:1835
 msgid "Review fields before export..."
 msgstr "Révisez les champs avant l'export..."
 
@@ -9580,7 +9583,7 @@ msgstr "Enregistrer les devoirs"
 msgid "Save Branding"
 msgstr "Enregistrer l'image de marque"
 
-#: src/pages/folders/components/EditMetadataView.tsx:387
+#: src/pages/folders/components/EditMetadataView.tsx:409
 #: src/pages/forms/FormEntriesPage.tsx:401
 #: src/pages/forms/FormEntriesPage.tsx:1995
 msgid "Save Changes"
@@ -9658,7 +9661,7 @@ msgstr "Enregistré ({0})"
 msgid "Saved signature removed."
 msgstr "Signature enregistrée supprimée."
 
-#: src/pages/folders/components/EditMetadataView.tsx:387
+#: src/pages/folders/components/EditMetadataView.tsx:409
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:980
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:833
 #: src/pages/settings/components/SettingsWizardLayout.tsx:218
@@ -9729,8 +9732,8 @@ msgstr ""
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:923
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:252
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:256
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:247
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:251
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:833
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -9743,7 +9746,7 @@ msgstr "Rechercher"
 msgid "Search {selectedColumnLabel}"
 msgstr "Rechercher {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:284
 msgid "Search AI"
 msgstr "Recherche IA"
 
@@ -9803,7 +9806,7 @@ msgstr "Service de recherche..."
 msgid "Search description..."
 msgstr "Description de la recherche..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:297
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:292
 msgid "Search documents, folders, requests, and more across your workspace."
 msgstr "Recherchez des documents, des dossiers, des demandes et bien plus encore dans votre espace de travail."
 
@@ -9953,15 +9956,15 @@ msgstr "Rechercher des flux de travail..."
 msgid "Search workflows…"
 msgstr "Rechercher des flux de travail…"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:203
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:198
 msgid "Search..."
 msgstr "Recherche..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:319
 msgid "Searching AI"
 msgstr "Recherche d'IA"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:329
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
 msgid "Searching…"
 msgstr "Recherche…"
 
@@ -10333,7 +10336,7 @@ msgstr "Sélectionnez votre langue préférée"
 msgid "Selected {enabledKpiCount} KPIs and {enabledChartCount} charts"
 msgstr ""
 
-#: src/pages/folders/components/EditMetadataView.tsx:365
+#: src/pages/folders/components/EditMetadataView.tsx:387
 msgid "Selected Document"
 msgstr "Document sélectionné"
 
@@ -10905,7 +10908,7 @@ msgstr "Lancer la recherche"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:294
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
 msgid "Start typing to search"
 msgstr "Commencez à taper pour rechercher"
 
@@ -11233,7 +11236,7 @@ msgstr "Fournisseurs"
 msgid "Suppliers to Chase"
 msgstr "Fournisseurs à relancer"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1709
+#: src/pages/folders/components/Upload/Upload.tsx:1726
 msgid "Support for PDF, images, and scanned documents"
 msgstr "Prise en charge des PDF, images et documents numérisés"
 
@@ -11255,18 +11258,18 @@ msgstr "Prend en charge les PDF et les images · Max 10 Mo"
 msgid "Supports PDF and Images · Max 4 MB"
 msgstr "Prend en charge PDF et images · Max 4 Mo"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1673
+#: src/pages/folders/components/Upload/Upload.tsx:1690
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:890
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Prend en charge PDF, Word, Excel, PowerPoint, images et documents · Max 50 Mo"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:224
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:235
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:219
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:230
 msgid "Switch to Dummy Data"
 msgstr "Passer aux données factices"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:223
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:218
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:229
 msgid "Switch to Original Data"
 msgstr "Passer aux données d'origine"
 
@@ -11419,7 +11422,7 @@ msgstr "C'est tout pour cette section. Continuez lorsque vous êtes prêt."
 msgid "the demo data"
 msgstr "les données de démonstration"
 
-#: src/pages/folders/components/EditMetadataView.tsx:428
+#: src/pages/folders/components/EditMetadataView.tsx:450
 msgid "The selected repository did not return editable metadata fields. Please confirm the repository field configuration from the backend response."
 msgstr "Le référentiel sélectionné n'a pas renvoyé de champs de métadonnées modifiables. Veuillez confirmer la configuration du champ du référentiel à partir de la réponse du backend."
 
@@ -12066,7 +12069,7 @@ msgid "Update User"
 msgstr "Mettre à jour l'utilisateur"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:455
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:446
 msgid "Updated from {0}"
 msgstr "Mis à jour depuis {0}"
 
@@ -12078,7 +12081,7 @@ msgstr "Met à jour les enregistrements dans la base de données principale"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2104
 #: src/pages/folders/components/FolderExplorer.tsx:318
 #: src/pages/folders/components/FolderFilterBar.tsx:697
-#: src/pages/folders/components/Upload/Upload.tsx:1622
+#: src/pages/folders/components/Upload/Upload.tsx:1639
 #: src/pages/portal/components/PortalHome.tsx:343
 #: src/pages/portal/components/PortalPicker.tsx:123
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:227
@@ -12112,8 +12115,8 @@ msgstr "Téléversez d'abord une image de signature."
 msgid "Upload Documents"
 msgstr "Télécharger des documents"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1612
-#: src/pages/folders/components/Upload/Upload.tsx:1626
+#: src/pages/folders/components/Upload/Upload.tsx:1629
+#: src/pages/folders/components/Upload/Upload.tsx:1643
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Téléversez des documents en toute sécurité, assignez des métadonnées et organisez les fichiers dans votre dépôt pour une recherche et une gestion efficaces."
 
@@ -12125,7 +12128,7 @@ msgstr "Échec de l'envoi"
 msgid "Upload favicon"
 msgstr "Télécharger une icône de favori"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1608
+#: src/pages/folders/components/Upload/Upload.tsx:1625
 msgid "Upload Files"
 msgstr "Téléverser des fichiers"
 
@@ -12579,6 +12582,10 @@ msgstr "Avertissement"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:147
 msgid "Warning: Column \"{column}\" is already mapped to \"{colLabel}\"."
 msgstr "Avertissement : La colonne \"{column}\" est déjà mappée sur \"__XPH1X__\"."
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:346
+msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
+msgstr ""
 
 #: src/pages/requests/components/KanbanView.tsx:305
 msgid "We couldn’t identify this request, so it couldn’t be moved."

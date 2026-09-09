@@ -74,7 +74,7 @@ msgid "{0} credits, highest this period"
 msgstr "{0} kredit, tertinggi dalam tempoh ini"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/folders/components/EditMetadataView.tsx:407
+#: src/pages/folders/components/EditMetadataView.tsx:429
 msgid "{0} fields"
 msgstr "{0} medan"
 
@@ -212,7 +212,7 @@ msgid "{filledCount} of {totalCount} fields ready"
 msgstr "{filledCount} daripada __XPH1X__ medan sedia"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:1915
+#: src/pages/folders/components/Upload/Upload.tsx:1932
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr "{filledFieldsCount} daripada __XPH1X__ medan sedia"
 
@@ -353,7 +353,7 @@ msgstr "1. Diterima"
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1704
+#: src/pages/folders/components/Upload/Upload.tsx:1721
 msgid "100% Accuracy"
 msgstr "100% Ketepatan"
 
@@ -918,7 +918,7 @@ msgstr "Semua folder"
 msgid "All options must be checked to fulfill requirements."
 msgstr "Semua pilihan mesti disemak untuk memenuhi keperluan."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:513
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:504
 msgid "All search results for “{searchLabel}”"
 msgstr "Semua hasil carian untuk “{searchLabel}”"
 
@@ -1009,7 +1009,7 @@ msgstr "Menganalisis konteks & kata kunci"
 #~ msgid "Analyzing data structures for {repositoryName}..."
 #~ msgstr "Menganalisis struktur data untuk {repositoryName}..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1812
+#: src/pages/folders/components/Upload/Upload.tsx:1829
 msgid "Analyzing document..."
 msgstr "Menganalisis dokumen..."
 
@@ -1059,7 +1059,7 @@ msgstr "Apa-apa syarat boleh sepadan"
 msgid "Any file type"
 msgstr "Sebarang jenis fail"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1710
+#: src/pages/folders/components/Upload/Upload.tsx:1727
 msgid "Any Format"
 msgstr "Sebarang Format"
 
@@ -1443,10 +1443,10 @@ msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsof
 #: src/pages/folders/components/DocumentDetailsView.tsx:1770
 #: src/pages/folders/components/DocumentSigningPage.tsx:2901
 #: src/pages/folders/components/DocumentSigningPage.tsx:2904
-#: src/pages/folders/components/EditMetadataView.tsx:355
+#: src/pages/folders/components/EditMetadataView.tsx:377
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
-#: src/pages/folders/components/Upload/Upload.tsx:1599
+#: src/pages/folders/components/Upload/Upload.tsx:1616
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/portal/components/PortalBackButton.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:104
@@ -1591,7 +1591,7 @@ msgid "Breadcrumb"
 msgstr "Serbuk roti"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
-#: src/pages/folders/components/Upload/Upload.tsx:1669
+#: src/pages/folders/components/Upload/Upload.tsx:1686
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:887
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
@@ -1741,7 +1741,7 @@ msgstr "Tidak dapat memuat naik: aliran kerja ini tidak mempunyai repositori yan
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:174
 #: src/pages/folders/components/StartWorkflowView.tsx:210
-#: src/pages/folders/components/Upload/Upload.tsx:2047
+#: src/pages/folders/components/Upload/Upload.tsx:2064
 #: src/pages/forms/components/GenericFormImportModal.tsx:856
 #: src/pages/forms/FormEntriesPage.tsx:377
 #: src/pages/forms/FormEntriesPage.tsx:1987
@@ -2444,7 +2444,7 @@ msgstr "Kawal akses peringkat dokumen dengan menilai medan metadata."
 msgid "Control with Readiness Timelines"
 msgstr "Kawalan dengan Garis Masa Kesediaan"
 
-#: src/pages/folders/components/EditMetadataView.tsx:397
+#: src/pages/folders/components/EditMetadataView.tsx:419
 msgid "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 msgstr "Kawalan dijana daripada definisi medan repositori sahaja. Nilai kosong atau tiada kekal kosong dalam mod edit dan dipaparkan sebagai \"-\" dalam paparan grid/senarai."
 
@@ -2456,8 +2456,8 @@ msgstr "Disalin ke papan keratan"
 #~ msgid "Copy"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/folders/components/Upload/Upload.tsx:2012
+#: src/pages/folders/components/Upload/Upload.tsx:2027
+#: src/pages/folders/components/Upload/Upload.tsx:2029
 msgid "Copy JSON"
 msgstr "Salin JSON"
 
@@ -2480,7 +2480,6 @@ msgstr "Salin URL"
 msgid "Cost Center"
 msgstr "Pusat Kos"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:105
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:493
 msgid "Could not complete search."
 msgstr "Tidak dapat menyelesaikan carian."
@@ -3307,7 +3306,7 @@ msgstr "Nombor Dokumen"
 msgid "Document owners are notified beforehand."
 msgstr "Pemilik dokumen dimaklumkan terlebih dahulu."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1852
+#: src/pages/folders/components/Upload/Upload.tsx:1869
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
 msgid "Document Preview"
@@ -3536,7 +3535,7 @@ msgstr "Lepaskan fail, atau"
 #~ msgstr "Lepaskan imej di sini atau klik untuk memilih fail"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
-#: src/pages/folders/components/Upload/Upload.tsx:1667
+#: src/pages/folders/components/Upload/Upload.tsx:1684
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:886
 msgid "Drop your file here, or"
@@ -3797,7 +3796,7 @@ msgid "Edit Menu Setup"
 msgstr "Edit Persediaan Menu"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1006
-#: src/pages/folders/components/EditMetadataView.tsx:362
+#: src/pages/folders/components/EditMetadataView.tsx:384
 #: src/pages/folders/components/FolderTable.tsx:830
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
 msgid "Edit Metadata"
@@ -3935,9 +3934,9 @@ msgstr "Didayakan"
 msgid "Ends With"
 msgstr "Berakhir Dengan"
 
-#: src/pages/folders/components/EditMetadataView.tsx:327
-#: src/pages/folders/components/Upload/Upload.tsx:1514
-#: src/pages/folders/components/Upload/Upload.tsx:1533
+#: src/pages/folders/components/EditMetadataView.tsx:349
+#: src/pages/folders/components/Upload/Upload.tsx:1531
+#: src/pages/folders/components/Upload/Upload.tsx:1550
 msgid "Enter {label}"
 msgstr "Masukkan {label}"
 
@@ -4165,7 +4164,7 @@ msgstr "Tarikh Luput / Tamat Tempoh"
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "Terokai, uji dan nyahpepijat titik akhir API dengan permintaan langsung dan sampel respons."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2065
+#: src/pages/folders/components/Upload/Upload.tsx:2082
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1925
@@ -4185,8 +4184,8 @@ msgid "Export to Excel"
 msgstr "Eksport ke Excel"
 
 #: src/pages/folders/components/AiSummaryView.tsx:248
-#: src/pages/folders/components/Upload/Upload.tsx:1824
-#: src/pages/folders/components/Upload/Upload.tsx:2065
+#: src/pages/folders/components/Upload/Upload.tsx:1841
+#: src/pages/folders/components/Upload/Upload.tsx:2082
 msgid "Exporting..."
 msgstr "Mengeksport..."
 
@@ -4202,7 +4201,7 @@ msgstr "Diekstrak"
 msgid "EXTRACTED"
 msgstr "DIEKSTRAK"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1910
+#: src/pages/folders/components/Upload/Upload.tsx:1927
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3522
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
@@ -4226,11 +4225,11 @@ msgstr ""
 msgid "Extracting data from the document…"
 msgstr "Mengekstrak data daripada dokumen…"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1956
+#: src/pages/folders/components/Upload/Upload.tsx:1973
 msgid "Extracting fields from document..."
 msgstr "Mengekstrak medan daripada dokumen..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1914
+#: src/pages/folders/components/Upload/Upload.tsx:1931
 msgid "Extracting fields..."
 msgstr "Mengekstrak medan..."
 
@@ -4251,8 +4250,8 @@ msgstr "Mengekstrak metadata, menyemak pendua, mengesahkan pematuhan"
 msgid "Extracting textual metadata"
 msgstr "Mengekstrak metadata teks"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1514
-#: src/pages/folders/components/Upload/Upload.tsx:1533
+#: src/pages/folders/components/Upload/Upload.tsx:1531
+#: src/pages/folders/components/Upload/Upload.tsx:1550
 msgid "Extracting..."
 msgstr "Mengekstrak..."
 
@@ -4537,7 +4536,7 @@ msgid "fields"
 msgstr "medan"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
-#: src/pages/folders/components/Upload/Upload.tsx:1931
+#: src/pages/folders/components/Upload/Upload.tsx:1948
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
 #: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
@@ -4622,7 +4621,7 @@ msgstr "Fail berjaya dimuat naik"
 #: src/pages/folders/components/DocumentsListView.tsx:956
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
-#: src/pages/folders/components/Upload/Upload.tsx:1623
+#: src/pages/folders/components/Upload/Upload.tsx:1640
 msgid "Files"
 msgstr "Fail"
 
@@ -5432,7 +5431,7 @@ msgstr "Jumlah beban kerja masuk sepanjang 6 bulan yang lalu"
 msgid "Incremental Version"
 msgstr "Versi Tambahan"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1703
+#: src/pages/folders/components/Upload/Upload.tsx:1720
 msgid "Industry-leading extraction accuracy"
 msgstr "Ketepatan pengekstrakan terkemuka industri"
 
@@ -5755,11 +5754,11 @@ msgstr "Januari"
 msgid "Job Title"
 msgstr "Jawatan"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1943
+#: src/pages/folders/components/Upload/Upload.tsx:1960
 msgid "JSON"
 msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1590
+#: src/pages/folders/components/Upload/Upload.tsx:1607
 msgid "JSON copied to clipboard."
 msgstr "JSON disalin ke papan keratan."
 
@@ -5951,7 +5950,7 @@ msgstr "Mari sediakan aliran kerja AP anda"
 msgid "Light"
 msgstr "Cerah"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1698
+#: src/pages/folders/components/Upload/Upload.tsx:1715
 msgid "Lightning Fast"
 msgstr "Pantas Seperti Kilat"
 
@@ -6530,7 +6529,7 @@ msgstr "dipadankan"
 msgid "Matched GL Account"
 msgstr "Akaun GL yang dipadankan"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:491
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:482
 msgid "Matched in:"
 msgstr "dipadankan dalam:"
 
@@ -6659,7 +6658,7 @@ msgstr "Medan metadata"
 msgid "Metadata validated, no duplicates found"
 msgstr "Metadata disahkan, tiada pendua ditemui"
 
-#: src/pages/folders/components/EditMetadataView.tsx:396
+#: src/pages/folders/components/EditMetadataView.tsx:418
 msgid "Metadata Workspace:"
 msgstr "Ruang Kerja Metadata:"
 
@@ -7270,6 +7269,10 @@ msgstr "Tiada medan induk yang sepadan"
 msgid "No matching permissions found"
 msgstr "Tiada kebenaran sepadan ditemui"
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:343
+msgid "No matching results found"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:80
 msgid "No matching rows."
 msgstr ""
@@ -7282,7 +7285,7 @@ msgstr "Tiada menu ditemui."
 msgid "No menus yet"
 msgstr "Belum ada menu"
 
-#: src/pages/folders/components/EditMetadataView.tsx:426
+#: src/pages/folders/components/EditMetadataView.tsx:448
 msgid "No metadata fields available"
 msgstr "Tiada medan metadata tersedia"
 
@@ -7348,7 +7351,7 @@ msgstr "Tiada dokumen berkaitan ditemui."
 #~ msgid "No related documents found. Try a different keyword or folder."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2000
+#: src/pages/folders/components/Upload/Upload.tsx:2017
 msgid "No repository fields configured."
 msgstr "Tiada medan repositori dikonfigurasi."
 
@@ -7361,8 +7364,8 @@ msgid "No requests in this stage"
 msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
-msgid "No results for “{debouncedQuery}”."
-msgstr "Tiada hasil untuk “{debouncedQuery}”."
+#~ msgid "No results for “{debouncedQuery}”."
+#~ msgstr "Tiada hasil untuk “{debouncedQuery}”."
 
 #: src/pages/requests/components/QuickFilters.tsx:295
 #: src/pages/requests/components/QuickFilters.tsx:339
@@ -8521,7 +8524,7 @@ msgstr "Menyediakan permintaan anda..."
 msgid "Preparing..."
 msgstr "Menyediakan..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:516
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:507
 msgid "Press"
 msgstr "Tekan"
 
@@ -8593,7 +8596,7 @@ msgstr "Keutamaan"
 msgid "Private to me"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1697
+#: src/pages/folders/components/Upload/Upload.tsx:1714
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Proses dokumen lebih pantas dengan saluran ejen kami"
 
@@ -9059,7 +9062,7 @@ msgstr "Repositori dan dokumen diperlukan."
 msgid "Repository context and business scope."
 msgstr "Konteks repositori dan skop perniagaan."
 
-#: src/pages/folders/components/EditMetadataView.tsx:404
+#: src/pages/folders/components/EditMetadataView.tsx:426
 msgid "Repository Fields"
 msgstr "Medan Repositori"
 
@@ -9197,7 +9200,7 @@ msgstr "Memerlukan nombor telefon"
 msgid "Resend OTP"
 msgstr "Hantar semula OTP"
 
-#: src/pages/folders/components/EditMetadataView.tsx:377
+#: src/pages/folders/components/EditMetadataView.tsx:399
 #: src/pages/forms/components/GenericFormImportModal.tsx:767
 msgid "Reset"
 msgstr "Tetapkan Semula"
@@ -9242,7 +9245,7 @@ msgstr "Pulihkan"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entri"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:457
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:448
 msgid "Result"
 msgstr "Hasilnya"
 
@@ -9359,7 +9362,7 @@ msgstr "Semak dan simpan peraturan"
 msgid "Review Column Mapping"
 msgstr "Semak Pemetaan Lajur"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1818
+#: src/pages/folders/components/Upload/Upload.tsx:1835
 msgid "Review fields before export..."
 msgstr "Semak medan sebelum eksport..."
 
@@ -9584,7 +9587,7 @@ msgstr "Simpan Tugasan"
 msgid "Save Branding"
 msgstr "Simpan Penjenamaan"
 
-#: src/pages/folders/components/EditMetadataView.tsx:387
+#: src/pages/folders/components/EditMetadataView.tsx:409
 #: src/pages/forms/FormEntriesPage.tsx:401
 #: src/pages/forms/FormEntriesPage.tsx:1995
 msgid "Save Changes"
@@ -9662,7 +9665,7 @@ msgstr "Disimpan ({0})"
 msgid "Saved signature removed."
 msgstr "Tandatangan yang disimpan dialih keluar."
 
-#: src/pages/folders/components/EditMetadataView.tsx:387
+#: src/pages/folders/components/EditMetadataView.tsx:409
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:980
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:833
 #: src/pages/settings/components/SettingsWizardLayout.tsx:218
@@ -9733,8 +9736,8 @@ msgstr ""
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:923
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:252
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:256
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:247
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:251
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:833
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -9747,7 +9750,7 @@ msgstr "Cari"
 msgid "Search {selectedColumnLabel}"
 msgstr "Cari {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:284
 msgid "Search AI"
 msgstr "Cari AI"
 
@@ -9807,7 +9810,7 @@ msgstr "Jabatan carian..."
 msgid "Search description..."
 msgstr "Carian perihalan..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:297
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:292
 msgid "Search documents, folders, requests, and more across your workspace."
 msgstr "Cari dokumen, folder, permintaan dan banyak lagi di seluruh ruang kerja anda."
 
@@ -9957,15 +9960,15 @@ msgstr "Cari aliran kerja..."
 msgid "Search workflows…"
 msgstr "Cari aliran kerja…"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:203
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:198
 msgid "Search..."
 msgstr "Cari..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:319
 msgid "Searching AI"
 msgstr "Mencari AI"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:329
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
 msgid "Searching…"
 msgstr "Mencari…"
 
@@ -10337,7 +10340,7 @@ msgstr "Pilih bahasa pilihan anda"
 msgid "Selected {enabledKpiCount} KPIs and {enabledChartCount} charts"
 msgstr ""
 
-#: src/pages/folders/components/EditMetadataView.tsx:365
+#: src/pages/folders/components/EditMetadataView.tsx:387
 msgid "Selected Document"
 msgstr "Dokumen Terpilih"
 
@@ -10909,7 +10912,7 @@ msgstr "Mulakan carian"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:294
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
 msgid "Start typing to search"
 msgstr "Mula menaip untuk mencari"
 
@@ -11237,7 +11240,7 @@ msgstr "Pembekal"
 msgid "Suppliers to Chase"
 msgstr "Pembekal untuk Diikuti"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1709
+#: src/pages/folders/components/Upload/Upload.tsx:1726
 msgid "Support for PDF, images, and scanned documents"
 msgstr "Sokongan untuk PDF, imej, dan dokumen imbasan"
 
@@ -11259,18 +11262,18 @@ msgstr "Menyokong PDF dan imej · Maks 10 MB"
 msgid "Supports PDF and Images · Max 4 MB"
 msgstr "Menyokong PDF dan Imej · Maks 4 MB"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1673
+#: src/pages/folders/components/Upload/Upload.tsx:1690
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:890
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Menyokong PDF, Word, Excel, PowerPoint, Imej & Dokumen · Maks 50 MB"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:224
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:235
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:219
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:230
 msgid "Switch to Dummy Data"
 msgstr "Tukar kepada Data Dummy"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:223
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:218
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:229
 msgid "Switch to Original Data"
 msgstr "Tukar kepada Data Asal"
 
@@ -11423,7 +11426,7 @@ msgstr "Itu sahaja untuk bahagian ini. Teruskan apabila anda sudah bersedia."
 msgid "the demo data"
 msgstr "data demo"
 
-#: src/pages/folders/components/EditMetadataView.tsx:428
+#: src/pages/folders/components/EditMetadataView.tsx:450
 msgid "The selected repository did not return editable metadata fields. Please confirm the repository field configuration from the backend response."
 msgstr "Repositori yang dipilih tidak mengembalikan medan metadata boleh diedit. Sila sahkan konfigurasi medan repositori daripada respons bahagian belakang."
 
@@ -12070,7 +12073,7 @@ msgid "Update User"
 msgstr "Kemas Kini Pengguna"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:455
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:446
 msgid "Updated from {0}"
 msgstr "Dikemas kini daripada {0}"
 
@@ -12082,7 +12085,7 @@ msgstr "Mengemas kini rekod dalam pangkalan data induk"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2104
 #: src/pages/folders/components/FolderExplorer.tsx:318
 #: src/pages/folders/components/FolderFilterBar.tsx:697
-#: src/pages/folders/components/Upload/Upload.tsx:1622
+#: src/pages/folders/components/Upload/Upload.tsx:1639
 #: src/pages/portal/components/PortalHome.tsx:343
 #: src/pages/portal/components/PortalPicker.tsx:123
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:227
@@ -12116,8 +12119,8 @@ msgstr "Muat naik imej tandatangan dahulu."
 msgid "Upload Documents"
 msgstr "Muat Naik Dokumen"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1612
-#: src/pages/folders/components/Upload/Upload.tsx:1626
+#: src/pages/folders/components/Upload/Upload.tsx:1629
+#: src/pages/folders/components/Upload/Upload.tsx:1643
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Muat naik dokumen dengan selamat, tetapkan metadata, dan susun fail dalam repositori anda untuk carian dan pengurusan yang cekap."
 
@@ -12129,7 +12132,7 @@ msgstr "Muat naik gagal"
 msgid "Upload favicon"
 msgstr "Muat naik favicon"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1608
+#: src/pages/folders/components/Upload/Upload.tsx:1625
 msgid "Upload Files"
 msgstr "Muat Naik Fail"
 
@@ -12583,6 +12586,10 @@ msgstr "Amaran"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:147
 msgid "Warning: Column \"{column}\" is already mapped to \"{colLabel}\"."
 msgstr "Amaran: Lajur \"{column}\" sudah dipetakan kepada \"__XPH1X__\"."
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:346
+msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
+msgstr ""
 
 #: src/pages/requests/components/KanbanView.tsx:305
 msgid "We couldn’t identify this request, so it couldn’t be moved."

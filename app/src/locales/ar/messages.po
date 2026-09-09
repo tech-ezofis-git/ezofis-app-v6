@@ -74,7 +74,7 @@ msgid "{0} credits, highest this period"
 msgstr "{0} رصيد، الأعلى هذه الفترة"
 
 #. placeholder {0}: editableFields.length
-#: src/pages/folders/components/EditMetadataView.tsx:407
+#: src/pages/folders/components/EditMetadataView.tsx:429
 msgid "{0} fields"
 msgstr "{0} حقول"
 
@@ -191,7 +191,7 @@ msgid "{filledCount} of {totalCount} fields ready"
 msgstr "{filledCount} من {totalCount} الحقول جاهزة"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:1915
+#: src/pages/folders/components/Upload/Upload.tsx:1932
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr "{filledFieldsCount} من {0} الحقول جاهزة"
 
@@ -328,7 +328,7 @@ msgstr "1. مستلم"
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr "10 من 24 موردًا يسجلون الآن أكثر من 80% في التسليم في الوقت المحدد، مما يعكس أداءً أكثر استقرارًا للموردين."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1704
+#: src/pages/folders/components/Upload/Upload.tsx:1721
 msgid "100% Accuracy"
 msgstr "دقة 100%"
 
@@ -893,7 +893,7 @@ msgstr "كافة المجلدات"
 msgid "All options must be checked to fulfill requirements."
 msgstr "يجب التحقق من جميع الخيارات للوفاء بالمتطلبات."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:513
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:504
 msgid "All search results for “{searchLabel}”"
 msgstr "جميع نتائج البحث عن «{searchLabel}»"
 
@@ -984,7 +984,7 @@ msgstr "جاري تحليل السياق والكلمات المفتاحية"
 #~ msgid "Analyzing data structures for {repositoryName}..."
 #~ msgstr "جارٍ تحليل بنيات البيانات لـ {repositoryName}..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1812
+#: src/pages/folders/components/Upload/Upload.tsx:1829
 msgid "Analyzing document..."
 msgstr "جاري تحليل المستند..."
 
@@ -1034,7 +1034,7 @@ msgstr "أي شرط يمكن أن تتطابق"
 msgid "Any file type"
 msgstr "أي نوع ملف"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1710
+#: src/pages/folders/components/Upload/Upload.tsx:1727
 msgid "Any Format"
 msgstr "أي صيغة"
 
@@ -1418,10 +1418,10 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1770
 #: src/pages/folders/components/DocumentSigningPage.tsx:2901
 #: src/pages/folders/components/DocumentSigningPage.tsx:2904
-#: src/pages/folders/components/EditMetadataView.tsx:355
+#: src/pages/folders/components/EditMetadataView.tsx:377
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
-#: src/pages/folders/components/Upload/Upload.tsx:1599
+#: src/pages/folders/components/Upload/Upload.tsx:1616
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/portal/components/PortalBackButton.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:104
@@ -1566,7 +1566,7 @@ msgid "Breadcrumb"
 msgstr "مسار التنقل"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
-#: src/pages/folders/components/Upload/Upload.tsx:1669
+#: src/pages/folders/components/Upload/Upload.tsx:1686
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:887
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
@@ -1716,7 +1716,7 @@ msgstr "لا يمكن التحميل: لم يتم تكوين مستودع لسي
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:174
 #: src/pages/folders/components/StartWorkflowView.tsx:210
-#: src/pages/folders/components/Upload/Upload.tsx:2047
+#: src/pages/folders/components/Upload/Upload.tsx:2064
 #: src/pages/forms/components/GenericFormImportModal.tsx:856
 #: src/pages/forms/FormEntriesPage.tsx:377
 #: src/pages/forms/FormEntriesPage.tsx:1987
@@ -2407,7 +2407,7 @@ msgstr "التحكم في الوصول إلى مستوى المستند من خ�
 msgid "Control with Readiness Timelines"
 msgstr "التحكم مع الجداول الزمنية للجاهزية"
 
-#: src/pages/folders/components/EditMetadataView.tsx:397
+#: src/pages/folders/components/EditMetadataView.tsx:419
 msgid "Controls are generated from repository field definitions only. Empty or missing values remain blank in edit mode and display as “-” in grid/list view."
 msgstr "يتم إنشاء عناصر التحكم من تعريفات حقول المستودع فقط. تبقى القيم الفارغة أو المفقودة فارغة في وضع التعديل وتظهر كـ «-» في عرض الشبكة/القائمة."
 
@@ -2419,8 +2419,8 @@ msgstr "تم النسخ إلى الحافظة"
 #~ msgid "Copy"
 #~ msgstr "نسخ"
 
-#: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/folders/components/Upload/Upload.tsx:2012
+#: src/pages/folders/components/Upload/Upload.tsx:2027
+#: src/pages/folders/components/Upload/Upload.tsx:2029
 msgid "Copy JSON"
 msgstr "نسخ JSON"
 
@@ -2443,7 +2443,6 @@ msgstr "انسخ عنوان URL"
 msgid "Cost Center"
 msgstr "مركز التكلفة"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:105
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:493
 msgid "Could not complete search."
 msgstr "تعذر إكمال البحث."
@@ -3250,7 +3249,7 @@ msgstr "مستند Number"
 msgid "Document owners are notified beforehand."
 msgstr "يتم إخطار مالكي المستندات مسبقًا."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1852
+#: src/pages/folders/components/Upload/Upload.tsx:1869
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
 msgid "Document Preview"
@@ -3479,7 +3478,7 @@ msgstr "إسقاط الملفات، أو"
 #~ msgstr "أسقط الصور هنا أو انقر لتحديد الملفات"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
-#: src/pages/folders/components/Upload/Upload.tsx:1667
+#: src/pages/folders/components/Upload/Upload.tsx:1684
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:886
 msgid "Drop your file here, or"
@@ -3724,7 +3723,7 @@ msgid "Edit Menu Setup"
 msgstr "تحرير إعداد القائمة"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1006
-#: src/pages/folders/components/EditMetadataView.tsx:362
+#: src/pages/folders/components/EditMetadataView.tsx:384
 #: src/pages/folders/components/FolderTable.tsx:830
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
 msgid "Edit Metadata"
@@ -3862,9 +3861,9 @@ msgstr "ممكّن"
 msgid "Ends With"
 msgstr "ينتهي ب"
 
-#: src/pages/folders/components/EditMetadataView.tsx:327
-#: src/pages/folders/components/Upload/Upload.tsx:1514
-#: src/pages/folders/components/Upload/Upload.tsx:1533
+#: src/pages/folders/components/EditMetadataView.tsx:349
+#: src/pages/folders/components/Upload/Upload.tsx:1531
+#: src/pages/folders/components/Upload/Upload.tsx:1550
 msgid "Enter {label}"
 msgstr "أدخل {label}"
 
@@ -4092,7 +4091,7 @@ msgstr "تاريخ انتهاء الصلاحية / الاستحقاق"
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "استكشف واختبر ونقح نقاط نهاية واجهة برمجة التطبيقات بطلبات مباشرة واستجابات نموذجية."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2065
+#: src/pages/folders/components/Upload/Upload.tsx:2082
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1925
@@ -4112,8 +4111,8 @@ msgid "Export to Excel"
 msgstr "تصدير إلى إكسل"
 
 #: src/pages/folders/components/AiSummaryView.tsx:248
-#: src/pages/folders/components/Upload/Upload.tsx:1824
-#: src/pages/folders/components/Upload/Upload.tsx:2065
+#: src/pages/folders/components/Upload/Upload.tsx:1841
+#: src/pages/folders/components/Upload/Upload.tsx:2082
 msgid "Exporting..."
 msgstr "جاري التصدير..."
 
@@ -4129,7 +4128,7 @@ msgstr "مستخرج"
 msgid "EXTRACTED"
 msgstr "مستخرج"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1910
+#: src/pages/folders/components/Upload/Upload.tsx:1927
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3522
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
@@ -4153,11 +4152,11 @@ msgstr ""
 msgid "Extracting data from the document…"
 msgstr "جارٍ استخراج البيانات من المستند..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1956
+#: src/pages/folders/components/Upload/Upload.tsx:1973
 msgid "Extracting fields from document..."
 msgstr "جاري استخراج الحقول من المستند..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1914
+#: src/pages/folders/components/Upload/Upload.tsx:1931
 msgid "Extracting fields..."
 msgstr "جاري استخراج الحقول..."
 
@@ -4178,8 +4177,8 @@ msgstr "جاري استخراج البيانات الوصفية والتحقق �
 msgid "Extracting textual metadata"
 msgstr "جاري استخراج البيانات الوصفية النصية"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1514
-#: src/pages/folders/components/Upload/Upload.tsx:1533
+#: src/pages/folders/components/Upload/Upload.tsx:1531
+#: src/pages/folders/components/Upload/Upload.tsx:1550
 msgid "Extracting..."
 msgstr "جاري الاستخراج..."
 
@@ -4464,7 +4463,7 @@ msgid "fields"
 msgstr "حقول"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
-#: src/pages/folders/components/Upload/Upload.tsx:1931
+#: src/pages/folders/components/Upload/Upload.tsx:1948
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
 #: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
@@ -4549,7 +4548,7 @@ msgstr "تم رفع الملف بنجاح"
 #: src/pages/folders/components/DocumentsListView.tsx:956
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
-#: src/pages/folders/components/Upload/Upload.tsx:1623
+#: src/pages/folders/components/Upload/Upload.tsx:1640
 msgid "Files"
 msgstr "الملفات"
 
@@ -5347,7 +5346,7 @@ msgstr "أحجام عبء العمل الوارد خلال آخر 6 أشهر"
 msgid "Incremental Version"
 msgstr "إصدار تدريجي"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1703
+#: src/pages/folders/components/Upload/Upload.tsx:1720
 msgid "Industry-leading extraction accuracy"
 msgstr "دقة استخراج رائدة في الصناعة"
 
@@ -5670,11 +5669,11 @@ msgstr "يناير"
 msgid "Job Title"
 msgstr "المسمى الوظيفي"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1943
+#: src/pages/folders/components/Upload/Upload.tsx:1960
 msgid "JSON"
 msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1590
+#: src/pages/folders/components/Upload/Upload.tsx:1607
 msgid "JSON copied to clipboard."
 msgstr "تم نسخ JSON إلى الحافظة."
 
@@ -5866,7 +5865,7 @@ msgstr "لنقم بإعداد سير عمل الحسابات الدائنة"
 msgid "Light"
 msgstr "فاتح"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1698
+#: src/pages/folders/components/Upload/Upload.tsx:1715
 msgid "Lightning Fast"
 msgstr "سريع كالبرق"
 
@@ -6441,7 +6440,7 @@ msgstr "مطابق"
 msgid "Matched GL Account"
 msgstr "حساب دفتر الأستاذ المطابق"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:491
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:482
 msgid "Matched in:"
 msgstr "متطابق في:"
 
@@ -6570,7 +6569,7 @@ msgstr "حقول البيانات الوصفية"
 msgid "Metadata validated, no duplicates found"
 msgstr "تم التحقق من صحة البيانات الوصفية، ولم يتم العثور على أي تكرارات"
 
-#: src/pages/folders/components/EditMetadataView.tsx:396
+#: src/pages/folders/components/EditMetadataView.tsx:418
 msgid "Metadata Workspace:"
 msgstr "مساحة عمل البيانات الوصفية:"
 
@@ -7168,6 +7167,10 @@ msgstr "لا توجد حقول رئيسية مطابقة"
 msgid "No matching permissions found"
 msgstr "لم يتم العثور على أذونات مطابقة"
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:343
+msgid "No matching results found"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/FieldsPreviewTable.tsx:80
 msgid "No matching rows."
 msgstr ""
@@ -7180,7 +7183,7 @@ msgstr "لم يتم العثور على قوائم."
 msgid "No menus yet"
 msgstr "لا توجد قوائم حتى الآن"
 
-#: src/pages/folders/components/EditMetadataView.tsx:426
+#: src/pages/folders/components/EditMetadataView.tsx:448
 msgid "No metadata fields available"
 msgstr "لا توجد حقول بيانات وصفية متاحة"
 
@@ -7246,7 +7249,7 @@ msgstr "لم يتم العثور على وثائق ذات صلة."
 #~ msgid "No related documents found. Try a different keyword or folder."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2000
+#: src/pages/folders/components/Upload/Upload.tsx:2017
 msgid "No repository fields configured."
 msgstr "لم يتم تكوين حقول المستودع."
 
@@ -7259,8 +7262,8 @@ msgid "No requests in this stage"
 msgstr ""
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
-msgid "No results for “{debouncedQuery}”."
-msgstr "لا توجد نتائج لـ «{debouncedQuery}»."
+#~ msgid "No results for “{debouncedQuery}”."
+#~ msgstr "لا توجد نتائج لـ «{debouncedQuery}»."
 
 #: src/pages/requests/components/QuickFilters.tsx:295
 #: src/pages/requests/components/QuickFilters.tsx:339
@@ -8405,7 +8408,7 @@ msgstr "جاري تجهيز طلبك..."
 msgid "Preparing..."
 msgstr "جاري التحضير..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:516
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:507
 msgid "Press"
 msgstr "اضغط"
 
@@ -8473,7 +8476,7 @@ msgstr "الأولوية"
 msgid "Private to me"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1697
+#: src/pages/folders/components/Upload/Upload.tsx:1714
 msgid "Process documents faster with our agentic pipeline"
 msgstr "عالج المستندات أسرع مع خط أنابيب الوكلاء لدينا"
 
@@ -8935,7 +8938,7 @@ msgstr "المستودع والمستند مطلوبان."
 msgid "Repository context and business scope."
 msgstr "سياق المستودع ونطاق الأعمال."
 
-#: src/pages/folders/components/EditMetadataView.tsx:404
+#: src/pages/folders/components/EditMetadataView.tsx:426
 msgid "Repository Fields"
 msgstr "حقول المستودع"
 
@@ -9069,7 +9072,7 @@ msgstr "يتطلب رقم الهاتف"
 msgid "Resend OTP"
 msgstr "إعادة إرسال كلمة المرور لمرة واحدة"
 
-#: src/pages/folders/components/EditMetadataView.tsx:377
+#: src/pages/folders/components/EditMetadataView.tsx:399
 #: src/pages/forms/components/GenericFormImportModal.tsx:767
 msgid "Reset"
 msgstr "إعادة تعيين"
@@ -9114,7 +9117,7 @@ msgstr "يعيد"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entry"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:457
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:448
 msgid "Result"
 msgstr "النتيجة"
 
@@ -9231,7 +9234,7 @@ msgstr "مراجعة القواعد وحفظها"
 msgid "Review Column Mapping"
 msgstr "مراجعة ربط الأعمدة"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1818
+#: src/pages/folders/components/Upload/Upload.tsx:1835
 msgid "Review fields before export..."
 msgstr "راجع الحقول قبل التصدير..."
 
@@ -9452,7 +9455,7 @@ msgstr "حفظ الواجبات"
 msgid "Save Branding"
 msgstr "حفظ العلامة التجارية"
 
-#: src/pages/folders/components/EditMetadataView.tsx:387
+#: src/pages/folders/components/EditMetadataView.tsx:409
 #: src/pages/forms/FormEntriesPage.tsx:401
 #: src/pages/forms/FormEntriesPage.tsx:1995
 msgid "Save Changes"
@@ -9530,7 +9533,7 @@ msgstr "تم الحفظ ({0})"
 msgid "Saved signature removed."
 msgstr "تمت إزالة التوقيع المحفوظ."
 
-#: src/pages/folders/components/EditMetadataView.tsx:387
+#: src/pages/folders/components/EditMetadataView.tsx:409
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:980
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:833
 #: src/pages/settings/components/SettingsWizardLayout.tsx:218
@@ -9601,8 +9604,8 @@ msgstr ""
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:923
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:252
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:256
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:247
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:251
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:833
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -9615,7 +9618,7 @@ msgstr "بحث"
 msgid "Search {selectedColumnLabel}"
 msgstr "بحث {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:284
 msgid "Search AI"
 msgstr "بحث AI"
 
@@ -9675,7 +9678,7 @@ msgstr "بحث department..."
 msgid "Search description..."
 msgstr "وصف البحث..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:297
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:292
 msgid "Search documents, folders, requests, and more across your workspace."
 msgstr "ابحث في المستندات والمجلدات والطلبات والمزيد عبر مساحة عملك."
 
@@ -9825,15 +9828,15 @@ msgstr "بحث workflows..."
 msgid "Search workflows…"
 msgstr "بحث سير العمل..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:203
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:198
 msgid "Search..."
 msgstr "بحث..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:319
 msgid "Searching AI"
 msgstr "جاري البحث بالذكاء الاصطناعي"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:329
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
 msgid "Searching…"
 msgstr "جاري البحث…"
 
@@ -10163,7 +10166,7 @@ msgstr "حدد لغتك المفضلة"
 msgid "Selected {enabledKpiCount} KPIs and {enabledChartCount} charts"
 msgstr ""
 
-#: src/pages/folders/components/EditMetadataView.tsx:365
+#: src/pages/folders/components/EditMetadataView.tsx:387
 msgid "Selected Document"
 msgstr "المستند المحدد"
 
@@ -10730,7 +10733,7 @@ msgstr "ابدأ البحث"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:294
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
 msgid "Start typing to search"
 msgstr "ابدأ الكتابة للبحث"
 
@@ -11051,7 +11054,7 @@ msgstr "الموردين"
 msgid "Suppliers to Chase"
 msgstr "موردون للمتابعة"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1709
+#: src/pages/folders/components/Upload/Upload.tsx:1726
 msgid "Support for PDF, images, and scanned documents"
 msgstr "دعم PDF والصور والمستندات الممسوحة"
 
@@ -11073,18 +11076,18 @@ msgstr "يدعم ملفات PDF والصور · الحد الأقصى 10 ميج�
 msgid "Supports PDF and Images · Max 4 MB"
 msgstr "يدعم PDF والصور · الحد الأقصى 4 ميجابايت"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1673
+#: src/pages/folders/components/Upload/Upload.tsx:1690
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:890
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "يدعم ملفات PDF وWord وExcel وPowerPoint والصور والمستندات · بحد أقصى 50 ميجابايت"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:224
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:235
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:219
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:230
 msgid "Switch to Dummy Data"
 msgstr "قم بالتبديل إلى البيانات الوهمية"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:223
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:218
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:229
 msgid "Switch to Original Data"
 msgstr "التبديل إلى البيانات الأصلية"
 
@@ -11237,7 +11240,7 @@ msgstr "هذا كل شيء لهذا القسم. استمر عندما تكون �
 msgid "the demo data"
 msgstr "البيانات التجريبية"
 
-#: src/pages/folders/components/EditMetadataView.tsx:428
+#: src/pages/folders/components/EditMetadataView.tsx:450
 msgid "The selected repository did not return editable metadata fields. Please confirm the repository field configuration from the backend response."
 msgstr "لم يُرجع المستودع المحدد حقول بيانات وصفية قابلة للتعديل. يرجى التحقق من تكوين حقول المستودع من استجابة الخادم."
 
@@ -11884,7 +11887,7 @@ msgid "Update User"
 msgstr "تحديث المستخدم"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:455
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:446
 msgid "Updated from {0}"
 msgstr "تم التحديث من {0}"
 
@@ -11896,7 +11899,7 @@ msgstr "يحدّث السجلات في قاعدة البيانات الرئيس�
 #: src/pages/folders/components/DocumentSigningPage.tsx:2104
 #: src/pages/folders/components/FolderExplorer.tsx:318
 #: src/pages/folders/components/FolderFilterBar.tsx:697
-#: src/pages/folders/components/Upload/Upload.tsx:1622
+#: src/pages/folders/components/Upload/Upload.tsx:1639
 #: src/pages/portal/components/PortalHome.tsx:343
 #: src/pages/portal/components/PortalPicker.tsx:123
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:227
@@ -11930,8 +11933,8 @@ msgstr "ارفع صورة التوقيع أولاً."
 msgid "Upload Documents"
 msgstr "تحميل المستندات"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1612
-#: src/pages/folders/components/Upload/Upload.tsx:1626
+#: src/pages/folders/components/Upload/Upload.tsx:1629
+#: src/pages/folders/components/Upload/Upload.tsx:1643
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "ارفع المستندات بأمان، وعيّن البيانات الوصفية، ونظّم الملفات داخل مستودعك للبحث والإدارة بكفاءة."
 
@@ -11943,7 +11946,7 @@ msgstr "فشل الرفع"
 msgid "Upload favicon"
 msgstr "تحميل الرمز المفضل"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1608
+#: src/pages/folders/components/Upload/Upload.tsx:1625
 msgid "Upload Files"
 msgstr "رفع الملفات"
 
@@ -12389,6 +12392,10 @@ msgstr "تحذير"
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:147
 msgid "Warning: Column \"{column}\" is already mapped to \"{colLabel}\"."
 msgstr "تحذير: العمود «{column}» مرتبط بالفعل بـ «{colLabel}»."
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:346
+msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
+msgstr ""
 
 #: src/pages/requests/components/KanbanView.tsx:305
 msgid "We couldn’t identify this request, so it couldn’t be moved."
