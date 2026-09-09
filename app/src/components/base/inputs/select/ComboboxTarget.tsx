@@ -1,4 +1,4 @@
-import { Combobox as Base, Input, InputBase } from '@mantine/core'
+import { Combobox as Base, Input, InputBase, Tooltip as MantineTooltip } from '@mantine/core'
 import { forwardRef, type ReactNode, useMemo } from 'react'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
@@ -13,6 +13,7 @@ interface Props extends InputProps {
   iconOnly?: boolean
   leftSection?: ReactNode
   loading?: boolean
+  maxDisplayCount?: number
   rightSectionIcon?: string
   variant?: SelectVariant
   onChange: (value: Option[]) => void
@@ -27,6 +28,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       iconOnly,
       label,
       loading,
+      maxDisplayCount,
       optional,
       placeholder,
       readOnly,
@@ -155,21 +157,56 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
             {showLeadingIcon ? (
               <Icon className='size-4 shrink-0' name={selectedIconKey!} />
             ) : null}
-            <div className='truncate text-13 font-normal text-gray-12'>
-              {firstValue?.name}
-            </div>
+            <MantineTooltip
+              classNames={{
+                tooltip:
+                  'rounded-md px-2.5 py-1.5 text-xs bg-gray-13 text-white break-words whitespace-normal shadow-lg font-sans font-normal leading-relaxed',
+              }}
+              disabled={!firstValue?.name || firstValue.name.length < 20}
+              label={firstValue?.name}
+              multiline
+              openDelay={200}
+              position='top'
+              w={220}
+              withArrow
+              zIndex={20000}
+            >
+              <div className='truncate text-13 font-normal text-gray-12'>
+                {firstValue?.name}
+              </div>
+            </MantineTooltip>
           </div>
         )
       }
 
+      const limit = maxDisplayCount ?? 3
+      const visibleList = limit && list.length > limit ? list.slice(0, limit) : list
+      const remainingCount = limit && list.length > limit ? list.length - limit : 0
+      const remainingItems = limit && list.length > limit ? list.slice(limit) : []
+
       return (
         <div className='flex min-w-0 flex-wrap items-center gap-1'>
-          {list.map((opt, index) => (
+          {visibleList.map((opt, index) => (
             <div
               className='inline-flex max-w-full items-center gap-0.5 rounded bg-gray-4 py-0.5 pr-0.5 pl-2 text-13 font-normal text-gray-12'
               key={`${opt.id}-${opt.name}-${index}`}
             >
-              <span className='truncate'>{opt.name}</span>
+              <MantineTooltip
+                classNames={{
+                  tooltip:
+                    'rounded-md px-2.5 py-1.5 text-xs bg-gray-13 text-white break-words whitespace-normal shadow-lg font-sans font-normal leading-relaxed',
+                }}
+                disabled={!opt.name || opt.name.length < 15}
+                label={opt.name}
+                multiline
+                openDelay={150}
+                position='top'
+                w={220}
+                withArrow
+                zIndex={20000}
+              >
+                <span className='max-w-[130px] truncate select-none'>{opt.name}</span>
+              </MantineTooltip>
               {!locked && (
                 <button
                   aria-label={`Remove ${opt.name}`}
@@ -190,6 +227,26 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
               )}
             </div>
           ))}
+
+          {remainingCount > 0 && (
+            <MantineTooltip
+              classNames={{
+                tooltip:
+                  'rounded-md px-2.5 py-1.5 text-xs bg-gray-13 text-white break-words whitespace-normal shadow-lg font-sans font-normal leading-relaxed',
+              }}
+              label={remainingItems.map((item) => item.name).join(', ')}
+              multiline
+              openDelay={150}
+              position='top'
+              w={220}
+              withArrow
+              zIndex={20000}
+            >
+              <div className='inline-flex items-center rounded-md border border-gray-4 bg-gray-2 px-1.5 py-0.5 text-11 font-semibold text-gray-11 transition-colors hover:bg-gray-3 hover:text-gray-13'>
+                +{remainingCount}
+              </div>
+            </MantineTooltip>
+          )}
         </div>
       )
     }, [
@@ -197,6 +254,7 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       iconOnly,
       list,
       locked,
+      maxDisplayCount,
       onChange,
       placeholder,
       selectedIconKey,

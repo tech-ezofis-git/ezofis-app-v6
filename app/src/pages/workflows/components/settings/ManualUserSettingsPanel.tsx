@@ -327,8 +327,9 @@ export default function ManualUserSettingsPanel({
           onToggle={() => toggleSection('security')}
         >
           <SecurityTab
+            assignedUsers={selectedUsers}
             fieldOptions={fieldOptions}
-            nodeData={nodeData}
+            nodeData={mergedNodeData}
             userOptions={userOptions}
             updateNodeData={updateNodeData}
           />

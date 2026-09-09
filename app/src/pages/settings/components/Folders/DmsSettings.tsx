@@ -74,6 +74,7 @@ import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import { isDemoAppOrigin } from '@/utils/origin'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -1567,7 +1568,7 @@ export default function DmsFolderConfiguration({
   })
 
   const goNext = () => {
-    if (step === 3) {
+    if (!isDemoAppOrigin() && step === 3) {
       const selectedStorageOption =
         storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
 
@@ -1994,7 +1995,7 @@ export default function DmsFolderConfiguration({
   })
 
   const formattedWizardSteps = useMemo(() => {
-    const isEditMode = editingRepositoryId !== null
+    const isEditMode = editingRepositoryId !== null || isDemoAppOrigin()
     return wizardSteps.map((item) => ({
       clickable: isEditMode ? true : undefined,
       description: item.description,

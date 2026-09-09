@@ -8,6 +8,7 @@ import {
   AnimateSlideUp,
 } from '@/components/common/animations'
 import cn from '@/utils/cn'
+import { isDemoAppOrigin } from '@/utils/origin'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
   putFolderSecurity,
@@ -394,7 +395,7 @@ export default function FolderSecurityPolicyWizard({
   }
 
   const goToStep = (nextStep: Step) => {
-    if (nextStep > 0 && selectedPrincipals.length === 0) {
+    if (!isDemoAppOrigin() && nextStep > 0 && selectedPrincipals.length === 0) {
       setStep(0)
       ensurePrincipalSelection()
       return
@@ -491,11 +492,14 @@ export default function FolderSecurityPolicyWizard({
     onClose()
   }
 
-  const formattedSteps = STEPPER_ITEMS.map((s, idx) => ({
-    ...s,
-    clickable: idx <= maxVisitedStep,
-    disabled: idx > maxVisitedStep,
-  }))
+  const formattedSteps = useMemo(() => {
+    const allowAnyStep = isDemoAppOrigin()
+    return STEPPER_ITEMS.map((s, idx) => ({
+      ...s,
+      clickable: allowAnyStep || idx <= maxVisitedStep,
+      disabled: allowAnyStep ? false : idx > maxVisitedStep,
+    }))
+  }, [maxVisitedStep])
 
   const renderStepContent = () => {
     if (isLoading) {
@@ -841,7 +845,7 @@ export default function FolderSecurityPolicyWizard({
                   size="sm"
                   suffixIcon="tabler:arrow-right"
                   onClick={() => {
-                    if (step === 0 && !ensurePrincipalSelection()) return
+                    if (!isDemoAppOrigin() && step === 0 && !ensurePrincipalSelection()) return
                     goToStep((step + 1) as Step)
                   }}
                 />

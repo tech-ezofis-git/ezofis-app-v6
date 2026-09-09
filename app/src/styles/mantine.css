@@ -19,6 +19,7 @@
   .mantine-Notification-root {
     background-color: var(--surface-raised) !important;
     border-color: var(--border-default) !important;
+    align-items: flex-start !important;
   }
 
   .mantine-Notification-title {
@@ -37,6 +38,8 @@
 
   .mantine-Notification-closeButton {
     color: var(--gray-11);
+    align-self: flex-start !important;
+    margin-top: 2px;
   }
 
   .mantine-Notification-closeButton:hover {

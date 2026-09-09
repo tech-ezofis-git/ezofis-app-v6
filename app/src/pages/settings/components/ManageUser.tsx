@@ -52,6 +52,7 @@ import PasswordRequirements, {
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import { isDemoAppOrigin } from '@/utils/origin'
 import { dummySettingsUsers } from '../data/settingsDummyData'
 import {
   countryDialCodeOptions,
@@ -2734,20 +2735,22 @@ function UserSetup({
   const [showErrors, setShowErrors] = useState(false)
 
   const handleNext = () => {
-    const validationMessage = getUserSetupValidationMessage(
-      draftUser,
-      t,
-      i18n,
-      activeStep,
-    )
+    if (!isDemoAppOrigin()) {
+      const validationMessage = getUserSetupValidationMessage(
+        draftUser,
+        t,
+        i18n,
+        activeStep,
+      )
 
-    if (validationMessage) {
-      setShowErrors(true)
-      showToast({
-        message: validationMessage,
-        variant: 'error',
-      })
-      return
+      if (validationMessage) {
+        setShowErrors(true)
+        showToast({
+          message: validationMessage,
+          variant: 'error',
+        })
+        return
+      }
     }
 
     setShowErrors(false)
@@ -2771,7 +2774,7 @@ function UserSetup({
   }
 
   const handleStepChange = (step: number) => {
-    if (step > activeStep) {
+    if (!isDemoAppOrigin() && step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const validationMessage = getUserSetupValidationMessage(
           draftUser,
@@ -2802,7 +2805,7 @@ function UserSetup({
   }
 
   const wizardSteps = useMemo(() => {
-    const isEditMode = editingUserId !== null
+    const isEditMode = editingUserId !== null || isDemoAppOrigin()
     return steps.map((s, idx) => ({
       clickable: isEditMode ? true : undefined,
       description: s.description,

@@ -1958,7 +1958,7 @@ const InboxList: React.FC<InboxListProps> = ({
           onViewModeChange={setViewMode}
         />
       )}
-      <div className='relative mt-2 flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden'>
+      <div className='relative mt-1 flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden'>
         <div className='flex h-full min-h-0 min-w-0 w-full gap-3'>
           {/* Left */}
           {!selectedItem && viewMode === 'table' && (

@@ -8,6 +8,7 @@ import {
   AnimateSlideUp,
 } from '@/components/common/animations'
 import cn from '@/utils/cn'
+import { isDemoAppOrigin } from '@/utils/origin'
 import { getUsers, getGroups, type V6UserListItem, type V6GroupItem } from '@/api/v6/user'
 import {
   getFilterFields,
@@ -474,7 +475,7 @@ export default function DocumentSecurityRuleWizard({
   )
 
   const goToStep = (nextStep: Step) => {
-    if (nextStep > 0 && nextStep > step) {
+    if (!isDemoAppOrigin() && nextStep > 0 && nextStep > step) {
       if (nextStep === 2 && selectedPrincipals.length === 0) {
         showToast({
           message: t`Select at least one user or group for target assignment.`,
@@ -489,11 +490,14 @@ export default function DocumentSecurityRuleWizard({
     setMaxVisitedStep((prev) => Math.max(prev, nextStep) as Step)
   }
 
-  const formattedSteps = STEPPER_ITEMS.map((s, idx) => ({
-    ...s,
-    clickable: idx <= maxVisitedStep,
-    disabled: idx > maxVisitedStep,
-  }))
+  const formattedSteps = useMemo(() => {
+    const allowAnyStep = isDemoAppOrigin()
+    return STEPPER_ITEMS.map((s, idx) => ({
+      ...s,
+      clickable: allowAnyStep || idx <= maxVisitedStep,
+      disabled: allowAnyStep ? false : idx > maxVisitedStep,
+    }))
+  }, [maxVisitedStep])
 
   const renderStepContent = () => {
     if (isLoading) {

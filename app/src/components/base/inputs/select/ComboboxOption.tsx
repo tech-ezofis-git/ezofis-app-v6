@@ -1,4 +1,4 @@
-import { Combobox as Base } from '@mantine/core'
+import { Combobox as Base, Tooltip as MantineTooltip } from '@mantine/core'
 import { memo } from 'react'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
@@ -57,7 +57,22 @@ const ComboboxOption = ({
       {renderIcon(iconKey)}
 
       <div className='min-w-0 flex-1'>
-        <div className='truncate text-13 font-normal text-gray-12'>{name}</div>
+        <MantineTooltip
+          classNames={{
+            tooltip:
+              'rounded-md px-2.5 py-1.5 text-xs bg-gray-13 text-white break-words whitespace-normal shadow-lg font-sans font-normal leading-relaxed',
+          }}
+          disabled={!name || name.length < 24}
+          label={name}
+          multiline
+          openDelay={250}
+          position='top'
+          w={240}
+          withArrow
+          zIndex={20050}
+        >
+          <div className='truncate text-13 font-normal text-gray-12'>{name}</div>
+        </MantineTooltip>
         {description && (
           <div className='mt-0.5 line-clamp-2 text-xs text-gray-10'>
             {description}

@@ -13,6 +13,7 @@ export interface InputProps {
   disabled?: boolean
   error?: string
   label?: string
+  maxDisplayCount?: number
   optional?: boolean
   placeholder?: string
   readOnly?: boolean
