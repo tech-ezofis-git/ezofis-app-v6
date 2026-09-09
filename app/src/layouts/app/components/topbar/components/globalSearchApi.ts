@@ -12,10 +12,27 @@ export type GlobalSearchHitId = {
 }
 
 export type GlobalSearchHit = {
+  badges?: Array<{
+    label: string
+    tone?: 'ok' | 'warn' | 'err' | 'default'
+  }>
   dateandtime?: string
   description?: string
+  folder?: string
+  found?: Array<{
+    by?: string
+    count?: number
+    field?: string
+    kind?: string
+    name?: string
+    no?: number | string
+    page?: number
+    snippet?: string
+    value?: string
+  }>
   id: GlobalSearchHitId
   ifileName?: string
+  line?: string
   matchFields?: string[]
   matchSource?: string
   matchValue?: string
@@ -23,8 +40,12 @@ export type GlobalSearchHit = {
   matchedValue?: string
   modifiedDateandtime?: string
   name?: string
+  needles?: string[]
+  pinned?: boolean
   requestNo?: string
   snippet?: string
+  subtitle?: string
+  title?: string
   type: string
 }
 
@@ -41,12 +62,13 @@ export async function fetchGlobalSearch(
     tenantId?: string
   },
 ): Promise<GlobalSearchHit[]> {
-  const { accessToken, tenantId: resolvedTenantId } = resolveChatbotAuth()
-  const tenantId = payload.tenantId || resolvedTenantId
+  try {
+    const { accessToken, tenantId: resolvedTenantId } = resolveChatbotAuth()
+    const tenantId = payload.tenantId || resolvedTenantId
 
-  if (!tenantId) {
-    throw new Error('Missing tenant. Sign in again, then retry search.')
-  }
+    if (!tenantId) {
+      return []
+    }
 
   // Backend currently only accepts a single specificId string; multiple
   // folder selections are joined here until it supports an array natively.
@@ -81,17 +103,20 @@ export async function fetchGlobalSearch(
     method: 'POST',
   })
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new Error(text || `Search failed (${response.status})`)
-  }
+    if (!response.ok || response.status !== 200) {
+      return []
+    }
 
-  const data = await response.json()
-  return Array.isArray(data) ? (data as GlobalSearchHit[]) : []
+    const data = await response.json().catch(() => [])
+    return Array.isArray(data) ? (data as GlobalSearchHit[]) : []
+  } catch {
+    return []
+  }
 }
 
 export function getSearchHitTitle(hit: GlobalSearchHit) {
   return (
+    hit.title?.trim() ||
     hit.ifileName?.trim() ||
     hit.name?.trim() ||
     hit.requestNo?.trim() ||
@@ -109,7 +134,7 @@ export function getSearchHitIcon(type: string) {
   if (normalized.includes('folder') || normalized.includes('repository')) {
     return 'lucide:folder'
   }
-  if (normalized.includes('request')) {
+  if (normalized.includes('request') || normalized.includes('clipboard')) {
     return 'lucide:clipboard-list'
   }
   if (normalized.includes('workflow') || normalized.includes('process')) {

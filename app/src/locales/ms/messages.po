@@ -838,7 +838,7 @@ msgstr "AI mencadangkan pencetus dan syarat daripada metadata folder anda — se
 #: src/pages/folders/components/AiSummaryView.tsx:276
 #: src/pages/folders/components/DocumentDetailsView.tsx:1846
 #: src/pages/folders/components/DocumentDetailsView.tsx:1853
-#: src/pages/folders/components/DocumentsListView.tsx:1011
+#: src/pages/folders/components/DocumentsListView.tsx:1012
 #: src/pages/folders/components/FolderTable.tsx:836
 msgid "AI Summary"
 msgstr "Ringkasan AI"
@@ -918,7 +918,7 @@ msgstr "Semua folder"
 msgid "All options must be checked to fulfill requirements."
 msgstr "Semua pilihan mesti disemak untuk memenuhi keperluan."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:509
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:513
 msgid "All search results for “{searchLabel}”"
 msgstr "Semua hasil carian untuk “{searchLabel}”"
 
@@ -2982,7 +2982,7 @@ msgstr "Tentukan Peraturan"
 #~ msgid "Define the role name, assign users, and describe its scope."
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1025
+#: src/pages/folders/components/DocumentsListView.tsx:1026
 #: src/pages/folders/components/FolderTable.tsx:851
 #: src/pages/folders/components/FolderTable.tsx:1225
 #: src/pages/forms/FormsPage.tsx:292
@@ -3796,7 +3796,7 @@ msgstr "Edit Menu"
 msgid "Edit Menu Setup"
 msgstr "Edit Persediaan Menu"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1005
+#: src/pages/folders/components/DocumentsListView.tsx:1006
 #: src/pages/folders/components/EditMetadataView.tsx:362
 #: src/pages/folders/components/FolderTable.tsx:830
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
@@ -4619,7 +4619,7 @@ msgstr "Fail berjaya dimuat naik"
 #~ msgid "File uploaded."
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:955
+#: src/pages/folders/components/DocumentsListView.tsx:956
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
 #: src/pages/folders/components/Upload/Upload.tsx:1623
@@ -6530,7 +6530,7 @@ msgstr "dipadankan"
 msgid "Matched GL Account"
 msgstr "Akaun GL yang dipadankan"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:487
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:491
 msgid "Matched in:"
 msgstr "dipadankan dalam:"
 
@@ -7360,7 +7360,7 @@ msgstr "Tiada item repositori dijumpai"
 msgid "No requests in this stage"
 msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:341
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
 msgid "No results for “{debouncedQuery}”."
 msgstr "Tiada hasil untuk “{debouncedQuery}”."
 
@@ -8521,7 +8521,7 @@ msgstr "Menyediakan permintaan anda..."
 msgid "Preparing..."
 msgstr "Menyediakan..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:512
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:516
 msgid "Press"
 msgstr "Tekan"
 
@@ -9242,7 +9242,7 @@ msgstr "Pulihkan"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entri"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:453
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:457
 msgid "Result"
 msgstr "Hasilnya"
 
@@ -9733,8 +9733,8 @@ msgstr ""
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:923
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:237
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:241
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:252
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:256
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:833
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -9747,7 +9747,7 @@ msgstr "Cari"
 msgid "Search {selectedColumnLabel}"
 msgstr "Cari {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:274
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
 msgid "Search AI"
 msgstr "Cari AI"
 
@@ -9807,7 +9807,7 @@ msgstr "Jabatan carian..."
 msgid "Search description..."
 msgstr "Carian perihalan..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:282
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:297
 msgid "Search documents, folders, requests, and more across your workspace."
 msgstr "Cari dokumen, folder, permintaan dan banyak lagi di seluruh ruang kerja anda."
 
@@ -9957,15 +9957,15 @@ msgstr "Cari aliran kerja..."
 msgid "Search workflows…"
 msgstr "Cari aliran kerja…"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:188
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:203
 msgid "Search..."
 msgstr "Cari..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:309
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
 msgid "Searching AI"
 msgstr "Mencari AI"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:314
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:329
 msgid "Searching…"
 msgstr "Mencari…"
 
@@ -10506,7 +10506,7 @@ msgstr "Keterukan"
 #: src/components/common/SharePopover.tsx:332
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/DocumentDetailsView.tsx:1863
-#: src/pages/folders/components/DocumentsListView.tsx:1016
+#: src/pages/folders/components/DocumentsListView.tsx:1017
 #: src/pages/folders/components/FolderSharePopover.tsx:511
 #: src/pages/folders/components/FolderSharePopover.tsx:526
 #: src/pages/folders/components/FolderSharePopover.tsx:559
@@ -10909,7 +10909,7 @@ msgstr "Mulakan carian"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:279
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:294
 msgid "Start typing to search"
 msgstr "Mula menaip untuk mencari"
 
@@ -11264,13 +11264,13 @@ msgstr "Menyokong PDF dan Imej · Maks 4 MB"
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Menyokong PDF, Word, Excel, PowerPoint, Imej & Dokumen · Maks 50 MB"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:209
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:220
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:224
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:235
 msgid "Switch to Dummy Data"
 msgstr "Tukar kepada Data Dummy"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:208
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:219
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:223
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
 msgid "Switch to Original Data"
 msgstr "Tukar kepada Data Asal"
 
@@ -12070,7 +12070,7 @@ msgid "Update User"
 msgstr "Kemas Kini Pengguna"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:451
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:455
 msgid "Updated from {0}"
 msgstr "Dikemas kini daripada {0}"
 
@@ -12512,7 +12512,7 @@ msgstr "Lihat"
 msgid "View activity logs, security events, and configuration change history."
 msgstr "Lihat log aktiviti, acara keselamatan dan sejarah perubahan konfigurasi."
 
-#: src/pages/folders/components/DocumentsListView.tsx:999
+#: src/pages/folders/components/DocumentsListView.tsx:1000
 #: src/pages/folders/components/FolderTable.tsx:824
 msgid "View Details"
 msgstr "Lihat Butiran"

@@ -809,7 +809,7 @@ msgstr "اقترح الذكاء الاصطناعي مشغلاً وشروطًا �
 #: src/pages/folders/components/AiSummaryView.tsx:276
 #: src/pages/folders/components/DocumentDetailsView.tsx:1846
 #: src/pages/folders/components/DocumentDetailsView.tsx:1853
-#: src/pages/folders/components/DocumentsListView.tsx:1011
+#: src/pages/folders/components/DocumentsListView.tsx:1012
 #: src/pages/folders/components/FolderTable.tsx:836
 msgid "AI Summary"
 msgstr "ملخص الذكاء الاصطناعي"
@@ -893,7 +893,7 @@ msgstr "كافة المجلدات"
 msgid "All options must be checked to fulfill requirements."
 msgstr "يجب التحقق من جميع الخيارات للوفاء بالمتطلبات."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:509
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:513
 msgid "All search results for “{searchLabel}”"
 msgstr "جميع نتائج البحث عن «{searchLabel}»"
 
@@ -2929,7 +2929,7 @@ msgstr "حدد الأدوار وقم بتكوين أذونات تفصيلية ع
 msgid "Define Rule"
 msgstr "تحديد القاعدة"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1025
+#: src/pages/folders/components/DocumentsListView.tsx:1026
 #: src/pages/folders/components/FolderTable.tsx:851
 #: src/pages/folders/components/FolderTable.tsx:1225
 #: src/pages/forms/FormsPage.tsx:292
@@ -3723,7 +3723,7 @@ msgstr "تحرير القائمة"
 msgid "Edit Menu Setup"
 msgstr "تحرير إعداد القائمة"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1005
+#: src/pages/folders/components/DocumentsListView.tsx:1006
 #: src/pages/folders/components/EditMetadataView.tsx:362
 #: src/pages/folders/components/FolderTable.tsx:830
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
@@ -4546,7 +4546,7 @@ msgstr "تم رفع الملف بنجاح"
 #~ msgid "File uploaded."
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:955
+#: src/pages/folders/components/DocumentsListView.tsx:956
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
 #: src/pages/folders/components/Upload/Upload.tsx:1623
@@ -6441,7 +6441,7 @@ msgstr "مطابق"
 msgid "Matched GL Account"
 msgstr "حساب دفتر الأستاذ المطابق"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:487
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:491
 msgid "Matched in:"
 msgstr "متطابق في:"
 
@@ -7258,7 +7258,7 @@ msgstr "لم يتم العثور على عناصر المستودع"
 msgid "No requests in this stage"
 msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:341
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
 msgid "No results for “{debouncedQuery}”."
 msgstr "لا توجد نتائج لـ «{debouncedQuery}»."
 
@@ -8405,7 +8405,7 @@ msgstr "جاري تجهيز طلبك..."
 msgid "Preparing..."
 msgstr "جاري التحضير..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:512
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:516
 msgid "Press"
 msgstr "اضغط"
 
@@ -9114,7 +9114,7 @@ msgstr "يعيد"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entry"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:453
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:457
 msgid "Result"
 msgstr "النتيجة"
 
@@ -9601,8 +9601,8 @@ msgstr ""
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:923
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:237
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:241
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:252
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:256
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:833
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -9615,7 +9615,7 @@ msgstr "بحث"
 msgid "Search {selectedColumnLabel}"
 msgstr "بحث {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:274
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
 msgid "Search AI"
 msgstr "بحث AI"
 
@@ -9675,7 +9675,7 @@ msgstr "بحث department..."
 msgid "Search description..."
 msgstr "وصف البحث..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:282
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:297
 msgid "Search documents, folders, requests, and more across your workspace."
 msgstr "ابحث في المستندات والمجلدات والطلبات والمزيد عبر مساحة عملك."
 
@@ -9825,15 +9825,15 @@ msgstr "بحث workflows..."
 msgid "Search workflows…"
 msgstr "بحث سير العمل..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:188
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:203
 msgid "Search..."
 msgstr "بحث..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:309
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
 msgid "Searching AI"
 msgstr "جاري البحث بالذكاء الاصطناعي"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:314
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:329
 msgid "Searching…"
 msgstr "جاري البحث…"
 
@@ -10327,7 +10327,7 @@ msgstr "الخطورة"
 #: src/components/common/SharePopover.tsx:332
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/DocumentDetailsView.tsx:1863
-#: src/pages/folders/components/DocumentsListView.tsx:1016
+#: src/pages/folders/components/DocumentsListView.tsx:1017
 #: src/pages/folders/components/FolderSharePopover.tsx:511
 #: src/pages/folders/components/FolderSharePopover.tsx:526
 #: src/pages/folders/components/FolderSharePopover.tsx:559
@@ -10730,7 +10730,7 @@ msgstr "ابدأ البحث"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:279
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:294
 msgid "Start typing to search"
 msgstr "ابدأ الكتابة للبحث"
 
@@ -11078,13 +11078,13 @@ msgstr "يدعم PDF والصور · الحد الأقصى 4 ميجابايت"
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "يدعم ملفات PDF وWord وExcel وPowerPoint والصور والمستندات · بحد أقصى 50 ميجابايت"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:209
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:220
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:224
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:235
 msgid "Switch to Dummy Data"
 msgstr "قم بالتبديل إلى البيانات الوهمية"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:208
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:219
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:223
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
 msgid "Switch to Original Data"
 msgstr "التبديل إلى البيانات الأصلية"
 
@@ -11884,7 +11884,7 @@ msgid "Update User"
 msgstr "تحديث المستخدم"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:451
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:455
 msgid "Updated from {0}"
 msgstr "تم التحديث من {0}"
 
@@ -12322,7 +12322,7 @@ msgstr "عرض"
 msgid "View activity logs, security events, and configuration change history."
 msgstr "اعرض سجلات النشاط وأحداث الأمان وسجل تغييرات التكوين."
 
-#: src/pages/folders/components/DocumentsListView.tsx:999
+#: src/pages/folders/components/DocumentsListView.tsx:1000
 #: src/pages/folders/components/FolderTable.tsx:824
 msgid "View Details"
 msgstr "عرض التفاصيل"

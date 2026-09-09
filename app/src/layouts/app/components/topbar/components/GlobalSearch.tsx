@@ -29,7 +29,6 @@ const GlobalSearch = () => {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<any[]>([])
   const [useDummyData, setUseDummyData] = useState(false)
-  const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const requestIdRef = useRef(0)
 
@@ -39,7 +38,6 @@ const GlobalSearch = () => {
       setDebouncedQuery('')
       setLoading(false)
       setResults([])
-      setError('')
       return
     }
 
@@ -56,12 +54,10 @@ const GlobalSearch = () => {
       setDebouncedQuery('')
       setLoading(false)
       setResults([])
-      setError('')
       return
     }
 
     setLoading(true)
-    setError('')
     const timer = window.setTimeout(() => {
       setDebouncedQuery(trimmed)
     }, 400)
@@ -84,7 +80,6 @@ const GlobalSearch = () => {
         if (requestId !== requestIdRef.current) return
         const hits = searchMock(debouncedQuery)
         setResults(hits)
-        setError('')
         setLoading(false)
       }, 400)
     } else {
@@ -96,14 +91,10 @@ const GlobalSearch = () => {
         .then((hits) => {
           if (requestId !== requestIdRef.current) return
           setResults(hits)
-          setError('')
         })
-        .catch((err: unknown) => {
+        .catch(() => {
           if (requestId !== requestIdRef.current) return
           setResults([])
-          setError(
-            err instanceof Error ? err.message : t`Could not complete search.`,
-          )
         })
         .finally(() => {
           if (requestId === requestIdRef.current) setLoading(false)
@@ -132,25 +123,40 @@ const GlobalSearch = () => {
   }
 
   const openHit = (hit: GlobalSearchHit) => {
-    const repositoryId = String(hit.id?.repositoryId || '').trim()
-    const itemId = String(hit.id?.itemId || '').trim()
+    const rawRepoId =
+      typeof hit.id === 'object' && hit.id !== null
+        ? hit.id.repositoryId
+        : undefined
+    const rawItemId =
+      typeof hit.id === 'object' && hit.id !== null
+        ? hit.id.itemId
+        : undefined
+    const repositoryId = String(rawRepoId || '').trim()
+    const itemId = String(rawItemId || '').trim()
     const title = getSearchHitTitle(hit)
     const type = String(hit.type || '').toLowerCase()
+    const isFolder = type.includes('folder') || type.includes('repository')
+    const repositoryLabel =
+      hit.folder || (isFolder ? title : '') || hit.name || 'Repository'
 
     if (type.includes('workflow') || type.includes('process')) {
+      const workflowId =
+        typeof hit.id === 'object' && hit.id !== null
+          ? String(hit.id.workflowId || '')
+          : ''
       setPending({
         filters: {},
         target: 'Workflow',
-        workflowId: String(hit.id?.workflowId || ''),
+        workflowId,
       })
       void navigate({ to: '/workflows' })
     } else {
       setPending({
-        fileSearch: title,
+        fileSearch: isFolder ? undefined : title,
         filters: {},
         openItemId: itemId || undefined,
         repositoryId: repositoryId || undefined,
-        repositoryLabel: 'Repository',
+        repositoryLabel,
         target: 'Repository',
       })
       void navigate({ to: '/folders' })
@@ -318,31 +324,27 @@ const GlobalSearch = () => {
               </motion.div>
             )}
 
-            {showResults && error && (
+            {showResults && results.length === 0 && (
               <motion.div
                 animate={{ opacity: 1 }}
-                className='px-4 py-12 text-center text-sm text-gray-10'
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                key='error'
-              >
-                {error}
-              </motion.div>
-            )}
-
-            {showResults && !error && results.length === 0 && (
-              <motion.div
-                animate={{ opacity: 1 }}
-                className='px-4 py-12 text-center text-sm text-gray-10'
+                className='flex flex-1 flex-col items-center justify-center gap-2 px-6 py-12 text-center'
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
                 key='empty'
               >
-                {t`No results for “${debouncedQuery}”.`}
+                <div className='flex size-10 items-center justify-center rounded-full bg-gray-3 text-gray-10'>
+                  <Icon className='size-5' name='lucide:search' />
+                </div>
+                <p className='text-sm font-medium text-gray-12'>
+                  {t`No matching results found`}
+                </p>
+                <p className='max-w-[300px] text-xs leading-5 text-gray-10'>
+                  {t`We couldn't find any records matching “${debouncedQuery}”. Try searching with different keywords or check spelling.`}
+                </p>
               </motion.div>
             )}
 
-            {showResults && !error && results.length > 0 && (
+            {showResults && results.length > 0 && (
               <motion.div
                 animate={{ opacity: 1 }}
                 className='flex min-h-0 flex-1 flex-col'
@@ -352,33 +354,22 @@ const GlobalSearch = () => {
               >
                 <ul className='ez-scrollbar min-h-0 flex-1 divide-y divide-gray-3 overflow-y-auto pb-1'>
                   {results.map((hit, index) => {
-                    const isDummy = !!hit.found
+                    const isDummy = useDummyData
 
-                    const title = isDummy ? hit.title : getSearchHitTitle(hit)
-                    const titleHtml = isDummy ? hl(title, hit.needles) : title
+                    const title = getSearchHitTitle(hit)
+                    const titleHtml =
+                      hit.needles && hit.needles.length > 0
+                        ? hl(title, hit.needles)
+                        : title
 
-                    let iconName = 'lucide:file'
-                    if (isDummy) {
-                      const t = hit.type
-                      iconName =
-                        t === 'request'
-                          ? 'lucide:clipboard-list'
-                          : t === 'document'
-                            ? 'lucide:file-text'
-                            : t === 'folder'
-                              ? 'lucide:folder'
-                              : 'lucide:git-branch'
-                    } else {
-                      iconName = getSearchHitIcon(hit.type)
-                    }
-
-                    const badges = isDummy ? hit.badges || [] : []
+                    const iconName = getSearchHitIcon(hit.type)
+                    const badges = hit.badges || []
 
                     return (
                       <motion.li
                         animate={{ opacity: 1, y: 0 }}
                         initial={{ opacity: 0, y: 8 }}
-                        key={hit.id?.itemId || hit.id || index}
+                        key={hit.id?.itemId || hit.id?.repositoryId || hit.id || index}
                         transition={{
                           delay: Math.min(index, 12) * 0.03,
                           duration: 0.2,
@@ -386,9 +377,7 @@ const GlobalSearch = () => {
                       >
                         <div
                           className='group flex w-full cursor-pointer items-start gap-4 px-4 py-4 text-left transition-colors hover:bg-gray-2'
-                          onClick={() => {
-                            if (!isDummy) openHit(hit)
-                          }}
+                          onClick={() => openHit(hit)}
                         >
                           {/* Icon Container */}
                           <div
@@ -409,12 +398,12 @@ const GlobalSearch = () => {
                                 className='truncate text-[14.5px] font-semibold text-gray-12'
                                 dangerouslySetInnerHTML={{ __html: titleHtml }}
                               />
-                              {isDummy && hit.subtitle && (
+                              {hit.subtitle && (
                                 <span className='text-[13.5px] text-gray-11'>
                                   {hit.subtitle}
                                 </span>
                               )}
-                              {isDummy && hit.folder && (
+                              {hit.folder && (
                                 <span className='shrink-0 rounded-full border border-gray-4 bg-gray-3 px-2 py-0.5 text-[11px] font-medium text-gray-11'>
                                   {hit.folder}
                                 </span>
@@ -445,16 +434,18 @@ const GlobalSearch = () => {
 
                             {/* Meta */}
                             <div className='mb-2 line-clamp-1 hover:line-clamp-none text-[12.5px] text-slate-500'>
-                              {isDummy
-                                ? lineFor(hit)
-                                : [
-                                    hit.name ? t`Updated from ${hit.name}` : '',
-                                    getSearchHitDate(hit)
-                                  ].filter(Boolean).join(', ') || hit.type || t`Result`}
+                              {hit.line
+                                ? hit.line
+                                : isDummy
+                                  ? lineFor(hit)
+                                  : [
+                                      hit.name ? t`Updated from ${hit.name}` : '',
+                                      getSearchHitDate(hit),
+                                    ].filter(Boolean).join(', ') || hit.type || t`Result`}
                             </div>
 
                             {/* Found snippets */}
-                            {isDummy && hit.found && hit.found.length > 0 && (
+                            {hit.found && hit.found.length > 0 && (
                               <div className='flex flex-col gap-1.5'>
                                 <div className='flex items-start gap-2'>
                                   <div className='bg-[#00bcd4] mt-[7px] size-[5px] shrink-0 rounded-full' />
@@ -478,8 +469,8 @@ const GlobalSearch = () => {
                               </div>
                             )}
 
-                            {/* Found snippets (Real Data) */}
-                            {!isDummy && hit.matchSource && (
+                            {/* Found snippets (Fallback when matchSource is present without found array) */}
+                            {!hit.found?.length && hit.matchSource && (
                               <div className='flex flex-col gap-1.5 mt-2'>
                                 <div className='flex items-start gap-2'>
                                   <div className='bg-[#00bcd4] mt-[7px] size-[5px] shrink-0 rounded-full' />

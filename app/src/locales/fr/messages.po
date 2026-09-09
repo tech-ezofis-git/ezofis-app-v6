@@ -838,7 +838,7 @@ msgstr "L'IA a suggéré un déclencheur et des conditions à partir des métado
 #: src/pages/folders/components/AiSummaryView.tsx:276
 #: src/pages/folders/components/DocumentDetailsView.tsx:1846
 #: src/pages/folders/components/DocumentDetailsView.tsx:1853
-#: src/pages/folders/components/DocumentsListView.tsx:1011
+#: src/pages/folders/components/DocumentsListView.tsx:1012
 #: src/pages/folders/components/FolderTable.tsx:836
 msgid "AI Summary"
 msgstr "Résumé IA"
@@ -918,7 +918,7 @@ msgstr "Tous les dossiers"
 msgid "All options must be checked to fulfill requirements."
 msgstr "Toutes les options doivent être cochées pour répondre aux exigences."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:509
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:513
 msgid "All search results for “{searchLabel}”"
 msgstr "Tous les résultats de recherche pour « {searchLabel} »"
 
@@ -2982,7 +2982,7 @@ msgstr "Définir une règle"
 #~ msgid "Define the role name, assign users, and describe its scope."
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:1025
+#: src/pages/folders/components/DocumentsListView.tsx:1026
 #: src/pages/folders/components/FolderTable.tsx:851
 #: src/pages/folders/components/FolderTable.tsx:1225
 #: src/pages/forms/FormsPage.tsx:292
@@ -3796,7 +3796,7 @@ msgstr "Modifier le menu"
 msgid "Edit Menu Setup"
 msgstr "Modifier la configuration du menu"
 
-#: src/pages/folders/components/DocumentsListView.tsx:1005
+#: src/pages/folders/components/DocumentsListView.tsx:1006
 #: src/pages/folders/components/EditMetadataView.tsx:362
 #: src/pages/folders/components/FolderTable.tsx:830
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
@@ -4619,7 +4619,7 @@ msgstr "Fichier téléversé avec succès"
 #~ msgid "File uploaded."
 #~ msgstr ""
 
-#: src/pages/folders/components/DocumentsListView.tsx:955
+#: src/pages/folders/components/DocumentsListView.tsx:956
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
 #: src/pages/folders/components/Upload/Upload.tsx:1623
@@ -6530,7 +6530,7 @@ msgstr "Correspondant"
 msgid "Matched GL Account"
 msgstr "Compte GL correspondant"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:487
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:491
 msgid "Matched in:"
 msgstr "Correspondant à :"
 
@@ -7360,7 +7360,7 @@ msgstr "Aucun élément de dépôt trouvé"
 msgid "No requests in this stage"
 msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:341
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
 msgid "No results for “{debouncedQuery}”."
 msgstr "Aucun résultat pour « {debouncedQuery} »."
 
@@ -8517,7 +8517,7 @@ msgstr "Préparation de votre demande..."
 msgid "Preparing..."
 msgstr "Préparation..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:512
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:516
 msgid "Press"
 msgstr "Appuyez"
 
@@ -9238,7 +9238,7 @@ msgstr "Restaurer"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entry"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:453
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:457
 msgid "Result"
 msgstr "Résultat"
 
@@ -9729,8 +9729,8 @@ msgstr ""
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:923
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:237
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:241
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:252
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:256
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:833
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -9743,7 +9743,7 @@ msgstr "Rechercher"
 msgid "Search {selectedColumnLabel}"
 msgstr "Rechercher {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:274
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
 msgid "Search AI"
 msgstr "Recherche IA"
 
@@ -9803,7 +9803,7 @@ msgstr "Service de recherche..."
 msgid "Search description..."
 msgstr "Description de la recherche..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:282
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:297
 msgid "Search documents, folders, requests, and more across your workspace."
 msgstr "Recherchez des documents, des dossiers, des demandes et bien plus encore dans votre espace de travail."
 
@@ -9953,15 +9953,15 @@ msgstr "Rechercher des flux de travail..."
 msgid "Search workflows…"
 msgstr "Rechercher des flux de travail…"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:188
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:203
 msgid "Search..."
 msgstr "Recherche..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:309
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
 msgid "Searching AI"
 msgstr "Recherche d'IA"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:314
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:329
 msgid "Searching…"
 msgstr "Recherche…"
 
@@ -10502,7 +10502,7 @@ msgstr "Gravité"
 #: src/components/common/SharePopover.tsx:332
 #: src/components/common/SharePopover.tsx:692
 #: src/pages/folders/components/DocumentDetailsView.tsx:1863
-#: src/pages/folders/components/DocumentsListView.tsx:1016
+#: src/pages/folders/components/DocumentsListView.tsx:1017
 #: src/pages/folders/components/FolderSharePopover.tsx:511
 #: src/pages/folders/components/FolderSharePopover.tsx:526
 #: src/pages/folders/components/FolderSharePopover.tsx:559
@@ -10905,7 +10905,7 @@ msgstr "Lancer la recherche"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr ""
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:279
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:294
 msgid "Start typing to search"
 msgstr "Commencez à taper pour rechercher"
 
@@ -11260,13 +11260,13 @@ msgstr "Prend en charge PDF et images · Max 4 Mo"
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Prend en charge PDF, Word, Excel, PowerPoint, images et documents · Max 50 Mo"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:209
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:220
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:224
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:235
 msgid "Switch to Dummy Data"
 msgstr "Passer aux données factices"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:208
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:219
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:223
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
 msgid "Switch to Original Data"
 msgstr "Passer aux données d'origine"
 
@@ -12066,7 +12066,7 @@ msgid "Update User"
 msgstr "Mettre à jour l'utilisateur"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:451
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:455
 msgid "Updated from {0}"
 msgstr "Mis à jour depuis {0}"
 
@@ -12508,7 +12508,7 @@ msgstr "Afficher"
 msgid "View activity logs, security events, and configuration change history."
 msgstr "Consultez les journaux d'activité, les événements de sécurité et l'historique des modifications de configuration."
 
-#: src/pages/folders/components/DocumentsListView.tsx:999
+#: src/pages/folders/components/DocumentsListView.tsx:1000
 #: src/pages/folders/components/FolderTable.tsx:824
 msgid "View Details"
 msgstr "Afficher les détails"

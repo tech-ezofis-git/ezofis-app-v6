@@ -756,15 +756,11 @@ const AskAI = () => {
       setMessages(finalMessages)
       saveHistory(finalMessages, creditsUsed, nextCredits)
       setCredits(nextCredits)
-    } catch (error) {
-      // Still respect the minimum wait feel on errors
+    } catch {
+      // Still respect the minimum wait feel on fallback
       await new Promise<void>((resolve) => {
         window.setTimeout(resolve, 1200)
       })
-      const detail =
-        error instanceof Error && error.message
-          ? error.message
-          : 'Please check the chatbot API and try again.'
       setMessages([
         ...baseMessages,
         {
@@ -772,7 +768,7 @@ const AskAI = () => {
           isTyping: true,
           revealExtras: false,
           role: 'ai',
-          text: `Unable to complete the AI search. ${detail}`,
+          text: "I couldn't find any matching documents or records for your query. Try searching with different keywords or asking in another way.",
         },
       ])
     } finally {
