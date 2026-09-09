@@ -855,8 +855,8 @@ export function DocumentsListView({
         />
       </div>
 
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-2 pt-2'>
-        <section className='flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-2 pt-1'>
+        <section className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden'>
           {!activeRepositoryId || folders.length > 0 ? (
             <FolderDataTableSection
               folders={folders}
@@ -874,7 +874,7 @@ export function DocumentsListView({
               onLoadMoreFolders={() => undefined}
               onOpenFolder={handleOpenFolder}
               onReload={handleRefresh}
-              rowSize='default'
+              rowSize='compact'
               folderBodyMaxHeight={
                 activeRepositoryId && visibleFiles.length > 0
                   ? `${Math.min(260, Math.max(96, folders.length * 56 + 52))}px`
@@ -930,9 +930,10 @@ export function DocumentsListView({
               )
             ) : visibleFiles.length > 0 || loading || loadingPage || refreshing ? (
               <DataTable
-                component={<div />}
+                hideActionBar
                 isLoading={(loading || loadingPage) && visibleFiles.length === 0}
                 pageSize={Math.max(5, visibleFiles.length || pageSize)}
+                rowSize='compact'
                 table={table}
                 isSticky
                 stickyHeader

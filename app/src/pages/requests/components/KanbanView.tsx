@@ -799,7 +799,7 @@ function KanbanCard({
         }
       }}
     >
-      <div className='mb-2 flex items-start gap-2'>
+      <div className='mb-2 flex items-center gap-2'>
         <span
           className={cn(
             'flex size-6 shrink-0 items-center justify-center rounded-full',
@@ -812,7 +812,7 @@ function KanbanCard({
           />
         </span>
         <span
-          className='min-w-0 flex-1 !cursor-pointer'
+          className='flex min-w-0 flex-1 items-center !cursor-pointer'
           data-no-drag=''
           onMouseEnter={() => setBlockCardDrag(true)}
           onMouseLeave={() => setBlockCardDrag(false)}
@@ -828,7 +828,7 @@ function KanbanCard({
         </span>
         <span
           className={cn(
-            'max-w-[150px] truncate rounded-full border px-2.5 py-0.5 text-[10px] font-semibold',
+            'max-w-[150px] shrink-0 truncate rounded-full border px-2.5 py-0.5 text-[10px] font-semibold',
             rolePillClass[cardRole],
           )}
         >
