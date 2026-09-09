@@ -235,7 +235,8 @@ export default function KanbanView({
     const rule = findMoveRule(workflow, fromId, targetColumnId)
     if (!rule) {
       showToast({
-        message: t`This request can only move to a connected stage.`,
+        message: t`This request can’t be moved to this stage from its current stage.`,
+        toastTitle: t`Stage unavailable`,
         variant: 'error',
       })
       return
@@ -253,22 +254,33 @@ export default function KanbanView({
           missing.flatMap((field) => [field.id, field.label].filter(Boolean)),
         ),
       ]
+      const displayedFields = missing.slice(0, 2)
+      const remainingCount = missing.length - displayedFields.length
+
       const toastId = showToast({
         autoClose: 15_000,
-        toastTitle: t`Required fields missing`,
+        toastTitle: t`Action needed`,
         variant: 'warning',
         message: (
           <div className='space-y-2.5'>
             <p className='text-13 text-gray-12'>
-              {t`Please fill the required fields before moving this request:`}
+              {t`This request is missing a few required details to move forward.`}
             </p>
             <ul className='space-y-1 text-13 text-gray-13'>
-              {missing.map((field) => (
+              {displayedFields.map((field) => (
                 <li className='flex items-start gap-2' key={field.id}>
                   <span className='mt-1.5 size-1.5 shrink-0 rounded-full bg-orange-9' />
-                  <span>{field.label}</span>
+                  <span className='truncate'>{field.label}</span>
                 </li>
               ))}
+              {remainingCount > 0 ? (
+                <li className='flex items-center gap-2 pt-0.5 text-12 text-gray-11'>
+                  <span className='size-1.5 shrink-0 rounded-full bg-orange-9' />
+                  <span className='inline-flex items-center rounded-full bg-orange-2 px-2 py-0.5 text-11 font-semibold text-orange-11'>
+                    +{remainingCount} {t`more`}
+                  </span>
+                </li>
+              ) : null}
             </ul>
             <button
               className='inline-flex items-center gap-1.5 pt-1 text-13 font-semibold text-primary-9 hover:underline'
@@ -278,7 +290,7 @@ export default function KanbanView({
                 onRowClick(item, 'Overview', missingIds)
               }}
             >
-              {t`Open the request`}
+              {t`Open request`}
               <Icon className='size-3.5' name='lucide:arrow-right' />
             </button>
           </div>
@@ -290,7 +302,8 @@ export default function KanbanView({
     const instanceId = itemInstanceId(item)
     if (!instanceId) {
       showToast({
-        message: t`Unable to move this request.`,
+        message: t`We couldn’t identify this request, so it couldn’t be moved.`,
+        toastTitle: t`Move unavailable`,
         variant: 'error',
       })
       return
@@ -329,19 +342,22 @@ export default function KanbanView({
       const response = await workflowsApiV6.moveNext(String(instanceId), payload)
       if (response?.error) {
         showToast({
-          message: t`Failed to proceed request: ${response.error}`,
+          message: t`We couldn’t move request ${requestNo}. ${response.error}`,
+          toastTitle: t`Move unsuccessful`,
           variant: 'error',
         })
         return
       }
       showToast({
-        message: t`Request ${requestNo} moved successfully`,
+        message: t`Request ${requestNo} has been moved successfully.`,
+        toastTitle: t`Request moved`,
         variant: 'success',
       })
       await Promise.resolve(onRefresh?.())
     } catch {
       showToast({
-        message: t`Failed to move this request.`,
+        message: t`We couldn’t move this request right now. Please try again.`,
+        toastTitle: t`Move unsuccessful`,
         variant: 'error',
       })
     } finally {
