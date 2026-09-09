@@ -170,29 +170,56 @@ export function resolveAskAiPageContext(
   pathname: string,
   pageContext?: AskAiPageContext | null,
 ): AskAiPageContext {
-  if (pathname.startsWith('/folders')) {
+  const normalizedPath = pathname.toLowerCase()
+
+  if (
+    normalizedPath === '/' ||
+    normalizedPath.startsWith('/dashboard') ||
+    normalizedPath.startsWith('/reports') ||
+    normalizedPath.startsWith('/report')
+  ) {
+    return {
+      actionFrom: '',
+      specificId: pageContext?.specificId || '',
+    }
+  }
+
+  if (normalizedPath.startsWith('/folders')) {
     return {
       actionFrom: 'Repository',
       specificId: pageContext?.specificId || '',
     }
   }
-  if (pathname.startsWith('/workflows')) {
+
+  if (normalizedPath.startsWith('/workflows')) {
     return {
       actionFrom: 'Workflow',
       specificId: pageContext?.specificId || '',
     }
   }
-  if (pathname.startsWith('/requests')) {
-    return { actionFrom: 'Request', specificId: pageContext?.specificId || '' }
-  }
-  if (pathname === '/' || pathname.startsWith('/dashboard')) {
+
+  if (normalizedPath.startsWith('/requests')) {
     return {
-      actionFrom: 'Dashboard',
+      actionFrom: 'Request',
       specificId: pageContext?.specificId || '',
     }
   }
+
+  const currentActionFrom = String(pageContext?.actionFrom || '').trim()
+  const lowerActionFrom = currentActionFrom.toLowerCase()
+  if (
+    lowerActionFrom === 'dashboard' ||
+    lowerActionFrom === 'reports' ||
+    lowerActionFrom === 'report'
+  ) {
+    return {
+      actionFrom: '',
+      specificId: pageContext?.specificId || '',
+    }
+  }
+
   return {
-    actionFrom: pageContext?.actionFrom || 'Dashboard',
+    actionFrom: currentActionFrom,
     specificId: pageContext?.specificId || '',
   }
 }
@@ -255,7 +282,7 @@ export async function postChatbotMessage(
 
     const specificId = String(pageContext.specificId || '').trim()
     const body: ChatbotRequestBody = {
-      actionFrom: pageContext.actionFrom || 'Dashboard',
+      actionFrom: pageContext.actionFrom ?? '',
       message,
       specificId: specificId || null,
       tenantId,

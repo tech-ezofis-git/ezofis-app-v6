@@ -83,7 +83,7 @@ export async function fetchGlobalSearch(
 
   const response = await fetch(SEARCH_ENDPOINT, {
     body: JSON.stringify({
-      actionFrom: payload.actionFrom || 'Repository',
+      actionFrom: payload.actionFrom ?? '',
       query: payload.query,
       specificId,
       tenantId,

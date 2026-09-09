@@ -1,11 +1,12 @@
 import { useLingui } from '@lingui/react/macro'
-import { useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Menu from '@/components/base/menu/Menu'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import { resolveAskAiPageContext } from '@/components/common/ask-ai/chatbotApi'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import cn from '@/utils/cn'
 import {
@@ -20,6 +21,7 @@ import { foundLine, hl, lineFor, searchMock } from './mockSearch'
 const GlobalSearch = () => {
   const { t } = useLingui()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const pageContext = useAskAiActionStore((state) => state.pageContext)
   const setPending = useAskAiActionStore((state) => state.setPending)
 
@@ -83,10 +85,11 @@ const GlobalSearch = () => {
         setLoading(false)
       }, 400)
     } else {
+      const resolvedContext = resolveAskAiPageContext(pathname, pageContext)
       void fetchGlobalSearch({
-        actionFrom: pageContext?.actionFrom || 'Repository',
+        actionFrom: resolvedContext.actionFrom,
         query: debouncedQuery,
-        specificId: pageContext?.specificId || '',
+        specificId: resolvedContext.specificId || '',
       })
         .then((hits) => {
           if (requestId !== requestIdRef.current) return
@@ -103,6 +106,7 @@ const GlobalSearch = () => {
   }, [
     debouncedQuery,
     useDummyData,
+    pathname,
     pageContext?.actionFrom,
     pageContext?.specificId,
   ])
