@@ -367,7 +367,7 @@ export default function KanbanView({
 
   if (isLoading) {
     return (
-      <div className='flex h-full min-h-0 gap-4 overflow-hidden px-2 pt-3 pb-4'>
+      <div className='flex h-full min-h-0 gap-4 overflow-hidden px-2 pt-1 pb-2'>
         {[0, 1, 2, 3].map((index) => (
           <div
             className='flex h-full w-80 shrink-0 flex-col rounded-xl border border-gray-3 bg-surface'
@@ -378,7 +378,7 @@ export default function KanbanView({
               <div className='h-3.5 flex-1 rounded bg-gray-3' />
               <div className='h-5 w-7 rounded-full bg-gray-2' />
             </div>
-            <div className='flex flex-col gap-3 p-3'>
+            <div className='flex flex-col gap-2 p-3'>
               <div className='h-32 rounded-xl border border-gray-3 bg-gray-2' />
               <div className='h-32 rounded-xl border border-gray-3 bg-gray-2' />
             </div>
@@ -400,7 +400,7 @@ export default function KanbanView({
   }
 
   return (
-    <div className='flex h-full min-h-0 w-full min-w-0 py-4'>
+    <div className='flex h-full min-h-0 w-full min-w-0 pt-0.5 pb-2'>
       <div className='min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-visible [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
         <div className='flex h-full min-h-0 w-max items-stretch gap-4 px-1'>
           {grouped.map((column) => {
@@ -456,7 +456,7 @@ export default function KanbanView({
               items.length ? (
                 items.map((item, index) => (
                   <div
-                    className='relative z-0 overflow-visible py-2.5 hover:z-50'
+                    className='relative z-0 overflow-visible py-1 hover:z-50'
                     key={
                       item?.id ||
                       item?.processId ||
@@ -498,7 +498,7 @@ export default function KanbanView({
               )
 
             return (
-              <div className='relative h-full shrink-0 py-2' key={column.id}>
+              <div className='relative h-full shrink-0 py-0.5' key={column.id}>
                 <motion.section
                   animate={
                     showColumnHover
@@ -557,7 +557,7 @@ export default function KanbanView({
                 </header>
                 
                 {isGrouped ? (
-                  <div className='flex min-h-0 flex-1 flex-col gap-1 overflow-x-visible overflow-y-auto px-3 py-3 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
+                  <div className='flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-visible overflow-y-auto px-2.5 py-1.5 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
                     {stageBuckets.map((stage) => {
                       const groupKey = `${column.id}:${stage.id}`
                       const collapsed = Boolean(collapsedGroups[groupKey])
@@ -611,7 +611,7 @@ export default function KanbanView({
                             </span>
                           </button>
                           {!collapsed ? (
-                            <div className='flex flex-col gap-3 px-1 pb-3'>
+                            <div className='flex flex-col gap-0.5 px-1 pb-1.5'>
                               {renderCards(
                                 stage.items,
                                 stage.name,
@@ -624,7 +624,7 @@ export default function KanbanView({
                     })}
                   </div>
                 ) : (
-                  <div className='flex min-h-0 flex-1 flex-col gap-1 overflow-x-visible overflow-y-auto px-3 py-4 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
+                  <div className='flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-visible overflow-y-auto px-2.5 pt-1 pb-2 [scrollbar-color:var(--gray-8)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-8 [&::-webkit-scrollbar-track]:bg-transparent'>
                     {renderCards(
                       column.items,
                       column.name,
@@ -739,7 +739,7 @@ function KanbanCard({
   return (
     <div
       className={cn(
-        'relative z-0 w-full rounded-xl border bg-surface p-3.5 text-left',
+        'relative z-0 w-full rounded-xl border bg-surface p-3 text-left',
         'duration-200 ease-out',
         isCardHovered ? 'z-20 border-primary-6' : 'border-gray-3',
         canDrag
@@ -799,7 +799,7 @@ function KanbanCard({
         }
       }}
     >
-      <div className='mb-2.5 flex items-start gap-2'>
+      <div className='mb-2 flex items-start gap-2'>
         <span
           className={cn(
             'flex size-6 shrink-0 items-center justify-center rounded-full',
@@ -837,7 +837,7 @@ function KanbanCard({
       </div>
 
       {fieldLines.length > 0 && (
-        <div className='mb-2.5 flex min-w-0 flex-col gap-0.5'>
+        <div className='mb-2 flex min-w-0 flex-col gap-0.5'>
           {fieldLines.map((line) => (
             <div
               className='flex min-w-0 items-start gap-1.5 rounded-md px-0.5 py-0.5 transition-colors duration-200 hover:bg-gray-2/80'
@@ -863,7 +863,7 @@ function KanbanCard({
       )}
 
       {previewFieldTexts.length > 0 && (
-        <div className='mb-2.5 flex min-w-0 flex-col gap-0.5'>
+        <div className='mb-2 flex min-w-0 flex-col gap-0.5'>
           {previewFieldTexts.map((text, index) => (
             <div
               className='flex min-w-0 items-start gap-1.5 rounded-md px-0.5 py-0.5 transition-colors duration-200 hover:bg-gray-2/80'
@@ -886,7 +886,7 @@ function KanbanCard({
       )}
 
       {raisedBy ? (
-        <div className='mb-2.5 flex items-start gap-1.5 rounded-md px-0.5 py-0.5 text-gray-8 transition-colors duration-200 hover:bg-gray-2/80'>
+        <div className='mb-2 flex items-start gap-1.5 rounded-md px-0.5 py-0.5 text-gray-8 transition-colors duration-200 hover:bg-gray-2/80'>
           <Icon className='mt-0.5 size-3.5 shrink-0' name='tabler:user' />
           <HoverExpandableText
             className='text-[11.5px] text-gray-11'
@@ -898,7 +898,7 @@ function KanbanCard({
         </div>
       ) : null}
 
-      <div className='flex items-center justify-between gap-2 border-t border-gray-3 pt-2.5'>
+      <div className='flex items-center justify-between gap-2 border-t border-gray-3 pt-2'>
         {startedAt ? (
           <div className='flex min-w-0 items-center gap-1 text-[10.5px] text-gray-10'>
             <Icon className='size-3 shrink-0' name='tabler:calendar' />
