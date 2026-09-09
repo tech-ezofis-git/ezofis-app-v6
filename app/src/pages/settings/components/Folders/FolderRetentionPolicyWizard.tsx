@@ -23,6 +23,7 @@ import {
   AnimateSlideUp,
 } from '@/components/common/animations'
 import cn from '@/utils/cn'
+import { isDemoAppOrigin } from '@/utils/origin'
 import {
   ACTION_OPTIONS,
   actionMeta,
@@ -230,19 +231,21 @@ export default function FolderRetentionPolicyWizard({
   }
 
   const goToStep = (nextStep: Step) => {
-    if (nextStep > step && step === 0 && !policy.name.trim()) {
-      showToast({
-        message: t`Enter a policy name to continue.`,
-        variant: 'error',
-      })
-      return
-    }
-    if (nextStep > step && step === 1 && ruleStage !== 'form') {
-      showToast({
-        message: t`Choose a destination action and how to build the rule to continue.`,
-        variant: 'error',
-      })
-      return
+    if (!isDemoAppOrigin()) {
+      if (nextStep > step && step === 0 && !policy.name.trim()) {
+        showToast({
+          message: t`Enter a policy name to continue.`,
+          variant: 'error',
+        })
+        return
+      }
+      if (nextStep > step && step === 1 && ruleStage !== 'form') {
+        showToast({
+          message: t`Choose a destination action and how to build the rule to continue.`,
+          variant: 'error',
+        })
+        return
+      }
     }
     setStep(nextStep)
   }

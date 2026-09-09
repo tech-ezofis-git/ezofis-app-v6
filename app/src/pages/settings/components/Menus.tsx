@@ -53,6 +53,7 @@ import SettingsPageHeader, {
 } from './SettingsPageHeader'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
+import { isDemoAppOrigin } from '@/utils/origin'
 
 type AppMenu = {
   created: string
@@ -646,15 +647,17 @@ function MenuSetup({
   }
 
   const handleNext = () => {
-    const missingLabels = getMissingLabels(activeStep)
+    if (!isDemoAppOrigin()) {
+      const missingLabels = getMissingLabels(activeStep)
 
-    if (missingLabels.length) {
-      setShowErrors(true)
-      showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
-        variant: 'error',
-      })
-      return
+      if (missingLabels.length) {
+        setShowErrors(true)
+        showToast({
+          message: getRequiredFieldErrorMessage(missingLabels),
+          variant: 'error',
+        })
+        return
+      }
     }
 
     setShowErrors(false)
@@ -689,7 +692,7 @@ function MenuSetup({
   }
 
   const handleStepChange = (step: number) => {
-    if (step > activeStep) {
+    if (!isDemoAppOrigin() && step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const missingLabels = getMissingLabels(index)
 
@@ -715,7 +718,10 @@ function MenuSetup({
   }
 
   const wizardSteps = useMemo(() => {
+    const allowAnyStep = isDemoAppOrigin()
     return menuSteps.map((s, idx) => ({
+      clickable: allowAnyStep ? true : undefined,
+      disabled: allowAnyStep ? false : undefined,
       id: idx,
       label: s.title,
       description: s.description,

@@ -35,6 +35,7 @@ import {
 import authUserStore from '@/stores/authUserStore'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import { isDemoAppOrigin } from '@/utils/origin'
 import type { SettingsOption } from '../helpers/userGroupMappers'
 import {
   applyLoginType,
@@ -987,14 +988,16 @@ function PortalSetup({
   }
 
   const handleNext = () => {
-    const missingLabels = getMissingLabels(activeStep)
-    if (missingLabels.length) {
-      setShowErrors(true)
-      showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
-        variant: 'error',
-      })
-      return
+    if (!isDemoAppOrigin()) {
+      const missingLabels = getMissingLabels(activeStep)
+      if (missingLabels.length) {
+        setShowErrors(true)
+        showToast({
+          message: getRequiredFieldErrorMessage(missingLabels),
+          variant: 'error',
+        })
+        return
+      }
     }
     setShowErrors(false)
     onNext()
@@ -1022,7 +1025,7 @@ function PortalSetup({
   }
 
   const handleStepChange = (step: number) => {
-    if (step > activeStep) {
+    if (!isDemoAppOrigin() && step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const missingLabels = getMissingLabels(index)
         if (missingLabels.length) {
@@ -1078,7 +1081,7 @@ function PortalSetup({
   }
 
   const wizardSteps = useMemo(() => {
-    const isEditMode = editingPortalId !== null
+    const isEditMode = editingPortalId !== null || isDemoAppOrigin()
     return PORTAL_STEP_MSGS.map((step, idx) => ({
       clickable: isEditMode ? true : undefined,
       description: i18n._(step.description),

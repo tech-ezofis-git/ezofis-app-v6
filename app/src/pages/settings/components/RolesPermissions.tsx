@@ -52,6 +52,7 @@ import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import { formatDatetime } from '@/utils/dayjs'
+import { isDemoAppOrigin } from '@/utils/origin'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -879,15 +880,17 @@ function CreateRolePage({
   }
 
   const handleNext = () => {
-    const missingLabels = getMissingLabels(activeStep)
+    if (!isDemoAppOrigin()) {
+      const missingLabels = getMissingLabels(activeStep)
 
-    if (missingLabels.length) {
-      setShowErrors(true)
-      showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
-        variant: 'error',
-      })
-      return
+      if (missingLabels.length) {
+        setShowErrors(true)
+        showToast({
+          message: getRequiredFieldErrorMessage(missingLabels),
+          variant: 'error',
+        })
+        return
+      }
     }
 
     setShowErrors(false)
@@ -912,7 +915,7 @@ function CreateRolePage({
   }
 
   const handleStepChange = (step: number) => {
-    if (step > activeStep) {
+    if (!isDemoAppOrigin() && step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const missingLabels = getMissingLabels(index)
 
@@ -938,7 +941,7 @@ function CreateRolePage({
   }
 
   const wizardSteps = useMemo(() => {
-    const isEditMode = editingRoleId !== null
+    const isEditMode = editingRoleId !== null || isDemoAppOrigin()
     return ROLE_STEP_MSGS.map((step, idx) => ({
       id: idx,
       label: i18n._(step.title),

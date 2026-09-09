@@ -49,6 +49,7 @@ import { AnimateFadeIn } from '@/components/common/animations'
 import SettingsWizardLayout from './SettingsWizardLayout'
 import useSettingsTableToolbar from './useSettingsTableToolbar'
 import { formatDatetime } from '@/utils/dayjs'
+import { isDemoAppOrigin } from '@/utils/origin'
 
 const SESSION_KEY = 'ezofis_group_management_state'
 
@@ -730,15 +731,17 @@ function GroupSetup({
   }
 
   const handleNext = () => {
-    const missingLabels = getMissingLabels(activeStep)
+    if (!isDemoAppOrigin()) {
+      const missingLabels = getMissingLabels(activeStep)
 
-    if (missingLabels.length) {
-      setShowErrors(true)
-      showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
-        variant: 'error',
-      })
-      return
+      if (missingLabels.length) {
+        setShowErrors(true)
+        showToast({
+          message: getRequiredFieldErrorMessage(missingLabels),
+          variant: 'error',
+        })
+        return
+      }
     }
 
     setShowErrors(false)
@@ -767,7 +770,7 @@ function GroupSetup({
   }
 
   const handleStepChange = (step: number) => {
-    if (step > activeStep) {
+    if (!isDemoAppOrigin() && step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const missingLabels = getMissingLabels(index)
 
@@ -793,7 +796,7 @@ function GroupSetup({
   }
 
   const wizardSteps = useMemo(() => {
-    const isEditMode = editingGroupId !== null
+    const isEditMode = editingGroupId !== null || isDemoAppOrigin()
     return GROUP_STEP_MSGS.map((step, idx) => ({
       id: idx,
       label: i18n._(step.title),

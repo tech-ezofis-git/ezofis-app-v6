@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import Button from '@/components/base/button/Button'
 import Stepper from '@/components/base/Stepper'
 import cn from '@/utils/cn'
+import { isDemoAppOrigin } from '@/utils/origin'
 import useSettingsTopbar from '../hooks/useSettingsTopbar'
 
 export type SettingsWizardStep = {
@@ -126,10 +127,13 @@ export default function SettingsWizardLayout({
   }, [activeStep])
 
   const formattedSteps = useMemo(() => {
+    const allowAnyStep = isDemoAppOrigin()
     return steps.map((s, idx) => ({
       ...s,
-      clickable: s.clickable !== undefined ? s.clickable : idx <= activeStep,
-      disabled: s.disabled !== undefined ? s.disabled : idx > activeStep,
+      clickable:
+        allowAnyStep || (s.clickable !== undefined ? s.clickable : idx <= activeStep),
+      disabled:
+        allowAnyStep ? false : (s.disabled !== undefined ? s.disabled : idx > activeStep),
     }))
   }, [steps, activeStep, i18n.locale])
 
