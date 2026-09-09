@@ -18,6 +18,7 @@ interface Props {
   variant?: SelectVariant
   onBottomReached?: () => void
   onChange: (value: Option[]) => void
+  onSearch?: (search: string) => void
 }
 
 const ComboboxOptions = ({
@@ -31,6 +32,7 @@ const ComboboxOptions = ({
   variant,
   onBottomReached,
   onChange,
+  onSearch,
 }: Props) => {
   const counter = useRef(-1)
   const optionList = options ?? []
@@ -86,6 +88,7 @@ const ComboboxOptions = ({
         name: search.trim(),
         value: search.trim(),
       })
+      onSearch?.('')
     }
   }
 

@@ -1473,6 +1473,10 @@ export default function Upload({
     } else if (
       fieldType === 'select' ||
       fieldType === 'dropdown' ||
+      fieldType === 'single_select' ||
+      fieldType === 'multi_select' ||
+      fieldType === 'single_choice' ||
+      fieldType === 'multiple_choice' ||
       options.length > 0
     ) {
       InputComponent = (

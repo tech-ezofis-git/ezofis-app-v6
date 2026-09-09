@@ -66,12 +66,40 @@ export const toBooleanValue = (value: any) => {
 export const getSelectOptions = (
   field: DynamicRepositoryColumn,
 ): SelectOption[] => {
-  const rawOptions =
+  let rawOptions =
     (field as any).options ||
     (field as any).values ||
     (field as any).lookupValues ||
     (field as any).allowedValues ||
+    (field as any).optionsJson ||
     []
+
+  if (typeof rawOptions === 'string') {
+    try {
+      rawOptions = JSON.parse(rawOptions)
+      if (typeof rawOptions === 'string') {
+        try {
+          rawOptions = JSON.parse(rawOptions)
+        } catch {
+          // not double JSON
+        }
+      }
+    } catch {
+      // not JSON string
+    }
+  }
+
+  if (
+    rawOptions &&
+    typeof rawOptions === 'object' &&
+    !Array.isArray(rawOptions)
+  ) {
+    if (Array.isArray((rawOptions as any).values)) {
+      rawOptions = (rawOptions as any).values
+    } else if (Array.isArray((rawOptions as any).options)) {
+      rawOptions = (rawOptions as any).options
+    }
+  }
 
   if (!Array.isArray(rawOptions)) return []
 
@@ -151,6 +179,10 @@ export function renderMetadataFieldControl(
   if (
     fieldType === 'select' ||
     fieldType === 'dropdown' ||
+    fieldType === 'single_select' ||
+    fieldType === 'multi_select' ||
+    fieldType === 'single_choice' ||
+    fieldType === 'multiple_choice' ||
     options.length > 0
   ) {
     return (

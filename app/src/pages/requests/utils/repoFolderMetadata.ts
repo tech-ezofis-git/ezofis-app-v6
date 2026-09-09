@@ -28,12 +28,22 @@ export const parseFieldOptionValues = (
 ): string[] => {
   if (!field.optionsJson) return []
   try {
-    const parsed = JSON.parse(field.optionsJson)
+    let parsed = JSON.parse(field.optionsJson)
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed)
+      } catch {}
+    }
     if (Array.isArray(parsed)) {
       return parsed.filter((v): v is string => typeof v === 'string')
     }
     if (parsed && Array.isArray(parsed.values)) {
       return (parsed.values as unknown[]).filter(
+        (v): v is string => typeof v === 'string',
+      )
+    }
+    if (parsed && Array.isArray(parsed.options)) {
+      return (parsed.options as unknown[]).filter(
         (v): v is string => typeof v === 'string',
       )
     }

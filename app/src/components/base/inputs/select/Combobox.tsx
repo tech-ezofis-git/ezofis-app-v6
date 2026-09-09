@@ -160,6 +160,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
             variant={variant}
             onBottomReached={onBottomReached}
             onChange={onChange}
+            onSearch={onSearch}
           />
 
           {dropdownFooter && (

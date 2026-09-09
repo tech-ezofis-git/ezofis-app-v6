@@ -2433,29 +2433,29 @@ function FieldNameWithIconInput({
   )
 }
 
-function FieldOptionsConfiguration({
-  columnsLength,
-  row,
-  updateField,
+function OptionsConfigurationContent({
+  fieldName,
+  optionsJson,
+  onChangeOptionsJson,
 }: {
-  columnsLength: number
-  row: FieldRow
-  updateField: (id: string, updates: Partial<FieldRow>) => void
+  fieldName?: string
+  optionsJson?: string | null
+  onChangeOptionsJson: (newOptionsJson: string) => void
 }) {
   const parsedOptions = useMemo(() => {
     let parsed: any = { type: 'predefined', values: [] }
     try {
-      if (row.optionsJson) {
-        const p = JSON.parse(row.optionsJson)
+      if (optionsJson) {
+        const p = JSON.parse(optionsJson)
         if (Array.isArray(p)) {
           parsed = { type: 'predefined', values: p }
-        } else {
+        } else if (p && typeof p === 'object') {
           parsed = p
         }
       }
     } catch {}
     return parsed
-  }, [row.optionsJson])
+  }, [optionsJson])
 
   const [optionsType, setOptionsType] = useState<string>(
     parsedOptions.type || 'predefined',
@@ -2464,6 +2464,12 @@ function FieldOptionsConfiguration({
   const [loadingForms, setLoadingForms] = useState(false)
   const [fields, setFields] = useState<any[]>([])
   const [loadingFields, setLoadingFields] = useState(false)
+
+  useEffect(() => {
+    if (parsedOptions.type && parsedOptions.type !== optionsType) {
+      setOptionsType(parsedOptions.type)
+    }
+  }, [parsedOptions.type])
 
   useEffect(() => {
     if (optionsType === 'master' && forms.length === 0) {
@@ -2479,7 +2485,6 @@ function FieldOptionsConfiguration({
         .then((res) => {
           if (!isMounted) return
           let loadedForms: any[] = []
-          console.log('forms', res?.data?.data?.[0]?.value)
 
           if (res?.data?.data?.[0]?.value) {
             loadedForms = res.data.data[0].value
@@ -2499,7 +2504,7 @@ function FieldOptionsConfiguration({
         isMounted = false
       }
     }
-  }, [optionsType])
+  }, [optionsType, forms.length])
 
   useEffect(() => {
     if (optionsType === 'master' && parsedOptions.masterFormId) {
@@ -2548,132 +2553,165 @@ function FieldOptionsConfiguration({
     }
     const newType = typeMap[val] || 'predefined'
     setOptionsType(newType)
-    updateField(row.id, {
-      optionsJson: JSON.stringify({ type: newType, values: [] }),
-    })
+    onChangeOptionsJson(
+      JSON.stringify({
+        ...parsedOptions,
+        type: newType,
+        values: newType === 'predefined' ? (parsedOptions.values || []) : [],
+      }),
+    )
   }
 
   const currentTypeVal =
     optionsType === 'unique' ? 1 : optionsType === 'master' ? 2 : 3
-  console.log('forms', forms)
+
+  return (
+    <div className='flex max-w-xl flex-col gap-2.5'>
+      <label className='text-13 font-medium text-gray-12'>
+        Options Configuration
+      </label>
+      <div>
+        <InputRadioGroup
+          value={currentTypeVal}
+          options={[
+            { id: 1, name: 'Use unique column values as options' },
+            { id: 2, name: 'Use values from a master table as options' },
+            { id: 3, name: 'Use predefined values as options' },
+          ]}
+          onChange={handleTypeChange}
+        />
+      </div>
+
+      {optionsType === 'predefined' && (
+        <div className='flex flex-col gap-1.5'>
+          <label className='text-12 font-medium text-gray-11'>
+            Predefined Values
+          </label>
+          <InputSelectMultiple
+            placeholder='Type an option'
+            searchPlaceholder='Type an option'
+            clearable
+            creatable
+            searchable
+            options={(parsedOptions.values || []).map((opt: string) => ({
+              id: opt,
+              name: opt,
+              value: opt,
+            }))}
+            value={(parsedOptions.values || []).map((opt: string) => ({
+              id: opt,
+              name: opt,
+              value: opt,
+            }))}
+            onChange={(newOptions) =>
+              onChangeOptionsJson(
+                JSON.stringify({
+                  ...parsedOptions,
+                  type: 'predefined',
+                  values: newOptions.map((o) => o.value || o.name),
+                }),
+              )
+            }
+          />
+        </div>
+      )}
+
+      {optionsType === 'master' && (
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+          <InputSelect
+            label='Master Form'
+            loading={loadingForms}
+            options={forms.map((f) => ({ id: String(f.id), name: f.name }))}
+            searchPlaceholder='Search master form...'
+            searchable
+            value={
+              parsedOptions.masterFormId
+                ? {
+                    id: parsedOptions.masterFormId,
+                    name:
+                      forms.find(
+                        (f) => String(f.id) === parsedOptions.masterFormId,
+                      )?.name || parsedOptions.masterFormId,
+                  }
+                : null
+            }
+            onChange={(selected) => {
+              onChangeOptionsJson(
+                JSON.stringify({
+                  ...parsedOptions,
+                  type: 'master',
+                  masterFieldId: null,
+                  masterFormId: selected?.id || null,
+                }),
+              )
+            }}
+          />
+          {parsedOptions.masterFormId ? (
+            <InputSelect
+              label='Master Field'
+              loading={loadingFields}
+              searchPlaceholder='Search field...'
+              searchable
+              options={fields.map((f) => ({
+                id: f.id,
+                name: f.label || f.name || f.id,
+              }))}
+              value={
+                parsedOptions.masterFieldId
+                  ? {
+                      id: parsedOptions.masterFieldId,
+                      name:
+                        fields.find(
+                          (f) => f.id === parsedOptions.masterFieldId,
+                        )?.label ||
+                        fields.find(
+                          (f) => f.id === parsedOptions.masterFieldId,
+                        )?.name ||
+                        parsedOptions.masterFieldId,
+                    }
+                  : null
+              }
+              onChange={(selected) => {
+                onChangeOptionsJson(
+                  JSON.stringify({
+                    ...parsedOptions,
+                    type: 'master',
+                    masterFieldId: selected?.id || null,
+                  }),
+                )
+              }}
+            />
+          ) : (
+            <div />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FieldOptionsConfiguration({
+  columnsLength,
+  row,
+  updateField,
+}: {
+  columnsLength: number
+  row: FieldRow
+  updateField: (id: string, updates: Partial<FieldRow>) => void
+}) {
   return (
     <tr className='bg-gray-1/50 shadow-inner'>
       <td
         className='border-b border-[var(--gray-3)] px-12 py-5'
         colSpan={columnsLength}
       >
-        <div className='flex max-w-md flex-col gap-4'>
-          <label className='text-13 font-medium text-gray-12'>
-            Options Configuration
-          </label>
-          <div>
-            <InputRadioGroup
-              value={currentTypeVal}
-              options={[
-                { id: 1, name: 'Use unique column values as options' },
-                { id: 2, name: 'Use values from a master table as options' },
-                { id: 3, name: 'Use predefined values as options' },
-              ]}
-              onChange={handleTypeChange}
-            />
-          </div>
-
-          {optionsType === 'predefined' && (
-            <div className='pt-1'>
-              <InputSelectMultiple
-                searchPlaceholder='Type an option and press Enter'
-                clearable
-                creatable
-                searchable
-                options={(parsedOptions.values || []).map((opt: string) => ({
-                  id: opt,
-                  name: opt,
-                  value: opt,
-                }))}
-                value={(parsedOptions.values || []).map((opt: string) => ({
-                  id: opt,
-                  name: opt,
-                  value: opt,
-                }))}
-                onChange={(newOptions) =>
-                  updateField(row.id, {
-                    optionsJson: JSON.stringify({
-                      ...parsedOptions,
-                      values: newOptions.map((o) => o.value || o.name),
-                    }),
-                  })
-                }
-              />
-            </div>
-          )}
-
-          {optionsType === 'master' && (
-            <div className='flex flex-col gap-4 pt-1'>
-              <InputSelect
-                label='Master Form'
-                loading={loadingForms}
-                options={forms.map((f) => ({ id: String(f.id), name: f.name }))}
-                searchPlaceholder='Search master form...'
-                searchable
-                value={
-                  parsedOptions.masterFormId
-                    ? {
-                        id: parsedOptions.masterFormId,
-                        name:
-                          forms.find(
-                            (f) => String(f.id) === parsedOptions.masterFormId,
-                          )?.name || parsedOptions.masterFormId,
-                      }
-                    : null
-                }
-                onChange={(selected) => {
-                  updateField(row.id, {
-                    optionsJson: JSON.stringify({
-                      ...parsedOptions,
-                      masterFieldId: null,
-                      masterFormId: selected?.id || null,
-                    }),
-                  })
-                }}
-              />
-              {parsedOptions.masterFormId && (
-                <InputSelect
-                  label='Master Field'
-                  loading={loadingFields}
-                  searchPlaceholder='Search field...'
-                  searchable
-                  options={fields.map((f) => ({
-                    id: f.id,
-                    name: f.label || f.name || f.id,
-                  }))}
-                  value={
-                    parsedOptions.masterFieldId
-                      ? {
-                          id: parsedOptions.masterFieldId,
-                          name:
-                            fields.find(
-                              (f) => f.id === parsedOptions.masterFieldId,
-                            )?.label ||
-                            fields.find(
-                              (f) => f.id === parsedOptions.masterFieldId,
-                            )?.name ||
-                            parsedOptions.masterFieldId,
-                        }
-                      : null
-                  }
-                  onChange={(selected) => {
-                    updateField(row.id, {
-                      optionsJson: JSON.stringify({
-                        ...parsedOptions,
-                        masterFieldId: selected?.id || null,
-                      }),
-                    })
-                  }}
-                />
-              )}
-            </div>
-          )}
-        </div>
+        <OptionsConfigurationContent
+          fieldName={row.fieldName}
+          optionsJson={row.optionsJson}
+          onChangeOptionsJson={(nextJson) =>
+            updateField(row.id, { optionsJson: nextJson })
+          }
+        />
       </td>
     </tr>
   )
@@ -4102,7 +4140,9 @@ function WizardContent({
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
   const [newIsFolder, setNewIsFolder] = useState(false)
   const [newIsMandatory, setNewIsMandatory] = useState(false)
-  const [newFieldOptions, setNewFieldOptions] = useState<string[]>([])
+  const [newFieldOptionsJson, setNewFieldOptionsJson] = useState<string>(
+    JSON.stringify({ type: 'predefined', values: [] }),
+  )
   const [newFieldIcon, setNewFieldIcon] = useState<SelectOption | null>(
     folderIconOptions.find((option) => option.value === 'folder') || null,
   )
@@ -4663,6 +4703,12 @@ function WizardContent({
     const trimmedName = newFieldName.trim()
     if (!trimmedName) return
 
+    let optionsJsonToSave: string | null = null
+    if (['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(newFieldType)) {
+      optionsJsonToSave =
+        newFieldOptionsJson || JSON.stringify({ type: 'predefined', values: [] })
+    }
+
     setFields((prev) =>
       recalculateFieldHierarchy([
         ...prev,
@@ -4676,14 +4722,13 @@ function WizardContent({
           includeInFolderStructure: newIsFolder,
           isMandatory: newIsFolder || newIsMandatory,
           level: 0,
-          optionsJson:
-            newFieldOptions.length > 0 ? JSON.stringify(newFieldOptions) : null,
+          optionsJson: optionsJsonToSave,
           orderId: prev.length + 1,
         },
       ]),
     )
     setNewFieldName('')
-    setNewFieldOptions([])
+    setNewFieldOptionsJson(JSON.stringify({ type: 'predefined', values: [] }))
     setNewFieldType(String(fieldTypeOptions[0]?.value || 'SHORT_TEXT'))
     setNewIsFolder(false)
     setNewIsMandatory(false)
@@ -4784,16 +4829,11 @@ function WizardContent({
                   {['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(
                     newFieldType,
                   ) && (
-                    <div className='flex flex-col gap-2'>
-                      <label className='text-13 font-medium text-gray-11'>
-                        {t`Options`}
-                      </label>
-                      <TagsInput
-                        data={[]}
-                        placeholder={t`Type an option and press Enter`}
-                        value={newFieldOptions}
-                        clearable
-                        onChange={setNewFieldOptions}
+                    <div className='rounded-lg border border-gray-3 bg-gray-1/30 p-4'>
+                      <OptionsConfigurationContent
+                        fieldName={newFieldName}
+                        optionsJson={newFieldOptionsJson}
+                        onChangeOptionsJson={setNewFieldOptionsJson}
                       />
                     </div>
                   )}
