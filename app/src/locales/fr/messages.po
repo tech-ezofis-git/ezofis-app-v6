@@ -13,11 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3974
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3975
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4013
 msgid "Oracle Attribute"
 msgstr ""
 
@@ -194,11 +190,7 @@ msgstr ""
 msgid "{countForUser} place(s) for {0}. Click again to add another, or Send when done."
 msgstr "{countForUser} place(s) pour {0}. Cliquez à nouveau pour en ajouter un autre, ou Envoyer lorsque vous avez terminé."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1058
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1061
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "{enabledCount} enabled"
 msgstr "{enabledCount} activé"
 
@@ -220,7 +212,7 @@ msgid "{filledCount} of {totalCount} fields ready"
 msgstr "{filledCount} champs sur {totalCount} sont prêts"
 
 #. placeholder {0}: repositoryFields.length
-#: src/pages/folders/components/Upload/Upload.tsx:1911
+#: src/pages/folders/components/Upload/Upload.tsx:1915
 msgid "{filledFieldsCount} of {0} fields ready"
 msgstr "{filledFieldsCount} champs sur {0} sont prêts"
 
@@ -361,7 +353,7 @@ msgstr "1. Reçu"
 #~ msgid "10 of 24 suppliers now score above 80% on-time delivery, reflecting steadier vendor performance."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1700
+#: src/pages/folders/components/Upload/Upload.tsx:1704
 msgid "100% Accuracy"
 msgstr "100 % de précision"
 
@@ -437,13 +429,8 @@ msgstr "un champ déclencheur"
 msgid "Accepted formats: CSV, XLSX"
 msgstr "Formats acceptés : CSV, XLSX"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:748
-#: src/pages/settings/components/RolesPermissions.tsx:1444
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:749
 #: src/pages/settings/components/RolesPermissions.tsx:1447
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Access"
 msgstr "Accéder"
 
@@ -451,13 +438,8 @@ msgstr "Accéder"
 msgid "Access Control"
 msgstr "Contrôle d'accès"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1626
-#: src/pages/settings/components/RolesPermissions.tsx:1631
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1629
 #: src/pages/settings/components/RolesPermissions.tsx:1634
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Access Pages"
 msgstr "Pages d'accès"
 
@@ -525,21 +507,13 @@ msgid "Activating..."
 msgstr "Activation..."
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1093
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3348
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3386
 #: src/pages/settings/components/Folders/FolderRetention.tsx:160
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:103
-#: src/pages/settings/components/GroupManagement.tsx:950
-#: src/pages/settings/components/ManageUser.tsx:1429
-#: src/pages/settings/components/ManageUser.tsx:2606
-#: src/pages/settings/components/RolesPermissions.tsx:1664
-=======
 #: src/pages/settings/components/GroupManagement.tsx:104
 #: src/pages/settings/components/GroupManagement.tsx:953
 #: src/pages/settings/components/ManageUser.tsx:1430
 #: src/pages/settings/components/ManageUser.tsx:2607
 #: src/pages/settings/components/RolesPermissions.tsx:1667
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Active"
 msgstr "Actif"
 
@@ -651,11 +625,7 @@ msgstr "Ajouter une connexion"
 msgid "Add custom option"
 msgstr "Ajouter une option personnalisée"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:739
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:743
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:875
 msgid "Add Document Rule"
 msgstr "Ajouter une règle de document"
@@ -924,19 +894,11 @@ msgstr "Alignement des en-têtes CSV/XLSX avec le schéma de mappage de la base 
 #: src/components/base/pagination/PaginationItemsPerPage.tsx:48
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:46
 #: src/pages/requests/components/InboxList.tsx:1891
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:623
-#: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:547
-#: src/pages/settings/components/Folders/FolderSecurity.tsx:622
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:549
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:574
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:627
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:550
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:622
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:553
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:578
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "All"
 msgstr "Tous"
 
@@ -1007,11 +969,7 @@ msgstr "montant"
 msgid "Amount"
 msgstr "Montant"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3534
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3535
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3573
 msgid "Amount in Local Currency"
 msgstr ""
 
@@ -1051,7 +1009,7 @@ msgstr "Analyse du contexte et des mots-clés"
 #~ msgid "Analyzing data structures for {repositoryName}..."
 #~ msgstr "Analyse des structures de données pour {repositoryName}..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1808
+#: src/pages/folders/components/Upload/Upload.tsx:1812
 msgid "Analyzing document..."
 msgstr "Analyse du document..."
 
@@ -1087,13 +1045,8 @@ msgstr "et"
 msgid "And"
 msgstr "Et"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:638
-#: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:561
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:642
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:564
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:622
 msgid "Any"
 msgstr "N'importe lequel"
@@ -1106,7 +1059,7 @@ msgstr "N'importe quelle condition peut correspondre"
 msgid "Any file type"
 msgstr "Tout type de fichier"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1706
+#: src/pages/folders/components/Upload/Upload.tsx:1710
 msgid "Any Format"
 msgstr "N'importe quel format"
 
@@ -1169,21 +1122,12 @@ msgstr "Ajouter de nouveaux enregistrements"
 msgid "Append timestamp to each version"
 msgstr "Ajouter un horodatage à chaque version"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3590
-msgid "Application Host / Router"
-msgstr ""
-
-#: src/pages/settings/components/PortalConfiguration.tsx:107
-#: src/pages/settings/components/PortalConfiguration.tsx:119
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3591
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3629
 msgid "Application Host / Router"
 msgstr ""
 
 #: src/pages/settings/components/PortalConfiguration.tsx:108
 #: src/pages/settings/components/PortalConfiguration.tsx:120
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Application Sign in"
 msgstr "Connexion"
 
@@ -1233,7 +1177,7 @@ msgid "Archive"
 msgstr "Archive"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1095
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3348
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3386
 msgid "Archived"
 msgstr "Archivé"
 
@@ -1245,19 +1189,11 @@ msgstr "Etes-vous sûr de vouloir supprimer"
 #. placeholder {0}: `${deletingUser.firstName} ${deletingUser.lastName}`.trim() || deletingUser.email
 #. placeholder {0}: deletingGroup.name
 #. placeholder {0}: deletingMenu.label
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:576
-#: src/pages/settings/components/ManageUser.tsx:1534
-#: src/pages/settings/components/Menus.tsx:528
-#: src/pages/settings/components/PortalConfiguration.tsx:645
-#: src/pages/settings/components/RolesPermissions.tsx:625
-=======
 #: src/pages/settings/components/GroupManagement.tsx:577
 #: src/pages/settings/components/ManageUser.tsx:1535
 #: src/pages/settings/components/Menus.tsx:529
 #: src/pages/settings/components/PortalConfiguration.tsx:646
 #: src/pages/settings/components/RolesPermissions.tsx:626
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Are you sure you want to delete \"{0}\"? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir supprimer « {0} » ? Cette action ne peut pas être annulée."
 
@@ -1273,11 +1209,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer ce menu ? Cette action ne peut pas
 msgid "Are you sure you want to delete this portal? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir supprimer ce portail ? Cette action ne peut pas être annulée."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:626
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:627
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Are you sure you want to delete this role? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir supprimer ce rôle ? Cette action est irréversible."
 
@@ -1314,11 +1246,7 @@ msgstr "Attribuer un utilisateur"
 msgid "Assign user access groups"
 msgstr "Attribuer des groupes d'accès aux utilisateurs"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:2122
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:2125
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Assign users to roles once users are available in the platform."
 msgstr "Attribuez des rôles aux utilisateurs une fois que les utilisateurs sont disponibles sur la plateforme."
 
@@ -1406,21 +1334,12 @@ msgstr "Août"
 msgid "Authentication"
 msgstr "Authentification"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3899
-msgid "Authentication Mode"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:458
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:480
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3900
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3938
 msgid "Authentication Mode"
 msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:459
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:481
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Authentication required. Please log in again."
 msgstr "Authentification requise. Veuillez vous reconnecter."
 
@@ -1458,11 +1377,7 @@ msgstr "AUTO-VÉRIFIÉ"
 msgid "Automate Your Full AP Workflow — Request a Demo"
 msgstr "Automatisez l'ensemble de votre flux de travail AP — Demandez une démonstration"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:73
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:74
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Automated delivery"
 msgstr ""
 
@@ -1504,21 +1419,12 @@ msgstr "Nombre moyen de jours d'approbation"
 msgid "Avg. Processing Time"
 msgstr "Moy. Temps de traitement"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3573
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3872
-msgid "Awaiting Verification"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:426
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3574
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3873
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3612
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3911
 msgid "Awaiting Verification"
 msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:427
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Azure AD authentication"
 msgstr "Authentification Azure AD"
 
@@ -1540,7 +1446,7 @@ msgstr "Intégration du stockage Azure Blob pour les organisations utilisant Mic
 #: src/pages/folders/components/EditMetadataView.tsx:355
 #: src/pages/folders/components/ShareView.tsx:318
 #: src/pages/folders/components/StartWorkflowView.tsx:44
-#: src/pages/folders/components/Upload/Upload.tsx:1595
+#: src/pages/folders/components/Upload/Upload.tsx:1599
 #: src/pages/forms/components/AiFormBuilder.tsx:129
 #: src/pages/portal/components/PortalBackButton.tsx:20
 #: src/pages/portal/components/PortalShell.tsx:104
@@ -1685,7 +1591,7 @@ msgid "Breadcrumb"
 msgstr "Fil d'Ariane"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:108
-#: src/pages/folders/components/Upload/Upload.tsx:1665
+#: src/pages/folders/components/Upload/Upload.tsx:1669
 #: src/pages/forms/components/GenericFormImportModal.tsx:401
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:887
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:874
@@ -1702,11 +1608,7 @@ msgstr "Parcourir"
 msgid "browse files"
 msgstr "parcourir les fichiers"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:220
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:223
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Build a custom report from any of your organization's data domains."
 msgstr ""
 
@@ -1714,11 +1616,7 @@ msgstr ""
 msgid "Build and configure custom reports"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:234
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:237
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Build manually"
 msgstr ""
 
@@ -1729,15 +1627,9 @@ msgstr ""
 msgid "Build Manually"
 msgstr "Construire manuellement"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:68
-#: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:418
-#: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:434
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:69
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:421
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:437
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Build with AI"
 msgstr "Construire avec l'IA"
 
@@ -1849,7 +1741,7 @@ msgstr "Impossible de télécharger : ce workflow n'a aucun référentiel confi
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:101
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:174
 #: src/pages/folders/components/StartWorkflowView.tsx:210
-#: src/pages/folders/components/Upload/Upload.tsx:2043
+#: src/pages/folders/components/Upload/Upload.tsx:2047
 #: src/pages/forms/components/GenericFormImportModal.tsx:856
 #: src/pages/forms/FormEntriesPage.tsx:377
 #: src/pages/forms/FormEntriesPage.tsx:1987
@@ -1924,13 +1816,8 @@ msgstr "De l'argent cette semaine"
 #: src/pages/settings/components/AuditMonitoring.tsx:202
 #: src/pages/settings/components/AuditMonitoring.tsx:341
 #: src/pages/settings/components/AuditMonitoring.tsx:342
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:745
-#: src/pages/settings/components/RolesPermissions.tsx:1421
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:746
 #: src/pages/settings/components/RolesPermissions.tsx:1424
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Category"
 msgstr "Catégorie"
 
@@ -1960,11 +1847,7 @@ msgstr ""
 msgid "Change Language"
 msgstr "Changer de langue"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:2071
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:2074
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Change Role"
 msgstr "Changer de rôle"
 
@@ -2037,11 +1920,7 @@ msgstr "Choisissez un workflow pour afficher ses soumissions."
 msgid "Choose column"
 msgstr "Choisir la colonne"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:71
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Choose columns"
 msgstr ""
 
@@ -2157,11 +2036,7 @@ msgstr "Cliquez pour marquer l'emplacement du signataire"
 #~ msgid "Click to place signature"
 #~ msgstr "Cliquez pour placer la signature"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3610
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3611
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3649
 msgid "Client Number"
 msgstr ""
 
@@ -2187,19 +2062,11 @@ msgstr "Fermer le panneau"
 msgid "Cloud Integrations"
 msgstr "Intégrations cloud"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3659
-msgid "CO (Controlling & Cost Centers)"
-msgstr ""
-
-#: src/pages/settings/components/ManageUser.tsx:2321
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3660
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3698
 msgid "CO (Controlling & Cost Centers)"
 msgstr ""
 
 #: src/pages/settings/components/ManageUser.tsx:2322
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Code"
 msgstr "Code"
 
@@ -2458,19 +2325,11 @@ msgstr "Connectez la messagerie électronique, l'ERP et le stockage pour démarr
 msgid "Connect one or more workflows to this portal"
 msgstr "Connectez un ou plusieurs workflows à ce portail"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3850
-msgid "Connect Oracle ERP Cloud REST API services for Accounts Payable and Procurement sync."
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:481
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3851
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3889
 msgid "Connect Oracle ERP Cloud REST API services for Accounts Payable and Procurement sync."
 msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:482
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Connect Oracle ERP for invoice and master data sync."
 msgstr "Connectez Oracle ERP pour la synchronisation des factures et des données de base."
 
@@ -2495,35 +2354,19 @@ msgstr "Connectez votre fournisseur pour stocker et gérer en toute sécurité l
 msgid "Connect your QuickBooks account to sync PO and invoice data automatically."
 msgstr "Connectez votre compte QuickBooks pour synchroniser automatiquement les données de bon de commande et de facture."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3872
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3911
 msgid "Connected • REST v11.13"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3573
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3612
 msgid "Connected • SID: {sapSystemId}"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3814
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3853
 msgid "Connecting to Oracle Fusion ERP REST API ({oracleUrl})..."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3517
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3873
-msgid "Connected • REST v11.13"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3574
-msgid "Connected • SID: {sapSystemId}"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3815
-msgid "Connecting to Oracle Fusion ERP REST API ({oracleUrl})..."
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3518
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3556
 msgid "Connecting to SAP Host ({sapHost})..."
 msgstr ""
 
@@ -2531,19 +2374,11 @@ msgstr ""
 msgid "Connection name"
 msgstr "Nom de la connexion"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3822
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3861
 msgid "Connection Successful! Oracle Fusion ERP Cloud REST API Connected (200 OK, 24ms latency)."
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3525
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3823
-msgid "Connection Successful! Oracle Fusion ERP Cloud REST API Connected (200 OK, 24ms latency)."
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3526
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3564
 msgid "Connection Successful! SAP ERP ({sapSystemId}) RFC Destination verified (200 OK, 38ms latency)."
 msgstr ""
 
@@ -2621,8 +2456,8 @@ msgstr "Copié dans le presse-papiers"
 #~ msgid "Copy"
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:2006
-#: src/pages/folders/components/Upload/Upload.tsx:2008
+#: src/pages/folders/components/Upload/Upload.tsx:2010
+#: src/pages/folders/components/Upload/Upload.tsx:2012
 msgid "Copy JSON"
 msgstr "Copier JSON"
 
@@ -2721,11 +2556,7 @@ msgstr "Créez un menu pour ajouter des éléments de navigation personnalisés.
 msgid "Create a portal to configure login methods and connected workflows."
 msgstr "Créez un portail pour configurer les méthodes de connexion et les flux de travail connectés."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1810
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1813
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Create a role to manage access permissions across the platform."
 msgstr "Créez un rôle pour gérer les autorisations d'accès sur la plateforme."
 
@@ -2765,11 +2596,7 @@ msgstr "Créez des portails personnalisés, configurez les méthodes de connexio
 msgid "Create Group"
 msgstr "Créer un groupe"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:589
-=======
 #: src/pages/settings/components/GroupManagement.tsx:590
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/SettingsMain.tsx:320
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr "Créez des groupes logiques pour organiser les utilisateurs par équipe, département ou fonction."
@@ -2787,13 +2614,8 @@ msgstr "Créer une politique"
 msgid "Create Portal"
 msgstr "Créer un portail"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:965
-#: src/pages/settings/components/RolesPermissions.tsx:1792
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:968
 #: src/pages/settings/components/RolesPermissions.tsx:1795
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Create Role"
 msgstr "Créer un rôle"
 
@@ -2805,27 +2627,15 @@ msgstr "Créer une demande de signature"
 msgid "Create User"
 msgstr "Créer un utilisateur"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2174
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3354
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3356
-#: src/pages/settings/components/GroupManagement.tsx:452
-#: src/pages/settings/components/ManageUser.tsx:1248
-#: src/pages/settings/components/Menus.tsx:404
-#: src/pages/settings/components/PortalConfiguration.tsx:499
-#: src/pages/settings/components/RolesPermissions.tsx:1671
-#: src/pages/settings/components/RolesPermissions.tsx:1673
-=======
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2175
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3355
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3357
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3393
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3395
 #: src/pages/settings/components/GroupManagement.tsx:453
 #: src/pages/settings/components/ManageUser.tsx:1249
 #: src/pages/settings/components/Menus.tsx:405
 #: src/pages/settings/components/PortalConfiguration.tsx:500
 #: src/pages/settings/components/RolesPermissions.tsx:1674
 #: src/pages/settings/components/RolesPermissions.tsx:1676
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Created"
 msgstr "Créé"
 
@@ -2844,8 +2654,8 @@ msgstr "Créé par"
 #: src/pages/forms/FormsPage.tsx:229
 #: src/pages/forms/FormsPage.tsx:614
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2180
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3368
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3370
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3406
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3408
 #: src/pages/workflows/components/Table.tsx:81
 #: src/pages/workflows/components/Table.tsx:462
 msgid "Created By"
@@ -2941,21 +2751,12 @@ msgstr "Devises"
 msgid "Currency"
 msgstr "Devise"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3535
-msgid "Currency Key"
-msgstr ""
-
-#: src/pages/settings/components/RolesPermissions.tsx:2058
-#: src/pages/settings/components/RolesPermissions.tsx:2060
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3536
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3574
 msgid "Currency Key"
 msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:2061
 #: src/pages/settings/components/RolesPermissions.tsx:2063
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Current Role"
 msgstr "Rôle actuel"
 
@@ -3132,7 +2933,7 @@ msgstr "Décembre"
 msgid "Decide how document revisions are tracked when files are updated."
 msgstr "Décidez de la manière dont les révisions des documents sont suivies lorsque les fichiers sont mis à jour."
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3297
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3335
 msgid "Default"
 msgstr "Défaut"
 
@@ -3190,19 +2991,6 @@ msgstr "Définir une règle"
 #: src/pages/settings/components/Folders/FolderRetention.tsx:197
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:498
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:680
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:70
-#: src/pages/settings/components/GroupManagement.tsx:502
-#: src/pages/settings/components/GroupManagement.tsx:579
-#: src/pages/settings/components/ManageUser.tsx:1298
-#: src/pages/settings/components/ManageUser.tsx:1527
-#: src/pages/settings/components/Menus.tsx:453
-#: src/pages/settings/components/Menus.tsx:531
-#: src/pages/settings/components/PortalConfiguration.tsx:572
-#: src/pages/settings/components/PortalConfiguration.tsx:639
-#: src/pages/settings/components/RolesPermissions.tsx:628
-#: src/pages/settings/components/RolesPermissions.tsx:1721
-=======
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:71
 #: src/pages/settings/components/GroupManagement.tsx:503
 #: src/pages/settings/components/GroupManagement.tsx:580
@@ -3214,7 +3002,6 @@ msgstr "Définir une règle"
 #: src/pages/settings/components/PortalConfiguration.tsx:640
 #: src/pages/settings/components/RolesPermissions.tsx:629
 #: src/pages/settings/components/RolesPermissions.tsx:1724
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/workflows/components/Table.tsx:145
 msgid "Delete"
 msgstr "Supprimer"
@@ -3252,11 +3039,7 @@ msgstr "Supprimer le portail"
 msgid "Delete Report"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:622
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:623
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Delete Role"
 msgstr "Supprimer le rôle"
 
@@ -3337,11 +3120,7 @@ msgstr ""
 msgid "Describe the form you want to create..."
 msgstr "Décrivez le formulaire que vous souhaitez créer..."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4719
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4720
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4765
 msgid "Describe the purpose of this folder..."
 msgstr "Décrivez le but de ce dossier..."
 
@@ -3357,11 +3136,7 @@ msgstr ""
 msgid "Describe the workflow you want to create..."
 msgstr "Décrivez le flux de travail que vous souhaitez créer..."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:989
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:992
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Describe this role's responsibilities and scope..."
 msgstr "Décrivez les responsabilités et la portée de ce rôle..."
 
@@ -3388,32 +3163,12 @@ msgstr "Décrivez ce que gère cette politique de rétention et pourquoi."
 #: src/pages/settings/components/credits/Credits.tsx:498
 #: src/pages/settings/components/credits/Credits.tsx:499
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1914
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2162
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3272
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3274
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3698
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3977
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4717
-#: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:332
-#: src/pages/settings/components/GroupManagement.tsx:411
-#: src/pages/settings/components/GroupManagement.tsx:413
-#: src/pages/settings/components/GroupManagement.tsx:844
-#: src/pages/settings/components/GroupManagement.tsx:911
-#: src/pages/settings/components/PortalConfiguration.tsx:459
-#: src/pages/settings/components/PortalConfiguration.tsx:1142
-#: src/pages/settings/components/PortalConfiguration.tsx:1440
-#: src/pages/settings/components/RolesPermissions.tsx:987
-#: src/pages/settings/components/RolesPermissions.tsx:1062
-#: src/pages/settings/components/RolesPermissions.tsx:1597
-#: src/pages/settings/components/RolesPermissions.tsx:1599
-=======
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2163
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3273
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3275
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3699
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3978
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4718
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3311
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3313
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3737
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4016
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4763
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:335
 #: src/pages/settings/components/GroupManagement.tsx:412
 #: src/pages/settings/components/GroupManagement.tsx:414
@@ -3426,7 +3181,6 @@ msgstr "Décrivez ce que gère cette politique de rétention et pourquoi."
 #: src/pages/settings/components/RolesPermissions.tsx:1065
 #: src/pages/settings/components/RolesPermissions.tsx:1600
 #: src/pages/settings/components/RolesPermissions.tsx:1602
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/workflows/components/Table.tsx:75
 msgid "Description"
 msgstr "Description"
@@ -3459,11 +3213,7 @@ msgstr "Action de destination"
 msgid "Destination Action"
 msgstr "Action de destination"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:70
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:71
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Details"
 msgstr ""
 
@@ -3532,11 +3282,7 @@ msgstr "Date de création du document"
 msgid "Document Date"
 msgstr "Date du document"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3536
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3537
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3575
 msgid "Document Date in Document"
 msgstr ""
 
@@ -3561,7 +3307,7 @@ msgstr "Numéro du document"
 msgid "Document owners are notified beforehand."
 msgstr "Les propriétaires de documents sont informés au préalable."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1848
+#: src/pages/folders/components/Upload/Upload.tsx:1852
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
 msgid "Document Preview"
@@ -3624,8 +3370,8 @@ msgid "Document uploaded"
 msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2170
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3307
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3312
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3345
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3350
 msgid "Documents"
 msgstr "Documents"
 
@@ -3645,15 +3391,9 @@ msgstr "Les documents seront masqués lorsque :"
 msgid "Documents will be shown when:"
 msgstr "Les documents seront présentés lorsque :"
 
-<<<<<<< HEAD
 #: src/pages/reports/components/ReportsListView.tsx:145
 #: src/pages/reports/components/ReportsListView.tsx:203
 #: src/pages/reports/components/ReportsListView.tsx:390
-=======
-#: src/pages/report-builder/components/steps/DetailsStep.tsx:129
-#: src/pages/reports/components/ReportsListView.tsx:133
-#: src/pages/reports/components/ReportsListView.tsx:278
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #~ msgid "Domain"
 #~ msgstr ""
 
@@ -3737,7 +3477,7 @@ msgstr "DPD"
 #: src/components/common/ReportStatusBadge.tsx:27
 #: src/pages/forms/FormsPage.tsx:607
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1094
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3348
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3386
 #: src/pages/settings/components/ManageUser.tsx:1424
 #: src/pages/settings/components/ManageUser.tsx:2611
 #: src/pages/workflows/components/Table.tsx:455
@@ -3796,7 +3536,7 @@ msgstr "Supprimez des fichiers, ou"
 #~ msgstr "Déposez des images ici ou cliquez pour sélectionner des fichiers"
 
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:107
-#: src/pages/folders/components/Upload/Upload.tsx:1663
+#: src/pages/folders/components/Upload/Upload.tsx:1667
 #: src/pages/forms/components/GenericFormImportModal.tsx:399
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:886
 msgid "Drop your file here, or"
@@ -3882,19 +3622,11 @@ msgstr "par ex. /rapports"
 msgid "e.g. Access2Pay Portal"
 msgstr "par ex. Portail Access2Pay"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4701
-msgid "e.g. AP Invoices 2026"
-msgstr "ex. Factures AP 2026"
-
-#: src/pages/settings/components/RolesPermissions.tsx:979
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4702
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4747
 msgid "e.g. AP Invoices 2026"
 msgstr "ex. Factures AP 2026"
 
 #: src/pages/settings/components/RolesPermissions.tsx:982
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "e.g. AP Supervisor"
 msgstr "par ex. Superviseur AP"
 
@@ -3902,11 +3634,7 @@ msgstr "par ex. Superviseur AP"
 #~ msgid "e.g. Corporate"
 #~ msgstr "ex. Corporate"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4749
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4750
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4795
 msgid "e.g. Cost Center"
 msgstr "par ex. Centre de coûts"
 
@@ -3988,23 +3716,15 @@ msgstr "Chaque signataire a besoin d'un nom et d'une adresse e-mail."
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2354
 #: src/pages/settings/components/Folders/AiFolderBuilderTimeline.tsx:195
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:353
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3410
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3448
 #: src/pages/settings/components/Folders/FolderRetention.tsx:190
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:491
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:673
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:495
-#: src/pages/settings/components/ManageUser.tsx:1291
-#: src/pages/settings/components/Menus.tsx:443
-#: src/pages/settings/components/PortalConfiguration.tsx:549
-#: src/pages/settings/components/RolesPermissions.tsx:1714
-=======
 #: src/pages/settings/components/GroupManagement.tsx:496
 #: src/pages/settings/components/ManageUser.tsx:1292
 #: src/pages/settings/components/Menus.tsx:444
 #: src/pages/settings/components/PortalConfiguration.tsx:550
 #: src/pages/settings/components/RolesPermissions.tsx:1717
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/workflows/components/Table.tsx:133
 msgid "Edit"
 msgstr "Modifier"
@@ -4079,11 +3799,7 @@ msgstr "Modifier la configuration du menu"
 #: src/pages/folders/components/DocumentsListView.tsx:1005
 #: src/pages/folders/components/EditMetadataView.tsx:362
 #: src/pages/folders/components/FolderTable.tsx:830
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:71
-=======
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:72
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Edit Metadata"
 msgstr "Modifier les métadonnées"
 
@@ -4095,11 +3811,7 @@ msgstr "Mode d'édition actif : cliquez sur le cercle de coche sur n'importe q
 msgid "Edit Portal"
 msgstr "Modifier le portail"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:221
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:224
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Edit Report"
 msgstr ""
 
@@ -4111,11 +3823,7 @@ msgstr "Modifier la politique de rétention"
 msgid "Edit Retention Policy"
 msgstr "Modifier la politique de rétention"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:965
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:968
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Edit Role"
 msgstr "Modifier le rôle"
 
@@ -4142,21 +3850,12 @@ msgstr "Date d'entrée en vigueur"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx:22
 #: src/pages/folders/components/SignRequestAssignForm.tsx:545
 #: src/pages/portal/components/PortalLogin.tsx:82
-<<<<<<< HEAD
-#: src/pages/settings/components/ManageUser.tsx:1148
-#: src/pages/settings/components/ManageUser.tsx:1150
-#: src/pages/settings/components/ManageUser.tsx:1575
-#: src/pages/settings/components/ManageUser.tsx:2544
-#: src/pages/settings/components/RolesPermissions.tsx:2047
-#: src/pages/settings/components/RolesPermissions.tsx:2049
-=======
 #: src/pages/settings/components/ManageUser.tsx:1149
 #: src/pages/settings/components/ManageUser.tsx:1151
 #: src/pages/settings/components/ManageUser.tsx:1576
 #: src/pages/settings/components/ManageUser.tsx:2545
 #: src/pages/settings/components/RolesPermissions.tsx:2050
 #: src/pages/settings/components/RolesPermissions.tsx:2052
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/sign-in/components/SignInForm.tsx:693
 #: src/pages/sign-in/components/SignInForm.tsx:743
 msgid "Email"
@@ -4237,8 +3936,8 @@ msgid "Ends With"
 msgstr "Se termine par"
 
 #: src/pages/folders/components/EditMetadataView.tsx:327
-#: src/pages/folders/components/Upload/Upload.tsx:1510
-#: src/pages/folders/components/Upload/Upload.tsx:1529
+#: src/pages/folders/components/Upload/Upload.tsx:1514
+#: src/pages/folders/components/Upload/Upload.tsx:1533
 msgid "Enter {label}"
 msgstr "Saisissez {label}"
 
@@ -4466,7 +4165,7 @@ msgstr "Expiration / Date d'échéance"
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "Explorez, testez et déboguez les points de terminaison d'API avec des requêtes en direct et des exemples de réponses."
 
-#: src/pages/folders/components/Upload/Upload.tsx:2061
+#: src/pages/folders/components/Upload/Upload.tsx:2065
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
 #: src/pages/requests/components/InboxList.tsx:1925
@@ -4486,8 +4185,8 @@ msgid "Export to Excel"
 msgstr "Exporter vers Excel"
 
 #: src/pages/folders/components/AiSummaryView.tsx:248
-#: src/pages/folders/components/Upload/Upload.tsx:1820
-#: src/pages/folders/components/Upload/Upload.tsx:2061
+#: src/pages/folders/components/Upload/Upload.tsx:1824
+#: src/pages/folders/components/Upload/Upload.tsx:2065
 msgid "Exporting..."
 msgstr "Exportation..."
 
@@ -4503,7 +4202,7 @@ msgstr "Extrait"
 msgid "EXTRACTED"
 msgstr "EXTRAIT"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1906
+#: src/pages/folders/components/Upload/Upload.tsx:1910
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3522
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
@@ -4527,11 +4226,11 @@ msgstr ""
 msgid "Extracting data from the document…"
 msgstr "Extraction des données du document…"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1952
+#: src/pages/folders/components/Upload/Upload.tsx:1956
 msgid "Extracting fields from document..."
 msgstr "Extraction des champs du document..."
 
-#: src/pages/folders/components/Upload/Upload.tsx:1910
+#: src/pages/folders/components/Upload/Upload.tsx:1914
 msgid "Extracting fields..."
 msgstr "Extraction des champs..."
 
@@ -4552,8 +4251,8 @@ msgstr "Extraction des métadonnées, vérification des doublons, validation de 
 msgid "Extracting textual metadata"
 msgstr "Extraction des métadonnées textuelles"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1510
-#: src/pages/folders/components/Upload/Upload.tsx:1529
+#: src/pages/folders/components/Upload/Upload.tsx:1514
+#: src/pages/folders/components/Upload/Upload.tsx:1533
 msgid "Extracting..."
 msgstr "Extraction..."
 
@@ -4672,19 +4371,11 @@ msgstr ""
 msgid "Failed to load reports."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:483
-msgid "Failed to load role"
-msgstr "Échec du chargement du rôle"
-
-#: src/pages/settings/components/RolesPermissions.tsx:383
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:484
 msgid "Failed to load role"
 msgstr "Échec du chargement du rôle"
 
 #: src/pages/settings/components/RolesPermissions.tsx:384
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Failed to load role permissions"
 msgstr "Échec du chargement des autorisations de rôle"
 
@@ -4696,19 +4387,11 @@ msgstr "Échec du chargement du document d'exemple."
 msgid "Failed to load user draft."
 msgstr "Échec du chargement du brouillon utilisateur."
 
-<<<<<<< HEAD
 #: src/pages/requests/components/KanbanView.tsx:344
-msgid "Failed to move this request."
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4214
-=======
-#: src/pages/requests/components/KanbanView.tsx:314
 #~ msgid "Failed to move this request."
 #~ msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4215
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4255
 msgid "Failed to parse Excel file"
 msgstr "Échec de l'analyse du fichier Excel"
 
@@ -4725,10 +4408,6 @@ msgid "Failed to proceed request:"
 msgstr "Échec du traitement de la demande :"
 
 #. placeholder {0}: response.error
-<<<<<<< HEAD
-#: src/pages/requests/components/KanbanView.tsx:332
-=======
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/requests/components/request/Request.tsx:1586
 msgid "Failed to proceed request: {0}"
 msgstr "Échec du traitement de la demande : {0}"
@@ -4750,11 +4429,7 @@ msgstr "Échec de l'enregistrement des modifications du document"
 msgid "Failed to save preferences: {message}"
 msgstr "Échec de l'enregistrement des préférences : {message}"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:175
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:178
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Failed to save report"
 msgstr ""
 
@@ -4820,20 +4495,12 @@ msgstr "Récupération des détails.."
 msgid "Fetching the latest portal configuration."
 msgstr "Récupération de la dernière configuration du portail."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3658
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3659
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3697
 msgid "FI / MM (Financial Accounting & Materials)"
 msgstr ""
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:102
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:902
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:906
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Field"
 msgstr "Champ"
 
@@ -4845,11 +4512,7 @@ msgstr "Correspondance des champs"
 msgid "Field name"
 msgstr "Nom du champ"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4745
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4746
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4791
 msgid "Field Name"
 msgstr "Nom du champ"
 
@@ -4863,11 +4526,7 @@ msgstr ""
 #~ msgstr "Paramètres du champ"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:750
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4766
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4767
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4812
 msgid "Field type"
 msgstr "Type de champ"
 
@@ -4878,12 +4537,8 @@ msgid "fields"
 msgstr "champs"
 
 #: src/pages/folders/components/Upload/Upload.tsx:589
-#: src/pages/folders/components/Upload/Upload.tsx:1927
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:71
-=======
+#: src/pages/folders/components/Upload/Upload.tsx:1931
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/reports/components/ReportKpiCards.tsx:37
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:909
 #: src/pages/settings/components/Folders/DmsSettings.tsx:343
@@ -4967,7 +4622,7 @@ msgstr "Fichier téléversé avec succès"
 #: src/pages/folders/components/DocumentsListView.tsx:955
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
-#: src/pages/folders/components/Upload/Upload.tsx:1619
+#: src/pages/folders/components/Upload/Upload.tsx:1623
 msgid "Files"
 msgstr "Fichiers"
 
@@ -4980,11 +4635,7 @@ msgid "Files must be under 5MB"
 msgstr "Les fichiers doivent faire moins de 5 Mo"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:236
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:73
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:70
 msgid "Filters"
 msgstr "Filtres"
@@ -5043,17 +4694,10 @@ msgstr "Commande flexible"
 
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:52
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:268
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2147
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2891
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3255
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3257
-=======
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2148
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2892
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3256
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3258
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:2930
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3294
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3296
 msgid "Folder"
 msgstr "Dossier"
 
@@ -5105,13 +4749,8 @@ msgid "Folder details updated. Regenerating recommended fields for “{nameTrimm
 msgstr "Détails du dossier mis à jour. Régénération des champs recommandés pour « {nameTrimmed} »…"
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:229
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3701
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3980
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3702
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3981
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3740
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4019
 msgid "Folder Field"
 msgstr "Champ de dossier"
 
@@ -5134,11 +4773,7 @@ msgstr "Les champs du dossier sont obligatoires"
 msgid "Folder Name"
 msgstr "Nom du dossier"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4700
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4701
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4746
 msgid "Folder Name *"
 msgstr "Nom du dossier *"
 
@@ -5306,11 +4941,7 @@ msgstr "Entièrement assorti"
 #~ msgid "Gemini unavailable — used local folder setup fallback."
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3939
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3940
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3978
 msgid "General Ledger (Journal Feeds)"
 msgstr ""
 
@@ -5568,11 +5199,7 @@ msgstr "Enregistrements d'en-tête"
 msgid "Header Row"
 msgstr "Ligne d'en-tête"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3832
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3833
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3871
 msgid "Header Total Invoice Amount"
 msgstr ""
 
@@ -5614,17 +5241,10 @@ msgstr "Bonjour, bienvenue !"
 msgid "Hidden in View"
 msgstr "Caché dans la vue"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:576
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:753
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:817
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:861
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:580
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:757
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:821
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:865
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:605
 msgid "Hide Documents"
 msgstr "Masquer les documents"
@@ -5785,19 +5405,11 @@ msgstr ""
 msgid "In progress..."
 msgstr "En cours..."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:104
-#: src/pages/settings/components/GroupManagement.tsx:950
-#: src/pages/settings/components/ManageUser.tsx:1427
-#: src/pages/settings/components/ManageUser.tsx:2611
-#: src/pages/settings/components/RolesPermissions.tsx:1664
-=======
 #: src/pages/settings/components/GroupManagement.tsx:105
 #: src/pages/settings/components/GroupManagement.tsx:953
 #: src/pages/settings/components/ManageUser.tsx:1428
 #: src/pages/settings/components/ManageUser.tsx:2612
 #: src/pages/settings/components/RolesPermissions.tsx:1667
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Inactive"
 msgstr "Inactif"
 
@@ -5820,7 +5432,7 @@ msgstr "Volumes de charge de travail entrants au cours des 6 derniers mois"
 msgid "Incremental Version"
 msgstr "Version incrémentielle"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1699
+#: src/pages/folders/components/Upload/Upload.tsx:1703
 msgid "Industry-leading extraction accuracy"
 msgstr "Précision d'extraction à la pointe de l'industrie"
 
@@ -5887,11 +5499,7 @@ msgstr "Connaissances"
 msgid "Insights into your liabilities."
 msgstr "Un aperçu de vos responsabilités."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3620
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3621
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3659
 msgid "Instance / System Number"
 msgstr ""
 
@@ -6009,11 +5617,7 @@ msgstr "Date de facture"
 msgid "Invoice Decision Details"
 msgstr "Détails de la décision de facture"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3829
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3830
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3868
 msgid "Invoice Document Number"
 msgstr ""
 
@@ -6114,11 +5718,7 @@ msgstr "n'est pas vide"
 msgid "is used with more than one account. Which account do you want to use?"
 msgstr "est utilisé avec plusieurs comptes. Quel compte souhaitez-vous utiliser ?"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3834
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3835
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3873
 msgid "ISO Currency Code"
 msgstr ""
 
@@ -6155,11 +5755,11 @@ msgstr "Janvier"
 msgid "Job Title"
 msgstr "Intitulé du poste"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1939
+#: src/pages/folders/components/Upload/Upload.tsx:1943
 msgid "JSON"
 msgstr "JSON"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1586
+#: src/pages/folders/components/Upload/Upload.tsx:1590
 msgid "JSON copied to clipboard."
 msgstr "JSON copié dans le presse-papiers."
 
@@ -6351,7 +5951,7 @@ msgstr "Configurons votre flux AP"
 msgid "Light"
 msgstr "Clair"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1694
+#: src/pages/folders/components/Upload/Upload.tsx:1698
 msgid "Lightning Fast"
 msgstr "Ultra rapide"
 
@@ -6503,13 +6103,8 @@ msgstr "Chargement du formulaire…"
 
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:372
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:380
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:569
-#: src/pages/settings/components/ManageUser.tsx:2157
-=======
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:573
 #: src/pages/settings/components/ManageUser.tsx:2158
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Loading groups..."
 msgstr "Chargement des groupes..."
 
@@ -6526,11 +6121,7 @@ msgstr "Chargement de l'historique..."
 msgid "Loading live dashboard data..."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1330
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1333
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Loading menus..."
 msgstr "Chargement des menus..."
 
@@ -6559,11 +6150,7 @@ msgstr "Chargement des documents associés…"
 msgid "Loading report..."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/ManageUser.tsx:1845
-=======
 #: src/pages/settings/components/ManageUser.tsx:1846
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Loading roles..."
 msgstr "Chargement des rôles..."
 
@@ -6774,11 +6361,7 @@ msgstr "Mapper les colonnes pour prévisualiser les données"
 msgid "Map Excel file headers (source) to EZOFIS database fields (destination)."
 msgstr "Mappez les en-têtes du fichier Excel (source) aux champs de la base de données EZOFIS (destination)."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3965
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3966
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4004
 msgid "Map Oracle REST attributes to folder fields"
 msgstr ""
 
@@ -6786,11 +6369,7 @@ msgstr ""
 msgid "Map Repository Fields (destination) to Excel Fields (source)."
 msgstr "Mapper les champs du référentiel (destination) aux champs Excel (source)."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3686
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3687
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3725
 msgid "Map SAP structure fields to folder fields"
 msgstr ""
 
@@ -7035,11 +6614,7 @@ msgstr "Touche Menu *"
 msgid "Menu key & label"
 msgstr "Touche et étiquette de menu"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:140
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:141
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Menu Profiles"
 msgstr "Profils de menus"
 
@@ -7051,11 +6626,7 @@ msgstr "Résumé des menus"
 msgid "Menu updated successfully"
 msgstr "Menu mis à jour avec succès"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1323
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1326
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Menu Visibility for {selectedRoleName}"
 msgstr "Visibilité du menu pour {selectedRoleName}"
 
@@ -7063,11 +6634,7 @@ msgstr "Visibilité du menu pour {selectedRoleName}"
 msgid "Menus"
 msgstr "Menus"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1492
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1495
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Menus will appear here once navigation items are available."
 msgstr "Les menus apparaîtront ici une fois que les éléments de navigation seront disponibles."
 
@@ -7200,11 +6767,7 @@ msgstr "Modifier les champs de métadonnées"
 #~ msgid "Modify submitted answers"
 #~ msgstr "Modify submitted answers"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:151
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:152
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Module access & privilege matrix"
 msgstr "Matrice d'accès et de privilèges au module"
 
@@ -7325,17 +6888,6 @@ msgstr "N/A (Aucune valeur requise)"
 #: src/pages/reports/components/ReportsListView.tsx:114
 #: src/pages/reports/components/ReportsListView.tsx:152
 #: src/pages/requests/components/Table.tsx:27
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:618
-#: src/pages/settings/components/ManageUser.tsx:1125
-#: src/pages/settings/components/ManageUser.tsx:1127
-#: src/pages/settings/components/ManageUser.tsx:1568
-#: src/pages/settings/components/ManageUser.tsx:2539
-#: src/pages/settings/components/PortalConfiguration.tsx:451
-#: src/pages/settings/components/PortalConfiguration.tsx:453
-#: src/pages/settings/components/PortalConfiguration.tsx:679
-#: src/pages/settings/components/RolesPermissions.tsx:1766
-=======
 #: src/pages/settings/components/GroupManagement.tsx:619
 #: src/pages/settings/components/ManageUser.tsx:1126
 #: src/pages/settings/components/ManageUser.tsx:1128
@@ -7345,7 +6897,6 @@ msgstr "N/A (Aucune valeur requise)"
 #: src/pages/settings/components/PortalConfiguration.tsx:454
 #: src/pages/settings/components/PortalConfiguration.tsx:680
 #: src/pages/settings/components/RolesPermissions.tsx:1769
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/workflows/components/Table.tsx:53
 #: src/pages/workflows/components/Table.tsx:445
 msgid "Name"
@@ -7363,19 +6914,11 @@ msgstr "Nommer et décrire cette politique"
 msgid "Name this policy and describe what it governs for folder \"{folderName}\"."
 msgstr "Nommez cette stratégie et décrivez ce qu'elle régit pour le dossier « {folderName} »."
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:70
-msgid "Name, domain & sharing"
-msgstr ""
-
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:72
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:71
 msgid "Name, domain & sharing"
 msgstr ""
 
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:73
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Narrow down rows"
 msgstr ""
 
@@ -7433,7 +6976,7 @@ msgstr ""
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:129
-#: src/pages/requests/RequestsPage.tsx:794
+#: src/pages/requests/RequestsPage.tsx:828
 msgid "New Request"
 msgstr "Nouvelle demande"
 
@@ -7731,11 +7274,7 @@ msgstr "Aucune autorisation correspondante trouvée"
 msgid "No matching rows."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1334
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1337
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "No menus found."
 msgstr "Aucun menu trouvé."
 
@@ -7768,11 +7307,7 @@ msgstr "Personne n'a encore été invité."
 msgid "No permissions granted"
 msgstr "Aucune autorisation accordée"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1494
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1497
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "No permissions to configure"
 msgstr "Aucune autorisation à configurer"
 
@@ -7813,7 +7348,7 @@ msgstr "Aucun document connexe trouvé."
 #~ msgid "No related documents found. Try a different keyword or folder."
 #~ msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1996
+#: src/pages/folders/components/Upload/Upload.tsx:2000
 msgid "No repository fields configured."
 msgstr "Aucun champ de dépôt configuré."
 
@@ -7821,11 +7356,7 @@ msgstr "Aucun champ de dépôt configuré."
 msgid "No repository items found"
 msgstr "Aucun élément de dépôt trouvé"
 
-<<<<<<< HEAD
-#: src/pages/requests/components/KanbanView.tsx:480
-=======
 #: src/pages/requests/components/KanbanView.tsx:496
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "No requests in this stage"
 msgstr ""
 
@@ -7846,11 +7377,7 @@ msgstr "Aucune politique de conservation"
 msgid "No retention policies configured yet. Click 'Create Policy' to set up the trigger, action, and conditions."
 msgstr "Aucune politique de rétention configurée pour le moment. Cliquez sur « Créer une politique » pour configurer le déclencheur, l'action et les conditions."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1812
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1815
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "No roles yet"
 msgstr "Aucun rôle pour l'instant"
 
@@ -7943,11 +7470,7 @@ msgstr "Aucun type trouvé"
 msgid "No uploaded columns found."
 msgstr "Aucune colonne téléchargée trouvée."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:2124
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:2127
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "No user assignments yet"
 msgstr "Aucune attribution d'utilisateur pour l'instant"
 
@@ -8072,19 +7595,11 @@ msgstr "Novembre"
 msgid "Number"
 msgstr "Nombre"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3909
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3948
 msgid "OAuth Client ID"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3919
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3910
-msgid "OAuth Client ID"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3920
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3958
 msgid "OAuth Client Secret"
 msgstr ""
 
@@ -8174,14 +7689,13 @@ msgstr "Factures ouvertes"
 #~ msgid "Open portal"
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/requests/components/KanbanView.tsx:281
-msgid "Open the request"
-=======
 #: src/pages/requests/components/KanbanView.tsx:293
 msgid "Open request"
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgstr ""
+
+#: src/pages/requests/components/KanbanView.tsx:281
+#~ msgid "Open the request"
+#~ msgstr ""
 
 #: src/pages/folders/components/CollaboraEditor.tsx:270
 msgid "Opening document..."
@@ -8212,11 +7726,7 @@ msgstr "Facultatif — cliquez pour rendre obligatoire"
 msgid "Optional — skip this and build it manually, or describe it here and we'll draft a starting point."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:67
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:68
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Optional AI head start"
 msgstr ""
 
@@ -8232,13 +7742,9 @@ msgstr "Pièces justificatives facultatives"
 msgid "Optionally connect ERP or other systems so data can sync with this folder."
 msgstr "Connectez éventuellement un ERP ou d'autres systèmes afin que les données puissent se synchroniser avec ce dossier."
 
-<<<<<<< HEAD
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4789
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4790
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
-msgid "Options"
-msgstr "Possibilités"
+#~ msgid "Options"
+#~ msgstr "Possibilités"
 
 #: src/pages/settings/components/Folders/retentionMockData.ts:297
 msgid "or"
@@ -8272,11 +7778,7 @@ msgstr "Ou tapez une stratégie de versioning…"
 msgid "Or type an integration…"
 msgstr "Ou tapez une intégration…"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3889
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3890
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3928
 msgid "Oracle Cloud Instance URL"
 msgstr ""
 
@@ -8284,27 +7786,15 @@ msgstr ""
 msgid "Oracle ERP"
 msgstr "OracleERP"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3847
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3886
 msgid "Oracle Fusion ERP Cloud Integration"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3962
-msgid "Oracle Fusion REST Field Mapping"
-msgstr ""
-
-#: src/pages/settings/components/Menus.tsx:382
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3848
-msgid "Oracle Fusion ERP Cloud Integration"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3963
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4001
 msgid "Oracle Fusion REST Field Mapping"
 msgstr ""
 
 #: src/pages/settings/components/Menus.tsx:383
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Order"
 msgstr "Commande"
 
@@ -8435,11 +7925,7 @@ msgstr "Le mot de passe doit contenir au moins 6 caractères"
 msgid "Passwords do not match"
 msgstr "Les mots de passe ne correspondent pas"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3937
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3938
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3976
 msgid "Payables (Invoices & Disbursements)"
 msgstr ""
 
@@ -8538,16 +8024,6 @@ msgstr "Supprimez définitivement les documents correspondants. Cela ne peut pas
 msgid "Permission"
 msgstr "Autorisation"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:139
-msgid "Permission Matrix"
-msgstr "Matrice d'autorisation"
-
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:55
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:711
-#: src/pages/settings/components/RolesPermissions.tsx:153
-#: src/pages/settings/components/RolesPermissions.tsx:1057
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:140
 msgid "Permission Matrix"
 msgstr "Matrice d'autorisation"
@@ -8556,7 +8032,6 @@ msgstr "Matrice d'autorisation"
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:715
 #: src/pages/settings/components/RolesPermissions.tsx:154
 #: src/pages/settings/components/RolesPermissions.tsx:1060
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Permissions"
 msgstr "Autorisations"
 
@@ -8717,11 +8192,7 @@ msgstr "Veuillez remplir le champ obligatoire : Méthode MFA"
 msgid "Please fill the required field: Password"
 msgstr "Veuillez remplir le champ obligatoire : Mot de passe"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1007
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1010
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Please fill the required field: Select Users"
 msgstr "Veuillez remplir le champ requis : Sélectionner les utilisateurs"
 
@@ -8734,8 +8205,8 @@ msgid "Please fill the required field: Workflow"
 msgstr "Veuillez remplir le champ obligatoire : Workflow"
 
 #: src/pages/requests/components/KanbanView.tsx:263
-msgid "Please fill the required fields before moving this request:"
-msgstr ""
+#~ msgid "Please fill the required fields before moving this request:"
+#~ msgstr ""
 
 #. placeholder {0}: labels[0]
 #. placeholder {1}: labels[1]
@@ -9110,18 +8581,15 @@ msgstr "Éléments de facture prioritaires nécessitant une attention aujourd'hu
 msgid "Priority"
 msgstr "Priorité"
 
-<<<<<<< HEAD
 #: src/pages/reports/components/ReportsListView.tsx:240
 #~ msgid "Private"
 #~ msgstr ""
 
-=======
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/reports/components/ReportsListView.tsx:244
 msgid "Private to me"
 msgstr ""
 
-#: src/pages/folders/components/Upload/Upload.tsx:1693
+#: src/pages/folders/components/Upload/Upload.tsx:1697
 msgid "Process documents faster with our agentic pipeline"
 msgstr "Traitez les documents plus rapidement avec notre pipeline agentique"
 
@@ -9161,11 +8629,7 @@ msgstr "Chronologie du traitement"
 msgid "Processing..."
 msgstr "Traitement..."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3938
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3939
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3977
 msgid "Procurement (POs & Requisitions)"
 msgstr ""
 
@@ -9229,19 +8693,11 @@ msgstr "Publié"
 msgid "Purchase Order #"
 msgstr "Numéro de bon de commande"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3532
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3571
 msgid "Purchase Order Number"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3831
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3533
-msgid "Purchase Order Number"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3832
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3870
 msgid "Purchase Order Reference ID"
 msgstr ""
 
@@ -9384,11 +8840,7 @@ msgstr ""
 msgid "Redo"
 msgstr "Refaire"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3537
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3538
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3576
 msgid "Reference Document Number"
 msgstr ""
 
@@ -9408,19 +8860,11 @@ msgstr ""
 #: src/pages/requests/components/InboxList.tsx:1916
 #: src/pages/settings/components/AuditMonitoring.tsx:193
 #: src/pages/settings/components/credits/Credits.tsx:899
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:2136
-#: src/pages/settings/components/GroupManagement.tsx:606
-#: src/pages/settings/components/ManageUser.tsx:1556
-#: src/pages/settings/components/PortalConfiguration.tsx:667
-#: src/pages/settings/components/RolesPermissions.tsx:1786
-=======
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2137
 #: src/pages/settings/components/GroupManagement.tsx:607
 #: src/pages/settings/components/ManageUser.tsx:1557
 #: src/pages/settings/components/PortalConfiguration.tsx:668
 #: src/pages/settings/components/RolesPermissions.tsx:1789
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/workflows/components/Table.tsx:428
 msgid "Refresh"
 msgstr "Actualiser"
@@ -9547,13 +8991,8 @@ msgid "Replace File"
 msgstr "Remplacer le fichier"
 
 #: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:65
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:221
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:238
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:224
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:241
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/SettingsMain.tsx:311
 msgid "Report Builder"
 msgstr ""
@@ -9578,11 +9017,7 @@ msgstr ""
 msgid "Report not found."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:167
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:170
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Report published"
 msgstr ""
 
@@ -9590,11 +9025,7 @@ msgstr ""
 #~ msgid "Report run started"
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:168
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:171
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Report saved as draft"
 msgstr ""
 
@@ -9604,24 +9035,15 @@ msgstr ""
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:38
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:91
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:224
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:227
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/reports/components/Table.tsx:52
 #: src/pages/reports/ReportsPage.tsx:13
 msgid "Reports"
 msgstr "Rapports"
 
 #: src/pages/folders/components/DocumentsListView.tsx:835
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:801
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:697
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:805
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:701
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Repository"
 msgstr "Dépôt"
 
@@ -9659,13 +9081,8 @@ msgstr ""
 msgid "Request {0} submitted successfully"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/requests/components/KanbanView.tsx:338
-msgid "Request {requestNo} moved successfully"
-=======
 #: src/pages/requests/components/KanbanView.tsx:352
 msgid "Request {requestNo} has been moved successfully."
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgstr ""
 
 #: src/pages/requests/components/KanbanView.tsx:308
@@ -9764,15 +9181,11 @@ msgstr "Champ obligatoire"
 msgid "Required field must be mapped."
 msgstr "Le champ obligatoire doit être mappé."
 
-<<<<<<< HEAD
 #: src/pages/requests/components/KanbanView.tsx:258
-msgid "Required fields missing"
-msgstr ""
+#~ msgid "Required fields missing"
+#~ msgstr ""
 
-#: src/pages/settings/components/ManageUser.tsx:1800
-=======
 #: src/pages/settings/components/ManageUser.tsx:1801
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Requires phone number"
 msgstr "Nécessite un numéro de téléphone"
 
@@ -9871,19 +9284,11 @@ msgstr "Réessayer le chargement"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:929
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:22
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:87
-#: src/pages/settings/components/ManageUser.tsx:153
-#: src/pages/settings/components/Menus.tsx:98
-#: src/pages/settings/components/PortalConfiguration.tsx:93
-#: src/pages/settings/components/RolesPermissions.tsx:158
-=======
 #: src/pages/settings/components/GroupManagement.tsx:88
 #: src/pages/settings/components/ManageUser.tsx:154
 #: src/pages/settings/components/Menus.tsx:99
 #: src/pages/settings/components/PortalConfiguration.tsx:94
 #: src/pages/settings/components/RolesPermissions.tsx:159
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Review"
 msgstr "Revue"
 
@@ -9925,11 +9330,7 @@ msgstr "Politique de révision et d'enregistrement"
 msgid "Review & save profile"
 msgstr "Vérifier et enregistrer le profil"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:156
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:157
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Review & save role configuration"
 msgstr "Vérifier et enregistrer la configuration des rôles"
 
@@ -9954,7 +9355,7 @@ msgstr "Vérifier et enregistrer les règles"
 msgid "Review Column Mapping"
 msgstr "Réviser le mappage des colonnes"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1814
+#: src/pages/folders/components/Upload/Upload.tsx:1818
 msgid "Review fields before export..."
 msgstr "Révisez les champs avant l'export..."
 
@@ -9987,73 +9388,11 @@ msgstr "Vérification des champs disponibles…"
 msgid "Revoke"
 msgstr "Révoquer"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3640
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3679
 msgid "RFC Password"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3630
-msgid "RFC User ID"
-msgstr ""
-
-#: src/pages/settings/components/ManageUser.tsx:1175
-#: src/pages/settings/components/ManageUser.tsx:1180
-#: src/pages/settings/components/ManageUser.tsx:1580
-#: src/pages/settings/components/ManageUser.tsx:1842
-#: src/pages/settings/components/ManageUser.tsx:1843
-#: src/pages/settings/components/ManageUser.tsx:2572
-#: src/pages/settings/components/RolesPermissions.tsx:1579
-#: src/pages/settings/components/RolesPermissions.tsx:1581
-msgid "Role"
-msgstr "Rôle"
-
-#: src/pages/settings/components/RolesPermissions.tsx:459
-msgid "Role created successfully"
-msgstr "Rôle créé avec succès"
-
-#: src/pages/settings/components/RolesPermissions.tsx:580
-msgid "Role deleted successfully."
-msgstr "Rôle supprimé avec succès."
-
-#: src/pages/settings/components/RolesPermissions.tsx:148
-msgid "Role Details"
-msgstr "Détails du rôle"
-
-#: src/pages/settings/components/RolesPermissions.tsx:138
-msgid "Role List"
-msgstr "Liste des rôles"
-
-#: src/pages/settings/components/RolesPermissions.tsx:871
-#: src/pages/settings/components/RolesPermissions.tsx:976
-#: src/pages/settings/components/RolesPermissions.tsx:977
-#: src/pages/settings/components/RolesPermissions.tsx:1053
-msgid "Role Name"
-msgstr "Nom du rôle"
-
-#: src/pages/settings/components/RolesPermissions.tsx:146
-msgid "Role name & user assignments"
-msgstr "Nom du rôle et affectations des utilisateurs"
-
-#: src/pages/settings/components/RolesPermissions.tsx:1048
-msgid "Role Summary"
-msgstr "Role Résumé"
-
-#: src/pages/settings/components/RolesPermissions.tsx:458
-msgid "Role updated successfully"
-msgstr "Rôle mis à jour avec succès"
-
-#: src/pages/settings/components/RolesPermissions.tsx:1829
-msgid "Roles"
-msgstr "Rôles"
-
-#: src/pages/settings/components/RolesPermissions.tsx:964
-#: src/pages/settings/components/RolesPermissions.tsx:1757
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3641
-msgid "RFC Password"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3631
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3669
 msgid "RFC User ID"
 msgstr ""
 
@@ -10109,7 +9448,6 @@ msgstr "Rôles"
 
 #: src/pages/settings/components/RolesPermissions.tsx:967
 #: src/pages/settings/components/RolesPermissions.tsx:1760
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
 #: src/pages/settings/SettingsMain.tsx:329
 msgid "Roles & Permissions"
@@ -10191,27 +9529,15 @@ msgstr "Règles"
 msgid "Sample template downloaded successfully"
 msgstr "Exemple de modèle téléchargé avec succès"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3550
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3589
 msgid "SAP ERP Connection"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3695
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3734
 msgid "SAP Field"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3683
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3551
-msgid "SAP ERP Connection"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3696
-msgid "SAP Field"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3684
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3722
 msgid "SAP Table Field Mapping"
 msgstr ""
 
@@ -10234,11 +9560,7 @@ msgstr "Enregistrer et quitter"
 #~ msgid "Save & Next"
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:254
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:257
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Save & Publish instead"
 msgstr ""
 
@@ -10246,19 +9568,11 @@ msgstr ""
 msgid "Save & Regenerate Fields"
 msgstr "Enregistrer et régénérer les champs"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:225
-msgid "Save as Draft"
-msgstr ""
-
-#: src/pages/settings/components/RolesPermissions.tsx:2142
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:228
 msgid "Save as Draft"
 msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:2145
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Save Assignments"
 msgstr "Enregistrer les devoirs"
 
@@ -10323,11 +9637,7 @@ msgstr "Enregistrer le portail"
 msgid "Save request timed out inside the document editor."
 msgstr "La demande de sauvegarde a expiré dans l'éditeur de documents."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:600
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:601
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Save Role"
 msgstr "Enregistrer le rôle"
 
@@ -10376,11 +9686,7 @@ msgstr "Scannez le code QR pour sélectionner"
 msgid "Scanned handwritten bill."
 msgstr "Facture manuscrite numérisée."
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:73
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:74
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/reports/components/ReportKpiCards.tsx:43
 #: src/pages/reports/components/RowActionsMenu.tsx:39
 msgid "Schedule"
@@ -10416,11 +9722,7 @@ msgstr "Validation du schéma"
 msgid "Score"
 msgstr "Score"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3660
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3661
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3699
 msgid "SD (Sales & Order Processing)"
 msgstr ""
 
@@ -10579,17 +9881,10 @@ msgstr "Gestionnaire de recherche..."
 
 #: src/pages/forms/FormEntriesPage.tsx:2151
 #: src/pages/forms/FormsPage.tsx:600
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:625
-#: src/pages/settings/components/ManageUser.tsx:1571
-#: src/pages/settings/components/PortalConfiguration.tsx:686
-#: src/pages/settings/components/RolesPermissions.tsx:1773
-=======
 #: src/pages/settings/components/GroupManagement.tsx:626
 #: src/pages/settings/components/ManageUser.tsx:1572
 #: src/pages/settings/components/PortalConfiguration.tsx:687
 #: src/pages/settings/components/RolesPermissions.tsx:1776
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/workflows/components/Table.tsx:448
 msgid "Search name..."
 msgstr "Rechercher le nom..."
@@ -10642,11 +9937,7 @@ msgid "Search suppliers..."
 msgstr "Rechercher des fournisseurs..."
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:781
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4767
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4768
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4813
 msgid "Search type"
 msgstr "Type de recherche"
 
@@ -10691,11 +9982,7 @@ msgstr "Rubrique {0}"
 #: src/pages/my-account/components/security/Security.tsx:13
 #: src/pages/my-account/MyAccountPage.tsx:37
 #: src/pages/settings/components/AuditMonitoring.tsx:140
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3415
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3416
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3454
 msgid "Security"
 msgstr "Sécurité"
 
@@ -10810,11 +10097,7 @@ msgstr "Sélectionnez un utilisateur avant de marquer un emplacement."
 msgid "Select a workflow"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:672
-=======
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:676
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Select All"
 msgstr "Sélectionner tout"
 
@@ -10872,19 +10155,11 @@ msgstr "Sélectionnez le champ prénom"
 msgid "Select folders"
 msgstr "Sélectionner des dossiers"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:5372
+#: src/pages/settings/components/Folders/DmsSettings.tsx:5413
 msgid "Select Forms"
 msgstr "Sélectionnez les formulaires"
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:5373
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:5373
-msgid "Select Forms"
-msgstr "Sélectionnez les formulaires"
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:5374
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:5414
 msgid "Select forms..."
 msgstr "Sélectionnez les formulaires..."
 
@@ -10960,13 +10235,8 @@ msgstr "Sélectionnez le champ de mot de passe"
 msgid "Select recipients"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/ManageUser.tsx:1845
-#: src/pages/settings/components/RolesPermissions.tsx:1890
-=======
 #: src/pages/settings/components/ManageUser.tsx:1846
 #: src/pages/settings/components/RolesPermissions.tsx:1893
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Select role"
 msgstr "Sélectionnez un rôle"
 
@@ -11007,15 +10277,9 @@ msgstr "Sélectionnez le champ nom d'utilisateur/e-mail"
 msgid "Select users"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:542
-#: src/pages/settings/components/RolesPermissions.tsx:875
-#: src/pages/settings/components/RolesPermissions.tsx:998
-=======
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:546
 #: src/pages/settings/components/RolesPermissions.tsx:876
 #: src/pages/settings/components/RolesPermissions.tsx:1001
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Select Users"
 msgstr "Sélectionnez les utilisateurs"
 
@@ -11049,11 +10313,7 @@ msgstr "Sélectionnez des utilisateurs ou des groupes..."
 #~ msgid "Select users to be members of this group."
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:1000
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:1003
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Select users..."
 msgstr "Sélectionnez les utilisateurs..."
 
@@ -11223,11 +10483,7 @@ msgstr "Paramètres"
 #~ msgid "Settings administration modules"
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:772
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:773
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Settings configuration access"
 msgstr ""
 
@@ -11321,11 +10577,7 @@ msgid "should be applied."
 msgstr "devrait être appliqué."
 
 #. placeholder {0}: child.category
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:798
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:799
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Show {0} in Settings"
 msgstr ""
 
@@ -11337,17 +10589,10 @@ msgstr ""
 msgid "Show both folders and files"
 msgstr "Afficher les dossiers et les fichiers"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:550
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:753
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:817
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:865
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:554
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:757
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:821
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:869
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:610
 msgid "Show Documents"
 msgstr "Afficher les documents"
@@ -11356,11 +10601,7 @@ msgstr "Afficher les documents"
 msgid "Show files only"
 msgstr "Afficher uniquement les fichiers"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:793
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:794
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Show Folder Configuration in Settings"
 msgstr ""
 
@@ -11369,11 +10610,7 @@ msgstr ""
 msgid "Show folders only"
 msgstr "Afficher uniquement les dossiers"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:791
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:792
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Show Forms in Settings → Configuration"
 msgstr ""
 
@@ -11390,17 +10627,6 @@ msgstr "Afficher les documents correspondants aux utilisateurs cibles."
 msgid "Show more ({0} more)"
 msgstr "Afficher plus ({0} plus)"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:795
-msgid "Show Portal Configuration in Settings"
-msgstr ""
-
-#: src/pages/settings/components/RolesPermissions.tsx:797
-msgid "Show Report Builder in Settings → Configuration"
-msgstr ""
-
-#: src/pages/settings/components/RolesPermissions.tsx:789
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:796
 msgid "Show Portal Configuration in Settings"
 msgstr ""
@@ -11410,7 +10636,6 @@ msgid "Show Report Builder in Settings → Configuration"
 msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:790
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Show Workflows in Settings → Configuration"
 msgstr ""
 
@@ -11712,20 +10937,10 @@ msgstr "statut"
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2158
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3324
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3329
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3362
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3367
 #: src/pages/settings/components/Folders/FolderRetention.tsx:152
 #: src/pages/settings/components/Folders/retentionMockData.ts:54
-<<<<<<< HEAD
-#: src/pages/settings/components/GroupManagement.tsx:439
-#: src/pages/settings/components/GroupManagement.tsx:444
-#: src/pages/settings/components/GroupManagement.tsx:627
-#: src/pages/settings/components/ManageUser.tsx:1193
-#: src/pages/settings/components/ManageUser.tsx:1198
-#: src/pages/settings/components/ManageUser.tsx:1581
-#: src/pages/settings/components/RolesPermissions.tsx:1643
-#: src/pages/settings/components/RolesPermissions.tsx:1648
-=======
 #: src/pages/settings/components/GroupManagement.tsx:440
 #: src/pages/settings/components/GroupManagement.tsx:445
 #: src/pages/settings/components/GroupManagement.tsx:628
@@ -11734,7 +10949,6 @@ msgstr "statut"
 #: src/pages/settings/components/ManageUser.tsx:1582
 #: src/pages/settings/components/RolesPermissions.tsx:1646
 #: src/pages/settings/components/RolesPermissions.tsx:1651
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/workflows/components/Table.tsx:63
 #: src/pages/workflows/components/Table.tsx:452
 msgid "Status"
@@ -11761,13 +10975,8 @@ msgstr "Statuts"
 #~ msgid "Step {currentStep} of {totalSteps}"
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/ManageUser.tsx:158
-#: src/pages/settings/components/RolesPermissions.tsx:162
-=======
 #: src/pages/settings/components/ManageUser.tsx:159
 #: src/pages/settings/components/RolesPermissions.tsx:163
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Step 1"
 msgstr "Étape 1"
 
@@ -11775,15 +10984,6 @@ msgstr "Étape 1"
 #~ msgid "Step 1 of {stepCount}"
 #~ msgstr "Étape 1 de {stepCount}"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/ManageUser.tsx:159
-#: src/pages/settings/components/RolesPermissions.tsx:162
-msgid "Step 2"
-msgstr "Étape 2"
-
-#: src/pages/settings/components/ManageUser.tsx:160
-#: src/pages/settings/components/RolesPermissions.tsx:162
-=======
 #: src/pages/settings/components/ManageUser.tsx:160
 #: src/pages/settings/components/RolesPermissions.tsx:163
 msgid "Step 2"
@@ -11791,7 +10991,6 @@ msgstr "Étape 2"
 
 #: src/pages/settings/components/ManageUser.tsx:161
 #: src/pages/settings/components/RolesPermissions.tsx:163
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Step 3"
 msgstr "Étape 3"
 
@@ -11813,8 +11012,8 @@ msgstr "Toujours ouvert... cela prend plus de temps que prévu. Consultez la con
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:18
 #: src/pages/settings/components/Folders/DmsSettings.tsx:344
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2155
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3286
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3291
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3324
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3329
 msgid "Storage"
 msgstr "Stockage"
 
@@ -11945,11 +11144,7 @@ msgstr "fournisseur"
 msgid "Supplier"
 msgstr "Fournisseur"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3830
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3831
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3869
 msgid "Supplier / Vendor Entity Name"
 msgstr ""
 
@@ -12038,7 +11233,7 @@ msgstr "Fournisseurs"
 msgid "Suppliers to Chase"
 msgstr "Fournisseurs à relancer"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1705
+#: src/pages/folders/components/Upload/Upload.tsx:1709
 msgid "Support for PDF, images, and scanned documents"
 msgstr "Prise en charge des PDF, images et documents numérisés"
 
@@ -12060,7 +11255,7 @@ msgstr "Prend en charge les PDF et les images · Max 10 Mo"
 msgid "Supports PDF and Images · Max 4 MB"
 msgstr "Prend en charge PDF et images · Max 4 Mo"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1669
+#: src/pages/folders/components/Upload/Upload.tsx:1673
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:890
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "Prend en charge PDF, Word, Excel, PowerPoint, images et documents · Max 50 Mo"
@@ -12077,13 +11272,8 @@ msgstr "Passer aux données d'origine"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1375
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:160
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3704
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3983
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3705
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3984
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3743
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4022
 msgid "Sync"
 msgstr "Synchroniser"
 
@@ -12091,19 +11281,11 @@ msgstr "Synchroniser"
 msgid "SYNC"
 msgstr "SYNCHRONISATION"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3553
-msgid "Sync document fields, PO master, and vendor records via SAP NetWeaver RFC / OData."
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:475
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3554
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3592
 msgid "Sync document fields, PO master, and vendor records via SAP NetWeaver RFC / OData."
 msgstr ""
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:476
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Sync folder documents and metadata with SAP ERP."
 msgstr "Synchronisez les documents du dossier et les métadonnées avec SAP ERP."
 
@@ -12134,19 +11316,11 @@ msgstr "Par défaut du système"
 msgid "System Field"
 msgstr "Champ système"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3600
-msgid "System ID (SID)"
-msgstr ""
-
-#: src/pages/settings/components/Menus.tsx:231
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3601
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3639
 msgid "System ID (SID)"
 msgstr ""
 
 #: src/pages/settings/components/Menus.tsx:232
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "System menus cannot be deleted"
 msgstr "Les menus système ne peuvent pas être supprimés"
 
@@ -12167,27 +11341,15 @@ msgstr "Vue tableau"
 msgid "Tap your highlighted sign area to place your signature."
 msgstr "Appuyez sur la zone de signe en surbrillance pour placer votre signature."
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3933
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3972
 msgid "Target Oracle Fusion Endpoints"
 msgstr ""
 
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3654
-msgid "Target SAP Modules"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:64
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3934
-msgid "Target Oracle Fusion Endpoints"
-msgstr ""
-
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3655
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3693
 msgid "Target SAP Modules"
 msgstr ""
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:65
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Target Users"
 msgstr "Utilisateurs cibles"
 
@@ -12196,13 +11358,8 @@ msgstr "Utilisateurs cibles"
 msgid "Target Users ({0})"
 msgstr "Utilisateurs cibles ({0})"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:750
-#: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:808
-=======
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:754
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:812
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:541
 msgid "Target Users & Groups"
 msgstr "Utilisateurs et groupes cibles"
@@ -12240,13 +11397,8 @@ msgstr "L'identifiant de locataire est manquant."
 msgid "Tenant is missing. Sign in again and retry."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3577
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3876
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3578
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3877
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3616
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3915
 msgid "Test Connection"
 msgstr ""
 
@@ -12356,11 +11508,7 @@ msgstr "Ce document associé ne peut pas être supprimé."
 msgid "This report has no fields configured yet."
 msgstr ""
 
-<<<<<<< HEAD
 #: src/pages/requests/components/KanbanView.tsx:238
-msgid "This request can only move to a connected stage."
-=======
-#: src/pages/requests/components/KanbanView.tsx:234
 #~ msgid "This request can only move to a connected stage."
 #~ msgstr ""
 
@@ -12370,7 +11518,6 @@ msgstr ""
 
 #: src/pages/requests/components/KanbanView.tsx:267
 msgid "This request is missing a few required details to move forward."
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgstr ""
 
 #: src/pages/portal/components/PortalDetail.tsx:194
@@ -12571,11 +11718,7 @@ msgstr "Suivez l’activité des utilisateurs, les modifications de configuratio
 msgid "Transaction Activity"
 msgstr "Activité des transactions"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3833
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3834
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3872
 msgid "Transaction Date"
 msgstr ""
 
@@ -12629,13 +11772,8 @@ msgstr "Vérification en deux étapes"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2103
 #: src/pages/forms/FormsPage.tsx:217
 #: src/pages/settings/components/credits/components/CreditsChart.tsx:32
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4764
-#: src/pages/settings/components/Menus.tsx:395
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4765
+#: src/pages/settings/components/Folders/DmsSettings.tsx:4810
 #: src/pages/settings/components/Menus.tsx:396
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Type"
 msgstr "Taper"
 
@@ -12643,13 +11781,9 @@ msgstr "Taper"
 #~ msgid "Type a folder name"
 #~ msgstr ""
 
-<<<<<<< HEAD
 #: src/pages/settings/components/Folders/DmsSettings.tsx:4793
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:4794
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
-msgid "Type an option and press Enter"
-msgstr "Tapez une option et appuyez sur Entrée"
+#~ msgid "Type an option and press Enter"
+#~ msgstr "Tapez une option et appuyez sur Entrée"
 
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:229
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:423
@@ -12748,10 +11882,6 @@ msgid "Unable to load this workflow form."
 msgstr "Impossible de charger ce formulaire de workflow."
 
 #: src/pages/portal/components/PortalDetail.tsx:242
-<<<<<<< HEAD
-#: src/pages/requests/components/KanbanView.tsx:293
-=======
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Unable to move this request."
 msgstr "Impossible de déplacer cette demande."
 
@@ -12891,11 +12021,7 @@ msgstr "Sans titre Formulaire"
 msgid "Untitled policy"
 msgstr "Politique sans titre"
 
-<<<<<<< HEAD
-#: src/pages/report-builder/components/ReportBuilderWizard.tsx:135
-=======
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:138
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Untitled Report"
 msgstr ""
 
@@ -12919,11 +12045,7 @@ msgstr "Menu de mise à jour"
 msgid "Update Portal"
 msgstr "Mettre à jour le portail"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:600
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:601
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Update Role"
 msgstr "Mettre à jour le rôle"
 
@@ -12956,7 +12078,7 @@ msgstr "Met à jour les enregistrements dans la base de données principale"
 #: src/pages/folders/components/DocumentSigningPage.tsx:2104
 #: src/pages/folders/components/FolderExplorer.tsx:318
 #: src/pages/folders/components/FolderFilterBar.tsx:697
-#: src/pages/folders/components/Upload/Upload.tsx:1618
+#: src/pages/folders/components/Upload/Upload.tsx:1622
 #: src/pages/portal/components/PortalHome.tsx:343
 #: src/pages/portal/components/PortalPicker.tsx:123
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:227
@@ -12990,8 +12112,8 @@ msgstr "Téléversez d'abord une image de signature."
 msgid "Upload Documents"
 msgstr "Télécharger des documents"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1608
-#: src/pages/folders/components/Upload/Upload.tsx:1622
+#: src/pages/folders/components/Upload/Upload.tsx:1612
+#: src/pages/folders/components/Upload/Upload.tsx:1626
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Téléversez des documents en toute sécurité, assignez des métadonnées et organisez les fichiers dans votre dépôt pour une recherche et une gestion efficaces."
 
@@ -13003,7 +12125,7 @@ msgstr "Échec de l'envoi"
 msgid "Upload favicon"
 msgstr "Télécharger une icône de favori"
 
-#: src/pages/folders/components/Upload/Upload.tsx:1604
+#: src/pages/folders/components/Upload/Upload.tsx:1608
 msgid "Upload Files"
 msgstr "Téléverser des fichiers"
 
@@ -13144,13 +12266,8 @@ msgstr ""
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:220
 #: src/pages/settings/components/AuditMonitoring.tsx:329
 #: src/pages/settings/components/AuditMonitoring.tsx:330
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:2034
-#: src/pages/settings/components/RolesPermissions.tsx:2036
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:2037
 #: src/pages/settings/components/RolesPermissions.tsx:2039
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "User"
 msgstr "Utilisateur"
 
@@ -13158,11 +12275,7 @@ msgstr "Utilisateur"
 #~ msgid "User access modules"
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/RolesPermissions.tsx:141
-=======
 #: src/pages/settings/components/RolesPermissions.tsx:142
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "User Assignments"
 msgstr "Affectations des utilisateurs"
 
@@ -13234,17 +12347,10 @@ msgstr "Champ du nom d'utilisateur"
 #~ msgid "Username Field *"
 #~ msgstr ""
 
-<<<<<<< HEAD
-#: src/pages/settings/components/ManageUser.tsx:1662
-#: src/pages/settings/components/RolesPermissions.tsx:1066
-#: src/pages/settings/components/RolesPermissions.tsx:1609
-#: src/pages/settings/components/RolesPermissions.tsx:1614
-=======
 #: src/pages/settings/components/ManageUser.tsx:1663
 #: src/pages/settings/components/RolesPermissions.tsx:1069
 #: src/pages/settings/components/RolesPermissions.tsx:1612
 #: src/pages/settings/components/RolesPermissions.tsx:1617
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "Users"
 msgstr "Utilisateurs"
 
@@ -13317,11 +12423,7 @@ msgstr "Valeur..."
 msgid "Vendor"
 msgstr "Fournisseur"
 
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3533
-=======
-#: src/pages/settings/components/Folders/DmsSettings.tsx:3534
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
+#: src/pages/settings/components/Folders/DmsSettings.tsx:3572
 msgid "Vendor / Account Number"
 msgstr ""
 
@@ -13398,11 +12500,7 @@ msgstr "Stratégie de versionnement enregistrée. Avez-vous besoin d'une intégr
 #: src/components/common/SharePopover.tsx:106
 #: src/pages/folders/components/FolderSharePopover.tsx:150
 #: src/pages/folders/components/FolderSharePopover.tsx:861
-<<<<<<< HEAD
-#: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:66
-=======
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:67
->>>>>>> 9a9550a3118757c98eec593b918cd5c0f90d66f6
 msgid "View"
 msgstr "Afficher"
 
