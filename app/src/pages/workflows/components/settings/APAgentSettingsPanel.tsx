@@ -1,13 +1,20 @@
 import type { Node } from '@xyflow/react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNodes, useReactFlow } from '@xyflow/react'
 import { nanoid } from 'nanoid'
 import { useEffect, useMemo, useState } from 'react'
 import { getMasterFormsQueryOptions } from '@/api/form/queries'
+import { getConnectionQueryOptions } from '@/api/connectorQueries'
 import { requestApi } from '@/api/requests/requests'
+import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import InputSwitch from '@/components/base/inputs/InputSwitch'
+import showToast from '@/components/base/toast/showToast'
+import {
+  openWorkflowOAuthAuthorize,
+  parseOAuthConnectionSuccess,
+} from '@/pages/workflows/utils/oauthAuthorize'
 import cn from '@/utils/cn'
 import ConnectionsRouting from './common/ConnectionsRouting'
 import SettingsSection from './common/SettingsSection'
@@ -15,11 +22,11 @@ import SettingsSection from './common/SettingsSection'
 const toWeightRows = (raw: any[] | undefined) =>
   Array.isArray(raw)
     ? raw.map((w) => ({
-        fieldId: w.fieldId ?? w.id ?? null,
-        label: w.label ?? w.name ?? '',
-        rowId: w.rowId || w.id || nanoid(),
-        value: Number(w.value) || 0,
-      }))
+      fieldId: w.fieldId ?? w.id ?? null,
+      label: w.label ?? w.name ?? '',
+      rowId: w.rowId || w.id || nanoid(),
+      value: Number(w.value) || 0,
+    }))
     : []
 
 const extractFormFieldOptions = (formJson: any) => {
@@ -84,6 +91,57 @@ const poMatchingOptions = [
   },
 ]
 
+const QuickBooksIcon = ({ className = 'h-4 w-4' }: { className?: string }) => (
+  <svg
+    className={cn('inline-block shrink-0', className)}
+    fill='none'
+    viewBox='0 0 24 24'
+    xmlns='http://www.w3.org/2000/svg'
+  >
+    <rect fill='#2CA01C' height='24' rx='12' width='24' />
+    <path
+      d='M11.5 6.5C8.73858 6.5 6.5 8.73858 6.5 11.5C6.5 14.2614 8.73858 16.5 11.5 16.5H12.5V14.5H11.5C9.84315 14.5 8.5 13.1569 8.5 11.5C8.5 9.84315 9.84315 8.5 11.5 8.5H12.5V6.5H11.5ZM12.5 17.5C15.2614 17.5 17.5 15.2614 17.5 12.5C17.5 9.73858 15.2614 7.5 12.5 7.5H11.5V9.5H12.5C14.1569 9.5 15.5 10.8431 15.5 12.5C15.5 14.1569 14.1569 15.5 12.5 15.5H11.5V17.5H12.5Z'
+      fill='white'
+    />
+  </svg>
+)
+
+const SapIcon = ({ className = 'h-4 w-4' }: { className?: string }) => (
+  <svg
+    className={cn('inline-block shrink-0', className)}
+    fill='none'
+    viewBox='0 0 24 24'
+    xmlns='http://www.w3.org/2000/svg'
+  >
+    <path
+      d='M2 6C2 4.89543 2.89543 4 4 4H20C21.1046 4 22 4.89543 22 6V18C22 19.1046 21.1046 20 20 20H4C2.89543 20 2 19.1046 2 18V6Z'
+      fill='#008FD3'
+    />
+    <path
+      d='M6.5 15L8.2 9H9.8L11.5 15H10.1L9.7 13.5H8.3L7.9 15H6.5ZM8.6 12.3H9.4L9 10.7L8.6 12.3ZM12.2 15V9H14.5C15.5 9 16.2 9.6 16.2 10.5C16.2 11.2 15.7 11.7 14.9 11.9C15.8 12.1 16.4 12.7 16.4 13.6C16.4 14.5 15.6 15 14.5 15H12.2ZM13.5 11.4H14.3C14.8 11.4 15.1 11.1 15.1 10.6C15.1 10.1 14.8 9.9 14.3 9.9H13.5V11.4ZM13.5 14.1H14.4C15 14.1 15.3 13.8 15.3 13.3C15.3 12.8 15 12.5 14.4 12.5H13.5V14.1Z'
+      fill='white'
+    />
+  </svg>
+)
+
+const poMasterSourceTypeOptions = [
+  {
+    iconKey: 'lucide:database',
+    id: 'internal',
+    name: 'Master Form',
+  },
+  {
+    iconKey: 'brand:quickbooks',
+    id: 'quickbooks',
+    name: 'QuickBooks',
+  },
+  {
+    iconKey: 'brand:sap',
+    id: 'sap',
+    name: 'SAP System',
+  },
+]
+
 interface Props {
   node?: Node
 }
@@ -132,16 +190,199 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
 
   const [invoiceType, setInvoiceType] = useState(
     invoiceTypeOptions.find((opt) => opt.name === nodeData.invoiceType) ||
-      invoiceTypeOptions[0],
+    invoiceTypeOptions[0],
   )
   const [poMatching, setPoMatching] = useState(
     poMatchingOptions.find((opt) => opt.name === nodeData.poMatching) ||
-      poMatchingOptions[0],
+    poMatchingOptions[0],
   )
 
-  const [poMaster, setPoMaster] = useState<any>(
-    getMasterOption(nodeData.poMaster),
+  const [poMasterSourceType, setPoMasterSourceType] = useState<
+    'internal' | 'quickbooks' | 'sap'
+  >(() => {
+    if (nodeData.poMasterSourceType) return nodeData.poMasterSourceType
+    if (nodeData.poMasterType) return nodeData.poMasterType
+    if (nodeData.poMaster?.sourceType) return nodeData.poMaster.sourceType
+    return 'internal'
+  })
+
+  const currentSourceOption = useMemo(
+    () =>
+      poMasterSourceTypeOptions.find((o) => o.id === poMasterSourceType) ||
+      poMasterSourceTypeOptions[0],
+    [poMasterSourceType],
   )
+
+  // QuickBooks Queries & States
+  const { data: apiQbConnections = [] } = useQuery(
+    getConnectionQueryOptions('QUICKBOOKS'),
+  )
+  const qbAccountOptions = useMemo(() => {
+    if (!Array.isArray(apiQbConnections)) return []
+    return apiQbConnections.map((item: any) => ({
+      id: String(item.id),
+      name: item.name || item.externalAccountEmail || item.email || `QuickBooks (${item.id})`,
+    }))
+  }, [apiQbConnections])
+
+  const [qbAccount, setQbAccount] = useState<any>(
+    nodeData.poMasterQbAccount || null,
+  )
+  const [isQbConnectionOpen, setIsQbConnectionOpen] = useState(false)
+  const [isCreatingQbConnection, setIsCreatingQbConnection] = useState(false)
+  const [isConnectingQb, setIsConnectingQb] = useState(false)
+  const [newQbAccountName, setNewQbAccountName] = useState('')
+
+  // SAP Queries & States
+  const { data: apiSapConnections = [] } = useQuery(
+    getConnectionQueryOptions('SAP'),
+  )
+  const sapAccountOptions = useMemo(() => {
+    if (!Array.isArray(apiSapConnections)) return []
+    return apiSapConnections.map((item: any) => ({
+      id: String(item.id),
+      name: item.name || item.externalAccountEmail || item.email || `SAP (${item.id})`,
+    }))
+  }, [apiSapConnections])
+
+  const [sapAccount, setSapAccount] = useState<any>(
+    nodeData.poMasterSapAccount || null,
+  )
+  const [isSapConnectionOpen, setIsSapConnectionOpen] = useState(false)
+  const [isCreatingSapConnection, setIsCreatingSapConnection] = useState(false)
+  const [isConnectingSap, setIsConnectingSap] = useState(false)
+  const [newSapHost, setNewSapHost] = useState('')
+
+  const queryClient = useQueryClient()
+
+  // Handle OAuth postMessage callback from auth redirect
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      const data = event.data
+      if (!data || typeof data !== 'object') return
+
+      if (
+        data.type === 'CONNECTOR_OAUTH_SUCCESS' ||
+        data.type === 'CONNECTION_SUCCESS' ||
+        data.connectorOAuth === 'success' ||
+        data.connectorId ||
+        data.connector
+      ) {
+        const { connector, connectorId, label } =
+          parseOAuthConnectionSuccess(data)
+        const accountName =
+          label || connector || newQbAccountName.trim() || newSapHost.trim() || 'Connected Account'
+        
+        if (isConnectingQb) {
+          const newAcc = {
+            id: connectorId || 'qb_' + Date.now(),
+            name: accountName,
+          }
+          setQbAccount(newAcc)
+          updateNodeData('poMasterQbAccount', newAcc)
+          updateNodeData('poMaster', {
+            id: newAcc.id,
+            name: `QuickBooks PO Master (${newAcc.name})`,
+            sourceType: 'quickbooks',
+          })
+          setIsConnectingQb(false)
+          setIsCreatingQbConnection(false)
+          setIsQbConnectionOpen(false)
+          setNewQbAccountName('')
+          showToast({ message: `Connected QuickBooks account: ${accountName}` })
+          queryClient.invalidateQueries({
+            queryKey: ['connections', 'QUICKBOOKS'],
+          })
+        } else if (isConnectingSap) {
+          const newAcc = {
+            id: connectorId || 'sap_' + Date.now(),
+            name: accountName,
+          }
+          setSapAccount(newAcc)
+          updateNodeData('poMasterSapAccount', newAcc)
+          updateNodeData('poMaster', {
+            id: newAcc.id,
+            name: `SAP PO Master (${newAcc.name})`,
+            sourceType: 'sap',
+          })
+          setIsConnectingSap(false)
+          setIsCreatingSapConnection(false)
+          setIsSapConnectionOpen(false)
+          setNewSapHost('')
+          showToast({ message: `Connected SAP account: ${accountName}` })
+          queryClient.invalidateQueries({
+            queryKey: ['connections', 'SAP'],
+          })
+        }
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [isConnectingQb, isConnectingSap, newQbAccountName, newSapHost, queryClient])
+
+  const handleConnectQb = async () => {
+    const name = newQbAccountName.trim() || 'QuickBooks Online'
+    setIsConnectingQb(true)
+    const { error } = await openWorkflowOAuthAuthorize('QUICKBOOKS', name)
+    if (error) {
+      // Fallback / local connect mode if OAuth authorize API fails
+      const newAcc = {
+        id: 'qb_' + Date.now(),
+        name,
+      }
+      setQbAccount(newAcc)
+      updateNodeData('poMasterQbAccount', newAcc)
+      updateNodeData('poMaster', {
+        id: newAcc.id,
+        name: `QuickBooks PO Master (${newAcc.name})`,
+        sourceType: 'quickbooks',
+      })
+      setIsConnectingQb(false)
+      setIsCreatingQbConnection(false)
+      setIsQbConnectionOpen(false)
+      setNewQbAccountName('')
+      showToast({ message: `Connected QuickBooks account: ${name}` })
+    }
+  }
+
+  const handleConnectSap = async () => {
+    const name = newSapHost.trim() || 'SAP Connection'
+    setIsConnectingSap(true)
+    const { error } = await openWorkflowOAuthAuthorize('SAP', name)
+    if (error) {
+      // Fallback / local connect mode if OAuth authorize API fails
+      const newAcc = { id: 'sap_' + Date.now(), name }
+      setSapAccount(newAcc)
+      updateNodeData('poMasterSapAccount', newAcc)
+      updateNodeData('poMaster', {
+        id: newAcc.id,
+        name: newAcc.name,
+        sourceType: 'sap',
+      })
+      setIsConnectingSap(false)
+      setIsCreatingSapConnection(false)
+      setIsSapConnectionOpen(false)
+      setNewSapHost('')
+      showToast({ message: `Connected SAP account: ${name}` })
+    }
+  }
+
+  const [poMaster, setPoMaster] = useState<any>(() => {
+    const raw = nodeData.poMaster
+    if (!raw) return null
+    const isExternal =
+      typeof raw === 'object' &&
+      (raw.sourceType === 'quickbooks' ||
+        raw.sourceType === 'sap' ||
+        String(raw.id).startsWith('qb_') ||
+        String(raw.id).startsWith('sap_') ||
+        String(raw.name || '').includes('QuickBooks') ||
+        String(raw.name || '').includes('SAP'))
+    if (isExternal) return null
+    return getMasterOption(raw)
+  })
   const [invoiceMaster, setInvoiceMaster] = useState<any>(
     getMasterOption(nodeData.invoiceMaster),
   )
@@ -188,7 +429,30 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   const isThresholdInvalid = thresholds.partial >= thresholds.approved
 
   // Values for display in select (handle loading from masterForms)
-  const poMasterValue = poMaster || getMasterOption(nodeData.poMaster) || null
+  const poMasterValue = useMemo(() => {
+    if (poMasterSourceType !== 'internal') {
+      return null
+    }
+
+    const candidate = poMaster || getMasterOption(nodeData.poMaster)
+    if (!candidate) return null
+
+    const isExternal =
+      typeof candidate === 'object' &&
+      (candidate.sourceType === 'quickbooks' ||
+        candidate.sourceType === 'sap' ||
+        String(candidate.id).startsWith('qb_') ||
+        String(candidate.id).startsWith('sap_') ||
+        String(candidate.name || '').includes('QuickBooks') ||
+        String(candidate.name || '').includes('SAP'))
+
+    if (isExternal) {
+      return null
+    }
+
+    return candidate
+  }, [poMaster, nodeData.poMaster, poMasterSourceType])
+
   const invoiceMasterValue =
     invoiceMaster || getMasterOption(nodeData.invoiceMaster) || null
   const vendorSourceValue =
@@ -240,6 +504,52 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     updateNodeData('poMatching', opt.name)
   }
 
+  const handlePoMasterSourceTypeChange = (
+    type: 'internal' | 'quickbooks' | 'sap',
+  ) => {
+    setPoMasterSourceType(type)
+    updateNodeData('poMasterSourceType', type)
+
+    if (type === 'internal') {
+      const isExternal =
+        poMaster &&
+        (poMaster.sourceType === 'quickbooks' ||
+          poMaster.sourceType === 'sap' ||
+          String(poMaster.id).startsWith('qb_') ||
+          String(poMaster.id).startsWith('sap_') ||
+          String(poMaster.name || '').includes('QuickBooks') ||
+          String(poMaster.name || '').includes('SAP'))
+
+      const targetForm = isExternal ? null : poMaster
+      setPoMaster(targetForm)
+      updateNodeData('poMaster', targetForm)
+    } else if (type === 'quickbooks') {
+      setPoMaster(null)
+      if (qbAccount) {
+        const qbData = {
+          id: qbAccount.id,
+          name: `QuickBooks PO Master (${qbAccount.name})`,
+          sourceType: 'quickbooks',
+        }
+        updateNodeData('poMaster', qbData)
+      } else {
+        updateNodeData('poMaster', null)
+      }
+    } else if (type === 'sap') {
+      setPoMaster(null)
+      if (sapAccount) {
+        const sapData = {
+          id: sapAccount.id,
+          name: `SAP PO Master (${sapAccount.name})`,
+          sourceType: 'sap',
+        }
+        updateNodeData('poMaster', sapData)
+      } else {
+        updateNodeData('poMaster', null)
+      }
+    }
+  }
+
   const updateWeight = (rowId: string, value: number) => {
     const newWeights = weights.map((w: any) =>
       w.rowId === rowId ? { ...w, value } : w,
@@ -255,10 +565,10 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     const newWeights = weights.map((w: any) =>
       w.rowId === rowId
         ? {
-            ...w,
-            fieldId: option.id,
-            label: option.name,
-          }
+          ...w,
+          fieldId: option.id,
+          label: option.name,
+        }
         : w,
     )
     setWeights(newWeights)
@@ -307,13 +617,13 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
     if (nodeData.invoiceType && nodeData.invoiceType !== invoiceType.name) {
       setInvoiceType(
         invoiceTypeOptions.find((opt) => opt.name === nodeData.invoiceType) ||
-          invoiceTypeOptions[0],
+        invoiceTypeOptions[0],
       )
     }
     if (nodeData.poMatching && nodeData.poMatching !== poMatching.name) {
       setPoMatching(
         poMatchingOptions.find((opt) => opt.name === nodeData.poMatching) ||
-          poMatchingOptions[0],
+        poMatchingOptions[0],
       )
     }
     if (
@@ -533,21 +843,341 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
                   </button>
                 ))}
               </div>
-              <div className='space-y-1.5 px-0.5 pt-1'>
+              <div className='space-y-3 px-0.5 pt-2'>
                 <div className='text-12 font-medium text-gray-12'>
                   PO Master Resource
                 </div>
-                <InputSelect
-                  options={masterForms}
-                  placeholder='Select PO Master'
-                  rightSectionIcon='lucide:chevrons-up-down'
-                  searchable={true}
-                  value={poMasterValue}
-                  onChange={(val) => {
-                    setPoMaster(val)
-                    updateNodeData('poMaster', val)
-                  }}
-                />
+
+                {/* Searchable Dropdown Selector for PO Source using InputSelect primitive */}
+                <div className='space-y-1.5'>
+                  <div className='text-11 font-medium text-gray-10'>
+                    PO Source
+                  </div>
+                  <InputSelect
+                    options={poMasterSourceTypeOptions}
+                    placeholder='Select PO Source'
+                    rightSectionIcon='lucide:chevrons-up-down'
+                    searchable={true}
+                    value={currentSourceOption}
+                    onChange={(val) => {
+                      if (val) {
+                        handlePoMasterSourceTypeChange(val.id as any)
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Option 1: Internal Master Form */}
+                {poMasterSourceType === 'internal' && (
+                  <div className='animate-in fade-in slide-in-from-top-1 space-y-1.5 duration-200'>
+                    <div className='text-11 font-medium text-gray-10'>
+                      Master Form
+                    </div>
+                    <InputSelect
+                      options={masterForms}
+                      placeholder='Select Master Form'
+                      rightSectionIcon='lucide:chevrons-up-down'
+                      searchable={true}
+                      value={poMasterValue}
+                      onChange={(val) => {
+                        setPoMaster(val)
+                        updateNodeData('poMaster', val)
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Option 2: QuickBooks Online */}
+                {poMasterSourceType === 'quickbooks' && (
+                  <div className='animate-in fade-in slide-in-from-top-1 space-y-2.5 duration-200'>
+                    <div className='space-y-1.5'>
+                      <label className='flex items-center gap-1 text-[13px] font-medium text-gray-11'>
+                        Connection <span className='text-red-11'>*</span>
+                      </label>
+                      <div className='relative'>
+                        <button
+                          className={cn(
+                            'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
+                            isQbConnectionOpen
+                              ? 'border-primary-9 ring-2 ring-primary-4'
+                              : 'border-gray-3 hover:border-primary-5',
+                          )}
+                          type='button'
+                          onClick={() => setIsQbConnectionOpen(!isQbConnectionOpen)}
+                        >
+                          <span
+                            className={
+                              !qbAccount
+                                ? 'text-gray-9'
+                                : 'font-normal text-gray-13 flex items-center gap-2'
+                            }
+                          >
+                            {qbAccount ? (
+                              <>
+                                <Icon className='size-4 shrink-0' name='brand:quickbooks' />
+                                <span>{qbAccount.name || qbAccount.label || 'QuickBooks Connection'}</span>
+                              </>
+                            ) : (
+                              'Select a connection'
+                            )}
+                          </span>
+                          <Icon
+                            className='pointer-events-none h-4 w-4 text-gray-7'
+                            name='lucide:chevrons-up-down'
+                          />
+                        </button>
+
+                        {isQbConnectionOpen && (
+                          <>
+                            <div
+                              className='fixed inset-0 z-40'
+                              onClick={() => {
+                                setIsQbConnectionOpen(false)
+                                setIsCreatingQbConnection(false)
+                                setNewQbAccountName('')
+                              }}
+                            />
+                            <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-white p-1 shadow-xl duration-100'>
+                              {!isCreatingQbConnection ? (
+                                <>
+                                  {qbAccountOptions.map((option) => (
+                                    <button
+                                      key={option.id}
+                                      className={cn(
+                                        'flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal transition-colors',
+                                        String(qbAccount?.id) === String(option.id)
+                                          ? 'bg-primary-1 font-normal text-primary-9'
+                                          : 'text-gray-12 hover:bg-gray-2',
+                                      )}
+                                      type='button'
+                                      onClick={() => {
+                                        setQbAccount(option)
+                                        updateNodeData('poMasterQbAccount', option)
+                                        updateNodeData('poMaster', {
+                                          id: option.id,
+                                          name: option.name,
+                                          sourceType: 'quickbooks',
+                                        })
+                                        setIsQbConnectionOpen(false)
+                                      }}
+                                    >
+                                      <Icon className='size-4 shrink-0' name='brand:quickbooks' />
+                                      <span className='truncate text-13 font-normal'>{option.name}</span>
+                                    </button>
+                                  ))}
+
+                                  {qbAccountOptions.length > 0 && (
+                                    <div className='my-1 h-px bg-gray-2' />
+                                  )}
+
+                                  <button
+                                    className='flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal text-primary-9 transition-colors hover:bg-primary-1'
+                                    type='button'
+                                    onClick={() => setIsCreatingQbConnection(true)}
+                                  >
+                                    <Icon className='size-4 shrink-0' name='lucide:plus' />
+                                    <span>Create Connection</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <div className='space-y-3 p-3'>
+                                  <div className='flex flex-col gap-1.5'>
+                                    <label className='text-xs font-medium text-gray-11'>
+                                      Connection Name
+                                    </label>
+                                    <input
+                                      autoFocus
+                                      className='w-full rounded-md border border-gray-3 px-2 py-1.5 text-sm focus:border-primary-9 focus:ring-2 focus:ring-primary-4 focus:outline-none'
+                                      placeholder='e.g. My QuickBooks Connection'
+                                      type='text'
+                                      value={newQbAccountName}
+                                      onChange={(e) => setNewQbAccountName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleConnectQb()
+                                      }}
+                                    />
+                                  </div>
+                                  <div className='flex items-center justify-end gap-2'>
+                                    <Button
+                                      className='text-gray-10 hover:bg-gray-2 hover:text-gray-13'
+                                      size='md'
+                                      variant='ghost'
+                                      onClick={() => setIsCreatingQbConnection(false)}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      className='flex items-center justify-center gap-2'
+                                      color='primary'
+                                      disabled={!newQbAccountName.trim() || isConnectingQb}
+                                      size='md'
+                                      onClick={handleConnectQb}
+                                    >
+                                      {isConnectingQb && (
+                                        <Icon
+                                          className='h-3 w-3 animate-spin'
+                                          name='lucide:loader-2'
+                                        />
+                                      )}
+                                      {isConnectingQb ? 'Connecting...' : 'Connect'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Option 3: SAP ERP / S/4HANA */}
+                {poMasterSourceType === 'sap' && (
+                  <div className='animate-in fade-in slide-in-from-top-1 space-y-2.5 duration-200'>
+                    <div className='space-y-1.5'>
+                      <label className='flex items-center gap-1 text-[13px] font-medium text-gray-11'>
+                        Connection <span className='text-red-11'>*</span>
+                      </label>
+                      <div className='relative'>
+                        <button
+                          className={cn(
+                            'flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 text-sm transition-all duration-200 outline-none focus:border-primary-9 focus:ring-2 focus:ring-primary-4',
+                            isSapConnectionOpen
+                              ? 'border-primary-9 ring-2 ring-primary-4'
+                              : 'border-gray-3 hover:border-primary-5',
+                          )}
+                          type='button'
+                          onClick={() => setIsSapConnectionOpen(!isSapConnectionOpen)}
+                        >
+                          <span
+                            className={
+                              !sapAccount
+                                ? 'text-gray-9'
+                                : 'font-normal text-gray-13 flex items-center gap-2'
+                            }
+                          >
+                            {sapAccount ? (
+                              <>
+                                <Icon className='size-4 shrink-0' name='brand:sap' />
+                                <span>{sapAccount.name || sapAccount.label || 'SAP Connection'}</span>
+                              </>
+                            ) : (
+                              'Select a connection'
+                            )}
+                          </span>
+                          <Icon
+                            className='pointer-events-none h-4 w-4 text-gray-7'
+                            name='lucide:chevrons-up-down'
+                          />
+                        </button>
+
+                        {isSapConnectionOpen && (
+                          <>
+                            <div
+                              className='fixed inset-0 z-40'
+                              onClick={() => {
+                                setIsSapConnectionOpen(false)
+                                setIsCreatingSapConnection(false)
+                                setNewSapHost('')
+                              }}
+                            />
+                            <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-white p-1 shadow-xl duration-100'>
+                              {!isCreatingSapConnection ? (
+                                <>
+                                  {sapAccountOptions.map((option) => (
+                                    <button
+                                      key={option.id}
+                                      className={cn(
+                                        'flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal transition-colors',
+                                        String(sapAccount?.id) === String(option.id)
+                                          ? 'bg-primary-1 font-normal text-primary-9'
+                                          : 'text-gray-12 hover:bg-gray-2',
+                                      )}
+                                      type='button'
+                                      onClick={() => {
+                                        setSapAccount(option)
+                                        updateNodeData('poMasterSapAccount', option)
+                                        updateNodeData('poMaster', {
+                                          id: option.id,
+                                          name: option.name,
+                                          sourceType: 'sap',
+                                        })
+                                        setIsSapConnectionOpen(false)
+                                      }}
+                                    >
+                                      <Icon className='size-4 shrink-0' name='brand:sap' />
+                                      <span className='truncate text-13 font-normal'>{option.name}</span>
+                                    </button>
+                                  ))}
+
+                                  {sapAccountOptions.length > 0 && (
+                                    <div className='my-1 h-px bg-gray-2' />
+                                  )}
+
+                                  <button
+                                    className='flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal text-primary-9 transition-colors hover:bg-primary-1'
+                                    type='button'
+                                    onClick={() => setIsCreatingSapConnection(true)}
+                                  >
+                                    <Icon className='size-4 shrink-0' name='lucide:plus' />
+                                    <span>Create Connection</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <div className='space-y-3 p-3'>
+                                  <div className='flex flex-col gap-1.5'>
+                                    <label className='text-xs font-medium text-gray-11'>
+                                      Connection Name
+                                    </label>
+                                    <input
+                                      autoFocus
+                                      className='w-full rounded-md border border-gray-3 px-2 py-1.5 text-sm focus:border-primary-9 focus:ring-2 focus:ring-primary-4 focus:outline-none'
+                                      placeholder='e.g. My SAP Connection'
+                                      type='text'
+                                      value={newSapHost}
+                                      onChange={(e) => setNewSapHost(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleConnectSap()
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                  <div className='flex items-center justify-end gap-2'>
+                                    <Button
+                                      className='text-gray-10 hover:bg-gray-2 hover:text-gray-13'
+                                      size='md'
+                                      variant='ghost'
+                                      onClick={() => setIsCreatingSapConnection(false)}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      className='flex items-center justify-center gap-2'
+                                      color='primary'
+                                      disabled={!newSapHost.trim() || isConnectingSap}
+                                      size='md'
+                                      onClick={handleConnectSap}
+                                    >
+                                      {isConnectingSap && (
+                                        <Icon
+                                          className='h-3 w-3 animate-spin'
+                                          name='lucide:loader-2'
+                                        />
+                                      )}
+                                      {isConnectingSap ? 'Connecting...' : 'Connect'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -5,7 +5,6 @@ import formApi from '@/api/form/form'
 import Badge from '@/components/base/Badge'
 import Icon from '@/components/base/icon/Icon'
 import Title from '@/components/base/Title'
-import useDashboardStore from '@/pages/dashboard/stores/useDashboardStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import useDmsSetupStore from '@/pages/dashboard/workflows/document-repository/stores/useDmsSetupStore'
 import {
@@ -26,8 +25,6 @@ const PageTitle = () => {
   const { closeRequest, isRequestOpen, requestListTab, selectedWorkflow } =
     requestStore((state) => state)
   const { closeBuilder, isBuilderOpen } = useWorkflowStore((state) => state)
-  const { role, setRole } = useDashboardStore()
-  const isApSetUpCompleted = useSetupStore((state) => state.isApSetUpCompleted)
   const isApSetupStarted = useSetupStore((state) => state.isSetupStarted)
   const isDmsSetupStarted = useDmsSetupStore((state) => state.isSetupStarted)
   const settingsBreadcrumbs = useSettingsTopbarStore(
@@ -130,10 +127,6 @@ const PageTitle = () => {
   const isSetupMode = Boolean(activeSetupPreview)
   const showSetupSwitcher =
     (isDashboardRoute || rawPageTitle === 'Dashboard') && isSetupMode
-  const showRoleSwitcher =
-    (isDashboardRoute || rawPageTitle === 'Dashboard') &&
-    isApSetUpCompleted &&
-    !isSetupMode
 
   const renderContent = () => {
     if (isWorkflowsRoute && isBuilderOpen) {
@@ -237,30 +230,6 @@ const PageTitle = () => {
                 onClick={openDmsSetupPreview}
               >
                 DMS Folder
-              </button>
-            </div>
-          )}
-        {showRoleSwitcher && (
-            <div className='flex gap-0.5 rounded-lg border border-border-default bg-gray-2 p-1 dark:bg-gray-12'>
-              <button
-                className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
-                  role === 'management'
-                    ? 'bg-primary-9 text-white shadow-sm'
-                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
-                }`}
-                onClick={() => setRole('management')}
-              >
-                {t`Management`}
-              </button>
-              <button
-                className={`cursor-pointer rounded-md px-3.5 py-1 text-12 font-semibold transition-all duration-150 ${
-                  role === 'ap'
-                    ? 'bg-primary-9 text-white shadow-sm'
-                    : 'text-gray-11 hover:bg-gray-3 hover:text-gray-13 dark:hover:bg-gray-10'
-                }`}
-                onClick={() => setRole('ap')}
-              >
-                {t`AP Team`}
               </button>
             </div>
           )}
