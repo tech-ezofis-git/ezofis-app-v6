@@ -371,15 +371,15 @@ export default function IntelligentUploadView({
       </header>
 
       {/* Main Content Area */}
-      <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto p-6'>
-        <div className='mx-auto max-w-4xl space-y-6'>
+      <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-5'>
+        <div className='mx-auto max-w-4xl space-y-4'>
           {/* Empty State: Dropzone */}
           {files.length === 0 ? (
-            <AnimateFadeIn className='space-y-4'>
+            <AnimateFadeIn className='space-y-3.5'>
               <FileUpload
                 accept={DOCUMENT_ACCEPT}
                 fileTypeIcons={FILE_TYPE_ICONS}
-                heightClassName='h-[280px]'
+                heightClassName='h-[180px]'
                 helperText={t`Support for PDF, PNG, TIFF, JPG up to 50MB.`}
                 ref={dropzoneRef}
                 subtitle={t`Drag and drop documents here, or click to browse. Ezofis AI will classify and route them automatically.`}
@@ -388,44 +388,44 @@ export default function IntelligentUploadView({
                 onFiles={handleFilesAdded}
               />
 
-              <div className='grid grid-cols-1 gap-4 pt-2 sm:grid-cols-3'>
-                <div className='flex items-start gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-xs'>
-                  <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-primary'>
-                    <AiBrandIcon className='size-4' variant='outline-purple' />
+              <div className='grid grid-cols-1 gap-3 pt-1 sm:grid-cols-3'>
+                <div className='flex items-start gap-3 rounded-xl border border-border-default bg-surface-primary p-3 shadow-xs'>
+                  <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-primary'>
+                    <AiBrandIcon className='size-3.5' variant='outline-purple' />
                   </div>
-                  <div>
-                    <h3 className='text-13 font-semibold text-text-primary'>
+                  <div className='min-w-0 flex-1'>
+                    <h3 className='text-12 font-semibold text-text-primary'>
                       {t`Semantic Classification`}
                     </h3>
-                    <p className='mt-1 text-11 leading-relaxed text-text-secondary'>
+                    <p className='mt-0.5 line-clamp-2 min-h-[2rem] text-11 leading-relaxed text-text-secondary'>
                       {t`AI analyzes document content and structures to identify types and metadata.`}
                     </p>
                   </div>
                 </div>
 
-                <div className='flex items-start gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-xs'>
-                  <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-success-subtle text-success-main'>
-                    <span className='text-14 font-bold'>%</span>
+                <div className='flex items-start gap-3 rounded-xl border border-border-default bg-surface-primary p-3 shadow-xs'>
+                  <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-success-subtle text-success-main'>
+                    <span className='text-13 font-bold'>%</span>
                   </div>
-                  <div>
-                    <h3 className='text-13 font-semibold text-text-primary'>
+                  <div className='min-w-0 flex-1'>
+                    <h3 className='text-12 font-semibold text-text-primary'>
                       {t`Confidence Scoring`}
                     </h3>
-                    <p className='mt-1 text-11 leading-relaxed text-text-secondary'>
+                    <p className='mt-0.5 line-clamp-2 min-h-[2rem] text-11 leading-relaxed text-text-secondary'>
                       {t`Receive transparent confidence rankings for top candidate repository matches.`}
                     </p>
                   </div>
                 </div>
 
-                <div className='flex items-start gap-3 rounded-xl border border-border-default bg-surface-primary p-4 shadow-xs'>
-                  <div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-2 text-blue-9'>
-                    <span className='text-14 font-bold'>⇄</span>
+                <div className='flex items-start gap-3 rounded-xl border border-border-default bg-surface-primary p-3 shadow-xs'>
+                  <div className='flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-2 text-blue-9'>
+                    <span className='text-13 font-bold'>⇄</span>
                   </div>
-                  <div>
-                    <h3 className='text-13 font-semibold text-text-primary'>
+                  <div className='min-w-0 flex-1'>
+                    <h3 className='text-12 font-semibold text-text-primary'>
                       {t`Full User Control`}
                     </h3>
-                    <p className='mt-1 text-11 leading-relaxed text-text-secondary'>
+                    <p className='mt-0.5 line-clamp-2 min-h-[2rem] text-11 leading-relaxed text-text-secondary'>
                       {t`Review, confirm recommendations, or manually override target folders anytime.`}
                     </p>
                   </div>
