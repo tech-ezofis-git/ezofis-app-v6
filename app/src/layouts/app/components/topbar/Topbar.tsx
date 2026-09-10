@@ -1,6 +1,8 @@
 import { useLingui } from '@lingui/react/macro'
+import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
+import useSettingsTopbarStore from '@/pages/settings/stores/useSettingsTopbarStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import SidebarToggle from '../sidebar/SidebarToggle'
 import GlobalSearch from './components/GlobalSearch'
@@ -16,6 +18,7 @@ const Topbar = () => {
   const isPlaygroundOpen = usePlaygroundStore((state) => state.isOpen)
   const openPlayground = usePlaygroundStore((state) => state.open)
   const closePlayground = usePlaygroundStore((state) => state.close)
+  const topbarAction = useSettingsTopbarStore((state) => state.action)
 
   const handleOpenAskAI = () => {
     // Read from store directly so HMR / stale closures can't block open.
@@ -73,6 +76,17 @@ const Topbar = () => {
           }
         />
         <Notifications />
+        {topbarAction ? (
+          <Button
+            className='ml-2'
+            color={topbarAction.color ?? 'primary'}
+            icon={topbarAction.icon}
+            label={topbarAction.label}
+            size='sm'
+            variant='solid'
+            onClick={topbarAction.onClick}
+          />
+        ) : null}
         <UserMenu />
       </div>
     </header>
