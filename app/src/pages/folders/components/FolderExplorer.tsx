@@ -6,6 +6,7 @@ import showToast from '@/components/base/toast/showToast'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import { encodeRepositoryNodeId } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
+import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
 import {
   findRepositoryNodeId,
@@ -17,10 +18,10 @@ import { DocumentsListView } from './DocumentsListView'
 import { EditMetadataView } from './EditMetadataView'
 import { ExplorerToolbar } from './ExplorerToolbar'
 import FolderTable from './FolderTable'
+import IntelligentUploadView from './IntelligentUpload/IntelligentUploadView'
 import { StartWorkflowView } from './StartWorkflowView'
 import { TreeSidebar } from './TreeSidebar'
 import Upload from './Upload/Upload'
-import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 
 export function FolderExplorer() {
   const { i18n, t } = useLingui()
@@ -317,6 +318,9 @@ export function FolderExplorer() {
     if (appView === 'Upload') {
       items.push({ label: t`Upload` })
     }
+    if (appView === 'intelligentUpload') {
+      items.push({ label: t`Intelligent Upload & Classify` })
+    }
 
     return {
       items,
@@ -325,6 +329,17 @@ export function FolderExplorer() {
   }, [appView, breadcrumbs, handleBreadcrumbNavigate, i18n.locale, t])
 
   useFoldersTopbar(foldersTopbar)
+
+  const handleIntelligentUpload = () => {
+    if (!resolvedRepositoryId) {
+      showToast({
+        message: t`Select a repository before uploading.`,
+        variant: 'error',
+      })
+      return
+    }
+    setAppView('intelligentUpload')
+  }
 
   const handleUpload = () => {
     if (!resolvedRepositoryId) {
@@ -443,6 +458,25 @@ export function FolderExplorer() {
     )
   }
 
+  if (appView === 'intelligentUpload') {
+    const candidateRepos = repositoryNodes.map((node) => ({
+      id: String(getRepositoryIdFromFolder(node.id) || node.id),
+      name: node.title,
+    }))
+
+    return (
+      <IntelligentUploadView
+        candidateRepositories={candidateRepos}
+        repositoryId={resolvedRepositoryId || null}
+        onBack={() => setAppView('explorer')}
+        onDone={async () => {
+          setAppView('explorer')
+          await refreshData()
+        }}
+      />
+    )
+  }
+
   if (appView === 'aiSummary') {
     console.log(
       'appView === aiSummary',
@@ -456,8 +490,8 @@ export function FolderExplorer() {
         itemId={selectedFile}
         repositoryId={String(
           selectedRepository?.id ||
-          getRepositoryIdFromFolder(activeFolder) ||
-          '',
+            getRepositoryIdFromFolder(activeFolder) ||
+            '',
         )}
         onBack={() => setAppView(selectedFile ? 'details' : 'explorer')}
       />
@@ -471,11 +505,11 @@ export function FolderExplorer() {
   const displayFolders = activeFolder
     ? folders
     : (repositoryNodes.map((node) => ({
+        createdByName: node.createdByName || '-',
         iconKey: node.iconKey || 'folder',
         id: node.id,
         itemsText: node.fileCount !== undefined ? String(node.fileCount) : '-',
         modifiedText: node.createdAtUtc || '-',
-        createdByName: node.createdByName || '-',
         title: node.title,
       })) as any[])
 
@@ -500,6 +534,7 @@ export function FolderExplorer() {
           itemFilterFields={itemFilterFields}
           loading={loading}
           loadingPage={loadingPage}
+          permissions={folderPermissions}
           refreshing={refreshing}
           repositories={repositoryNodes}
           repositoryId={resolvedRepositoryId}
@@ -514,7 +549,6 @@ export function FolderExplorer() {
               ? (id) => openFileAction(id, 'editMetadata')
               : undefined
           }
-          permissions={folderPermissions}
           onFilterMenuOpenChange={(id) => {
             if (id) beginFilterDefer()
             else commitFilterDefer()
@@ -523,6 +557,7 @@ export function FolderExplorer() {
             setFileFilters(filters)
             setFolderFilters(filters)
           }}
+          onIntelligentUpload={canUpload ? handleIntelligentUpload : undefined}
           onOpenFile={openDetailsFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
@@ -572,6 +607,7 @@ export function FolderExplorer() {
         }}
         onFolderFiltersChange={setFolderFilters}
         onFolderSearchChange={setFolderSearch}
+        onIntelligentUpload={canUpload ? handleIntelligentUpload : undefined}
         onRefresh={handleRefresh}
         onUpload={canUpload ? handleUpload : undefined}
       />
@@ -598,20 +634,22 @@ export function FolderExplorer() {
               folderHasMore={activeFolder ? folderHasMore : false}
               folders={displayFolders}
               folderSearch={folderSearch}
-              folderTotalCount={activeFolder ? folderPage?.totalCount : displayFolders.length}
               hideFolderActions={!activeFolder}
               loading={loading}
               loadingFolders={loadingFolders}
               loadingPage={loadingPage}
+              permissions={folderPermissions}
               refreshing={refreshing}
               uploadDisabled={!canUpload}
+              folderTotalCount={
+                activeFolder ? folderPage?.totalCount : displayFolders.length
+              }
               onAiSummary={(id) => openFileAction(id, 'aiSummary')}
               onEditMetadata={
                 folderPermissions.editMetadata
                   ? (id) => openFileAction(id, 'editMetadata')
                   : undefined
               }
-              permissions={folderPermissions}
               onLoadMoreFolders={loadMoreFolders}
               onOpenFile={openDetailsFile}
               onOpenFolder={openFolder}

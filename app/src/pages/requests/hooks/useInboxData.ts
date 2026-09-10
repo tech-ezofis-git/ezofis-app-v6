@@ -1,13 +1,53 @@
 import { useQuery } from '@tanstack/react-query'
-import workflowsApiV6 from '@/api/v6/workflows'
+import workflowsApiV6, { type V6FilterField } from '@/api/v6/workflows'
 import type { InboxItem, TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
+import { extractPONumber } from '../utils/inboxItemDisplay'
 import {
   countInboxSplit,
   filterInboxItemsByTab,
   isDuplicatedInboxItem,
 } from '../utils/inboxList.utils'
 import { getActionsForActivity } from '../utils/workflow.utils'
+
+/**
+ * Grouping is applied entirely client-side against whatever page of items
+ * the normal (ungrouped) list endpoints already returned — the backend's
+ * grouped inbox-list endpoint is not used (see useInboxData's queryFn).
+ */
+const getGroupableFieldValue = (item: any, columnId: string): string => {
+  if (columnId === 'poNumber') return extractPONumber(item)
+  const raw = item?.[columnId]
+  return raw == null || raw === '' ? 'N/A' : String(raw)
+}
+
+const applyClientGrouping = (
+  items: InboxItem[],
+  columnId: string,
+): TableGroup[] => {
+  const order: string[] = []
+  const byGroup = new Map<string, InboxItem[]>()
+
+  for (const item of items) {
+    const key = getGroupableFieldValue(item, columnId) || 'N/A'
+    if (!byGroup.has(key)) {
+      byGroup.set(key, [])
+      order.push(key)
+    }
+    byGroup.get(key)!.push(item)
+  }
+
+  return order.map((key) => {
+    const groupItems = byGroup.get(key)!
+    return {
+      groupCount: groupItems.length,
+      groupId: key,
+      groupKey: key,
+      groupValue: key,
+      items: groupItems,
+    }
+  })
+}
 
 const toFiniteCount = (value: unknown): number | null => {
   const count = Number(value)
@@ -499,16 +539,19 @@ export const useInboxData = (
   groupBy: string[],
   activeTab: string = 'Inbox',
   filterClauses: any[] = [],
+  // Unused: grouping is resolved client-side without the field schema.
+  _filterFields: V6FilterField[] = [],
 ) => {
   return useQuery({
     enabled: !!selectedWorkflow?.id && selectedWorkflow.id !== 'procurement',
     gcTime: 5 * 60 * 1000,
+    // `groupBy`/`filterFields` deliberately excluded: grouping is applied
+    // client-side in `select` below and never triggers a refetch.
     queryKey: [
       'inbox',
       selectedWorkflow?.id,
       page,
       pageSize,
-      groupBy,
       activeTab,
       filterClauses,
     ],
@@ -522,14 +565,16 @@ export const useInboxData = (
       }
 
       try {
+        // Grouping is applied client-side in `select` below (see
+        // applyClientGrouping) — it is intentionally never sent to the
+        // backend, so `groupBy` never changes which endpoint/payload we use.
         if (filterClauses && filterClauses.length > 0) {
           const searchRes = await workflowsApiV6.searchTickets(
             String(workflowId),
             {
               currentPage: page,
               filterBy: filterClauses,
-              groupBy:
-                activeTab === 'Inbox' && groupBy.length > 0 ? groupBy[0] : '',
+              groupBy: '',
               itemsPerPage: pageSize,
               sortBy: { criteria: 'raisedAt', order: 'DESC' },
             },
@@ -612,8 +657,16 @@ export const useInboxData = (
       let tabTotalItems = totalItems > 0 ? totalItems : inboxTabCount
       if (activeTab === 'Exceptions') tabTotalItems = exceptionsCount
 
+      const finalGroupedData =
+        groupBy && groupBy.length > 0
+          ? applyClientGrouping(
+              filteredGroupedData.flatMap((group) => group.items),
+              groupBy[0],
+            )
+          : filteredGroupedData
+
       return {
-        data: filteredGroupedData,
+        data: finalGroupedData,
         exceptionsCount,
         inboxTabCount,
         totalItems: tabTotalItems,

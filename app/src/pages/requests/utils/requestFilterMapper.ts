@@ -181,6 +181,154 @@ export const convertDatePresetToFilterClause = (
 }
 
 /**
+ * Resolves a UI column ID to its backend sqlColumnName and dataType using V6FilterField schema.
+ */
+export const resolveFieldSqlColumnName = (
+  colId: string | undefined,
+  fields: V6FilterField[],
+): { criteria: string; dataType: string; isStatus: boolean } => {
+  const fieldByColumn = new Map<string, V6FilterField>()
+  const fieldByName = new Map<string, V6FilterField>()
+
+  for (const f of fields) {
+    if (f.sqlColumnName) fieldByColumn.set(f.sqlColumnName, f)
+    if (f.name) {
+      fieldByName.set(f.name.toLowerCase().trim(), f)
+    }
+  }
+
+  const findField = (key: string): V6FilterField | undefined => {
+    return (
+      fieldByColumn.get(key) ||
+      fieldByName.get(key.toLowerCase().trim()) ||
+      Array.from(fields).find(
+        (f) =>
+          f.name.toLowerCase().includes(key.toLowerCase().trim()) ||
+          key.toLowerCase().trim().includes(f.name.toLowerCase()),
+      )
+    )
+  }
+
+  const matchedStatusField =
+    fieldByName.get('matched status') ||
+    fieldByName.get('status') ||
+    fieldByName.get('decision')
+
+  const dueDateField =
+    fieldByName.get('due date') ||
+    fieldByName.get('duedate') ||
+    fieldByColumn.get('792IWMnNXLKyfXjCGcowU')
+
+  if (!colId) {
+    const invoiceNoField =
+      fieldByName.get('invoice no') ||
+      fieldByName.get('invoice number') ||
+      fieldByName.get('invoiceno') ||
+      fieldByName.get('invoice_no')
+    return {
+      criteria: invoiceNoField?.sqlColumnName || 'kvcYuknkDumkTenjvrVLj',
+      dataType: invoiceNoField?.dataType || 'SHORT_TEXT',
+      isStatus: false,
+    }
+  }
+
+  const directField = findField(colId)
+  if (directField) {
+    const isStat =
+      directField.sqlColumnName === matchedStatusField?.sqlColumnName ||
+      directField.name.toLowerCase().includes('status') ||
+      directField.name.toLowerCase().includes('matched')
+    return {
+      criteria: directField.sqlColumnName,
+      dataType: directField.dataType || 'SHORT_TEXT',
+      isStatus: isStat,
+    }
+  }
+
+  const cleanKey = colId.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  if (cleanKey.includes('supplier') || cleanKey.includes('vendor')) {
+    const f =
+      fieldByName.get('supplier') ||
+      fieldByName.get('vendor name') ||
+      fieldByName.get('supplier name')
+    return {
+      criteria: f?.sqlColumnName || 'UtfgJy6Z0qyfRC5Bclf-c',
+      dataType: f?.dataType || 'SHORT_TEXT',
+      isStatus: false,
+    }
+  }
+  if (
+    cleanKey.includes('po') &&
+    (cleanKey.includes('num') || cleanKey.includes('no'))
+  ) {
+    const f = fieldByName.get('po number') || fieldByName.get('po_number')
+    return {
+      criteria: f?.sqlColumnName || 'RXwLGHILLrreMmRqlk9mj',
+      dataType: f?.dataType || 'SHORT_TEXT',
+      isStatus: false,
+    }
+  }
+  if (
+    cleanKey.includes('invoice') &&
+    (cleanKey.includes('num') || cleanKey.includes('no'))
+  ) {
+    const f = fieldByName.get('invoice no') || fieldByName.get('invoice number')
+    return {
+      criteria: f?.sqlColumnName || 'kvcYuknkDumkTenjvrVLj',
+      dataType: f?.dataType || 'SHORT_TEXT',
+      isStatus: false,
+    }
+  }
+  if (cleanKey.includes('amount') || cleanKey.includes('val')) {
+    const f = fieldByName.get('invoice amount') || fieldByName.get('amount')
+    return {
+      criteria: f?.sqlColumnName || 'suyqsm0SYii_8vsj4p0c_',
+      dataType: f?.dataType || 'SHORT_TEXT',
+      isStatus: false,
+    }
+  }
+  if (cleanKey.includes('due') || cleanKey.includes('overdue')) {
+    const f = dueDateField
+    return {
+      criteria: f?.sqlColumnName || '792IWMnNXLKyfXjCGcowU',
+      dataType: f?.dataType || 'DATE',
+      isStatus: false,
+    }
+  }
+  if (cleanKey.includes('invoicedate')) {
+    const f = fieldByName.get('invoice date')
+    return {
+      criteria: f?.sqlColumnName || '9F6tPVHoRnmONGx3kYJu2',
+      dataType: f?.dataType || 'DATE',
+      isStatus: false,
+    }
+  }
+  if (cleanKey.includes('podate')) {
+    const f = fieldByName.get('po date')
+    return {
+      criteria: f?.sqlColumnName || 'xc3784_ncgbwVPDfk-B0S',
+      dataType: f?.dataType || 'DATE',
+      isStatus: false,
+    }
+  }
+  if (
+    cleanKey.includes('status') ||
+    cleanKey.includes('matched') ||
+    cleanKey.includes('decision')
+  ) {
+    const f = matchedStatusField
+    return {
+      criteria: f?.sqlColumnName || '2MH_BMDFEVKsU0uAQjoI1',
+      dataType: f?.dataType || 'SINGLE_SELECT',
+      isStatus: true,
+    }
+  }
+
+  return { criteria: colId, dataType: 'SHORT_TEXT', isStatus: false }
+}
+
+/**
  * Maps UI active filter entries to V6 search filter clauses
  */
 export const buildV6FilterClauses = (
@@ -287,9 +435,9 @@ export const buildV6FilterClauses = (
       const keyLower = fieldKey.toLowerCase()
       if (keyLower.includes('due') || keyLower.includes('overdue')) {
         schemaField = dueDateField || {
+          dataType: 'DATE',
           name: 'Due Date',
           sqlColumnName: '792IWMnNXLKyfXjCGcowU',
-          dataType: 'DATE',
           supportedOperators: ['between'],
         }
       } else if (keyLower.includes('date')) {
@@ -389,118 +537,8 @@ export const buildV6FilterClauses = (
   })
 
   // Helper to map selected column ID to exact sqlColumnName
-  const resolveSearchColumnCriteria = (
-    colId?: string,
-  ): { criteria: string; dataType: string; isStatus: boolean } => {
-    if (!colId) {
-      const invoiceNoField =
-        fieldByName.get('invoice no') ||
-        fieldByName.get('invoice number') ||
-        fieldByName.get('invoiceno') ||
-        fieldByName.get('invoice_no')
-      return {
-        criteria: invoiceNoField?.sqlColumnName || 'kvcYuknkDumkTenjvrVLj',
-        dataType: invoiceNoField?.dataType || 'SHORT_TEXT',
-        isStatus: false,
-      }
-    }
-
-    const directField = findField(colId)
-    if (directField) {
-      const isStat =
-        directField.sqlColumnName === matchedStatusField?.sqlColumnName ||
-        directField.name.toLowerCase().includes('status') ||
-        directField.name.toLowerCase().includes('matched')
-      return {
-        criteria: directField.sqlColumnName,
-        dataType: directField.dataType || 'SHORT_TEXT',
-        isStatus: isStat,
-      }
-    }
-
-    const cleanKey = colId.toLowerCase().replace(/[^a-z0-9]/g, '')
-
-    if (cleanKey.includes('supplier') || cleanKey.includes('vendor')) {
-      const f =
-        fieldByName.get('supplier') ||
-        fieldByName.get('vendor name') ||
-        fieldByName.get('supplier name')
-      return {
-        criteria: f?.sqlColumnName || 'UtfgJy6Z0qyfRC5Bclf-c',
-        dataType: f?.dataType || 'SHORT_TEXT',
-        isStatus: false,
-      }
-    }
-    if (
-      cleanKey.includes('po') &&
-      (cleanKey.includes('num') || cleanKey.includes('no'))
-    ) {
-      const f = fieldByName.get('po number') || fieldByName.get('po_number')
-      return {
-        criteria: f?.sqlColumnName || 'RXwLGHILLrreMmRqlk9mj',
-        dataType: f?.dataType || 'SHORT_TEXT',
-        isStatus: false,
-      }
-    }
-    if (
-      cleanKey.includes('invoice') &&
-      (cleanKey.includes('num') || cleanKey.includes('no'))
-    ) {
-      const f =
-        fieldByName.get('invoice no') || fieldByName.get('invoice number')
-      return {
-        criteria: f?.sqlColumnName || 'kvcYuknkDumkTenjvrVLj',
-        dataType: f?.dataType || 'SHORT_TEXT',
-        isStatus: false,
-      }
-    }
-    if (cleanKey.includes('amount') || cleanKey.includes('val')) {
-      const f = fieldByName.get('invoice amount') || fieldByName.get('amount')
-      return {
-        criteria: f?.sqlColumnName || 'suyqsm0SYii_8vsj4p0c_',
-        dataType: f?.dataType || 'SHORT_TEXT',
-        isStatus: false,
-      }
-    }
-    if (cleanKey.includes('due') || cleanKey.includes('overdue')) {
-      const f = dueDateField
-      return {
-        criteria: f?.sqlColumnName || '792IWMnNXLKyfXjCGcowU',
-        dataType: f?.dataType || 'DATE',
-        isStatus: false,
-      }
-    }
-    if (cleanKey.includes('invoicedate')) {
-      const f = fieldByName.get('invoice date')
-      return {
-        criteria: f?.sqlColumnName || '9F6tPVHoRnmONGx3kYJu2',
-        dataType: f?.dataType || 'DATE',
-        isStatus: false,
-      }
-    }
-    if (cleanKey.includes('podate')) {
-      const f = fieldByName.get('po date')
-      return {
-        criteria: f?.sqlColumnName || 'xc3784_ncgbwVPDfk-B0S',
-        dataType: f?.dataType || 'DATE',
-        isStatus: false,
-      }
-    }
-    if (
-      cleanKey.includes('status') ||
-      cleanKey.includes('matched') ||
-      cleanKey.includes('decision')
-    ) {
-      const f = matchedStatusField
-      return {
-        criteria: f?.sqlColumnName || '2MH_BMDFEVKsU0uAQjoI1',
-        dataType: f?.dataType || 'SINGLE_SELECT',
-        isStatus: true,
-      }
-    }
-
-    return { criteria: colId, dataType: 'SHORT_TEXT', isStatus: false }
-  }
+  const resolveSearchColumnCriteria = (colId?: string) =>
+    resolveFieldSqlColumnName(colId, filterFields)
 
   // 3. Process search query (Target selected column or default to Invoice Number)
   const searchQuery =

@@ -21,6 +21,7 @@ export type AppView =
   | 'share'
   | 'workflow'
   | 'Upload'
+  | 'intelligentUpload'
 
 export interface DocumentDetail {
   documentId: string

@@ -1297,7 +1297,6 @@ interface GridViewProps<TData> {
   actions?: TableActionButton[]
   activeTab?: string
   hideExport?: boolean
-  hideGrouping?: boolean
   hideReload?: boolean
   isReloading?: boolean
   rowSize?: RowSize
@@ -1313,7 +1312,6 @@ const GridView = <TData,>({
   activeTab,
   data,
   hideExport = false,
-  hideGrouping: _hideGrouping,
   hideReload = false,
   isLoading,
   isReloading,
@@ -1333,9 +1331,34 @@ const GridView = <TData,>({
 
   const rawWorkflowData = requestStore((state) => state.rawWorkflowData)
 
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(
+    new Set(),
+  )
+
+  const toggleGroupCollapsed = useCallback((groupId: string) => {
+    setCollapsedGroupIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(groupId)) {
+        next.delete(groupId)
+      } else {
+        next.add(groupId)
+      }
+      return next
+    })
+  }, [])
+
   useEffect(() => {
     setSelectedIds(new Set())
   }, [activeTab])
+
+  const groupIdsSignature = useMemo(
+    () => data.map((g: any) => g.groupId).join('|'),
+    [data],
+  )
+
+  useEffect(() => {
+    setCollapsedGroupIds(new Set())
+  }, [groupIdsSignature])
 
   const exitSelectionMode = () => {
     setSelectedIds(new Set())
@@ -1458,25 +1481,146 @@ const GridView = <TData,>({
       />
     )
   } else {
+    let flatIndex = 0
     content = (
-      <div className='flex flex-col gap-2.5 px-2 pt-3 pr-3 pb-4'>
-        {allItems.map((row: any, index: number) => {
-          const originalIndex =
-            typeof row?._originalIndex === 'number' ? row._originalIndex : index
-          const rowId = row?.id || row?.processId || `item-${originalIndex}`
-          const isSelected = selectedIds.has(rowId)
+      <div className='flex flex-col gap-3 px-2 pt-3 pr-3 pb-4'>
+        {data.map((group: any) => {
+          const groupId = group.groupId || 'root'
+          const isRealGroup = Boolean(group.groupKey && group.groupValue)
+          const isCollapsed = isRealGroup && collapsedGroupIds.has(groupId)
+          const groupItems: any[] = Array.isArray(group.items)
+            ? group.items
+            : []
+
+          // PO amount is a single value shared by every request against the
+          // same PO — take it once, don't sum it.
+          const poTotal = Number(
+            groupItems.find(
+              (item: any) => Number(item['WksH1Mrs42X4J9AHgoBtw']) > 0,
+            )?.['WksH1Mrs42X4J9AHgoBtw'] || 0,
+          )
+          const invoiceTotal = groupItems.reduce(
+            (acc: number, item: any) =>
+              acc + Number(item['suyqsm0SYii_8vsj4p0c_'] || 0),
+            0,
+          )
+          const isAmountMatch =
+            Math.abs(poTotal - invoiceTotal) < 0.01 && poTotal > 0
+          const showAmounts =
+            groupItems.length > 0 &&
+            (groupItems[0]['WksH1Mrs42X4J9AHgoBtw'] !== undefined ||
+              groupItems[0]['suyqsm0SYii_8vsj4p0c_'] !== undefined)
+
+          const groupRows = groupItems.map((row: any) => {
+            const originalIndex =
+              typeof row?._originalIndex === 'number'
+                ? row._originalIndex
+                : flatIndex
+            flatIndex++
+            const rowId = row?.id || row?.processId || `item-${originalIndex}`
+            const isSelected = selectedIds.has(rowId)
+            return (
+              <GridRowItem
+                activeTab={activeTab}
+                hasSelectionActive={selectedIds.size > 0}
+                index={originalIndex}
+                isSelected={isSelected}
+                key={rowId}
+                row={row}
+                toggleRowSelection={toggleRowSelection}
+                workflow={workflow}
+                onRowClick={onRowClick}
+              />
+            )
+          })
+
+          if (!isRealGroup) {
+            return (
+              <div className='flex flex-col gap-2.5' key={groupId}>
+                {groupRows}
+              </div>
+            )
+          }
+
           return (
-            <GridRowItem
-              activeTab={activeTab}
-              hasSelectionActive={selectedIds.size > 0}
-              index={index}
-              isSelected={isSelected}
-              key={rowId}
-              row={row}
-              toggleRowSelection={toggleRowSelection}
-              workflow={workflow}
-              onRowClick={onRowClick}
-            />
+            <div className='flex flex-col gap-2' key={groupId}>
+              <button
+                className='group/header sticky top-0 z-10 flex cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--gray-2)] bg-[var(--gray-1)] px-4 py-3.5 text-left transition-all hover:border-[var(--primary-4)] hover:bg-[var(--primary-2)]'
+                type='button'
+                onClick={() => toggleGroupCollapsed(groupId)}
+              >
+                <Icon
+                  name='tabler:chevron-right'
+                  className={cn(
+                    'size-4 shrink-0 text-[var(--gray-8)] transition-transform duration-200',
+                    !isCollapsed && 'rotate-90',
+                  )}
+                />
+                <Icon
+                  className='size-4 shrink-0 text-[var(--primary-9)]'
+                  name='tabler:stack-2'
+                />
+                <span className='text-15 font-semibold whitespace-nowrap text-[var(--gray-13)]'>
+                  {group.groupValue} ({group.groupCount})
+                </span>
+                {showAmounts && (
+                  <div
+                    className={cn(
+                      'ml-auto flex items-center gap-4 rounded border px-3 py-1.5 text-xs font-normal',
+                      isAmountMatch
+                        ? 'border-[var(--green-3)] bg-[var(--green-2)]'
+                        : 'border-[var(--gray-3)] bg-surface',
+                    )}
+                  >
+                    <span className='flex items-center gap-1.5'>
+                      <span
+                        className={cn(
+                          'text-[10px] font-normal uppercase',
+                          isAmountMatch
+                            ? 'text-[var(--green-9)]'
+                            : 'text-[var(--gray-9)]',
+                        )}
+                      >
+                        PO
+                      </span>
+                      <span
+                        className={
+                          isAmountMatch
+                            ? 'text-[var(--green-11)]'
+                            : 'text-[var(--secondary-9)]'
+                        }
+                      >
+                        ${poTotal.toFixed(2)}
+                      </span>
+                    </span>
+                    <span className='flex items-center gap-1.5'>
+                      <span
+                        className={cn(
+                          'text-[10px] font-normal uppercase',
+                          isAmountMatch
+                            ? 'text-[var(--green-9)]'
+                            : 'text-[var(--gray-9)]',
+                        )}
+                      >
+                        Inv
+                      </span>
+                      <span
+                        className={
+                          isAmountMatch
+                            ? 'text-[var(--green-11)]'
+                            : 'text-[var(--primary-9)]'
+                        }
+                      >
+                        ${invoiceTotal.toFixed(2)}
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </button>
+              {!isCollapsed && (
+                <div className='flex flex-col gap-2.5 pl-3'>{groupRows}</div>
+              )}
+            </div>
           )
         })}
       </div>

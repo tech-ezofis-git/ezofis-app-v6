@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import { useEffect, useMemo, useState } from 'react'
 import type {
   DynamicRepositoryColumn,
   RepositoryItemFilterField,
 } from '../api/folderApi'
 import type { ExplorerView, FileItem, FolderItem } from '../types/folderTypes'
 import {
-  getExplorerFilterMode,
-  getExplorerSectionVisibility,
   type ExplorerFilterMode,
   type FolderFilterOptionsCache,
+  getExplorerFilterMode,
+  getExplorerSectionVisibility,
 } from '../utils/folderExplorerUtils'
 import { FolderFilterBar, isFolderTableFilterId } from './FolderFilterBar'
 
@@ -20,10 +20,10 @@ type ExplorerToolbarProps = {
   fileFilters?: Record<string, string>
   files?: FileItem[]
   fileSearch?: string
-  folderContextFilters?: Record<string, string>
-  folderFilters?: Record<string, string>
   filterOptionsCache?: FolderFilterOptionsCache
+  folderContextFilters?: Record<string, string>
   folderFilterOptionSource?: FolderItem[]
+  folderFilters?: Record<string, string>
   folders?: FolderItem[]
   folderSearch?: string
   itemFilterFields?: RepositoryItemFilterField[]
@@ -33,11 +33,12 @@ type ExplorerToolbarProps = {
   refreshing?: boolean
   repositoryId?: string
   view: ExplorerView
-  onFolderSearchChange?: (value: string) => void
-  onFileSearchChange?: (value: string) => void
   onFileFiltersChange?: (filters: Record<string, string>) => void
-  onFolderFiltersChange?: (filters: Record<string, string>) => void
+  onFileSearchChange?: (value: string) => void
   onFilterMenuOpenChange?: (id: string | null) => void
+  onFolderFiltersChange?: (filters: Record<string, string>) => void
+  onFolderSearchChange?: (value: string) => void
+  onIntelligentUpload?: () => void
   onRefresh?: () => void
   onUpload?: () => void
   setView: (view: ExplorerView) => void
@@ -71,27 +72,28 @@ export function ExplorerToolbar({
   fileFilters = {},
   files = [],
   fileSearch = '',
-  folderContextFilters = {},
-  folderFilters = {},
   filterOptionsCache = {},
+  folderContextFilters = {},
   folderFilterOptionSource = [],
+  folderFilters = {},
   folders = [],
   folderSearch = '',
   itemFilterFields = [],
   loading = false,
   loadingFolders = false,
   loadingPage = false,
-  onFolderSearchChange,
-  onFileSearchChange,
-  onFileFiltersChange,
-  onFolderFiltersChange,
-  onFilterMenuOpenChange,
-  onRefresh,
-  onUpload,
   refreshing = false,
   repositoryId = '',
-  setView,
   view,
+  setView,
+  onFileFiltersChange,
+  onFileSearchChange,
+  onFilterMenuOpenChange,
+  onFolderFiltersChange,
+  onFolderSearchChange,
+  onIntelligentUpload,
+  onRefresh,
+  onUpload,
 }: ExplorerToolbarProps) {
   const { t } = useLingui()
   const hasActiveFolderFilters = Object.values(folderFilters).some(Boolean)
@@ -102,9 +104,9 @@ export function ExplorerToolbar({
     if (view === 'list') return 'files'
 
     const visibility = getExplorerSectionVisibility({
+      filesLength: files.length,
       folderSearch,
       foldersLength: folders.length,
-      filesLength: files.length,
       hasActiveFileFilters,
       hasActiveFolderFilters,
       loading,
@@ -117,7 +119,8 @@ export function ExplorerToolbar({
     // Empty filter results still keep the matching filter set visible
     if (mode === 'none') {
       if (hasActiveFolderFilters && hasActiveFileFilters) return 'both'
-      if (hasActiveFolderFilters || Boolean(folderSearch.trim())) return 'folders'
+      if (hasActiveFolderFilters || Boolean(folderSearch.trim()))
+        return 'folders'
       if (hasActiveFileFilters || Boolean(fileSearch.trim())) return 'files'
       return 'folders'
     }
@@ -144,8 +147,7 @@ export function ExplorerToolbar({
     return { ...folderFilters, ...fileFilters }
   }, [fileFilters, filterMode, folderFilters, useApiItemFilters])
 
-  const searchFromParent =
-    filterMode === 'files' ? fileSearch : folderSearch
+  const searchFromParent = filterMode === 'files' ? fileSearch : folderSearch
 
   const [searchQuery, setSearchQuery] = useState(searchFromParent)
 
@@ -246,8 +248,8 @@ export function ExplorerToolbar({
         fileColumns={fileColumns}
         files={normalizedFiles}
         filterMode={filterMode}
-        folderContextFilters={folderContextFilters}
         filterOptionsCache={filterOptionsCache}
+        folderContextFilters={folderContextFilters}
         folderFilterOptionSource={folderFilterOptionSource}
         folders={folders}
         isBusy={isBusy}
@@ -257,13 +259,14 @@ export function ExplorerToolbar({
         searchPlaceholder={t`Search by name or metadata...`}
         searchQuery={searchQuery}
         view={view}
+        setView={setView}
         onFilterChange={handleFilterChange}
         onFilterMenuOpenChange={onFilterMenuOpenChange}
+        onIntelligentUpload={onIntelligentUpload}
         onRefresh={onRefresh}
         onResetFilters={handleResetFilters}
         onSearchChange={setSearchQuery}
         onUpload={onUpload}
-        setView={setView}
       />
     </div>
   )
