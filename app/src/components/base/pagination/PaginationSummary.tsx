@@ -26,7 +26,7 @@ const PaginationSummary = ({
     : 0
 
   return (
-    <div className='hidden text-13 font-medium text-gray-11 select-none sm:block'>
+    <div className='ml-2 flex items-center text-13 font-medium text-gray-11 select-none'>
       {hasItems
         ? t`Showing ${from} - ${to} of ${totalItems} ${label}`
         : t`Showing 0 - 0 of 0 ${label}`}

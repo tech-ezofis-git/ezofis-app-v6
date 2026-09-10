@@ -355,16 +355,6 @@ const AddNodeMenu = () => {
 
     // Triggers
     {
-      bgColor: 'bg-orange-50',
-      category: 'triggers',
-      description: 'Trigger on new form entry',
-      icon: 'lucide:file-input',
-      iconColor: '#ea580c',
-      label: 'Form Submission',
-      toolType: NODE_TOOL_TYPE.FORM_SUBMISSION,
-      type: 'highlight',
-    },
-    {
       bgColor: 'bg-pink-50',
       category: 'triggers',
       description: 'Trigger manually by user',
