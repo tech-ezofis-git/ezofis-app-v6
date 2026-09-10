@@ -61,7 +61,14 @@ const RESULTS_PREVIEW_COUNT = 3
 const RECENT_WINDOW_MS = 90 * 24 * 60 * 60 * 1000
 
 const hitKey = (hit: GlobalSearchHit): string =>
-  String(hit.id?.itemId || hit.id?.repositoryId || getSearchHitTitle(hit))
+  String(
+    hit.id?.itemId ||
+      hit.id?.formEntryId ||
+      hit.id?.instanceId ||
+      hit.entity_id ||
+      hit.id?.repositoryId ||
+      getSearchHitTitle(hit),
+  )
 
 const getFileExtLabel = (title: string): string => {
   const parts = title.split('.')
@@ -127,12 +134,14 @@ const collectMatchValues = (hit: GlobalSearchHit): string[] => {
   const extra = hit as GlobalSearchHit & Record<string, unknown>
   push(hit.matchValue)
   push(hit.matchedValue)
+  push(hit.matched_value)
   push(hit.snippet)
   push(extra.matchedText)
   push(extra.matchText)
   push(extra.highlight)
   if (Array.isArray(hit.matchedFields)) hit.matchedFields.forEach(push)
   if (Array.isArray(hit.matchFields)) hit.matchFields.forEach(push)
+  push(hit.matched_field)
 
   const title = getSearchHitTitle(hit)
   if (hit.description?.trim() && hit.description.trim() !== title) {

@@ -209,7 +209,7 @@ const DataTable = <TData,>({
       window.requestAnimationFrame(() => {
         const entry = entries[0]
         if (!entry) return
-        
+
         setContainerWidth((prev) => {
           const newWidth = Math.round(entry.contentRect.width)
           return Math.abs(prev - newWidth) > 1 ? newWidth : prev
@@ -354,10 +354,13 @@ const DataTable = <TData,>({
                       ) as any[]) ??
                       (row.original as any).items ??
                       []
-                    const poTotal = groupItems.reduce(
-                      (acc: number, item: any) =>
-                        acc + Number(item['WksH1Mrs42X4J9AHgoBtw'] || 0),
-                      0,
+                    // PO amount is a single value shared by every request
+                    // against the same PO — take it once, don't sum it.
+                    const poTotal = Number(
+                      groupItems.find(
+                        (item: any) =>
+                          Number(item['WksH1Mrs42X4J9AHgoBtw']) > 0,
+                      )?.['WksH1Mrs42X4J9AHgoBtw'] || 0,
                     )
                     const invoiceTotal = groupItems.reduce(
                       (acc: number, item: any) =>
@@ -366,140 +369,105 @@ const DataTable = <TData,>({
                     )
                     const isMatch =
                       Math.abs(poTotal - invoiceTotal) < 0.01 && poTotal > 0
-                    const showRequestTotals =
+                    const showAmounts =
                       groupItems.length > 0 &&
                       (groupItems[0]['WksH1Mrs42X4J9AHgoBtw'] !== undefined ||
                         groupItems[0]['suyqsm0SYii_8vsj4p0c_'] !== undefined)
-                    const visibleColumns = table.getVisibleLeafColumns()
-                    const groupLabelColumnIndex = Math.max(
-                      0,
-                      visibleColumns.findIndex((col) => col.id === 'group'),
-                    )
 
                     return (
                       <Tr
-                        className='group/header cursor-pointer bg-surface transition-all [--pinned-bg:var(--surface)] hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]'
+                        className='group/header cursor-pointer bg-[var(--gray-1)] transition-all hover:bg-[var(--gray-2)]'
                         key={row.id}
                         onClick={() => row.toggleExpanded()}
                       >
-                        {visibleColumns.map((column, columnIndex) => (
-                          <Td
-                            key={column.id}
-                            style={getCellPinnedStyle(column)}
-                            className={cn(
-                              'border-b border-[var(--gray-2)] py-1.5 transition-colors',
-                              column.columnDef.meta?.className,
-                            )}
-                          >
-                            {columnIndex === groupLabelColumnIndex ? (
+                        <Td
+                          colSpan={visibleColumnCount}
+                          className={cn(
+                            'border-b border-[var(--gray-2)] py-3.5',
+                            hideGroupItemCountOnHover && 'min-h-8',
+                          )}
+                        >
+                          <div className='sticky left-0 flex w-fit items-center gap-2.5'>
+                            <Icon
+                              name='tabler:chevron-right'
+                              className={cn(
+                                'size-4 shrink-0 text-[var(--gray-8)] transition-transform duration-200',
+                                isExpanded && 'rotate-90',
+                              )}
+                            />
+                            <Icon
+                              className='size-4 shrink-0 text-[var(--primary-9)]'
+                              name='tabler:stack-2'
+                            />
+                            <span className='text-15 font-semibold whitespace-nowrap text-[var(--gray-13)]'>
+                              {(row.original as any).group}
+                            </span>
+                            {showAmounts && (
                               <div
                                 className={cn(
-                                  'flex items-center gap-2',
-                                  hideGroupItemCountOnHover && 'min-h-8',
+                                  'flex items-center gap-4 rounded border px-3 py-1.5 text-xs font-normal',
+                                  isMatch
+                                    ? 'border-[var(--green-3)] bg-[var(--green-2)]'
+                                    : 'border-[var(--gray-3)] bg-surface',
                                 )}
                               >
-                                <Icon
-                                  name='tabler:chevron-right'
-                                  className={cn(
-                                    'size-4 shrink-0 text-[var(--gray-8)] opacity-0 transition-all duration-200 group-hover/header:opacity-100',
-                                    isExpanded && 'rotate-90',
-                                  )}
-                                />
-                                <Icon
-                                  className='size-4 shrink-0 text-[var(--primary-9)]'
-                                  name='tabler:stack-2'
-                                />
-                                <span className='text-14 font-medium whitespace-nowrap text-[var(--gray-13)]'>
-                                  {(row.original as any).group}
-                                </span>
-                                {groupItems.length > 0 && (
-                                  <div className='ml-auto flex translate-x-2 items-center gap-4 opacity-0 transition-all duration-300 group-hover/header:translate-x-0 group-hover/header:opacity-100'>
-                                    {showRequestTotals && (
-                                      <div
-                                        className={cn(
-                                          'flex flex-col gap-2 rounded border px-3 py-1.5 shadow-sm transition-all',
-                                          isMatch
-                                            ? 'border-[var(--green-3)] bg-[var(--green-2)] group-hover/header:border-[var(--green-5)] group-hover/header:bg-[var(--green-3)]'
-                                            : 'border-[var(--gray-3)] bg-surface group-hover/header:border-[var(--primary-4)] group-hover/header:bg-[var(--primary-2)]',
-                                        )}
-                                      >
-                                        <div className='flex items-center gap-2'>
-                                          <span
-                                            className={cn(
-                                              'text-[10px] font-normal uppercase',
-                                              isMatch
-                                                ? 'text-[var(--green-9)]'
-                                                : 'text-[var(--gray-9)]',
-                                            )}
-                                          >
-                                            PO
-                                          </span>
-                                          <span
-                                            className={cn(
-                                              'text-xs font-normal',
-                                              isMatch
-                                                ? 'text-[var(--green-11)]'
-                                                : 'text-[var(--secondary-9)]',
-                                            )}
-                                          >
-                                            ${poTotal.toFixed(2)}
-                                          </span>
-                                        </div>
-                                        <div className='flex items-center gap-2'>
-                                          <span
-                                            className={cn(
-                                              'text-[10px] font-normal uppercase',
-                                              isMatch
-                                                ? 'text-[var(--green-9)]'
-                                                : 'text-[var(--gray-9)]',
-                                            )}
-                                          >
-                                            Inv
-                                          </span>
-                                          <span
-                                            className={cn(
-                                              'text-xs font-normal',
-                                              isMatch
-                                                ? 'text-[var(--green-11)]'
-                                                : 'text-[var(--primary-9)]',
-                                            )}
-                                          >
-                                            ${invoiceTotal.toFixed(2)}
-                                          </span>
-                                        </div>
-                                      </div>
+                                <span className='flex items-center gap-1.5'>
+                                  <span
+                                    className={cn(
+                                      'text-[10px] font-normal uppercase',
+                                      isMatch
+                                        ? 'text-[var(--green-9)]'
+                                        : 'text-[var(--gray-9)]',
                                     )}
-                                    <div
-                                      aria-hidden={hideGroupItemCountOnHover}
-                                      className={cn(
-                                        'flex items-center gap-1.5 rounded border border-transparent bg-[var(--green-2)] px-3 py-1.5 text-[11px] font-normal text-[var(--green-11)] transition-all group-hover/header:border-[var(--green-5)] group-hover/header:bg-[var(--green-3)]',
-                                        hideGroupItemCountOnHover &&
-                                          'pointer-events-none invisible',
-                                      )}
-                                    >
-                                      <Icon
-                                        className='size-3 shrink-0'
-                                        name='tabler:check'
-                                      />
-                                      {groupItems.length} Items
-                                    </div>
-                                  </div>
-                                )}
+                                  >
+                                    PO
+                                  </span>
+                                  <span
+                                    className={
+                                      isMatch
+                                        ? 'text-[var(--green-11)]'
+                                        : 'text-[var(--secondary-9)]'
+                                    }
+                                  >
+                                    ${poTotal.toFixed(2)}
+                                  </span>
+                                </span>
+                                <span className='flex items-center gap-1.5'>
+                                  <span
+                                    className={cn(
+                                      'text-[10px] font-normal uppercase',
+                                      isMatch
+                                        ? 'text-[var(--green-9)]'
+                                        : 'text-[var(--gray-9)]',
+                                    )}
+                                  >
+                                    Inv
+                                  </span>
+                                  <span
+                                    className={
+                                      isMatch
+                                        ? 'text-[var(--green-11)]'
+                                        : 'text-[var(--primary-9)]'
+                                    }
+                                  >
+                                    ${invoiceTotal.toFixed(2)}
+                                  </span>
+                                </span>
                               </div>
-                            ) : null}
-                          </Td>
-                        ))}
+                            )}
+                          </div>
+                        </Td>
                       </Tr>
                     )
                   }
 
                   return (
                     <Tr
+                      key={row.id}
                       className={cn(
                         'relative border-b border-[var(--gray-2)] transition-all [--pinned-bg:var(--surface)] hover:z-10 hover:bg-[var(--gray-1)] hover:shadow-sm hover:[--pinned-bg:var(--gray-1)]',
-                        onRowClick && 'cursor-pointer'
+                        onRowClick && 'cursor-pointer',
                       )}
-                      key={row.id}
                       onClick={onRowClick ? () => onRowClick(row) : undefined}
                     >
                       {row.getVisibleCells().map((cell) => {

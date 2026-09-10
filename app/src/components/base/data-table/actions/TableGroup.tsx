@@ -8,6 +8,7 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
+import Tooltip from '@/components/base/Tooltip'
 
 interface Props<TData> {
   table: TanstackTable<TData>
@@ -21,7 +22,12 @@ const TableGroup = <TData,>({ table }: Props<TData>) => {
       (column) =>
         !!column.accessorFn && column.getCanGroup() && !column.getIsGrouped(),
     )
-  const grouped = groupState.map((column) => table.getColumn(column)!)
+  // A grouped column id can outlive the columns it came from (e.g. it was
+  // persisted from a different workflow/table shape) — drop anything that
+  // no longer resolves instead of crashing on it.
+  const grouped = groupState
+    .map((column) => table.getColumn(column))
+    .filter((column): column is NonNullable<typeof column> => Boolean(column))
 
   const _rightSection = groupState.length ? (
     <Badge color='gray' label={String(groupState.length)} />
@@ -34,13 +40,14 @@ const TableGroup = <TData,>({ table }: Props<TData>) => {
       position='bottom-start'
       width={240}
       target={
-        <Button
-          color='gray'
-          icon='lucide:copy'
-          label='Group'
-          rightSection={_rightSection}
-          variant='outline'
-        />
+        <Tooltip content='Group by'>
+          <Button
+            color='gray'
+            icon='lucide:copy'
+            rightSection={_rightSection}
+            variant='outline'
+          />
+        </Tooltip>
       }
     >
       <MenuLabel>Group by</MenuLabel>
