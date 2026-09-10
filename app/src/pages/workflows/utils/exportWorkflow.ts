@@ -338,6 +338,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
         },
         previewValues: storeState.previewValues,
         processNumberPrefix: JSON.stringify(storeState.prefixSegments),
+        requestTabs: storeState.requestTabs || [],
         scheduleReport: {},
         slaRules: [],
         slaSettings: {

@@ -434,8 +434,7 @@ const fetchInboxDataFn = async (
       }
     }
     case 'Exceptions':
-    case 'Inbox':
-    default: {
+    case 'Inbox': {
       const v6Res = await workflowsApiV6.getInboxList(
         workflowId,
         page,
@@ -458,6 +457,13 @@ const fetchInboxDataFn = async (
         },
       }
     }
+    default:
+      // Custom tabs beyond the first 3 (Inbox/Sent/Closed or
+      // Inbox/Exceptions/Processed) have no data source yet.
+      return {
+        data: [{ key: 'root', value: [] }],
+        meta: { totalItems: 0 },
+      }
   }
 }
 
