@@ -8,6 +8,7 @@ import MenuItem from '@/components/base/menu/MenuItem'
 import MenuLabel from '@/components/base/menu/MenuLabel'
 import SortableContainer from '@/components/base/sortable/SortableContainer'
 import SortableItem from '@/components/base/sortable/SortableItem'
+import Tooltip from '@/components/base/Tooltip'
 
 interface Props<TData> {
   table: TanstackTable<TData>
@@ -34,13 +35,14 @@ const TableGroup = <TData,>({ table }: Props<TData>) => {
       position='bottom-start'
       width={240}
       target={
-        <Button
-          color='gray'
-          icon='lucide:copy'
-          label='Group'
-          rightSection={_rightSection}
-          variant='outline'
-        />
+        <Tooltip content='Group by'>
+          <Button
+            color='gray'
+            icon='lucide:copy'
+            rightSection={_rightSection}
+            variant='outline'
+          />
+        </Tooltip>
       }
     >
       <MenuLabel>Group by</MenuLabel>
