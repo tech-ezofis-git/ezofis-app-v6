@@ -13,6 +13,7 @@ interface Props extends HTMLMotionProps<'button'> {
   iconClass?: string
   label?: string
   labelClass?: string
+  leftSection?: ReactNode
   loading?: boolean
   rightSection?: ReactNode
   size?: ButtonSize
@@ -40,6 +41,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(
       iconClass,
       label,
       labelClass,
+      leftSection,
       loading,
       rightSection,
       size = 'md',
@@ -77,6 +79,10 @@ const Button = forwardRef<HTMLButtonElement, Props>(
                     : 'fa:spinner'
                 }
               />
+            ) : leftSection ? (
+              <span className='-ml-1 inline-flex items-center'>
+                {leftSection}
+              </span>
             ) : icon ? (
               <Icon className={cn('-ml-1', iconClass)} name={icon} />
             ) : null}
