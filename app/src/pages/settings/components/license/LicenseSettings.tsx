@@ -5,6 +5,7 @@ import { getLicenseSummary } from '@/api/v6/license'
 import Button from '@/components/base/button/Button'
 import showToast from '@/components/base/toast/showToast'
 import AnimateSlideUp from '@/components/common/animations/AnimateSlideUp'
+import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import { licenseSummaryFallback } from '../../data/licenseMockData'
 import useSettingsTopbarAction from '../../hooks/useSettingsTopbarAction'
 import SettingsPageHeader from '../SettingsPageHeader'
@@ -44,10 +45,13 @@ export default function LicenseSettings({ onBack }: { onBack?: () => void }) {
   )
   useSettingsTopbarAction(topbarAction)
 
+  const openDemoForm = useRequestDemoStore((s) => s.openDemoForm)
+
   const handleTalkToSales = () => {
-    showToast({
-      message: t`Thanks! Our team will reach out within one business day.`,
-      variant: 'default',
+    openDemoForm({
+      category: 'support',
+      focusDescription: true,
+      priority: 'high',
     })
   }
 

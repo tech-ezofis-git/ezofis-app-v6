@@ -15,15 +15,24 @@ export default function LicenseStatsRow({ summary }: Props) {
   const groupsCount = summary.groupsCount
 
   return (
-    <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+    <div className='grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+      <StatCard
+        accent='teal'
+        badgeLabel={t`All Active`}
+        badgeTone='positive'
+        footer={t`${activeUsers} active · ${groupsCount} groups`}
+        icon={<Users size={18} strokeWidth={2} />}
+        label={t`Users`}
+        value={`${summary.usersCount}/${summary.usersLimit}`}
+      />
       <StatCard
         accent='primary'
         badgeLabel={t`+2 this week`}
         badgeTone='positive'
-        footer={t`${activeWorkflows} active workflows`}
+        footer={t`${activeWorkflows} active`}
         icon={<GitFork size={18} strokeWidth={2} />}
         label={t`Workflows`}
-        value={String(summary.workflowsCount)}
+        value={`${summary.workflowsCount}/${summary.workflowsLimit}`}
       />
       <StatCard
         accent='cyan'
@@ -32,7 +41,7 @@ export default function LicenseStatsRow({ summary }: Props) {
         footer={t`5 hierarchy levels`}
         icon={<FolderOpen size={18} strokeWidth={2} />}
         label={t`Folders`}
-        value={String(summary.foldersCount)}
+        value={`${summary.foldersCount}/${summary.foldersLimit}`}
       />
       <StatCard
         accent='violet'
@@ -41,16 +50,7 @@ export default function LicenseStatsRow({ summary }: Props) {
         footer={t`Storage across all folders`}
         icon={<FileText size={18} strokeWidth={2} />}
         label={t`Files`}
-        value={summary.filesCount.toLocaleString()}
-      />
-      <StatCard
-        accent='teal'
-        badgeLabel={t`All Active`}
-        badgeTone='positive'
-        footer={t`${activeUsers} active · ${groupsCount} groups`}
-        icon={<Users size={18} strokeWidth={2} />}
-        label={t`Users`}
-        value={String(summary.usersCount)}
+        value={`${summary.filesCount.toLocaleString()}/${summary.filesLimit.toLocaleString()}`}
       />
     </div>
   )
@@ -87,11 +87,11 @@ function StatCard({
 }) {
   return (
     <div
-      className={`flex flex-col gap-4 rounded-xl border border-t-[3px] border-gray-3 bg-surface p-4 shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${accentClass[accent].top}`}
+      className={`flex flex-col gap-2 rounded-xl border border-t-[3px] border-gray-3 bg-surface p-3 shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${accentClass[accent].top}`}
     >
       <div className='flex items-start justify-between gap-2'>
         <span
-          className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${accentClass[accent].icon}`}
+          className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${accentClass[accent].icon}`}
         >
           {icon}
         </span>
@@ -102,16 +102,14 @@ function StatCard({
         </span>
       </div>
       <div>
-        <div className='font-poppins text-[22px] font-semibold text-text-primary'>
+        <div className='font-poppins text-[20px] font-semibold text-text-primary'>
           {value}
         </div>
         <div className='mt-0.5 text-12 font-medium text-text-secondary'>
           {label}
         </div>
       </div>
-      <div className='border-t border-dashed border-gray-3 pt-2.5 text-11 text-text-muted'>
-        {footer}
-      </div>
+      <div className='text-11 text-text-muted'>{footer}</div>
     </div>
   )
 }

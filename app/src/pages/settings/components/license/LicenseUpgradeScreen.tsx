@@ -103,7 +103,7 @@ export default function LicenseUpgradeScreen({
           onClick={step === 'success' ? onUpgraded : onBack}
         >
           <ArrowLeft size={14} strokeWidth={2.2} />
-          {t`License & Subscription`}
+          {t`Back`}
         </button>
       </div>
 

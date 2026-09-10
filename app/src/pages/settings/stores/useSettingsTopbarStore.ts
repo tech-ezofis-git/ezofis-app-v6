@@ -10,10 +10,13 @@ export type SettingsTopbarAction = {
 
 type SettingsTopbarState = {
   action: SettingsTopbarAction | null
+  actionToken: number
   breadcrumbs: SettingsBreadcrumbItem[]
+  /** Clears the action only if `token` is still the most recent setAction call. */
+  clearAction: (token: number) => void
   onNavigate?: (key: string) => void
   reset: () => void
-  setAction: (action: SettingsTopbarAction | null) => void
+  setAction: (action: SettingsTopbarAction | null) => number
   setBreadcrumbs: (
     breadcrumbs: SettingsBreadcrumbItem[],
     onNavigate?: (key: string) => void,
@@ -22,16 +25,25 @@ type SettingsTopbarState = {
 
 const DEFAULT_BREADCRUMBS: SettingsBreadcrumbItem[] = [{ label: 'Settings' }]
 
-const useSettingsTopbarStore = create<SettingsTopbarState>((set) => ({
+const useSettingsTopbarStore = create<SettingsTopbarState>((set, get) => ({
   action: null,
+  actionToken: 0,
   breadcrumbs: DEFAULT_BREADCRUMBS,
+  clearAction: (token) => {
+    if (get().actionToken === token) {
+      set({ action: null })
+    }
+  },
   reset: () =>
     set({
-      action: null,
       breadcrumbs: DEFAULT_BREADCRUMBS,
       onNavigate: undefined,
     }),
-  setAction: (action) => set({ action }),
+  setAction: (action) => {
+    const nextToken = get().actionToken + 1
+    set({ action, actionToken: nextToken })
+    return nextToken
+  },
   setBreadcrumbs: (breadcrumbs, onNavigate) =>
     set({
       breadcrumbs: Array.isArray(breadcrumbs)

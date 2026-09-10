@@ -50,7 +50,9 @@ export const recentTrialResources: RecentTrialResourceDef[] = [
 export const licenseSummaryFallback: LicenseSummaryResponse = {
   daysRemaining: 9,
   filesCount: 2184,
+  filesLimit: 2500,
   foldersCount: 37,
+  foldersLimit: 50,
   groupsCount: 6,
   planType: 'trial',
   requestsCount: 642,
@@ -62,6 +64,7 @@ export const licenseSummaryFallback: LicenseSummaryResponse = {
   trialLengthDays: 30,
   trialStartDate: '2026-07-25',
   usersCount: 26,
+  usersLimit: 45,
   workflowsCount: 18,
   workflowsLimit: 18,
 }

@@ -7,7 +7,9 @@ export type LicensePlanType = 'production' | 'trial'
 export type LicenseSummaryResponse = {
   daysRemaining: number
   filesCount: number
+  filesLimit: number
   foldersCount: number
+  foldersLimit: number
   groupsCount: number
   planType: LicensePlanType
   requestsCount: number
@@ -19,6 +21,7 @@ export type LicenseSummaryResponse = {
   trialLengthDays: number
   trialStartDate: string
   usersCount: number
+  usersLimit: number
   workflowsCount: number
   workflowsLimit: number
 }
@@ -49,7 +52,9 @@ export const mapLicenseSummaryResponse = (
   return {
     daysRemaining: toNumber(record.daysRemaining),
     filesCount: toNumber(record.filesCount),
+    filesLimit: toNumber(record.filesLimit),
     foldersCount: toNumber(record.foldersCount),
+    foldersLimit: toNumber(record.foldersLimit),
     groupsCount: toNumber(record.groupsCount),
     planType: record.planType === 'production' ? 'production' : 'trial',
     requestsCount: toNumber(record.requestsCount),
@@ -61,6 +66,7 @@ export const mapLicenseSummaryResponse = (
     trialLengthDays: toNumber(record.trialLengthDays, 30),
     trialStartDate: String(record.trialStartDate || ''),
     usersCount: toNumber(record.usersCount),
+    usersLimit: toNumber(record.usersLimit),
     workflowsCount: toNumber(record.workflowsCount),
     workflowsLimit: toNumber(record.workflowsLimit),
   }
