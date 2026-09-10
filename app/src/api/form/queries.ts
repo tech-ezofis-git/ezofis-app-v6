@@ -1,4 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
+import type { Question } from '@/pages/form-builder/store/formStore'
 import formApi from './form'
 
 export const formQueries = {
@@ -175,3 +176,21 @@ export const getPublishedFormsByType = (
 
 export const getWorkflowFormsQueryOptions = () =>
   getPublishedFormsByType('WORKFLOW')
+
+/**
+ * Fetches a single form's schema and flattens it to the list of fields
+ * (Question[]) across all panels — used by Report Builder to derive the
+ * available fields for a selected source form.
+ */
+export const getFormFieldsQueryOptions = (formId: string) =>
+  queryOptions({
+    enabled: Boolean(formId),
+    queryKey: [...formQueries.detail(formId), 'fields'] as const,
+    queryFn: async () => {
+      const { data, error } = await formApi.getFormDataById(formId)
+      if (error) throw new Error(error)
+      const panels: Array<{ fields?: Question[] }> =
+        data?.formJson?.panels ?? []
+      return panels.flatMap((p) => p.fields ?? [])
+    },
+  })

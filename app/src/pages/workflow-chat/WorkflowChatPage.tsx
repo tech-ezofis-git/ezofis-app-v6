@@ -21,6 +21,7 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import formApi from '@/api/form/form'
 import { uploadForOcr } from '@/api/v6/folder/folder'
+import uploadAndIndexApi from '@/api/v6/uploadAndIndex'
 import workflowsApiV6, {
   createPublishedWorkflowBrowsePayload,
   mapPublishedBrowseResponseToOptions,
@@ -41,6 +42,13 @@ import {
   StatusPill,
 } from '@/pages/folders/components/Ui'
 import LineItemTable from '@/pages/requests/components/request/components/sections/overview/LineItemTable'
+import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-request/utils/buildStartWorkflowPayload'
+import {
+  buildRepoMetadata,
+  extractOcrText,
+  isFieldRequired,
+  mapOcrFieldsToModel,
+} from '@/pages/requests/components/workflow-request/utils/fieldRendering'
 import {
   matchWorkflowWithGemini,
   type ParsedDoc,
@@ -50,6 +58,10 @@ import {
 } from '@/services/ai/workflowChatAi'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import PanelFormCard, {
+  type ChatAttachedFile,
+  type PanelFormPayload,
+} from './PanelFormCard'
 
 export type WorkflowChatMode = 'idle' | 'collecting' | 'review' | 'submitted'
 
@@ -66,11 +78,14 @@ export interface WorkflowHistoryData {
   answers: Record<string, any>
   awaitingDoc: ParsedDoc | null
   awaitingField: ParsedField | null
+  awaitingPanelForm?: PanelFormPayload | null
+  completedPanelIndexes?: number[]
   docsMap: Record<string, string>
   documents: ParsedDoc[]
   fields: ParsedField[]
   messages: Message[]
   mode: WorkflowChatMode
+  repositoryId?: string | null
   ticketId: string | null
   panels?: any[]
 }
@@ -80,6 +95,7 @@ interface Message {
   id: string
   sender: 'assistant' | 'user'
   htmlContent?: string
+  panelForm?: PanelFormPayload
   pills?: string[]
   selectedPill?: string
   showDatePicker?: boolean
@@ -293,13 +309,26 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   const [docsMap, setDocsMap] = useState<Record<string, string>>(
     initialState?.docsMap || {},
   )
+  const [attachedFiles, setAttachedFiles] = useState<
+    Record<string, ChatAttachedFile>
+  >({})
   const [awaitingField, setAwaitingField] = useState<ParsedField | null>(
     initialState?.awaitingField || null,
   )
   const [awaitingDoc, setAwaitingDoc] = useState<ParsedDoc | null>(
     initialState?.awaitingDoc || null,
   )
+  const [awaitingPanelForm, setAwaitingPanelForm] =
+    useState<PanelFormPayload | null>(
+      initialState?.awaitingPanelForm || null,
+    )
+  const [completedPanelIndexes, setCompletedPanelIndexes] = useState<number[]>(
+    () => initialState?.completedPanelIndexes || [],
+  )
   const [panels, setPanels] = useState<any[]>(initialState?.panels || [])
+  const [repositoryId, setRepositoryId] = useState<string | null>(
+    initialState?.repositoryId || null,
+  )
 
   // Layout & UI state
   const [contextVisible, setContextVisible] = useState<boolean>(true)
@@ -316,6 +345,9 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
   const dynamicPlaceholder = useMemo(() => {
     if (activeWorkflow) {
+      if (awaitingPanelForm) {
+        return `Fill the ${awaitingPanelForm.title} panel, then click Continue…`
+      }
       if (awaitingField) {
         return `Enter ${awaitingField.label || (awaitingField as any).name || 'details'}...`
       }
@@ -331,7 +363,13 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       return 'Enter request ID or keyword to search...'
     }
     return 'Ask me to start a workflow or check a request...'
-  }, [activeWorkflow, awaitingField, awaitingDoc, initialAction])
+  }, [
+    activeWorkflow,
+    awaitingField,
+    awaitingDoc,
+    awaitingPanelForm,
+    initialAction,
+  ])
 
   // Auto-scroll to bottom of chat
   const scrollToBottom = () => {
@@ -518,12 +556,15 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
         answers,
         awaitingDoc,
         awaitingField,
+        awaitingPanelForm,
+        completedPanelIndexes,
         docsMap,
         documents,
         fields,
         messages,
         mode,
         panels,
+        repositoryId,
         ticketId,
       })
     }
@@ -537,9 +578,163 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     docsMap,
     awaitingField,
     awaitingDoc,
+    awaitingPanelForm,
+    completedPanelIndexes,
     ticketId,
     panels,
+    repositoryId,
   ])
+
+  const resolveControlRequired = (ctrl: any) =>
+    Boolean(
+      ctrl?.isRequired ||
+        ctrl?.required ||
+        ctrl?.isMandatory ||
+        isFieldRequired(ctrl) ||
+        ctrl?.settings?.validation?.fieldRule === 'REQUIRED',
+    )
+
+  const parseControlToFieldOrDoc = (
+    ctrl: any,
+    idx: number,
+    panelIndex: number,
+  ): { doc?: ParsedDoc; field?: ParsedField } => {
+    if (!ctrl) return {}
+    const id = String(
+      ctrl.jsonId ||
+        ctrl.id ||
+        ctrl.name ||
+        ctrl.columnName ||
+        `field_${panelIndex}_${idx}`,
+    )
+    const label = String(
+      ctrl.label ||
+        ctrl.name ||
+        ctrl.title ||
+        ctrl.jsonId ||
+        `Field ${idx + 1}`,
+    )
+    const type = String(
+      ctrl.type ||
+        ctrl.control ||
+        ctrl.controlType ||
+        ctrl.dataType ||
+        'text',
+    ).toLowerCase()
+    const required = resolveControlRequired(ctrl)
+
+    if (
+      type.includes('divider') ||
+      type.includes('label') ||
+      type.includes('heading') ||
+      type.includes('paragraph') ||
+      label.toLowerCase().includes('divider') ||
+      label.toLowerCase().includes('paragraph')
+    ) {
+      return {}
+    }
+
+    if (
+      type.includes('file') ||
+      type.includes('upload') ||
+      type.includes('document') ||
+      type.includes('image_upload')
+    ) {
+      return {
+        doc: {
+          accept: ctrl.accept || ctrl.settings?.specific?.accept || '.pdf,.doc,.docx,.png,.jpg',
+          id,
+          label,
+          panelIndex,
+          rawControl: ctrl,
+          required,
+        },
+      }
+    }
+
+    // Only treat real choice/select controls as having selectable options.
+    // Pulling options from unrelated ctrl.values / empty customOptions was
+    // forcing almost every field into a dropdown in the chat panel form.
+    const isChoiceType =
+      type.includes('select') ||
+      type.includes('choice') ||
+      type.includes('dropdown') ||
+      type.includes('radio') ||
+      type.includes('checklist') ||
+      type === 'yes_no_toggle'
+
+    let options: string[] | undefined
+    if (isChoiceType) {
+      const rawOptions =
+        ctrl.options ||
+        ctrl.items ||
+        ctrl.choiceOptions ||
+        ctrl.dropDownList ||
+        ctrl.radioList ||
+        ctrl.checklist ||
+        []
+      if (Array.isArray(rawOptions)) {
+        options = rawOptions
+          .map((o: any) => {
+            if (typeof o === 'string') return o
+            if (o && typeof o === 'object')
+              return o.value || o.label || o.text || o.name || String(o)
+            return String(o)
+          })
+          .filter(Boolean)
+      } else if (typeof rawOptions === 'string') {
+        options = rawOptions
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      }
+
+      const specific = ctrl.settings?.specific
+      if ((!options || options.length === 0) && specific?.customOptions) {
+        const parts =
+          specific.separateOptionsUsing === 'NEWLINE'
+            ? String(specific.customOptions).split('\n')
+            : String(specific.customOptions).split(',')
+        options = parts.map((s: string) => s.trim()).filter(Boolean)
+      }
+      if (Array.isArray(specific?.options) && (!options || options.length === 0)) {
+        options = specific.options
+          .map((o: any) =>
+            typeof o === 'string'
+              ? o
+              : String(o?.value || o?.label || o?.name || o?.id || ''),
+          )
+          .filter(Boolean)
+      }
+      if (options && options.length === 0) options = undefined
+    }
+
+    // Preserve the form-builder type (SHORT_TEXT, DATE, SINGLE_SELECT, …)
+    // so PanelFormCard / FieldRenderer can render the correct control.
+    const canonicalType = String(
+      ctrl.type ||
+        ctrl.controlType ||
+        ctrl.control ||
+        ctrl.dataType ||
+        (isChoiceType ? 'SINGLE_SELECT' : 'SHORT_TEXT'),
+    ).toUpperCase()
+
+    return {
+      field: {
+        id,
+        label,
+        options,
+        panelIndex,
+        placeholder:
+          ctrl.placeholder || ctrl.settings?.general?.placeholder || '',
+        question: `What is the ${label}?`,
+        rawControl: ctrl,
+        required,
+        tipExample: ctrl.example || ctrl.placeholder || undefined,
+        type: canonicalType,
+      },
+    }
+  }
 
   // Parse Form JSON into ParsedField[] and ParsedDoc[]
   const parseFormJson = (
@@ -570,129 +765,301 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       }
     }
 
-    const rawControls: any[] = []
-    if (Array.isArray(target?.controllist))
-      rawControls.push(...target.controllist)
-    if (Array.isArray(target?.controlList))
-      rawControls.push(...target.controlList)
-
     const panels = [
       ...(Array.isArray(target?.panels) ? target.panels : []),
       ...(Array.isArray(target?.secondaryPanels) ? target.secondaryPanels : []),
     ]
 
-    panels.forEach((p) => {
-      if (Array.isArray(p?.controlList)) rawControls.push(...p.controlList)
-      if (Array.isArray(p?.controllist)) rawControls.push(...p.controllist)
-      if (Array.isArray(p?.fields)) rawControls.push(...p.fields)
-    })
+    const pushParsed = (
+      ctrl: any,
+      idx: number,
+      panelIndex: number,
+    ) => {
+      const parsed = parseControlToFieldOrDoc(ctrl, idx, panelIndex)
+      if (parsed.doc) parsedDocs.push(parsed.doc)
+      if (parsed.field) parsedFields.push(parsed.field)
+    }
 
-    rawControls.forEach((ctrl, idx) => {
-      if (!ctrl) return
-      const id = String(
-        ctrl.jsonId ||
-        ctrl.id ||
-        ctrl.name ||
-        ctrl.columnName ||
-        `field_${idx}`,
+    if (panels.length > 0) {
+      panels.forEach((p, panelIndex) => {
+        const controls = [
+          ...(Array.isArray(p?.fields) ? p.fields : []),
+          ...(Array.isArray(p?.controlList) ? p.controlList : []),
+          ...(Array.isArray(p?.controllist) ? p.controllist : []),
+        ]
+        controls.forEach((ctrl, idx) => pushParsed(ctrl, idx, panelIndex))
+      })
+    } else {
+      const rawControls: any[] = []
+      if (Array.isArray(target?.controllist))
+        rawControls.push(...target.controllist)
+      if (Array.isArray(target?.controlList))
+        rawControls.push(...target.controlList)
+      rawControls.forEach((ctrl, idx) => pushParsed(ctrl, idx, 0))
+    }
+
+    return { docs: parsedDocs, fields: parsedFields, panels }
+  }
+
+  const isAnswerFilled = (value: any) =>
+    value !== undefined && value !== null && String(value).trim() !== ''
+
+  const sortFieldsMandatoryFirst = (list: ParsedField[]) => {
+    const required = list.filter((f) => f.required)
+    const optional = list.filter((f) => !f.required)
+    return [...required, ...optional]
+  }
+
+  const buildSingleFieldQuestionMessage = (field: ParsedField): Message => {
+    const type = String(field.type || field.rawControl?.type || '').toUpperCase()
+    const isSelect =
+      type.includes('SELECT') ||
+      type.includes('CHOICE') ||
+      type === 'YES_NO_TOGGLE' ||
+      Boolean(field.options?.length)
+    const isDate = type.includes('DATE') && !type.includes('UPDATE')
+    const isTable =
+      type.includes('TABLE') ||
+      type.includes('LINEITEM') ||
+      String(field.label)
+        .toLowerCase()
+        .match(/table|line item|lineitem/)
+
+    return {
+      htmlContent: field.question || `What is the ${field.label}?`,
+      id: `msg-${Date.now()}-q-${field.id}`,
+      pills: isSelect ? field.options : undefined,
+      sender: 'assistant',
+      showDatePicker: isDate,
+      tableField: isTable ? field : undefined,
+      tipText: field.tipExample
+        ? `Type your answer in the box below — e.g. ${field.tipExample}.`
+        : 'Type your answer in the box below.',
+    }
+  }
+
+  const presentNextCollectionStep = (
+    nextAnswers: Record<string, any>,
+    nextDocsMap: Record<string, string>,
+    sourceFields: ParsedField[],
+    sourceDocs: ParsedDoc[],
+    sourcePanels: any[],
+    workflowName: string,
+    skippedPanelIndexes: number[] = [],
+  ) => {
+    setAwaitingField(null)
+    setAwaitingDoc(null)
+    setAwaitingPanelForm(null)
+
+    const skipped = new Set(skippedPanelIndexes)
+
+    const panelCount = Math.max(
+      sourcePanels.length,
+      1,
+      ...sourceFields.map((f) => (f.panelIndex ?? 0) + 1),
+      ...sourceDocs.map((d) => (d.panelIndex ?? 0) + 1),
+    )
+
+    for (let panelIndex = 0; panelIndex < panelCount; panelIndex++) {
+      // User already clicked Continue on this panel — never re-ask it,
+      // even if optional fields were left blank.
+      if (skipped.has(panelIndex)) continue
+
+      const panelFields = sortFieldsMandatoryFirst(
+        sourceFields.filter(
+          (f) =>
+            (f.panelIndex ?? 0) === panelIndex &&
+            !isAnswerFilled(nextAnswers[f.id]),
+        ),
       )
-      const label = String(
-        ctrl.label ||
-        ctrl.name ||
-        ctrl.title ||
-        ctrl.jsonId ||
-        `Field ${idx + 1}`,
-      )
-      const type = String(
-        ctrl.type ||
-        ctrl.control ||
-        ctrl.controlType ||
-        ctrl.dataType ||
-        'text',
-      ).toLowerCase()
-      const required = Boolean(
-        ctrl.isRequired || ctrl.required || ctrl.isMandatory,
+      const panelDocs = sourceDocs.filter(
+        (d) => (d.panelIndex ?? 0) === panelIndex && !nextDocsMap[d.id],
       )
 
-      if (
-        type.includes('divider') ||
-        type.includes('label') ||
-        type.includes('paragraph') ||
-        label.toLowerCase().includes('divider') ||
-        label.toLowerCase().includes('paragraph')
-      ) {
+      if (panelFields.length === 0 && panelDocs.length === 0) continue
+
+      const title =
+        sourcePanels[panelIndex]?.settings?.title ||
+        sourcePanels[panelIndex]?.title ||
+        `Section ${panelIndex + 1}`
+
+      const controlCount = panelFields.length + panelDocs.length
+
+      // Upload-first when this panel has file controls mixed with questions,
+      // or more than one control overall → inline panel form.
+      if (controlCount > 1 || (panelDocs.length > 0 && panelFields.length > 0)) {
+        const panelForm: PanelFormPayload = {
+          docs: [
+            ...panelDocs.filter((d) => d.required),
+            ...panelDocs.filter((d) => !d.required),
+          ],
+          fields: panelFields,
+          panelIndex,
+          title,
+        }
+        setAwaitingPanelForm(panelForm)
+        setMessages((prev) => [
+          ...prev,
+          {
+            htmlContent:
+              panelForm.docs.length > 0
+                ? `Please complete <strong>${title}</strong>. Upload any documents first — I'll try to fill fields from them.`
+                : `Please complete <strong>${title}</strong>. Fill in the details below, then continue.`,
+            id: `msg-${Date.now()}-panel-${panelIndex}`,
+            panelForm,
+            sender: 'assistant',
+          },
+        ])
         return
       }
 
-      if (
-        type.includes('file') ||
-        type.includes('upload') ||
-        type.includes('document')
-      ) {
-        parsedDocs.push({
-          accept: ctrl.accept || '.pdf,.doc,.docx,.png,.jpg',
-          id,
-          label,
-          required,
-        })
-      } else {
-        let options: string[] | undefined = undefined
-        const rawOptions =
-          ctrl.options ||
-          ctrl.items ||
-          ctrl.choiceOptions ||
-          ctrl.values ||
-          ctrl.dropDownList ||
-          ctrl.radioList ||
-          ctrl.checklist ||
-          []
-        if (Array.isArray(rawOptions)) {
-          options = rawOptions
-            .map((o: any) => {
-              if (typeof o === 'string') return o
-              if (o && typeof o === 'object')
-                return o.value || o.label || o.text || o.name || String(o)
-              return String(o)
-            })
-            .filter(Boolean)
-        } else if (typeof rawOptions === 'string') {
-          options = rawOptions
-            .split(',')
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        } else if (typeof rawOptions === 'object' && rawOptions !== null) {
-          // Handle object like {"USD": "US Dollar"}
-          options = Object.entries(rawOptions)
-            .map(([key, val]: [string, any]) => {
-              if (typeof val === 'string') return key // Or val? Usually key is the value we want to submit. Let's provide the label or key. Actually, we should probably submit the key, but show the label. The pills only show a string. Let's just use the key. Wait, if it's `{ label: 'USD', value: 'USD' }`, we already handle array of objects. If it's a map:
-              return String(
-                val.label || val.value || val.text || val.name || key,
-              )
-            })
-            .filter(Boolean)
-        }
-        if (options && options.length === 0) options = undefined
-        if (!options && label.toLowerCase().includes('currency')) {
-          options = ['USD', 'CAD', 'INR', 'EUR', 'GBP']
-        }
-        if (!options && label.toLowerCase().includes('matched status')) {
-          options = ['Matched', 'Not Matched']
-        }
-        parsedFields.push({
-          id,
-          label,
-          options,
-          placeholder: ctrl.placeholder || '',
-          question: `What is the ${label}?`,
-          rawControl: ctrl,
-          required,
-          tipExample: ctrl.example || ctrl.placeholder || undefined,
-          type: options ? 'select' : type.includes('date') ? 'date' : 'text',
-        })
+      if (panelDocs.length === 1) {
+        const nextD = panelDocs[0]
+        setAwaitingDoc(nextD)
+        setMessages((prev) => [
+          ...prev,
+          {
+            htmlContent: `Please attach the <strong>${nextD.label}</strong>. You can upload a file or select from existing files.`,
+            id: `msg-${Date.now()}-doc-${nextD.id}`,
+            sender: 'assistant',
+            uploadCardDoc: nextD,
+          },
+        ])
+        return
       }
-    })
-    console.log('fields for the json', parsedFields, parsedDocs, target, panels)
-    return { docs: parsedDocs, fields: parsedFields, panels }
+
+      if (panelFields.length === 1) {
+        const nextF = panelFields[0]
+        setAwaitingField(nextF)
+        setMessages((prev) => [...prev, buildSingleFieldQuestionMessage(nextF)])
+        return
+      }
+    }
+
+    // Fallback: remaining fields/docs not on a completed panel
+    const remainingF = sortFieldsMandatoryFirst(
+      sourceFields.filter(
+        (f) =>
+          !skipped.has(f.panelIndex ?? 0) &&
+          !isAnswerFilled(nextAnswers[f.id]),
+      ),
+    )
+    const remainingD = sourceDocs.filter(
+      (d) => !skipped.has(d.panelIndex ?? 0) && !nextDocsMap[d.id],
+    )
+
+    if (remainingF.length + remainingD.length > 1) {
+      const panelForm: PanelFormPayload = {
+        docs: remainingD,
+        fields: remainingF,
+        panelIndex: panelCount,
+        title: 'Remaining details',
+      }
+      setAwaitingPanelForm(panelForm)
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent:
+            panelForm.docs.length > 0
+              ? `Please complete the remaining details for <strong>${workflowName}</strong>. Upload any documents first — I'll try to fill fields from them.`
+              : `Please complete the remaining details for <strong>${workflowName}</strong>. Fill in the fields below, then continue.`,
+          id: `msg-${Date.now()}-panel-remaining`,
+          panelForm,
+          sender: 'assistant',
+        },
+      ])
+      return
+    }
+
+    if (remainingD.length === 1) {
+      const nextD = remainingD[0]
+      setAwaitingDoc(nextD)
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent: `Please attach the <strong>${nextD.label}</strong>.`,
+          id: `msg-${Date.now()}-doc-${nextD.id}`,
+          sender: 'assistant',
+          uploadCardDoc: nextD,
+        },
+      ])
+      return
+    }
+
+    if (remainingF.length === 1) {
+      const nextF = remainingF[0]
+      setAwaitingField(nextF)
+      setMessages((prev) => [...prev, buildSingleFieldQuestionMessage(nextF)])
+      return
+    }
+
+    setMode('review')
+    setMessages((prev) => [
+      ...prev,
+      {
+        htmlContent: `All set! I've collected everything needed for your <strong>${workflowName}</strong> request. Ready to submit?`,
+        id: `msg-${Date.now()}-review`,
+        pills: ['Review & Submit', 'Make changes'],
+        sender: 'assistant',
+      },
+    ])
+  }
+
+  const handlePanelContinue = (next: {
+    answers: Record<string, any>
+    attachedFiles: Record<string, ChatAttachedFile>
+    docsMap: Record<string, string>
+  }) => {
+    if (!activeWorkflow || !awaitingPanelForm) return
+    const completedPanel = awaitingPanelForm
+
+    // Keep real values; do NOT write '' for blanks (that was submitting as empty).
+    // Completed panels are tracked via completedPanelIndexes instead.
+    const mergedAnswers = { ...next.answers }
+    const mergedDocs = { ...next.docsMap }
+    const mergedAttached = { ...attachedFiles, ...next.attachedFiles }
+    const panelDocs = [
+      ...completedPanel.docs,
+      ...documents.filter(
+        (d) => (d.panelIndex ?? 0) === completedPanel.panelIndex,
+      ),
+    ]
+    for (const doc of panelDocs) {
+      if (!mergedDocs[doc.id] && !doc.required) {
+        mergedDocs[doc.id] = '__skipped__'
+      }
+    }
+
+    const nextCompletedIndexes = Array.from(
+      new Set([...completedPanelIndexes, completedPanel.panelIndex]),
+    )
+
+    setAnswers(mergedAnswers)
+    setDocsMap(mergedDocs)
+    setAttachedFiles(mergedAttached)
+    setCompletedPanelIndexes(nextCompletedIndexes)
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.panelForm?.panelIndex === completedPanel.panelIndex &&
+        !msg.panelForm.completed
+          ? {
+              ...msg,
+              htmlContent: `Thanks — <strong>${completedPanel.title}</strong> is complete.`,
+              panelForm: { ...msg.panelForm!, completed: true },
+            }
+          : msg,
+      ),
+    )
+    setAwaitingPanelForm(null)
+    presentNextCollectionStep(
+      mergedAnswers,
+      mergedDocs,
+      fields,
+      documents,
+      panels,
+      activeWorkflow.name,
+      nextCompletedIndexes,
+    )
   }
 
   const handleFieldChange = (jsonId: string, value: any) => {
@@ -1010,7 +1377,13 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     setMode('collecting')
     setAnswers({})
     setDocsMap({})
+    setAttachedFiles({})
     setTicketId(null)
+    setAwaitingField(null)
+    setAwaitingDoc(null)
+    setAwaitingPanelForm(null)
+    setCompletedPanelIndexes([])
+    setRepositoryId(null)
 
     // Add assistant intro message
     setMessages((prev) => [
@@ -1028,6 +1401,16 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       // Fetch detailed workflow & formJson from API
       const detailRes = await workflowsApiV6.getWorkflowById(workflow.id)
       let formJsonData = detailRes.data?.formJson
+
+      const resolvedRepoId = String(
+        (detailRes.data as any)?.repositoryId ||
+          (detailRes.data as any)?.settings?.general?.initiateUsing
+            ?.repositoryId ||
+          (detailRes.data as any)?.workflowJson?.settings?.general
+            ?.initiateUsing?.repositoryId ||
+          '',
+      ).trim()
+      if (resolvedRepoId) setRepositoryId(resolvedRepoId)
 
       const wFormId =
         detailRes.data?.formId ||
@@ -1054,6 +1437,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             {
               id: 'vendor_name',
               label: 'Vendor Name',
+              panelIndex: 0,
               question: 'What is the vendor / company name?',
               required: true,
               tipExample: 'Acme Technologies',
@@ -1063,6 +1447,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               id: 'vendor_type',
               label: 'Vendor Type',
               options: ['IT Services', 'Consulting', 'Hardware', 'Other'],
+              panelIndex: 0,
               question: 'What type of vendor is this?',
               required: true,
               type: 'select',
@@ -1070,6 +1455,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             {
               id: 'contact_person',
               label: 'Contact Person',
+              panelIndex: 0,
               question: 'Who is the primary contact person?',
               required: true,
               tipExample: 'John Smith',
@@ -1078,6 +1464,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             {
               id: 'contact_email',
               label: 'Contact Email',
+              panelIndex: 0,
               question: 'What is the contact email?',
               required: true,
               tipExample: 'john@acme.com',
@@ -1087,6 +1474,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               id: 'currency',
               label: 'Currency',
               options: ['USD', 'INR', 'EUR', 'GBP'],
+              panelIndex: 0,
               question: 'Which currency will be used?',
               required: true,
               type: 'select',
@@ -1095,6 +1483,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               id: 'payment_terms',
               label: 'Payment Terms',
               options: ['Net 15', 'Net 30', 'Net 45', 'Net 60'],
+              panelIndex: 0,
               question: 'What are the payment terms?',
               required: false,
               type: 'select',
@@ -1105,12 +1494,14 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               accept: '.pdf,.doc,.docx,.png,.jpg',
               id: 'registration_cert',
               label: 'Registration Certificate',
+              panelIndex: 0,
               required: true,
             },
             {
               accept: '.pdf,.doc,.docx',
               id: 'tax_cert',
               label: 'Tax Certificate',
+              panelIndex: 0,
               required: true,
             },
           ]
@@ -1122,6 +1513,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             {
               id: 'po_number',
               label: 'PO Number',
+              panelIndex: 0,
               question: "What's the PO number this invoice matches against?",
               required: true,
               tipExample: 'PO-44210',
@@ -1130,6 +1522,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             {
               id: 'invoice_amount',
               label: 'Invoice Amount',
+              panelIndex: 0,
               question: "What's the invoice amount?",
               required: true,
               tipExample: '48000',
@@ -1139,6 +1532,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               id: 'currency',
               label: 'Currency',
               options: ['USD', 'INR', 'EUR', 'GBP'],
+              panelIndex: 0,
               question: 'Which currency is this invoice in?',
               required: false,
               type: 'select',
@@ -1149,6 +1543,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               accept: '.pdf,.png,.jpg',
               id: 'invoice_file',
               label: 'Invoice Upload',
+              panelIndex: 0,
               required: true,
             },
           ]
@@ -1157,6 +1552,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             {
               id: 'request_title',
               label: 'Request Title',
+              panelIndex: 0,
               question: 'What is the title for this request?',
               required: true,
               tipExample: 'New Equipment Procurement',
@@ -1166,6 +1562,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               id: 'department',
               label: 'Department',
               options: ['IT', 'Finance', 'Operations', 'Sales', 'HR'],
+              panelIndex: 0,
               question: 'Which department is this for?',
               required: true,
               type: 'select',
@@ -1174,6 +1571,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               id: 'priority',
               label: 'Priority',
               options: ['Low', 'Medium', 'High', 'Urgent'],
+              panelIndex: 0,
               question: 'What is the priority level?',
               required: false,
               type: 'select',
@@ -1181,6 +1579,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
             {
               id: 'description',
               label: 'Description',
+              panelIndex: 0,
               question: 'Please provide details or description:',
               required: true,
               tipExample: 'Purchase of 10 laptops for new engineering team',
@@ -1192,100 +1591,72 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               accept: '.pdf,.doc,.docx,.png,.jpg',
               id: 'support_doc',
               label: 'Supporting Document',
+              panelIndex: 0,
               required: false,
             },
           ]
         }
       }
 
-      if ((!parsedP || parsedP.length === 0) && parsedF.length > 0) {
+      if ((!parsedP || parsedP.length === 0) && (parsedF.length > 0 || parsedD.length > 0)) {
         parsedP = [
           {
-            fields: parsedF.map((f) => ({
-              id: f.id,
-              label: f.label,
-              type: f.type === 'select' ? 'SINGLE_SELECT' : f.type,
-              settings: f.options
-                ? {
-                  specific: {
-                    customOptions: f.options.join(','),
-                    optionsType: 'CUSTOM',
-                    separateOptionsUsing: 'COMMA',
+            fields: [
+              ...parsedD.map((d) => ({
+                id: d.id,
+                label: d.label,
+                type: 'FILE_UPLOAD',
+                settings: {
+                  validation: {
+                    fieldRule: d.required ? 'REQUIRED' : 'OPTIONAL',
                   },
-                }
-                : {},
-            })),
+                },
+              })),
+              ...parsedF.map((f) => ({
+                id: f.id,
+                label: f.label,
+                type:
+                  f.type === 'select' || f.type === 'SINGLE_SELECT'
+                    ? 'SINGLE_SELECT'
+                    : f.type === 'text' || !f.type
+                      ? 'SHORT_TEXT'
+                      : f.type,
+                settings: {
+                  ...(f.options
+                    ? {
+                        specific: {
+                          customOptions: f.options.join(','),
+                          optionsType: 'CUSTOM',
+                          separateOptionsUsing: 'COMMA',
+                        },
+                      }
+                    : {}),
+                  validation: {
+                    fieldRule: f.required ? 'REQUIRED' : 'OPTIONAL',
+                  },
+                },
+              })),
+            ],
             settings: { title: 'Workflow Details' },
           },
         ]
+        parsedF = parsedF.map((f) => ({ ...f, panelIndex: 0 }))
+        parsedD = parsedD.map((d) => ({ ...d, panelIndex: 0 }))
       }
 
       setFields(parsedF)
       setPanels(parsedP || [])
       setDocuments(parsedD)
 
-      // Ask first field or doc
-      const firstF = parsedF[0]
-      const firstD = parsedD[0]
-      const isPayable =
-        workflow.name.toLowerCase().includes('payable') ||
-        workflow.name.toLowerCase().includes('invoice')
-
-      if (isPayable && firstD) {
-        setAwaitingDoc(firstD)
-        setAwaitingField(null)
-        setMessages((prev) => [
-          ...prev,
-          {
-            htmlContent: `Please attach the <strong>${firstD.label}</strong>. You can upload a file or select from existing files.`,
-            id: `msg-${Date.now()}-doc`,
-            sender: 'assistant',
-            uploadCardDoc: firstD,
-          },
-        ])
-      } else if (firstF) {
-        setAwaitingField(firstF)
-        setAwaitingDoc(null)
-        setMessages((prev) => [
-          ...prev,
-          {
-            htmlContent: firstF.question || `What is the ${firstF.label}?`,
-            id: `msg-${Date.now()}-q`,
-            pills: firstF.options,
-            sender: 'assistant',
-            showDatePicker: firstF.type === 'date' || firstF.type === 'DATE',
-            tableField:
-              String(firstF.type)
-                .toLowerCase()
-                .match(/table|grid|subform|lineitem/) ||
-                String(firstF.rawControl?.type)
-                  .toLowerCase()
-                  .match(/table|grid|subform|lineitem/) ||
-                String(firstF.label)
-                  .toLowerCase()
-                  .match(/table|line item|lineitem/) ||
-                String(firstF.rawControl?.name)
-                  .toLowerCase()
-                  .match(/table|line item|lineitem/)
-                ? firstF
-                : undefined,
-            tipText: firstF.tipExample
-              ? `Type your answer in the box below — e.g. ${firstF.tipExample}.`
-              : 'Type your answer in the box below.',
-          },
-        ])
-      } else if (firstD) {
-        setAwaitingDoc(firstD)
-        setMessages((prev) => [
-          ...prev,
-          {
-            htmlContent: `Please attach the ${firstD.label}. You can upload a file or select from existing files.`,
-            id: `msg-${Date.now()}-doc`,
-            sender: 'assistant',
-            uploadCardDoc: firstD,
-          },
-        ])
-      }
+      presentNextCollectionStep(
+        {},
+        {},
+        parsedF,
+        parsedD,
+        parsedP || [],
+        workflow.name,
+        [],
+      )
     } catch (err) {
       console.error('Error initiating workflow schema:', err)
     } finally {
@@ -1327,7 +1698,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
     setIsTyping(true)
 
-    // Use Gemini or Fallback to determine next step
+    // Use Gemini or Fallback to extract any extra answers from free text
     const stepResult = await processWorkflowChatStepWithGemini({
       currentAnswers: updatedAnswers,
       currentDocs: docsMap,
@@ -1337,120 +1708,19 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       workflowName: activeWorkflow.name,
     })
 
+    const mergedAnswers = { ...updatedAnswers, ...(stepResult.extractedAnswers || {}) }
+    setAnswers(mergedAnswers)
     setIsTyping(false)
 
-    // Check next field or doc
-    const remainingF = fields.filter((f) => updatedAnswers[f.id] === undefined)
-    const remainingD = documents.filter((d) => !docsMap[d.id])
-    const isPayable =
-      activeWorkflow?.name?.toLowerCase().includes('payable') ||
-      activeWorkflow?.name?.toLowerCase().includes('invoice')
-
-    if (isPayable && remainingD.length > 0) {
-      const nextD = remainingD[0]
-      setAwaitingDoc(nextD)
-      setAwaitingField(null)
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent: `Please attach the <strong>${nextD.label}</strong>. You can upload a file or choose from your document library.`,
-          id: `msg-${Date.now()}-nextD`,
-          sender: 'assistant',
-          uploadCardDoc: nextD,
-        },
-      ])
-    } else if (remainingF.length > 0) {
-      let nextF = fields.find((f) => f.id === stepResult.nextFieldId)
-      if (!nextF || updatedAnswers[nextF.id] !== undefined) {
-        // Fallback: Try to infer the field from the AI's reply text
-        let inferredF = remainingF.find(
-          (f) =>
-            stepResult.reply &&
-            stepResult.reply
-              .toLowerCase()
-              .includes(String(f.label).toLowerCase()),
-        )
-
-        // If the AI explicitly mentions 'line item' or 'table', find the next available table field
-        if (
-          !inferredF &&
-          stepResult.reply &&
-          stepResult.reply.toLowerCase().match(/table|line item|lineitem/)
-        ) {
-          inferredF = remainingF.find(
-            (f) =>
-              String(f.type)
-                .toLowerCase()
-                .match(/table|grid|subform|lineitem/) ||
-              String(f.rawControl?.type)
-                .toLowerCase()
-                .match(/table|grid|subform|lineitem/) ||
-              String(f.label)
-                .toLowerCase()
-                .match(/table|line item|lineitem/) ||
-              String(f.rawControl?.name)
-                .toLowerCase()
-                .match(/table|line item|lineitem/),
-          )
-        }
-
-        nextF = inferredF || remainingF[0]
-      }
-
-      setAwaitingField(nextF)
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent:
-            nextF.question || stepResult.reply || `What is the ${nextF.label}?`,
-          id: `msg-${Date.now()}-nextF`,
-          pills: nextF.options,
-          sender: 'assistant',
-          showDatePicker: nextF.type === 'date' || nextF.type === 'DATE',
-          tableField:
-            String(nextF.type)
-              .toLowerCase()
-              .match(/table|grid|subform|lineitem/) ||
-              String(nextF.rawControl?.type)
-                .toLowerCase()
-                .match(/table|grid|subform|lineitem/) ||
-              String(nextF.label)
-                .toLowerCase()
-                .match(/table|line item|lineitem/) ||
-              String(nextF.rawControl?.name)
-                .toLowerCase()
-                .match(/table|line item|lineitem/)
-              ? nextF
-              : undefined,
-          tipText: nextF.tipExample
-            ? `Type your answer in the box below — e.g. ${nextF.tipExample}.`
-            : stepResult.tipText,
-        },
-      ])
-    } else if (remainingD.length > 0) {
-      const nextD = remainingD[0]
-      setAwaitingDoc(nextD)
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent: `Please attach the <strong>${nextD.label}</strong>. You can upload a file or choose from your document library.`,
-          id: `msg-${Date.now()}-nextD`,
-          sender: 'assistant',
-          uploadCardDoc: nextD,
-        },
-      ])
-    } else {
-      setMode('review')
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent: `All set! I've collected everything needed for your <strong>${activeWorkflow.name}</strong> request. Ready to submit?`,
-          id: `msg-${Date.now()}-review`,
-          pills: ['Review & Submit', 'Make changes'],
-          sender: 'assistant',
-        },
-      ])
-    }
+    presentNextCollectionStep(
+      mergedAnswers,
+      docsMap,
+      fields,
+      documents,
+      panels,
+      activeWorkflow.name,
+      completedPanelIndexes,
+    )
   }
 
   // Handle document upload
@@ -1463,6 +1733,18 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     setDocsMap(updatedDocs)
     setAwaitingDoc(null)
 
+    let attachmentEntry: ChatAttachedFile = {
+      fieldId: doc.id,
+      fieldName: doc.label,
+      fileName,
+      ocrChecked: !fileObj,
+      rawFile: fileObj,
+      repositoryId: repositoryId || undefined,
+    }
+    if (fileObj) {
+      setAttachedFiles((prev) => ({ ...prev, [doc.id]: attachmentEntry }))
+    }
+
     setMessages((prev) => [
       ...prev,
       {
@@ -1474,12 +1756,79 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
     setIsTyping(true)
 
-    const updatedAnswers = { ...answers }
+    let updatedAnswers = { ...answers }
 
     const isPayable =
       activeWorkflow?.name?.toLowerCase().includes('payable') ||
       activeWorkflow?.name?.toLowerCase().includes('invoice')
-    if (fileObj && isPayable) {
+
+    // Prefer request-page OCR (uploadForOcr) whenever we have a repository + file.
+    if (fileObj && repositoryId) {
+      try {
+        setMessages((prev) => [
+          ...prev,
+          {
+            htmlContent: `Extracting data from <strong>${fileName}</strong>…`,
+            id: `msg-${Date.now()}-processing`,
+            sender: 'assistant',
+          },
+        ])
+        setTypingText('Running OCR…')
+
+        const hints = fields.map(
+          (field) => `${field.label},${field.rawControl?.type || 'SHORT_TEXT'}`,
+        )
+        const { data, error } = await uploadForOcr(
+          String(repositoryId),
+          fileObj,
+          hints,
+        )
+        attachmentEntry = {
+          ...attachmentEntry,
+          ocrChecked: true,
+          ocrFieldList: data?.ocrFieldList,
+          ocrJson: data?.ocrJson,
+          repositoryId: String(repositoryId),
+        }
+        setAttachedFiles((prev) => ({ ...prev, [doc.id]: attachmentEntry }))
+
+        if (!error && data?.ocrFieldList?.length) {
+          const patch = mapOcrFieldsToModel(panels, data.ocrFieldList)
+          const byLabel = new Map(
+            fields.map((field) => [
+              field.label.replace(/\*/g, '').trim().toLowerCase(),
+              field.id,
+            ]),
+          )
+          for (const item of data.ocrFieldList) {
+            const name = String(item?.name || '')
+              .split(',')[0]
+              .trim()
+              .toLowerCase()
+            const fieldId = byLabel.get(name)
+            if (
+              fieldId &&
+              item?.value &&
+              !isAnswerFilled(updatedAnswers[fieldId])
+            ) {
+              updatedAnswers[fieldId] = item.value
+            }
+          }
+          for (const [key, value] of Object.entries(patch)) {
+            if (!isAnswerFilled(updatedAnswers[key])) {
+              updatedAnswers[key] = value
+            }
+          }
+          setAnswers(updatedAnswers)
+        }
+      } catch (err) {
+        console.error('OCR Extraction failed:', err)
+        setAttachedFiles((prev) => ({
+          ...prev,
+          [doc.id]: { ...attachmentEntry, ocrChecked: true },
+        }))
+      }
+    } else if (fileObj && isPayable) {
       try {
         setMessages((prev) => [
           ...prev,
@@ -1524,14 +1873,15 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
               inboxRes.data.items.length > 0
             ) {
               const item = inboxRes.data.items[0]
-              const currentStage = item.stage || item.activityName || item.status || 'Finalizing Results...'
+              const currentStage =
+                item.stage || item.activityName || item.status || 'Finalizing Results...'
               setTypingText(currentStage)
 
               if (item.formData) {
                 let formDataObj: any = {}
                 try {
                   formDataObj = JSON.parse(item.formData)
-                } catch (e) { }
+                } catch (e) {}
 
                 let nonEmptyCount = 0
                 Object.values(formDataObj).forEach((v) => {
@@ -1557,7 +1907,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                       ) {
                         try {
                           val = JSON.parse(v)
-                        } catch (e) { }
+                        } catch (e) {}
                       }
                       updatedAnswers[field.id] = val
                     }
@@ -1577,61 +1927,21 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
     setIsTyping(false)
     setTypingText(null)
-    const remainingF = fields.filter((f) => updatedAnswers[f.id] === undefined)
-    const remainingD = documents.filter((d) => !updatedDocs[d.id])
 
-    if (isPayable && remainingD.length > 0) {
-      const nextD = remainingD[0]
-      setAwaitingDoc(nextD)
-      setAwaitingField(null)
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent: `Please attach the <strong>${nextD.label}</strong>.`,
-          id: `msg-${Date.now()}-nextD`,
-          sender: 'assistant',
-          uploadCardDoc: nextD,
-        },
-      ])
-    } else if (remainingF.length > 0) {
-      const nextF = remainingF[0]
-      setAwaitingField(nextF)
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent: nextF.question || `What is the ${nextF.label}?`,
-          id: `msg-${Date.now()}-nextF`,
-          pills: nextF.options,
-          sender: 'assistant',
-        },
-      ])
-    } else if (remainingD.length > 0) {
-      const nextD = remainingD[0]
-      setAwaitingDoc(nextD)
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent: `Please attach the <strong>${nextD.label}</strong>.`,
-          id: `msg-${Date.now()}-nextD`,
-          sender: 'assistant',
-          uploadCardDoc: nextD,
-        },
-      ])
-    } else {
-      setMode('review')
-      setMessages((prev) => [
-        ...prev,
-        {
-          htmlContent: `All set! I've collected everything needed for your <strong>${activeWorkflow?.name}</strong> request. Ready to submit?`,
-          id: `msg-${Date.now()}-review`,
-          pills: ['Review & Submit', 'Make changes'],
-          sender: 'assistant',
-        },
-      ])
-    }
+    if (!activeWorkflow) return
+    presentNextCollectionStep(
+      updatedAnswers,
+      updatedDocs,
+      fields,
+      documents,
+      panels,
+      activeWorkflow.name,
+      completedPanelIndexes,
+    )
   }
 
-  // Submit Workflow to Backend API
+  // Submit Workflow to Backend API — same path as the request page
+  // (uploadWithOcr stage → startWorkflowJson + stagedFiles).
   const handleWorkflowSubmit = async () => {
     if (!activeWorkflow) return
     setSubmitting(true)
@@ -1642,25 +1952,184 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       '-' +
       Math.floor(100000 + Math.random() * 899999)
 
+    let submitted = false
     try {
-      // Build FormData payload for startWorkflow API call
-      const formData = new FormData()
-      formData.append('workflowId', activeWorkflow.id)
-      formData.append('ticketId', generatedId)
+      const formModel: Record<string, any> = {}
 
-      Object.entries(answers).forEach(([k, v]) => {
-        formData.append(k, String(v))
-      })
+      const takeValue = (...keys: Array<string | undefined | null>) => {
+        for (const key of keys) {
+          if (!key) continue
+          const value = answers[key]
+          if (value === undefined || value === null) continue
+          if (typeof value === 'string' && value.trim() === '') continue
+          if (value === '__skipped__') continue
+          return value
+        }
+        return undefined
+      }
 
-      // Real API initiation call
-      await workflowsApiV6.startWorkflow(activeWorkflow.id, formData)
+      for (const field of fields) {
+        const value = takeValue(
+          field.id,
+          field.rawControl?.jsonId,
+          field.rawControl?.id,
+          field.rawControl?.name,
+        )
+        if (value === undefined) continue
+        formModel[field.id] = value
+        if (field.rawControl?.id) formModel[String(field.rawControl.id)] = value
+        if (field.rawControl?.jsonId) {
+          formModel[String(field.rawControl.jsonId)] = value
+        }
+      }
+
+      for (const [key, value] of Object.entries(answers)) {
+        if (formModel[key] !== undefined) continue
+        if (value === undefined || value === null || value === '__skipped__')
+          continue
+        if (typeof value === 'string' && value.trim() === '') continue
+        formModel[key] = value
+      }
+
+      // Phase 2 (request page): stage each attached file via uploadWithOcr
+      // so start/json receives real stagedFiles entries.
+      const stagedAttachmentFiles: Array<{
+        fileId: string
+        fileName?: string
+        repositoryId: string
+        fieldId?: string
+        fieldName?: string
+        itemId?: string
+        jsonId?: string
+      }> = []
+
+      for (const [docId, attachment] of Object.entries(attachedFiles)) {
+        if (!attachment?.rawFile && !attachment?.fileId) continue
+        const repoId = String(
+          attachment.repositoryId || repositoryId || '',
+        ).trim()
+        if (!repoId) {
+          throw new Error(
+            `Can't upload ${attachment.fileName || docId}: no repository configured.`,
+          )
+        }
+
+        let fileId = attachment.fileId
+        let stagedRepoId = repoId
+
+        if (!fileId && attachment.rawFile) {
+          const hints = fields.map(
+            (field) =>
+              `${field.label},${field.rawControl?.type || field.type || 'SHORT_TEXT'}`,
+          )
+          const { data, error } = await uploadAndIndexApi.uploadWithOcr({
+            fields: hints,
+            file: attachment.rawFile,
+            metadata: buildRepoMetadata([], panels, formModel, attachment.fileName),
+            ocrFieldList: attachment.ocrFieldList,
+            ocrJson: attachment.ocrJson,
+            ocrText: extractOcrText(attachment.ocrJson),
+            repositoryId: repoId,
+          })
+          if (error || !data?.fileId) {
+            throw new Error(
+              error || `Failed to upload ${attachment.fileName || docId}.`,
+            )
+          }
+          fileId = data.fileId
+          stagedRepoId = data.repositoryId || repoId
+          setAttachedFiles((prev) => ({
+            ...prev,
+            [docId]: {
+              ...attachment,
+              fileId,
+              repositoryId: stagedRepoId,
+            },
+          }))
+        }
+
+        if (!fileId) continue
+
+        const staged = {
+          fieldId: attachment.fieldId || docId,
+          fieldName: attachment.fieldName,
+          fileId,
+          fileName: attachment.fileName,
+          itemId: fileId,
+          jsonId: attachment.fieldId || docId,
+          repositoryId: stagedRepoId,
+        }
+        stagedAttachmentFiles.push(staged)
+      }
+
+      // Prefer panel FILE_UPLOAD fields (same as request page); anything else
+      // goes through extraAttachments / stagedFiles.
+      const panelFileFieldIds = new Set<string>()
+      for (const panel of panels || []) {
+        for (const field of panel.fields || []) {
+          if (field.type !== 'FILE_UPLOAD' && field.type !== 'IMAGE_UPLOAD')
+            continue
+          panelFileFieldIds.add(String(field.id))
+          if (field.jsonId) panelFileFieldIds.add(String(field.jsonId))
+        }
+      }
+
+      const extraAttachments: typeof stagedAttachmentFiles = []
+      for (const staged of stagedAttachmentFiles) {
+        const id = String(staged.fieldId || staged.jsonId || '')
+        if (panelFileFieldIds.has(id)) {
+          formModel[id] = {
+            fileId: staged.fileId,
+            fileName: staged.fileName,
+            itemId: staged.itemId || staged.fileId,
+            repositoryId: staged.repositoryId,
+          }
+        } else {
+          extraAttachments.push(staged)
+        }
+      }
+
+      const payload = buildStartWorkflowPayload(
+        panels,
+        formModel,
+        extraAttachments,
+        '',
+      )
+      const { error } = await workflowsApiV6.startWorkflowJson(
+        String(activeWorkflow.id),
+        payload,
+      )
+      if (error) {
+        console.warn('Workflow submit error:', error)
+        setMessages((prev) => [
+          ...prev,
+          {
+            htmlContent: `I couldn't submit the request: <strong>${error}</strong>. Please try again.`,
+            id: `msg-${Date.now()}-submit-error`,
+            sender: 'assistant',
+          },
+        ])
+        return
+      }
+      submitted = true
     } catch (err) {
       console.warn('Real API workflow submit fallback:', err)
+      const message =
+        err instanceof Error ? err.message : 'Please try again.'
+      setMessages((prev) => [
+        ...prev,
+        {
+          htmlContent: `I couldn't submit the request: <strong>${message}</strong>`,
+          id: `msg-${Date.now()}-submit-error`,
+          sender: 'assistant',
+        },
+      ])
     } finally {
+      setSubmitting(false)
+      if (!submitted) return
+
       setTicketId(generatedId)
       setMode('submitted')
-      setSubmitting(false)
-
       setMessages((prev) => [
         ...prev,
         {
@@ -1679,6 +2148,24 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     if (!text) return
 
     setInputText('')
+
+    // Panel forms are completed via Continue — don't treat chat text as answers.
+    if (awaitingPanelForm && mode === 'collecting') {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-${Date.now()}-user`,
+          sender: 'user',
+          textContent: text,
+        },
+        {
+          htmlContent: `Please fill the <strong>${awaitingPanelForm.title}</strong> panel above and click <strong>Continue</strong> when mandatory fields are complete.`,
+          id: `msg-${Date.now()}-panel-hint`,
+          sender: 'assistant',
+        },
+      ])
+      return
+    }
 
     // If currently awaiting text field answer
     if (awaitingField && mode === 'collecting') {
@@ -1770,6 +2257,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       setMode('idle')
       setAnswers({})
       setDocsMap({})
+      setAttachedFiles({})
+      setCompletedPanelIndexes([])
       setMessages((prev) => [
         ...prev,
         {
@@ -2004,6 +2493,21 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                       </button>
                     </div>
                   )}
+
+                  {/* Multi-field panel form */}
+                  {msg.panelForm ? (
+                    <PanelFormCard
+                      answers={answers}
+                      attachedFiles={attachedFiles}
+                      docsMap={docsMap}
+                      isExpanded={embedded ? isExpanded : true}
+                      panels={panels}
+                      payload={msg.panelForm}
+                      repositoryId={repositoryId}
+                      onAnswerChange={handleFieldChange}
+                      onContinue={handlePanelContinue}
+                    />
+                  ) : null}
 
                   {/* Options List */}
                   {msg.pills && msg.pills.length > 0 && (

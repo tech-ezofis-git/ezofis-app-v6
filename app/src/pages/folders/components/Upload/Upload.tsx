@@ -1473,16 +1473,37 @@ export default function Upload({
     } else if (
       fieldType === 'select' ||
       fieldType === 'dropdown' ||
+      fieldType === 'single_select' ||
+      fieldType === 'multi_select' ||
+      fieldType === 'single_choice' ||
+      fieldType === 'multiple_choice' ||
       options.length > 0
     ) {
+      const textVal = toTextValue(value)
+      const selectedOption = findSelectedOption(options, textVal)
+      const effectiveOptions =
+        selectedOption &&
+        !options.some(
+          (o) =>
+            String(o.value ?? '').toLowerCase() ===
+              String(selectedOption.value ?? '').toLowerCase() ||
+            String(o.name).toLowerCase() ===
+              selectedOption.name.toLowerCase() ||
+            String(o.id).toLowerCase() === String(selectedOption.id).toLowerCase(),
+        )
+          ? [...options, selectedOption]
+          : options
+
       InputComponent = (
         <InputSelect
           className={fieldClassName}
           disabled={disabled}
           label={label}
-          options={options}
+          options={effectiveOptions}
           required={required}
-          value={findSelectedOption(options, toTextValue(value))}
+          searchable
+          creatable
+          value={selectedOption}
           onChange={(selected) =>
             updateFieldValue(
               field,

@@ -170,110 +170,149 @@ export function resolveAskAiPageContext(
   pathname: string,
   pageContext?: AskAiPageContext | null,
 ): AskAiPageContext {
-  if (pathname.startsWith('/folders')) {
+  const normalizedPath = pathname.toLowerCase()
+
+  if (
+    normalizedPath === '/' ||
+    normalizedPath.startsWith('/dashboard') ||
+    normalizedPath.startsWith('/reports') ||
+    normalizedPath.startsWith('/report')
+  ) {
+    return {
+      actionFrom: '',
+      specificId: pageContext?.specificId || '',
+    }
+  }
+
+  if (normalizedPath.startsWith('/folders')) {
     return {
       actionFrom: 'Repository',
       specificId: pageContext?.specificId || '',
     }
   }
-  if (pathname.startsWith('/workflows')) {
+
+  if (normalizedPath.startsWith('/workflows')) {
     return {
       actionFrom: 'Workflow',
       specificId: pageContext?.specificId || '',
     }
   }
-  if (pathname.startsWith('/requests')) {
-    return { actionFrom: 'Request', specificId: pageContext?.specificId || '' }
-  }
-  if (pathname === '/' || pathname.startsWith('/dashboard')) {
+
+  if (normalizedPath.startsWith('/requests')) {
     return {
-      actionFrom: 'Dashboard',
+      actionFrom: 'Request',
       specificId: pageContext?.specificId || '',
     }
   }
+
+  const currentActionFrom = String(pageContext?.actionFrom || '').trim()
+  const lowerActionFrom = currentActionFrom.toLowerCase()
+  if (
+    lowerActionFrom === 'dashboard' ||
+    lowerActionFrom === 'reports' ||
+    lowerActionFrom === 'report'
+  ) {
+    return {
+      actionFrom: '',
+      specificId: pageContext?.specificId || '',
+    }
+  }
+
   return {
-    actionFrom: pageContext?.actionFrom || 'Dashboard',
+    actionFrom: currentActionFrom,
     specificId: pageContext?.specificId || '',
   }
+}
+
+export const DEFAULT_CHATBOT_FALLBACK_ANSWER: AskAiAnswer = {
+  text: {
+    blocks: [
+      {
+        text: "I couldn't find any matching documents or records for your query. Try searching with different keywords or asking in another way.",
+        type: 'paragraph',
+      },
+    ],
+  },
 }
 
 export async function postChatbotMessage(
   message: string,
   pageContext: AskAiPageContext,
 ): Promise<AskAiAnswer> {
-  let { accessToken, tenantId } = resolveChatbotAuth()
+  try {
+    let { accessToken, tenantId } = resolveChatbotAuth()
 
-  // Session can lag behind login; refresh once if tenant is missing.
-  if (accessToken && !tenantId) {
-    try {
-      const { getSession, getTenants } = await import('@/api/v6/auth')
-      await getSession()
-        ; ({ accessToken, tenantId } = resolveChatbotAuth())
+    // Session can lag behind login; refresh once if tenant is missing.
+    if (accessToken && !tenantId) {
+      try {
+        const { getSession, getTenants } = await import('@/api/v6/auth')
+        await getSession()
+          ; ({ accessToken, tenantId } = resolveChatbotAuth())
 
-      if (!tenantId) {
-        const store = authUserStore.getState()
-        const email = String(store.session?.email || '').trim()
-        if (email) {
-          const tenantsRes = await getTenants(email)
-          const tenants = Array.isArray(tenantsRes?.data) ? tenantsRes.data : []
-          const only =
-            tenants.length === 1
-              ? tenants[0]?.id ?? tenants[0]?.tenantId
-              : null
-          if (only) {
-            tenantId = String(only)
-            setToLocalStorage(tenantId, 'tenantId', 'STRING')
-            if (store.identity) {
-              store.setIdentity({ ...store.identity, tenantId })
-            }
-            if (store.session) {
-              store.setSession({ ...store.session, tenantId })
+        if (!tenantId) {
+          const store = authUserStore.getState()
+          const email = String(store.session?.email || '').trim()
+          if (email) {
+            const tenantsRes = await getTenants(email)
+            const tenants = Array.isArray(tenantsRes?.data) ? tenantsRes.data : []
+            const only =
+              tenants.length === 1
+                ? tenants[0]?.id ?? tenants[0]?.tenantId
+                : null
+            if (only) {
+              tenantId = String(only)
+              setToLocalStorage(tenantId, 'tenantId', 'STRING')
+              if (store.identity) {
+                store.setIdentity({ ...store.identity, tenantId })
+              }
+              if (store.session) {
+                store.setSession({ ...store.session, tenantId })
+              }
             }
           }
         }
+      } catch {
+        // Keep going; check below
       }
-    } catch {
-      // Keep going; throw below if still empty.
     }
-  }
 
-  if (!accessToken) {
-    throw new Error('Missing auth token for chatbot API')
-  }
-  if (!tenantId) {
-    throw new Error(
-      'Missing tenant id for chatbot API. Please sign out and sign in again.',
-    )
-  }
+    if (!accessToken || !tenantId) {
+      return DEFAULT_CHATBOT_FALLBACK_ANSWER
+    }
 
-  const specificId = String(pageContext.specificId || '').trim()
-  const body: ChatbotRequestBody = {
-    actionFrom: pageContext.actionFrom || 'Dashboard',
-    message,
-    specificId: specificId || null,
-    tenantId,
-    token: accessToken.startsWith('Bearer ')
-      ? accessToken
-      : `Bearer ${accessToken}`,
+    const specificId = String(pageContext.specificId || '').trim()
+    const body: ChatbotRequestBody = {
+      actionFrom: pageContext.actionFrom ?? '',
+      message,
+      specificId: specificId || null,
+      tenantId,
+      token: accessToken.startsWith('Bearer ')
+        ? accessToken
+        : `Bearer ${accessToken}`,
+    }
+
+    const response = await fetch(CHATBOT_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: body.token,
+        'X-Tenant-Id': tenantId,
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok || response.status !== 200) {
+      return DEFAULT_CHATBOT_FALLBACK_ANSWER
+    }
+
+    const data = await response.json().catch(() => null)
+    if (!data || !data.text) {
+      return DEFAULT_CHATBOT_FALLBACK_ANSWER
+    }
+
+    return data as AskAiAnswer
+  } catch {
+    return DEFAULT_CHATBOT_FALLBACK_ANSWER
   }
-
-  const response = await fetch(CHATBOT_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: body.token,
-      'X-Tenant-Id': tenantId,
-    },
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '')
-    throw new Error(
-      detail || `Chatbot API failed with status ${response.status}`,
-    )
-  }
-
-  return (await response.json()) as AskAiAnswer
 }

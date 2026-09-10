@@ -20,6 +20,7 @@ import FolderTable from './FolderTable'
 import { StartWorkflowView } from './StartWorkflowView'
 import { TreeSidebar } from './TreeSidebar'
 import Upload from './Upload/Upload'
+import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 
 export function FolderExplorer() {
   const { i18n, t } = useLingui()
@@ -159,7 +160,29 @@ export function FolderExplorer() {
   const resolvedRepositoryId = String(
     selectedRepository?.id || getRepositoryIdFromFolder(activeFolder) || '',
   )
-  const canUpload = Boolean(activeFolder && resolvedRepositoryId)
+  const { permissions: folderPermissions } = useFolderSecurityPermissions(
+    resolvedRepositoryId,
+    activeFolder,
+  )
+  const canUpload = Boolean(
+    activeFolder && resolvedRepositoryId && folderPermissions.upload,
+  )
+
+  useEffect(() => {
+    if (appView === 'Upload' && !folderPermissions.upload) {
+      exitUpload()
+    }
+    if (appView === 'editMetadata' && !folderPermissions.editMetadata) {
+      setAppView(selectedFile ? 'details' : 'explorer')
+    }
+  }, [
+    appView,
+    exitUpload,
+    folderPermissions.editMetadata,
+    folderPermissions.upload,
+    selectedFile,
+    setAppView,
+  ])
 
   const currentRepositoryId = resolvedRepositoryId
 
@@ -360,6 +383,7 @@ export function FolderExplorer() {
       <DocumentDetailsView
         autoOpenShare={pendingOpenShare}
         id={detailsId}
+        permissions={folderPermissions}
         repositoryId={detailsRepositoryId}
         onAiSummary={() => setAppView('aiSummary')}
         onBack={() => {
@@ -367,7 +391,11 @@ export function FolderExplorer() {
           setDetailsDocument(null)
           setAppView('explorer')
         }}
-        onEdit={() => setAppView('editMetadata')}
+        onEdit={
+          folderPermissions.editMetadata
+            ? () => setAppView('editMetadata')
+            : undefined
+        }
         onOpenRelatedDocument={({
           id: relatedId,
           repositoryId: relatedRepoId,
@@ -481,7 +509,12 @@ export function FolderExplorer() {
           setView={changeViewMode}
           onAiSummary={(id) => openFileAction(id, 'aiSummary')}
           onBreadcrumbSelect={openFolder}
-          onEdit={(id) => openFileAction(id, 'editMetadata')}
+          onEdit={
+            folderPermissions.editMetadata
+              ? (id) => openFileAction(id, 'editMetadata')
+              : undefined
+          }
+          permissions={folderPermissions}
           onFilterMenuOpenChange={(id) => {
             if (id) beginFilterDefer()
             else commitFilterDefer()
@@ -573,7 +606,12 @@ export function FolderExplorer() {
               refreshing={refreshing}
               uploadDisabled={!canUpload}
               onAiSummary={(id) => openFileAction(id, 'aiSummary')}
-              onEditMetadata={(id) => openFileAction(id, 'editMetadata')}
+              onEditMetadata={
+                folderPermissions.editMetadata
+                  ? (id) => openFileAction(id, 'editMetadata')
+                  : undefined
+              }
+              permissions={folderPermissions}
               onLoadMoreFolders={loadMoreFolders}
               onOpenFile={openDetailsFile}
               onOpenFolder={openFolder}

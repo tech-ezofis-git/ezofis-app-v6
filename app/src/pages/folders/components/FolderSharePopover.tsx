@@ -32,6 +32,7 @@ export type FolderShareMeta = {
 }
 
 type FolderSharePopoverProps = {
+  allowSign?: boolean
   className?: string
   /** When true, open the popover on mount (e.g. list "Share" action). */
   defaultOpen?: boolean
@@ -115,6 +116,7 @@ const userKey = (user: any): string =>
   )
 
 export default function FolderSharePopover({
+  allowSign = true,
   className,
   defaultOpen = false,
   ownerUserId,
@@ -138,9 +140,10 @@ export default function FolderSharePopover({
   const [sharedUsers, setSharedUsers] = useState<Set<string>>(
     () => new Set(sharedIds ? [...sharedIds] : []),
   )
-  const shareRoleOptions = useMemo<FolderShareRoleOption[]>(
-    () =>
-      roleOptions || [
+  const shareRoleOptions = useMemo<FolderShareRoleOption[]>(() => {
+    const options =
+      roleOptions ||
+      ([
         {
           icon: 'lucide:eye',
           id: 'View',
@@ -151,12 +154,24 @@ export default function FolderSharePopover({
           id: 'Sign',
           name: t`Sign`,
         },
-      ],
-    [roleOptions, t],
-  )
+      ] satisfies FolderShareRoleOption[])
+    return allowSign
+      ? options
+      : options.filter((option) => option.id !== 'Sign')
+  }, [allowSign, roleOptions, t])
   const [globalShareRole, setGlobalShareRole] = useState<FolderShareRoleOption>(
     () => shareRoleOptions[0] || { id: 'View', name: 'View' },
   )
+
+  useEffect(() => {
+    if (
+      !allowSign &&
+      (globalShareRole.id === 'Sign' ||
+        !shareRoleOptions.some((option) => option.id === globalShareRole.id))
+    ) {
+      setGlobalShareRole(shareRoleOptions[0] || { id: 'View', name: 'View' })
+    }
+  }, [allowSign, globalShareRole.id, shareRoleOptions])
   const [showRoleDropdown, setShowRoleDropdown] = useState(false)
   const [openUserDropdown, setOpenUserDropdown] = useState<string | null>(null)
   const [sendNotification, setSendNotification] = useState(true)

@@ -312,6 +312,7 @@ export function DocumentDetailsView({
   autoOpenShare = false,
   onShareOpened,
   onOpenRelatedDocument,
+  permissions,
 }: {
   id: string
   repositoryId: string
@@ -327,6 +328,18 @@ export function DocumentDetailsView({
     id: string
     repositoryId: string
   }) => void
+  permissions?: {
+    checkIn?: boolean
+    checkOut?: boolean
+    delete?: boolean
+    download?: boolean
+    editDocument?: boolean
+    editMetadata?: boolean
+    print?: boolean
+    sendForSignature?: boolean
+    upload?: boolean
+    view?: boolean
+  }
   /** Open directly in assigned-field signing mode (invite / pending). */
   forceSigning?: boolean
   inviteToken?: string
@@ -401,8 +414,17 @@ export function DocumentDetailsView({
     String(initialSignRequestId || ''),
   )
   const [activeInviteToken] = useState(String(inviteToken || ''))
-  // Signing is offered only through a sign request invite link.
-  const canSign = Boolean(forceSigning || activeInviteToken || true)
+  // Signing UI is for invite / forced sign flows only.
+  // "Send for Signature" permission gates creating sign requests via Share.
+  const canSign = Boolean(forceSigning || activeInviteToken)
+  const canDownload = permissions ? permissions.download === true : true
+  const canPrint = permissions ? permissions.print === true : true
+  const canEditDocument = permissions
+    ? permissions.editDocument === true
+    : true
+  const canSendForSignature = permissions
+    ? permissions.sendForSignature === true
+    : true
   const [assignedFields, setAssignedFields] = useState<SignRequestFieldDto[]>(
     () => initialSignatureFields,
   )
@@ -1120,7 +1142,7 @@ export function DocumentDetailsView({
   }
 
   const handleDownload = async () => {
-    if (!repositoryId || !id || isDownloading) return
+    if (!repositoryId || !id || isDownloading || !canDownload) return
 
     setIsDownloading(true)
     setDownloadError('')
@@ -1771,7 +1793,7 @@ export function DocumentDetailsView({
         <div className='flex items-center gap-1.5 shrink-0'>
           {!compactActions ? (
             <>
-              {isEditableDocType ? (
+              {isEditableDocType && canEditDocument ? (
                 <Tooltip content={t`Edit file`} position='bottom'>
                   <button
                     aria-label={t`Edit file`}
@@ -1789,32 +1811,36 @@ export function DocumentDetailsView({
                 </Tooltip>
               ) : null}
 
-              <Tooltip content={t`Print file`} position='bottom'>
-                <button
-                  aria-label={t`Print file`}
-                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                  disabled={!previewUrl || isPreviewLoading}
-                  type='button'
-                  onClick={handlePrint}
-                >
-                  <DynamicIcon className='h-4 w-4' name='printer' />
-                </button>
-              </Tooltip>
+              {canPrint ? (
+                <Tooltip content={t`Print file`} position='bottom'>
+                  <button
+                    aria-label={t`Print file`}
+                    className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                    disabled={!previewUrl || isPreviewLoading}
+                    type='button'
+                    onClick={handlePrint}
+                  >
+                    <DynamicIcon className='h-4 w-4' name='printer' />
+                  </button>
+                </Tooltip>
+              ) : null}
 
-              <Tooltip
-                content={isDownloading ? t`Downloading...` : t`Download file`}
-                position='bottom'
-              >
-                <button
-                  aria-label={t`Download file`}
-                  className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
-                  disabled={isDownloading || isPreviewLoading}
-                  type='button'
-                  onClick={handleDownload}
+              {canDownload ? (
+                <Tooltip
+                  content={isDownloading ? t`Downloading...` : t`Download file`}
+                  position='bottom'
                 >
-                  <DynamicIcon className='h-4 w-4' name='download' />
-                </button>
-              </Tooltip>
+                  <button
+                    aria-label={t`Download file`}
+                    className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
+                    disabled={isDownloading || isPreviewLoading}
+                    type='button'
+                    onClick={handleDownload}
+                  >
+                    <DynamicIcon className='h-4 w-4' name='download' />
+                  </button>
+                </Tooltip>
+              ) : null}
 
               <button
                 aria-label={t`AI Summary`}
@@ -1830,6 +1856,7 @@ export function DocumentDetailsView({
                 <FolderSharePopover
                   className='shrink-0'
                   defaultOpen={autoOpenShare}
+                  allowSign={canSendForSignature}
                   sharedIds={sharedEmails}
                   sharedRoles={sharedRoles}
                   successMessage={t`Invite sent`}
@@ -1850,10 +1877,26 @@ export function DocumentDetailsView({
                         (share) =>
                           share.permission !== 'Sign' && share.action !== 2,
                       )
-                      const signShares = shares.filter(
-                        (share) =>
-                          share.permission === 'Sign' || share.action === 2,
-                      )
+                      const signShares = canSendForSignature
+                        ? shares.filter(
+                            (share) =>
+                              share.permission === 'Sign' || share.action === 2,
+                          )
+                        : []
+
+                      if (
+                        !canSendForSignature &&
+                        shares.some(
+                          (share) =>
+                            share.permission === 'Sign' || share.action === 2,
+                        )
+                      ) {
+                        showToast({
+                          message: t`You do not have permission to send for signature.`,
+                          variant: 'error',
+                        })
+                        return false
+                      }
 
                       // View → share API only
                       for (const share of viewShares) {
@@ -2523,54 +2566,60 @@ export function DocumentDetailsView({
                                   </span>
                                 </button>
 
-                                <Tooltip content={t`Download`} position='top'>
-                                  <button
-                                    type='button'
-                                    aria-label={t`Download`}
-                                    className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-                                    onClick={async (event) => {
-                                      event.stopPropagation()
-                                      try {
-                                        const response = await fileApi.viewBinaryV6(
-                                          item.repositoryId,
-                                          item.id,
-                                          'attachment',
-                                        )
-                                        if (!(response?.data instanceof Blob)) {
-                                          throw new Error(
-                                            toUiErrorMessage(
-                                              response?.error,
+                                {canDownload ? (
+                                  <Tooltip content={t`Download`} position='top'>
+                                    <button
+                                      type='button'
+                                      aria-label={t`Download`}
+                                      className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+                                      onClick={async (event) => {
+                                        event.stopPropagation()
+                                        try {
+                                          const response =
+                                            await fileApi.viewBinaryV6(
+                                              item.repositoryId,
+                                              item.id,
+                                              'attachment',
+                                            )
+                                          if (
+                                            !(response?.data instanceof Blob)
+                                          ) {
+                                            throw new Error(
+                                              toUiErrorMessage(
+                                                response?.error,
+                                                t`Unable to download file`,
+                                              ),
+                                            )
+                                          }
+                                          const downloadUrl =
+                                            URL.createObjectURL(response.data)
+                                          const link =
+                                            document.createElement('a')
+                                          link.href = downloadUrl
+                                          link.download =
+                                            item.fileName || 'document'
+                                          document.body.appendChild(link)
+                                          link.click()
+                                          link.remove()
+                                          URL.revokeObjectURL(downloadUrl)
+                                        } catch (exception: any) {
+                                          showToast({
+                                            message: toUiErrorMessage(
+                                              exception?.message || exception,
                                               t`Unable to download file`,
                                             ),
-                                          )
+                                            variant: 'error',
+                                          })
                                         }
-                                        const downloadUrl = URL.createObjectURL(
-                                          response.data,
-                                        )
-                                        const link = document.createElement('a')
-                                        link.href = downloadUrl
-                                        link.download = item.fileName || 'document'
-                                        document.body.appendChild(link)
-                                        link.click()
-                                        link.remove()
-                                        URL.revokeObjectURL(downloadUrl)
-                                      } catch (exception: any) {
-                                        showToast({
-                                          message: toUiErrorMessage(
-                                            exception?.message || exception,
-                                            t`Unable to download file`,
-                                          ),
-                                          variant: 'error',
-                                        })
-                                      }
-                                    }}
-                                  >
-                                    <DynamicIcon
-                                      className='h-4 w-4'
-                                      name='download'
-                                    />
-                                  </button>
-                                </Tooltip>
+                                      }}
+                                    >
+                                      <DynamicIcon
+                                        className='h-4 w-4'
+                                        name='download'
+                                      />
+                                    </button>
+                                  </Tooltip>
+                                ) : null}
                                 <Tooltip content={t`Remove from related`} position='top'>
                                   <button
                                     type='button'

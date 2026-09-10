@@ -52,6 +52,7 @@ import SettingsWizardLayout from './SettingsWizardLayout'
 import CustomFilter from '@/components/common/CustomFilter'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
 import { formatDatetime } from '@/utils/dayjs'
+import { isDemoAppOrigin } from '@/utils/origin'
 import {
   getFieldRequiredError,
   getMissingRequiredLabels,
@@ -106,6 +107,7 @@ type PermissionRow = {
   category: string
   categoryKey: string
   enabled: boolean
+  parentKey?: string
 }
 
 type Role = {
@@ -126,6 +128,12 @@ type RoleUserProps = {
 }
 
 type TabKey = 'roles' | 'permissions' | 'menus' | 'assignments'
+
+type RolePermissionPage = {
+  key: string
+  name: string
+  parentKey?: string
+}
 
 const tabs: { key: TabKey; label: any }[] = [
   { key: 'roles', label: msg`Role List` },
@@ -154,25 +162,47 @@ const ROLE_STEP_MSGS = [
 
 const ROLE_STEP_CAPTIONS = [msg`Step 1`, msg`Step 2`, msg`Step 3`]
 
-const ROLE_PERMISSION_PAGES: Array<{ key: string; name: string }> = [
+const ROLE_PERMISSION_PAGES: RolePermissionPage[] = [
   { key: 'dashboard', name: 'Dashboard' },
   { key: 'request', name: 'Request' },
   { key: 'folder', name: 'Folder' },
-  { key: 'workflow', name: 'Workflow' },
-  { key: 'form', name: 'Form' },
+  { key: 'report', name: 'Reports' },
   { key: 'settings', name: 'Settings' },
+  { key: 'workflow', name: 'Workflow', parentKey: 'settings' },
+  { key: 'form', name: 'Form', parentKey: 'settings' },
+  { key: 'folder-create', name: 'Folder creation', parentKey: 'settings' },
+  { key: 'portal', name: 'Portal', parentKey: 'settings' },
+  { key: 'report-builder', name: 'Report builder', parentKey: 'settings' },
 ]
 
 const ROLE_PERMISSION_KEY_ALIASES: Record<string, string> = {
   form: 'form',
   forms: 'form',
+  'folder-creation': 'folder-create',
+  'folder-configuration': 'folder-create',
+  report: 'report',
+  reports: 'report',
+  'report-builder': 'report-builder',
+  'report-builder-settings': 'report-builder',
+  reportbuilder: 'report-builder',
   request: 'request',
   requests: 'request',
+  workflow: 'workflow',
+  workflows: 'workflow',
+  portal: 'portal',
+  portals: 'portal',
 }
 
 const ALLOWED_ROLE_PERMISSION_KEYS = new Set(
   ROLE_PERMISSION_PAGES.map((page) => page.key),
 )
+
+const SETTINGS_CHILD_KEYS = ROLE_PERMISSION_PAGES.filter(
+  (page) => page.parentKey === 'settings',
+).map((page) => page.key)
+
+const getPermissionPageMeta = (key: string) =>
+  ROLE_PERMISSION_PAGES.find((page) => page.key === key)
 
 const normalizeRolePermissionKey = (value: string) => {
   const slug = normalizeCategorySlug(value)
@@ -400,13 +430,11 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
     const payload: UpsertV6RolePayload & { permissionKeys?: any[] } = {
       description:
         newRoleDescription.trim() || 'Custom role configured by administrator',
-      permissionKeys: apiMenus.map((item) => {
-        const isEnabled = newPermissions.includes(
-          normalizeCategorySlug(item.key || ''),
-        )
+      permissionKeys: ROLE_PERMISSION_PAGES.map((page) => {
+        const isEnabled = newPermissions.includes(page.key)
         return {
-          key: item.key,
-          name: item.name || item.label,
+          key: page.key,
+          name: page.name,
           visible: isEnabled,
         }
       }),
@@ -433,6 +461,13 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         variant: 'success',
       })
       await loadRoles()
+      // Refresh session so Settings cards reflect the latest permissionKeys.
+      try {
+        const { refreshUserSession } = await import('@/api/v6/auth')
+        await refreshUserSession()
+      } catch {
+        // ignore session refresh failures; role save already succeeded
+      }
       resetCreateRole()
     } finally {
       setIsSavingRole(false)
@@ -477,13 +512,34 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
   }
 
   const toggleNewPermission = (categoryKey: string) => {
-    setNewPermissionRows((current) =>
-      current.map((row) =>
-        row.categoryKey === categoryKey
-          ? { ...row, enabled: !row.enabled }
-          : row,
-      ),
-    )
+    setNewPermissionRows((current) => {
+      const target = current.find((row) => row.categoryKey === categoryKey)
+      if (!target) return current
+      const nextEnabled = !target.enabled
+
+      return current.map((row) => {
+        if (row.categoryKey === categoryKey) {
+          return { ...row, enabled: nextEnabled }
+        }
+        // Turning Settings off clears nested configuration access.
+        if (
+          categoryKey === 'settings' &&
+          !nextEnabled &&
+          row.parentKey === 'settings'
+        ) {
+          return { ...row, enabled: false }
+        }
+        // Enabling a Settings child also enables Settings.
+        if (
+          nextEnabled &&
+          SETTINGS_CHILD_KEYS.includes(categoryKey) &&
+          row.categoryKey === 'settings'
+        ) {
+          return { ...row, enabled: true }
+        }
+        return row
+      })
+    })
   }
 
   const toggleMenu = (key: string) => {
@@ -584,9 +640,11 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
         roles={roles}
         onBack={onBack}
         onCreate={() => {
-          const resetMenus = apiMenus.map((item) => ({
-            ...item,
-            visible: true,
+          const resetMenus = ROLE_PERMISSION_PAGES.map((page) => ({
+            key: page.key,
+            name: page.name,
+            // Top-level modules on by default; Settings children opt-in.
+            visible: !page.parentKey,
           }))
           setApiMenus(resetMenus)
           setNewPermissionRows(buildEmptyPermissionRows(resetMenus))
@@ -603,25 +661,38 @@ export default function RolesPermissions({ onBack }: RoleUserProps) {
 function buildEmptyPermissionRows(menus: V6MenuItem[]): PermissionRow[] {
   return buildPermissionCategoriesFromMenus(menus).map(({ key, name }) => {
     const menuItem = menus.find(
-      (m) => normalizeCategorySlug(m.key || '') === key,
+      (m) => normalizeRolePermissionKey(m.key || '') === key,
     )
+    const meta = getPermissionPageMeta(key)
     return {
       category: name,
       categoryKey: key,
       enabled: menuItem ? menuItem.visible !== false : true,
+      parentKey: meta?.parentKey,
     }
   })
 }
 
 function buildPermissionCategoriesFromMenus(menus: V6MenuItem[]) {
-  return menus
-    .map((menu) => ({
-      key: normalizeCategorySlug(String(menu.key || menu.id || '')),
-      name: String(menu.label || menu.key || 'Menu'),
-      sortOrder: Number(menu.sortOrder ?? 0),
+  // Prefer the fixed ROLE_PERMISSION_PAGES order so Settings children stay nested.
+  if (!menus.length) {
+    return ROLE_PERMISSION_PAGES.map((page, index) => ({
+      key: page.key,
+      name: page.name,
+      sortOrder: index,
     }))
-    .filter((category) => category.key)
-    .sort((a, b) => a.sortOrder - b.sortOrder)
+  }
+
+  return ROLE_PERMISSION_PAGES.map((page, index) => {
+    const menu = menus.find(
+      (item) => normalizeRolePermissionKey(String(item.key || '')) === page.key,
+    )
+    return {
+      key: page.key,
+      name: String(menu?.name || menu?.label || page.name),
+      sortOrder: Number(menu?.sortOrder ?? index),
+    }
+  })
 }
 
 function CheckBox({
@@ -662,70 +733,87 @@ function CreatePermissionMatrix({
   onToggle: (categoryKey: string) => void
 }) {
   const { t } = useLingui()
-  // console.log(rows, "rows")
-  const tableSearchOptions = useSettingsTableSearch()
-  const permissionColumns = useMemo(
-    () => [
-      permissionColumnHelper.accessor('category', {
-        enableSorting: false,
-        header: t`Category`,
-        id: 'category',
-        meta: settingsHeaderMeta.start,
-        size: 360,
-        cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)] capitalize'>
-            {getValue()}
-          </span>
-        ),
-      }),
-      permissionColumnHelper.display({
-        enableSorting: false,
-        header: t`Access`,
-        id: 'access',
-        meta: settingsHeaderMeta.center,
-        size: 140,
-        cell: ({ row }) => (
-          <div className='flex justify-center'>
-            <Switch
-              checked={row.original.enabled}
-              onChange={() => onToggle(row.original.categoryKey)}
-            />
-          </div>
-        ),
-      }),
-    ],
-    [onToggle, t],
+  const settingsEnabled = Boolean(
+    rows.find((row) => row.categoryKey === 'settings')?.enabled,
   )
-
-  const permissionTable = useReactTable({
-    ...settingsTableCoreOptions,
-    ...tableSearchOptions,
-    columns: permissionColumns,
-    data: rows,
-    getRowId: (row) => row.category,
-  })
-
-  const { rowSize, onRowSizeChange } = useSettingsTableToolbar({
-    isReLoading: false,
-    table: permissionTable,
-    onReload: () => undefined,
-  })
+  const topLevelRows = rows.filter((row) => !row.parentKey)
+  const settingsChildren = rows.filter((row) => row.parentKey === 'settings')
 
   return (
-    <div>
-      <DataTable
-        isLoading={false}
-        isReLoading={false}
-        pageSize={Math.max(9, rows.length || 9)}
-        rowSize={rowSize}
-        table={permissionTable}
-        tableBodyMaxHeight='calc(100vh - 330px)'
-        hideActionBar
-        hideGrouping
-        stickyHeader
-        onReload={() => undefined}
-        onRowSizeChange={onRowSizeChange}
-      />
+    <div className='overflow-hidden rounded-[12px] border border-[var(--border-default)] bg-[var(--surface-primary)]'>
+      <div className='grid grid-cols-[1fr_120px] border-b border-[var(--border-default)] bg-[var(--gray-1)] px-4 py-3'>
+        <span className='text-12 font-semibold tracking-wide text-[var(--gray-11)] uppercase'>
+          {t`Category`}
+        </span>
+        <span className='text-center text-12 font-semibold tracking-wide text-[var(--gray-11)] uppercase'>
+          {t`Access`}
+        </span>
+      </div>
+
+      <div className='divide-y divide-[var(--border-default)]'>
+        {topLevelRows.map((row) => {
+          const isSettings = row.categoryKey === 'settings'
+          return (
+            <div key={row.categoryKey}>
+              <div className='grid grid-cols-[1fr_120px] items-center px-4 py-3.5'>
+                <span className='text-sm font-semibold text-[var(--gray-13)] capitalize'>
+                  {row.category}
+                </span>
+                <div className='flex justify-center'>
+                  <Switch
+                    checked={row.enabled}
+                    onChange={() => onToggle(row.categoryKey)}
+                  />
+                </div>
+              </div>
+
+              {isSettings && settingsEnabled ? (
+                <div className='border-t border-[var(--border-default)] bg-[var(--primary-1)]/60 px-4 py-3'>
+                  <p className='mb-2.5 text-[11px] font-semibold tracking-[0.08em] text-primary-9 uppercase'>
+                    {t`Settings configuration access`}
+                  </p>
+                  <div className='overflow-hidden rounded-[10px] border border-[var(--border-default)] bg-[var(--surface-primary)]'>
+                    {settingsChildren.map((child, index) => (
+                      <div
+                        className={[
+                          'grid grid-cols-[1fr_120px] items-center px-3.5 py-3',
+                          index > 0 ? 'border-t border-[var(--border-default)]' : '',
+                        ].join(' ')}
+                        key={child.categoryKey}
+                      >
+                        <div className='min-w-0 pl-1'>
+                          <div className='text-13 font-semibold text-[var(--gray-13)]'>
+                            {child.category}
+                          </div>
+                          <div className='mt-0.5 text-11 text-[var(--gray-10)]'>
+                            {child.categoryKey === 'workflow'
+                              ? t`Show Workflows in Settings → Configuration`
+                              : child.categoryKey === 'form'
+                                ? t`Show Forms in Settings → Configuration`
+                                : child.categoryKey === 'folder-create'
+                                  ? t`Show Folder Configuration in Settings`
+                                  : child.categoryKey === 'portal'
+                                    ? t`Show Portal Configuration in Settings`
+                                    : child.categoryKey === 'report-builder'
+                                      ? t`Show Report Builder in Settings → Configuration`
+                                      : t`Show ${child.category} in Settings`}
+                          </div>
+                        </div>
+                        <div className='flex justify-center'>
+                          <Switch
+                            checked={child.enabled}
+                            onChange={() => onToggle(child.categoryKey)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -792,15 +880,17 @@ function CreateRolePage({
   }
 
   const handleNext = () => {
-    const missingLabels = getMissingLabels(activeStep)
+    if (!isDemoAppOrigin()) {
+      const missingLabels = getMissingLabels(activeStep)
 
-    if (missingLabels.length) {
-      setShowErrors(true)
-      showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
-        variant: 'error',
-      })
-      return
+      if (missingLabels.length) {
+        setShowErrors(true)
+        showToast({
+          message: getRequiredFieldErrorMessage(missingLabels),
+          variant: 'error',
+        })
+        return
+      }
     }
 
     setShowErrors(false)
@@ -825,7 +915,7 @@ function CreateRolePage({
   }
 
   const handleStepChange = (step: number) => {
-    if (step > activeStep) {
+    if (!isDemoAppOrigin() && step > activeStep) {
       for (let index = activeStep; index < step; index += 1) {
         const missingLabels = getMissingLabels(index)
 
@@ -851,7 +941,7 @@ function CreateRolePage({
   }
 
   const wizardSteps = useMemo(() => {
-    const isEditMode = editingRoleId !== null
+    const isEditMode = editingRoleId !== null || isDemoAppOrigin()
     return ROLE_STEP_MSGS.map((step, idx) => ({
       id: idx,
       label: i18n._(step.title),
@@ -1003,11 +1093,11 @@ function formatCategoryLabel(key: string): string {
 }
 
 function isPermissionKeyVisible(value: unknown): boolean {
+  if (value == null || value === '') return true
   if (typeof value === 'boolean') return value
   if (typeof value === 'number') return value === 1
-  const text = String(value ?? '')
-    .trim()
-    .toLowerCase()
+  const text = String(value).trim().toLowerCase()
+  if (!text) return true
   return text === 'true' || text === '1' || text === 'yes'
 }
 
@@ -1082,7 +1172,7 @@ function isPermissionEnabledForCategory(
   permissions: string[],
 ): boolean {
   return permissions.some(
-    (permission) => normalizePermissionCategory(permission) === categoryKey,
+    (permission) => normalizeRolePermissionKey(permission) === categoryKey,
   )
 }
 
@@ -1154,12 +1244,12 @@ function mapPermissionsToRows(
   const categoryKeys = new Set(categories.map((category) => category.key))
 
   for (const permission of permissions) {
-    const key = normalizePermissionCategory(permission)
+    const key = normalizeRolePermissionKey(permission)
 
-    if (key && !categoryKeys.has(key)) {
+    if (key && !categoryKeys.has(key) && ALLOWED_ROLE_PERMISSION_KEYS.has(key)) {
       categories.push({
         key,
-        name: formatCategoryLabel(key),
+        name: getPermissionPageMeta(key)?.name || formatCategoryLabel(key),
         sortOrder: categories.length + 1,
       })
       categoryKeys.add(key)
@@ -1168,15 +1258,17 @@ function mapPermissionsToRows(
 
   return categories.map((category) => {
     const menuItem = menus.find(
-      (m) => normalizeCategorySlug(m.key || '') === category.key,
+      (m) => normalizeRolePermissionKey(m.key || '') === category.key,
     )
     const isVisible = menuItem
       ? menuItem.visible === true
       : isPermissionEnabledForCategory(category.key, permissions)
+    const meta = getPermissionPageMeta(category.key)
     return {
       category: category.name,
       categoryKey: category.key,
       enabled: isVisible,
+      parentKey: meta?.parentKey,
     }
   })
 }
@@ -1334,10 +1426,20 @@ function PermissionMatrix({
         meta: settingsHeaderMeta.start,
         minSize: 40,
         size: 240,
-        cell: ({ getValue }) => (
-          <span className='text-sm font-semibold text-[var(--gray-13)]'>
-            {getValue()}
-          </span>
+        cell: ({ getValue, row }) => (
+          <div
+            className={[
+              'flex items-center gap-2',
+              row.original.parentKey
+                ? 'pl-6 text-[var(--gray-11)]'
+                : 'text-[var(--gray-13)]',
+            ].join(' ')}
+          >
+            {row.original.parentKey ? (
+              <span className='text-[var(--gray-8)]'>└</span>
+            ) : null}
+            <span className='text-sm font-semibold'>{getValue()}</span>
+          </div>
         ),
       }),
       permissionColumnHelper.display({

@@ -73,41 +73,59 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
     const handleSearchKeyDown = (
       event: React.KeyboardEvent<HTMLInputElement>,
     ) => {
-      if (event.key === 'Enter' && creatable && search.trim()) {
+      if (event.key === 'Enter' && search.trim()) {
         const trimmed = search.trim()
         if (isCreatableSearch && !isCreatableSearch(trimmed)) return
 
-        // If there's an exact match in current options, let Mantine handle it naturally
-        const hasExactMatch = (options ?? []).some(
+        const exactMatch = (options ?? []).find(
           (o) =>
             o.name.toLowerCase() === trimmed.toLowerCase() ||
             String(o.value || '').toLowerCase() === trimmed.toLowerCase(),
         )
-        if (hasExactMatch) return
 
-        event.preventDefault()
-        const id = Date.now()
-        const newOption = {
-          description: '',
-          disabled: false,
-          id,
-          name: trimmed,
-          value: trimmed,
+        if (exactMatch) {
+          event.preventDefault()
+          if (variant === 'single') {
+            onChange([exactMatch])
+          } else {
+            const selected = value ?? []
+            const alreadySelected = selected.some(
+              (item) =>
+                String(item.value || item.name).toLowerCase() ===
+                trimmed.toLowerCase(),
+            )
+            if (!alreadySelected) onChange([...selected, exactMatch])
+          }
+          onSearch('')
+          comboboxStore.closeDropdown()
+          return
         }
 
-        if (variant === 'single') {
-          onChange([newOption])
-        } else {
-          const selected = value ?? []
-          const alreadySelected = selected.some(
-            (item) =>
-              String(item.value || item.name).toLowerCase() ===
-              trimmed.toLowerCase(),
-          )
-          if (!alreadySelected) onChange([...selected, newOption])
+        if (creatable) {
+          event.preventDefault()
+          const id = Date.now()
+          const newOption = {
+            description: '',
+            disabled: false,
+            id,
+            name: trimmed,
+            value: trimmed,
+          }
+
+          if (variant === 'single') {
+            onChange([newOption])
+          } else {
+            const selected = value ?? []
+            const alreadySelected = selected.some(
+              (item) =>
+                String(item.value || item.name).toLowerCase() ===
+                trimmed.toLowerCase(),
+            )
+            if (!alreadySelected) onChange([...selected, newOption])
+          }
+          onSearch('')
+          comboboxStore.closeDropdown()
         }
-        onSearch('')
-        comboboxStore.closeDropdown()
       }
     }
 
@@ -117,6 +135,9 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
         store={comboboxStore}
         transitionProps={{ transition: 'pop' }}
         width={width}
+        withinPortal
+        // Above Ask AI drawer (z-[9999]) and similar overlays so the menu is visible
+        zIndex={10050}
       >
         <ComboboxTarget
           {...rest}
@@ -157,6 +178,7 @@ const Combobox = forwardRef<HTMLButtonElement, Props>(
             variant={variant}
             onBottomReached={onBottomReached}
             onChange={onChange}
+            onSearch={onSearch}
           />
 
           {dropdownFooter && (

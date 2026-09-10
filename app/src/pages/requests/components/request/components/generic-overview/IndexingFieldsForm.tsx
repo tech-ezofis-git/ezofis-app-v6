@@ -25,8 +25,8 @@ const toIndexingField = (
   const options = parseFieldOptionValues(repoField)
   let type = dataType
   if (dataType === 'BOOLEAN') type = 'YES_NO_TOGGLE'
-  else if (dataType === 'SINGLE_CHOICE') type = 'SINGLE_SELECT'
-  else if (dataType === 'MULTIPLE_CHOICE') type = 'MULTI_SELECT'
+  else if (dataType === 'SINGLE_CHOICE' || dataType === 'SINGLE_SELECT') type = 'SINGLE_SELECT'
+  else if (dataType === 'MULTIPLE_CHOICE' || dataType === 'MULTI_SELECT') type = 'MULTI_SELECT'
   else if (!SUPPORTED_TYPES.has(dataType)) type = 'SHORT_TEXT'
 
   return {

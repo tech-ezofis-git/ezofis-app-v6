@@ -179,7 +179,7 @@ export default function CustomFilter({
   onFilterMenuOpenChange,
   onQuickFilterToggle,
   onReset,
-  onSearchChange = () => {},
+  onSearchChange = () => { },
   onViewModeChange,
 }: CustomFilterProps) {
   const { t } = useLingui()
@@ -448,161 +448,161 @@ export default function CustomFilter({
 
   const moreFiltersPanel =
     activeFilterDropdown === 'more' &&
-    morePanelPos &&
-    moreFilters &&
-    moreFilters.length > 0
+      morePanelPos &&
+      moreFilters &&
+      moreFilters.length > 0
       ? createPortal(
-          <div
-            className='animate-in fade-in zoom-in-95 fixed flex max-h-[320px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
-            ref={moreFiltersPanelRef}
-            style={{
-              left: morePanelPos.left,
-              top: morePanelPos.top,
-              zIndex: FILTER_MENU_Z_INDEX,
-            }}
-          >
-            <div className='ez-scrollbar flex max-h-[320px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12'>
-              {moreFilters.map((group) => {
-                const IconComp = group.icon
-                const isActive = activeFilterGroup === group.id
-                return (
-                  <button
-                    key={group.id}
-                    type='button'
-                    className={cn(
-                      'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 transition-all',
-                      isActive
-                        ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
-                        : 'hover:bg-gray-2 dark:hover:bg-gray-10',
+        <div
+          className='animate-in fade-in zoom-in-95 fixed flex max-h-[320px] overflow-hidden rounded-lg border border-border-default bg-surface shadow-md'
+          ref={moreFiltersPanelRef}
+          style={{
+            left: morePanelPos.left,
+            top: morePanelPos.top,
+            zIndex: FILTER_MENU_Z_INDEX,
+          }}
+        >
+          <div className='ez-scrollbar flex max-h-[320px] w-[168px] flex-col overflow-y-auto border-r border-border-default bg-primary-3/30 p-1 dark:bg-gray-12'>
+            {moreFilters.map((group) => {
+              const IconComp = group.icon
+              const isActive = activeFilterGroup === group.id
+              return (
+                <button
+                  key={group.id}
+                  type='button'
+                  className={cn(
+                    'flex w-full cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-left text-12 transition-all',
+                    isActive
+                      ? 'bg-primary-3 text-primary-9 dark:bg-primary-9 dark:text-white'
+                      : 'hover:bg-gray-2 dark:hover:bg-gray-10',
+                  )}
+                  onClick={() => {
+                    setActiveFilterGroup(group.id)
+                    skipMoreFilterDebounceRef.current = true
+                    setFilterSearchQuery(activeFilters[group.id] || '')
+                  }}
+                >
+                  <span className='flex min-w-0 items-center gap-1.5'>
+                    {IconComp && (
+                      <IconComp className='h-3.5 w-3.5 shrink-0' />
                     )}
-                    onClick={() => {
-                      setActiveFilterGroup(group.id)
-                      skipMoreFilterDebounceRef.current = true
-                      setFilterSearchQuery(activeFilters[group.id] || '')
-                    }}
-                  >
-                    <span className='flex min-w-0 items-center gap-1.5'>
-                      {IconComp && (
-                        <IconComp className='h-3.5 w-3.5 shrink-0' />
-                      )}
-                      <span className='truncate'>{group.label}</span>
-                    </span>
-                    <ChevronRight className='h-3 w-3 shrink-0 opacity-60' />
-                  </button>
-                )
-              })}
-            </div>
+                    <span className='truncate'>{group.label}</span>
+                  </span>
+                  <ChevronRight className='h-3 w-3 shrink-0 opacity-60' />
+                </button>
+              )
+            })}
+          </div>
 
-            <div className='ez-scrollbar flex max-h-[320px] w-max max-w-64 flex-col overflow-hidden bg-surface'>
-              {moreFilters.map((group) => {
-                if (activeFilterGroup !== group.id) return null
-                const selectedValues = parseFilterValues(activeFilters[group.id])
+          <div className='ez-scrollbar flex max-h-[320px] w-max max-w-64 flex-col overflow-hidden bg-surface'>
+            {moreFilters.map((group) => {
+              if (activeFilterGroup !== group.id) return null
+              const selectedValues = parseFilterValues(activeFilters[group.id])
 
-                if (isDateColumnType(group.dataType)) {
-                  return (
-                    <DateFilterMenu
-                      key={group.id}
-                      options={group.options?.length ? group.options : DEFAULT_DATE_RANGE_OPTIONS}
-                      selectedValues={selectedValues}
-                      onChange={(vals) => {
-                        skipMoreFilterDebounceRef.current = true
-                        onFilterChange(group.id, vals[0] || '')
-                      }}
-                      onClear={() => {
-                        skipMoreFilterDebounceRef.current = true
-                        onFilterChange(group.id, '')
-                        setActiveFilterDropdown(null)
-                      }}
-                    />
-                  )
-                }
-
-                if (isNumberColumnType(group.dataType)) {
-                  return (
-                    <NumberFilterMenu
-                      key={group.id}
-                      isLoading={isLoading}
-                      options={group.options || []}
-                      selectedValues={selectedValues}
-                      onChange={(vals) => {
-                        skipMoreFilterDebounceRef.current = true
-                        applyMultiFilter(group.id, vals)
-                        setActiveFilterDropdown(null)
-                      }}
-                      onClear={() => {
-                        skipMoreFilterDebounceRef.current = true
-                        onFilterChange(group.id, '')
-                        setActiveFilterDropdown(null)
-                      }}
-                    />
-                  )
-                }
-
-                if (group.options) {
-                  return (
-                    <CategoryFilterMenu
-                      key={group.id}
-                      isLoading={isLoading}
-                      label={group.label}
-                      options={group.options}
-                      selectedValues={selectedValues}
-                      onChange={(vals) => {
-                        skipMoreFilterDebounceRef.current = true
-                        applyMultiFilter(group.id, vals)
-                        setActiveFilterDropdown(null)
-                      }}
-                      onClear={() => {
-                        skipMoreFilterDebounceRef.current = true
-                        onFilterChange(group.id, '')
-                        setActiveFilterDropdown(null)
-                      }}
-                    />
-                  )
-                }
-
-                if (group.actions && group.actions.length > 0) {
-                  return (
-                    <CategoryFilterMenu
-                      key={group.id}
-                      isLoading={isLoading}
-                      label={group.label}
-                      options={group.actions}
-                      selectedValues={selectedValues}
-                      onChange={(vals) => {
-                        skipMoreFilterDebounceRef.current = true
-                        applyMultiFilter(group.id, vals)
-                        setActiveFilterDropdown(null)
-                      }}
-                      onClear={() => {
-                        skipMoreFilterDebounceRef.current = true
-                        onFilterChange(group.id, '')
-                        setActiveFilterDropdown(null)
-                      }}
-                    />
-                  )
-                }
-
-                // Free-text fallback when no options are provided
+              if (isDateColumnType(group.dataType)) {
                 return (
-                  <div key={group.id} className='flex flex-col p-2'>
-                    <div className='relative border border-border-default rounded-md'>
-                      <Search className='absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-text-muted' />
-                      <input
-                        className={FILTER_SEARCH_INPUT}
-                        placeholder={`Filter ${group.label.toLowerCase()}...`}
-                        type='text'
-                        value={filterSearchQuery}
-                        autoFocus
-                        onChange={(e) => setFilterSearchQuery(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                  <DateFilterMenu
+                    key={group.id}
+                    options={group.options?.length ? group.options : DEFAULT_DATE_RANGE_OPTIONS}
+                    selectedValues={selectedValues}
+                    onChange={(vals) => {
+                      skipMoreFilterDebounceRef.current = true
+                      onFilterChange(group.id, vals[0] || '')
+                    }}
+                    onClear={() => {
+                      skipMoreFilterDebounceRef.current = true
+                      onFilterChange(group.id, '')
+                      setActiveFilterDropdown(null)
+                    }}
+                  />
                 )
-              })}
-            </div>
-          </div>,
-          document.body,
-        )
+              }
+
+              if (isNumberColumnType(group.dataType)) {
+                return (
+                  <NumberFilterMenu
+                    key={group.id}
+                    isLoading={isLoading}
+                    options={group.options || []}
+                    selectedValues={selectedValues}
+                    onChange={(vals) => {
+                      skipMoreFilterDebounceRef.current = true
+                      applyMultiFilter(group.id, vals)
+                      setActiveFilterDropdown(null)
+                    }}
+                    onClear={() => {
+                      skipMoreFilterDebounceRef.current = true
+                      onFilterChange(group.id, '')
+                      setActiveFilterDropdown(null)
+                    }}
+                  />
+                )
+              }
+
+              if (group.options) {
+                return (
+                  <CategoryFilterMenu
+                    key={group.id}
+                    isLoading={isLoading}
+                    label={group.label}
+                    options={group.options}
+                    selectedValues={selectedValues}
+                    onChange={(vals) => {
+                      skipMoreFilterDebounceRef.current = true
+                      applyMultiFilter(group.id, vals)
+                      setActiveFilterDropdown(null)
+                    }}
+                    onClear={() => {
+                      skipMoreFilterDebounceRef.current = true
+                      onFilterChange(group.id, '')
+                      setActiveFilterDropdown(null)
+                    }}
+                  />
+                )
+              }
+
+              if (group.actions && group.actions.length > 0) {
+                return (
+                  <CategoryFilterMenu
+                    key={group.id}
+                    isLoading={isLoading}
+                    label={group.label}
+                    options={group.actions}
+                    selectedValues={selectedValues}
+                    onChange={(vals) => {
+                      skipMoreFilterDebounceRef.current = true
+                      applyMultiFilter(group.id, vals)
+                      setActiveFilterDropdown(null)
+                    }}
+                    onClear={() => {
+                      skipMoreFilterDebounceRef.current = true
+                      onFilterChange(group.id, '')
+                      setActiveFilterDropdown(null)
+                    }}
+                  />
+                )
+              }
+
+              // Free-text fallback when no options are provided
+              return (
+                <div key={group.id} className='flex flex-col p-2'>
+                  <div className='relative border border-border-default rounded-md'>
+                    <Search className='absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-text-muted' />
+                    <input
+                      className={FILTER_SEARCH_INPUT}
+                      placeholder={`Filter ${group.label.toLowerCase()}...`}
+                      type='text'
+                      value={filterSearchQuery}
+                      autoFocus
+                      onChange={(e) => setFilterSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>,
+        document.body,
+      )
       : null
 
   return (
@@ -1057,7 +1057,7 @@ export default function CustomFilter({
                     color='primary'
                     label={addButton.label}
                     size='md'
-                    suffixIcon={addButton.icon || 'lucide:plus'}
+                    icon={addButton.icon || 'lucide:plus'}
                     variant='solid'
                     onClick={addButton.onClick}
                   />

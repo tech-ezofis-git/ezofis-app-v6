@@ -7,11 +7,11 @@ import formApi from '@/api/form/form'
 import requestApi from '@/api/requests/requests'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
+  type WorkflowOptionItem,
 } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
 import setupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import useAuthUserStore from '@/stores/authUserStore'
-import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 import type {
   InboxItem,
   IRequestMeta,
@@ -31,13 +31,24 @@ import {
 
 type WorkflowLoadStatus = 'loading' | 'ready' | 'empty'
 
-const LAST_WORKFLOW_ID_KEY = 'v6_requests_last_workflow_id'
+const MANUALLY_SELECTED_WORKFLOW_ID_KEY =
+  'v6_requests_manually_selected_workflow_id'
 
-const getLastSelectedWorkflowId = () =>
-  getFromLocalStorage<string>(LAST_WORKFLOW_ID_KEY, 'STRING')
+const getManuallySelectedWorkflowId = (): string | null => {
+  try {
+    return sessionStorage.getItem(MANUALLY_SELECTED_WORKFLOW_ID_KEY)
+  } catch {
+    return null
+  }
+}
 
-const setLastSelectedWorkflowId = (id: string | number) =>
-  setToLocalStorage(String(id), LAST_WORKFLOW_ID_KEY, 'STRING')
+const setManuallySelectedWorkflowId = (id: string | number) => {
+  try {
+    sessionStorage.setItem(MANUALLY_SELECTED_WORKFLOW_ID_KEY, String(id))
+  } catch {
+    // ignore
+  }
+}
 
 function flattenRows(groups: any[]): any[] {
   const out: any[] = []
@@ -178,35 +189,80 @@ const RequestsPage = () => {
   }
 
   // --- 3. HANDLERS ---
+  const handleWorkflowSelect = useCallback(
+    (opt: Option | null | ((prev: Option | null) => Option | null)) => {
+      setWorkflow((prev) => {
+        const next = typeof opt === 'function' ? opt(prev) : opt
+        if (next?.id) {
+          setManuallySelectedWorkflowId(next.id)
+        }
+        return next
+      })
+    },
+    [],
+  )
+
   const loadWorkflowList = useCallback(async () => {
     setWorkflowLoadStatus('loading')
+    const procurementOption: WorkflowOptionItem = {
+      disabled: false,
+      id: 'procurement',
+      name: 'Procurement',
+    }
     try {
       const { data, error } = await workflowsApiV6.getWorkflows()
       if (error) throw new Error(error)
 
-      const options = mapPublishedWorkflowListToOptions(data)
+      const publishedOptions = mapPublishedWorkflowListToOptions(data)
+      const options = [...publishedOptions]
+      if (!options.some((opt) => String(opt.id).toLowerCase() === 'procurement')) {
+        options.push(procurementOption)
+      }
+
       if (options.length > 0) {
         setAllWorkflow(options)
-        // Re-select whatever workflow was last active instead of always
-        // defaulting to the first one — this page remounts (and loses its
-        // local `workflow` state) whenever the user navigates away and
-        // back, or when the New Request panel opens/closes.
-        const lastId = getLastSelectedWorkflowId()
-        const restored =
-          lastId && options.find((opt) => String(opt.id) === String(lastId))
-        setWorkflow(restored || options[0])
+
+        // First published workflow is the default for initial load / login.
+        // Procurement is an extra appended option and should never load by default on login.
+        const defaultWorkflow =
+          publishedOptions.length > 0 ? publishedOptions[0] : options[0]
+        const userSelectedId = getManuallySelectedWorkflowId()
+
+        let selectedOpt: Option = defaultWorkflow
+        if (userSelectedId) {
+          const match = options.find(
+            (opt) => String(opt.id) === String(userSelectedId),
+          )
+          if (match) {
+            selectedOpt = match
+          }
+        }
+
+        setWorkflow(selectedOpt)
       } else {
-        setAllWorkflow([])
-        setWorkflow(null)
-        setSelectedWorkflow(null)
-        setWorkflowLoadStatus('empty')
+        setAllWorkflow([procurementOption])
+        setWorkflow(procurementOption)
+        setSelectedWorkflow({
+          flowJson: '',
+          formJson: '',
+          id: 'procurement',
+          name: 'Procurement',
+          wFormId: '',
+        })
+        setWorkflowLoadStatus('ready')
       }
       setIsLoading(false)
     } catch {
-      setAllWorkflow([])
-      setWorkflow(null)
-      setSelectedWorkflow(null)
-      setWorkflowLoadStatus('empty')
+      setAllWorkflow([procurementOption])
+      setWorkflow(procurementOption)
+      setSelectedWorkflow({
+        flowJson: '',
+        formJson: '',
+        id: 'procurement',
+        name: 'Procurement',
+        wFormId: '',
+      })
+      setWorkflowLoadStatus('ready')
       setIsLoading(false)
     }
   }, [])
@@ -235,6 +291,23 @@ const RequestsPage = () => {
   const loadSelectedWorkflow = useCallback(
     async (workflowId: string, workflowName?: string) => {
       setWorkflowLoadStatus('loading')
+      if (String(workflowId).toLowerCase() === 'procurement') {
+        setSelectedWorkflow({
+          flowJson: '',
+          formJson: '',
+          id: 'procurement',
+          name: 'Procurement',
+          wFormId: '',
+        })
+        setMetaData({
+          completedCount: '0',
+          inboxCount: '0',
+          sentCount: '0',
+        })
+        setWorkflowLoadStatus('ready')
+        setIsLoading(false)
+        return
+      }
       try {
         const [workflowRes, countRes] = await Promise.all([
           workflowsApiV6.getWorkflowById(workflowId),
@@ -332,7 +405,7 @@ const RequestsPage = () => {
     if (match) {
       console.log('📌 [RequestsPage Step 6.1: Found Matching Workflow]', match)
       if (String(match.id) !== String(workflow?.id)) {
-        setWorkflow(match)
+        handleWorkflowSelect(match)
       }
     } else {
       console.warn(
@@ -539,14 +612,6 @@ const RequestsPage = () => {
     navigate,
   ])
 
-  // Remember the active workflow so it survives this page remounting
-  // (navigating away and back, or opening/closing New Request).
-  useEffect(() => {
-    if (workflow?.id) {
-      setLastSelectedWorkflowId(workflow.id)
-    }
-  }, [workflow?.id])
-
   const lastLoadedWorkflowIdRef = useRef<string | number | null>(null)
 
   // Workflow Change Listener
@@ -695,6 +760,7 @@ const RequestsPage = () => {
   const session = useAuthUserStore((s) => s.session)
 
   const canCreateNewRequest = useMemo(() => {
+    if (workflow?.id === 'procurement' || selectedWorkflow?.id === 'procurement') return false
     // AP workflows always allow "+ New Request"
     if (isAccountsPayable) return true
 
@@ -747,7 +813,7 @@ const RequestsPage = () => {
               activeTab={activeTab}
               allWorkflows={allWorkflow}
               exceptionsCount={inboxResult?.exceptionsCount}
-              hideListTabs={viewMode === 'kanban'}
+              hideListTabs={viewMode === 'kanban' || workflow?.id === 'procurement'}
               isAccountsPayable={isAccountsPayable}
               isLoading={isLoading}
               metaData={metaData}
@@ -770,7 +836,7 @@ const RequestsPage = () => {
                   : []
               }
               setActiveTab={handleTabChange}
-              setWorkflow={setWorkflow}
+              setWorkflow={handleWorkflowSelect}
             />
           )}
           {selectedItem && (
@@ -785,7 +851,16 @@ const RequestsPage = () => {
             />
           )}
           {!selectedItem &&
-            (showWorkflowEmpty ? (
+            (workflow?.id === 'procurement' ? (
+              <div className='flex h-full w-full flex-1 overflow-hidden border-0'>
+                <iframe
+                  allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+                  className='h-full w-full border-0'
+                  src='https://arasuezofis-pr-agent.hf.space/'
+                  title='Procurement'
+                />
+              </div>
+            ) : showWorkflowEmpty ? (
               <PageEmptyState page='requests' variant='unavailable' />
             ) : (
               <InboxList

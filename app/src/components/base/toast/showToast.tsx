@@ -21,13 +21,20 @@ const variants = {
   },
 }
 
-const showToast = ({ message, toastTitle, variant = 'default' }: Toast) => {
+const showToast = ({
+  autoClose,
+  message,
+  toastTitle,
+  variant = 'default',
+}: Toast) => {
   const { title } = toastTitle ? { title: toastTitle } : variants[variant]
 
   return notifications.show({
+    autoClose: autoClose ?? 4000,
     className: cn(variants[variant].className, 'mt-4'),
     message,
     title,
+    withCloseButton: true,
   })
 }
 

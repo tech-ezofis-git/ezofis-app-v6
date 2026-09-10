@@ -66,12 +66,40 @@ export const toBooleanValue = (value: any) => {
 export const getSelectOptions = (
   field: DynamicRepositoryColumn,
 ): SelectOption[] => {
-  const rawOptions =
+  let rawOptions =
     (field as any).options ||
     (field as any).values ||
     (field as any).lookupValues ||
     (field as any).allowedValues ||
+    (field as any).optionsJson ||
     []
+
+  if (typeof rawOptions === 'string') {
+    try {
+      rawOptions = JSON.parse(rawOptions)
+      if (typeof rawOptions === 'string') {
+        try {
+          rawOptions = JSON.parse(rawOptions)
+        } catch {
+          // not double JSON
+        }
+      }
+    } catch {
+      // not JSON string
+    }
+  }
+
+  if (
+    rawOptions &&
+    typeof rawOptions === 'object' &&
+    !Array.isArray(rawOptions)
+  ) {
+    if (Array.isArray((rawOptions as any).values)) {
+      rawOptions = (rawOptions as any).values
+    } else if (Array.isArray((rawOptions as any).options)) {
+      rawOptions = (rawOptions as any).options
+    }
+  }
 
   if (!Array.isArray(rawOptions)) return []
 
@@ -114,14 +142,18 @@ export const findSelectedOption = (
 ): SelectOption | null => {
   if (!value) return null
   const normalizedValue = value.toLowerCase()
-  return (
-    options.find(
-      (option) =>
-        String(option.value ?? '').toLowerCase() === normalizedValue ||
-        String(option.name).toLowerCase() === normalizedValue ||
-        String(option.id).toLowerCase() === normalizedValue,
-    ) || null
+  const found = options.find(
+    (option) =>
+      String(option.value ?? '').toLowerCase() === normalizedValue ||
+      String(option.name).toLowerCase() === normalizedValue ||
+      String(option.id).toLowerCase() === normalizedValue,
   )
+  if (found) return found
+  return {
+    id: value,
+    name: value,
+    value: value,
+  }
 }
 
 export function renderMetadataFieldControl(
@@ -151,13 +183,34 @@ export function renderMetadataFieldControl(
   if (
     fieldType === 'select' ||
     fieldType === 'dropdown' ||
+    fieldType === 'single_select' ||
+    fieldType === 'multi_select' ||
+    fieldType === 'single_choice' ||
+    fieldType === 'multiple_choice' ||
     options.length > 0
   ) {
+    const textVal = toTextValue(value)
+    const selectedOption = findSelectedOption(options, textVal)
+    const effectiveOptions =
+      selectedOption &&
+      !options.some(
+        (o) =>
+          String(o.value ?? '').toLowerCase() ===
+            String(selectedOption.value ?? '').toLowerCase() ||
+          String(o.name).toLowerCase() ===
+            selectedOption.name.toLowerCase() ||
+          String(o.id).toLowerCase() === String(selectedOption.id).toLowerCase(),
+      )
+        ? [...options, selectedOption]
+        : options
+
     return (
       <InputSelect
         label={label}
-        options={options}
-        value={findSelectedOption(options, toTextValue(value))}
+        options={effectiveOptions}
+        searchable
+        creatable
+        value={selectedOption}
         onChange={(selected: SelectOption | null) =>
           updateFieldValue(
             field.key,

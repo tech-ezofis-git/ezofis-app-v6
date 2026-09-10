@@ -1,6 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import type { Menu } from '@/layouts/app/types'
 import Icon from '@/components/base/icon/Icon'
+import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
 import useRequestDemoStore from '@/layouts/app/stores/useRequestDemoStore'
 import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { exitSetupToDashboard } from '@/pages/dashboard/workflows/setupPreview'
@@ -18,7 +19,10 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
   })
   const isDemoFormOpen = useRequestDemoStore((s) => s.isDemoFormOpen)
   const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
-  const isActive = !isDemoFormOpen && pathname === route
+  const isAskAIMaximized = useAskAIStore((s) => s.isMaximized)
+  const exitFullView = useAskAIStore((s) => s.exitFullView)
+  const isActive =
+    !isDemoFormOpen && !isAskAIMaximized && pathname === route
   const isNavigationLocked = useSetupStore(
     (state) =>
       state.restrictNavigationUntilApSetup && !state.isApSetUpCompleted,
@@ -29,6 +33,10 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
     // Close demo even when already on this route (pathname won't change).
     closeDemoForm()
     clearOpenedFromSettings()
+    // Full-view AI: minimize to side panel so this menu can open + highlight
+    if (isAskAIMaximized) {
+      exitFullView()
+    }
     if (route === '/') {
       exitSetupToDashboard()
     }
@@ -36,7 +44,7 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
   }
 
   return (
-    <li key={label} onClick={isLinkDisabled ? undefined : handleClick}>
+    <li key={label}>
       <Link
         tabIndex={isLinkDisabled ? -1 : undefined}
         to={route}
@@ -45,6 +53,7 @@ const MenuItem = ({ icon, iconClassName, label, route, onClick }: Props) => {
           isActive && 'bg-gray-3',
           isLinkDisabled && 'pointer-events-none cursor-not-allowed opacity-40',
         )}
+        onClick={isLinkDisabled ? undefined : handleClick}
       >
         <Icon
           name={icon}

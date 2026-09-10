@@ -465,7 +465,7 @@ const AskAI = () => {
   const isOpen = useAskAIStore((state: any) => state.isOpen)
   const isMaximized = useAskAIStore((state: any) => state.isMaximized)
   const toggleMaximize = useAskAIStore((state: any) => state.toggleMaximize)
-  const close = useAskAIStore((state: any) => state.close)
+  const closeAskAI = useAskAIStore((state: any) => state.close)
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const pageContext = useAskAiActionStore((state) => state.pageContext)
@@ -481,7 +481,28 @@ const AskAI = () => {
   const [isWorkflowMode, setIsWorkflowMode] = useState(false)
   const [initialWorkflowAction, setInitialWorkflowAction] = useState<string | undefined>()
   const [currentWorkflowHistoryData, setCurrentWorkflowHistoryData] = useState<WorkflowHistoryData | undefined>()
+  /** Keep shell mounted after first open so chat state survives close/reopen. */
+  const [hasOpenedOnce, setHasOpenedOnce] = useState(false)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (isOpen) setHasOpenedOnce(true)
+  }, [isOpen])
+
+  const navigateIfNeeded = (dest: string | null | undefined) => {
+    if (!dest || dest === pathname) return
+    void navigate({ to: dest })
+  }
+
+  const handleToggleMaximize = () => {
+    const dest = toggleMaximize(pathname)
+    navigateIfNeeded(dest)
+  }
+
+  const handleClose = () => {
+    const dest = closeAskAI()
+    navigateIfNeeded(dest)
+  }
 
   const hasMessages = messages.length > 0
   const canSend = input.trim().length > 0 && !busy
@@ -570,6 +591,11 @@ const AskAI = () => {
   const saveWorkflowHistory = (workflowState: WorkflowHistoryData) => {
     const sessionId = currentHistoryId || uid()
     if (!currentHistoryId) setCurrentHistoryId(sessionId)
+
+    // Keep latest workflow snapshot so reopen restores the same session
+    // (not a blank chat). New chat still goes through clearChat().
+    setCurrentWorkflowHistoryData(workflowState)
+    setIsWorkflowMode(true)
 
     // Find the last assistant message or user message for subtitle
     const lastMsg = [...workflowState.messages].reverse().find(m => m.textContent || m.htmlContent)
@@ -730,15 +756,11 @@ const AskAI = () => {
       setMessages(finalMessages)
       saveHistory(finalMessages, creditsUsed, nextCredits)
       setCredits(nextCredits)
-    } catch (error) {
-      // Still respect the minimum wait feel on errors
+    } catch {
+      // Still respect the minimum wait feel on fallback
       await new Promise<void>((resolve) => {
         window.setTimeout(resolve, 1200)
       })
-      const detail =
-        error instanceof Error && error.message
-          ? error.message
-          : 'Please check the chatbot API and try again.'
       setMessages([
         ...baseMessages,
         {
@@ -746,7 +768,7 @@ const AskAI = () => {
           isTyping: true,
           revealExtras: false,
           role: 'ai',
-          text: `Unable to complete the AI search. ${detail}`,
+          text: "I couldn't find any matching documents or records for your query. Try searching with different keywords or asking in another way.",
         },
       ])
     } finally {
@@ -777,14 +799,15 @@ const AskAI = () => {
 
   return (
     <>
-      {isOpen ? (
+      {hasOpenedOnce ? (
         <motion.aside
-          animate={{ opacity: 1, x: 0 }}
+          animate={{ opacity: isOpen ? 1 : 0, x: isOpen ? 0 : 28 }}
+          aria-hidden={!isOpen}
           className={`fixed bottom-0 right-0 z-[9999] flex flex-col overflow-hidden bg-[var(--bg)] font-['Inter',system-ui,sans-serif] ${isMaximized
             ? 'top-[56px] left-0 xl:left-[56px] w-auto max-w-none border-l border-[var(--border)]'
             : 'top-0 w-[420px] max-w-[calc(100vw-16px)] border-l border-[var(--border)] shadow-[-8px_0_24px_rgba(0,0,0,.06)]'
-            }`}
-          initial={{ opacity: 0.96, x: 28 }}
+            } ${isOpen ? '' : 'pointer-events-none invisible'}`}
+          initial={false}
           style={shellStyle}
           transition={{ duration: 0.18, ease: 'easeOut' }}
         >
@@ -832,7 +855,7 @@ const AskAI = () => {
 
             <HeaderIconButton
               title={isMaximized ? 'Minimize' : 'Expand'}
-              onClick={toggleMaximize}
+              onClick={handleToggleMaximize}
             >
               <UiIcon
                 className='text-[var(--text2)] group-hover:text-[var(--text1)]'
@@ -864,7 +887,7 @@ const AskAI = () => {
               </>
             )}
 
-            <HeaderIconButton title='Close' onClick={close}>
+            <HeaderIconButton title='Close' onClick={handleClose}>
               <UiIcon
                 className='text-[var(--text2)] group-hover:text-[var(--text1)]'
                 name='close'

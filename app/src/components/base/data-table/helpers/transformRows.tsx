@@ -20,6 +20,7 @@ export default function transformRows(rows: ItemGroup[]): Row[] {
     groupKey,
     groupValue,
     id: groupId,
+    rowType: 'group' as const,
     subRows: transformItemsToRows(items),
     type: 'group' as const,
   }))
@@ -39,13 +40,13 @@ function transformItemsToRows(items: (ItemGroup | Item)[]): Row[] {
         groupKey: item.groupKey,
         groupValue: item.groupValue,
         id: item.groupId,
+        rowType: 'group' as const,
         subRows: transformItemsToRows(item.items),
         type: 'group' as const,
       }
     } else {
       const { id, ...rest } = item
       return {
-        ...rest,
         group: '',
         groupCount: 0,
         groupId: '',
@@ -53,8 +54,10 @@ function transformItemsToRows(items: (ItemGroup | Item)[]): Row[] {
         groupValue: '',
         id: id.toString(),
         itemId: id,
+        rowType: 'item' as const,
         subRows: [],
         type: 'item' as const,
+        ...rest,
       }
     }
   })

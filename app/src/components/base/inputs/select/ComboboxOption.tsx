@@ -1,4 +1,4 @@
-import { Combobox as Base } from '@mantine/core'
+import { Combobox as Base, Tooltip as MantineTooltip } from '@mantine/core'
 import { memo } from 'react'
 import type { Option } from '@/types/option'
 import Icon from '@/components/base/icon/Icon'
@@ -11,6 +11,8 @@ import InputRadioIndicator from '../InputRadioIndicator'
 interface Props extends Option {
   icon?: string
   iconKey?: string
+  /** Shown on the trailing edge of the option row (e.g. folder / workflow). */
+  rightIconKey?: string
   isSelected?: boolean
   variant?: SelectVariant
 }
@@ -22,6 +24,7 @@ const ComboboxOption = ({
   id,
   isSelected,
   name,
+  rightIconKey,
   variant = 'single',
 }: Props) => {
   const _className = cn(
@@ -30,13 +33,13 @@ const ComboboxOption = ({
     disabled && 'cursor-not-allowed',
   )
 
-  const optionIcon = iconKey ? (
-    iconKey.includes(':') ? (
-      <Icon className='size-4 shrink-0' name={iconKey} />
-    ) : (
-      <DynamicIcon className='h-4 w-4 shrink-0 text-gray-11' name={iconKey} />
-    )
-  ) : null
+  const renderIcon = (key?: string, className = 'size-4 shrink-0 text-gray-11') => {
+    if (!key) return null
+    if (key.includes(':')) {
+      return <Icon className={className} name={key} />
+    }
+    return <DynamicIcon className={cn('h-4 w-4 shrink-0 text-gray-11', className)} name={key} />
+  }
 
   return (
     <Base.Option
@@ -51,16 +54,43 @@ const ComboboxOption = ({
         <InputRadioIndicator checked={isSelected} />
       )}
 
-      {optionIcon}
+      {renderIcon(iconKey)}
 
       <div className='min-w-0 flex-1'>
-        <div className='truncate text-13 font-normal text-gray-12'>{name}</div>
+        <MantineTooltip
+          classNames={{
+            tooltip:
+              'rounded-md px-2.5 py-1.5 text-xs bg-gray-13 text-white break-words whitespace-normal shadow-lg font-sans font-normal leading-relaxed',
+          }}
+          disabled={!name || name.length < 24}
+          label={name}
+          multiline
+          openDelay={250}
+          position='top'
+          w={240}
+          withArrow
+          zIndex={20050}
+        >
+          <div className='truncate text-13 font-normal text-gray-12'>{name}</div>
+        </MantineTooltip>
         {description && (
           <div className='mt-0.5 line-clamp-2 text-xs text-gray-10'>
             {description}
           </div>
         )}
       </div>
+
+      {rightIconKey ? (
+        <span className='ml-auto flex shrink-0 items-center self-center pl-2'>
+          {renderIcon(
+            rightIconKey,
+            cn(
+              'size-4 shrink-0',
+              isSelected ? 'text-primary-9' : 'text-gray-10',
+            ),
+          )}
+        </span>
+      ) : null}
     </Base.Option>
   )
 }

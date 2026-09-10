@@ -60,9 +60,16 @@ const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes TTL
 export function clearSecurityCache(repositoryId?: string) {
   if (repositoryId) {
     const cleanRepoId = sanitizeGuid(repositoryId)
-    memoryCache.delete(`folder_${cleanRepoId}`)
-    memoryCache.delete(`doc_${cleanRepoId}`)
-    memoryCache.delete(`filter_fields_${cleanRepoId}`)
+    for (const key of [...memoryCache.keys()]) {
+      if (
+        key === `folder_${cleanRepoId}` ||
+        key.startsWith(`folder_${cleanRepoId}:`) ||
+        key === `doc_${cleanRepoId}` ||
+        key === `filter_fields_${cleanRepoId}`
+      ) {
+        memoryCache.delete(key)
+      }
+    }
   } else {
     memoryCache.clear()
   }
@@ -87,20 +94,156 @@ const isRequestCanceled = (err: any): boolean => {
   )
 }
 
-export async function getFolderSecurity(repositoryId: string, useCache = true) {
+export const FOLDER_PERMISSIONS_ALLOW_ALL: FolderPermissionFlags = {
+  view: true,
+  upload: true,
+  download: true,
+  print: true,
+  delete: true,
+  editMetadata: true,
+  editDocument: true,
+  checkOut: true,
+  checkIn: true,
+  sendForSignature: true,
+}
+
+export const FOLDER_PERMISSIONS_VIEW_ONLY: FolderPermissionFlags = {
+  view: true,
+  upload: false,
+  download: false,
+  print: false,
+  delete: false,
+  editMetadata: false,
+  editDocument: false,
+  checkOut: false,
+  checkIn: false,
+  sendForSignature: false,
+}
+
+const normalizePolicyFolderId = (folderId?: string | null) => {
+  const cleaned = sanitizeGuid(String(folderId || ''))
+  return cleaned || null
+}
+
+const policyAppliesToUser = (
+  policy: FolderSecurityPolicy,
+  userId: string,
+  userGroupIds: string[] = [],
+) => {
+  const userIds = sanitizeGuidArray(policy.userIds || [])
+  const groupIds = sanitizeGuidArray(policy.groupIds || [])
+  if (!userIds.length && !groupIds.length) return false
+  if (userId && userIds.includes(userId)) return true
+  if (
+    userGroupIds.length &&
+    groupIds.some((groupId) => userGroupIds.includes(groupId))
+  ) {
+    return true
+  }
+  return false
+}
+
+const mergePermissionFlags = (
+  flags: FolderPermissionFlags[],
+): FolderPermissionFlags => {
+  if (!flags.length) return { ...FOLDER_PERMISSIONS_VIEW_ONLY }
+  return flags.reduce<FolderPermissionFlags>(
+    (acc, next) => ({
+      view: acc.view || Boolean(next.view),
+      upload: acc.upload || Boolean(next.upload),
+      download: acc.download || Boolean(next.download),
+      print: acc.print || Boolean(next.print),
+      delete: acc.delete || Boolean(next.delete),
+      editMetadata: acc.editMetadata || Boolean(next.editMetadata),
+      editDocument: acc.editDocument || Boolean(next.editDocument),
+      checkOut: acc.checkOut || Boolean(next.checkOut),
+      checkIn: acc.checkIn || Boolean(next.checkIn),
+      sendForSignature:
+        acc.sendForSignature || Boolean(next.sendForSignature),
+    }),
+    { ...FOLDER_PERMISSIONS_VIEW_ONLY },
+  )
+}
+
+/**
+ * Resolve the current user's effective folder permissions from security policies.
+ * Prefers folder-scoped policies over repository-wide (`folderId: null`) ones.
+ */
+export function resolveEffectiveFolderPermissions(args: {
+  policies?: FolderSecurityPolicy[] | null
+  userId?: string | null
+  userGroupIds?: string[]
+  folderId?: string | null
+  /** When true (e.g. admin), grant full access. */
+  allowAll?: boolean
+}): FolderPermissionFlags {
+  if (args.allowAll) return { ...FOLDER_PERMISSIONS_ALLOW_ALL }
+
+  const policies = Array.isArray(args.policies) ? args.policies : []
+  if (!policies.length) return { ...FOLDER_PERMISSIONS_ALLOW_ALL }
+
+  const userId = sanitizeGuid(String(args.userId || ''))
+  const userGroupIds = sanitizeGuidArray(args.userGroupIds || [])
+  const targetFolderId = normalizePolicyFolderId(args.folderId)
+
+  const matching = policies.filter((policy) =>
+    policyAppliesToUser(policy, userId, userGroupIds),
+  )
+  if (!matching.length) return { ...FOLDER_PERMISSIONS_VIEW_ONLY }
+
+  const folderScoped = matching.filter(
+    (policy) => normalizePolicyFolderId(policy.folderId) === targetFolderId,
+  )
+  const repoScoped = matching.filter(
+    (policy) => normalizePolicyFolderId(policy.folderId) == null,
+  )
+
+  const selected =
+    targetFolderId && folderScoped.length
+      ? folderScoped
+      : folderScoped.length
+        ? folderScoped
+        : repoScoped.length
+          ? repoScoped
+          : matching
+
+  return mergePermissionFlags(
+    selected.map(
+      (policy) => policy.permissions || FOLDER_PERMISSIONS_VIEW_ONLY,
+    ),
+  )
+}
+
+export async function getFolderSecurity(
+  repositoryId: string,
+  useCache = true,
+  folderId?: string | null,
+) {
   const cleanRepoId = sanitizeGuid(repositoryId)
-  const cacheKey = `folder_${cleanRepoId}`
+  const cleanFolderId = normalizePolicyFolderId(folderId)
+  const cacheKey = cleanFolderId
+    ? `folder_${cleanRepoId}:${cleanFolderId}`
+    : `folder_${cleanRepoId}`
 
   if (useCache && memoryCache.has(cacheKey)) {
     const cached = memoryCache.get(cacheKey)!
     if (Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return { data: cached.data as GetFolderSecurityResponse, error: null, isCanceled: false, isFromCache: true, status: 200 }
+      return {
+        data: cached.data as GetFolderSecurityResponse,
+        error: null,
+        isCanceled: false,
+        isFromCache: true,
+        status: 200,
+      }
     }
   }
 
   try {
     const { data, status } = await axiosV6.get<GetFolderSecurityResponse>(
       `/repositories/${cleanRepoId}/security/folder`,
+      {
+        params: cleanFolderId ? { folderId: cleanFolderId } : undefined,
+      },
     )
     if (data) {
       memoryCache.set(cacheKey, { data, timestamp: Date.now() })
@@ -108,7 +251,13 @@ export async function getFolderSecurity(repositoryId: string, useCache = true) {
     return { data, error: null, isCanceled: false, isFromCache: false, status }
   } catch (err: any) {
     if (isRequestCanceled(err)) {
-      return { data: null, error: null, isCanceled: true, isFromCache: false, status: 0 }
+      return {
+        data: null,
+        error: null,
+        isCanceled: true,
+        isFromCache: false,
+        status: 0,
+      }
     }
     const status = err.response?.status
     const message =
@@ -116,7 +265,13 @@ export async function getFolderSecurity(repositoryId: string, useCache = true) {
       err.response?.data?.title ||
       err.message ||
       'Failed to load folder security policies'
-    return { data: null, error: message, isCanceled: false, isFromCache: false, status }
+    return {
+      data: null,
+      error: message,
+      isCanceled: false,
+      isFromCache: false,
+      status,
+    }
   }
 }
 

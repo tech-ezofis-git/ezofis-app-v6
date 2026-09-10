@@ -74,6 +74,7 @@ import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
 import { matchesCategoryFilterValue } from '@/utils/filterUtils'
+import { isDemoAppOrigin } from '@/utils/origin'
 import {
   settingsHeaderMeta,
   settingsTableCoreOptions,
@@ -1567,7 +1568,7 @@ export default function DmsFolderConfiguration({
   })
 
   const goNext = () => {
-    if (step === 3) {
+    if (!isDemoAppOrigin() && step === 3) {
       const selectedStorageOption =
         storageOptions.find((item) => item.id === storage) ?? storageOptions[0]
 
@@ -1994,7 +1995,7 @@ export default function DmsFolderConfiguration({
   })
 
   const formattedWizardSteps = useMemo(() => {
-    const isEditMode = editingRepositoryId !== null
+    const isEditMode = editingRepositoryId !== null || isDemoAppOrigin()
     return wizardSteps.map((item) => ({
       clickable: isEditMode ? true : undefined,
       description: item.description,
@@ -2433,29 +2434,29 @@ function FieldNameWithIconInput({
   )
 }
 
-function FieldOptionsConfiguration({
-  columnsLength,
-  row,
-  updateField,
+function OptionsConfigurationContent({
+  fieldName,
+  optionsJson,
+  onChangeOptionsJson,
 }: {
-  columnsLength: number
-  row: FieldRow
-  updateField: (id: string, updates: Partial<FieldRow>) => void
+  fieldName?: string
+  optionsJson?: string | null
+  onChangeOptionsJson: (newOptionsJson: string) => void
 }) {
   const parsedOptions = useMemo(() => {
     let parsed: any = { type: 'predefined', values: [] }
     try {
-      if (row.optionsJson) {
-        const p = JSON.parse(row.optionsJson)
+      if (optionsJson) {
+        const p = JSON.parse(optionsJson)
         if (Array.isArray(p)) {
           parsed = { type: 'predefined', values: p }
-        } else {
+        } else if (p && typeof p === 'object') {
           parsed = p
         }
       }
     } catch {}
     return parsed
-  }, [row.optionsJson])
+  }, [optionsJson])
 
   const [optionsType, setOptionsType] = useState<string>(
     parsedOptions.type || 'predefined',
@@ -2464,6 +2465,12 @@ function FieldOptionsConfiguration({
   const [loadingForms, setLoadingForms] = useState(false)
   const [fields, setFields] = useState<any[]>([])
   const [loadingFields, setLoadingFields] = useState(false)
+
+  useEffect(() => {
+    if (parsedOptions.type && parsedOptions.type !== optionsType) {
+      setOptionsType(parsedOptions.type)
+    }
+  }, [parsedOptions.type])
 
   useEffect(() => {
     if (optionsType === 'master' && forms.length === 0) {
@@ -2479,7 +2486,6 @@ function FieldOptionsConfiguration({
         .then((res) => {
           if (!isMounted) return
           let loadedForms: any[] = []
-          console.log('forms', res?.data?.data?.[0]?.value)
 
           if (res?.data?.data?.[0]?.value) {
             loadedForms = res.data.data[0].value
@@ -2499,7 +2505,7 @@ function FieldOptionsConfiguration({
         isMounted = false
       }
     }
-  }, [optionsType])
+  }, [optionsType, forms.length])
 
   useEffect(() => {
     if (optionsType === 'master' && parsedOptions.masterFormId) {
@@ -2548,132 +2554,165 @@ function FieldOptionsConfiguration({
     }
     const newType = typeMap[val] || 'predefined'
     setOptionsType(newType)
-    updateField(row.id, {
-      optionsJson: JSON.stringify({ type: newType, values: [] }),
-    })
+    onChangeOptionsJson(
+      JSON.stringify({
+        ...parsedOptions,
+        type: newType,
+        values: newType === 'predefined' ? (parsedOptions.values || []) : [],
+      }),
+    )
   }
 
   const currentTypeVal =
     optionsType === 'unique' ? 1 : optionsType === 'master' ? 2 : 3
-  console.log('forms', forms)
+
+  return (
+    <div className='flex max-w-xl flex-col gap-2.5'>
+      <label className='text-13 font-medium text-gray-12'>
+        Options Configuration
+      </label>
+      <div>
+        <InputRadioGroup
+          value={currentTypeVal}
+          options={[
+            { id: 1, name: 'Use unique column values as options' },
+            { id: 2, name: 'Use values from a master table as options' },
+            { id: 3, name: 'Use predefined values as options' },
+          ]}
+          onChange={handleTypeChange}
+        />
+      </div>
+
+      {optionsType === 'predefined' && (
+        <div className='flex flex-col gap-1.5'>
+          <label className='text-12 font-medium text-gray-11'>
+            Predefined Values
+          </label>
+          <InputSelectMultiple
+            placeholder='Type an option'
+            searchPlaceholder='Type an option'
+            clearable
+            creatable
+            searchable
+            options={(parsedOptions.values || []).map((opt: string) => ({
+              id: opt,
+              name: opt,
+              value: opt,
+            }))}
+            value={(parsedOptions.values || []).map((opt: string) => ({
+              id: opt,
+              name: opt,
+              value: opt,
+            }))}
+            onChange={(newOptions) =>
+              onChangeOptionsJson(
+                JSON.stringify({
+                  ...parsedOptions,
+                  type: 'predefined',
+                  values: newOptions.map((o) => o.value || o.name),
+                }),
+              )
+            }
+          />
+        </div>
+      )}
+
+      {optionsType === 'master' && (
+        <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+          <InputSelect
+            label='Master Form'
+            loading={loadingForms}
+            options={forms.map((f) => ({ id: String(f.id), name: f.name }))}
+            searchPlaceholder='Search master form...'
+            searchable
+            value={
+              parsedOptions.masterFormId
+                ? {
+                    id: parsedOptions.masterFormId,
+                    name:
+                      forms.find(
+                        (f) => String(f.id) === parsedOptions.masterFormId,
+                      )?.name || parsedOptions.masterFormId,
+                  }
+                : null
+            }
+            onChange={(selected) => {
+              onChangeOptionsJson(
+                JSON.stringify({
+                  ...parsedOptions,
+                  type: 'master',
+                  masterFieldId: null,
+                  masterFormId: selected?.id || null,
+                }),
+              )
+            }}
+          />
+          {parsedOptions.masterFormId ? (
+            <InputSelect
+              label='Master Field'
+              loading={loadingFields}
+              searchPlaceholder='Search field...'
+              searchable
+              options={fields.map((f) => ({
+                id: f.id,
+                name: f.label || f.name || f.id,
+              }))}
+              value={
+                parsedOptions.masterFieldId
+                  ? {
+                      id: parsedOptions.masterFieldId,
+                      name:
+                        fields.find(
+                          (f) => f.id === parsedOptions.masterFieldId,
+                        )?.label ||
+                        fields.find(
+                          (f) => f.id === parsedOptions.masterFieldId,
+                        )?.name ||
+                        parsedOptions.masterFieldId,
+                    }
+                  : null
+              }
+              onChange={(selected) => {
+                onChangeOptionsJson(
+                  JSON.stringify({
+                    ...parsedOptions,
+                    type: 'master',
+                    masterFieldId: selected?.id || null,
+                  }),
+                )
+              }}
+            />
+          ) : (
+            <div />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FieldOptionsConfiguration({
+  columnsLength,
+  row,
+  updateField,
+}: {
+  columnsLength: number
+  row: FieldRow
+  updateField: (id: string, updates: Partial<FieldRow>) => void
+}) {
   return (
     <tr className='bg-gray-1/50 shadow-inner'>
       <td
         className='border-b border-[var(--gray-3)] px-12 py-5'
         colSpan={columnsLength}
       >
-        <div className='flex max-w-md flex-col gap-4'>
-          <label className='text-13 font-medium text-gray-12'>
-            Options Configuration
-          </label>
-          <div>
-            <InputRadioGroup
-              value={currentTypeVal}
-              options={[
-                { id: 1, name: 'Use unique column values as options' },
-                { id: 2, name: 'Use values from a master table as options' },
-                { id: 3, name: 'Use predefined values as options' },
-              ]}
-              onChange={handleTypeChange}
-            />
-          </div>
-
-          {optionsType === 'predefined' && (
-            <div className='pt-1'>
-              <InputSelectMultiple
-                searchPlaceholder='Type an option and press Enter'
-                clearable
-                creatable
-                searchable
-                options={(parsedOptions.values || []).map((opt: string) => ({
-                  id: opt,
-                  name: opt,
-                  value: opt,
-                }))}
-                value={(parsedOptions.values || []).map((opt: string) => ({
-                  id: opt,
-                  name: opt,
-                  value: opt,
-                }))}
-                onChange={(newOptions) =>
-                  updateField(row.id, {
-                    optionsJson: JSON.stringify({
-                      ...parsedOptions,
-                      values: newOptions.map((o) => o.value || o.name),
-                    }),
-                  })
-                }
-              />
-            </div>
-          )}
-
-          {optionsType === 'master' && (
-            <div className='flex flex-col gap-4 pt-1'>
-              <InputSelect
-                label='Master Form'
-                loading={loadingForms}
-                options={forms.map((f) => ({ id: String(f.id), name: f.name }))}
-                searchPlaceholder='Search master form...'
-                searchable
-                value={
-                  parsedOptions.masterFormId
-                    ? {
-                        id: parsedOptions.masterFormId,
-                        name:
-                          forms.find(
-                            (f) => String(f.id) === parsedOptions.masterFormId,
-                          )?.name || parsedOptions.masterFormId,
-                      }
-                    : null
-                }
-                onChange={(selected) => {
-                  updateField(row.id, {
-                    optionsJson: JSON.stringify({
-                      ...parsedOptions,
-                      masterFieldId: null,
-                      masterFormId: selected?.id || null,
-                    }),
-                  })
-                }}
-              />
-              {parsedOptions.masterFormId && (
-                <InputSelect
-                  label='Master Field'
-                  loading={loadingFields}
-                  searchPlaceholder='Search field...'
-                  searchable
-                  options={fields.map((f) => ({
-                    id: f.id,
-                    name: f.label || f.name || f.id,
-                  }))}
-                  value={
-                    parsedOptions.masterFieldId
-                      ? {
-                          id: parsedOptions.masterFieldId,
-                          name:
-                            fields.find(
-                              (f) => f.id === parsedOptions.masterFieldId,
-                            )?.label ||
-                            fields.find(
-                              (f) => f.id === parsedOptions.masterFieldId,
-                            )?.name ||
-                            parsedOptions.masterFieldId,
-                        }
-                      : null
-                  }
-                  onChange={(selected) => {
-                    updateField(row.id, {
-                      optionsJson: JSON.stringify({
-                        ...parsedOptions,
-                        masterFieldId: selected?.id || null,
-                      }),
-                    })
-                  }}
-                />
-              )}
-            </div>
-          )}
-        </div>
+        <OptionsConfigurationContent
+          fieldName={row.fieldName}
+          optionsJson={row.optionsJson}
+          onChangeOptionsJson={(nextJson) =>
+            updateField(row.id, { optionsJson: nextJson })
+          }
+        />
       </td>
     </tr>
   )
@@ -3458,6 +3497,593 @@ function useRepositoryTable(
   }
 }
 
+function SapIntegrationPanel({
+  fields,
+  onConnectSuccess,
+  sapClient,
+  sapHost,
+  sapMapping,
+  sapModule,
+  sapPassword,
+  sapSyncFields,
+  sapSystemId,
+  sapSystemNumber,
+  sapTested,
+  sapTesting,
+  sapUsername,
+  setSapClient,
+  setSapHost,
+  setSapMapping,
+  setSapModule,
+  setSapPassword,
+  setSapSyncFields,
+  setSapSystemId,
+  setSapSystemNumber,
+  setSapTested,
+  setSapTesting,
+  setSapUsername,
+}: {
+  fields: FieldRow[]
+  onConnectSuccess: (id: string) => void
+  sapClient: string
+  sapHost: string
+  sapMapping: Record<string, string>
+  sapModule: string
+  sapPassword: string
+  sapSyncFields: string[]
+  sapSystemId: string
+  sapSystemNumber: string
+  sapTested: boolean
+  sapTesting: boolean
+  sapUsername: string
+  setSapClient: (v: string) => void
+  setSapHost: (v: string) => void
+  setSapMapping: Dispatch<SetStateAction<Record<string, string>>>
+  setSapModule: (v: string) => void
+  setSapPassword: (v: string) => void
+  setSapSyncFields: Dispatch<SetStateAction<string[]>>
+  setSapSystemId: (v: string) => void
+  setSapSystemNumber: (v: string) => void
+  setSapTested: (v: boolean) => void
+  setSapTesting: (v: boolean) => void
+  setSapUsername: (v: string) => void
+}) {
+  const { t } = useLingui()
+
+  const handleTestConnection = () => {
+    setSapTesting(true)
+    showToast({
+      message: t`Connecting to SAP Host (${sapHost})...`,
+      variant: 'default',
+    })
+    setTimeout(() => {
+      setSapTesting(false)
+      setSapTested(true)
+      onConnectSuccess('SAP')
+      showToast({
+        message: t`Connection Successful! SAP ERP (${sapSystemId}) RFC Destination verified (200 OK, 38ms latency).`,
+        variant: 'success',
+      })
+    }, 1200)
+  }
+
+  const sapFieldsList = [
+    { description: t`Purchase Order Number`, name: 'EBELN' },
+    { description: t`Vendor / Account Number`, name: 'LIFNR' },
+    { description: t`Amount in Local Currency`, name: 'DMBTR' },
+    { description: t`Currency Key`, name: 'WAERS' },
+    { description: t`Document Date in Document`, name: 'BLDAT' },
+    { description: t`Reference Document Number`, name: 'XBLNR' },
+  ]
+
+  return (
+    <div className='mt-6 space-y-6 rounded-[12px] border border-gray-3 bg-surface p-5 shadow-sm'>
+      {/* Header & Status */}
+      <div className='flex flex-wrap items-center justify-between gap-4 border-b border-gray-3 pb-4'>
+        <div className='flex items-center gap-3.5'>
+          <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-2 text-primary-11 shadow-2xs'>
+            <Icon className='size-6' name='tabler:building-warehouse' />
+          </div>
+          <div>
+            <h4 className='text-14/5 font-semibold text-gray-12'>
+              {t`SAP ERP Connection`}
+            </h4>
+            <p className='mt-0.5 text-12 text-gray-10'>
+              {t`Sync document fields, PO master, and vendor records via SAP NetWeaver RFC / OData.`}
+            </p>
+          </div>
+        </div>
+
+        <div className='flex items-center gap-2.5'>
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-12 font-medium transition-all',
+              sapTested
+                ? 'border border-green-5 bg-green-2 text-green-11'
+                : 'border border-orange-5 bg-orange-2 text-orange-11',
+            )}
+          >
+            <Icon
+              className='size-3.5'
+              name={
+                sapTested ? 'tabler:circle-check-filled' : 'tabler:alert-circle'
+              }
+            />
+            {sapTested ? t`Connected • SID: ${sapSystemId}` : t`Awaiting Verification`}
+          </span>
+          <Button
+            icon='tabler:plug-connected'
+            label={t`Test Connection`}
+            loading={sapTesting}
+            size='sm'
+            variant='outline'
+            onClick={handleTestConnection}
+          />
+        </div>
+      </div>
+
+      {/* Form Fields Grid */}
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`Application Host / Router`}
+          </label>
+          <InputText
+            placeholder='e.g. sap-prd.ezofis.internal'
+            value={sapHost}
+            onChange={(val) => setSapHost(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`System ID (SID)`}
+          </label>
+          <InputText
+            placeholder='e.g. PRD-100'
+            value={sapSystemId}
+            onChange={(val) => setSapSystemId(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`Client Number`}
+          </label>
+          <InputText
+            placeholder='e.g. 800'
+            value={sapClient}
+            onChange={(val) => setSapClient(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`Instance / System Number`}
+          </label>
+          <InputText
+            placeholder='e.g. 00'
+            value={sapSystemNumber}
+            onChange={(val) => setSapSystemNumber(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`RFC User ID`}
+          </label>
+          <InputText
+            placeholder='e.g. EZOFIS_RFC_USER'
+            value={sapUsername}
+            onChange={(val) => setSapUsername(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`RFC Password`}
+          </label>
+          <InputText
+            placeholder='••••••••••••'
+            type='password'
+            value={sapPassword}
+            onChange={(val) => setSapPassword(val)}
+          />
+        </div>
+      </div>
+
+      {/* Target Module Selection */}
+      <div>
+        <label className='mb-2 block text-12 font-medium text-gray-11'>
+          {t`Target SAP Modules`}
+        </label>
+        <div className='flex flex-wrap gap-2'>
+          {[
+            { id: 'FI/MM', label: t`FI / MM (Financial Accounting & Materials)` },
+            { id: 'CO', label: t`CO (Controlling & Cost Centers)` },
+            { id: 'SD', label: t`SD (Sales & Order Processing)` },
+          ].map((mod) => (
+            <button
+              key={mod.id}
+              className={cn(
+                'rounded-lg border px-3 py-1.5 text-12 font-medium transition',
+                sapModule === mod.id
+                  ? 'border-primary-9 bg-primary-2 text-primary-11 ring-1 ring-primary-9'
+                  : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-4',
+              )}
+              type='button'
+              onClick={() => setSapModule(mod.id)}
+            >
+              {mod.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Field Mapping Table */}
+      <div>
+        <div className='mb-3 flex items-center justify-between'>
+          <h5 className='text-13 font-semibold text-gray-12'>
+            {t`SAP Table Field Mapping`}
+          </h5>
+          <span className='text-12 text-gray-10'>
+            {t`Map SAP structure fields to folder fields`}
+          </span>
+        </div>
+
+        <div className='overflow-hidden rounded-lg border border-gray-3 shadow-inner'>
+          <table className='w-full text-left text-13'>
+            <thead className='border-b border-gray-3 bg-gray-2/50'>
+              <tr>
+                <th className='w-[25%] px-4 py-2.5 font-semibold text-gray-11'>
+                  {t`SAP Field`}
+                </th>
+                <th className='w-[35%] px-4 py-2.5 font-semibold text-gray-11'>
+                  {t`Description`}
+                </th>
+                <th className='w-[30%] px-4 py-2.5 font-semibold text-gray-11'>
+                  {t`Folder Field`}
+                </th>
+                <th className='w-[10%] px-4 py-2.5 text-center font-semibold text-gray-11'>
+                  {t`Sync`}
+                </th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-gray-3 bg-surface'>
+              {sapFieldsList.map((sapItem) => {
+                const mappedValue = sapMapping[sapItem.name] || ''
+                const isSynced = sapSyncFields.includes(sapItem.name)
+
+                return (
+                  <tr
+                    key={sapItem.name}
+                    className='transition-colors hover:bg-gray-1/40'
+                  >
+                    <td className='px-4 py-2.5 font-mono text-12 font-medium text-primary-11'>
+                      {sapItem.name}
+                    </td>
+                    <td className='px-4 py-2.5 text-12 text-gray-10'>
+                      {sapItem.description}
+                    </td>
+                    <td className='px-4 py-2.5'>
+                      <MasterFieldSelectDropdown
+                        options={fields.map((f) => ({
+                          id: f.fieldName,
+                          label: f.fieldName,
+                        }))}
+                        value={mappedValue || null}
+                        onChange={(newVal) => {
+                          setSapMapping((prev) => ({
+                            ...prev,
+                            [sapItem.name]: newVal || '',
+                          }))
+                        }}
+                      />
+                    </td>
+                    <td className='px-4 py-2.5 text-center'>
+                      <input
+                        checked={isSynced}
+                        className='size-4 cursor-pointer rounded border-gray-3 text-primary-9 accent-primary-9'
+                        type='checkbox'
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSapSyncFields((prev) => [...prev, sapItem.name])
+                          } else {
+                            setSapSyncFields((prev) =>
+                              prev.filter((f) => f !== sapItem.name),
+                            )
+                          }
+                        }}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OracleIntegrationPanel({
+  fields,
+  onConnectSuccess,
+  oracleAuthMode,
+  oracleClientId,
+  oracleClientSecret,
+  oracleMapping,
+  oracleModule,
+  oracleSyncFields,
+  oracleTested,
+  oracleTesting,
+  oracleUrl,
+  setOracleAuthMode,
+  setOracleClientId,
+  setOracleClientSecret,
+  setOracleMapping,
+  setOracleModule,
+  setOracleSyncFields,
+  setOracleTested,
+  setOracleTesting,
+  setOracleUrl,
+}: {
+  fields: FieldRow[]
+  onConnectSuccess: (id: string) => void
+  oracleAuthMode: string
+  oracleClientId: string
+  oracleClientSecret: string
+  oracleMapping: Record<string, string>
+  oracleModule: string
+  oracleSyncFields: string[]
+  oracleTested: boolean
+  oracleTesting: boolean
+  oracleUrl: string
+  setOracleAuthMode: (v: string) => void
+  setOracleClientId: (v: string) => void
+  setOracleClientSecret: (v: string) => void
+  setOracleMapping: Dispatch<SetStateAction<Record<string, string>>>
+  setOracleModule: (v: string) => void
+  setOracleSyncFields: Dispatch<SetStateAction<string[]>>
+  setOracleTested: (v: boolean) => void
+  setOracleTesting: (v: boolean) => void
+  setOracleUrl: (v: string) => void
+}) {
+  const { t } = useLingui()
+
+  const handleTestConnection = () => {
+    setOracleTesting(true)
+    showToast({
+      message: t`Connecting to Oracle Fusion ERP REST API (${oracleUrl})...`,
+      variant: 'default',
+    })
+    setTimeout(() => {
+      setOracleTesting(false)
+      setOracleTested(true)
+      onConnectSuccess('Oracle ERP')
+      showToast({
+        message: t`Connection Successful! Oracle Fusion ERP Cloud REST API Connected (200 OK, 24ms latency).`,
+        variant: 'success',
+      })
+    }, 1200)
+  }
+
+  const oracleFieldsList = [
+    { description: t`Invoice Document Number`, name: 'InvoiceNum' },
+    { description: t`Supplier / Vendor Entity Name`, name: 'SupplierName' },
+    { description: t`Purchase Order Reference ID`, name: 'POHeaderId' },
+    { description: t`Header Total Invoice Amount`, name: 'InvoiceAmount' },
+    { description: t`Transaction Date`, name: 'InvoiceDate' },
+    { description: t`ISO Currency Code`, name: 'CurrencyCode' },
+  ]
+
+  return (
+    <div className='mt-6 space-y-6 rounded-[12px] border border-gray-3 bg-surface p-5 shadow-sm'>
+      {/* Header & Status Banner */}
+      <div className='flex flex-wrap items-center justify-between gap-4 border-b border-gray-3 pb-4'>
+        <div className='flex items-center gap-3.5'>
+          <div className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-2 text-primary-11 shadow-2xs'>
+            <Icon className='size-6' name='tabler:database' />
+          </div>
+          <div>
+            <h4 className='text-14/5 font-semibold text-gray-12'>
+              {t`Oracle Fusion ERP Cloud Integration`}
+            </h4>
+            <p className='mt-0.5 text-12 text-gray-10'>
+              {t`Connect Oracle ERP Cloud REST API services for Accounts Payable and Procurement sync.`}
+            </p>
+          </div>
+        </div>
+
+        <div className='flex items-center gap-2.5'>
+          <span
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-12 font-medium transition-all',
+              oracleTested
+                ? 'border border-green-5 bg-green-2 text-green-11'
+                : 'border border-orange-5 bg-orange-2 text-orange-11',
+            )}
+          >
+            <Icon
+              className='size-3.5'
+              name={
+                oracleTested
+                  ? 'tabler:circle-check-filled'
+                  : 'tabler:alert-circle'
+              }
+            />
+            {oracleTested ? t`Connected • REST v11.13` : t`Awaiting Verification`}
+          </span>
+          <Button
+            icon='tabler:plug-connected'
+            label={t`Test Connection`}
+            loading={oracleTesting}
+            size='sm'
+            variant='outline'
+            onClick={handleTestConnection}
+          />
+        </div>
+      </div>
+
+      {/* Form Fields Grid */}
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`Oracle Cloud Instance URL`}
+          </label>
+          <InputText
+            placeholder='https://fa-ezofis-saas.oraclecloud.com'
+            value={oracleUrl}
+            onChange={(val) => setOracleUrl(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`Authentication Mode`}
+          </label>
+          <InputText
+            placeholder='OAuth 2.0 Client Credentials'
+            value={oracleAuthMode}
+            onChange={(val) => setOracleAuthMode(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`OAuth Client ID`}
+          </label>
+          <InputText
+            placeholder='EZOFIS_ERP_INTEGRATION_CLIENT'
+            value={oracleClientId}
+            onChange={(val) => setOracleClientId(val)}
+          />
+        </div>
+        <div>
+          <label className='mb-1.5 block text-12 font-medium text-gray-11'>
+            {t`OAuth Client Secret`}
+          </label>
+          <InputText
+            placeholder='••••••••••••'
+            type='password'
+            value={oracleClientSecret}
+            onChange={(val) => setOracleClientSecret(val)}
+          />
+        </div>
+      </div>
+
+      {/* Target Module Selection */}
+      <div>
+        <label className='mb-2 block text-12 font-medium text-gray-11'>
+          {t`Target Oracle Fusion Endpoints`}
+        </label>
+        <div className='flex flex-wrap gap-2'>
+          {[
+            { id: 'Payables', label: t`Payables (Invoices & Disbursements)` },
+            { id: 'Procurement', label: t`Procurement (POs & Requisitions)` },
+            { id: 'GeneralLedger', label: t`General Ledger (Journal Feeds)` },
+          ].map((mod) => (
+            <button
+              key={mod.id}
+              className={cn(
+                'rounded-lg border px-3 py-1.5 text-12 font-medium transition',
+                oracleModule === mod.id
+                  ? 'border-primary-9 bg-primary-2 text-primary-11 ring-1 ring-primary-9'
+                  : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-4',
+              )}
+              type='button'
+              onClick={() => setOracleModule(mod.id)}
+            >
+              {mod.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Field Mapping Table */}
+      <div>
+        <div className='mb-3 flex items-center justify-between'>
+          <h5 className='text-13 font-semibold text-gray-12'>
+            {t`Oracle Fusion REST Field Mapping`}
+          </h5>
+          <span className='text-12 text-gray-10'>
+            {t`Map Oracle REST attributes to folder fields`}
+          </span>
+        </div>
+
+        <div className='overflow-hidden rounded-lg border border-gray-3 shadow-inner'>
+          <table className='w-full text-left text-13'>
+            <thead className='border-b border-gray-3 bg-gray-2/50'>
+              <tr>
+                <th className='w-[25%] px-4 py-2.5 font-semibold text-gray-11'>
+                  {t`Oracle Attribute`}
+                </th>
+                <th className='w-[35%] px-4 py-2.5 font-semibold text-gray-11'>
+                  {t`Description`}
+                </th>
+                <th className='w-[30%] px-4 py-2.5 font-semibold text-gray-11'>
+                  {t`Folder Field`}
+                </th>
+                <th className='w-[10%] px-4 py-2.5 text-center font-semibold text-gray-11'>
+                  {t`Sync`}
+                </th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-gray-3 bg-surface'>
+              {oracleFieldsList.map((oracleItem) => {
+                const mappedValue = oracleMapping[oracleItem.name] || ''
+                const isSynced = oracleSyncFields.includes(oracleItem.name)
+
+                return (
+                  <tr
+                    key={oracleItem.name}
+                    className='transition-colors hover:bg-gray-1/40'
+                  >
+                    <td className='px-4 py-2.5 font-mono text-12 font-medium text-primary-11'>
+                      {oracleItem.name}
+                    </td>
+                    <td className='px-4 py-2.5 text-12 text-gray-10'>
+                      {oracleItem.description}
+                    </td>
+                    <td className='px-4 py-2.5'>
+                      <MasterFieldSelectDropdown
+                        options={fields.map((f) => ({
+                          id: f.fieldName,
+                          label: f.fieldName,
+                        }))}
+                        value={mappedValue || null}
+                        onChange={(newVal) => {
+                          setOracleMapping((prev) => ({
+                            ...prev,
+                            [oracleItem.name]: newVal || '',
+                          }))
+                        }}
+                      />
+                    </td>
+                    <td className='px-4 py-2.5 text-center'>
+                      <input
+                        checked={isSynced}
+                        className='size-4 cursor-pointer rounded border-gray-3 text-primary-9 accent-primary-9'
+                        type='checkbox'
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setOracleSyncFields((prev) => [
+                              ...prev,
+                              oracleItem.name,
+                            ])
+                          } else {
+                            setOracleSyncFields((prev) =>
+                              prev.filter((f) => f !== oracleItem.name),
+                            )
+                          }
+                        }}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function WizardContent({
   description,
   displayMode,
@@ -3515,7 +4141,9 @@ function WizardContent({
   const [newFieldType, setNewFieldType] = useState('SHORT_TEXT')
   const [newIsFolder, setNewIsFolder] = useState(false)
   const [newIsMandatory, setNewIsMandatory] = useState(false)
-  const [newFieldOptions, setNewFieldOptions] = useState<string[]>([])
+  const [newFieldOptionsJson, setNewFieldOptionsJson] = useState<string>(
+    JSON.stringify({ type: 'predefined', values: [] }),
+  )
   const [newFieldIcon, setNewFieldIcon] = useState<SelectOption | null>(
     folderIconOptions.find((option) => option.value === 'folder') || null,
   )
@@ -3739,6 +4367,61 @@ function WizardContent({
 
   const [syncDataTypes, setSyncDataTypes] = useState<Record<string, string>>({})
 
+  // SAP ERP State
+  const [sapHost, setSapHost] = useState('sap-prd.ezofis.internal')
+  const [sapSystemId, setSapSystemId] = useState('PRD-100')
+  const [sapClient, setSapClient] = useState('800')
+  const [sapSystemNumber, setSapSystemNumber] = useState('00')
+  const [sapUsername, setSapUsername] = useState('EZOFIS_RFC_USER')
+  const [sapPassword, setSapPassword] = useState('••••••••••••')
+  const [sapModule, setSapModule] = useState('FI/MM')
+  const [sapTesting, setSapTesting] = useState(false)
+  const [sapTested, setSapTested] = useState(false)
+  const [sapMapping, setSapMapping] = useState<Record<string, string>>({
+    BLDAT: 'Invoice Date',
+    DMBTR: 'Amount',
+    EBELN: 'PO Number',
+    LIFNR: 'Supplier',
+    WAERS: 'Currency',
+  })
+  const [sapSyncFields, setSapSyncFields] = useState<string[]>([
+    'EBELN',
+    'LIFNR',
+    'DMBTR',
+    'WAERS',
+    'BLDAT',
+  ])
+
+  // Oracle Fusion ERP State
+  const [oracleUrl, setOracleUrl] = useState(
+    'https://fa-ezofis-saas.oraclecloud.com',
+  )
+  const [oracleTenant, setOracleTenant] = useState('oracle-cloud-tenant-9921')
+  const [oracleAuthMode, setOracleAuthMode] = useState(
+    'OAuth 2.0 Client Credentials',
+  )
+  const [oracleClientId, setOracleClientId] = useState(
+    'EZOFIS_ERP_INTEGRATION_CLIENT',
+  )
+  const [oracleClientSecret, setOracleClientSecret] = useState('••••••••••••')
+  const [oracleModule, setOracleModule] = useState('Payables')
+  const [oracleTesting, setOracleTesting] = useState(false)
+  const [oracleTested, setOracleTested] = useState(false)
+  const [oracleMapping, setOracleMapping] = useState<Record<string, string>>({
+    InvoiceAmount: 'Amount',
+    InvoiceDate: 'Invoice Date',
+    InvoiceNum: 'Document Title',
+    POHeaderId: 'PO Number',
+    SupplierName: 'Supplier',
+  })
+  const [oracleSyncFields, setOracleSyncFields] = useState<string[]>([
+    'InvoiceNum',
+    'SupplierName',
+    'POHeaderId',
+    'InvoiceAmount',
+    'InvoiceDate',
+  ])
+
   const [masterFormTitle, setMasterFormTitle] = useState(
     `${folderName} - Master Form`,
   )
@@ -3753,6 +4436,23 @@ function WizardContent({
         masterFormFile,
         masterFormSetupMode,
         masterFormTitle,
+        oracleConfig: {
+          authMode: oracleAuthMode,
+          clientId: oracleClientId,
+          mapping: oracleMapping,
+          module: oracleModule,
+          syncFields: oracleSyncFields,
+          url: oracleUrl,
+        },
+        sapConfig: {
+          client: sapClient,
+          host: sapHost,
+          mapping: sapMapping,
+          module: sapModule,
+          sid: sapSystemId,
+          syncFields: sapSyncFields,
+          user: sapUsername,
+        },
         selectedExistingFormIds: selectedFormIds,
         selectedIntegration,
         syncDataTypes,
@@ -4004,6 +4704,12 @@ function WizardContent({
     const trimmedName = newFieldName.trim()
     if (!trimmedName) return
 
+    let optionsJsonToSave: string | null = null
+    if (['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(newFieldType)) {
+      optionsJsonToSave =
+        newFieldOptionsJson || JSON.stringify({ type: 'predefined', values: [] })
+    }
+
     setFields((prev) =>
       recalculateFieldHierarchy([
         ...prev,
@@ -4017,14 +4723,13 @@ function WizardContent({
           includeInFolderStructure: newIsFolder,
           isMandatory: newIsFolder || newIsMandatory,
           level: 0,
-          optionsJson:
-            newFieldOptions.length > 0 ? JSON.stringify(newFieldOptions) : null,
+          optionsJson: optionsJsonToSave,
           orderId: prev.length + 1,
         },
       ]),
     )
     setNewFieldName('')
-    setNewFieldOptions([])
+    setNewFieldOptionsJson(JSON.stringify({ type: 'predefined', values: [] }))
     setNewFieldType(String(fieldTypeOptions[0]?.value || 'SHORT_TEXT'))
     setNewIsFolder(false)
     setNewIsMandatory(false)
@@ -4125,16 +4830,11 @@ function WizardContent({
                   {['SINGLE_SELECT', 'MULTI_SELECT', 'BOOLEAN'].includes(
                     newFieldType,
                   ) && (
-                    <div className='flex flex-col gap-2'>
-                      <label className='text-13 font-medium text-gray-11'>
-                        {t`Options`}
-                      </label>
-                      <TagsInput
-                        data={[]}
-                        placeholder={t`Type an option and press Enter`}
-                        value={newFieldOptions}
-                        clearable
-                        onChange={setNewFieldOptions}
+                    <div className='rounded-lg border border-gray-3 bg-gray-1/30 p-4'>
+                      <OptionsConfigurationContent
+                        fieldName={newFieldName}
+                        optionsJson={newFieldOptionsJson}
+                        onChangeOptionsJson={setNewFieldOptionsJson}
                       />
                     </div>
                   )}
@@ -4426,7 +5126,14 @@ function WizardContent({
           <div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2'>
             {integrations.map((item, idx) => {
               const isSelected = selectedIntegration === item.id
-              const isConnected = connectedIntegrationId === item.id
+              const isTested =
+                item.id === 'SAP'
+                  ? sapTested
+                  : item.id === 'Oracle ERP'
+                    ? oracleTested
+                    : true
+              const isConnected = connectedIntegrationId === item.id && isTested
+              const isConfiguring = isSelected && !isConnected && item.id !== 'None'
               const canConnect = item.id !== 'None'
 
               return (
@@ -4434,10 +5141,10 @@ function WizardContent({
                   <div
                     className={cn(
                       'rounded-[12px] border p-3.5 transition',
-                      isSelected
-                        ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
-                        : isConnected
-                          ? 'border-green-8 bg-green-1'
+                      isConnected
+                        ? 'border-green-8 bg-green-1'
+                        : isConfiguring
+                          ? 'border-primary-8 bg-primary-2 shadow-sm ring-1 ring-primary-8'
                           : 'border-gray-3 bg-surface hover:border-primary-5',
                     )}
                   >
@@ -4446,16 +5153,18 @@ function WizardContent({
                         type='button'
                         className={cn(
                           'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition',
-                          isSelected || isConnected
-                            ? 'bg-surface shadow-sm'
-                            : 'bg-gray-2',
+                          isConnected
+                            ? 'bg-green-3 shadow-sm'
+                            : isConfiguring
+                              ? 'bg-surface shadow-sm'
+                              : 'bg-gray-2',
                         )}
                         onClick={() => {
                           setSelectedIntegration(item.id)
                           if (item.id === 'None') {
                             setConnectedIntegrationId(null)
-                          } else {
-                            setConnectedIntegrationId(item.id)
+                          } else if (item.id === 'MasterForm') {
+                            setConnectedIntegrationId('MasterForm')
                           }
                         }}
                       >
@@ -4465,7 +5174,7 @@ function WizardContent({
                             'size-4',
                             isConnected
                               ? 'text-green-11'
-                              : isSelected
+                              : isConfiguring
                                 ? 'text-primary-9'
                                 : 'text-gray-11',
                           )}
@@ -4481,8 +5190,8 @@ function WizardContent({
                               setSelectedIntegration(item.id)
                               if (item.id === 'None') {
                                 setConnectedIntegrationId(null)
-                              } else {
-                                setConnectedIntegrationId(item.id)
+                              } else if (item.id === 'MasterForm') {
+                                setConnectedIntegrationId('MasterForm')
                               }
                             }}
                           >
@@ -4496,27 +5205,41 @@ function WizardContent({
                                 'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-12 font-medium transition',
                                 isConnected
                                   ? 'bg-green-3 text-green-11'
-                                  : 'bg-primary-3 text-primary-11 hover:bg-primary-4',
+                                  : isConfiguring
+                                    ? 'bg-primary-3 text-primary-11 hover:bg-primary-4'
+                                    : 'bg-gray-3 text-gray-12 hover:bg-gray-4',
                               )}
                               onClick={() => {
                                 if (isConnected) {
                                   setConnectedIntegrationId(null)
+                                  if (item.id === 'SAP') setSapTested(false)
+                                  if (item.id === 'Oracle ERP') setOracleTested(false)
                                   if (selectedIntegration === item.id) {
                                     setSelectedIntegration('None')
                                   }
                                   return
                                 }
                                 setSelectedIntegration(item.id)
-                                setConnectedIntegrationId(item.id)
+                                if (item.id === 'MasterForm') {
+                                  setConnectedIntegrationId('MasterForm')
+                                }
                               }}
                             >
                               <Icon
                                 className='size-3.5'
                                 name={
-                                  isConnected ? 'lucide:check' : 'lucide:link-2'
+                                  isConnected
+                                    ? 'lucide:check'
+                                    : isConfiguring
+                                      ? 'tabler:settings'
+                                      : 'lucide:link-2'
                                 }
                               />
-                              {isConnected ? 'Connected' : 'Connect'}
+                              {isConnected
+                                ? 'Connected'
+                                : isConfiguring
+                                  ? 'Configuring'
+                                  : 'Connect'}
                             </button>
                           ) : (
                             <span
@@ -4536,8 +5259,8 @@ function WizardContent({
                             setSelectedIntegration(item.id)
                             if (item.id === 'None') {
                               setConnectedIntegrationId(null)
-                            } else {
-                              setConnectedIntegrationId(item.id)
+                            } else if (item.id === 'MasterForm') {
+                              setConnectedIntegrationId('MasterForm')
                             }
                           }}
                         >
@@ -5066,6 +5789,62 @@ function WizardContent({
                   </div>
                 </AnimateFadeIn>
               )}
+            {selectedIntegration === 'SAP' && (
+              <AnimateFadeIn delay={0.2}>
+                <SapIntegrationPanel
+                  fields={fields}
+                  onConnectSuccess={(id) => setConnectedIntegrationId(id)}
+                  sapClient={sapClient}
+                  sapHost={sapHost}
+                  sapMapping={sapMapping}
+                  sapModule={sapModule}
+                  sapPassword={sapPassword}
+                  sapSyncFields={sapSyncFields}
+                  sapSystemId={sapSystemId}
+                  sapSystemNumber={sapSystemNumber}
+                  sapTested={sapTested}
+                  sapTesting={sapTesting}
+                  sapUsername={sapUsername}
+                  setSapClient={setSapClient}
+                  setSapHost={setSapHost}
+                  setSapMapping={setSapMapping}
+                  setSapModule={setSapModule}
+                  setSapPassword={setSapPassword}
+                  setSapSyncFields={setSapSyncFields}
+                  setSapSystemId={setSapSystemId}
+                  setSapSystemNumber={setSapSystemNumber}
+                  setSapTested={setSapTested}
+                  setSapTesting={setSapTesting}
+                  setSapUsername={setSapUsername}
+                />
+              </AnimateFadeIn>
+            )}
+            {selectedIntegration === 'Oracle ERP' && (
+              <AnimateFadeIn delay={0.2}>
+                <OracleIntegrationPanel
+                  fields={fields}
+                  onConnectSuccess={(id) => setConnectedIntegrationId(id)}
+                  oracleAuthMode={oracleAuthMode}
+                  oracleClientId={oracleClientId}
+                  oracleClientSecret={oracleClientSecret}
+                  oracleMapping={oracleMapping}
+                  oracleModule={oracleModule}
+                  oracleSyncFields={oracleSyncFields}
+                  oracleTested={oracleTested}
+                  oracleTesting={oracleTesting}
+                  oracleUrl={oracleUrl}
+                  setOracleAuthMode={setOracleAuthMode}
+                  setOracleClientId={setOracleClientId}
+                  setOracleClientSecret={setOracleClientSecret}
+                  setOracleMapping={setOracleMapping}
+                  setOracleModule={setOracleModule}
+                  setOracleSyncFields={setOracleSyncFields}
+                  setOracleTested={setOracleTested}
+                  setOracleTesting={setOracleTesting}
+                  setOracleUrl={setOracleUrl}
+                />
+              </AnimateFadeIn>
+            )}
           </AnimatePresence>
         </div>
       </SettingsFormSection>

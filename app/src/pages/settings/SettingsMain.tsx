@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ClipboardList,
   Code2,
+  FileBarChart2,
   FileText,
   FolderOpen,
   GitFork,
@@ -15,9 +16,13 @@ import {
   Users,
 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
+import { refreshUserSession } from '@/api/v6/auth'
 import ColorPreference from '@/pages/my-account/components/color-preference/ColorPreference'
+import ReportBuilderSettingsPage from '@/pages/report-builder/components/ReportBuilderSettingsPage'
 import authUserStore from '@/stores/authUserStore'
-import { isPermissionVisible } from '@/utils/sessionPermissions'
+import {
+  isAnyPermissionVisible,
+} from '@/utils/sessionPermissions'
 import AuditMonitoring from './components/AuditMonitoring'
 import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
@@ -38,7 +43,8 @@ type SettingsItem = {
   href?: string
   icon: React.ElementType
   key: string
-  permissionKey?: string
+  /** One or more permission keys; visible if any match. */
+  permissionKeys?: string[]
   title: string
 }
 
@@ -51,6 +57,7 @@ const SETTINGS_PAGES = new Set([
   'group-management',
   'playground',
   'portal-configuration',
+  'report-builder',
   'roles-permissions',
   'settings',
   'user-management',
@@ -62,6 +69,7 @@ const CONFIGURATION_SETTINGS_KEYS = [
   'form-configuration',
   'workflow-configuration',
   'portal-configuration',
+  'report-builder',
 ]
 
 const ACCESS_SETTINGS_KEYS = [
@@ -77,10 +85,12 @@ const PLATFORM_SETTINGS_KEYS = [
   'audit-monitoring',
 ]
 
-const SETTINGS_PAGE_PERMISSIONS: Record<string, string> = {
-  'folder-configuration': 'folder',
-  'form-configuration': 'form',
-  'workflow-configuration': 'workflow',
+const SETTINGS_PAGE_PERMISSIONS: Record<string, string[]> = {
+  'folder-configuration': ['folder-create'],
+  'form-configuration': ['form'],
+  'portal-configuration': ['portal'],
+  'report-builder': ['report-builder'],
+  'workflow-configuration': ['workflow'],
 }
 
 const pickSettingsItems = (items: SettingsItem[], keys: string[]) =>
@@ -93,7 +103,10 @@ export default function SettingsMain() {
   const isAdmin = session?.role?.toLowerCase() === 'admin'
   const sessionPermissions = session?.permissionKeys
   const canOpenSettingsPage = (page: string) =>
-    isPermissionVisible(SETTINGS_PAGE_PERMISSIONS[page], sessionPermissions)
+    isAnyPermissionVisible(
+      SETTINGS_PAGE_PERMISSIONS[page] || [],
+      sessionPermissions,
+    )
   const [activePage, setActivePage] = useState<string>(() => {
     try {
       const stored = sessionStorage.getItem('ezofis_settings_state')
@@ -192,6 +205,17 @@ export default function SettingsMain() {
     )
   }
 
+  if (activePage === 'report-builder') {
+    if (!canOpenSettingsPage(activePage)) {
+      return <SettingsLanding onOpenPage={setActivePage} />
+    }
+    return (
+      <SettingsDetailShell>
+        <ReportBuilderSettingsPage onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
+  }
+
   if (activePage === 'branding') {
     if (!isAdmin) {
       return <SettingsLanding onOpenPage={setActivePage} />
@@ -243,13 +267,17 @@ function SettingsLanding({
     (state) => state.session?.permissionKeys,
   )
 
+  useEffect(() => {
+    void refreshUserSession()
+  }, [])
+
   const settingsItems: SettingsItem[] = useMemo(() => {
     const items: SettingsItem[] = [
       {
         description: t`Set up folders with custom fields, storage, security, and versioning.`,
         icon: FolderOpen,
         key: 'folder-configuration',
-        permissionKey: 'folder',
+        permissionKeys: ['folder-create'],
         title: t`Folder Configuration`,
       },
       {
@@ -257,7 +285,7 @@ function SettingsLanding({
         href: '/forms',
         icon: FileText,
         key: 'form-configuration',
-        permissionKey: 'form',
+        permissionKeys: ['form'],
         title: t`Forms`,
       },
       {
@@ -265,14 +293,22 @@ function SettingsLanding({
         href: '/workflows',
         icon: GitFork,
         key: 'workflow-configuration',
-        permissionKey: 'workflow',
+        permissionKeys: ['workflow'],
         title: t`Workflows`,
       },
       {
         description: t`Create branded portals, configure login methods, and connect workflows.`,
         icon: Globe,
         key: 'portal-configuration',
+        permissionKeys: ['portal'],
         title: t`Portal Configuration`,
+      },
+      {
+        description: t`Build and configure custom reports`,
+        icon: FileBarChart2,
+        key: 'report-builder',
+        permissionKeys: ['report-builder'],
+        title: t`Report Builder`,
       },
       {
         description: t`Add, edit, and manage platform users. Configure authentication and assign roles.`,
@@ -319,7 +355,17 @@ function SettingsLanding({
     ]
     return items.filter((item) => {
       if (!isAdmin && item.key === 'branding') return false
-      return isPermissionVisible(item.permissionKey, sessionPermissions)
+      // Access Control + Platform Management stay admin-only so
+      // Settings configuration access only surfaces Configuration cards.
+      if (
+        !isAdmin &&
+        (ACCESS_SETTINGS_KEYS.includes(item.key) ||
+          PLATFORM_SETTINGS_KEYS.includes(item.key))
+      ) {
+        return false
+      }
+      if (!item.permissionKeys?.length) return true
+      return isAnyPermissionVisible(item.permissionKeys, sessionPermissions)
     })
   }, [i18n.locale, isAdmin, sessionPermissions, t])
 
@@ -376,31 +422,6 @@ function SettingsLanding({
   )
 }
 
-function SettingsModuleGroup({
-  items,
-  onOpen,
-  title,
-}: {
-  items: SettingsItem[]
-  onOpen: (item: SettingsItem) => void
-  title: string
-}) {
-  if (!items.length) return null
-
-  return (
-    <section className='flex flex-col gap-3'>
-      <h2 className='text-[11px] font-semibold tracking-[0.12em] text-primary-9 uppercase'>
-        {title}
-      </h2>
-      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-        {items.map((item) => (
-          <SettingsModuleCard item={item} key={item.key} onOpen={onOpen} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function SettingsModuleCard({
   item,
   onOpen,
@@ -436,5 +457,30 @@ function SettingsModuleCard({
         strokeWidth={1.8}
       />
     </button>
+  )
+}
+
+function SettingsModuleGroup({
+  items,
+  title,
+  onOpen,
+}: {
+  items: SettingsItem[]
+  title: string
+  onOpen: (item: SettingsItem) => void
+}) {
+  if (!items.length) return null
+
+  return (
+    <section className='flex flex-col gap-3'>
+      <h2 className='text-[11px] font-semibold tracking-[0.12em] text-primary-9 uppercase'>
+        {title}
+      </h2>
+      <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+        {items.map((item) => (
+          <SettingsModuleCard item={item} key={item.key} onOpen={onOpen} />
+        ))}
+      </div>
+    </section>
   )
 }

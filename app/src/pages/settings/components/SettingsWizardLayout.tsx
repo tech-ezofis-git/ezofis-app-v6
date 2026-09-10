@@ -1,18 +1,19 @@
 import type { I18n, MessageDescriptor } from '@lingui/core'
-import { useEffect, useMemo, useRef } from 'react'
 import { useLingui } from '@lingui/react/macro'
-import Stepper from '@/components/base/Stepper'
+import { useEffect, useMemo, useRef } from 'react'
 import Button from '@/components/base/button/Button'
+import Stepper from '@/components/base/Stepper'
 import cn from '@/utils/cn'
+import { isDemoAppOrigin } from '@/utils/origin'
 import useSettingsTopbar from '../hooks/useSettingsTopbar'
 
 export type SettingsWizardStep = {
+  clickable?: boolean
+  description?: string
+  disabled?: boolean
+  icon?: string
   id: number
   label: string
-  description?: string
-  icon?: string
-  clickable?: boolean
-  disabled?: boolean
 }
 
 type Translatable = string | MessageDescriptor
@@ -28,50 +29,52 @@ const resolveText = (
 
 export type SettingsWizardLayoutProps = {
   activeStep: number
-  steps: SettingsWizardStep[]
-  onStepChange: (step: number) => void
-  onBack?: () => void
-  onNext?: () => void
-  onSave?: () => void
-  onCancel?: () => void
-  onBackToSettings?: () => void
-  isNextDisabled?: boolean
-  isBackDisabled?: boolean
-  isLoading?: boolean
-  isSaving?: boolean
-  nextLabel?: string
-  saveLabel?: string
-  moduleTitle?: Translatable
-  setupTitle?: Translatable
-  headerTitle: Translatable
-  headerDescription?: Translatable
   children: React.ReactNode
   className?: string
   contentClassName?: string
+  headerAction?: React.ReactNode
+  headerDescription?: Translatable
+  headerTitle: Translatable
+  isBackDisabled?: boolean
+  isLoading?: boolean
+  isNextDisabled?: boolean
+  isSaving?: boolean
+  moduleTitle?: Translatable
+  nextLabel?: string
+  saveLabel?: string
+  setupTitle?: Translatable
+  steps: SettingsWizardStep[]
+  onBack?: () => void
+  onBackToSettings?: () => void
+  onCancel?: () => void
+  onNext?: () => void
+  onSave?: () => void
+  onStepChange: (step: number) => void
 }
 
 export default function SettingsWizardLayout({
   activeStep,
-  steps,
-  onStepChange,
-  onBack,
-  onNext,
-  onSave,
-  onCancel,
-  onBackToSettings,
-  isNextDisabled = false,
-  isBackDisabled = false,
-  isLoading = false,
-  isSaving = false,
-  nextLabel,
-  saveLabel,
-  moduleTitle,
-  setupTitle,
-  headerTitle,
-  headerDescription,
   children,
   className,
   contentClassName,
+  headerAction,
+  headerDescription,
+  headerTitle,
+  isBackDisabled = false,
+  isLoading = false,
+  isNextDisabled = false,
+  isSaving = false,
+  moduleTitle,
+  nextLabel,
+  saveLabel,
+  steps,
+  setupTitle,
+  onBack,
+  onBackToSettings,
+  onCancel,
+  onNext,
+  onSave,
+  onStepChange,
 }: SettingsWizardLayoutProps) {
   const { i18n, t } = useLingui()
   const resolvedNextLabel = nextLabel ?? t`Continue`
@@ -110,13 +113,7 @@ export default function SettingsWizardLayout({
         }
       },
     }
-  }, [
-    resolvedModuleTitle,
-    resolvedSetupTitle,
-    onCancel,
-    onBackToSettings,
-    t,
-  ])
+  }, [resolvedModuleTitle, resolvedSetupTitle, onCancel, onBackToSettings, t])
 
   useSettingsTopbar(breadcrumbConfig)
 
@@ -130,10 +127,13 @@ export default function SettingsWizardLayout({
   }, [activeStep])
 
   const formattedSteps = useMemo(() => {
+    const allowAnyStep = isDemoAppOrigin()
     return steps.map((s, idx) => ({
       ...s,
-      clickable: s.clickable !== undefined ? s.clickable : idx <= activeStep,
-      disabled: s.disabled !== undefined ? s.disabled : idx > activeStep,
+      clickable:
+        allowAnyStep || (s.clickable !== undefined ? s.clickable : idx <= activeStep),
+      disabled:
+        allowAnyStep ? false : (s.disabled !== undefined ? s.disabled : idx > activeStep),
     }))
   }, [steps, activeStep, i18n.locale])
 
@@ -149,14 +149,21 @@ export default function SettingsWizardLayout({
         className='mb-4 border-b border-gray-3 px-6 py-4 md:px-8'
         key={i18n.locale}
       >
-        <div className='flex min-w-0 flex-col gap-1'>
-          <h2 className='truncate text-18/6 font-semibold tracking-tight text-gray-13'>
-            {resolvedHeaderTitle}
-          </h2>
-          {resolvedHeaderDescription ? (
-            <p className='truncate text-13/5 text-gray-11'>
-              {resolvedHeaderDescription}
-            </p>
+        <div className='flex min-w-0 items-start justify-between gap-4'>
+          <div className='flex min-w-0 flex-col gap-1'>
+            <h2 className='truncate text-18/6 font-semibold tracking-tight text-gray-13'>
+              {resolvedHeaderTitle}
+            </h2>
+            {resolvedHeaderDescription ? (
+              <p className='truncate text-13/5 text-gray-11'>
+                {resolvedHeaderDescription}
+              </p>
+            ) : null}
+          </div>
+          {headerAction ? (
+            <div className='flex shrink-0 items-center pt-0.5'>
+              {headerAction}
+            </div>
           ) : null}
         </div>
       </div>
