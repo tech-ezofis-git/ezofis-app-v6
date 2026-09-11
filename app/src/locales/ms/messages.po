@@ -181,13 +181,17 @@ msgstr "{0}: __XPH1X__"
 msgid "{activeCard}"
 msgstr "{activeCard}"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:50
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:23
 msgid "{activeUsers} active · {groupsCount} groups"
 msgstr "{activeUsers} aktif · {groupsCount} kumpulan"
 
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:32
+msgid "{activeWorkflows} active"
+msgstr ""
+
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:23
-msgid "{activeWorkflows} active workflows"
-msgstr "{activeWorkflows} aliran kerja aktif"
+#~ msgid "{activeWorkflows} active workflows"
+#~ msgstr "{activeWorkflows} aliran kerja aktif"
 
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:622
 msgid "{count} line item(s) found in the uploaded document."
@@ -279,7 +283,7 @@ msgstr "{progress}% Selesai"
 msgid "{requiredMapped} / {requiredTotal} Required Mapped"
 msgstr "{requiredMapped} / __XPH1X__ Diperlukan Dipetakan"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:39
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:48
 msgid "{storageUsedGb} GB used"
 msgstr "{storageUsedGb} GB digunakan"
 
@@ -327,7 +331,7 @@ msgstr "+ Tambah syarat"
 msgid "+{extraCount} more"
 msgstr "+{extraCount} lagi"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:21
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:30
 msgid "+2 this week"
 msgstr "+2 minggu ini"
 
@@ -429,7 +433,7 @@ msgstr "4 bidang"
 msgid "4. Posted"
 msgstr "4. Disiarkan"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:32
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:41
 msgid "5 hierarchy levels"
 msgstr "5 tahap hierarki"
 
@@ -962,7 +966,7 @@ msgstr "Semua"
 msgid "All {count} documents successfully ingested and indexed."
 msgstr "Semua {count} dokumen berjaya diserap dan diindeks."
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:48
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:21
 msgid "All Active"
 msgstr "Semua Aktif"
 
@@ -1538,6 +1542,7 @@ msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsof
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:833
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:779
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:821
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:106
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:212
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
 #: src/pages/settings/components/SettingsWizardLayout.tsx:209
@@ -1981,7 +1986,7 @@ msgstr "Kotak semak/OMR"
 msgid "Choose a destination action and how to build the rule to continue."
 msgstr "Pilih tindakan destinasi dan cara membina peraturan untuk meneruskan."
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:211
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:214
 msgid "Choose a different repository to override..."
 msgstr "Pilih repositori lain untuk mengatasi..."
 
@@ -2029,7 +2034,7 @@ msgstr "Pilih cara untuk menyediakan pencetus dan syarat."
 msgid "Choose how users sign in to this portal"
 msgstr "Pilih cara pengguna log masuk ke portal ini"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:103
+#: src/pages/settings/components/license/LicenseSettings.tsx:107
 msgid "Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean."
 msgstr "Pilih cara aliran kerja percubaan, folder, pengguna dan permintaan anda dipindahkan — kekalkan semua, kekalkan konfigurasi sahaja atau mulakan semula."
 
@@ -4781,7 +4786,7 @@ msgstr "Fail berjaya dimuat naik"
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
 #: src/pages/folders/components/Upload/Upload.tsx:1640
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:43
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:52
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:139
 msgid "Files"
 msgstr "Fail"
@@ -4991,7 +4996,7 @@ msgstr "Folder berjaya dikemas kini."
 #: src/layouts/app/components/sidebar/Sidebar.tsx:32
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:78
 #: src/pages/folders/components/FolderExplorer.tsx:313
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:34
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:43
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:21
 msgid "Folders"
@@ -6136,8 +6141,7 @@ msgstr "Mari sediakan aliran kerja AP anda"
 #~ msgid "Let’s start your submission."
 #~ msgstr "Mari mulakan penyerahan anda."
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:76
-#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:106
+#: src/pages/settings/components/license/LicenseSettings.tsx:80
 #: src/pages/settings/SettingsMain.tsx:356
 msgid "License & Subscription"
 msgstr "Lesen & Langganan"
@@ -6554,7 +6558,7 @@ msgstr "Manual"
 msgid "Manual PO Import"
 msgstr "Import PO Manual"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:227
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:230
 msgid "Manually routed to"
 msgstr "Dihala secara manual kepada"
 
@@ -8010,7 +8014,7 @@ msgstr "Ataupun"
 msgid "or build them manually."
 msgstr "atau bina secara manual."
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:202
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:205
 msgid "Or override with another repository:"
 msgstr "Atau ganti dengan repositori lain:"
 
@@ -8051,7 +8055,7 @@ msgstr "Pemetaan Medan REST Oracle Fusion"
 msgid "Order"
 msgstr "Pesanan"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:30
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:39
 msgid "Organized"
 msgstr "Tersusun"
 
@@ -8096,7 +8100,7 @@ msgstr "Jumlah tertunggak"
 msgid "Overdue and due-soonest first — process top-down"
 msgstr "Tertunggak dan perlu dibayar paling cepat dahulu — proses dari atas ke bawah"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:208
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:211
 msgid "Override repository"
 msgstr "Gantikan repositori"
 
@@ -9097,7 +9101,7 @@ msgstr "Sedia untuk Kelulusan"
 msgid "Ready to confirm"
 msgstr "Sedia untuk mengesahkan"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:100
+#: src/pages/settings/components/license/LicenseSettings.tsx:104
 msgid "Ready to go live? Upgrade to Production."
 msgstr "Bersedia untuk bersiaran langsung? Naik taraf ke Pengeluaran."
 
@@ -10949,7 +10953,7 @@ msgstr "Tunjukkan kedua-dua folder dan fail"
 msgid "Show Documents"
 msgstr "Tunjukkan Dokumen"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:183
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:186
 msgid "Show fewer suggestions"
 msgstr "Tunjukkan cadangan yang kurang"
 
@@ -11381,7 +11385,7 @@ msgstr "Masih dibuka... ini mengambil masa lebih lama daripada jangkaan. Semak k
 msgid "Storage"
 msgstr "Storan"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:41
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:50
 msgid "Storage across all folders"
 msgstr "Storan merentasi semua folder"
 
@@ -11717,7 +11721,7 @@ msgstr "Paparan Jadual"
 msgid "Take your workspace to Production"
 msgstr "Bawa ruang kerja anda ke Pengeluaran"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:110
+#: src/pages/settings/components/license/LicenseSettings.tsx:114
 msgid "Talk to Sales"
 msgstr "Bercakap dengan Bahagian Jualan"
 
@@ -11791,8 +11795,8 @@ msgid "Test Connection"
 msgstr "Uji Sambungan"
 
 #: src/pages/settings/components/license/LicenseSettings.tsx:49
-msgid "Thanks! Our team will reach out within one business day."
-msgstr "Terima kasih! Pasukan kami akan menghubungi anda dalam masa satu hari perniagaan."
+#~ msgid "Thanks! Our team will reach out within one business day."
+#~ msgstr "Terima kasih! Pasukan kami akan menghubungi anda dalam masa satu hari perniagaan."
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:202
 msgid "That email is already in the signing list."
@@ -12500,8 +12504,8 @@ msgstr "Mengemas kini rekod dalam pangkalan data induk"
 msgid "Upgrade complete"
 msgstr "Naik taraf selesai"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:39
-#: src/pages/settings/components/license/LicenseSettings.tsx:118
+#: src/pages/settings/components/license/LicenseSettings.tsx:40
+#: src/pages/settings/components/license/LicenseSettings.tsx:122
 msgid "Upgrade to Production"
 msgstr "Naik Taraf ke Pengeluaran"
 
@@ -12797,7 +12801,7 @@ msgstr "Medan Nama Pengguna"
 #~ msgid "Username Field *"
 #~ msgstr "Medan Nama Pengguna *"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:52
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:25
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:144
 #: src/pages/settings/components/ManageUser.tsx:1663
 #: src/pages/settings/components/RolesPermissions.tsx:1069
@@ -12956,7 +12960,7 @@ msgstr "Strategi versi disimpan. Adakah anda memerlukan integrasi ERP atau siste
 msgid "View"
 msgstr "Lihat"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:184
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:187
 msgid "View {remainingCount} more suggestions"
 msgstr "Lihat {remainingCount} lagi cadangan"
 
@@ -12990,7 +12994,7 @@ msgstr "Mod Lihat"
 msgid "View suggestions"
 msgstr "Lihat cadangan"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:75
+#: src/pages/settings/components/license/LicenseSettings.tsx:79
 msgid "View trial usage summary and upgrade to production."
 msgstr "Lihat ringkasan penggunaan percubaan dan naik taraf ke pengeluaran."
 
@@ -13190,7 +13194,7 @@ msgstr "Aliran kerja bermula tetapi tidak mengembalikan sebarang data."
 #: src/layouts/app/components/sidebar/Sidebar.tsx:26
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:80
 #: src/pages/portal/components/PortalHome.tsx:275
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:25
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:34
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129
 #: src/pages/settings/components/PortalConfiguration.tsx:88
 #: src/pages/settings/components/PortalConfiguration.tsx:486
@@ -13303,11 +13307,11 @@ msgstr "ruang kerja anda"
 msgid "Your workspace has been upgraded using the \"{optionTitle}\" strategy. Refresh to see your production workspace."
 msgstr "Ruang kerja anda telah dinaik taraf menggunakan strategi \"{optionTitle}\". Muat semula untuk melihat ruang kerja pengeluaran anda."
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:57
+#: src/pages/settings/components/license/LicenseSettings.tsx:61
 msgid "Your workspace is now on Production."
 msgstr "Ruang kerja anda kini dalam Pengeluaran."
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:97
+#: src/pages/settings/components/license/LicenseSettings.tsx:101
 msgid "Zero-Downtime Transition"
 msgstr "Peralihan Tanpa Masa Henti"
 
