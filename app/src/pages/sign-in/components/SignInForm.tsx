@@ -7,11 +7,14 @@ import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
+import { isDualAuthEnabledDomain, verifyDualAuth, type DualAuthResult } from '@/api/dualAuth'
 import authApiV6 from '@/api/v6/auth'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
 import MicrosoftButton from '@/components/base/button/MicrosoftButton'
+import { performV5Handoff } from '@/utils/v5Handoff'
+import VersionSelectionCard from './VersionSelectionCard'
 import Divider from '@/components/base/Divider'
 import Icon from '@/components/base/icon/Icon'
 import IconIllustrated from '@/components/base/icon/IconIllustrated'
@@ -144,6 +147,10 @@ const SignInForm = ({
   const [selectedTenantId, setSelectedTenantId] = useState<
     number | string | null
   >(null)
+
+  // === Dual V5/V6 Auth state ===
+  const [dualAuthResult, setDualAuthResult] = useState<DualAuthResult | null>(null)
+  const [showVersionSelection, setShowVersionSelection] = useState(false)
 
   // === environment-based flags (computed in Vue) ===
   const origin =
@@ -296,6 +303,51 @@ const SignInForm = ({
 
       const targetTenantId =
         tenantId || shareTenantId || brandingTenantId || undefined
+
+      // Check if dual auth (V5 + V6) is active on this domain (cloud.ezofis.com / app.ezofis.com)
+      if (isDualAuthEnabledDomain()) {
+        const dualResult = await verifyDualAuth(payload, targetTenantId)
+
+        // Case 1: Both V6 and V5 authentication succeeded -> Show Version Selection UI
+        if (dualResult.v6.success && dualResult.v5.success) {
+          setDualAuthResult(dualResult)
+          setShowVersionSelection(true)
+          return
+        }
+
+        // Case 2: V5 Auth ONLY succeeded -> Launch V5 directly
+        if (dualResult.v5.success && !dualResult.v6.success && dualResult.v5.identity) {
+          performV5Handoff({
+            identity: dualResult.v5.identity,
+            session: dualResult.v5.session,
+          })
+          return
+        }
+
+        // Case 3: V6 Auth ONLY succeeded -> Launch V6 directly
+        if (dualResult.v6.success && !dualResult.v5.success) {
+          await completeSignIn(dualResult.v6.data, email, targetTenantId)
+          return
+        }
+
+        // Case 4: Handle status 300 tenant options from V6 or V5
+        if (dualResult.v6.tenants && dualResult.v6.tenants.length > 0) {
+          const mapped: TenantOption[] = dualResult.v6.tenants.map((tenant: any) => ({
+            email: tenant.email,
+            id: tenant.id,
+            label: tenant.name,
+            value: tenant.id,
+          }))
+          setTenantList(mapped)
+          setShowTenantListModal(true)
+          return
+        }
+
+        // Neither succeeded -> display error
+        setError(dualResult.v6.error || dualResult.v5.error || t`Unable to sign in`)
+        return
+      }
+
       const { data, error, status } = await apiRouter.login(
         payload,
         targetTenantId,
@@ -516,6 +568,30 @@ const SignInForm = ({
           ? 'APP'
           : 'EZOFIS'
     welcomeDescription = t`Hi, Welcome back to ${appName}`
+  }
+
+  // Show Version Selection UI when both V5 and V6 are available
+  if (showVersionSelection && dualAuthResult) {
+    const targetTenantId = shareTenantId || brandingTenantId || undefined
+    return (
+      <VersionSelectionCard
+        onBack={() => setShowVersionSelection(false)}
+        onSelectV6={async () => {
+          setShowVersionSelection(false)
+          if (dualAuthResult.v6.data) {
+            await completeSignIn(dualAuthResult.v6.data, email, targetTenantId)
+          }
+        }}
+        onSelectV5={() => {
+          if (dualAuthResult.v5.identity) {
+            performV5Handoff({
+              identity: dualAuthResult.v5.identity,
+              session: dualAuthResult.v5.session,
+            })
+          }
+        }}
+      />
+    )
   }
 
   // Show tenant selection UI instead of sign-in form when tenant list is available
