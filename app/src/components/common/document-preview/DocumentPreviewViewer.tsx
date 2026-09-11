@@ -673,14 +673,14 @@ function WordPreview({
 }) {
   const ext = getFileExtension(fileName)
 
-  // Public URLs can be embedded via Microsoft Office Online.
-  if (isHttpUrl(fileUrl)) {
-    return <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
+  // Prefer in-browser DOCX rendering for uploaded / blob / fetchable files.
+  if (ext === 'docx') {
+    return <DocxRenderedPreview fileName={fileName} fileUrl={fileUrl} />
   }
 
-  // Local/blob .docx → extract readable text from the Open XML package.
-  if (ext === 'docx') {
-    return <DocxTextPreview fileName={fileName} fileUrl={fileUrl} />
+  // Public URLs for other Office formats can use Microsoft Office Online.
+  if (isHttpUrl(fileUrl)) {
+    return <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
   }
 
   return (
@@ -693,19 +693,24 @@ function WordPreview({
   )
 }
 
-function DocxTextPreview({
+const DEFAULT_DOCX_ZOOM = 0.7
+
+function DocxRenderedPreview({
   fileName,
   fileUrl,
 }: {
   fileName?: string
   fileUrl: string
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const styleRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [html, setHtml] = useState('')
   const [loading, setLoading] = useState(true)
+  const [scale, setScale] = useState(DEFAULT_DOCX_ZOOM)
 
   useEffect(() => {
     let cancelled = false
+    setScale(DEFAULT_DOCX_ZOOM)
 
     const load = async () => {
       setLoading(true)
@@ -769,9 +774,8 @@ function DocxTextPreview({
               ? err.message
               : 'Unable to preview Word document',
           )
+          setLoading(false)
         }
-      } finally {
-        if (!cancelled) setLoading(false)
       }
     }
 
@@ -781,7 +785,6 @@ function DocxTextPreview({
     }
   }, [fileUrl])
 
-  if (loading) return <SkeletonDocumentPreview />
   if (error) {
     return (
       <UnsupportedPreview
@@ -794,11 +797,53 @@ function DocxTextPreview({
   }
 
   return (
-    <div className='h-full min-h-[320px] overflow-auto bg-[var(--gray-1)] p-5'>
-      <div
-        className='mx-auto min-h-full max-w-3xl rounded-xl border border-[var(--gray-3)] bg-surface p-6 shadow-sm'
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+    <div className='relative h-full min-h-[320px] bg-[var(--gray-2)]'>
+      {loading && (
+        <div className='absolute inset-0 z-10'>
+          <SkeletonDocumentPreview />
+        </div>
+      )}
+      <div ref={styleRef} className='hidden' />
+      {/* Scroll only this pane so the zoom toolbar stays pinned. */}
+      <div className='h-full overflow-auto'>
+        <div
+          className={cn(
+            'flex min-h-full min-w-full justify-center px-3 py-4',
+            loading && 'invisible',
+          )}
+        >
+          <div
+            ref={containerRef}
+            className='ez-docx-preview origin-top transition-transform duration-200'
+            style={{ transform: `scale(${scale})` }}
+          />
+        </div>
+      </div>
+      {!loading && <ZoomToolbar scale={scale} onZoom={setScale} />}
+      <style>{`
+        .ez-docx-preview .ez-docx-wrapper {
+          background: transparent !important;
+          padding: 0 !important;
+        }
+        .ez-docx-preview .ez-docx {
+          background: #fff !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,.08);
+          margin: 0 auto 16px !important;
+          padding: 48px 56px !important;
+          color: #111;
+        }
+        .ez-docx-preview .ez-docx section.ez-docx {
+          min-height: auto;
+        }
+        .ez-docx-preview table {
+          border-collapse: collapse;
+        }
+        .ez-docx-preview td,
+        .ez-docx-preview th {
+          border: 1px solid #d0d0d0;
+          padding: 4px 8px;
+        }
+      `}</style>
     </div>
   )
 }

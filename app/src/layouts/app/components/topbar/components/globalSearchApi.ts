@@ -2,6 +2,10 @@ import {
   SEARCH_ENDPOINT,
   resolveChatbotAuth,
 } from '@/components/common/ask-ai/chatbotApi'
+import {
+  getFromLocalStorage,
+  setToLocalStorage,
+} from '@/utils/local-storage'
 
 export type GlobalSearchHitId = {
   formEntryId?: string
@@ -53,6 +57,7 @@ export type GlobalSearchHit = {
   matchedValue?: string
   matched_field?: string
   matched_value?: string
+  metadata?: Record<string, unknown>
   modifiedDateandtime?: string
   name?: string
   needles?: string[]
@@ -62,6 +67,8 @@ export type GlobalSearchHit = {
   subtitle?: string
   title?: string
   type: string
+  /** Preserve unknown API fields so cache search can match them too. */
+  [key: string]: unknown
 }
 
 export type GlobalSearchRequest = {
@@ -239,7 +246,13 @@ export function normalizeGlobalSearchHit(raw: unknown): GlobalSearchHit | null {
     name,
   )
 
+  const metadata =
+    hit.metadata && typeof hit.metadata === 'object' && !Array.isArray(hit.metadata)
+      ? (hit.metadata as Record<string, unknown>)
+      : undefined
+
   return {
+    ...hit,
     badges: badges.length ? badges : undefined,
     dateandtime: pickString(hit.dateandtime, hit.dateAndTime) || undefined,
     description: description || undefined,
@@ -259,6 +272,7 @@ export function normalizeGlobalSearchHit(raw: unknown): GlobalSearchHit | null {
     matchedValue: matchedValue || undefined,
     matched_field: matchedField || undefined,
     matched_value: matchedValue || undefined,
+    metadata,
     modifiedDateandtime:
       pickString(hit.modifiedDateandtime, hit.modifiedDateAndTime) || undefined,
     name: name || folder || undefined,
@@ -301,7 +315,7 @@ export async function fetchGlobalSearch(
     const tenantId = payload.tenantId || resolvedTenantId
 
     if (!tenantId) {
-      return []
+      throw new Error('Missing tenant id for global search')
     }
 
     // Backend currently only accepts a single specificId string; multiple
@@ -342,15 +356,28 @@ export async function fetchGlobalSearch(
     })
 
     if (!response.ok || response.status !== 200) {
-      return []
+      throw new Error(`Global search failed (${response.status})`)
     }
 
     const data = await response.json().catch(() => null)
-    return mapGlobalSearchResponse(data)
-  } catch {
-    return []
+    const hits = mapGlobalSearchResponse(data)
+    // Persist API hits so typing can filter locally without another call.
+    if (hits.length) {
+      saveGlobalSearchCache(hits, {
+        query: payload.query,
+        tenantId,
+      })
+    }
+    return hits
+  } catch (error) {
+    if (error instanceof Error) throw error
+    throw new Error('Global search failed')
   }
 }
+
+const GLOBAL_SEARCH_CACHE_KEY = 'ezofis.globalSearch.cache'
+const GLOBAL_SEARCH_CACHE_LIMIT = 500
+const GLOBAL_SEARCH_QUERY_LIMIT = 30
 
 export function getSearchHitTitle(hit: GlobalSearchHit) {
   return (
@@ -362,6 +389,212 @@ export function getSearchHitTitle(hit: GlobalSearchHit) {
     hit.description?.trim() ||
     'Untitled'
   )
+}
+
+export type GlobalSearchCachePayload = {
+  /** Exact API responses keyed by normalized query. */
+  byQuery: Record<string, GlobalSearchHit[]>
+  /** Deduped pool of all hits for fuzzy / partial filtering. */
+  hits: GlobalSearchHit[]
+  queries: string[]
+  savedAt: number
+  tenantId: string
+}
+
+const normalizeQueryKey = (query: string) =>
+  String(query || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+
+const hitCacheKey = (hit: GlobalSearchHit): string =>
+  [
+    hit.type,
+    hit.id?.itemId,
+    hit.id?.formEntryId,
+    hit.id?.instanceId,
+    hit.entity_id,
+    hit.id?.repositoryId,
+    hit.id?.workflowId,
+    hit.id?.formId,
+    getSearchHitTitle(hit),
+    hit.matched_value || hit.matchedValue || hit.matchValue,
+  ]
+    .filter(Boolean)
+    .join('::')
+
+const sameTenant = (cachedTenant: string, currentTenant?: string) => {
+  const a = String(cachedTenant || '').trim()
+  const b = String(currentTenant || '').trim()
+  // If either side is unknown, still allow reading the cache.
+  if (!a || !b) return true
+  return a === b
+}
+
+export function loadGlobalSearchCache(
+  tenantId?: string,
+): GlobalSearchCachePayload | null {
+  try {
+    const cached = getFromLocalStorage<GlobalSearchCachePayload>(
+      GLOBAL_SEARCH_CACHE_KEY,
+      'OBJECT',
+    ) as GlobalSearchCachePayload | undefined
+    if (!cached || typeof cached !== 'object') return null
+    if (!sameTenant(String(cached.tenantId || ''), tenantId)) return null
+
+    const hits = Array.isArray(cached.hits) ? cached.hits : []
+    const byQuery =
+      cached.byQuery && typeof cached.byQuery === 'object'
+        ? cached.byQuery
+        : {}
+
+    return {
+      byQuery,
+      hits,
+      queries: Array.isArray(cached.queries) ? cached.queries : [],
+      savedAt: Number(cached.savedAt) || 0,
+      tenantId: String(cached.tenantId || ''),
+    }
+  } catch {
+    return null
+  }
+}
+
+export function saveGlobalSearchCache(
+  hits: GlobalSearchHit[],
+  options?: { query?: string; tenantId?: string },
+): void {
+  if (!Array.isArray(hits) || !hits.length) return
+
+  try {
+    const { tenantId: authTenantId } = resolveChatbotAuth()
+    const tenantId = options?.tenantId || authTenantId || ''
+    const previous = loadGlobalSearchCache(tenantId || undefined)
+    const merged = new Map<string, GlobalSearchHit>()
+
+    for (const hit of previous?.hits || []) {
+      merged.set(hitCacheKey(hit), hit)
+    }
+    for (const hit of hits) {
+      merged.set(hitCacheKey(hit), hit)
+    }
+
+    const nextHits = Array.from(merged.values()).slice(
+      0,
+      GLOBAL_SEARCH_CACHE_LIMIT,
+    )
+    const query = String(options?.query || '').trim()
+    const queryKey = normalizeQueryKey(query)
+    const byQuery: Record<string, GlobalSearchHit[]> = {
+      ...(previous?.byQuery || {}),
+    }
+    if (queryKey) {
+      byQuery[queryKey] = hits
+    }
+
+    // Keep only the newest N query buckets.
+    const queryKeys = [
+      ...(queryKey ? [queryKey] : []),
+      ...Object.keys(byQuery).filter((key) => key !== queryKey),
+    ].slice(0, GLOBAL_SEARCH_QUERY_LIMIT)
+    const trimmedByQuery: Record<string, GlobalSearchHit[]> = {}
+    for (const key of queryKeys) {
+      if (byQuery[key]) trimmedByQuery[key] = byQuery[key]
+    }
+
+    const queries = [
+      ...(query ? [query] : []),
+      ...((previous?.queries || []).filter(
+        (item) => normalizeQueryKey(item) !== queryKey,
+      )),
+    ].slice(0, GLOBAL_SEARCH_QUERY_LIMIT)
+
+    setToLocalStorage(
+      {
+        byQuery: trimmedByQuery,
+        hits: nextHits,
+        queries,
+        savedAt: Date.now(),
+        tenantId,
+      } satisfies GlobalSearchCachePayload,
+      GLOBAL_SEARCH_CACHE_KEY,
+      'OBJECT',
+    )
+  } catch (error) {
+    console.warn('Failed to save global search cache', error)
+  }
+}
+
+/** Flatten any JSON-like value into searchable lowercase text. */
+const flattenSearchText = (value: unknown, depth = 0): string => {
+  if (value == null || depth > 4) return ''
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => flattenSearchText(item, depth + 1)).join(' ')
+  }
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>)
+      .map((item) => flattenSearchText(item, depth + 1))
+      .join(' ')
+  }
+  return ''
+}
+
+const collectHitSearchText = (hit: GlobalSearchHit): string =>
+  flattenSearchText(hit).toLowerCase()
+
+/** Exact cached API response for a query (Enter / same search again). */
+export function getCachedHitsForQuery(
+  query: string,
+  tenantId?: string,
+): GlobalSearchHit[] | null {
+  const key = normalizeQueryKey(query)
+  if (!key) return null
+  const cached = loadGlobalSearchCache(
+    tenantId || resolveChatbotAuth().tenantId || undefined,
+  )
+  const hits = cached?.byQuery?.[key]
+  return Array.isArray(hits) && hits.length ? hits : null
+}
+
+/**
+ * Resolve search results from cache:
+ * 1) exact query bucket from prior API call
+ * 2) otherwise filter the full hit pool across ALL response fields
+ */
+export function filterCachedGlobalSearchHits(
+  query: string,
+  hits?: GlobalSearchHit[] | null,
+): GlobalSearchHit[] {
+  const needle = String(query || '').trim()
+  if (!needle) return []
+
+  const tenantId = resolveChatbotAuth().tenantId || undefined
+  const exact = getCachedHitsForQuery(needle, tenantId)
+  if (exact?.length) return exact
+
+  const source =
+    hits ||
+    loadGlobalSearchCache(tenantId)?.hits ||
+    []
+
+  if (!source.length) return []
+
+  const tokens = normalizeQueryKey(needle).split(/\s+/).filter(Boolean)
+  if (!tokens.length) return []
+
+  return source.filter((hit) => {
+    const haystack = collectHitSearchText(hit)
+    // Match tokens with and without punctuation (po-60001 / po60001).
+    return tokens.every((token) => {
+      if (haystack.includes(token)) return true
+      const compactToken = token.replace(/[^a-z0-9]/g, '')
+      const compactHaystack = haystack.replace(/[^a-z0-9]/g, '')
+      return Boolean(compactToken) && compactHaystack.includes(compactToken)
+    })
+  })
 }
 
 export function getSearchHitDate(hit: GlobalSearchHit) {
