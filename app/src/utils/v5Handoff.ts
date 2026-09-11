@@ -9,16 +9,8 @@ export const getV5BaseUrl = (): string => {
     return import.meta.env.VITE_V5_APP_URL
   }
 
-  const origin = globalThis.location?.origin || ''
-  const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1')
-
-  // When running locally, default to live V5 app URL or configurable port
-  if (isLocal) {
-    return 'https://app.ezofis.com'
-  }
-
-  // In production (cloud.ezofis.com / app.ezofis.com under reverse proxy):
-  return `${origin}/v5`
+  // Default to live V5 app domain (https://app.ezofis.com) until server reverse proxy is active
+  return 'https://app.ezofis.com'
 }
 
 /**
