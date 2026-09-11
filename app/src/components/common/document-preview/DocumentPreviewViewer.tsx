@@ -694,13 +694,22 @@ function DocxTextPreview({
         const response = await fetch(fileUrl)
         if (!response.ok) throw new Error('Unable to load document')
         const buffer = await response.arrayBuffer()
+        if (buffer.byteLength < 4) {
+          throw new Error('File is empty or not a valid Word document')
+        }
+
         const xml = await extractDocxDocumentXml(buffer)
-        if (!xml) throw new Error('Could not read Word document contents')
+        if (!xml) {
+          throw new Error(
+            'Could not read Word document contents. Try Open file, or re-save as .docx.',
+          )
+        }
+
         const paragraphs = xml
           .split(/<\/w:p>/i)
           .map((chunk) => {
-            const texts = [...chunk.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/gi)].map(
-              (match) => match[1],
+            const texts = [...chunk.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map(
+              (match) => decodeXmlEntities(match[1] || ''),
             )
             return texts.join('')
           })
@@ -708,7 +717,19 @@ function DocxTextPreview({
           .filter(Boolean)
 
         if (!paragraphs.length) {
-          throw new Error('No readable text found in this Word document')
+          // Tables / text boxes may still have content under <w:t>.
+          const loose = [...xml.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)]
+            .map((match) => decodeXmlEntities(match[1] || '').trim())
+            .filter(Boolean)
+          if (!loose.length) {
+            throw new Error('No readable text found in this Word document')
+          }
+          if (!cancelled) {
+            setHtml(
+              `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(loose.join(' '))}</p>`,
+            )
+          }
+          return
         }
 
         if (!cancelled) {
@@ -844,7 +865,27 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 
-/** Minimal ZIP reader to pull `word/document.xml` from a .docx (no extra deps). */
+const decodeXmlEntities = (value: string) =>
+  value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+
+async function inflateRaw(payload: Uint8Array): Promise<Uint8Array> {
+  const copy = Uint8Array.from(payload)
+  const stream = new Blob([copy])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate-raw'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
+}
+
+/**
+ * Read `word/document.xml` from a .docx (ZIP) using the central directory.
+ * Local-header-only parsing fails on many Office files that use data descriptors.
+ */
 async function extractDocxDocumentXml(
   buffer: ArrayBuffer,
 ): Promise<string | null> {
@@ -852,50 +893,184 @@ async function extractDocxDocumentXml(
   const view = new DataView(buffer)
   const decoder = new TextDecoder('utf-8')
 
-  for (let offset = 0; offset < bytes.length - 30; offset++) {
+  // PK\x03\x04 = local, PK\x01\x02 = central, PK\x05\x06 = EOCD
+  if (
+    bytes.length < 22 ||
+    bytes[0] !== 0x50 ||
+    bytes[1] !== 0x4b ||
+    bytes[2] !== 0x03 ||
+    bytes[3] !== 0x04
+  ) {
+    return null
+  }
+
+  // Find End of Central Directory (scan backwards; comment can follow it).
+  let eocd = -1
+  for (let i = bytes.length - 22; i >= 0; i--) {
     if (
+      bytes[i] === 0x50 &&
+      bytes[i + 1] === 0x4b &&
+      bytes[i + 2] === 0x05 &&
+      bytes[i + 3] === 0x06
+    ) {
+      eocd = i
+      break
+    }
+    // Don't scan forever on huge trailing comments.
+    if (bytes.length - i > 65_536) break
+  }
+  if (eocd < 0) return extractDocxDocumentXmlFallback(bytes, view, decoder)
+
+  const totalEntries = view.getUint16(eocd + 10, true)
+  const centralOffset = view.getUint32(eocd + 16, true)
+  if (centralOffset >= bytes.length) {
+    return extractDocxDocumentXmlFallback(bytes, view, decoder)
+  }
+
+  let offset = centralOffset
+  for (let entry = 0; entry < totalEntries; entry++) {
+    if (
+      offset + 46 > bytes.length ||
       bytes[offset] !== 0x50 ||
       bytes[offset + 1] !== 0x4b ||
-      bytes[offset + 2] !== 0x03 ||
-      bytes[offset + 3] !== 0x04
+      bytes[offset + 2] !== 0x01 ||
+      bytes[offset + 3] !== 0x02
     ) {
-      continue
+      break
     }
 
-    const compression = view.getUint16(offset + 8, true)
-    const compressedSize = view.getUint32(offset + 18, true)
-    const nameLength = view.getUint16(offset + 26, true)
-    const extraLength = view.getUint16(offset + 28, true)
-    const nameStart = offset + 30
+    const compression = view.getUint16(offset + 10, true)
+    const compressedSize = view.getUint32(offset + 20, true)
+    const nameLength = view.getUint16(offset + 28, true)
+    const extraLength = view.getUint16(offset + 30, true)
+    const commentLength = view.getUint16(offset + 32, true)
+    const localHeaderOffset = view.getUint32(offset + 42, true)
+    const nameStart = offset + 46
     const nameEnd = nameStart + nameLength
-    if (nameEnd > bytes.length) continue
+    if (nameEnd > bytes.length) break
 
-    const name = decoder.decode(bytes.subarray(nameStart, nameEnd))
-    const dataStart = nameEnd + extraLength
-    const dataEnd = dataStart + compressedSize
-    if (dataEnd > bytes.length) continue
+    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
+    offset = nameEnd + extraLength + commentLength
 
-    if (name !== 'word/document.xml') {
-      offset = dataEnd - 1
-      continue
+    if (!/(^|\/)word\/document\.xml$/i.test(name)) continue
+
+    if (
+      localHeaderOffset + 30 > bytes.length ||
+      bytes[localHeaderOffset] !== 0x50 ||
+      bytes[localHeaderOffset + 1] !== 0x4b ||
+      bytes[localHeaderOffset + 2] !== 0x03 ||
+      bytes[localHeaderOffset + 3] !== 0x04
+    ) {
+      return null
     }
+
+    const localNameLength = view.getUint16(localHeaderOffset + 26, true)
+    const localExtraLength = view.getUint16(localHeaderOffset + 28, true)
+    const dataStart =
+      localHeaderOffset + 30 + localNameLength + localExtraLength
+    const dataEnd = dataStart + compressedSize
+    if (dataEnd > bytes.length) return null
 
     const payload = bytes.subarray(dataStart, dataEnd)
     if (compression === 0) return decoder.decode(payload)
     if (compression !== 8) return null
 
     try {
-      const stream = new Blob([payload.buffer.slice(
-        payload.byteOffset,
-        payload.byteOffset + payload.byteLength,
-      ) as ArrayBuffer])
-        .stream()
-        .pipeThrough(new DecompressionStream('deflate-raw'))
-      const inflated = await new Response(stream).arrayBuffer()
-      return decoder.decode(inflated)
+      return decoder.decode(await inflateRaw(payload))
     } catch {
       return null
     }
+  }
+
+  return extractDocxDocumentXmlFallback(bytes, view, decoder)
+}
+
+/** Fallback when EOCD/central directory is missing or incomplete. */
+async function extractDocxDocumentXmlFallback(
+  bytes: Uint8Array,
+  view: DataView,
+  decoder: TextDecoder,
+): Promise<string | null> {
+  for (let offset = 0; offset + 30 < bytes.length; ) {
+    if (
+      bytes[offset] !== 0x50 ||
+      bytes[offset + 1] !== 0x4b ||
+      bytes[offset + 2] !== 0x03 ||
+      bytes[offset + 3] !== 0x04
+    ) {
+      offset += 1
+      continue
+    }
+
+    const flags = view.getUint16(offset + 6, true)
+    const compression = view.getUint16(offset + 8, true)
+    let compressedSize = view.getUint32(offset + 18, true)
+    const nameLength = view.getUint16(offset + 26, true)
+    const extraLength = view.getUint16(offset + 28, true)
+    const nameStart = offset + 30
+    const nameEnd = nameStart + nameLength
+    if (nameEnd > bytes.length) break
+
+    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
+    const dataStart = nameEnd + extraLength
+    const hasDataDescriptor = (flags & 0x08) !== 0
+
+    // When bit 3 is set, sizes in the local header are zero — scan for
+    // the data descriptor (PK\x07\x08) or next local header.
+    if (hasDataDescriptor && compressedSize === 0) {
+      let cursor = dataStart
+      let found = -1
+      while (cursor + 16 < bytes.length) {
+        if (
+          bytes[cursor] === 0x50 &&
+          bytes[cursor + 1] === 0x4b &&
+          ((bytes[cursor + 2] === 0x07 && bytes[cursor + 3] === 0x08) ||
+            (bytes[cursor + 2] === 0x03 && bytes[cursor + 3] === 0x04) ||
+            (bytes[cursor + 2] === 0x01 && bytes[cursor + 3] === 0x02))
+        ) {
+          found = cursor
+          break
+        }
+        cursor += 1
+      }
+      if (found < 0) break
+      compressedSize = found - dataStart
+      // Optional signature before CRC in data descriptor.
+      const nextOffset =
+        bytes[found + 2] === 0x07 && bytes[found + 3] === 0x08
+          ? found + 16
+          : found
+
+      if (/(^|\/)word\/document\.xml$/i.test(name)) {
+        const payload = bytes.subarray(dataStart, dataStart + compressedSize)
+        if (compression === 0) return decoder.decode(payload)
+        if (compression !== 8) return null
+        try {
+          return decoder.decode(await inflateRaw(payload))
+        } catch {
+          return null
+        }
+      }
+
+      offset = nextOffset
+      continue
+    }
+
+    const dataEnd = dataStart + compressedSize
+    if (dataEnd > bytes.length) break
+
+    if (/(^|\/)word\/document\.xml$/i.test(name)) {
+      const payload = bytes.subarray(dataStart, dataEnd)
+      if (compression === 0) return decoder.decode(payload)
+      if (compression !== 8) return null
+      try {
+        return decoder.decode(await inflateRaw(payload))
+      } catch {
+        return null
+      }
+    }
+
+    offset = dataEnd
   }
 
   return null
