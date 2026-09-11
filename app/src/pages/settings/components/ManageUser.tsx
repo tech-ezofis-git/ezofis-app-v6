@@ -240,8 +240,8 @@ const emptyUser: DraftUser = {
   location: '',
   loginType: 'Password',
   manager: '',
-  mfaEnabled: true,
-  mfaMethods: ['Email OTP'],
+  mfaEnabled: false,
+  mfaMethods: [],
   password: '',
   passwordExpiryDays: 90,
   phoneNumber: '',
@@ -1924,12 +1924,14 @@ function BusinessDetails({
   )
 }
 function EzPasswordField({
+  disabled,
   error,
   label,
   required,
   value,
   onChange,
 }: {
+  disabled?: boolean
   error?: string
   label: string
   required?: boolean
@@ -1938,6 +1940,7 @@ function EzPasswordField({
 }) {
   return (
     <InputPassword
+      disabled={disabled}
       error={error}
       label={label}
       required={required}
@@ -2224,8 +2227,7 @@ function LoginDetails({
   )
   const firstNameRef = useRef<HTMLInputElement>(null)
   const [showEmailFormatError, setShowEmailFormatError] = useState(false)
-  const showPasswordField =
-    user.loginType === 'Password' && (!isEditing || Boolean(user.resetPassword))
+  const showPasswordField = user.loginType === 'Password'
 
   useEffect(() => {
     if (!autoFocusFirstName) return
@@ -2363,26 +2365,15 @@ function LoginDetails({
 
               return (
                 <button
-                  disabled={isEditing}
                   key={opt.value}
                   type='button'
                   className={[
-                    'flex items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
-                    isEditing
-                      ? 'cursor-not-allowed border-[var(--border-default)] bg-[var(--gray-2)] opacity-60'
-                      : 'cursor-pointer',
-                    !isEditing && isSelected
+                    'flex cursor-pointer items-center gap-3 rounded-[12px] border p-3.5 text-left transition',
+                    isSelected
                       ? 'border-[var(--primary-8)] bg-[var(--primary-2)] shadow-sm ring-1 ring-[var(--primary-8)]'
-                      : '',
-                    !isEditing && !isSelected
-                      ? 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]'
-                      : '',
-                    isEditing && isSelected
-                      ? 'border-[var(--primary-8)] bg-[var(--primary-2)]/50 shadow-sm ring-1 ring-[var(--primary-8)]/50'
-                      : '',
+                      : 'border-[var(--border-default)] bg-surface hover:border-[var(--primary-5)]',
                   ].join(' ')}
                   onClick={() => {
-                    if (isEditing) return
                     const nextUser = { ...user, loginType: opt.value }
 
                     if (opt.value === 'Password') {
@@ -2435,90 +2426,60 @@ function LoginDetails({
         </div>
       </AnimateFadeIn>
 
-      {user.loginType === 'Password' && isEditing ? (
-        <AnimateFadeIn delay={0.3}>
-          <ToggleRow
-            checked={Boolean(user.resetPassword)}
-            label={t`Reset password`}
-            onChange={(checked) =>
-              onChange({
-                ...user,
-                password: checked ? user.password : '',
-                resetPassword: checked,
-              })
-            }
-          />
-        </AnimateFadeIn>
-      ) : null}
+
 
       {showPasswordField ? (
         <AnimateFadeIn delay={0.35}>
           <div className='space-y-3'>
-            <EzPasswordField
-              label={isEditing ? t`New Password` : t`Password`}
-              value={user.password}
-              required
-              error={
-                getFieldRequiredError(
-                  isEditing ? t`New Password` : t`Password`,
-                  Boolean(showErrors),
-                  user.password,
-                ) ||
-                (showErrors && user.password
-                  ? getPasswordRequirementError(user.password, i18n, t)
-                  : undefined)
-              }
-              onChange={(value) => onChange({ ...user, password: value })}
-            />
-            <PasswordRequirements password={user.password} />
+            {isEditing ? (
+              <div className='flex items-center justify-between gap-4 rounded-[12px] border border-[var(--border-default)] bg-surface p-3.5'>
+                <div className='min-w-0'>
+                  <div className='text-xs font-semibold text-[var(--gray-13)]'>
+                    {t`Reset Password`}
+                  </div>
+                  <p className='mt-0.5 text-xs text-[var(--gray-11)]'>
+                    {t`Enable to set a new password for this user`}
+                  </p>
+                </div>
+                <Switch
+                  checked={Boolean(user.resetPassword)}
+                  onChange={(checked) =>
+                    onChange({
+                      ...user,
+                      resetPassword: checked,
+                      password: '',
+                    })
+                  }
+                />
+              </div>
+            ) : null}
+
+            {(!isEditing || Boolean(user.resetPassword)) && (
+              <>
+                <EzPasswordField
+                  label={isEditing ? t`New Password` : t`Password`}
+                  value={user.password}
+                  required
+                  error={
+                    getFieldRequiredError(
+                      isEditing ? t`New Password` : t`Password`,
+                      Boolean(showErrors),
+                      user.password,
+                    ) ||
+                    (showErrors && user.password
+                      ? getPasswordRequirementError(user.password, i18n, t)
+                      : undefined)
+                  }
+                  onChange={(value) => onChange({ ...user, password: value })}
+                />
+                <PasswordRequirements password={user.password} />
+              </>
+            )}
           </div>
         </AnimateFadeIn>
       ) : null}
 
-      <AnimateFadeIn delay={0.4}>
-        <div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-          <EzTextField
-            disabled={user.loginType !== 'Password'}
-            label={t`Password Expiry (Days)`}
-            placeholder='90'
-            type='number'
-            value={
-              user.loginType === 'Password'
-                ? String(user.passwordExpiryDays)
-                : ''
-            }
-            onChange={(value) =>
-              onChange({
-                ...user,
-                ...syncExpiryFromDays(Number(value)),
-              })
-            }
-          />
 
-          <SettingsDateField
-            disabled={user.loginType !== 'Password'}
-            label={t`Account Expiry Date`}
-            minDate={dayjs().add(1, 'day').format('YYYY-MM-DD')}
-            value={user.loginType === 'Password' ? user.accountExpiryDate : ''}
-            onChange={(value) =>
-              onChange({
-                ...user,
-                ...syncExpiryFromDate(value),
-              })
-            }
-          />
-        </div>
-      </AnimateFadeIn>
-
-      <AnimateFadeIn delay={0.45}>
-        <ToggleRow
-          checked={user.forcePasswordReset}
-          label={t`Force password reset on first login`}
-          onChange={(checked) =>
-            onChange({ ...user, forcePasswordReset: checked })
-          }
-        />
-      </AnimateFadeIn>
     </SettingsFormSection>
   )
 }

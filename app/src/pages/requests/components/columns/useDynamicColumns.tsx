@@ -1628,6 +1628,7 @@ const getBaseColumns = (
 
   columns.push(
     {
+      enableGrouping: true,
       id: 'poNumber',
       label: t`PO Number`,
       size: 160,

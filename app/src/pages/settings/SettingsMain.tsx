@@ -10,6 +10,7 @@ import {
   FolderOpen,
   GitFork,
   Globe,
+  KeyRound,
   Palette,
   Shield,
   UserRoundCheck,
@@ -20,14 +21,13 @@ import { refreshUserSession } from '@/api/v6/auth'
 import ColorPreference from '@/pages/my-account/components/color-preference/ColorPreference'
 import ReportBuilderSettingsPage from '@/pages/report-builder/components/ReportBuilderSettingsPage'
 import authUserStore from '@/stores/authUserStore'
-import {
-  isAnyPermissionVisible,
-} from '@/utils/sessionPermissions'
+import { isAnyPermissionVisible } from '@/utils/sessionPermissions'
 import AuditMonitoring from './components/AuditMonitoring'
 import Credits from './components/credits/Credits'
 import DmsSettings from './components/Folders/DmsSettings'
 import FormConfiguration from './components/FormConfiguration'
 import GroupManagement from './components/GroupManagement'
+import LicenseSettings from './components/license/LicenseSettings'
 import ManageUser from './components/ManageUser'
 import PortalConfiguration from './components/PortalConfiguration'
 import RolesPermissions from './components/RolesPermissions'
@@ -55,6 +55,7 @@ const SETTINGS_PAGES = new Set([
   'folder-configuration',
   'form-configuration',
   'group-management',
+  'license',
   'playground',
   'portal-configuration',
   'report-builder',
@@ -81,6 +82,7 @@ const ACCESS_SETTINGS_KEYS = [
 const PLATFORM_SETTINGS_KEYS = [
   'branding',
   'credit',
+  'license',
   'playground',
   'audit-monitoring',
 ]
@@ -241,6 +243,13 @@ export default function SettingsMain() {
       </SettingsDetailShell>
     )
   }
+  if (activePage === 'license') {
+    return (
+      <SettingsDetailShell>
+        <LicenseSettings onBack={() => setActivePage('settings')} />
+      </SettingsDetailShell>
+    )
+  }
 
   return <SettingsLanding onOpenPage={setActivePage} />
 }
@@ -339,6 +348,12 @@ function SettingsLanding({
         icon: BadgeDollarSign,
         key: 'credit',
         title: t`Credit Usage`,
+      },
+      {
+        description: t`View trial usage summary, manage license status, and upgrade to production.`,
+        icon: KeyRound,
+        key: 'license',
+        title: t`License & Subscription`,
       },
       {
         description: t`Explore, test, and debug API endpoints with live requests and sample responses.`,

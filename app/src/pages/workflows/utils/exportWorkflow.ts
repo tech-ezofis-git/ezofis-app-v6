@@ -134,12 +134,42 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       }))
     }
 
+    const isStartNode =
+      index === 0 ||
+      data.type === 'START' ||
+      toolType === NODE_TOOL_TYPE.GMAIL ||
+      toolType === NODE_TOOL_TYPE.OUTLOOK
+
+    // Ensure mailInitiate object exists for START block
+    if (isStartNode) {
+      const existingMailInitiate = settings.mailInitiate || data.mailInitiate || {}
+      const connId = data.connectorId || data.connection || existingMailInitiate.connectorId || ''
+      const connType =
+        toolType === NODE_TOOL_TYPE.GMAIL || toolType === NODE_TOOL_TYPE.OUTLOOK
+          ? toolType.toUpperCase()
+          : existingMailInitiate.connectorType || ''
+
+      settings.mailInitiate = {
+        connectorId: connId,
+        connectorType: connType,
+        ...existingMailInitiate,
+        ...(toolType === NODE_TOOL_TYPE.GMAIL || toolType === NODE_TOOL_TYPE.OUTLOOK
+          ? {
+              connectorId: connId,
+              connectorType: connType,
+            }
+          : {}),
+      }
+    }
+
     // Reconstruct nested settings for specific types
     if (
       toolType === NODE_TOOL_TYPE.GMAIL ||
       toolType === NODE_TOOL_TYPE.OUTLOOK
     ) {
+      const connId = data.connectorId || data.connection || data.mailInitiate?.connectorId || ''
       settings.mailInitiate = {
+        ...(settings.mailInitiate || {}),
         conditions: {
           fromAddress: data.fromMailAddresses?.map((a: any) => a.id) || [],
           fromDomain: data.fromDomainName ? [data.fromDomainName.id] : [],
@@ -151,7 +181,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
             ? data.mailSubjectToMonitor.split(',').map((s: string) => s.trim())
             : [],
         },
-        connectorId: data.connectorId || Number(data.connection) || 0,
+        connectorId: connId,
         connectorType: toolType.toUpperCase(),
       }
       // Clean up flat fields used in UI
@@ -338,6 +368,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
         },
         previewValues: storeState.previewValues,
         processNumberPrefix: JSON.stringify(storeState.prefixSegments),
+        requestTabs: storeState.requestTabs || [],
         scheduleReport: {},
         slaRules: [],
         slaSettings: {

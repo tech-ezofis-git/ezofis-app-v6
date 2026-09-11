@@ -133,15 +133,20 @@ const GlobalSearch = () => {
         : undefined
     const rawItemId =
       typeof hit.id === 'object' && hit.id !== null
-        ? hit.id.itemId
+        ? hit.id.itemId || hit.id.formEntryId
         : undefined
     const repositoryId = String(rawRepoId || '').trim()
     const itemId = String(rawItemId || '').trim()
     const title = getSearchHitTitle(hit)
-    const type = String(hit.type || '').toLowerCase()
+    const type = String(hit.type || hit.entity_type || '').toLowerCase()
     const isFolder = type.includes('folder') || type.includes('repository')
+    const isForm = type.includes('form') || type.includes('master')
     const repositoryLabel =
-      hit.folder || (isFolder ? title : '') || hit.name || 'Repository'
+      hit.folder ||
+      hit.id?.repositoryName ||
+      (isFolder ? title : '') ||
+      hit.name ||
+      'Repository'
 
     if (type.includes('workflow') || type.includes('process')) {
       const workflowId =
@@ -154,6 +159,16 @@ const GlobalSearch = () => {
         workflowId,
       })
       void navigate({ to: '/workflows' })
+    } else if (isForm) {
+      setPending({
+        fileSearch: title,
+        filters: {},
+        openItemId: itemId || undefined,
+        repositoryId: repositoryId || undefined,
+        repositoryLabel: hit.id?.formName || hit.name || title,
+        target: 'Repository',
+      })
+      void navigate({ to: '/folders' })
     } else {
       setPending({
         fileSearch: isFolder ? undefined : title,
@@ -373,7 +388,14 @@ const GlobalSearch = () => {
                       <motion.li
                         animate={{ opacity: 1, y: 0 }}
                         initial={{ opacity: 0, y: 8 }}
-                        key={hit.id?.itemId || hit.id?.repositoryId || hit.id || index}
+                        key={
+                          hit.id?.itemId ||
+                          hit.id?.formEntryId ||
+                          hit.id?.instanceId ||
+                          hit.entity_id ||
+                          hit.id?.repositoryId ||
+                          index
+                        }
                         transition={{
                           delay: Math.min(index, 12) * 0.03,
                           duration: 0.2,

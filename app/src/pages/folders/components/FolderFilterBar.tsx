@@ -1,5 +1,13 @@
 import { useLingui } from '@lingui/react/macro'
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import CustomFilter, {
   type FilterDefinition,
   type FilterGroup,
@@ -9,15 +17,21 @@ import type {
   DynamicRepositoryColumn,
   RepositoryItemFilterField,
 } from '../api/folderApi'
-import { decodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import type { ExplorerView, FolderItem } from '../types/folderTypes'
-import type { ExplorerFilterMode, FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
+import type {
+  ExplorerFilterMode,
+  FolderFilterOptionsCache,
+} from '../utils/folderExplorerUtils'
+import { decodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import {
   formatFolderModifiedDate,
   getCachedFilterOptionsForId,
   mergeFilterOptionLists,
 } from '../utils/folderExplorerUtils'
-import { matchesAnyFilterValue, splitFilterValues } from '../utils/multiFilterValues'
+import {
+  matchesAnyFilterValue,
+  splitFilterValues,
+} from '../utils/multiFilterValues'
 import {
   getRepositoryFieldStringValue,
   matchesFieldKey,
@@ -69,7 +83,7 @@ const isOptionListDataType = (dataType?: string) => {
 }
 
 const toFacetFilterOptions = (
-  facets: Array<{ value: string; count?: number }>,
+  facets: Array<{ count?: number; value: string }>,
 ): FilterOption[] =>
   facets
     .map((facet) => {
@@ -86,8 +100,7 @@ const getFilterValue = (
   item: AnyFileItem,
   filterId: string,
   folderContextFilters: Record<string, string> = {},
-) =>
-  getRepositoryFieldStringValue(item, filterId, folderContextFilters)
+) => getRepositoryFieldStringValue(item, filterId, folderContextFilters)
 
 const mergeUniqueOptions = (
   ...optionLists: Array<Array<{ label: string; value: string }>>
@@ -120,10 +133,7 @@ const buildFilterOptionsFromContext = (
   return [{ label: value, value }]
 }
 
-const buildFilterOptionsFromFiles = (
-  files: AnyFileItem[],
-  filterId: string,
-) =>
+const buildFilterOptionsFromFiles = (files: AnyFileItem[], filterId: string) =>
   files
     .map((file) => getRepositoryFieldStringValue(file, filterId))
     .filter((value) => value.length > 0)
@@ -270,10 +280,7 @@ export const matchesFolderTableFilters = (
   Object.entries(filters).every(([key, value]) => {
     if (!value || !isFolderTableFilterId(key)) return true
 
-    return matchesAnyFilterValue(
-      getFolderTableFilterValue(folder, key),
-      value,
-    )
+    return matchesAnyFilterValue(getFolderTableFilterValue(folder, key), value)
   })
 
 export const filterFolders = (
@@ -320,8 +327,8 @@ type FolderFilterBarProps = {
   fileColumns?: DynamicRepositoryColumn[]
   files: AnyFileItem[]
   filterMode?: ExplorerFilterMode
-  folderContextFilters?: Record<string, string>
   filterOptionsCache?: FolderFilterOptionsCache
+  folderContextFilters?: Record<string, string>
   folderFilterOptionSource?: FolderItem[]
   folders?: FolderItem[]
   isBusy?: boolean
@@ -333,6 +340,7 @@ type FolderFilterBarProps = {
   view: ExplorerView
   onFilterChange: (id: string, value: string) => void
   onFilterMenuOpenChange?: (id: string | null) => void
+  onIntelligentUpload?: () => void
   onRefresh?: () => void
   onResetFilters: () => void
   onSearchChange: (value: string) => void
@@ -347,27 +355,29 @@ export function FolderFilterBar({
   fileColumns: _fileColumns = [],
   files,
   filterMode = 'files',
-  folderContextFilters = {},
   filterOptionsCache = {},
+  folderContextFilters = {},
   folderFilterOptionSource = [],
   folders = [],
   isBusy = false,
   itemFilterFields = [],
-  onFilterChange,
-  onFilterMenuOpenChange,
-  onRefresh,
-  onResetFilters,
-  onSearchChange,
-  onUpload,
   refreshing = false,
   repositoryId = '',
   searchPlaceholder,
   searchQuery,
-  setView,
   view,
+  setView,
+  onFilterChange,
+  onFilterMenuOpenChange,
+  onIntelligentUpload,
+  onRefresh,
+  onResetFilters,
+  onSearchChange,
+  onUpload,
 }: FolderFilterBarProps) {
   const { t } = useLingui()
-  const effectivePlaceholder = searchPlaceholder || t`Search by name or metadata...`
+  const effectivePlaceholder =
+    searchPlaceholder || t`Search by name or metadata...`
   const showFileFilters = filterMode === 'files' || filterMode === 'both'
   const showFolderFilters = filterMode === 'folders' || filterMode === 'both'
   const folderBaseline =
@@ -376,7 +386,9 @@ export function FolderFilterBar({
   const [facetOptionsByField, setFacetOptionsByField] = useState<
     Record<string, FilterOption[]>
   >({})
-  const [loadingFacetField, setLoadingFacetField] = useState<string | null>(null)
+  const [loadingFacetField, setLoadingFacetField] = useState<string | null>(
+    null,
+  )
   const facetRequestSeqRef = useRef(0)
 
   const isSavedFilter = (filterId: string) => {
@@ -416,15 +428,13 @@ export function FolderFilterBar({
           const id = String(field.sqlColumnName || field.name || '').trim()
           if (!id) return null
           return {
+            dataType: String(field.dataType || '').trim(),
             id,
             label: String(field.name || field.sqlColumnName || id).trim() || id,
-            dataType: String(field.dataType || '').trim(),
           }
         })
         .filter(
-          (
-            field,
-          ): field is { id: string; label: string; dataType: string } =>
+          (field): field is { dataType: string; id: string; label: string } =>
             Boolean(field),
         ),
     [itemFilterFields],
@@ -599,9 +609,9 @@ export function FolderFilterBar({
     return visibleFields.map((field) => {
       const useOptions = isOptionListDataType(field.dataType)
       return {
+        dataType: field.dataType,
         id: field.id,
         label: field.label,
-        dataType: field.dataType,
         options: useOptions ? buildOptionsForFileFilter(field.id) : [],
         searchable: useOptions,
         searchPlaceholder: `Search ${field.label.toLowerCase()}...`,
@@ -647,10 +657,12 @@ export function FolderFilterBar({
         .map((field) => {
           const useOptions = isOptionListDataType(field.dataType)
           return {
+            dataType: field.dataType,
             id: field.id,
             label: field.label,
-            dataType: field.dataType,
-            options: useOptions ? buildOptionsForFileFilter(field.id) : undefined,
+            options: useOptions
+              ? buildOptionsForFileFilter(field.id)
+              : undefined,
             searchable: useOptions,
             searchPlaceholder: `Search ${field.label.toLowerCase()}...`,
           }
@@ -684,41 +696,60 @@ export function FolderFilterBar({
       filters={defaultFilters}
       isLoading={isBusy || Boolean(loadingFacetField)}
       moreFilters={moreFilters}
-      multiSelect
       searchPlaceholder={effectivePlaceholder}
       searchQuery={searchQuery}
       showReset={hasActiveFilters}
+      viewMode={view === 'list' ? 'table' : 'grid'}
+      multiSelect
       actionButtons={[
         ...(onUpload && String(repositoryId || '').trim()
           ? [
               {
-                id: 'upload',
+                color: 'primary' as const,
+                disabled: isBusy,
                 icon: 'lucide:upload',
+                id: 'upload',
+                isIconButton: false,
                 label: t`Upload`,
                 onClick: () => onUpload(),
-                disabled: isBusy,
-                isIconButton: false,
+              },
+            ]
+          : []),
+        ...(onIntelligentUpload && String(repositoryId || '').trim()
+          ? [
+              {
                 color: 'primary' as const,
+                disabled: isBusy,
+                iconNode: (
+                  <AiBrandIcon
+                    className='size-4 shrink-0'
+                    variant='outline-purple'
+                  />
+                ),
+                id: 'intelligent-upload',
+                isIconButton: false,
+                label: t`Intelligent Upload`,
+                variant: 'outline' as const,
+                onClick: () => onIntelligentUpload(),
               },
             ]
           : []),
         {
-          id: 'refresh',
-          icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
-          tooltip: refreshing ? t`Refreshing...` : t`Refresh`,
-          onClick: () => onRefresh?.(),
-          disabled: isBusy,
-          isIconButton: true,
           color: 'gray',
-          variant: 'outline'
-        }
+          disabled: isBusy,
+          icon: refreshing ? 'tabler:loader-2' : 'lucide:refresh-ccw',
+          id: 'refresh',
+          isIconButton: true,
+          tooltip: refreshing ? t`Refreshing...` : t`Refresh`,
+          variant: 'outline',
+          onClick: () => onRefresh?.(),
+        },
       ]}
-      viewMode={view === 'list' ? 'table' : 'grid'}
-      onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}
       onFilterChange={onFilterChange}
       onFilterMenuOpenChange={handleFilterMenuOpenChange}
       onReset={onResetFilters}
       onSearchChange={onSearchChange}
+      onViewModeChange={(mode) => setView(mode === 'table' ? 'list' : 'grid')}
     />
   )
 }

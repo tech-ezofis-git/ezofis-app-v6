@@ -1,18 +1,24 @@
+import { useLingui } from '@lingui/react/macro'
 import {
   type ColumnDef,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useLingui } from '@lingui/react/macro'
-import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import type { Option } from '@/types/option'
 import DataTable from '@/components/base/data-table/DataTable'
 import Icon from '@/components/base/icon/Icon'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import Pagination from '@/components/base/pagination/Pagination'
 import { getFileIcon } from '@/pages/requests/components/request/components/sections/attachment/Attachments'
-import { FolderDataTableSection } from './FolderTable'
-import type { Option } from '@/types/option'
 import type {
   DynamicRepositoryColumn,
   RepositoryItemFilterField,
@@ -25,14 +31,15 @@ import type {
   TreeNode,
 } from '../types/folderTypes'
 import type { FolderFilterOptionsCache } from '../utils/folderExplorerUtils'
+import { matchesAnyFilterValue } from '../utils/multiFilterValues'
 import {
   getRepositoryFieldRawValue,
   normalizeFieldKey,
 } from '../utils/repositoryFieldUtils'
-import { matchesAnyFilterValue } from '../utils/multiFilterValues'
 import { type BreadcrumbItem } from './Breadcrumbs'
 import { EmptyFolderUploadDropzone } from './EmptyFolderUploadDropzone'
 import { FolderFilterBar, matchesSearchText } from './FolderFilterBar'
+import { FolderDataTableSection } from './FolderTable'
 import { DynamicIcon } from './icons'
 import { Button, EllipsisText, StatusPill } from './Ui'
 
@@ -53,32 +60,13 @@ type DocumentsListViewProps = {
   fileFilters?: Record<string, string>
   filePage?: RepositoryFilePage
   files: FileItem[]
-  folderContextFilters?: Record<string, string>
   filterOptionsCache?: FolderFilterOptionsCache
+  folderContextFilters?: Record<string, string>
   folderFilterOptionSource?: FolderItem[]
   folders?: FolderItem[]
   itemFilterFields?: RepositoryItemFilterField[]
   loading?: boolean
   loadingPage?: boolean
-  refreshing?: boolean
-  repositories?: TreeNode[]
-  repositoryId?: string
-  searchQuery?: string
-  view: ExplorerView
-  onAiSummary: (id: string) => void
-  onBreadcrumbSelect: (id: string) => void
-  onEdit?: (id: string) => void
-  onFiltersChange?: (filters: Record<string, string>) => void
-  onFilterMenuOpenChange?: (id: string | null) => void
-  onOpenFile: (id: string) => void
-  onPageChange?: (page: number, cursor?: string | null) => void
-  onPageSizeChange?: (pageSize: number) => void
-  onRefresh?: () => void
-  onRepositoryChange?: (id: string) => void
-  onSearchChange?: (value: string) => void
-  onShare: (id: string) => void
-  onUpload?: () => void
-  onUploadFile?: (file: File) => void
   permissions?: {
     delete?: boolean
     download?: boolean
@@ -89,7 +77,27 @@ type DocumentsListViewProps = {
     upload?: boolean
     view?: boolean
   }
+  refreshing?: boolean
+  repositories?: TreeNode[]
+  repositoryId?: string
+  searchQuery?: string
   uploadDisabled?: boolean
+  view: ExplorerView
+  onAiSummary: (id: string) => void
+  onBreadcrumbSelect: (id: string) => void
+  onEdit?: (id: string) => void
+  onFilterMenuOpenChange?: (id: string | null) => void
+  onFiltersChange?: (filters: Record<string, string>) => void
+  onIntelligentUpload?: () => void
+  onOpenFile: (id: string) => void
+  onPageChange?: (page: number, cursor?: string | null) => void
+  onPageSizeChange?: (pageSize: number) => void
+  onRefresh?: () => void
+  onRepositoryChange?: (id: string) => void
+  onSearchChange?: (value: string) => void
+  onShare: (id: string) => void
+  onUpload?: () => void
+  onUploadFile?: (file: File) => void
   onWorkflow: (id: string) => void
   setView: (view: ExplorerView) => void
 }
@@ -287,10 +295,10 @@ export const isAccountsPayableFolder = (
       const status = String(f?.status ?? f?.Status ?? '').trim()
       return Boolean(
         status &&
-          status !== '-' &&
-          status !== 'null' &&
-          status !== 'undefined' &&
-          status !== '—',
+        status !== '-' &&
+        status !== 'null' &&
+        status !== 'undefined' &&
+        status !== '—',
       )
     })
   ) {
@@ -346,18 +354,27 @@ export function DocumentsListView({
   fileFilters = {},
   filePage,
   files,
-  folderContextFilters = {},
   filterOptionsCache = {},
+  folderContextFilters = {},
   folderFilterOptionSource = [],
   folders = [],
   itemFilterFields = [],
   loading = false,
   loadingPage = false,
+  permissions,
+  refreshing = false,
+  repositories = [],
+  repositoryId = '',
+  searchQuery: searchQueryProp = '',
+  uploadDisabled = false,
+  view,
+  setView,
   onAiSummary,
   onBreadcrumbSelect,
   onEdit,
-  onFiltersChange,
   onFilterMenuOpenChange,
+  onFiltersChange,
+  onIntelligentUpload,
   onOpenFile,
   onPageChange,
   onPageSizeChange,
@@ -367,15 +384,7 @@ export function DocumentsListView({
   onShare,
   onUpload,
   onUploadFile,
-  permissions,
-  uploadDisabled = false,
   onWorkflow,
-  refreshing = false,
-  repositories = [],
-  repositoryId = '',
-  searchQuery: searchQueryProp = '',
-  setView,
-  view,
 }: DocumentsListViewProps) {
   const { t } = useLingui()
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
@@ -441,7 +450,12 @@ export function DocumentsListView({
         breadcrumbs,
         normalizedFiles,
       ),
-    [activeRepositoryId, breadcrumbs, normalizedFiles, selectedRepositoryOption],
+    [
+      activeRepositoryId,
+      breadcrumbs,
+      normalizedFiles,
+      selectedRepositoryOption,
+    ],
   )
 
   const columns = useMemo(
@@ -472,7 +486,9 @@ export function DocumentsListView({
   const isBusy = loading || loadingPage || refreshing
   const hasActiveQuery =
     Boolean(String(searchQuery || '').trim()) ||
-    Object.values(fileFilters).some((value) => Boolean(String(value || '').trim()))
+    Object.values(fileFilters).some((value) =>
+      Boolean(String(value || '').trim()),
+    )
 
   // Client OR-match for multi-select (same field); AND across different fields; plus searchQuery.
   const visibleFiles = useMemo(() => {
@@ -496,11 +512,7 @@ export function DocumentsListView({
         )
         const fieldValue = matchedKey
           ? file[matchedKey]
-          : getRepositoryFieldRawValueFromRow(
-              file,
-              key,
-              folderContextFilters,
-            )
+          : getRepositoryFieldRawValueFromRow(file, key, folderContextFilters)
 
         return matchesAnyFilterValue(String(fieldValue ?? ''), value)
       })
@@ -601,8 +613,8 @@ export function DocumentsListView({
 
   const dataTableColumns = useMemo<ColumnDef<AnyFileItem>[]>(() => {
     const selectColumn: ColumnDef<AnyFileItem> = {
-      id: 'selection',
       enableSorting: false,
+      id: 'selection',
       maxSize: 44,
       minSize: 44,
       size: 44,
@@ -643,12 +655,11 @@ export function DocumentsListView({
 
     const dynamicColumns: ColumnDef<AnyFileItem>[] = columns.map((column) => ({
       enableResizing: column.key !== '__name',
-      header: () => <EllipsisText lines={1} value={column.label} />,
       id: column.key,
-      minSize: column.minWidth || 160,
-      size: column.minWidth || 160,
       maxSize: column.key === '__name' ? 340 : 320,
       meta: { disableEllipsis: true },
+      minSize: column.minWidth || 160,
+      size: column.minWidth || 160,
       accessorFn: (row) => {
         if (column.key === '__name') return getPrimaryFileName(row)
         if (column.key === '__status') {
@@ -666,7 +677,10 @@ export function DocumentsListView({
 
         if (column.key === '__name') {
           const fileId = getFileId(row.original)
-          const fileName = value !== '-' ? value : row.original.name || row.original.fileName || ''
+          const fileName =
+            value !== '-'
+              ? value
+              : row.original.name || row.original.fileName || ''
           const iconName = getFileIcon(fileName)
 
           return (
@@ -676,10 +690,7 @@ export function DocumentsListView({
               type='button'
               onClick={() => onOpenFile(fileId)}
             >
-              <Icon
-                className='size-5 shrink-0'
-                name={iconName}
-              />
+              <Icon className='size-5 shrink-0' name={iconName} />
               <EllipsisText
                 className='font-semibold text-gray-13'
                 lines={1}
@@ -697,12 +708,13 @@ export function DocumentsListView({
 
         return (
           <EllipsisText
-            className='text-sm font-normal leading-4 text-gray-10'
+            className='text-sm leading-4 font-normal text-gray-10'
             lines={1}
             value={value}
           />
         )
       },
+      header: () => <EllipsisText lines={1} value={column.label} />,
     }))
 
     const actionColumn: ColumnDef<AnyFileItem> = {
@@ -711,9 +723,9 @@ export function DocumentsListView({
       header: '',
       id: 'actions',
       maxSize: 72,
+      meta: { headerAlign: 'right' as const },
       minSize: 56,
       size: 64,
-      meta: { headerAlign: 'right' as const },
       cell: ({ row }) => {
         const fileId = getFileId(row.original)
 
@@ -760,9 +772,6 @@ export function DocumentsListView({
     },
     enableColumnResizing: true,
     enableSorting: true,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getRowId: (row) => getFileId(row),
     initialState: {
       columnPinning: {
         left: ['selection', '__name'],
@@ -770,6 +779,9 @@ export function DocumentsListView({
       },
     },
     manualPagination: true,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row) => getFileId(row),
+    getSortedRowModel: getSortedRowModel(),
   })
 
   useEffect(() => {
@@ -818,8 +830,8 @@ export function DocumentsListView({
           fileColumns={fileColumns}
           files={normalizedFiles}
           filterMode='files'
-          folderContextFilters={folderContextFilters}
           filterOptionsCache={filterOptionsCache}
+          folderContextFilters={folderContextFilters}
           folderFilterOptionSource={folderFilterOptionSource}
           folders={folders}
           isBusy={isBusy}
@@ -835,33 +847,37 @@ export function DocumentsListView({
                 aria-label={t`Repository`}
                 className='shrink-0 border-[var(--gray-3)] transition-colors hover:border-[var(--primary-3)]'
                 options={repositoryOptions}
-                searchable
                 value={selectedRepositoryOption}
                 width={240}
+                searchable
                 leftSection={
-                  <Icon className='text-[var(--gray-10)]' name='lucide:folder' />
+                  <Icon
+                    className='text-[var(--gray-10)]'
+                    name='lucide:folder'
+                  />
                 }
                 onChange={handleRepositoryChange}
               />
             ) : null
           }
+          setView={setView}
           onFilterChange={updateFilter}
           onFilterMenuOpenChange={onFilterMenuOpenChange}
+          onIntelligentUpload={onIntelligentUpload}
           onRefresh={handleRefresh}
           onResetFilters={resetFilters}
           onSearchChange={setSearchQuery}
           onUpload={onUpload}
-          setView={setView}
         />
       </div>
 
-      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-2 pt-1'>
+      <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pt-1 pb-2'>
         <section className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden'>
           {!activeRepositoryId || folders.length > 0 ? (
             <FolderDataTableSection
-              folders={folders}
               effectiveFolderTotal={folders.length}
               folderFilters={{}}
+              folders={folders}
               folderSearch={searchQuery}
               hasFiles={activeRepositoryId ? visibleFiles.length > 0 : false}
               hasMoreFolders={false}
@@ -871,15 +887,15 @@ export function DocumentsListView({
               loading={loading}
               loadingFolders={false}
               loadingPage={loadingPage}
-              onLoadMoreFolders={() => undefined}
-              onOpenFolder={handleOpenFolder}
-              onReload={handleRefresh}
               rowSize='compact'
               folderBodyMaxHeight={
                 activeRepositoryId && visibleFiles.length > 0
                   ? `${Math.min(260, Math.max(96, folders.length * 56 + 52))}px`
                   : undefined
               }
+              onLoadMoreFolders={() => undefined}
+              onOpenFolder={handleOpenFolder}
+              onReload={handleRefresh}
             />
           ) : null}
 
@@ -908,7 +924,10 @@ export function DocumentsListView({
                 <div className='flex min-h-[320px] flex-col items-center justify-center gap-2 px-6 py-10 text-center'>
                   <div className='mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-3 shadow-sm'>
                     <div className='flex h-14 w-14 items-center justify-center rounded-full bg-white'>
-                      <DynamicIcon className='h-8 w-8 text-gray-10' name='folder' />
+                      <DynamicIcon
+                        className='h-8 w-8 text-gray-10'
+                        name='folder'
+                      />
                     </div>
                   </div>
                   <b className='text-gray-13'>{t`No documents found`}</b>
@@ -928,16 +947,21 @@ export function DocumentsListView({
                   )}
                 </div>
               )
-            ) : visibleFiles.length > 0 || loading || loadingPage || refreshing ? (
+            ) : visibleFiles.length > 0 ||
+              loading ||
+              loadingPage ||
+              refreshing ? (
               <DataTable
-                hideActionBar
-                isLoading={(loading || loadingPage) && visibleFiles.length === 0}
                 pageSize={Math.max(5, visibleFiles.length || pageSize)}
                 rowSize='compact'
                 table={table}
+                hideActionBar
+                hideGrouping
                 isSticky
                 stickyHeader
-                hideGrouping
+                isLoading={
+                  (loading || loadingPage) && visibleFiles.length === 0
+                }
                 isReLoading={
                   refreshing ||
                   loadingPage ||
@@ -951,31 +975,31 @@ export function DocumentsListView({
       </div>
 
       {!activeRepositoryId ? null : (
-      <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
-        <Pagination
-          itemLabel={t`Files`}
-          page={currentPage}
-          pageSize={pageSize}
-          showPageNumbers={false}
-          totalItems={totalCount}
-          onPageChange={(nextPage: any) => {
-            if (loadingPage) return
+        <div className='z-50 shrink-0 border-t border-gray-3 bg-surface px-6 py-3 shadow-[0_-6px_18px_rgba(15,23,42,0.08)]'>
+          <Pagination
+            itemLabel={t`Files`}
+            page={currentPage}
+            pageSize={pageSize}
+            showPageNumbers={false}
+            totalItems={totalCount}
+            onPageChange={(nextPage: any) => {
+              if (loadingPage) return
 
-            if (nextPage === currentPage) return
+              if (nextPage === currentPage) return
 
-            if (nextPage < currentPage) {
-              onPageChange?.(nextPage, null)
-              return
-            }
+              if (nextPage < currentPage) {
+                onPageChange?.(nextPage, null)
+                return
+              }
 
-            onPageChange?.(nextPage, filePage?.nextCursor || null)
-          }}
-          onPageSizeChange={(nextPageSize) => {
-            if (loadingPage) return
-            onPageSizeChange?.(nextPageSize)
-          }}
-        />
-      </div>
+              onPageChange?.(nextPage, filePage?.nextCursor || null)
+            }}
+            onPageSizeChange={(nextPageSize) => {
+              if (loadingPage) return
+              onPageSizeChange?.(nextPageSize)
+            }}
+          />
+        </div>
       )}
 
       {openMenuId && actionMenuPosition ? (

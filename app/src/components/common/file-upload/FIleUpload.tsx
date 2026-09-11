@@ -52,7 +52,7 @@ const FileUpload = forwardRef<DropzoneUploadCardHandle, Props>(
       accept,
       disabled = false,
       fileTypeIcons = [],
-      heightClassName = 'h-[250px]',
+      heightClassName = 'h-[180px]',
       helperText,
       isLoading = false,
       loadingText = 'Processing…',
@@ -84,12 +84,12 @@ const FileUpload = forwardRef<DropzoneUploadCardHandle, Props>(
     useImperativeHandle(ref, () => ({ open, reset }), [disabled, isLoading])
 
     return (
-      <div className='rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-5 shadow-sm'>
+      <div className='rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-4 shadow-sm'>
         <AnimateEntrancePop>
-          <h3 className='text-center text-lg font-semibold text-[var(--gray-13)]'>
+          <h3 className='text-center text-15 font-semibold text-[var(--gray-13)]'>
             {title}
           </h3>
-          <p className='mx-auto mb-3 max-w-[650px] text-center text-12 leading-relaxed text-[var(--gray-11)]'>
+          <p className='mx-auto mb-2.5 max-w-[600px] text-center text-12 leading-relaxed text-[var(--gray-11)]'>
             {subtitle}
           </p>
         </AnimateEntrancePop>
@@ -97,8 +97,8 @@ const FileUpload = forwardRef<DropzoneUploadCardHandle, Props>(
         <AnimateScale>
           <div
             className={[
-              'group relative w-full rounded-3xl border-2 border-dashed transition-all duration-300',
-              'flex flex-col items-center justify-center gap-6 p-8',
+              'group relative w-full rounded-2xl border-2 border-dashed transition-all duration-300',
+              'flex flex-col items-center justify-center gap-3 p-4 sm:p-5',
               disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
               heightClassName,
               isDragOver
@@ -120,42 +120,42 @@ const FileUpload = forwardRef<DropzoneUploadCardHandle, Props>(
               reset() // reset so selecting same file again still triggers change
             }}
           >
-            <AnimateStagger className='mt-4 flex items-center gap-4'>
+            <AnimateStagger className='flex items-center gap-3'>
               <div
                 className={[
-                  'flex size-16 items-center justify-center rounded-lg shadow-sm',
+                  'flex size-11 items-center justify-center rounded-lg shadow-xs',
                   primaryIcon.bg,
                   primaryIcon.color,
                 ].join(' ')}
               >
-                <Icon className='size-6' name={primaryIcon.icon} />
+                <Icon className='size-5' name={primaryIcon.icon} />
               </div>
             </AnimateStagger>
 
             <div className='text-center'>
-              <div className='text-20 font-medium text-[var(--gray-12)]'>
+              <div className='text-15 font-medium text-[var(--gray-12)]'>
                 Drop your file here, or{' '}
                 <span className='text-[var(--primary-9)]'>browse</span>
               </div>
               {helperText ? (
-                <div className='mt-2 text-14 text-[var(--gray-10)]'>
+                <div className='mt-1 text-12 text-[var(--gray-10)]'>
                   {helperText}
                 </div>
               ) : null}
             </div>
 
             {fileTypeIcons?.length ? (
-              <AnimateStagger className='mb-4 flex items-center gap-4'>
+              <AnimateStagger className='flex items-center gap-2'>
                 {fileTypeIcons.map((it) => (
                   <div
                     key={it.icon}
                     className={[
-                      'flex size-10 items-center justify-center rounded-lg shadow-sm',
+                      'flex size-7 items-center justify-center rounded-md border shadow-2xs',
                       it.bg,
                       it.color,
                     ].join(' ')}
                   >
-                    <Icon className='size-6' name={it.icon} />
+                    <Icon className='size-3.5' name={it.icon} />
                   </div>
                 ))}
               </AnimateStagger>

@@ -6,6 +6,8 @@ import {
   buildFormFieldOcrHints,
   getColumnSizeClass,
   isFieldFilled,
+  isFieldHidden,
+  isFieldReadOnly,
   isFieldRequired,
   mapOcrFieldsToModel,
   mergeOcrFieldHints,
@@ -41,9 +43,15 @@ type PanelFormCardProps = {
   answers: Record<string, any>
   attachedFiles?: Record<string, ChatAttachedFile>
   docsMap: Record<string, string>
+  /** Workflow stage Security → Visible Fields (same as request page). */
+  hiddenFieldIds?: Set<string>
   isExpanded?: boolean
+  /** Workflow stage Security → Mandatory Fields (same as request page). */
+  mandatoryFieldIds?: Set<string>
   panels: any[]
   payload: PanelFormPayload
+  /** Workflow stage Security → Editable Fields (same as request page). */
+  readOnlyFieldIds?: Set<string>
   repositoryId?: string | null
   onAnswerChange?: (fieldId: string, value: any) => void
   onContinue: (next: {
@@ -56,18 +64,66 @@ type PanelFormCardProps = {
 const isEmptyValue = (value: any) =>
   value === undefined || value === null || String(value).trim() === ''
 
-const fieldIsRequired = (field: ParsedField) =>
-  Boolean(
+const fieldIsRequired = (
+  field: ParsedField,
+  mandatoryFieldIds?: Set<string>,
+) => {
+  if (
     field.required ||
-      isFieldRequired(field.rawControl) ||
-      field.rawControl?.settings?.validation?.fieldRule === 'REQUIRED',
+    isFieldRequired(field.rawControl) ||
+    field.rawControl?.settings?.validation?.fieldRule === 'REQUIRED'
+  ) {
+    return true
+  }
+  if (!mandatoryFieldIds?.size) return false
+  if (mandatoryFieldIds.has(String(field.id))) return true
+  const raw = field.rawControl
+  if (!raw) return false
+  return [raw.jsonId, raw.id, raw.name, raw.columnName]
+    .filter(Boolean)
+    .some((key) => mandatoryFieldIds.has(String(key)))
+}
+
+const docIsRequired = (doc: ParsedDoc, mandatoryFieldIds?: Set<string>) => {
+  if (doc.required) return true
+  if (!mandatoryFieldIds?.size) return false
+  if (mandatoryFieldIds.has(String(doc.id))) return true
+  const raw = doc.rawControl
+  if (!raw) return false
+  return [raw.jsonId, raw.id, raw.name, raw.columnName]
+    .filter(Boolean)
+    .some((key) => mandatoryFieldIds.has(String(key)))
+}
+
+/** Match request-page WorkflowFormRenderer: form JSON hide + stage hide sets. */
+const isParsedFieldHidden = (
+  field: ParsedField,
+  hiddenFieldIds?: Set<string>,
+) => {
+  const formField = field.rawControl || field
+  return (
+    isFieldHidden(formField) ||
+    Boolean(hiddenFieldIds?.has(String(field.id)))
   )
+}
+
+const isParsedDocHidden = (
+  doc: ParsedDoc,
+  hiddenFieldIds?: Set<string>,
+) => {
+  if (doc.rawControl && isFieldHidden(doc.rawControl)) return true
+  return Boolean(hiddenFieldIds?.has(String(doc.id)))
+}
 
 /** Build a FieldRenderer-compatible field from chat ParsedField. */
-const toFormField = (field: ParsedField) => {
+const toFormField = (
+  field: ParsedField,
+  mandatoryFieldIds?: Set<string>,
+) => {
   // Always key by ParsedField.id (jsonId-first) so draft answers, panels,
   // and startWorkflowJson formData stay aligned with the request page.
   const id = field.id
+  const required = fieldIsRequired(field, mandatoryFieldIds)
 
   if (field.rawControl && field.rawControl.type) {
     return {
@@ -75,6 +131,13 @@ const toFormField = (field: ParsedField) => {
       id,
       jsonId: field.rawControl.jsonId || id,
       label: field.rawControl.label || field.label,
+      settings: {
+        ...field.rawControl.settings,
+        validation: {
+          ...field.rawControl.settings?.validation,
+          fieldRule: required ? 'REQUIRED' : field.rawControl.settings?.validation?.fieldRule || 'OPTIONAL',
+        },
+      },
     }
   }
 
@@ -111,7 +174,7 @@ const toFormField = (field: ParsedField) => {
           }
         : {},
       validation: {
-        fieldRule: field.required ? 'REQUIRED' : 'OPTIONAL',
+        fieldRule: required ? 'REQUIRED' : 'OPTIONAL',
       },
     },
   }
@@ -121,9 +184,12 @@ export default function PanelFormCard({
   answers,
   attachedFiles = {},
   docsMap,
+  hiddenFieldIds,
   isExpanded = false,
+  mandatoryFieldIds,
   panels,
   payload,
+  readOnlyFieldIds,
   repositoryId,
   onAnswerChange,
   onContinue,
@@ -168,25 +234,52 @@ export default function PanelFormCard({
     })
   }, [answers, payload.completed, payload.fields])
 
+  const visibleDocs = useMemo(
+    () =>
+      payload.docs.filter((doc) => !isParsedDocHidden(doc, hiddenFieldIds)),
+    [hiddenFieldIds, payload.docs],
+  )
+
+  const visibleFields = useMemo(
+    () =>
+      payload.fields.filter(
+        (field) => !isParsedFieldHidden(field, hiddenFieldIds),
+      ),
+    [hiddenFieldIds, payload.fields],
+  )
+
   const orderedFields = useMemo(() => {
-    const required = payload.fields.filter(fieldIsRequired)
-    const optional = payload.fields.filter((field) => !fieldIsRequired(field))
+    const required = visibleFields.filter((field) =>
+      fieldIsRequired(field, mandatoryFieldIds),
+    )
+    const optional = visibleFields.filter(
+      (field) => !fieldIsRequired(field, mandatoryFieldIds),
+    )
     return [...required, ...optional]
-  }, [payload.fields])
+  }, [mandatoryFieldIds, visibleFields])
 
   const canContinue = useMemo(() => {
     if (payload.completed) return false
-    for (const doc of payload.docs) {
-      if (doc.required && !draftDocs[doc.id]) return false
+    for (const doc of visibleDocs) {
+      if (docIsRequired(doc, mandatoryFieldIds) && !draftDocs[doc.id]) {
+        return false
+      }
     }
-    for (const field of payload.fields) {
-      if (!fieldIsRequired(field)) continue
+    for (const field of visibleFields) {
+      if (!fieldIsRequired(field, mandatoryFieldIds)) continue
       const value = draftAnswers[field.id]
-      const formField = toFormField(field)
+      const formField = toFormField(field, mandatoryFieldIds)
       if (!isFieldFilled(formField, value)) return false
     }
     return true
-  }, [draftAnswers, draftDocs, payload.completed, payload.docs, payload.fields])
+  }, [
+    draftAnswers,
+    draftDocs,
+    mandatoryFieldIds,
+    payload.completed,
+    visibleDocs,
+    visibleFields,
+  ])
 
   const setFieldValue = (fieldId: string, value: any) => {
     setDraftAnswers((prev) => ({ ...prev, [fieldId]: value }))
@@ -309,7 +402,7 @@ export default function PanelFormCard({
 
   const fieldColumnClass = (field: ParsedField) => {
     if (!isExpanded) return 'w-full'
-    const formField = toFormField(field)
+    const formField = toFormField(field, mandatoryFieldIds)
     const type = String(formField.type || '').toUpperCase()
     if (
       type === 'TABLE' ||
@@ -332,7 +425,7 @@ export default function PanelFormCard({
         <div>
           <div className='text-sm font-bold text-gray-12'>{payload.title}</div>
           <div className='mt-0.5 text-[11px] text-gray-9'>
-            {payload.docs.length > 0
+            {visibleDocs.length > 0
               ? 'Upload documents first, then complete the fields.'
               : 'Fill in the details below, then continue.'}
           </div>
@@ -343,16 +436,20 @@ export default function PanelFormCard({
           </span>
         ) : (
           <span className='rounded-full bg-primary-2 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-primary-11 uppercase'>
-            {payload.fields.filter(fieldIsRequired).length} required
+            {visibleFields.filter((field) =>
+              fieldIsRequired(field, mandatoryFieldIds),
+            ).length}{' '}
+            required
           </span>
         )}
       </div>
 
-      {payload.docs.length > 0 ? (
+      {visibleDocs.length > 0 ? (
         <div className='mb-3 space-y-2'>
-          {payload.docs.map((doc) => {
+          {visibleDocs.map((doc) => {
             const attachedName = draftDocs[doc.id]
             const busy = ocrBusyDocId === doc.id
+            const required = docIsRequired(doc, mandatoryFieldIds)
             return (
               <div
                 key={doc.id}
@@ -361,12 +458,12 @@ export default function PanelFormCard({
                 <div className='mb-2 flex items-center justify-between gap-2'>
                   <span className='text-xs font-semibold text-gray-12'>
                     {doc.label}
-                    {doc.required ? (
+                    {required ? (
                       <span className='ml-0.5 text-red-9'>*</span>
                     ) : null}
                   </span>
                   <span className='text-[10px] font-bold tracking-wide text-gray-9 uppercase'>
-                    {doc.required ? 'Required' : 'Optional'}
+                    {required ? 'Required' : 'Optional'}
                   </span>
                 </div>
                 {attachedName ? (
@@ -432,7 +529,11 @@ export default function PanelFormCard({
 
       <div className='-mx-2 flex max-w-full min-w-0 flex-wrap'>
         {orderedFields.map((field) => {
-          const formField = toFormField(field)
+          const formField = toFormField(field, mandatoryFieldIds)
+          const fieldReadOnly =
+            Boolean(payload.completed) ||
+            isFieldReadOnly(formField) ||
+            Boolean(readOnlyFieldIds?.has(String(field.id)))
           return (
             <div
               className={cn(
@@ -447,7 +548,7 @@ export default function PanelFormCard({
                 panels={panels}
                 repositoryId={repositoryId || undefined}
                 value={draftAnswers[field.id]}
-                viewOnly={Boolean(payload.completed)}
+                viewOnly={fieldReadOnly}
                 onChange={(value) => setFieldValue(field.id, value)}
               />
             </div>

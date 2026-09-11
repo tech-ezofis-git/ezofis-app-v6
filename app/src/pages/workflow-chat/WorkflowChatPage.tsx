@@ -46,6 +46,7 @@ import { buildStartWorkflowPayload } from '@/pages/requests/components/workflow-
 import {
   buildRepoMetadata,
   extractOcrText,
+  isFieldHidden,
   isFieldRequired,
   mapOcrFieldsToModel,
 } from '@/pages/requests/components/workflow-request/utils/fieldRendering'
@@ -62,6 +63,114 @@ import PanelFormCard, {
   type ChatAttachedFile,
   type PanelFormPayload,
 } from './PanelFormCard'
+
+/** Same mapping as GenericRequestOverview / WorkflowFormRenderer. */
+const formAccessMode = (value: unknown): 'ALL' | 'NONE' | 'CUSTOM' => {
+  const access = String(
+    typeof value === 'string' || typeof value === 'number' ? value : 'ALL',
+  ).toUpperCase()
+  if (access === 'NONE') return 'NONE'
+  if (access === 'CUSTOM') return 'CUSTOM'
+  return 'ALL'
+}
+
+/**
+ * Resolve START-stage Security settings from workflow JSON into the same
+ * hidden / readOnly / mandatory field id sets the request page uses.
+ */
+const resolveStartStageFieldAccess = (
+  workflowJson: any,
+  allFieldIds: string[],
+  currentUserId: string,
+): {
+  hiddenFieldIds?: Set<string>
+  mandatoryFieldIds: Set<string>
+  readOnlyFieldIds?: Set<string>
+} => {
+  const blocks = Array.isArray(workflowJson?.blocks) ? workflowJson.blocks : []
+  const startBlock =
+    blocks.find((b: any) => String(b?.type || '').toUpperCase() === 'START') ||
+    blocks[0]
+  const blockSettings: Record<string, any> = startBlock?.settings || {}
+
+  const visibility = formAccessMode(blockSettings.formVisibilityAccess)
+  let hiddenFieldIds: Set<string> | undefined
+  if (visibility === 'NONE') {
+    hiddenFieldIds = new Set(allFieldIds)
+  } else if (visibility === 'CUSTOM') {
+    const rules = Array.isArray(blockSettings.formSecureControls)
+      ? blockSettings.formSecureControls
+      : []
+    const rule = rules.find((r: any) => String(r.userId) === currentUserId)
+    if (rule) {
+      const visible = new Set((rule.formFields || []).map(String))
+      hiddenFieldIds = new Set(allFieldIds.filter((id) => !visible.has(id)))
+    }
+  }
+
+  const edit = formAccessMode(blockSettings.formEditAccess)
+  let readOnlyFieldIds: Set<string> | undefined
+  if (edit === 'NONE') {
+    readOnlyFieldIds = new Set(allFieldIds)
+  } else if (edit === 'CUSTOM') {
+    const rules = Array.isArray(blockSettings.formEditControls)
+      ? blockSettings.formEditControls
+      : []
+    const rule = rules.find((r: any) => String(r.userId) === currentUserId)
+    if (rule) {
+      const editable = new Set((rule.formFields || []).map(String))
+      readOnlyFieldIds = new Set(allFieldIds.filter((id) => !editable.has(id)))
+    }
+  }
+
+  const mandatoryFieldIds = new Set(
+    (Array.isArray(blockSettings.mandatoryFields)
+      ? blockSettings.mandatoryFields
+      : []
+    ).map(String),
+  )
+
+  return { hiddenFieldIds, mandatoryFieldIds, readOnlyFieldIds }
+}
+
+/** Mark form/docs required when listed in stage Security → Mandatory Fields. */
+const controlMatchesIds = (
+  item: { id: string; rawControl?: any },
+  ids: Set<string>,
+) => {
+  if (!ids.size) return false
+  if (ids.has(String(item.id))) return true
+  const raw = item.rawControl
+  if (!raw) return false
+  return [raw.jsonId, raw.id, raw.name, raw.columnName]
+    .filter(Boolean)
+    .some((key) => ids.has(String(key)))
+}
+
+const applyStageMandatoryFlags = <
+  T extends { id: string; required: boolean; rawControl?: any },
+>(
+  items: T[],
+  mandatoryFieldIds: Set<string>,
+): T[] => {
+  if (!mandatoryFieldIds.size) return items
+  return items.map((item) => {
+    if (!controlMatchesIds(item, mandatoryFieldIds)) return item
+    const rawControl = item.rawControl
+      ? {
+          ...item.rawControl,
+          settings: {
+            ...item.rawControl.settings,
+            validation: {
+              ...item.rawControl.settings?.validation,
+              fieldRule: 'REQUIRED',
+            },
+          },
+        }
+      : item.rawControl
+    return { ...item, rawControl, required: true }
+  })
+}
 
 export type WorkflowChatMode = 'idle' | 'collecting' | 'review' | 'submitted'
 
@@ -328,6 +437,15 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
   const [panels, setPanels] = useState<any[]>(initialState?.panels || [])
   const [repositoryId, setRepositoryId] = useState<string | null>(
     initialState?.repositoryId || null,
+  )
+  const [hiddenFieldIds, setHiddenFieldIds] = useState<
+    Set<string> | undefined
+  >()
+  const [readOnlyFieldIds, setReadOnlyFieldIds] = useState<
+    Set<string> | undefined
+  >()
+  const [mandatoryFieldIds, setMandatoryFieldIds] = useState<Set<string>>(
+    () => new Set(),
   )
 
   // Layout & UI state
@@ -600,6 +718,8 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     panelIndex: number,
   ): { doc?: ParsedDoc; field?: ParsedField } => {
     if (!ctrl) return {}
+    // Match request-page WorkflowFormRenderer: skip HIDDEN / disabled controls.
+    if (isFieldHidden(ctrl)) return {}
     const id = String(
       ctrl.jsonId ||
         ctrl.id ||
@@ -1384,6 +1504,10 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
     setAwaitingPanelForm(null)
     setCompletedPanelIndexes([])
     setRepositoryId(null)
+    setHiddenFieldIds(undefined)
+    setReadOnlyFieldIds(undefined)
+    setMandatoryFieldIds(new Set())
+    setReadOnlyFieldIds(undefined)
 
     // Add assistant intro message
     setMessages((prev) => [
@@ -1646,6 +1770,46 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
 
       setFields(parsedF)
       setPanels(parsedP || [])
+      setDocuments(parsedD)
+
+      // Apply START-stage Security (Visible / Editable / Mandatory) like the request page.
+      const workflowJson =
+        (detailRes.data as any)?.workflowJson ||
+        (detailRes.data as any)?.settings ||
+        null
+      const allIds = [
+        ...parsedF.map((f) => String(f.id)),
+        ...parsedD.map((d) => String(d.id)),
+      ]
+      const currentUserId = String(
+        authUserStore.getState().session?.id || '',
+      )
+      const stageAccess = resolveStartStageFieldAccess(
+        workflowJson,
+        allIds,
+        currentUserId,
+      )
+      setHiddenFieldIds(stageAccess.hiddenFieldIds)
+      setReadOnlyFieldIds(stageAccess.readOnlyFieldIds)
+      setMandatoryFieldIds(stageAccess.mandatoryFieldIds)
+
+      // Drop stage-hidden controls so chat / progress / sidebar never ask for them.
+      if (stageAccess.hiddenFieldIds?.size) {
+        const hidden = stageAccess.hiddenFieldIds
+        parsedF = parsedF.filter((f) => !hidden.has(String(f.id)))
+        parsedD = parsedD.filter((d) => !hidden.has(String(d.id)))
+      }
+
+      // Stage Mandatory Fields override / extend form-level required flags.
+      parsedF = applyStageMandatoryFlags(
+        parsedF,
+        stageAccess.mandatoryFieldIds,
+      )
+      parsedD = applyStageMandatoryFlags(
+        parsedD,
+        stageAccess.mandatoryFieldIds,
+      )
+      setFields(parsedF)
       setDocuments(parsedD)
 
       presentNextCollectionStep(
@@ -2500,9 +2664,12 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                       answers={answers}
                       attachedFiles={attachedFiles}
                       docsMap={docsMap}
+                      hiddenFieldIds={hiddenFieldIds}
                       isExpanded={embedded ? isExpanded : true}
+                      mandatoryFieldIds={mandatoryFieldIds}
                       panels={panels}
                       payload={msg.panelForm}
+                      readOnlyFieldIds={readOnlyFieldIds}
                       repositoryId={repositoryId}
                       onAnswerChange={handleFieldChange}
                       onContinue={handlePanelContinue}
@@ -2710,9 +2877,11 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
                     // Only show fields that are actually tracked as fillable inputs by the AI
                     const panelFields =
                       panel.fields?.filter((c: any) => {
+                        if (isFieldHidden(c)) return false
                         const id = String(
                           c.jsonId || c.id || c.name || c.columnName,
                         )
+                        if (hiddenFieldIds?.has(id)) return false
                         return fields.some((f) => f.id === id)
                       }) || []
 

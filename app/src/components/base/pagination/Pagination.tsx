@@ -38,7 +38,7 @@ const Pagination = ({
   }
 
   const _className = cn(
-    'grid gap-4 sm:grid-cols-2',
+    'grid gap-4 items-center sm:grid-cols-2',
     showPageNumbers && 'lg:grid-cols-3',
     className,
   )

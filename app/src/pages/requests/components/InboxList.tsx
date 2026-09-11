@@ -1,5 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
+import React, { useEffect, useMemo, useState } from 'react'
+// import TableSort from '@/components/base/data-table/actions/TableSort'
+// import TableColumns from '@/components/base/data-table/actions/TableColumns'
+// import TableRows from '@/components/base/data-table/actions/TableRows'
+// import type { RowSize } from '@/components/base/data-table/types'
+import workflowsApiV6, {
+  type V6FilterField,
+  type V6SearchFilterClause,
+} from '@/api/v6/workflows'
+import GroupByMenu from '@/components/base/data-table/actions/TableGroup'
 import TableSearch from '@/components/base/data-table/actions/TableSearch'
 import DataTable from '@/components/base/data-table/DataTable'
 import useDataTable from '@/components/base/data-table/hooks/useDataTable'
@@ -10,26 +19,18 @@ import Tooltip from '@/components/base/Tooltip'
 import DynamicFilter, {
   type DynamicFilterField,
 } from '@/components/common/DynamicFilter'
+import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
 import { DUE_DATE_FILTER_OPTIONS } from '@/utils/filterUtils'
 import type { RequestViewMode, TableGroup, WorkflowOption } from '../types'
 import requestStore from '../stores/useRequestStore'
-// import TableSort from '@/components/base/data-table/actions/TableSort'
-// import TableColumns from '@/components/base/data-table/actions/TableColumns'
-// import TableRows from '@/components/base/data-table/actions/TableRows'
-// import type { RowSize } from '@/components/base/data-table/types'
-import workflowsApiV6, {
-  type V6FilterField,
-  type V6SearchFilterClause,
-} from '@/api/v6/workflows'
+import { buildV6FilterClauses } from '../utils/requestFilterMapper'
+import { isAccountsPayableWorkflow } from '../utils/workflow.utils'
 import ExportButton from './buttons/ExportButton'
 import RefreshButton from './buttons/RefreshButton'
 import UploadPoButton from './buttons/UploadPoButton'
 import { useDynamicColumns } from './columns/useDynamicColumns'
 import GridView from './GridView'
 import KanbanView from './KanbanView'
-import { extractDueDate } from '@/pages/requests/utils/inboxItemDisplay'
-import { buildV6FilterClauses } from '../utils/requestFilterMapper'
-import { isAccountsPayableWorkflow } from '../utils/workflow.utils'
 
 interface InboxListProps {
   data: TableGroup[]
@@ -43,6 +44,8 @@ interface InboxListProps {
   workflow: WorkflowOption | null
   activeTab?: string
   canCreateNewRequest?: boolean
+  filterFields?: V6FilterField[]
+  isFilterFieldsLoaded?: boolean
   setPage: (p: number) => void
   setPageSize: (s: number) => void
   setViewMode: (mode: RequestViewMode) => void
@@ -1174,6 +1177,8 @@ const InboxList: React.FC<InboxListProps> = ({
   activeTab,
   canCreateNewRequest,
   data,
+  filterFields = [],
+  isFilterFieldsLoaded = true,
   isLoading,
   isRefetching,
   page,
@@ -1195,9 +1200,6 @@ const InboxList: React.FC<InboxListProps> = ({
   const columns =
     useDynamicColumns(workflow, onRowClick, selectedItem, activeTab) || []
   // const [rowSize, setRowSize] = useState<RowSize>('default')
-
-  const [filterFields, setFilterFields] = useState<V6FilterField[]>([])
-  const [isFilterFieldsLoaded, setIsFilterFieldsLoaded] = useState(false)
 
   const dueDateFilterOptions = useMemo(
     () =>
@@ -1223,22 +1225,6 @@ const InboxList: React.FC<InboxListProps> = ({
     [t],
   )
 
-  useEffect(() => {
-    setIsFilterFieldsLoaded(false)
-    if (workflow?.id) {
-      workflowsApiV6.getFilterFields(String(workflow.id)).then((res) => {
-        if (res.data?.fields) {
-          setFilterFields(res.data.fields)
-        }
-      }).finally(() => {
-        setIsFilterFieldsLoaded(true)
-      })
-    } else {
-      setFilterFields([])
-      setIsFilterFieldsLoaded(true)
-    }
-  }, [workflow?.id])
-
   const initialVisibilityState = {
     createdAt: false,
     createdBy: false,
@@ -1254,6 +1240,7 @@ const InboxList: React.FC<InboxListProps> = ({
     sortState,
     setExpandState,
     setFiltersState,
+    setGroupState,
     setSearchState,
     ...rest
   } = useDataTableState({
@@ -1267,6 +1254,13 @@ const InboxList: React.FC<InboxListProps> = ({
       onGroupByChange(groupState)
     }
   }, [groupState, onGroupByChange])
+
+  // Grouping options come from the current workflow's columns — a column
+  // grouped on one workflow (e.g. "PO Number" on Accounts Payable) may not
+  // exist on another, so clear grouping whenever the workflow changes.
+  React.useEffect(() => {
+    setGroupState([])
+  }, [workflow?.id, setGroupState])
 
   // ✅ Use your actual API shape: data[0].items etc.
   const flatRows = useMemo(() => flattenRows(data as any), [data])
@@ -1788,9 +1782,7 @@ const InboxList: React.FC<InboxListProps> = ({
   const { table } = useDataTable({
     columns,
     enableRowSelection: false,
-    rows: (viewMode === 'table'
-      ? [{ items: flatFinalRows }]
-      : finalData) as any,
+    rows: finalData as any,
 
     state: {
       expandState,
@@ -1800,6 +1792,7 @@ const InboxList: React.FC<InboxListProps> = ({
       sortState,
       setExpandState,
       setFiltersState,
+      setGroupState,
       setSearchState,
       ...rest,
     },
@@ -1840,11 +1833,9 @@ const InboxList: React.FC<InboxListProps> = ({
       {showFilterSection && (
         <DynamicFilter
           activeQuickFilters={activeQuickFilters}
-          customSearchComponent={<TableSearch table={table as any} />}
           dataset={flatRows}
           isLoading={isLoading || isRefetching || isRefreshing}
           optionalFields={genericPickerFilterFields}
-          onFieldOpen={handleFieldOpen}
           searchPlaceholder={t`Search invoice, supplier, PO...`}
           searchQuery={searchState?.value || ''}
           viewMode={viewMode}
@@ -1858,6 +1849,12 @@ const InboxList: React.FC<InboxListProps> = ({
             'status': activeFiltersMap.status || [],
             'Supplier Name': activeFiltersMap.supplier || [],
           }}
+          customSearchComponent={
+            <div className='flex items-center gap-2'>
+              <TableSearch table={table} />
+              <GroupByMenu table={table} />
+            </div>
+          }
           fields={
             isAccountsPayable
               ? [
@@ -1869,44 +1866,51 @@ const InboxList: React.FC<InboxListProps> = ({
                 ]
               : genericDefaultFilterFields
           }
-          quickFilters={!isAccountsPayable ? [] : [
-            {
-              icon: 'tabler:calendar-due',
-              id: 'due_date',
-              label: t`Due Date`,
-              options: dueDateFilterOptions,
-              type: 'date',
-            },
-            {
-              icon: 'tabler:circle-check',
-              id: 'matched',
-              label: t`Matched`,
-            },
-            {
-              icon: 'tabler:alert-triangle',
-              id: 'discrepancies',
-              label: t`Discrepancies`,
-              options: [
-                {
-                  label: t`All`,
-                  value: 'discrepancies:discrepancies',
-                },
-                { label: t`Not Matched`, value: 'discrepancies:NOT_MATCHED' },
-                {
-                  label: t`Partially Matched`,
-                  value: 'discrepancies:PARTIALLY_MATCHED',
-                },
-              ],
-              type: 'category',
-            },
-            {
-              icon: 'tabler:currency-dollar',
-              id: 'highValue',
-              label: t`High Value`,
-              options: amountRangeOptions,
-              type: 'number',
-            },
-          ]}
+          quickFilters={
+            !isAccountsPayable
+              ? []
+              : [
+                  {
+                    icon: 'tabler:calendar-due',
+                    id: 'due_date',
+                    label: t`Due Date`,
+                    options: dueDateFilterOptions,
+                    type: 'date',
+                  },
+                  {
+                    icon: 'tabler:circle-check',
+                    id: 'matched',
+                    label: t`Matched`,
+                  },
+                  {
+                    icon: 'tabler:alert-triangle',
+                    id: 'discrepancies',
+                    label: t`Discrepancies`,
+                    options: [
+                      {
+                        label: t`All`,
+                        value: 'discrepancies:discrepancies',
+                      },
+                      {
+                        label: t`Not Matched`,
+                        value: 'discrepancies:NOT_MATCHED',
+                      },
+                      {
+                        label: t`Partially Matched`,
+                        value: 'discrepancies:PARTIALLY_MATCHED',
+                      },
+                    ],
+                    type: 'category',
+                  },
+                  {
+                    icon: 'tabler:currency-dollar',
+                    id: 'highValue',
+                    label: t`High Value`,
+                    options: amountRangeOptions,
+                    type: 'number',
+                  },
+                ]
+          }
           toolbarActions={[
             {
               icon: 'tabler:refresh',
@@ -1936,6 +1940,7 @@ const InboxList: React.FC<InboxListProps> = ({
           onClearAll={() => {
             requestStore.getState().clearQuickFilters()
           }}
+          onFieldOpen={handleFieldOpen}
           onFilterChange={(id, values) => {
             let mappedId = id
             if (id === 'Supplier Name') mappedId = 'supplier'
@@ -1958,21 +1963,14 @@ const InboxList: React.FC<InboxListProps> = ({
           onViewModeChange={setViewMode}
         />
       )}
-      <div className='relative mt-1 flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-hidden'>
-        <div className='flex h-full min-h-0 min-w-0 w-full gap-3'>
+      <div className='relative mt-1 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden'>
+        <div className='flex h-full min-h-0 w-full min-w-0 gap-3'>
           {/* Left */}
           {!selectedItem && viewMode === 'table' && (
             <div className='flex h-full min-w-0 flex-1 flex-col'>
               <DataTable
                 actions={[]}
                 component={selectedItem}
-                emptyPage={
-                  activeTab === 'Exceptions'
-                    ? 'requests-exceptions'
-                    : activeTab === 'Processed'
-                      ? 'requests-processed'
-                      : 'requests'
-                }
                 hideActionBar={true}
                 hideExport={true}
                 hideFilters={true}
@@ -1986,6 +1984,13 @@ const InboxList: React.FC<InboxListProps> = ({
                 // onRowSizeChange={setRowSize}
                 stickyHeader={true}
                 table={table}
+                emptyPage={
+                  activeTab === 'Exceptions'
+                    ? 'requests-exceptions'
+                    : activeTab === 'Processed'
+                      ? 'requests-processed'
+                      : 'requests'
+                }
                 onEmptyPrimaryAction={
                   canCreateNewRequest !== false &&
                   (activeTab === 'Inbox' || !activeTab)
@@ -2004,7 +2009,6 @@ const InboxList: React.FC<InboxListProps> = ({
                 activeTab={activeTab}
                 data={finalData} // ✅ Use final data
                 hideExport={true}
-                hideGrouping={activeTab !== 'Inbox'}
                 hideReload={true}
                 isLoading={isLoading}
                 isReloading={isRefetching}
@@ -2046,6 +2050,10 @@ const InboxList: React.FC<InboxListProps> = ({
       {!selectedItem && (
         <div className='z-10 shrink-0 border-t border-[var(--gray-3)] bg-surface pt-2'>
           <Pagination
+            page={page}
+            pageSize={pageSize}
+            showPageNumbers={false}
+            totalItems={totalItems}
             itemLabel={
               viewMode === 'kanban'
                 ? t`Requests`
@@ -2055,10 +2063,6 @@ const InboxList: React.FC<InboxListProps> = ({
                     ? t`Processed`
                     : t`Requests`
             }
-            page={page}
-            pageSize={pageSize}
-            showPageNumbers={false}
-            totalItems={totalItems}
             onPageChange={setPage}
             onPageSizeChange={setPageSize}
           />

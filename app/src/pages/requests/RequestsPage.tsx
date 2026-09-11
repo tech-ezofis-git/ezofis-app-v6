@@ -7,6 +7,7 @@ import formApi from '@/api/form/form'
 import requestApi from '@/api/requests/requests'
 import workflowsApiV6, {
   mapPublishedWorkflowListToOptions,
+  type V6FilterField,
   type WorkflowOptionItem,
 } from '@/api/v6/workflows'
 import PageEmptyState from '@/components/common/PageEmptyState'
@@ -123,6 +124,42 @@ const RequestsPage = () => {
     [rawWorkflowData],
   )
 
+  // The Requests-page tabs configured for this workflow (Workflow Settings
+  // -> Request Views). Only the first 3 (by position) are wired to real
+  // data - they map positionally to the Inbox/Sent/Completed (or
+  // Invoices/Exceptions/Processed for AP) buckets regardless of their
+  // custom label. Anything beyond that has no data source yet. An empty
+  // config means "unconfigured" - fall back to the historical defaults.
+  const requestTabs = useMemo(() => {
+    const bucketKeys = isAccountsPayable
+      ? ['Inbox', 'Exceptions', 'Processed']
+      : ['Inbox', 'Sent', 'Closed']
+    const defaultLabels = isAccountsPayable
+      ? [t`Invoices`, t`Exceptions`, t`Processed`]
+      : [t`Inbox`, t`Sent`, t`Completed`]
+
+    const raw = rawWorkflowData?.workflowJson?.settings?.general?.requestTabs
+    const configured = Array.isArray(raw) ? raw : []
+
+    if (!configured.length) {
+      return bucketKeys.map((value, index) => ({
+        label: defaultLabels[index],
+        value,
+      }))
+    }
+
+    return configured.map((tabConfig: any, index: number) => ({
+      label:
+        String(tabConfig?.label || '').trim() ||
+        defaultLabels[index] ||
+        `Tab ${index + 1}`,
+      value:
+        index < bucketKeys.length
+          ? bucketKeys[index]
+          : `custom-${tabConfig?.id ?? index}`,
+    }))
+  }, [rawWorkflowData, isAccountsPayable, t])
+
   const navigate = useNavigate()
 
   const [page, setPage] = useState(storedState?.page ?? 1)
@@ -152,6 +189,28 @@ const RequestsPage = () => {
     }
   }, [activeTab, viewMode, filterClauses, page, pageSize, groupBy])
 
+  const [filterFields, setFilterFields] = useState<V6FilterField[]>([])
+  const [isFilterFieldsLoaded, setIsFilterFieldsLoaded] = useState(false)
+
+  useEffect(() => {
+    setIsFilterFieldsLoaded(false)
+    if (selectedWorkflow?.id) {
+      workflowsApiV6
+        .getFilterFields(String(selectedWorkflow.id))
+        .then((res) => {
+          if (res.data?.fields) {
+            setFilterFields(res.data.fields)
+          }
+        })
+        .finally(() => {
+          setIsFilterFieldsLoaded(true)
+        })
+    } else {
+      setFilterFields([])
+      setIsFilterFieldsLoaded(true)
+    }
+  }, [selectedWorkflow?.id])
+
   // --- 2. DATA FETCHING ---
   // Pass 'activeTab' and 'filterClauses' to the hook so it knows which API to call
   const {
@@ -166,6 +225,7 @@ const RequestsPage = () => {
     groupBy,
     viewMode === 'kanban' ? 'Kanban' : activeTab,
     filterClauses,
+    filterFields,
   )
 
   const syncListTabFromItem = (row: InboxItem) => {
@@ -181,7 +241,11 @@ const RequestsPage = () => {
     }
   }
 
-  const handleRowClick = (row: InboxItem, tab: string, missingFieldIds?: string[]) => {
+  const handleRowClick = (
+    row: InboxItem,
+    tab: string,
+    missingFieldIds?: string[],
+  ) => {
     syncListTabFromItem(row)
     if (selectedWorkflow?.id) {
       openRequest(row, selectedWorkflow, tab, missingFieldIds)
@@ -215,7 +279,9 @@ const RequestsPage = () => {
 
       const publishedOptions = mapPublishedWorkflowListToOptions(data)
       const options = [...publishedOptions]
-      if (!options.some((opt) => String(opt.id).toLowerCase() === 'procurement')) {
+      if (
+        !options.some((opt) => String(opt.id).toLowerCase() === 'procurement')
+      ) {
         options.push(procurementOption)
       }
 
@@ -644,11 +710,6 @@ const RequestsPage = () => {
     requestStore.getState().clearQuickFilters()
     setPage(1)
 
-    // Only grouping for Inbox
-    if (tab !== 'Inbox') {
-      setGroupBy([])
-    }
-
     const workflowId = selectedWorkflow?.id || workflow?.id
     if (workflowId) {
       void refreshInstanceCounts(String(workflowId))
@@ -660,18 +721,16 @@ const RequestsPage = () => {
     setRequestListTab(activeTab)
   }, [])
 
-  // Generic workflows use Inbox/Sent/Closed tabs; AP workflows use
-  // Inbox/Exceptions/Processed. If the workflow type changes while a tab
-  // that doesn't exist for the new type is active, fall back to Inbox.
+  // If the configured tab list changes (workflow switch, or its Request
+  // Views setting changed) while a tab that's no longer in the list is
+  // active, fall back to the first configured tab.
   useEffect(() => {
-    const validTabs = isAccountsPayable
-      ? ['Inbox', 'Exceptions', 'Processed']
-      : ['Inbox', 'Sent', 'Closed']
-    if (!validTabs.includes(activeTab)) {
-      handleTabChange('Inbox')
+    const validValues = requestTabs.map((tab) => tab.value)
+    if (validValues.length && !validValues.includes(activeTab)) {
+      handleTabChange(validValues[0])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAccountsPayable])
+  }, [requestTabs])
 
   // Keep Inbox / Sent / Completed badges in sync with the list that just
   // loaded. instance-count is fetched on workflow load and tab change, but
@@ -680,8 +739,10 @@ const RequestsPage = () => {
     if (isFetching || inboxResult?.totalItems == null) return
 
     const value = String(inboxResult.totalItems)
-    if (activeTab === 'Inbox') listTotalsRef.current.inbox = inboxResult.totalItems
-    if (activeTab === 'Sent') listTotalsRef.current.sent = inboxResult.totalItems
+    if (activeTab === 'Inbox')
+      listTotalsRef.current.inbox = inboxResult.totalItems
+    if (activeTab === 'Sent')
+      listTotalsRef.current.sent = inboxResult.totalItems
     if (activeTab === 'Closed') {
       listTotalsRef.current.closed = inboxResult.totalItems
     }
@@ -760,7 +821,11 @@ const RequestsPage = () => {
   const session = useAuthUserStore((s) => s.session)
 
   const canCreateNewRequest = useMemo(() => {
-    if (workflow?.id === 'procurement' || selectedWorkflow?.id === 'procurement') return false
+    if (
+      workflow?.id === 'procurement' ||
+      selectedWorkflow?.id === 'procurement'
+    )
+      return false
     // AP workflows always allow "+ New Request"
     if (isAccountsPayable) return true
 
@@ -813,10 +878,9 @@ const RequestsPage = () => {
               activeTab={activeTab}
               allWorkflows={allWorkflow}
               exceptionsCount={inboxResult?.exceptionsCount}
-              hideListTabs={viewMode === 'kanban' || workflow?.id === 'procurement'}
-              isAccountsPayable={isAccountsPayable}
               isLoading={isLoading}
               metaData={metaData}
+              tabs={requestTabs}
               workflow={workflow}
               actionButtons={
                 canCreateNewRequest
@@ -834,6 +898,9 @@ const RequestsPage = () => {
                       },
                     ]
                   : []
+              }
+              hideListTabs={
+                viewMode === 'kanban' || workflow?.id === 'procurement'
               }
               setActiveTab={handleTabChange}
               setWorkflow={handleWorkflowSelect}
@@ -867,6 +934,8 @@ const RequestsPage = () => {
                 activeTab={activeTab}
                 canCreateNewRequest={canCreateNewRequest}
                 data={inboxResult?.data || []}
+                filterFields={filterFields}
+                isFilterFieldsLoaded={isFilterFieldsLoaded}
                 isLoading={inboxIsLoading}
                 isRefetching={isWorkflowReady && isFetching}
                 page={page}

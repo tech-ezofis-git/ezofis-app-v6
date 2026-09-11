@@ -20,7 +20,7 @@ const PaginationControls = ({ page, totalPages, onPageChange }: Props) => {
   })
 
   return (
-    <div className='flex justify-center md:justify-start xl:justify-center'>
+    <div className='flex items-center justify-center'>
       <div className='flex items-center gap-2'>
         <IconButton
           color='gray'
