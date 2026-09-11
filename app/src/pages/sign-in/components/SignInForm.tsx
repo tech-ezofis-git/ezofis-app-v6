@@ -26,6 +26,7 @@ import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
+import { setToLocalStorage } from '@/utils/local-storage'
 import { resolveAuthPath, useIsWhiteLabel } from '@/utils/whiteLabel'
 import { redirectAfterLogin } from '../utils/redirectAfterLogin'
 
@@ -207,11 +208,29 @@ const SignInForm = ({
     await redirectAfterLogin({ navigate, redirectTo, shareTenantId })
   }
 
+  const persistV6IdentityData = (
+    data: unknown,
+    usedTenantId?: string | number,
+  ) => {
+    if (!data) return
+    const identityRecord = asIdentityRecord(data) || {}
+    setToLocalStorage(identityRecord, 'identity')
+    const finalTenantId = String(
+      identityRecord.tenantId || usedTenantId || brandingTenantId || '',
+    )
+    if (finalTenantId) {
+      setToLocalStorage(finalTenantId, 'tenantId', 'STRING')
+    }
+    authUserStore.getState().setIdentity(identityRecord as any)
+  }
+
   const completeSignIn = async (
     data: unknown,
     signedEmail: string,
     usedTenantId?: string | number,
   ) => {
+    persistV6IdentityData(data, usedTenantId)
+
     if (onSignedIn) {
       const identity = asIdentityRecord(data) || {}
       const accessToken = extractAccessToken(data)
