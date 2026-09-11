@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
 import Icon from '@/components/base/icon/Icon'
 import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
+import cn from '@/utils/cn'
 import {
   buildFieldSearchKeywords,
   getFieldDisplayValue,
@@ -707,6 +708,7 @@ function DocxRenderedPreview({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [scale, setScale] = useState(DEFAULT_DOCX_ZOOM)
+  const [html, setHtml] = useState('')
 
   useEffect(() => {
     let cancelled = false
