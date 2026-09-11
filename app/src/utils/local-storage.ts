@@ -23,7 +23,8 @@ export const setToLocalStorage = (
   key: string,
   dataType: 'OBJECT' | 'STRING' = 'OBJECT',
 ): void => {
-  if (!data || !key) return
+  // Allow empty arrays / objects — only skip nullish values or missing keys.
+  if (data == null || !key) return
 
   let value = data as string
 

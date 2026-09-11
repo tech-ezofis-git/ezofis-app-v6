@@ -41,6 +41,7 @@ import {
 import { matchesSearchText } from '../components/FolderFilterBar'
 import useEmbedMode from '@/hooks/useEmbedMode'
 import { resolveShareContext } from '../utils/shareContextStorage'
+import { setFolderExplorerSearchSnapshot } from '../stores/folderExplorerSearchCache'
 
 const SESSION_STORAGE_KEY = 'ezofis_folder_explorer_state'
 
@@ -1059,6 +1060,28 @@ export function useFolderExplorer() {
     const node = findNodeById(tree, activeFolder)
     return node?.title || 'Folders'
   }, [breadcrumbs, tree, activeFolder])
+
+  // Mirror loaded explorer data for Global Search local cache.
+  useEffect(() => {
+    setFolderExplorerSearchSnapshot({
+      activeFolder,
+      contextFilters: folderContextFilters || {},
+      files,
+      folders,
+      repositoryId:
+        selectedRepository?.id || getRepositoryIdFromFolder(activeFolder) || '',
+      repositoryName: selectedRepository?.name || currentTitle || '',
+      tree,
+    })
+  }, [
+    activeFolder,
+    currentTitle,
+    files,
+    folderContextFilters,
+    folders,
+    selectedRepository,
+    tree,
+  ])
 
   const canGoBackInExplorer = useMemo(() => {
     if (breadcrumbs.length > 1) return true

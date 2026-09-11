@@ -23,6 +23,7 @@ import {
   getFileExtension,
   resolveDocumentPreviewKind,
 } from '@/pages/folders/utils/documentDetailsUtils'
+import cn from '@/utils/cn'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
@@ -653,14 +654,14 @@ function WordPreview({
 }) {
   const ext = getFileExtension(fileName)
 
-  // Public URLs can be embedded via Microsoft Office Online.
-  if (isHttpUrl(fileUrl)) {
-    return <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
+  // Prefer in-browser DOCX rendering for uploaded / blob / fetchable files.
+  if (ext === 'docx') {
+    return <DocxRenderedPreview fileName={fileName} fileUrl={fileUrl} />
   }
 
-  // Local/blob .docx → extract readable text from the Open XML package.
-  if (ext === 'docx') {
-    return <DocxTextPreview fileName={fileName} fileUrl={fileUrl} />
+  // Public URLs for other Office formats can use Microsoft Office Online.
+  if (isHttpUrl(fileUrl)) {
+    return <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
   }
 
   return (
@@ -673,19 +674,24 @@ function WordPreview({
   )
 }
 
-function DocxTextPreview({
+const DEFAULT_DOCX_ZOOM = 0.7
+
+function DocxRenderedPreview({
   fileName,
   fileUrl,
 }: {
   fileName?: string
   fileUrl: string
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const styleRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const [html, setHtml] = useState('')
   const [loading, setLoading] = useState(true)
+  const [scale, setScale] = useState(DEFAULT_DOCX_ZOOM)
 
   useEffect(() => {
     let cancelled = false
+    setScale(DEFAULT_DOCX_ZOOM)
 
     const load = async () => {
       setLoading(true)
@@ -698,58 +704,38 @@ function DocxTextPreview({
           throw new Error('File is empty or not a valid Word document')
         }
 
-        const xml = await extractDocxDocumentXml(buffer)
-        if (!xml) {
-          throw new Error(
-            'Could not read Word document contents. Try Open file, or re-save as .docx.',
-          )
-        }
+        const { renderAsync } = await import('docx-preview')
+        if (cancelled) return
 
-        const paragraphs = xml
-          .split(/<\/w:p>/i)
-          .map((chunk) => {
-            const texts = [...chunk.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map(
-              (match) => decodeXmlEntities(match[1] || ''),
-            )
-            return texts.join('')
-          })
-          .map((text) => text.replace(/\s+/g, ' ').trim())
-          .filter(Boolean)
+        const body = containerRef.current
+        const styleHost = styleRef.current
+        if (!body) throw new Error('Preview container is not ready')
 
-        if (!paragraphs.length) {
-          // Tables / text boxes may still have content under <w:t>.
-          const loose = [...xml.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)]
-            .map((match) => decodeXmlEntities(match[1] || '').trim())
-            .filter(Boolean)
-          if (!loose.length) {
-            throw new Error('No readable text found in this Word document')
-          }
-          if (!cancelled) {
-            setHtml(
-              `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(loose.join(' '))}</p>`,
-            )
-          }
-          return
-        }
+        body.innerHTML = ''
+        if (styleHost) styleHost.innerHTML = ''
 
-        if (!cancelled) {
-          setHtml(
-            paragraphs
-              .map(
-                (paragraph) =>
-                  `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(paragraph)}</p>`,
-              )
-              .join(''),
-          )
-        }
+        await renderAsync(buffer, body, styleHost || undefined, {
+          breakPages: true,
+          className: 'ez-docx',
+          ignoreLastRenderedPageBreak: true,
+          inWrapper: true,
+          renderEndnotes: true,
+          renderFooters: true,
+          renderFootnotes: true,
+          renderHeaders: true,
+          useBase64URL: true,
+        })
+
+        if (!cancelled) setLoading(false)
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : 'Unable to preview Word document',
+            err instanceof Error
+              ? err.message
+              : 'Unable to preview Word document',
           )
+          setLoading(false)
         }
-      } finally {
-        if (!cancelled) setLoading(false)
       }
     }
 
@@ -759,7 +745,6 @@ function DocxTextPreview({
     }
   }, [fileUrl])
 
-  if (loading) return <SkeletonDocumentPreview />
   if (error) {
     return (
       <UnsupportedPreview
@@ -772,11 +757,53 @@ function DocxTextPreview({
   }
 
   return (
-    <div className='h-full min-h-[320px] overflow-auto bg-[var(--gray-1)] p-5'>
-      <div
-        className='mx-auto min-h-full max-w-3xl rounded-xl border border-[var(--gray-3)] bg-surface p-6 shadow-sm'
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+    <div className='relative h-full min-h-[320px] bg-[var(--gray-2)]'>
+      {loading && (
+        <div className='absolute inset-0 z-10'>
+          <SkeletonDocumentPreview />
+        </div>
+      )}
+      <div ref={styleRef} className='hidden' />
+      {/* Scroll only this pane so the zoom toolbar stays pinned. */}
+      <div className='h-full overflow-auto'>
+        <div
+          className={cn(
+            'flex min-h-full min-w-full justify-center px-3 py-4',
+            loading && 'invisible',
+          )}
+        >
+          <div
+            ref={containerRef}
+            className='ez-docx-preview origin-top transition-transform duration-200'
+            style={{ transform: `scale(${scale})` }}
+          />
+        </div>
+      </div>
+      {!loading && <ZoomToolbar scale={scale} onZoom={setScale} />}
+      <style>{`
+        .ez-docx-preview .ez-docx-wrapper {
+          background: transparent !important;
+          padding: 0 !important;
+        }
+        .ez-docx-preview .ez-docx {
+          background: #fff !important;
+          box-shadow: 0 1px 3px rgba(0,0,0,.08);
+          margin: 0 auto 16px !important;
+          padding: 48px 56px !important;
+          color: #111;
+        }
+        .ez-docx-preview .ez-docx section.ez-docx {
+          min-height: auto;
+        }
+        .ez-docx-preview table {
+          border-collapse: collapse;
+        }
+        .ez-docx-preview td,
+        .ez-docx-preview th {
+          border: 1px solid #d0d0d0;
+          padding: 4px 8px;
+        }
+      `}</style>
     </div>
   )
 }
@@ -855,225 +882,6 @@ function OfficeOnlinePreview({
       />
     </div>
   )
-}
-
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-
-const decodeXmlEntities = (value: string) =>
-  value
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
-
-async function inflateRaw(payload: Uint8Array): Promise<Uint8Array> {
-  const copy = Uint8Array.from(payload)
-  const stream = new Blob([copy])
-    .stream()
-    .pipeThrough(new DecompressionStream('deflate-raw'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
-}
-
-/**
- * Read `word/document.xml` from a .docx (ZIP) using the central directory.
- * Local-header-only parsing fails on many Office files that use data descriptors.
- */
-async function extractDocxDocumentXml(
-  buffer: ArrayBuffer,
-): Promise<string | null> {
-  const bytes = new Uint8Array(buffer)
-  const view = new DataView(buffer)
-  const decoder = new TextDecoder('utf-8')
-
-  // PK\x03\x04 = local, PK\x01\x02 = central, PK\x05\x06 = EOCD
-  if (
-    bytes.length < 22 ||
-    bytes[0] !== 0x50 ||
-    bytes[1] !== 0x4b ||
-    bytes[2] !== 0x03 ||
-    bytes[3] !== 0x04
-  ) {
-    return null
-  }
-
-  // Find End of Central Directory (scan backwards; comment can follow it).
-  let eocd = -1
-  for (let i = bytes.length - 22; i >= 0; i--) {
-    if (
-      bytes[i] === 0x50 &&
-      bytes[i + 1] === 0x4b &&
-      bytes[i + 2] === 0x05 &&
-      bytes[i + 3] === 0x06
-    ) {
-      eocd = i
-      break
-    }
-    // Don't scan forever on huge trailing comments.
-    if (bytes.length - i > 65_536) break
-  }
-  if (eocd < 0) return extractDocxDocumentXmlFallback(bytes, view, decoder)
-
-  const totalEntries = view.getUint16(eocd + 10, true)
-  const centralOffset = view.getUint32(eocd + 16, true)
-  if (centralOffset >= bytes.length) {
-    return extractDocxDocumentXmlFallback(bytes, view, decoder)
-  }
-
-  let offset = centralOffset
-  for (let entry = 0; entry < totalEntries; entry++) {
-    if (
-      offset + 46 > bytes.length ||
-      bytes[offset] !== 0x50 ||
-      bytes[offset + 1] !== 0x4b ||
-      bytes[offset + 2] !== 0x01 ||
-      bytes[offset + 3] !== 0x02
-    ) {
-      break
-    }
-
-    const compression = view.getUint16(offset + 10, true)
-    const compressedSize = view.getUint32(offset + 20, true)
-    const nameLength = view.getUint16(offset + 28, true)
-    const extraLength = view.getUint16(offset + 30, true)
-    const commentLength = view.getUint16(offset + 32, true)
-    const localHeaderOffset = view.getUint32(offset + 42, true)
-    const nameStart = offset + 46
-    const nameEnd = nameStart + nameLength
-    if (nameEnd > bytes.length) break
-
-    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
-    offset = nameEnd + extraLength + commentLength
-
-    if (!/(^|\/)word\/document\.xml$/i.test(name)) continue
-
-    if (
-      localHeaderOffset + 30 > bytes.length ||
-      bytes[localHeaderOffset] !== 0x50 ||
-      bytes[localHeaderOffset + 1] !== 0x4b ||
-      bytes[localHeaderOffset + 2] !== 0x03 ||
-      bytes[localHeaderOffset + 3] !== 0x04
-    ) {
-      return null
-    }
-
-    const localNameLength = view.getUint16(localHeaderOffset + 26, true)
-    const localExtraLength = view.getUint16(localHeaderOffset + 28, true)
-    const dataStart =
-      localHeaderOffset + 30 + localNameLength + localExtraLength
-    const dataEnd = dataStart + compressedSize
-    if (dataEnd > bytes.length) return null
-
-    const payload = bytes.subarray(dataStart, dataEnd)
-    if (compression === 0) return decoder.decode(payload)
-    if (compression !== 8) return null
-
-    try {
-      return decoder.decode(await inflateRaw(payload))
-    } catch {
-      return null
-    }
-  }
-
-  return extractDocxDocumentXmlFallback(bytes, view, decoder)
-}
-
-/** Fallback when EOCD/central directory is missing or incomplete. */
-async function extractDocxDocumentXmlFallback(
-  bytes: Uint8Array,
-  view: DataView,
-  decoder: TextDecoder,
-): Promise<string | null> {
-  for (let offset = 0; offset + 30 < bytes.length; ) {
-    if (
-      bytes[offset] !== 0x50 ||
-      bytes[offset + 1] !== 0x4b ||
-      bytes[offset + 2] !== 0x03 ||
-      bytes[offset + 3] !== 0x04
-    ) {
-      offset += 1
-      continue
-    }
-
-    const flags = view.getUint16(offset + 6, true)
-    const compression = view.getUint16(offset + 8, true)
-    let compressedSize = view.getUint32(offset + 18, true)
-    const nameLength = view.getUint16(offset + 26, true)
-    const extraLength = view.getUint16(offset + 28, true)
-    const nameStart = offset + 30
-    const nameEnd = nameStart + nameLength
-    if (nameEnd > bytes.length) break
-
-    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
-    const dataStart = nameEnd + extraLength
-    const hasDataDescriptor = (flags & 0x08) !== 0
-
-    // When bit 3 is set, sizes in the local header are zero — scan for
-    // the data descriptor (PK\x07\x08) or next local header.
-    if (hasDataDescriptor && compressedSize === 0) {
-      let cursor = dataStart
-      let found = -1
-      while (cursor + 16 < bytes.length) {
-        if (
-          bytes[cursor] === 0x50 &&
-          bytes[cursor + 1] === 0x4b &&
-          ((bytes[cursor + 2] === 0x07 && bytes[cursor + 3] === 0x08) ||
-            (bytes[cursor + 2] === 0x03 && bytes[cursor + 3] === 0x04) ||
-            (bytes[cursor + 2] === 0x01 && bytes[cursor + 3] === 0x02))
-        ) {
-          found = cursor
-          break
-        }
-        cursor += 1
-      }
-      if (found < 0) break
-      compressedSize = found - dataStart
-      // Optional signature before CRC in data descriptor.
-      const nextOffset =
-        bytes[found + 2] === 0x07 && bytes[found + 3] === 0x08
-          ? found + 16
-          : found
-
-      if (/(^|\/)word\/document\.xml$/i.test(name)) {
-        const payload = bytes.subarray(dataStart, dataStart + compressedSize)
-        if (compression === 0) return decoder.decode(payload)
-        if (compression !== 8) return null
-        try {
-          return decoder.decode(await inflateRaw(payload))
-        } catch {
-          return null
-        }
-      }
-
-      offset = nextOffset
-      continue
-    }
-
-    const dataEnd = dataStart + compressedSize
-    if (dataEnd > bytes.length) break
-
-    if (/(^|\/)word\/document\.xml$/i.test(name)) {
-      const payload = bytes.subarray(dataStart, dataEnd)
-      if (compression === 0) return decoder.decode(payload)
-      if (compression !== 8) return null
-      try {
-        return decoder.decode(await inflateRaw(payload))
-      } catch {
-        return null
-      }
-    }
-
-    offset = dataEnd
-  }
-
-  return null
 }
 
 function ImagePreview({
