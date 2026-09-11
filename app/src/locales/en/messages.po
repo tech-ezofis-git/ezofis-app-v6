@@ -181,13 +181,17 @@ msgstr "{0}: {1}"
 msgid "{activeCard}"
 msgstr "{activeCard}"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:50
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:23
 msgid "{activeUsers} active · {groupsCount} groups"
 msgstr "{activeUsers} active · {groupsCount} groups"
 
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:32
+msgid "{activeWorkflows} active"
+msgstr "{activeWorkflows} active"
+
 #: src/pages/settings/components/license/LicenseStatsRow.tsx:23
-msgid "{activeWorkflows} active workflows"
-msgstr "{activeWorkflows} active workflows"
+#~ msgid "{activeWorkflows} active workflows"
+#~ msgstr "{activeWorkflows} active workflows"
 
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:622
 msgid "{count} line item(s) found in the uploaded document."
@@ -279,7 +283,7 @@ msgstr "{progress}% Complete"
 msgid "{requiredMapped} / {requiredTotal} Required Mapped"
 msgstr "{requiredMapped} / {requiredTotal} Required Mapped"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:39
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:48
 msgid "{storageUsedGb} GB used"
 msgstr "{storageUsedGb} GB used"
 
@@ -327,7 +331,7 @@ msgstr "+ Add condition"
 msgid "+{extraCount} more"
 msgstr "+{extraCount} more"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:21
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:30
 msgid "+2 this week"
 msgstr "+2 this week"
 
@@ -429,7 +433,7 @@ msgstr "4 fields"
 msgid "4. Posted"
 msgstr "4. Posted"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:32
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:41
 msgid "5 hierarchy levels"
 msgstr "5 hierarchy levels"
 
@@ -962,7 +966,7 @@ msgstr "All"
 msgid "All {count} documents successfully ingested and indexed."
 msgstr "All {count} documents successfully ingested and indexed."
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:48
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:21
 msgid "All Active"
 msgstr "All Active"
 
@@ -1538,6 +1542,7 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:833
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:779
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:821
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:106
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:212
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
 #: src/pages/settings/components/SettingsWizardLayout.tsx:209
@@ -1981,7 +1986,7 @@ msgstr "Checkbox/OMR"
 msgid "Choose a destination action and how to build the rule to continue."
 msgstr "Choose a destination action and how to build the rule to continue."
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:211
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:214
 msgid "Choose a different repository to override..."
 msgstr "Choose a different repository to override..."
 
@@ -2029,7 +2034,7 @@ msgstr "Choose how to set up the trigger and conditions."
 msgid "Choose how users sign in to this portal"
 msgstr "Choose how users sign in to this portal"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:103
+#: src/pages/settings/components/license/LicenseSettings.tsx:107
 msgid "Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean."
 msgstr "Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean."
 
@@ -4781,7 +4786,7 @@ msgstr "File uploaded successfully"
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
 #: src/pages/folders/components/Upload/Upload.tsx:1640
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:43
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:52
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:139
 msgid "Files"
 msgstr "Files"
@@ -4991,7 +4996,7 @@ msgstr "Folder updated successfully."
 #: src/layouts/app/components/sidebar/Sidebar.tsx:32
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:78
 #: src/pages/folders/components/FolderExplorer.tsx:313
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:34
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:43
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:21
 msgid "Folders"
@@ -6136,8 +6141,7 @@ msgstr "Let's set up your AP workflow"
 #~ msgid "Let’s start your submission."
 #~ msgstr "Let’s start your submission."
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:76
-#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:106
+#: src/pages/settings/components/license/LicenseSettings.tsx:80
 #: src/pages/settings/SettingsMain.tsx:356
 msgid "License & Subscription"
 msgstr "License & Subscription"
@@ -6554,7 +6558,7 @@ msgstr "Manual"
 msgid "Manual PO Import"
 msgstr "Manual PO Import"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:227
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:230
 msgid "Manually routed to"
 msgstr "Manually routed to"
 
@@ -8010,7 +8014,7 @@ msgstr "Or"
 msgid "or build them manually."
 msgstr "or build them manually."
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:202
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:205
 msgid "Or override with another repository:"
 msgstr "Or override with another repository:"
 
@@ -8051,7 +8055,7 @@ msgstr "Oracle Fusion REST Field Mapping"
 msgid "Order"
 msgstr "Order"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:30
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:39
 msgid "Organized"
 msgstr "Organized"
 
@@ -8096,7 +8100,7 @@ msgstr "Overdue Amount"
 msgid "Overdue and due-soonest first — process top-down"
 msgstr "Overdue and due-soonest first — process top-down"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:208
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:211
 msgid "Override repository"
 msgstr "Override repository"
 
@@ -9093,7 +9097,7 @@ msgstr "Ready for Approval"
 msgid "Ready to confirm"
 msgstr "Ready to confirm"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:100
+#: src/pages/settings/components/license/LicenseSettings.tsx:104
 msgid "Ready to go live? Upgrade to Production."
 msgstr "Ready to go live? Upgrade to Production."
 
@@ -10945,7 +10949,7 @@ msgstr "Show both folders and files"
 msgid "Show Documents"
 msgstr "Show Documents"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:183
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:186
 msgid "Show fewer suggestions"
 msgstr "Show fewer suggestions"
 
@@ -11377,7 +11381,7 @@ msgstr "Still opening... this is taking longer than expected. Check the browser 
 msgid "Storage"
 msgstr "Storage"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:41
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:50
 msgid "Storage across all folders"
 msgstr "Storage across all folders"
 
@@ -11713,7 +11717,7 @@ msgstr "Table View"
 msgid "Take your workspace to Production"
 msgstr "Take your workspace to Production"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:110
+#: src/pages/settings/components/license/LicenseSettings.tsx:114
 msgid "Talk to Sales"
 msgstr "Talk to Sales"
 
@@ -11787,8 +11791,8 @@ msgid "Test Connection"
 msgstr "Test Connection"
 
 #: src/pages/settings/components/license/LicenseSettings.tsx:49
-msgid "Thanks! Our team will reach out within one business day."
-msgstr "Thanks! Our team will reach out within one business day."
+#~ msgid "Thanks! Our team will reach out within one business day."
+#~ msgstr "Thanks! Our team will reach out within one business day."
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:202
 msgid "That email is already in the signing list."
@@ -12500,8 +12504,8 @@ msgstr ""
 msgid "Upgrade complete"
 msgstr "Upgrade complete"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:39
-#: src/pages/settings/components/license/LicenseSettings.tsx:118
+#: src/pages/settings/components/license/LicenseSettings.tsx:40
+#: src/pages/settings/components/license/LicenseSettings.tsx:122
 msgid "Upgrade to Production"
 msgstr "Upgrade to Production"
 
@@ -12797,7 +12801,7 @@ msgstr "Username Field"
 #~ msgid "Username Field *"
 #~ msgstr "Username Field *"
 
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:52
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:25
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:144
 #: src/pages/settings/components/ManageUser.tsx:1663
 #: src/pages/settings/components/RolesPermissions.tsx:1069
@@ -12956,7 +12960,7 @@ msgstr "Versioning strategy saved. Do you require an ERP or system integration, 
 msgid "View"
 msgstr "View"
 
-#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:184
+#: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:187
 msgid "View {remainingCount} more suggestions"
 msgstr "View {remainingCount} more suggestions"
 
@@ -12990,7 +12994,7 @@ msgstr "View Mode"
 msgid "View suggestions"
 msgstr "View suggestions"
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:75
+#: src/pages/settings/components/license/LicenseSettings.tsx:79
 msgid "View trial usage summary and upgrade to production."
 msgstr "View trial usage summary and upgrade to production."
 
@@ -13190,7 +13194,7 @@ msgstr "Workflow started but did not return any data."
 #: src/layouts/app/components/sidebar/Sidebar.tsx:26
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:80
 #: src/pages/portal/components/PortalHome.tsx:275
-#: src/pages/settings/components/license/LicenseStatsRow.tsx:25
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:34
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129
 #: src/pages/settings/components/PortalConfiguration.tsx:88
 #: src/pages/settings/components/PortalConfiguration.tsx:486
@@ -13303,11 +13307,11 @@ msgstr "your workspace"
 msgid "Your workspace has been upgraded using the \"{optionTitle}\" strategy. Refresh to see your production workspace."
 msgstr "Your workspace has been upgraded using the \"{optionTitle}\" strategy. Refresh to see your production workspace."
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:57
+#: src/pages/settings/components/license/LicenseSettings.tsx:61
 msgid "Your workspace is now on Production."
 msgstr "Your workspace is now on Production."
 
-#: src/pages/settings/components/license/LicenseSettings.tsx:97
+#: src/pages/settings/components/license/LicenseSettings.tsx:101
 msgid "Zero-Downtime Transition"
 msgstr "Zero-Downtime Transition"
 
