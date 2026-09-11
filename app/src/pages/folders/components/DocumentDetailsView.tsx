@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Loader2, PenLine, ScanText } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ExternalLink, Loader2, PenLine, ScanText } from 'lucide-react'
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
@@ -29,6 +29,7 @@ import {
   getRepositoryById,
   persistEditedDocumentToRepository,
   type RepositoryFieldDto,
+  type UploadArchiveResponse,
 } from '@/api/v6/folder/folder'
 import CollaboraEditor from './CollaboraEditor'
 import authUserStore from '@/stores/authUserStore'
@@ -406,6 +407,8 @@ export function DocumentDetailsView({
   const [isEditingDoc, setIsEditingDoc] = useState(false)
   /** Bump after a successful sign so the details viewer reloads the signed file. */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0)
+  /** Bump to reload document details and metadata from the backend. */
+  const [detailsRefreshKey, setDetailsRefreshKey] = useState(0)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [isSigning, setIsSigning] = useState(Boolean(forceSigning))
@@ -821,7 +824,7 @@ export function DocumentDetailsView({
     return () => {
       mounted = false
     }
-  }, [repositoryId, id, inviteToken, invitePreview?.fileName, t])
+  }, [repositoryId, id, inviteToken, invitePreview?.fileName, t, detailsRefreshKey])
 
   useEffect(() => {
     let mounted = true
@@ -1306,6 +1309,21 @@ export function DocumentDetailsView({
     return Object.keys(metadata).length ? metadata : labelValues
   }
 
+  const handleOpenFile = useCallback(
+    (targetItemId: string, targetRepoId: string) => {
+      if (targetItemId && targetItemId !== id) {
+        onOpenRelatedDocument?.({
+          id: targetItemId,
+          repositoryId: targetRepoId,
+        })
+      } else {
+        setDetailsRefreshKey((prev) => prev + 1)
+        setPreviewRefreshKey((prev) => prev + 1)
+      }
+    },
+    [id, onOpenRelatedDocument],
+  )
+
   const handleCollaboraSave = async (blob: Blob) => {
     setIsEditingDoc(false)
 
@@ -1342,11 +1360,38 @@ export function DocumentDetailsView({
         variant: 'error',
       })
     } else {
+      const responsePayload = (
+        Array.isArray(resData) ? resData[0] : (resData?.data || resData)
+      ) as UploadArchiveResponse | undefined
+
+      const savedItemId = String(responsePayload?.itemId || id).trim()
+      const savedFileName = String(responsePayload?.fileName || fileName).trim()
+      const savedVersion = responsePayload?.fileVersion
+
       showToast({
-        message: t`Document updated successfully.`,
+        autoClose: 10000,
+        message: (
+          <div className='flex flex-col gap-1.5 py-0.5 text-[13px]'>
+            <span className='leading-snug text-gray-12'>
+              {savedVersion !== undefined && savedVersion !== null
+                ? t`${savedFileName} created as version ${savedVersion}.`
+                : t`${savedFileName} updated successfully.`}
+            </span>
+            <button
+              type='button'
+              className='inline-flex items-center gap-1 text-[12px] font-semibold text-primary-10 hover:text-primary-11 hover:underline cursor-pointer w-fit transition-colors'
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenFile(savedItemId, repositoryId)
+              }}
+            >
+              <span>{t`Open file`}</span>
+              <ExternalLink size={12} className='shrink-0' />
+            </button>
+          </div>
+        ),
         variant: 'success',
       })
-      setPreviewRefreshKey((previous) => previous + 1)
     }
   }
 
