@@ -53,6 +53,32 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/v5': {
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/v5/, ''),
+        secure: false,
+        target: 'https://app.ezofis.com',
+      },
+      '/css': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://app.ezofis.com',
+      },
+      '/js': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://app.ezofis.com',
+      },
+      '/img': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://app.ezofis.com',
+      },
+      '/fonts': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://app.ezofis.com',
+      },
       // Tailscale GPU OpenAI-compatible API (avoids browser CORS in dev)
       '/qwen-proxy': {
         changeOrigin: true,

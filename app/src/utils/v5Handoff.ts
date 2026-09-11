@@ -2,15 +2,17 @@ import type { V5Identity } from '@/api/v5Auth'
 import { setToLocalStorage } from './local-storage'
 
 /**
- * Computes the V5 Application Base URL depending on environment
+ * Computes the V5 Application Base URL for Reverse Proxy Subpath (/v5)
  */
 export const getV5BaseUrl = (): string => {
   if (import.meta.env.VITE_V5_APP_URL) {
     return import.meta.env.VITE_V5_APP_URL
   }
 
-  // Default to live V5 app domain (https://app.ezofis.com) until server reverse proxy is active
-  return 'https://app.ezofis.com'
+  const origin = globalThis.location?.origin || ''
+
+  // Option 1 Subpath Reverse Proxy: cloud.ezofis.com/v5 or localhost:3000/v5
+  return `${origin}/v5`
 }
 
 /**
@@ -36,17 +38,20 @@ export interface V5HandoffOptions {
   session?: any
 }
 
-/**
- * Persists V5 identity & session state to localStorage and performs redirect/handoff
- */
 export const performV5Handoff = ({
   identity,
   redirectPath,
   session,
 }: V5HandoffOptions): void => {
   try {
-    // 1. Store identity and session in localStorage for V5 Vue router guard
-    setToLocalStorage(identity, 'identity')
+    // 1. Store raw Base64 identity string in localStorage for V5 Vue router guard
+    const rawIdentity = (identity as any)?.rawTokenData
+    if (rawIdentity && typeof rawIdentity === 'string') {
+      window.localStorage.setItem('identity', rawIdentity)
+    } else {
+      setToLocalStorage(identity, 'identity')
+    }
+
     if (session) {
       setToLocalStorage(session, 'session')
     }
@@ -54,14 +59,15 @@ export const performV5Handoff = ({
     // 2. Set version cookie for reverse proxy routing
     document.cookie = 'ezofis_app_version=v5; path=/; max-age=2592000; SameSite=Lax'
 
-    // 3. Determine target URL
+    // 3. Subpath Navigation with token parameter: cloud.ezofis.com/v5/#/repositories/browse?token=...
     const baseUrl = getV5BaseUrl()
     const landingHash = redirectPath || determineV5LandingHash(session)
-    const targetUrl = `${baseUrl}/${landingHash}`
+    const tokenQuery = rawIdentity ? `?token=${encodeURIComponent(rawIdentity)}` : ''
+    const targetUrl = `${baseUrl}/${landingHash}${tokenQuery}`
 
-    console.log('Redirecting to V5 application:', targetUrl)
+    console.log('Option 1 Subpath Navigation:', targetUrl)
 
-    // 4. Redirect window
+    // 4. Perform top-level window redirection
     globalThis.location.href = targetUrl
   } catch (err) {
     console.error('Failed to execute V5 handoff:', err)
