@@ -39,7 +39,26 @@ import '@react-pdf-viewer/search/lib/styles/index.css'
 import { getMockDB, startSupplierVerification } from '@/services/mockBackend'
 import authUserStore from '@/stores/authUserStore'
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
+import dayjs from 'dayjs'
 import cn from '@/utils/cn'
+import { parseUtcDate } from '@/utils/utcDate'
+
+const formatPaymentSyncTime = (dateStr: any): string => {
+  if (!dateStr) return '2 min ago'
+  const parsed = parseUtcDate(dateStr)
+  if (!parsed) return String(dateStr)
+  const ms = Math.abs(Date.now() - parsed.getTime())
+  if (Number.isNaN(ms)) return String(dateStr)
+  const secs = Math.floor(ms / 1000)
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins} min ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} hr${hours > 1 ? 's' : ''} ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`
+  return dayjs(parsed).format('DD-MMM-YYYY hh:mm A')
+}
 import {
   buildFieldMetaMap,
   findPreferredLineItemsTable,
@@ -823,6 +842,7 @@ const AnalysisCard = ({
   status,
   statusContent, // NEW: optional node that replaces the plain status badge
   statusType = 'success',
+  subtitle,
   title,
   value,
   onClick,
@@ -877,6 +897,11 @@ const AnalysisCard = ({
             title={typeof value === 'string' ? value : undefined}
           >
             {value || '---'}
+          </div>
+        )}
+        {subtitle && (
+          <div className='text-[10px] font-normal leading-none text-[var(--gray-10)] mt-0.5'>
+            {subtitle}
           </div>
         )}
       </div>
@@ -1649,6 +1674,51 @@ const Overview = (props: any) => {
       Object.values(formModel).some(hasMeaningfulScalarValue)
     return !!isCurrentlyProcessing && !hasData
   }, [isCurrentlyProcessing, formModel])
+
+  const isRequestCompleted = useMemo(() => {
+    const rawStatus = String(
+      selectedItem?.status ||
+        selectedItem?.workflowStatus ||
+        selectedItem?.stage ||
+        agentData?.status ||
+        '',
+    )
+      .toLowerCase()
+      .trim()
+
+    const hasCompletedAt = Boolean(
+      selectedItem?.completedAtUtc ||
+        agentData?.completedAtUtc ||
+        matchingProc?.completedAtUtc ||
+        selectedItem?.completedAt ||
+        agentData?.completedAt,
+    )
+
+    return (
+      hasCompletedAt ||
+      rawStatus === 'completed' ||
+      rawStatus === 'approved' ||
+      rawStatus === 'paid' ||
+      rawStatus === 'closed' ||
+      rawStatus === 'done' ||
+      props.isCompleted === true ||
+      selectedItem?.isCompleted === true ||
+      Boolean(agentData?.paymentStatus) ||
+      Boolean(agentData?.payment_status)
+    )
+  }, [selectedItem, agentData, matchingProc, props.isCompleted])
+
+  const formattedPaymentSyncTime = useMemo(() => {
+    const rawDate =
+      selectedItem?.completedAtUtc ||
+      agentData?.completedAtUtc ||
+      matchingProc?.completedAtUtc ||
+      selectedItem?.completedAt ||
+      agentData?.completedAt ||
+      agentData?.paymentSyncTime
+
+    return formatPaymentSyncTime(rawDate)
+  }, [selectedItem, agentData, matchingProc])
 
   const getFieldScore = (key: string) => {
     const normalizeName = (name: string) => {
@@ -3462,6 +3532,26 @@ const Overview = (props: any) => {
                           setActiveDetailView('back_order')
                           setActiveBackOrderTab('current')
                         }}
+                      />
+                    ) : isRequestCompleted ? (
+                      <AnalysisCard
+                        align='right'
+                        icon={CreditCard}
+                        isSelected={activeDetailView === 'payment_terms'}
+                        statusContent={
+                          <div className='flex items-center gap-1 rounded-full bg-[var(--purple-1)] border border-[var(--purple-3)] px-2 py-0.5 text-[9px] font-semibold text-[var(--purple-9)]'>
+                            <span>{agentData?.paymentSyncStatus || 'Synced'}</span>
+                            <span className='size-1.5 rounded-full bg-[var(--purple-9)]' />
+                          </div>
+                        }
+                        statusType='success'
+                        title={t`Payment Status`}
+                        value={agentData?.paymentStatus || agentData?.payment_status || 'Paid'}
+                        subtitle={
+                          agentData?.paymentSyncSubtitle ||
+                          `via ${agentData?.erpSystem || (agentData?.poMasterSourceType === 'quickbooks' ? 'QuickBooks' : 'SAP')} · ${formattedPaymentSyncTime}`
+                        }
+                        onClick={() => setActiveDetailView('payment_terms')}
                       />
                     ) : (
                       <AnalysisCard

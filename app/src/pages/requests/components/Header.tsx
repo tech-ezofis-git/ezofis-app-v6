@@ -7,6 +7,9 @@ import Tab from '@/components/base/tabs/Tab'
 import Tabs from '@/components/base/tabs/Tabs'
 import cn from '@/utils/cn'
 import type { IRequestMeta } from '../types'
+
+export type RequestTabDescriptor = { label: string; value: string }
+
 interface Props {
   // New Props
   activeTab: string
@@ -25,8 +28,8 @@ interface Props {
   }[]
   exceptionsCount?: number
   hideListTabs?: boolean
-  isAccountsPayable?: boolean
   metaData?: IRequestMeta
+  tabs?: RequestTabDescriptor[]
   setActiveTab: (val: string) => void
   setWorkflow: React.Dispatch<React.SetStateAction<Option | null>>
 }
@@ -37,9 +40,9 @@ const Header = ({
   allWorkflows,
   exceptionsCount,
   hideListTabs = false,
-  isAccountsPayable = true,
   isLoading,
   metaData,
+  tabs = [],
   workflow,
   setActiveTab,
   setWorkflow,
@@ -51,6 +54,26 @@ const Header = ({
   const sentCount = Number(metaData?.sentCount ?? 0)
   const completedCount = Number(metaData?.completedCount ?? 0)
   const resolvedExceptionsCount = exceptionsCount ?? 0
+
+  // Only the first 3 tabs (by position) are wired to real data - Inbox/Sent
+  // /Closed (or Exceptions/Processed for AP workflows). Anything past that
+  // has no data source yet, so it always shows a 0 count.
+  const countFor = (value: string) => {
+    switch (value) {
+      case 'Closed':
+        return completedCount
+      case 'Exceptions':
+        return resolvedExceptionsCount
+      case 'Inbox':
+        return inboxCount
+      case 'Processed':
+        return processedCount
+      case 'Sent':
+        return sentCount
+      default:
+        return 0
+    }
+  }
 
   console.log(allWorkflows)
 
@@ -70,45 +93,15 @@ const Header = ({
           value={activeTab}
           onChange={(val) => setActiveTab(val as string)}
         >
-          {isAccountsPayable ? (
-            <>
-              <Tab
-                label={isLoading ? t`Invoices` : t`Invoices (${inboxCount})`}
-                value='Inbox'
-              />
-              <Tab
-                value='Exceptions'
-                label={
-                  isLoading
-                    ? t`Exceptions`
-                    : t`Exceptions (${resolvedExceptionsCount})`
-                }
-              />
-              <Tab
-                value='Processed'
-                label={
-                  isLoading ? t`Processed` : t`Processed (${processedCount})`
-                }
-              />
-            </>
-          ) : (
-            <>
-              <Tab
-                label={isLoading ? t`Inbox` : t`Inbox (${inboxCount})`}
-                value='Inbox'
-              />
-              <Tab
-                label={isLoading ? t`Sent` : t`Sent (${sentCount})`}
-                value='Sent'
-              />
-              <Tab
-                value='Closed'
-                label={
-                  isLoading ? t`Completed` : t`Completed (${completedCount})`
-                }
-              />
-            </>
-          )}
+          {tabs.map((tab) => (
+            <Tab
+              key={tab.value}
+              value={tab.value}
+              label={
+                isLoading ? tab.label : `${tab.label} (${countFor(tab.value)})`
+              }
+            />
+          ))}
         </Tabs>
       )}
 

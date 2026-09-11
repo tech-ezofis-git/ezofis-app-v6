@@ -124,6 +124,42 @@ const RequestsPage = () => {
     [rawWorkflowData],
   )
 
+  // The Requests-page tabs configured for this workflow (Workflow Settings
+  // -> Request Views). Only the first 3 (by position) are wired to real
+  // data - they map positionally to the Inbox/Sent/Completed (or
+  // Invoices/Exceptions/Processed for AP) buckets regardless of their
+  // custom label. Anything beyond that has no data source yet. An empty
+  // config means "unconfigured" - fall back to the historical defaults.
+  const requestTabs = useMemo(() => {
+    const bucketKeys = isAccountsPayable
+      ? ['Inbox', 'Exceptions', 'Processed']
+      : ['Inbox', 'Sent', 'Closed']
+    const defaultLabels = isAccountsPayable
+      ? [t`Invoices`, t`Exceptions`, t`Processed`]
+      : [t`Inbox`, t`Sent`, t`Completed`]
+
+    const raw = rawWorkflowData?.workflowJson?.settings?.general?.requestTabs
+    const configured = Array.isArray(raw) ? raw : []
+
+    if (!configured.length) {
+      return bucketKeys.map((value, index) => ({
+        label: defaultLabels[index],
+        value,
+      }))
+    }
+
+    return configured.map((tabConfig: any, index: number) => ({
+      label:
+        String(tabConfig?.label || '').trim() ||
+        defaultLabels[index] ||
+        `Tab ${index + 1}`,
+      value:
+        index < bucketKeys.length
+          ? bucketKeys[index]
+          : `custom-${tabConfig?.id ?? index}`,
+    }))
+  }, [rawWorkflowData, isAccountsPayable, t])
+
   const navigate = useNavigate()
 
   const [page, setPage] = useState(storedState?.page ?? 1)
@@ -685,18 +721,16 @@ const RequestsPage = () => {
     setRequestListTab(activeTab)
   }, [])
 
-  // Generic workflows use Inbox/Sent/Closed tabs; AP workflows use
-  // Inbox/Exceptions/Processed. If the workflow type changes while a tab
-  // that doesn't exist for the new type is active, fall back to Inbox.
+  // If the configured tab list changes (workflow switch, or its Request
+  // Views setting changed) while a tab that's no longer in the list is
+  // active, fall back to the first configured tab.
   useEffect(() => {
-    const validTabs = isAccountsPayable
-      ? ['Inbox', 'Exceptions', 'Processed']
-      : ['Inbox', 'Sent', 'Closed']
-    if (!validTabs.includes(activeTab)) {
-      handleTabChange('Inbox')
+    const validValues = requestTabs.map((tab) => tab.value)
+    if (validValues.length && !validValues.includes(activeTab)) {
+      handleTabChange(validValues[0])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAccountsPayable])
+  }, [requestTabs])
 
   // Keep Inbox / Sent / Completed badges in sync with the list that just
   // loaded. instance-count is fetched on workflow load and tab change, but
@@ -844,9 +878,9 @@ const RequestsPage = () => {
               activeTab={activeTab}
               allWorkflows={allWorkflow}
               exceptionsCount={inboxResult?.exceptionsCount}
-              isAccountsPayable={isAccountsPayable}
               isLoading={isLoading}
               metaData={metaData}
+              tabs={requestTabs}
               workflow={workflow}
               actionButtons={
                 canCreateNewRequest

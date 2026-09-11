@@ -54,10 +54,9 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
       firstValue as (Option & { rightIconKey?: string }) | null
     )?.rightIconKey
 
-    const trailingTypeIcon =
-      selectedRightIconKey?.includes(':') || selectedIconKey?.includes(':')
-        ? selectedRightIconKey || selectedIconKey
-        : undefined
+    const trailingTypeIcon = selectedRightIconKey?.includes(':')
+      ? selectedRightIconKey
+      : undefined
 
     const _classNames = {
       description: classNames.description,
@@ -146,11 +145,8 @@ const ComboboxTarget = forwardRef<HTMLButtonElement, Props>(
           )
         }
 
-        // Prefer rightIconKey in the chevron cluster; only show leading iconKey when
-        // it is distinct from the trailing type icon.
-        const showLeadingIcon =
-          Boolean(selectedIconKey?.includes(':')) &&
-          selectedIconKey !== trailingTypeIcon
+        // Show leading iconKey on the left side of selected item
+        const showLeadingIcon = Boolean(selectedIconKey?.includes(':'))
 
         return (
           <div className='flex min-w-0 items-center gap-2'>

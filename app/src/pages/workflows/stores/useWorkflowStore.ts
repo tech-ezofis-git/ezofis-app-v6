@@ -8,6 +8,13 @@ import {
 
 export type PrefixSegment = { id: string; key: string; value: string | number }
 
+// A user-named Requests-page tab. Only the first 3 entries (by position)
+// are wired to real data today - position 0/1/2 map to the workflow's
+// Inbox/Sent/Completed (or Invoices/Exceptions/Processed for AP) buckets
+// regardless of what they're labelled; anything past index 2 has no data
+// source yet and renders empty on the Requests page.
+export type RequestTabConfig = { id: string; label: string }
+
 type AddMenuState = {
   edgeId: string | null
   isOpen: boolean
@@ -74,6 +81,7 @@ type Store = {
   loadedNodes: Node[] | null
   prefixSegments: PrefixSegment[]
   previewValues: string[]
+  requestTabs: RequestTabConfig[]
   selectedEdge: Edge | null
   selectedNode: Node | null
   workflowDescription: string
@@ -99,6 +107,7 @@ type Store = {
   setKanbanSettings: (cards: KanbanCardSetting[]) => void
   setPrefixSegments: (segments: PrefixSegment[]) => void
   setPreviewValues: (values: string[]) => void
+  setRequestTabs: (tabs: RequestTabConfig[]) => void
   setWorkflowDescription: (description: string) => void
   setWorkflowId: (id: number | null) => void
   setWorkflowName: (name: string) => void
@@ -128,6 +137,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   loadedNodes: null,
   prefixSegments: defaultPrefixSegments,
   previewValues: [],
+  requestTabs: [],
   selectedEdge: null,
   selectedNode: null,
   workflowDescription: '',
@@ -172,6 +182,30 @@ const useWorkflowStore = create<Store>()((set) => ({
       previewValues = []
     }
 
+    let requestTabs: RequestTabConfig[] = []
+    try {
+      const rawRequestTabs = legacyJson.settings?.general?.requestTabs
+      const parsed = Array.isArray(rawRequestTabs)
+        ? rawRequestTabs
+        : typeof rawRequestTabs === 'string'
+          ? JSON.parse(rawRequestTabs)
+          : []
+      requestTabs = Array.isArray(parsed)
+        ? parsed
+            .map((entry, index) => {
+              const label = String(entry?.label ?? '').trim()
+              if (!label) return null
+              return {
+                id: String(entry?.id ?? `tab-${index + 1}`),
+                label,
+              }
+            })
+            .filter((tab): tab is RequestTabConfig => Boolean(tab))
+        : []
+    } catch {
+      requestTabs = []
+    }
+
     const rawStatus =
       apiData?.publishOption ||
       apiData?.status ||
@@ -211,6 +245,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       loadedNodes: nodes,
       prefixSegments,
       previewValues,
+      requestTabs,
       workflowDescription,
       workflowId: legacyJson.id || apiData?.id || null,
       workflowName,
@@ -238,6 +273,7 @@ const useWorkflowStore = create<Store>()((set) => ({
       loadedNodes: null,
       prefixSegments: defaultPrefixSegments,
       previewValues: [],
+      requestTabs: [],
       selectedEdge: null,
       selectedNode: null,
       workflowDescription: '',
@@ -280,6 +316,7 @@ const useWorkflowStore = create<Store>()((set) => ({
   setKanbanSettings: (cards) => set({ kanbanSettings: cards }),
   setPrefixSegments: (segments) => set({ prefixSegments: segments }),
   setPreviewValues: (values) => set({ previewValues: values }),
+  setRequestTabs: (tabs) => set({ requestTabs: tabs }),
   setWorkflowDescription: (description) =>
     set({ workflowDescription: description }),
   setWorkflowId: (workflowId) => set({ workflowId }),

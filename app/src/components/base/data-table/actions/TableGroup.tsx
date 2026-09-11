@@ -22,7 +22,12 @@ const TableGroup = <TData,>({ table }: Props<TData>) => {
       (column) =>
         !!column.accessorFn && column.getCanGroup() && !column.getIsGrouped(),
     )
-  const grouped = groupState.map((column) => table.getColumn(column)!)
+  // A grouped column id can outlive the columns it came from (e.g. it was
+  // persisted from a different workflow/table shape) — drop anything that
+  // no longer resolves instead of crashing on it.
+  const grouped = groupState
+    .map((column) => table.getColumn(column))
+    .filter((column): column is NonNullable<typeof column> => Boolean(column))
 
   const _rightSection = groupState.length ? (
     <Badge color='gray' label={String(groupState.length)} />

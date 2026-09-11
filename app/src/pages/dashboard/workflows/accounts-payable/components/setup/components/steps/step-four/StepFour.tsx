@@ -108,12 +108,14 @@ const applyMailInitiateConnector = (
     : []
 
   for (const block of blocks) {
-    if (block?.type !== 'START' || !block.settings?.mailInitiate) continue
+    if (block?.type !== 'START') continue
+    if (!block.settings) block.settings = {}
 
     block.settings.mailInitiate = {
-      ...block.settings.mailInitiate,
-      connectorId,
-      connectorType,
+      connectorId: '',
+      connectorType: '',
+      ...(block.settings.mailInitiate || {}),
+      ...(connectorType ? { connectorId, connectorType } : {}),
     }
   }
 

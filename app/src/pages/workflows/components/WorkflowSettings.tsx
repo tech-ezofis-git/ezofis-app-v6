@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
 import type { Node } from '@xyflow/react'
+import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import { getRepositoriesQueryOptions } from '@/api/folders/queries'
@@ -18,6 +18,7 @@ import { normalizeFieldKey } from '@/pages/folders/utils/repositoryFieldUtils'
 import type { PrefixSegment } from '../stores/useWorkflowStore'
 import useWorkflowStore from '../stores/useWorkflowStore'
 import { generateId } from '../utils/generateId'
+import { NODE_TOOL_TYPE, normalizeNodeToolType } from '../utils/nodeToolTypes'
 import {
   CURRENT_DATE_OPTIONS,
   getFormatPreview,
@@ -29,8 +30,9 @@ import {
   TOKEN_TYPE_OPTIONS,
   YEAR_OPTIONS,
 } from '../utils/prefixFormat'
-import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
 import SettingsSection from './settings/common/SettingsSection'
+import KanbanViewSettingsSection from './settings/KanbanViewSettingsSection'
+import RequestTabsSettingsSection from './settings/RequestTabsSettingsSection'
 
 type PreviewField = {
   key: string
@@ -47,6 +49,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
   const [openConfiguration, setOpenConfiguration] = useState(false)
   const [openRequestNumber, setOpenRequestNumber] = useState(false)
   const [openKanban, setOpenKanban] = useState(false)
+  const [openRequestViews, setOpenRequestViews] = useState(false)
 
   const {
     closeSettings,
@@ -57,6 +60,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     kanbanSettings,
     prefixSegments,
     previewValues,
+    requestTabs,
     workflowDescription,
     workflowName,
     workflowStatus,
@@ -66,6 +70,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setKanbanSettings,
     setPrefixSegments,
     setPreviewValues,
+    setRequestTabs,
     setWorkflowDescription,
     setWorkflowName,
     setWorkflowStatus,
@@ -117,7 +122,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
 
       const fields: PreviewField[] = []
       panels.forEach((panel: any) => {
-        ; (panel?.fields || []).forEach((field: any) => {
+        ;(panel?.fields || []).forEach((field: any) => {
           if (field.type === 'DIVIDER') return
           fields.push({
             key: String(field.name || field.id),
@@ -201,8 +206,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     setPrefixSegments(
       hasSeparator
         ? prefixSegments.map((s) =>
-          s.key === 'seperator' ? { ...s, value } : s,
-        )
+            s.key === 'seperator' ? { ...s, value } : s,
+          )
         : [{ id: generateId(), key: 'seperator', value }, ...prefixSegments],
     )
   }
@@ -241,6 +246,13 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
     )
   }
 
+  // AP workflows (built around an AP_AGENT node) default their Requests
+  // tabs to Invoices/Exceptions/Processed instead of Inbox/Sent/Completed.
+  const isAccountsPayable = nodes.some((node) => {
+    const data = (node.data || {}) as Record<string, unknown>
+    return normalizeNodeToolType(data.toolType) === NODE_TOOL_TYPE.AP_AGENT
+  })
+
   if (!isSettingsOpen) return null
 
   return (
@@ -269,10 +281,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
               <button
                 key={opt.id}
                 type='button'
-                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${active
+                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-all duration-200 ${
+                  active
                     ? 'bg-primary-9 text-white shadow-sm'
                     : 'text-gray-9 hover:bg-white/50 hover:text-gray-12'
-                  }`}
+                }`}
                 onClick={() => setWorkflowStatus(opt.id as any)}
               >
                 {opt.label}
@@ -336,11 +349,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             value={
               initiateUsing
                 ? {
-                  id: initiateUsing as any,
-                  name:
-                    initiateOptions.find((o: any) => o.id === initiateUsing)
-                      ?.name || '',
-                }
+                    id: initiateUsing as any,
+                    name:
+                      initiateOptions.find((o: any) => o.id === initiateUsing)
+                        ?.name || '',
+                  }
                 : null
             }
             onChange={(val: any) =>
@@ -357,11 +370,11 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             value={
               folder
                 ? {
-                  id: folder,
-                  name:
-                    folderOptions.find((f: any) => f.id == folder)?.name ||
-                    '',
-                }
+                    id: folder,
+                    name:
+                      folderOptions.find((f: any) => f.id == folder)?.name ||
+                      '',
+                  }
                 : null
             }
             onChange={(val: any) => setFolder(val?.id || null)}
@@ -376,10 +389,10 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             value={
               form
                 ? {
-                  id: form,
-                  name:
-                    workflowForms.find((f: any) => f.id == form)?.name || '',
-                }
+                    id: form,
+                    name:
+                      workflowForms.find((f: any) => f.id == form)?.name || '',
+                  }
                 : null
             }
             onChange={(val: any) => setForm(val?.id || null)}
@@ -418,9 +431,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             label='Separator'
             options={SEPARATOR_OPTIONS}
             placeholder='Select'
-            value={
-              SEPARATOR_OPTIONS.find((o) => o.id === separator) || null
-            }
+            value={SEPARATOR_OPTIONS.find((o) => o.id === separator) || null}
             onChange={(val) => setSeparator(String(val?.id || '-'))}
           />
 
@@ -464,9 +475,8 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                       options={TOKEN_TYPE_OPTIONS}
                       placeholder='Select'
                       value={
-                        TOKEN_TYPE_OPTIONS.find(
-                          (o) => o.id === segment.key,
-                        ) || null
+                        TOKEN_TYPE_OPTIONS.find((o) => o.id === segment.key) ||
+                        null
                       }
                       onChange={(val) =>
                         updateToken(segment.id, {
@@ -531,9 +541,7 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
                         )}
                         onChange={(options) =>
                           updateToken(segment.id, {
-                            value: options
-                              .map((o) => String(o.id))
-                              .join(','),
+                            value: options.map((o) => String(o.id)).join(','),
                           })
                         }
                       />
@@ -605,6 +613,20 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             cards={kanbanSettings}
             nodes={nodes}
             onChange={setKanbanSettings}
+          />
+        </SettingsSection>
+
+        <SettingsSection
+          icon='lucide:layout-list'
+          isOpen={openRequestViews}
+          title='Manage Request Tabs'
+          variant='premium'
+          onToggle={() => setOpenRequestViews(!openRequestViews)}
+        >
+          <RequestTabsSettingsSection
+            isAccountsPayable={isAccountsPayable}
+            tabs={requestTabs}
+            onChange={setRequestTabs}
           />
         </SettingsSection>
       </div>

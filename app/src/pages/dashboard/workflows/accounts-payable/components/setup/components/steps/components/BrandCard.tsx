@@ -1,4 +1,5 @@
 import { motion } from 'motion/react'
+import Skeleton from '@/components/base/Skeleton'
 import Icon from '@/components/base/icon/Icon'
 import cn from '@/utils/cn'
 
@@ -93,16 +94,7 @@ const BrandCard = ({
         </div>
       </div>
       {loading ? (
-        <motion.div
-          animate={{ opacity: 1, scale: 1 }}
-          className='flex size-5 shrink-0 items-center justify-center'
-          initial={{ opacity: 0, scale: 0.5 }}
-        >
-          <Icon
-            className='size-5 animate-spin text-gray-10'
-            name='tabler:loader-2'
-          />
-        </motion.div>
+        <Skeleton className='h-4 w-12 rounded' />
       ) : (
         isConnected && (
           <motion.div

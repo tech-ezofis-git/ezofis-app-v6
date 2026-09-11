@@ -15,6 +15,8 @@ import {
   suggestDashboardPrompt,
 } from '@/api/v6/dashboard'
 import Button from '@/components/base/button/Button'
+import Skeleton from '@/components/base/Skeleton'
+import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
 import showToast from '@/components/base/toast/showToast'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
 import DashboardHtmlPreview from '@/pages/dashboard/components/DashboardHtmlPreview'
@@ -546,11 +548,17 @@ export default function DashboardApiBuilder({
 
   if (isLoadingSaved) {
     return (
-      <div className='mx-auto flex max-w-6xl flex-col items-center justify-center p-16'>
-        <RefreshCw className='mb-3 size-8 animate-spin text-primary-9' />
-        <p className='text-13 font-medium text-text-secondary'>
-          {t`Loading saved dashboard...`}
-        </p>
+      <div className='mx-auto flex max-w-6xl flex-col gap-6 p-6'>
+        <div className='space-y-2'>
+          <Skeleton className='h-6 w-48' />
+          <Skeleton className='h-4 w-72' />
+        </div>
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+          <SkeletonCard height='h-28' />
+          <SkeletonCard height='h-28' />
+          <SkeletonCard height='h-28' />
+        </div>
+        <SkeletonCard height='h-80' />
       </div>
     )
   }
@@ -612,12 +620,12 @@ export default function DashboardApiBuilder({
             {isGeneratingDesc ? (
               <div className='space-y-2.5'>
                 <div className='flex items-center gap-2 text-12 font-medium text-primary-9'>
-                  <RefreshCw className='size-3.5 animate-spin' />
+                  <span className='h-2 w-2 animate-ping rounded-full bg-primary-9' />
                   <span>{t`Generating description…`}</span>
                 </div>
-                <div className='h-3 w-full animate-pulse rounded bg-primary-9/10' />
-                <div className='h-3 w-5/6 animate-pulse rounded bg-primary-9/10' />
-                <div className='h-3 w-2/3 animate-pulse rounded bg-primary-9/10' />
+                <Skeleton className='h-3.5 w-full' />
+                <Skeleton className='h-3.5 w-5/6' />
+                <Skeleton className='h-3.5 w-2/3' />
               </div>
             ) : (
               <textarea
@@ -759,11 +767,17 @@ export default function DashboardApiBuilder({
           </div>
 
           {isGeneratingHtml ? (
-            <div className='my-2 flex flex-col items-center justify-center rounded-[16px] border border-primary-9/30 bg-primary-3/10 p-10 text-center shadow-xs'>
-              <RefreshCw className='mb-3 size-8 animate-spin text-primary-9' />
-              <h4 className='text-14 font-semibold text-text-primary'>
-                {t`Loading live dashboard data...`}
-              </h4>
+            <div className='my-2 flex flex-col gap-4 rounded-[16px] border border-primary-9/20 bg-surface p-6 shadow-xs'>
+              <div className='flex items-center gap-2 text-13 font-medium text-primary-9'>
+                <span className='h-2 w-2 animate-ping rounded-full bg-primary-9' />
+                <span>{t`Loading live dashboard data...`}</span>
+              </div>
+              <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+                <SkeletonCard height='h-24' />
+                <SkeletonCard height='h-24' />
+                <SkeletonCard height='h-24' />
+              </div>
+              <SkeletonCard height='h-64' />
             </div>
           ) : html ? (
             <DashboardHtmlPreview html={html} title={t`Dashboard preview`} />

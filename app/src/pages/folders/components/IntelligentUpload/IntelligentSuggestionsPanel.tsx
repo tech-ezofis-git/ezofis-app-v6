@@ -58,7 +58,7 @@ export default function IntelligentSuggestionsPanel({
   }, [candidateRepositories, isManualOverride, selectedRepositoryId])
 
   return (
-    <AnimateFadeIn className='mt-4 space-y-4 rounded-xl border border-border-default bg-surface-secondary/60 p-4'>
+    <AnimateFadeIn className='mt-3.5 space-y-3.5 rounded-xl border border-border-default bg-surface-secondary/60 p-3.5'>
       {/* Header bar */}
       <div className='space-y-2 border-b border-border-default pb-3'>
         <div className='flex items-center gap-2.5'>
@@ -84,14 +84,14 @@ export default function IntelligentSuggestionsPanel({
               {t`Detected keywords:`}
             </span>
             {keywords.map((kw) => (
-              <Badge className='text-10' color='purple' key={kw} label={kw} />
+              <Badge className='text-[10px]' color='purple' key={kw} label={kw} />
             ))}
           </div>
         )}
       </div>
 
       {/* Suggestion Cards Grid - equal height via items-stretch */}
-      <div className='grid grid-cols-1 items-stretch gap-3.5 md:grid-cols-2 lg:grid-cols-3'>
+      <div className='grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 lg:grid-cols-3'>
         {visibleSuggestions.map((suggestion) => {
           const isSelected = selectedRepositoryId === suggestion.repositoryId
           const confidenceColor = getConfidenceColor(suggestion.confidence)
@@ -103,7 +103,7 @@ export default function IntelligentSuggestionsPanel({
               key={suggestion.repositoryId}
               value={suggestion.repositoryId}
               className={cn(
-                'group relative flex h-full cursor-pointer flex-col justify-between border p-3.5 transition-all duration-200',
+                'group relative flex h-full cursor-pointer flex-col justify-between border p-3 transition-all duration-200',
                 'hover:-translate-y-0.5 hover:border-accent-primary hover:shadow-md active:scale-[0.99]',
                 isSelected
                   ? 'ring-1.5 border-accent-primary bg-accent-soft/30 shadow-xs ring-accent-primary'
@@ -113,7 +113,7 @@ export default function IntelligentSuggestionsPanel({
             >
               <div className='flex h-full flex-col justify-between gap-3'>
                 {/* Top Section */}
-                <div className='space-y-2.5'>
+                <div className='space-y-2'>
                   <div className='flex items-start justify-between gap-2'>
                     <div className='flex min-w-0 flex-1 items-start gap-2'>
                       <div className='pt-0.5'>
@@ -132,11 +132,14 @@ export default function IntelligentSuggestionsPanel({
                     <div className='shrink-0'>
                       <RingProgress
                         sections={[{ color: confidenceColor, value: percentage }]}
-                        size={50}
-                        thickness={4.5}
+                        size={46}
+                        thickness={4}
                         roundCaps
                         label={
-                          <div className='text-10 text-center font-bold text-text-primary'>
+                          <div
+                            className='text-center font-semibold text-text-primary leading-none'
+                            style={{ fontSize: '10px' }}
+                          >
                             {percentage}%
                           </div>
                         }
@@ -145,7 +148,7 @@ export default function IntelligentSuggestionsPanel({
                   </div>
 
                   {/* Reason */}
-                  <p className='line-clamp-2 text-11 leading-relaxed text-text-secondary'>
+                  <p className='line-clamp-2 min-h-[2rem] text-11 leading-relaxed text-text-secondary'>
                     {suggestion.reason}
                   </p>
                 </div>
@@ -154,7 +157,7 @@ export default function IntelligentSuggestionsPanel({
                 <div className='mt-auto flex min-h-[20px] flex-wrap items-end gap-1'>
                   {suggestion.keywords.map((kw) => (
                     <span
-                      className='text-10 rounded bg-surface-secondary px-1.5 py-0.5 font-normal text-text-secondary'
+                      className='text-[10px] rounded bg-surface-secondary px-1.5 py-0.5 font-normal text-text-secondary'
                       key={kw}
                     >
                       {kw}

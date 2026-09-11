@@ -176,10 +176,19 @@ export default function EmailSettingsPanel({
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
-      if (event.data.type !== 'CONNECTION_SUCCESS') return
+      if (!event.data || typeof event.data !== 'object') return
+      const data = event.data
+      const isOAuthSuccess =
+        data.type === 'CONNECTION_SUCCESS' ||
+        data.type === 'CONNECTOR_OAUTH_SUCCESS' ||
+        data.connectorOAuth === 'success' ||
+        Boolean(data.connectorId) ||
+        Boolean(data.connector)
+
+      if (!isOAuthSuccess) return
 
       const { connector, connectorId, email, label } =
-        parseOAuthConnectionSuccess(event.data)
+        parseOAuthConnectionSuccess(data)
 
       if (connectorId) {
         updateNodeData('connection', connectorId)
@@ -187,6 +196,11 @@ export default function EmailSettingsPanel({
         updateNodeData('connectionLabel', label || newConnectionName)
         updateNodeData('externalAccountEmail', email)
         updateNodeData('account', email || connector)
+        updateNodeData('mailInitiate', {
+          ...(nodeData.mailInitiate || {}),
+          connectorId: connectorId,
+          connectorType: provider.toUpperCase(),
+        })
         setIsConnecting(false)
         setIsCreatingConnection(false)
         setIsConnectionOpen(false)
@@ -276,28 +290,42 @@ export default function EmailSettingsPanel({
                           setNewConnectionName('')
                         }}
                       />
-                      <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-white py-1 shadow-xl duration-100'>
+                      <div className='animate-in fade-in zoom-in-95 absolute top-full left-0 z-50 mt-1 flex w-full flex-col overflow-hidden rounded-lg border border-gray-3 bg-white p-1 shadow-xl duration-100'>
                         {!isCreatingConnection ? (
                           <>
                             {allConnectionOptions.map((option) => (
                               <button
                                 key={option.value}
                                 className={cn(
-                                  'w-full px-3 py-2 text-left text-sm transition-colors',
+                                  'flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal transition-colors',
                                   String(nodeData.connection) === option.value
                                     ? 'bg-primary-1 font-normal text-primary-9'
-                                    : 'font-normal text-gray-13 hover:bg-gray-2',
+                                    : 'text-gray-12 hover:bg-gray-2',
                                 )}
+                                type='button'
                                 onClick={() => {
                                   updateNodeData('connection', option.value)
+                                  updateNodeData('connectorId', option.value)
                                   updateNodeData(
                                     'connectionLabel',
                                     option.label,
                                   )
+                                  updateNodeData('mailInitiate', {
+                                    ...(nodeData.mailInitiate || {}),
+                                    connectorId: option.value,
+                                    connectorType: provider.toUpperCase(),
+                                  })
                                   setIsConnectionOpen(false)
                                 }}
                               >
-                                {option.label}
+                                <Icon
+                                  className={cn(
+                                    'size-4 shrink-0',
+                                    provider === 'gmail' ? 'text-emerald-600' : 'text-blue-600',
+                                  )}
+                                  name={provider === 'gmail' ? 'brand:gmail' : 'brand:outlook'}
+                                />
+                                <span className='truncate text-13 font-normal'>{option.label}</span>
                               </button>
                             ))}
 
@@ -306,11 +334,12 @@ export default function EmailSettingsPanel({
                             )}
 
                             <button
-                              className='flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-normal text-primary-9 transition-colors hover:bg-primary-1'
+                              className='flex min-h-9 w-full items-center gap-2.5 rounded px-2.5 py-1.5 text-left text-13 font-normal text-primary-9 transition-colors hover:bg-primary-1'
+                              type='button'
                               onClick={() => setIsCreatingConnection(true)}
                             >
-                              <Icon className='h-4 w-4' name='lucide:plus' />
-                              Create Connection
+                              <Icon className='size-4 shrink-0' name='lucide:plus' />
+                              <span>Create Connection</span>
                             </button>
                           </>
                         ) : (

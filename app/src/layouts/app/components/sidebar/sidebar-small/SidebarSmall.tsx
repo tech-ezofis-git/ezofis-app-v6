@@ -58,7 +58,7 @@ const SidebarSmall = ({ menus }: Props) => {
                 'group relative flex size-8 items-center justify-center rounded-lg transition-all duration-200 hover:bg-gray-2 active:scale-95',
                 isDemoFormOpen && 'bg-gray-3',
               )}
-              onClick={openDemoForm}
+              onClick={() => openDemoForm()}
             >
               <AiBrandIcon
                 className='relative size-4'

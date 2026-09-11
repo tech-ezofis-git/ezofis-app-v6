@@ -426,6 +426,11 @@ export const importWorkflow = (
           ? block.settings.users.length > 0
           : undefined,
         label: nodeLabel,
+        mailInitiate:
+          block.settings?.mailInitiate ||
+          (nodeType === 'START' || isEmailStart || isManualStart
+            ? { connectorId: connectorId || '', connectorType: '' }
+            : undefined),
         mailContentEnabled,
         mailContentToMonitor,
         mailSubjectEnabled,

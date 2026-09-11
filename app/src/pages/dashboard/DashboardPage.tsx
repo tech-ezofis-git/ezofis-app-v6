@@ -7,7 +7,10 @@ import Button from '@/components/base/button/Button'
 import IconButton from '@/components/base/button/IconButton'
 import InputSelect from '@/components/base/inputs/InputSelect'
 import { AnimateFadeIn, AnimateSlideUp } from '@/components/common/animations'
+import Skeleton from '@/components/base/Skeleton'
+import SkeletonCard from '@/components/common/skeletons/SkeletonCard'
 import type { Option } from '@/types/option'
+import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import DashboardApiBuilder, {
   type SavedHtmlHeaderActions,
@@ -23,6 +26,7 @@ import DashboardCharts from './workflows/shared/components/Header'
 type DashboardSourceKind = 'repository' | 'workflow'
 
 type DashboardSourceOption = {
+  description?: string
   kind: DashboardSourceKind
   label: string
   /** Prefixed select id: `repository:<id>` or `workflow:<id>` */
@@ -35,6 +39,23 @@ const WORKFLOW_ICON = 'lucide:workflow'
 
 const DashboardPage = () => {
   const { t } = useLingui()
+  const session = authUserStore((state) => state.session)
+  const user = authUserStore((state) => state.user)
+
+  const userRole =
+    session?.role ||
+    (user as any)?.role ||
+    (session as any)?.roleName ||
+    (user as any)?.roleName ||
+    ''
+
+  const isAdminUser =
+    !userRole ||
+    userRole.toLowerCase() === 'admin' ||
+    userRole.toLowerCase() === 'adminuser' ||
+    userRole.toLowerCase() === 'admin user' ||
+    userRole.toLowerCase().includes('admin')
+
   const isActivatingAutomation = setupStore(
     (state) => state.isActivatingAutomation,
   )
@@ -84,7 +105,14 @@ const DashboardPage = () => {
                 item?.label ||
                 id,
             )
+            const rawDesc = item?.description || item?.details || item?.subtitle
+            const description = rawDesc
+              ? String(rawDesc)
+              : /accounts payable/i.test(label) || id === 'ap'
+                ? t`Connect email, ERP, and storage to start invoice processing.`
+                : t`Manage files and metadata in ${label} repository`
             return {
+              description,
               kind: 'repository' as const,
               label,
               selectId: `repository:${id}`,
@@ -98,12 +126,19 @@ const DashboardPage = () => {
           : []
         const workflowOptions: DashboardSourceOption[] = workflowItems
           .filter((workflow) => Number(workflow.status) === 1)
-          .map((workflow) => ({
-            kind: 'workflow' as const,
-            label: String(workflow.name || 'Untitled Workflow'),
-            selectId: `workflow:${workflow.id}`,
-            value: String(workflow.id),
-          }))
+          .map((workflow) => {
+            const rawDesc = workflow.description || (workflow as any).details
+            const description = rawDesc
+              ? String(rawDesc)
+              : t`Workflow document processing and automation`
+            return {
+              description,
+              kind: 'workflow' as const,
+              label: String(workflow.name || 'Untitled Workflow'),
+              selectId: `workflow:${workflow.id}`,
+              value: String(workflow.id),
+            }
+          })
           .filter((opt: any) => Boolean(opt.value && opt.label))
 
         const mapped = [...repoOptions, ...workflowOptions]
@@ -149,12 +184,12 @@ const DashboardPage = () => {
   }, [])
 
   const selectOptions: Array<
-    Option & { kind: DashboardSourceKind; rightIconKey: string }
+    Option & { kind: DashboardSourceKind; iconKey: string }
   > = sourceOptions.map((opt) => ({
     id: opt.selectId,
+    iconKey: opt.kind === 'workflow' ? WORKFLOW_ICON : REPO_ICON,
     kind: opt.kind,
     name: opt.label,
-    rightIconKey: opt.kind === 'workflow' ? WORKFLOW_ICON : REPO_ICON,
     value: opt.selectId,
   }))
 
@@ -187,9 +222,35 @@ const DashboardPage = () => {
       selectedName.toLowerCase() === 'ap' ||
       activeRepositoryId === 'ap')
 
+  const displayTitle =
+    selectedSource?.label || selectedName || t`Accounts Payable Automation`
+
+  const displayDescription =
+    selectedSource?.description ||
+    (isApDashboard
+      ? t`Connect email, ERP, and storage to start invoice processing.`
+      : isWorkflowSource
+        ? t`Workflow document processing and automation`
+        : t`Manage repository files and document automation`)
+
   if (isActivatingAutomation) {
     return (
-      <div className='bg-gray-50/50 flex h-full min-h-[50vh] flex-col items-center justify-center' />
+      <div className='flex h-full min-h-[50vh] flex-col gap-6 p-6'>
+        <div className='flex items-center justify-between gap-4'>
+          <div className='space-y-2'>
+            <Skeleton className='h-5 w-56' />
+            <Skeleton className='h-3.5 w-80' />
+          </div>
+          <Skeleton className='h-9 w-32 rounded-lg' />
+        </div>
+        <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4'>
+          <SkeletonCard height='h-28' />
+          <SkeletonCard height='h-28' />
+          <SkeletonCard height='h-28' />
+          <SkeletonCard height='h-28' />
+        </div>
+        <SkeletonCard height='h-64' />
+      </div>
     )
   }
 
@@ -208,13 +269,13 @@ const DashboardPage = () => {
         <>
           {!isSetupStarted && (
             <AnimateFadeIn delay={0.05}>
-              <div className='flex flex-wrap items-center justify-between gap-3 border-b border-gray-3 px-6 py-3 md:px-8'>
+              <div className='flex flex-wrap items-center justify-between gap-3 border-b border-gray-3 px-6 py-3'>
                 <div className='min-w-0'>
                   <p className='text-14 font-medium text-gray-13'>
-                    {t`Accounts Payable Automation`}
+                    {displayTitle}
                   </p>
                   <p className='mt-0.5 text-12 text-gray-10'>
-                    {t`Connect email, ERP, and storage to start invoice processing.`}
+                    {displayDescription}
                   </p>
                 </div>
                 <div className='flex items-center gap-3'>
@@ -269,12 +330,14 @@ const DashboardPage = () => {
                       />
                     </>
                   ) : null}
-                  <Button
-                    label={t`Get Started`}
-                    size='md'
-                    suffixIcon='lucide:arrow-right'
-                    onClick={openApSetupPreview}
-                  />
+                  {isAdminUser && (
+                    <Button
+                      label={t`Get Started`}
+                      size='md'
+                      suffixIcon='lucide:arrow-right'
+                      onClick={openApSetupPreview}
+                    />
+                  )}
                 </div>
               </div>
             </AnimateFadeIn>

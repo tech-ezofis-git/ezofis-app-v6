@@ -89,9 +89,16 @@ const INITIAL_STATE: FormState = {
 
 const RequestDemoForm = () => {
   const closeDemoForm = useRequestDemoStore((s) => s.closeDemoForm)
+  const focusDescription = useRequestDemoStore((s) => s.focusDescription)
+  const initialCategory = useRequestDemoStore((s) => s.initialCategory)
+  const initialPriority = useRequestDemoStore((s) => s.initialPriority)
   const session = useAuthUserStore((s) => s.session)
   const user = useAuthUserStore((s) => s.user)
-  const [form, setForm] = useState<FormState>(INITIAL_STATE)
+  const [form, setForm] = useState<FormState>(() => ({
+    ...INITIAL_STATE,
+    category: initialCategory ?? INITIAL_STATE.category,
+    priority: initialPriority ?? INITIAL_STATE.priority,
+  }))
   const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successTicket, setSuccessTicket] =
@@ -99,6 +106,7 @@ const RequestDemoForm = () => {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const successRef = useRef<HTMLDivElement>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (successTicket) {
@@ -109,6 +117,14 @@ const RequestDemoForm = () => {
       })
     }
   }, [successTicket])
+
+  useEffect(() => {
+    // Intentionally runs once on mount, not on every focusDescription change.
+    if (focusDescription) {
+      descriptionRef.current?.focus()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -442,6 +458,7 @@ const RequestDemoForm = () => {
                 maxLength={1000}
                 name='description'
                 placeholder="Describe how we can help you or what you'd like to accomplish"
+                ref={descriptionRef}
                 rows={4}
                 value={form.description}
                 onChange={handleChange}

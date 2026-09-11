@@ -129,7 +129,7 @@ msgid "{0} remaining"
 msgstr "{0} المتبقي"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1539
+#: src/pages/requests/components/GridView.tsx:1683
 msgid "{0} Selected"
 msgstr "{0} تم التحديد"
 
@@ -163,6 +163,14 @@ msgstr "{0}: {1}"
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:191
 msgid "{activeCard}"
 msgstr "{activeCard}"
+
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:50
+msgid "{activeUsers} active · {groupsCount} groups"
+msgstr "{activeUsers} نشط · {groupsCount} مجموعات"
+
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:23
+msgid "{activeWorkflows} active workflows"
+msgstr "{activeWorkflows} من مسارات العمل النشطة"
 
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:622
 msgid "{count} line item(s) found in the uploaded document."
@@ -222,7 +230,7 @@ msgid "{mappedRequiredCount} of {0} required fields mapped"
 msgstr "{mappedRequiredCount} من {0} حقول مطلوبة مرتبطة"
 
 #. placeholder {0}: matchCount === 1 ? '' : 'es'
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:784
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:793
 msgid "{matchCount} match{0}"
 msgstr "{matchCount} مطابقة{0}"
 
@@ -245,6 +253,10 @@ msgstr "{progress}% مكتمل"
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step2ColumnMapping.tsx:77
 msgid "{requiredMapped} / {requiredTotal} Required Mapped"
 msgstr "{requiredMapped} / {requiredTotal} مطلوب مرتبط"
+
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:39
+msgid "{storageUsedGb} GB used"
+msgstr "تم استخدام {storageUsedGb} جيجابايت"
 
 #. placeholder {0}: formatNumber(purchasedCredits)
 #: src/pages/settings/components/credits/Credits.tsx:818
@@ -277,7 +289,7 @@ msgstr "© 2026 {displayName}. جميع الحقوق محفوظة."
 msgid "+ {0} more"
 msgstr "+ {0} المزيد"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1097
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1106
 msgid "+ Add"
 msgstr "+ أضف"
 
@@ -289,6 +301,10 @@ msgstr "+ إضافة شرط"
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:585
 msgid "+{extraCount} more"
 msgstr "+{extraCount} المزيد"
+
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:21
+msgid "+2 this week"
+msgstr "+2 هذا الأسبوع"
 
 #: src/pages/requests/components/QuickFilters.tsx:102
 #: src/pages/requests/components/QuickFilters.tsx:221
@@ -388,6 +404,10 @@ msgstr "4 حقول"
 msgid "4. Posted"
 msgstr "4. مرحّل"
 
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:32
+msgid "5 hierarchy levels"
+msgstr "5 مستويات هرمية"
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1424
 msgid "6 / 6 fields"
 msgstr "6 / 6 حقول"
@@ -425,7 +445,7 @@ msgstr "الصيغ المقبولة: CSV، XLSX"
 msgid "Access"
 msgstr "وصول"
 
-#: src/pages/settings/SettingsMain.tsx:411
+#: src/pages/settings/SettingsMain.tsx:426
 msgid "Access Control"
 msgstr "التحكم في الوصول"
 
@@ -444,14 +464,14 @@ msgid "Account credentials & identity"
 msgstr "بيانات اعتماد الحساب والهوية"
 
 #: src/pages/settings/components/ManageUser.tsx:2500
-msgid "Account Expiry Date"
-msgstr "تاريخ انتهاء الحساب"
+#~ msgid "Account Expiry Date"
+#~ msgstr "تاريخ انتهاء الحساب"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1003
 msgid "Accounts Payable"
 msgstr "الحسابات الدائنة"
 
-#: src/pages/dashboard/DashboardPage.tsx:214
+#: src/pages/dashboard/DashboardPage.tsx:226
 msgid "Accounts Payable Automation"
 msgstr "أتمتة الحسابات الدائنة"
 
@@ -481,7 +501,7 @@ msgstr "الإجراء مطلوب"
 #: src/pages/forms/FormEntriesPage.tsx:1274
 #: src/pages/forms/FormsPage.tsx:263
 #: src/pages/reports/components/ReportsListView.tsx:209
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1816
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1817
 #: src/pages/requests/components/Table.tsx:96
 #: src/pages/requests/components/workflow-request/components/TableFieldRenderer.tsx:661
 #: src/pages/settings/components/Menus.tsx:415
@@ -503,7 +523,7 @@ msgstr "جارٍ التنشيط..."
 #: src/pages/settings/components/GroupManagement.tsx:104
 #: src/pages/settings/components/GroupManagement.tsx:953
 #: src/pages/settings/components/ManageUser.tsx:1430
-#: src/pages/settings/components/ManageUser.tsx:2607
+#: src/pages/settings/components/ManageUser.tsx:2568
 #: src/pages/settings/components/RolesPermissions.tsx:1667
 msgid "Active"
 msgstr "نشط"
@@ -709,8 +729,12 @@ msgstr "إضافة صف"
 msgid "Add rule"
 msgstr "إضافة قاعدة"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1197
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1203
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:121
+msgid "Add tab"
+msgstr "إضافة علامة تبويب"
+
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1206
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1212
 msgid "Add to related"
 msgstr "إضافة إلى ذات الصلة"
 
@@ -718,7 +742,7 @@ msgstr "إضافة إلى ذات الصلة"
 msgid "Add User"
 msgstr "إضافة مستخدم"
 
-#: src/pages/settings/SettingsMain.tsx:314
+#: src/pages/settings/SettingsMain.tsx:323
 msgid "Add, edit, and manage platform users. Configure authentication and assign roles."
 msgstr "أضف وعدّل وأدر مستخدمي المنصة. قم بتكوين المصادقة وتعيين الأدوار."
 
@@ -764,12 +788,12 @@ msgstr "يقوم الذكاء الاصطناعي بتحليل محتوى الم�
 msgid "AI Confidence Score"
 msgstr "درجة الثقة بالذكاء الاصطناعي"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:944
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:953
 msgid "AI Context"
 msgstr "سياق الذكاء الاصطناعي"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:990
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:653
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:661
 msgid "AI Dashboard Designer"
 msgstr "مصمم لوحة القيادة بالذكاء الاصطناعي"
 
@@ -913,6 +937,10 @@ msgstr "الكل"
 msgid "All {count} documents successfully ingested and indexed."
 msgstr "تم استيعاب وفهرسة جميع المستندات الـ {count} بنجاح."
 
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:48
+msgid "All Active"
+msgstr "الكل نشط"
+
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:878
 msgid "All conditions must match"
 msgstr "يجب أن تتطابق جميع الشروط"
@@ -921,7 +949,7 @@ msgstr "يجب أن تتطابق جميع الشروط"
 msgid "All files ready for ingestion and indexing."
 msgstr "جميع الملفات جاهزة للاستيعاب والفهرسة."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:845
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:854
 msgid "All folders"
 msgstr "كافة المجلدات"
 
@@ -933,7 +961,7 @@ msgstr "كافة المجلدات"
 msgid "All options must be checked to fulfill requirements."
 msgstr "يجب التحقق من جميع الخيارات للوفاء بالمتطلبات."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:504
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:526
 msgid "All search results for “{searchLabel}”"
 msgstr "جميع نتائج البحث عن «{searchLabel}»"
 
@@ -950,8 +978,8 @@ msgstr "جميع التقديمات"
 msgid "Allow users to sign in with Google or Microsoft"
 msgstr "السماح للمستخدمين بتسجيل الدخول باستخدام Google أو Microsoft"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1182
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1187
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1191
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1196
 msgid "Already added to related"
 msgstr "تمت إضافتها بالفعل إلى ذات الصلة"
 
@@ -1104,8 +1132,8 @@ msgid "AP Command Center"
 msgstr "مركز قيادة الحسابات الدائنة"
 
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:263
-msgid "AP Team"
-msgstr "فريق الحسابات الدائنة"
+#~ msgid "AP Team"
+#~ msgstr "فريق الحسابات الدائنة"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1926
 msgid "AP workbench — prioritized queue"
@@ -1116,8 +1144,8 @@ msgstr "منصة الحسابات الدائنة — قائمة أولويات"
 msgid "API Key"
 msgstr "مفتاح واجهة برمجة التطبيقات"
 
-#: src/layouts/app/components/topbar/Topbar.tsx:61
 #: src/layouts/app/components/topbar/Topbar.tsx:64
+#: src/layouts/app/components/topbar/Topbar.tsx:67
 msgid "API Playground"
 msgstr "ملعب API"
 
@@ -1148,7 +1176,7 @@ msgid "Application Sign in"
 msgstr "تسجيل دخول التطبيق"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1071
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:699
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:707
 msgid "Apply & Preview"
 msgstr "تطبيق ومعاينة"
 
@@ -1241,8 +1269,8 @@ msgstr "هل أنت متأكد أنك تريد التحرك"
 msgid "Are you sure you want to permanently delete"
 msgstr "هل أنت متأكد أنك تريد الحذف نهائيًا"
 
-#: src/layouts/app/components/topbar/Topbar.tsx:37
 #: src/layouts/app/components/topbar/Topbar.tsx:40
+#: src/layouts/app/components/topbar/Topbar.tsx:43
 msgid "Ask AI"
 msgstr "اسأل الذكاء الاصطناعي"
 
@@ -1325,14 +1353,14 @@ msgstr "مرفق"
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3532
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3622
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "المرفقات"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:179
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:41
-#: src/pages/settings/SettingsMain.tsx:353
+#: src/pages/settings/SettingsMain.tsx:368
 msgid "Audit & Monitoring"
 msgstr "التدقيق والمراقبة"
 
@@ -1363,7 +1391,7 @@ msgstr "المصادقة مطلوبة. الرجاء تسجيل الدخول مر
 msgid "Authenticator App"
 msgstr "تطبيق المصادقة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3622
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3712
 msgid "Authorized Amount"
 msgstr "المبلغ المصرح به"
 
@@ -1448,7 +1476,7 @@ msgstr "مصادقة Azure AD"
 msgid "Azure Blob storage integration for organizations using Microsoft Azure."
 msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم Microsoft Azure."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:778
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:780
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/StepThree.tsx:90
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/StepTwo.tsx:165
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/StepZero.tsx:96
@@ -1472,8 +1500,8 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:908
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4010
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:933
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4100
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1485,13 +1513,14 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:833
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:779
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:821
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:212
 #: src/pages/settings/components/SettingsSetupHeader.tsx:60
 #: src/pages/settings/components/SettingsWizardLayout.tsx:209
 #: src/pages/workflows/components/AiWorkflowBuilder.tsx:112
 msgid "Back"
 msgstr "رجوع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3450
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3520
 msgid "Back Order"
 msgstr "طلب متأخر"
 
@@ -1503,7 +1532,7 @@ msgstr "تم اكتشاف الطلب الخلفي"
 msgid "Back to Configuration"
 msgstr "العودة إلى التكوين"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:734
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:742
 msgid "Back to Designer"
 msgstr "العودة إلى المصمم"
 
@@ -1523,7 +1552,7 @@ msgstr "Back to نموذجs"
 msgid "Back to PO Setup"
 msgstr "العودة إلى إعداد أمر الشراء"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:691
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:699
 msgid "Back to Prompt"
 msgstr "العودة إلى الموجه"
 
@@ -1564,7 +1593,7 @@ msgstr "أساسي"
 msgid "Between"
 msgstr "بين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3883
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3973
 msgid "Billing Terms"
 msgstr "شروط الفوترة"
 
@@ -1595,7 +1624,7 @@ msgstr "تم حفظ تفضيلات العلامة التجارية بنجاح!"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:603
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:39
-#: src/pages/settings/SettingsMain.tsx:335
+#: src/pages/settings/SettingsMain.tsx:344
 msgid "Branding"
 msgstr "العلامة التجارية"
 
@@ -1633,7 +1662,7 @@ msgstr "تصفح الملفات"
 msgid "Build a custom report from any of your organization's data domains."
 msgstr "إنشاء تقرير مخصص من أي من مجالات بيانات مؤسستك."
 
-#: src/pages/settings/SettingsMain.tsx:307
+#: src/pages/settings/SettingsMain.tsx:316
 msgid "Build and configure custom reports"
 msgstr "بناء وتكوين تقارير مخصصة"
 
@@ -1664,7 +1693,7 @@ msgstr "تخزين آمن مدمج"
 
 #. placeholder {0}: actionValidation.action.label
 #. placeholder {1}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1571
+#: src/pages/requests/components/GridView.tsx:1715
 msgid "Bulk action \"{0}\" applied to {1} requests successfully!"
 msgstr "تم تطبيق الإجراء المجمع \"{0}\" على طلبات {1} بنجاح!"
 
@@ -1678,7 +1707,7 @@ msgid "Bulk Import Entries"
 msgstr "إدخالات الاستيراد بالجملة"
 
 #. placeholder {0}: selectedIds.size
-#: src/pages/requests/components/GridView.tsx:1548
+#: src/pages/requests/components/GridView.tsx:1692
 msgid "Bulk marked {0} requests as Paid successfully!"
 msgstr "تم وضع علامة على {0} من الطلبات المجمعة على أنها مدفوعة بنجاح!"
 
@@ -1774,16 +1803,17 @@ msgstr "لا يمكن التحميل: لم يتم تكوين مستودع لسي
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:221
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:661
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1545
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1104
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1113
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:253
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:447
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:199
 #: src/pages/settings/components/Folders/FolderStorageConnectorPanel.tsx:263
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:188
 #: src/pages/workflows/components/settings/KanbanViewSettingsSection.tsx:270
 msgid "Cancel"
 msgstr "إلغاء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1553
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1578
 msgid "Cancel Remaining"
 msgstr "إلغاء المتبقية"
 
@@ -1791,7 +1821,7 @@ msgstr "إلغاء المتبقية"
 msgid "Cancel signing"
 msgstr "إلغاء التوقيع"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:675
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:684
 msgid "Cannot attach: missing workflow attachment context."
 msgstr "لا يمكن الإرفاق: سياق مرفق سير العمل مفقود."
 
@@ -1852,7 +1882,7 @@ msgid "ccy"
 msgstr "العملة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:870
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:513
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:515
 msgid "Centralized repository for all incoming documentation and related analytics."
 msgstr "مستودع مركزي لجميع الوثائق الواردة والتحليلات ذات الصلة."
 
@@ -1898,7 +1928,7 @@ msgid "Changed your mind?"
 msgstr "هل غيرت رأيك؟"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1039
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:681
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:689
 msgid "Charts"
 msgstr "المخططات البيانية"
 
@@ -1929,6 +1959,10 @@ msgstr "اختر إجراء الوجهة وكيفية إنشاء القاعدة 
 #: src/pages/folders/components/IntelligentUpload/IntelligentSuggestionsPanel.tsx:211
 msgid "Choose a different repository to override..."
 msgstr "اختر مستودعاً مختلفاً للتجاوز..."
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:68
+msgid "Choose a migration strategy"
+msgstr "اختر استراتيجية الترحيل"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1301
 msgid "Choose a signature first, then tap your sign area."
@@ -1966,6 +2000,10 @@ msgstr "اختر كيفية إعداد المشغل والشروط."
 msgid "Choose how users sign in to this portal"
 msgstr "اختر كيفية تسجيل دخول المستخدمين إلى هذه البوابة"
 
+#: src/pages/settings/components/license/LicenseSettings.tsx:103
+msgid "Choose how your trial workflows, folders, users, and requests carry over — keep everything, keep configurations only, or start clean."
+msgstr "اختر كيفية ترحيل مسارات العمل والمجلدات والمستخدمين والطلبات التجريبية — الاحتفاظ بكل شيء، أو الاحتفاظ بالإعدادات فقط، أو البدء من جديد."
+
 #: src/pages/folders/components/DocumentSigningPage.tsx:2824
 msgid "Choose signature"
 msgstr "اختر توقيعاً"
@@ -1999,8 +2037,8 @@ msgid "Classification failed for this file."
 msgstr "فشل تصنيف هذا الملف."
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2640
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:817
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:935
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:826
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:944
 msgid "Clear"
 msgstr "مسح"
 
@@ -2083,7 +2121,7 @@ msgstr "رقم العميل"
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:635
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:719
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:189
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:790
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:799
 msgid "Close"
 msgstr "إغلاق"
 
@@ -2104,7 +2142,7 @@ msgstr "التكامل السحابي"
 msgid "CO (Controlling & Cost Centers)"
 msgstr "CO (مراقبة التكاليف ومراكز التكلفة)"
 
-#: src/pages/settings/components/ManageUser.tsx:2322
+#: src/pages/settings/components/ManageUser.tsx:2324
 msgid "Code"
 msgstr "الرمز"
 
@@ -2171,7 +2209,7 @@ msgstr "قريباً"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3537
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3627
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "التعليقات"
@@ -2205,14 +2243,15 @@ msgid "Complete setup to start your AP automation."
 msgstr "أكمل الإعداد لبدء أتمتة حسابات المدفوعات الخاصة بك."
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:710
-#: src/pages/requests/components/Header.tsx:107
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1403
+#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Completed"
 msgstr "المكتمل"
 
 #: src/pages/requests/components/Header.tsx:107
-msgid "Completed ({completedCount})"
-msgstr "المكتمل ({completedCount})"
+#~ msgid "Completed ({completedCount})"
+#~ msgstr "المكتمل ({completedCount})"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:565
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1234
@@ -2262,7 +2301,7 @@ msgid "Confidence Scoring"
 msgstr "درجات الثقة"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:141
-#: src/pages/settings/SettingsMain.tsx:406
+#: src/pages/settings/SettingsMain.tsx:421
 msgid "Configuration"
 msgstr "التكوين"
 
@@ -2327,6 +2366,10 @@ msgstr "تأكيد واستيراد"
 msgid "Confirm & Ingest Entries"
 msgstr "تأكيد واستيعاب الإدخالات"
 
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:221
+msgid "Confirm & Upgrade to Production"
+msgstr "تأكيد والترقية إلى بيئة الإنتاج"
+
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:67
 msgid "Confirm and activate the policy"
 msgstr "تأكيد وتفعيل السياسة"
@@ -2351,7 +2394,8 @@ msgstr "اتصال {0}"
 msgid "Connect {providerLabel}"
 msgstr "اتصال {providerLabel}"
 
-#: src/pages/dashboard/DashboardPage.tsx:217
+#: src/pages/dashboard/DashboardPage.tsx:112
+#: src/pages/dashboard/DashboardPage.tsx:231
 msgid "Connect email, ERP, and storage to start invoice processing."
 msgstr "اربط البريد الإلكتروني وERP والتخزين لبدء معالجة الفواتير."
 
@@ -2420,7 +2464,7 @@ msgstr "نجح الاتصال! تم التحقق من وجهة RFC لـ SAP ERP 
 msgid "Connector"
 msgstr "الموصل"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1545
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1570
 msgid "Contact Vendor"
 msgstr "اتصل بالمورد"
 
@@ -2446,6 +2490,7 @@ msgstr "يتضمن"
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:991
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:850
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:844
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:195
 #: src/pages/settings/components/SettingsWizardLayout.tsx:80
 #: src/pages/sign-in/components/SignInForm.tsx:762
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
@@ -2453,12 +2498,12 @@ msgid "Continue"
 msgstr "متابعة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1086
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:714
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:722
 msgid "Continue from configuration to generate KPIs and charts from your prompt."
 msgstr "تابع من التكوين لإنشاء مؤشرات الأداء الرئيسية والمخططات البيانية من مطالبتك."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:971
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:635
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:643
 msgid "Continue to Dashboard Designer"
 msgstr "تابع إلى مصمم لوحة المعلومات"
 
@@ -2514,7 +2559,7 @@ msgstr "انسخ عنوان URL"
 msgid "Cost Center"
 msgstr "مركز التكلفة"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:493
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:502
 msgid "Could not complete search."
 msgstr "تعذر إكمال البحث."
 
@@ -2601,7 +2646,7 @@ msgstr "إنشاء وصول للمتابعة"
 msgid "Create access to sign"
 msgstr "إنشاء وصول للتوقيع"
 
-#: src/pages/settings/SettingsMain.tsx:284
+#: src/pages/settings/SettingsMain.tsx:293
 msgid "Create and manage forms with fields, validation, and data collection."
 msgstr "أنشئ وأدر النماذج بالحقول والتحقق وجمع البيانات."
 
@@ -2613,7 +2658,7 @@ msgstr "أنشئ وأدر النماذج بالحقول والتحقق وجمع 
 msgid "Create branded portals with login methods and connected workflows."
 msgstr "أنشئ بوابات بعلامتك التجارية مع طرق تسجيل الدخول ومهام سير العمل المرتبطة."
 
-#: src/pages/settings/SettingsMain.tsx:300
+#: src/pages/settings/SettingsMain.tsx:309
 msgid "Create branded portals, configure login methods, and connect workflows."
 msgstr "أنشئ بوابات بعلامتك التجارية، وقم بتكوين طرق تسجيل الدخول، واربط مهام سير العمل."
 
@@ -2622,7 +2667,7 @@ msgid "Create Group"
 msgstr "إنشاء مجموعة"
 
 #: src/pages/settings/components/GroupManagement.tsx:590
-#: src/pages/settings/SettingsMain.tsx:320
+#: src/pages/settings/SettingsMain.tsx:329
 msgid "Create logical groups to organize users by team, department, or function."
 msgstr "أنشئ مجموعات منطقية لتنظيم المستخدمين حسب الفريق أو القسم أو الوظيفة."
 
@@ -2648,7 +2693,7 @@ msgstr "إنشاء دور"
 msgid "Create signature request"
 msgstr "إنشاء طلب التوقيع"
 
-#: src/pages/settings/components/ManageUser.tsx:2837
+#: src/pages/settings/components/ManageUser.tsx:2798
 msgid "Create User"
 msgstr "إنشاء مستخدم"
 
@@ -2707,7 +2752,7 @@ msgstr "مخطط الجدول الزمني للرصيد"
 
 #: src/pages/settings/components/credits/Credits.tsx:563
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:43
-#: src/pages/settings/SettingsMain.tsx:341
+#: src/pages/settings/SettingsMain.tsx:350
 msgid "Credit Usage"
 msgstr "استخدام الرصيد"
 
@@ -2752,7 +2797,7 @@ msgstr "حرج"
 #~ msgid "Critical Exceptions"
 #~ msgstr "استثناءات حرجة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3680
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3770
 msgid "Cross-Check Status"
 msgstr "حالة الفحص المتقاطع"
 
@@ -2808,8 +2853,8 @@ msgid "Custom Email Configuration (IMAP)"
 msgstr "تكوين البريد الإلكتروني المخصص (IMAP)"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:448
-#: src/pages/requests/components/InboxList.tsx:1220
-#: src/pages/requests/components/InboxList.tsx:1290
+#: src/pages/requests/components/InboxList.tsx:1222
+#: src/pages/requests/components/InboxList.tsx:1284
 msgid "Custom Range"
 msgstr "نطاق مخصص"
 
@@ -2817,7 +2862,7 @@ msgstr "نطاق مخصص"
 msgid "Customize Design"
 msgstr "تخصيص التصميم"
 
-#: src/pages/settings/SettingsMain.tsx:332
+#: src/pages/settings/SettingsMain.tsx:341
 msgid "Customize logos, brand colors, and visual identity across the platform."
 msgstr "خصص الشعارات وألوان العلامة التجارية والهوية المرئية عبر المنصة."
 
@@ -2844,8 +2889,8 @@ msgstr "داكن"
 #~ msgstr "الخلايا الأغمق تشير إلى اختناقات معالجة أطول."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:20
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:77
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:570
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:74
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:578
 msgid "Dashboard"
 msgstr "لوحة المعلومات"
 
@@ -2863,11 +2908,11 @@ msgstr "تكوين لوحة القيادة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:805
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1164
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:769
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:783
 msgid "Dashboard preview"
 msgstr "معاينة لوحة المعلومات"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:726
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:734
 msgid "Dashboard Preview"
 msgstr "معاينة لوحة المعلومات"
 
@@ -2876,7 +2921,7 @@ msgid "Dashboard Preview & Activation"
 msgstr "معاينة وتنشيط لوحة التحكم"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:491
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:335
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:337
 msgid "Dashboard preview updated!"
 msgstr "تم تحديث معاينة لوحة المعلومات!"
 
@@ -2885,7 +2930,7 @@ msgstr "تم تحديث معاينة لوحة المعلومات!"
 msgid "Dashboard saved and activated for {repositoryName}!"
 msgstr "تم حفظ لوحة التحكم وتنشيطها لـ {repositoryName}!"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:349
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:351
 msgid "Dashboard saved for {repositoryName}!"
 msgstr "تم حفظ لوحة المعلومات لـ {repositoryName}!"
 
@@ -2897,7 +2942,7 @@ msgstr "لم يتم إنشاء مخطط لوحة المعلومات بعد"
 msgid "Data Access"
 msgstr "الوصول إلى البيانات"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:805
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:807
 msgid "Data Destination"
 msgstr "وجهة البيانات"
 
@@ -2946,9 +2991,17 @@ msgstr "التاريخ To"
 msgid "Day"
 msgstr "يوم"
 
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:88
+msgid "Day {trialDay} of {trialLengthDays}"
+msgstr "اليوم {trialDay} من {trialLengthDays}"
+
 #: src/pages/settings/components/Folders/retentionMockData.ts:72
 msgid "days"
 msgstr "أيام"
+
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:73
+msgid "days remaining in evaluation"
+msgstr "أيام متبقية في فترة التقييم"
 
 #: src/pages/settings/components/credits/Credits.tsx:78
 msgid "December"
@@ -2991,7 +3044,7 @@ msgstr "تحديد قاعدة الاحتفاظ"
 #~ msgid "Define role details, access scopes, and permission privilege matrices"
 #~ msgstr "حدد تفاصيل الدور ونطاقات الوصول ومصفوفات امتيازات الصلاحيات"
 
-#: src/pages/settings/SettingsMain.tsx:326
+#: src/pages/settings/SettingsMain.tsx:335
 msgid "Define roles and configure granular permissions across all modules."
 msgstr "حدد الأدوار وقم بتكوين أذونات تفصيلية عبر جميع الوحدات."
 
@@ -3104,7 +3157,7 @@ msgstr "تم تحديد بيانات تجريبية. ستُستخدم هذه ا�
 #: src/pages/settings/components/ManageUser.tsx:1165
 #: src/pages/settings/components/ManageUser.tsx:1587
 #: src/pages/settings/components/ManageUser.tsx:1878
-#: src/pages/settings/components/ManageUser.tsx:2570
+#: src/pages/settings/components/ManageUser.tsx:2531
 msgid "Department"
 msgstr "القسم"
 
@@ -3124,12 +3177,12 @@ msgstr "القسم والتسلسل الهرمي للأعمال"
 msgid "Describe structure or fields…"
 msgstr "صف الهيكل أو الحقول…"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:586
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:594
 msgid "Describe the dashboard you want to create."
 msgstr "صف لوحة المعلومات التي تريد إنشاءها."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:961
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:625
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:633
 msgid "Describe the dashboard you want to create..."
 msgstr "صف لوحة المعلومات التي ترغب في إنشائها..."
 
@@ -3214,7 +3267,7 @@ msgstr "الوصف قيد الانتظار"
 msgid "Deselect All"
 msgstr "قم بإلغاء تحديد الكل"
 
-#: src/pages/settings/SettingsMain.tsx:292
+#: src/pages/settings/SettingsMain.tsx:301
 msgid "Design and configure automated workflows and process routing."
 msgstr "صمم وقم بتكوين مهام سير العمل المؤتمتة وتوجيه العمليات."
 
@@ -3252,7 +3305,7 @@ msgstr "تكامل مباشر"
 msgid "Direct Upload"
 msgstr "رفع مباشر"
 
-#: src/pages/settings/components/ManageUser.tsx:2587
+#: src/pages/settings/components/ManageUser.tsx:2548
 msgid "Disabled"
 msgstr "عاجز"
 
@@ -3280,6 +3333,7 @@ msgid "Doc agent"
 msgstr "وكيل الوثيقة"
 
 #: src/pages/portal/components/PortalWizard.tsx:160
+#: src/pages/settings/components/license/LicenseRecentResources.tsx:91
 msgid "Document"
 msgstr "وثيقة"
 
@@ -3312,7 +3366,7 @@ msgstr "معلومات الوثيقة"
 msgid "Document ingested via email"
 msgstr "تم استيعاب المستند عبر البريد الإلكتروني"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3600
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3690
 msgid "Document Mapping"
 msgstr "ربط المستند"
 
@@ -3435,6 +3489,7 @@ msgstr "ليس لديك حساب؟"
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1975
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2017
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:346
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:247
 msgid "Done"
 msgstr "تم"
 
@@ -3500,7 +3555,7 @@ msgstr "DPO"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1094
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3386
 #: src/pages/settings/components/ManageUser.tsx:1424
-#: src/pages/settings/components/ManageUser.tsx:2611
+#: src/pages/settings/components/ManageUser.tsx:2572
 #: src/pages/workflows/components/Table.tsx:455
 msgid "Draft"
 msgstr "مسودة"
@@ -3587,7 +3642,7 @@ msgstr "اسقاط"
 #~ msgid "Dual axis spending trend comparison"
 #~ msgstr "مقارنة اتجاه الإنفاق بمحورين"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1646
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1647
 msgid "Due & Terms"
 msgstr "الاستحقاق والشروط"
 
@@ -3605,21 +3660,21 @@ msgstr "تاريخ الاستحقاق"
 msgid "Due Date"
 msgstr "تاريخ الاستحقاق"
 
-#: src/pages/requests/components/InboxList.tsx:1216
+#: src/pages/requests/components/InboxList.tsx:1218
 msgid "Due in Next 1 Month"
 msgstr "مستحق في الشهر 1 القادم"
 
-#: src/pages/requests/components/InboxList.tsx:1214
+#: src/pages/requests/components/InboxList.tsx:1216
 msgid "Due in Next 15 Days"
 msgstr "مستحق خلال الـ 15 يومًا القادمة"
 
-#: src/pages/requests/components/InboxList.tsx:1212
+#: src/pages/requests/components/InboxList.tsx:1214
 msgid "Due in Next 7 Days"
 msgstr "مستحق في الأيام السبعة القادمة"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:134
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1881
-#: src/pages/requests/components/InboxList.tsx:1210
+#: src/pages/requests/components/InboxList.tsx:1212
 msgid "Due Today"
 msgstr "مستحق اليوم"
 
@@ -3627,7 +3682,7 @@ msgstr "مستحق اليوم"
 msgid "Duplicate"
 msgstr "مكرر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3323
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3393
 msgid "Duplicate Detection"
 msgstr "اكتشاف التكرار"
 
@@ -3635,7 +3690,7 @@ msgstr "اكتشاف التكرار"
 msgid "Duplicate invoice watch"
 msgstr "مراقبة الفواتير المكررة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3659
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3749
 msgid "Duplicate Payment Check"
 msgstr "فحص الدفع المكرر"
 
@@ -3663,7 +3718,7 @@ msgstr "مثال: مشرف الحسابات الدائنة"
 msgid "e.g. Cost Center"
 msgstr "على سبيل المثال مركز التكلفة"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1088
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1097
 msgid "e.g. CT-908"
 msgstr "على سبيل المثال سي تي-908"
 
@@ -3722,10 +3777,10 @@ msgstr "يحتاج كل موقّع إلى اسم وبريد إلكتروني."
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:793
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:875
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:900
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:518
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:539
-#: src/pages/dashboard/DashboardPage.tsx:261
-#: src/pages/dashboard/DashboardPage.tsx:266
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:520
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:541
+#: src/pages/dashboard/DashboardPage.tsx:322
+#: src/pages/dashboard/DashboardPage.tsx:327
 #: src/pages/forms/FormEntriesPage.tsx:1297
 #: src/pages/forms/FormsPage.tsx:281
 #: src/pages/reports/components/RowActionsMenu.tsx:34
@@ -3844,7 +3899,7 @@ msgstr "تعديل الدور"
 #~ msgid "Edit Role Setup"
 #~ msgstr "تعديل إعداد الدور"
 
-#: src/pages/settings/components/ManageUser.tsx:2837
+#: src/pages/settings/components/ManageUser.tsx:2798
 msgid "Edit User"
 msgstr "تعديل المستخدم"
 
@@ -3866,7 +3921,7 @@ msgstr "تاريخ النفاذ"
 #: src/pages/settings/components/ManageUser.tsx:1149
 #: src/pages/settings/components/ManageUser.tsx:1151
 #: src/pages/settings/components/ManageUser.tsx:1576
-#: src/pages/settings/components/ManageUser.tsx:2545
+#: src/pages/settings/components/ManageUser.tsx:2506
 #: src/pages/settings/components/RolesPermissions.tsx:2050
 #: src/pages/settings/components/RolesPermissions.tsx:2052
 #: src/pages/sign-in/components/SignInForm.tsx:693
@@ -3880,8 +3935,8 @@ msgstr "البريد الإلكتروني"
 msgid "Email / Username"
 msgstr "البريد / اسم المستخدم"
 
-#: src/pages/settings/components/ManageUser.tsx:2282
-#: src/pages/settings/components/ManageUser.tsx:2289
+#: src/pages/settings/components/ManageUser.tsx:2284
+#: src/pages/settings/components/ManageUser.tsx:2291
 msgid "Email Address"
 msgstr "عنوان البريد الإلكتروني"
 
@@ -3934,7 +3989,11 @@ msgstr "تم تخطي الصفوف الفارغة"
 msgid "Enable or disable granular action privileges for selected users and groups."
 msgstr "تمكين أو تعطيل امتيازات الإجراء التفصيلي للمستخدمين والمجموعات المحددة."
 
-#: src/pages/settings/components/ManageUser.tsx:2587
+#: src/pages/settings/components/ManageUser.tsx:2441
+msgid "Enable to set a new password for this user"
+msgstr "تمكين لتعيين كلمة مرور جديدة لهذا المستخدم"
+
+#: src/pages/settings/components/ManageUser.tsx:2548
 #: src/pages/settings/components/PortalConfiguration.tsx:1100
 msgid "Enabled"
 msgstr "ممكّن"
@@ -3963,7 +4022,7 @@ msgid "Enter a card name."
 msgstr "أدخل اسم البطاقة."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:361
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:119
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:121
 msgid "Enter a dashboard prompt before continuing."
 msgstr "أدخل موجه لوحة المعلومات قبل المتابعة."
 
@@ -3981,7 +4040,7 @@ msgstr "أدخل عنوان بريد إلكتروني صالح"
 msgid "Enter a valid email address."
 msgstr "أدخل بريداً إلكترونياً صالحاً."
 
-#: src/pages/settings/components/ManageUser.tsx:2251
+#: src/pages/settings/components/ManageUser.tsx:2253
 msgid "Enter first name"
 msgstr "أدخل الاسم الأول"
 
@@ -3997,15 +4056,15 @@ msgstr "أدخل تفاصيل خادم IMAP لموفر البريد الإلكت
 msgid "Enter itemized quantity, pricing, and specs inline below."
 msgstr "أدخل الكمية المفصلة والأسعار والمواصفات المضمنة أدناه."
 
-#: src/pages/settings/components/ManageUser.tsx:2265
+#: src/pages/settings/components/ManageUser.tsx:2267
 msgid "Enter last name"
 msgstr "أدخل اسم العائلة"
 
-#: src/pages/settings/components/ManageUser.tsx:2334
+#: src/pages/settings/components/ManageUser.tsx:2336
 msgid "Enter phone number"
 msgstr "أدخل رقم الهاتف"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:591
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:599
 msgid "Enter Prompt"
 msgstr "أدخل الموجه"
 
@@ -4025,7 +4084,7 @@ msgstr "أدخل الرمز من تطبيق المصادقة."
 msgid "Enter the user’s name."
 msgstr "أدخل اسم المستخدم."
 
-#: src/pages/settings/components/ManageUser.tsx:2307
+#: src/pages/settings/components/ManageUser.tsx:2309
 msgid "Enter username"
 msgstr "أدخل اسم المستخدم"
 
@@ -4140,15 +4199,16 @@ msgstr "جدول Excel"
 msgid "Exception uploading file: {detail}"
 msgstr "استثناء أثناء رفع الملف: {detail}"
 
-#: src/pages/requests/components/Header.tsx:83
-#: src/pages/requests/components/InboxList.tsx:2053
+#: src/pages/requests/components/InboxList.tsx:2061
+#: src/pages/requests/RequestsPage.tsx:138
 #: src/pages/requests/utils/localizeRequestUi.ts:36
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Exceptions"
 msgstr "الاستثناءات"
 
 #: src/pages/requests/components/Header.tsx:84
-msgid "Exceptions ({resolvedExceptionsCount})"
-msgstr "الاستثناءات ({resolvedExceptionsCount})"
+#~ msgid "Exceptions ({resolvedExceptionsCount})"
+#~ msgstr "الاستثناءات ({resolvedExceptionsCount})"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1071
 msgid "existing PO records"
@@ -4178,14 +4238,14 @@ msgstr "يجب أن تكون أيام الانتهاء 1 على الأقل."
 msgid "Expiry / Due Date"
 msgstr "تاريخ انتهاء الصلاحية / الاستحقاق"
 
-#: src/pages/settings/SettingsMain.tsx:344
+#: src/pages/settings/SettingsMain.tsx:359
 msgid "Explore, test, and debug API endpoints with live requests and sample responses."
 msgstr "استكشف واختبر ونقح نقاط نهاية واجهة برمجة التطبيقات بطلبات مباشرة واستجابات نموذجية."
 
 #: src/pages/folders/components/Upload/Upload.tsx:2082
 #: src/pages/requests/components/buttons/ExportButton.tsx:13
 #: src/pages/requests/components/buttons/ExportButton.tsx:16
-#: src/pages/requests/components/InboxList.tsx:1925
+#: src/pages/requests/components/InboxList.tsx:1929
 msgid "Export"
 msgstr "تصدير"
 
@@ -4220,7 +4280,7 @@ msgid "EXTRACTED"
 msgstr "مستخرج"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1927
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3522
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3612
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "البيانات المستخرجة"
@@ -4287,11 +4347,11 @@ msgstr "محرك إزوفيس"
 msgid "EZOFIS Fields"
 msgstr "حقول إزوفيس"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:656
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:665
 msgid "Failed to add to related documents."
 msgstr "فشلت الإضافة إلى المستندات ذات الصلة."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:713
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:722
 msgid "Failed to attach document."
 msgstr "فشل إرفاق المستند."
 
@@ -4335,7 +4395,7 @@ msgid "Failed to enqueue background import: {0}"
 msgstr "فشل إدراج استيراد الخلفية: {0}"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:386
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:139
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:141
 msgid "Failed to generate dashboard schema"
 msgstr "فشل إنشاء مخطط لوحة المعلومات"
 
@@ -4593,7 +4653,7 @@ msgstr "يبدو أن الملف فارغ."
 msgid "File Column"
 msgstr "عمود الملف"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:685
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:694
 msgid "File content could not be retrieved."
 msgstr "لا يمكن استرداد محتوى الملف."
 
@@ -4648,6 +4708,8 @@ msgstr "تم رفع الملف بنجاح"
 #: src/pages/folders/components/FolderTable.tsx:950
 #: src/pages/folders/components/FolderTable.tsx:1135
 #: src/pages/folders/components/Upload/Upload.tsx:1640
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:43
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:139
 msgid "Files"
 msgstr "الملفات"
 
@@ -4682,13 +4744,13 @@ msgstr "جاري إنهاء النتائج..."
 msgid "Financial Year"
 msgstr "السنة المالية"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:748
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:773
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:757
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:782
 msgid "Find related documents"
 msgstr "البحث عن الوثائق ذات الصلة"
 
-#: src/pages/settings/components/ManageUser.tsx:2250
-#: src/pages/settings/components/ManageUser.tsx:2256
+#: src/pages/settings/components/ManageUser.tsx:2252
+#: src/pages/settings/components/ManageUser.tsx:2258
 msgid "First Name"
 msgstr "الاسم الأول"
 
@@ -4723,6 +4785,7 @@ msgstr "أمر مرن"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2930
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3294
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3296
+#: src/pages/settings/components/license/LicenseRecentResources.tsx:88
 msgid "Folder"
 msgstr "مجلد"
 
@@ -4733,7 +4796,7 @@ msgstr "المجلد «{folderName}» جاهز. تابع لاختيار مزود
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:879
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:164
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:29
-#: src/pages/settings/SettingsMain.tsx:281
+#: src/pages/settings/SettingsMain.tsx:290
 msgid "Folder Configuration"
 msgstr "تكوين المجلد"
 
@@ -4845,8 +4908,10 @@ msgstr "تم تحديث المجلد بنجاح."
 #~ msgstr "المجلد: {0}"
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:32
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:81
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:78
 #: src/pages/folders/components/FolderExplorer.tsx:313
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:34
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:134
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:21
 msgid "Folders"
 msgstr "المجلدات"
@@ -4856,14 +4921,14 @@ msgid "FOLDERS"
 msgstr "المجلدات"
 
 #: src/pages/settings/components/ManageUser.tsx:2516
-msgid "Force password reset on first login"
-msgstr "فرض إعادة تعيين كلمة المرور عند أول تسجيل دخول"
+#~ msgid "Force password reset on first login"
+#~ msgstr "فرض إعادة تعيين كلمة المرور عند أول تسجيل دخول"
 
 #: src/pages/settings/components/credits/Credits.tsx:788
 msgid "Forecast EOM usage"
 msgstr "توقعات الاستخدام لنهاية الشهر"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:109
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:106
 msgid "Forgot Password"
 msgstr "نسيت كلمة المرور"
 
@@ -4884,7 +4949,7 @@ msgstr "استمارة"
 #~ msgid "Form Assistant is thinking..."
 #~ msgstr "مساعد النماذج يفكر..."
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:99
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:96
 msgid "Form Builder"
 msgstr "منشئ النماذج"
 
@@ -4900,7 +4965,7 @@ msgstr "تكوين النماذج"
 msgid "Form deleted successfully"
 msgstr "نموذج deleted successfully"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:87
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:84
 msgid "Form Entries"
 msgstr "إدخالات النموذج"
 
@@ -4914,11 +4979,11 @@ msgstr "إدخالات النموذج"
 msgid "Format"
 msgstr "الصيغة"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:85
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:82
 #: src/pages/forms/components/Table.tsx:57
 #: src/pages/forms/FormsPage.tsx:80
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:32
-#: src/pages/settings/SettingsMain.tsx:289
+#: src/pages/settings/SettingsMain.tsx:298
 msgid "Forms"
 msgstr "النماذج"
 
@@ -4992,12 +5057,12 @@ msgid "Generated by AI"
 msgstr "مُولَّد بالذكاء الاصطناعي"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:999
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:662
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:670
 msgid "Generating dashboard schema..."
 msgstr "جارٍ إنشاء مخطط لوحة المعلومات..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:952
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:616
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:624
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1878
 msgid "Generating description…"
 msgstr "جاري إنشاء الوصف…"
@@ -5014,7 +5079,7 @@ msgstr "جاري إنشاء الحقول الموصى بها…"
 msgid "Get a quick overview of the setup process before connecting your tools."
 msgstr "احصل على نظرة عامة سريعة على عملية الإعداد قبل توصيل أدواتك."
 
-#: src/pages/dashboard/DashboardPage.tsx:273
+#: src/pages/dashboard/DashboardPage.tsx:335
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/WelcomeMessage.tsx:26
 #: src/pages/dashboard/workflows/accounts-payable/components/SetupCallout.tsx:34
 msgid "Get Started"
@@ -5032,11 +5097,11 @@ msgstr "قم بتسمية تقريرك، وحدد مصدر البيانات، و
 msgid "GL & Category"
 msgstr "GL والفئة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3426
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3496
 msgid "GL Account Matching"
 msgstr "مطابقة حساب دفتر الأستاذ"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3811
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3901
 msgid "GL Account Matching Report"
 msgstr "تقرير مطابقة حساب دفتر الأستاذ"
 
@@ -5144,7 +5209,7 @@ msgstr "تفاصيل المجموعة"
 #: src/pages/settings/components/GroupManagement.tsx:591
 #: src/pages/settings/components/GroupManagement.tsx:822
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:27
-#: src/pages/settings/SettingsMain.tsx:323
+#: src/pages/settings/SettingsMain.tsx:332
 msgid "Group Management"
 msgstr "إدارة المجموعات"
 
@@ -5181,8 +5246,8 @@ msgid "Group updated successfully"
 msgstr "تم تحديث المجموعة بنجاح"
 
 #: src/pages/settings/components/GroupManagement.tsx:664
-#: src/pages/settings/components/ManageUser.tsx:2151
-#: src/pages/settings/components/ManageUser.tsx:2580
+#: src/pages/settings/components/ManageUser.tsx:2154
+#: src/pages/settings/components/ManageUser.tsx:2541
 msgid "Groups"
 msgstr "المجموعات"
 
@@ -5224,7 +5289,7 @@ msgstr "إجمالي مبلغ الفاتورة في الترويسة"
 #~ msgid "Hello! I am your Form Assistant. What type of form would you like to create today?"
 #~ msgstr "مرحباً! أنا مساعد النماذج الخاص بك. ما نوع النموذج الذي ترغب في إنشائه اليوم؟"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:97
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:94
 msgid "Help Center"
 msgstr "مركز المساعدة"
 
@@ -5291,7 +5356,7 @@ msgstr "مرتفع"
 msgid "High Match"
 msgstr "تطابق عالٍ"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:815
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:817
 msgid "High Precision"
 msgstr "دقة عالية"
 
@@ -5299,7 +5364,7 @@ msgstr "دقة عالية"
 #~ msgid "High Risk"
 #~ msgstr "مخاطر عالية"
 
-#: src/pages/requests/components/InboxList.tsx:1905
+#: src/pages/requests/components/InboxList.tsx:1908
 #: src/pages/requests/utils/localizeRequestUi.ts:27
 msgid "High Value"
 msgstr "قيمة عالية"
@@ -5312,13 +5377,13 @@ msgstr "قيمة عالية (≥10 آلاف دولار)"
 msgid "Highest Credit Consumption"
 msgstr "أعلى استهلاك للرصيد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3675
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3765
 msgid "Historical Match Results"
 msgstr "نتائج المطابقة التاريخية"
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3542
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3632
 msgid "History"
 msgstr "السجل"
 
@@ -5373,6 +5438,10 @@ msgstr "أؤكد هذا الإجراء بتوقيعي"
 #~ msgid "I've prepared the \"{displayName}\" form fields! Opening in Form Builder..."
 #~ msgstr "لقد قمت بإعداد حقول النموذج \"{displayName}\"! جارٍ الفتح في أداة إنشاء النماذج..."
 
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:452
+msgid "Ideal for:"
+msgstr "مثالي لـ:"
+
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-one/components/ImapSettings.tsx:49
 msgid "IMAP Port"
 msgstr "منفذ IMAP"
@@ -5394,7 +5463,7 @@ msgid "Import extracted items"
 msgstr "استيراد العناصر المستخرجة"
 
 #: src/pages/requests/components/buttons/UploadPoButton.tsx:14
-#: src/pages/requests/components/InboxList.tsx:1932
+#: src/pages/requests/components/InboxList.tsx:1936
 msgid "Import PO Data"
 msgstr "استيراد بيانات أمر الشراء"
 
@@ -5434,20 +5503,21 @@ msgstr "في تَقَدم..."
 #: src/pages/settings/components/GroupManagement.tsx:105
 #: src/pages/settings/components/GroupManagement.tsx:953
 #: src/pages/settings/components/ManageUser.tsx:1428
-#: src/pages/settings/components/ManageUser.tsx:2612
+#: src/pages/settings/components/ManageUser.tsx:2573
 #: src/pages/settings/components/RolesPermissions.tsx:1667
 msgid "Inactive"
 msgstr "غير نشط"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:174
-#: src/pages/requests/components/Header.tsx:97
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:167
+#: src/pages/requests/RequestsPage.tsx:139
 #: src/pages/requests/utils/localizeRequestUi.ts:35
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Inbox"
 msgstr "الوارد"
 
 #: src/pages/requests/components/Header.tsx:97
-msgid "Inbox ({inboxCount})"
-msgstr "الوارد ({inboxCount})"
+#~ msgid "Inbox ({inboxCount})"
+#~ msgstr "الوارد ({inboxCount})"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2601
 msgid "Incoming workload volumes over the last 6 months"
@@ -5552,7 +5622,7 @@ msgstr "التكامل"
 msgid "INTELLIGENCE"
 msgstr "الذكاء"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:813
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:815
 msgid "Intelligence Profile"
 msgstr "الملف الاستخباراتي"
 
@@ -5616,7 +5686,7 @@ msgstr "مدعو"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:839
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1942
 #: src/pages/portal/components/PortalWizard.tsx:160
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1361
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1386
 msgid "Invoice"
 msgstr "الفاتورة"
 
@@ -5641,7 +5711,7 @@ msgstr "فاتورة #"
 msgid "Invoice Amount"
 msgstr "مبلغ الفاتورة"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1696
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1697
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
 #: src/pages/requests/utils/localizeRequestUi.ts:8
@@ -5669,7 +5739,7 @@ msgid "Invoice exceeds PO value."
 msgstr "تتجاوز الفاتورة قيمة أمر الشراء."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2127
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4577
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4667
 msgid "Invoice Line Items"
 msgstr "بنود الفاتورة"
 
@@ -5707,13 +5777,14 @@ msgstr "تم تقليل قيمة الفاتورة."
 msgid "invoices"
 msgstr "فواتير"
 
-#: src/pages/requests/components/Header.tsx:76
+#: src/pages/requests/RequestsPage.tsx:138
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Invoices"
 msgstr "الفواتير"
 
 #: src/pages/requests/components/Header.tsx:76
-msgid "Invoices ({inboxCount})"
-msgstr "الفواتير ({inboxCount})"
+#~ msgid "Invoices ({inboxCount})"
+#~ msgstr "الفواتير ({inboxCount})"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/WhatHappensNext.tsx:14
 msgid "Invoices are automatically matched with purchase orders and goods receipt notes for accuracy."
@@ -5786,7 +5857,7 @@ msgstr "يناير"
 
 #: src/pages/settings/components/ManageUser.tsx:1594
 #: src/pages/settings/components/ManageUser.tsx:1857
-#: src/pages/settings/components/ManageUser.tsx:2558
+#: src/pages/settings/components/ManageUser.tsx:2519
 msgid "Job Title"
 msgstr "المسمى الوظيفي"
 
@@ -5822,7 +5893,7 @@ msgstr "ابقني متصلاً"
 msgid "Key Facts Extracted"
 msgstr "حقائق رئيسية مستخرجة"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1082
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1091
 msgid "Keyword / Field"
 msgstr "الكلمة الرئيسية / الحقل"
 
@@ -5833,7 +5904,7 @@ msgid "Kindly draw the signature"
 msgstr "يرجى رسم التوقيع"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1009
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:672
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:680
 msgid "KPIs"
 msgstr "مؤشرات الأداء الرئيسية"
 
@@ -5892,7 +5963,7 @@ msgstr "اللغة"
 msgid "Last 14 days"
 msgstr "آخر 14 يومًا"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:391
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:400
 msgid "Last 90 days"
 msgstr "آخر 90 يومًا"
 
@@ -5921,8 +5992,8 @@ msgstr "الشهر الماضي"
 msgid "Last month"
 msgstr "الشهر الماضي"
 
-#: src/pages/settings/components/ManageUser.tsx:2264
-#: src/pages/settings/components/ManageUser.tsx:2269
+#: src/pages/settings/components/ManageUser.tsx:2266
+#: src/pages/settings/components/ManageUser.tsx:2271
 msgid "Last Name"
 msgstr "اسم العائلة"
 
@@ -5950,7 +6021,7 @@ msgstr "مجلد العقود القانونية"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "القانوني لديه أطول دورة اعتماد في العرض الحالي، بمتوسط 8.0 أيام لكل فاتورة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4021
 msgid "Legal Matter Association Check"
 msgstr "فحص ارتباط المسألة القانونية"
 
@@ -5979,6 +6050,12 @@ msgstr "لنقم بإعداد سير عمل الحسابات الدائنة"
 #: src/pages/portal/components/PortalDocumentUpload.tsx:209
 #~ msgid "Let’s start your submission."
 #~ msgstr "لنبدأ التقديم الخاص بك."
+
+#: src/pages/settings/components/license/LicenseSettings.tsx:76
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:106
+#: src/pages/settings/SettingsMain.tsx:356
+msgid "License & Subscription"
+msgstr "الترخيص والاشتراك"
 
 #: src/hooks/useTheme.tsx:30
 #: src/layouts/app/components/topbar/components/user-menu/components/Theme.tsx:14
@@ -6028,7 +6105,7 @@ msgstr "مطابقة بنود السطر"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3527
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3617
 msgid "Line Items"
 msgstr "بنود السطر"
 
@@ -6056,8 +6133,8 @@ msgstr "اربط الفواتير بأوامر الشراء بدقة."
 msgid "Link QuickBooks for accounting and payment updates."
 msgstr "قم بربط QuickBooks لتحديثات المحاسبة والدفع."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:648
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:706
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:657
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:715
 msgid "Linked {title} to this document"
 msgstr "تم ربط {title} بهذا المستند"
 
@@ -6074,11 +6151,11 @@ msgstr "يسرد كل مستند مطابق للتأكيد قبل تشغيل ا�
 #~ msgid "LIVE"
 #~ msgstr "مباشر"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:723
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:731
 msgid "Live dashboard generated from your selected widgets."
 msgstr "لوحة معلومات مباشرة تم إنشاؤها من الأدوات المصغرة المحددة."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:175
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:177
 msgid "Live dashboard HTML was empty."
 msgstr "كان كود HTML للوحة المعلومات المباشرة فارغاً."
 
@@ -6095,7 +6172,7 @@ msgstr "جارٍ تحميل النشاط..."
 msgid "Loading attachments..."
 msgstr "جارٍ تحميل المرفقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4621
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4711
 msgid "Loading Attachments..."
 msgstr "جاري تحميل المرفقات..."
 
@@ -6104,7 +6181,7 @@ msgstr "جاري تحميل المرفقات..."
 msgid "Loading comments..."
 msgstr "جاري تحميل التعليقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4664
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4754
 msgid "Loading Comments..."
 msgstr "جاري تحميل التعليقات..."
 
@@ -6139,7 +6216,7 @@ msgstr "جارٍ تحميل النموذج..."
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:372
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:380
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:573
-#: src/pages/settings/components/ManageUser.tsx:2158
+#: src/pages/settings/components/ManageUser.tsx:2161
 msgid "Loading groups..."
 msgstr "جارٍ تحميل المجموعات..."
 
@@ -6147,12 +6224,12 @@ msgstr "جارٍ تحميل المجموعات..."
 msgid "Loading history..."
 msgstr "جارٍ تحميل السجل..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4693
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4783
 msgid "Loading History..."
 msgstr "جاري تحميل السجل..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1160
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:765
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:773
 msgid "Loading live dashboard data..."
 msgstr "جارٍ تحميل بيانات لوحة المعلومات المباشرة..."
 
@@ -6190,8 +6267,8 @@ msgid "Loading roles..."
 msgstr "جارٍ تحميل الأدوار..."
 
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:552
-msgid "Loading saved dashboard..."
-msgstr "جارٍ تحميل لوحة المعلومات المحفوظة..."
+#~ msgid "Loading saved dashboard..."
+#~ msgstr "جارٍ تحميل لوحة المعلومات المحفوظة..."
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:237
 msgid "Loading share details..."
@@ -6244,7 +6321,7 @@ msgstr "جارٍ التحميل..."
 
 #: src/pages/settings/components/ManageUser.tsx:1608
 #: src/pages/settings/components/ManageUser.tsx:1913
-#: src/pages/settings/components/ManageUser.tsx:2576
+#: src/pages/settings/components/ManageUser.tsx:2537
 msgid "Location"
 msgstr "الموقع"
 
@@ -6264,7 +6341,7 @@ msgstr "قم بتسجيل الدخول لتقديم ومتابعة طلباتك"
 msgid "Log out"
 msgstr "تسجيل الخروج"
 
-#: src/pages/settings/components/ManageUser.tsx:2565
+#: src/pages/settings/components/ManageUser.tsx:2526
 #: src/pages/settings/components/PortalConfiguration.tsx:469
 #: src/pages/settings/components/PortalConfiguration.tsx:691
 msgid "Login"
@@ -6290,9 +6367,9 @@ msgstr "نوع تسجيل الدخول"
 #: src/pages/settings/components/ManageUser.tsx:1208
 #: src/pages/settings/components/ManageUser.tsx:1215
 #: src/pages/settings/components/ManageUser.tsx:1622
-#: src/pages/settings/components/ManageUser.tsx:2358
-#: src/pages/settings/components/ManageUser.tsx:2423
-#: src/pages/settings/components/ManageUser.tsx:2429
+#: src/pages/settings/components/ManageUser.tsx:2360
+#: src/pages/settings/components/ManageUser.tsx:2414
+#: src/pages/settings/components/ManageUser.tsx:2420
 msgid "Login Type"
 msgstr "نوع تسجيل الدخول"
 
@@ -6325,11 +6402,11 @@ msgstr "نص طويل"
 #~ msgid "Look for the purchase order, receipt, contract or any file that belongs with this invoice."
 #~ msgstr "ابحث عن أمر الشراء أو الإيصال أو العقد أو أي ملف يخص هذه الفاتورة."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:840
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:849
 msgid "Looking in"
 msgstr "أبحث في"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1115
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1124
 msgid "Looking through your folders…"
 msgstr "البحث في المجلدات الخاصة بك ..."
 
@@ -6349,17 +6426,25 @@ msgstr "إدارة سياسات الوصول والامتيازات للمجلد
 msgid "Manage document-level access rules evaluated against document metadata for folder \"{folderName}\""
 msgstr "إدارة قواعد الوصول على مستوى المستند التي تم تقييمها مقابل بيانات تعريف المستند للمجلد \"{folderName}\""
 
+#: src/pages/dashboard/DashboardPage.tsx:113
+msgid "Manage files and metadata in {label} repository"
+msgstr "إدارة الملفات والبيانات الوصفية في مستودع {label}"
+
 #: src/pages/settings/components/Menus.tsx:542
 msgid "Manage navigation menus, routes, and display order across the platform."
 msgstr "إدارة قوائم التنقل والمسارات وترتيب العرض عبر النظام الأساسي."
 
+#: src/pages/dashboard/DashboardPage.tsx:234
+msgid "Manage repository files and document automation"
+msgstr "إدارة ملفات المستودع وأتمتة المستندات"
+
 #: src/layouts/app/components/topbar/components/PageTitle.tsx:253
-msgid "Management"
-msgstr "الإدارة"
+#~ msgid "Management"
+#~ msgstr "الإدارة"
 
 #: src/pages/settings/components/ManageUser.tsx:1615
 #: src/pages/settings/components/ManageUser.tsx:1901
-#: src/pages/settings/components/ManageUser.tsx:2561
+#: src/pages/settings/components/ManageUser.tsx:2522
 msgid "Manager"
 msgstr "المدير"
 
@@ -6372,7 +6457,7 @@ msgstr "إلزامي"
 msgid "Mandatory — click to make optional"
 msgstr "إلزامي — انقر لجعله اختيارياً"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1047
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1072
 msgid "Manual"
 msgstr "يدوي"
 
@@ -6459,7 +6544,7 @@ msgstr "تعليم كإلزامي"
 msgid "Mark as optional"
 msgstr "تعليم كاختياري"
 
-#: src/pages/requests/components/GridView.tsx:1558
+#: src/pages/requests/components/GridView.tsx:1702
 msgid "Mark as Paid"
 msgstr "وضع علامة على أنه مدفوع"
 
@@ -6555,21 +6640,21 @@ msgstr "مباراة:"
 #: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3302
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3587
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3372
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3677
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "مطابق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3829
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3919
 msgid "Matched GL Account"
 msgstr "حساب دفتر الأستاذ المطابق"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:482
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:504
 msgid "Matched in:"
 msgstr "متطابق في:"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:602
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:611
 msgid "Matched search criteria"
 msgstr "معايير البحث المتطابقة"
 
@@ -6587,7 +6672,7 @@ msgstr "جاري مطابقة تفاصيل أمر الشراء"
 #~ msgid "Matching supplier records..."
 #~ msgstr "مطابقة سجلات الموردين..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3497
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3587
 msgid "Matter Validation"
 msgstr "التحقق من المسألة"
 
@@ -6702,7 +6787,7 @@ msgstr "تم التحقق من صحة البيانات الوصفية، ولم �
 msgid "Metadata Workspace:"
 msgstr "مساحة عمل البيانات الوصفية:"
 
-#: src/pages/settings/components/ManageUser.tsx:2586
+#: src/pages/settings/components/ManageUser.tsx:2547
 msgid "MFA"
 msgstr "المصادقة متعددة العوامل"
 
@@ -6763,7 +6848,7 @@ msgstr "سياق المشاركة مفقود"
 msgid "Mobile OTP"
 msgstr "مكتب المدعي العام المحمول"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:119
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:116
 msgid "Mobile Preview"
 msgstr "معاينة الجوال"
 
@@ -6814,7 +6899,7 @@ msgstr "وصول الوحدات ومصفوفة الامتيازات"
 msgid "Modules"
 msgstr "الوحدات"
 
-#: src/pages/settings/SettingsMain.tsx:338
+#: src/pages/settings/SettingsMain.tsx:347
 msgid "Monitor credit consumption, usage trends, and module-wise activity across the platform."
 msgstr "راقب استهلاك الرصيد واتجاهات الاستخدام والنشاط حسب الوحدة عبر المنصة."
 
@@ -6855,6 +6940,10 @@ msgstr "المزيد (+{hiddenCount})"
 msgid "More than"
 msgstr "أكثر من"
 
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:84
+msgid "Move down"
+msgstr "تحريك لأسفل"
+
 #: src/pages/forms/FormEntriesPage.tsx:2055
 msgid "Move Entry to Trash"
 msgstr "نقل الإدخال إلى سلة المهملات"
@@ -6877,6 +6966,10 @@ msgstr "النقل غير متاح"
 msgid "Move unsuccessful"
 msgstr "فشل النقل"
 
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:75
+msgid "Move up"
+msgstr "تحريك لأعلى"
+
 #: src/pages/settings/components/ManageUser.tsx:1700
 msgid "Multi-Factor Authentication"
 msgstr "المصادقة متعددة العوامل"
@@ -6894,7 +6987,7 @@ msgstr "فروقات متعددة في الأسعار."
 msgid "Must contain:"
 msgstr "يجب أن يحتوي على:"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:103
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:100
 msgid "My Account"
 msgstr "حسابي"
 
@@ -6910,7 +7003,7 @@ msgstr "إرسالاتي"
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:89
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:109
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1606
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1687
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1688
 msgid "N/A"
 msgstr "غ/م"
 
@@ -6931,7 +7024,7 @@ msgstr "غير متوفر (لا توجد قيمة مطلوبة)"
 #: src/pages/settings/components/ManageUser.tsx:1126
 #: src/pages/settings/components/ManageUser.tsx:1128
 #: src/pages/settings/components/ManageUser.tsx:1569
-#: src/pages/settings/components/ManageUser.tsx:2540
+#: src/pages/settings/components/ManageUser.tsx:2501
 #: src/pages/settings/components/PortalConfiguration.tsx:452
 #: src/pages/settings/components/PortalConfiguration.tsx:454
 #: src/pages/settings/components/PortalConfiguration.tsx:680
@@ -6948,6 +7041,10 @@ msgstr "الاسم والوصف"
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:55
 msgid "Name and describe this policy"
 msgstr "قم بتسمية هذه السياسة ووصفها"
+
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:64
+msgid "Name and order the tabs shown on the Requests page for this workflow. Only the first 3 (in order) are backed by real data - any tab beyond that will always show empty."
+msgstr "قم بتسمية وترتيب علامات التبويب المعروضة في صفحة الطلبات لسير العمل هذا. أول 3 علامات تبويب فقط (بالترتيب) مدعومة ببيانات فعلية - وأي علامة تبويب بعدها ستظهر دائماً فارغة."
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:321
 msgid "Name this policy and describe what it governs for folder \"{folderName}\"."
@@ -6991,8 +7088,8 @@ msgstr "جديد نموذج Entry"
 msgid "New Menu Setup"
 msgstr "إعداد القائمة الجديدة"
 
-#: src/pages/settings/components/ManageUser.tsx:2458
-#: src/pages/settings/components/ManageUser.tsx:2463
+#: src/pages/settings/components/ManageUser.tsx:2460
+#: src/pages/settings/components/ManageUser.tsx:2465
 msgid "New Password"
 msgstr "كلمة مرور جديدة"
 
@@ -7006,7 +7103,7 @@ msgstr "تقرير جديد"
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:70
 #: src/pages/requests/components/request/NewRequestSheet.tsx:83
 #: src/pages/requests/components/workflow-request/WorkflowRequest.tsx:129
-#: src/pages/requests/RequestsPage.tsx:828
+#: src/pages/requests/RequestsPage.tsx:892
 msgid "New Request"
 msgstr "طلب جديد"
 
@@ -7020,6 +7117,10 @@ msgstr "طلب جديد"
 #: src/pages/portal/PortalPage.tsx:448
 msgid "New Submission"
 msgstr "تقديم جديد"
+
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:55
+msgid "New Tab"
+msgstr "علامة تبويب جديدة"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:445
 msgid "New uploads replace the existing file"
@@ -7067,8 +7168,8 @@ msgstr "لا"
 msgid "No account found for this username."
 msgstr "لم يتم العثور على حساب لاسم المستخدم هذا."
 
-#: src/pages/requests/components/GridView.tsx:1372
-#: src/pages/requests/components/GridView.tsx:1376
+#: src/pages/requests/components/GridView.tsx:1395
+#: src/pages/requests/components/GridView.tsx:1399
 msgid "No action"
 msgstr "لا يوجد إجراء"
 
@@ -7137,6 +7238,10 @@ msgstr "لا توجد بيانات استهلاك لهذه الفترة."
 msgid "No Data Found"
 msgstr "لم يتم العثور على بيانات"
 
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:122
+msgid "No data loss, no rework — just choose how your trial carries over."
+msgstr "دون فقدان للبيانات ودون إعادة عمل — فقط اختر كيفية ترحيل فترتك التجريبية."
+
 #: src/pages/requests/components/request/components/Header.tsx:995
 msgid "No decision details available for this request."
 msgstr "لا توجد تفاصيل قرار متاحة لهذا الطلب."
@@ -7166,7 +7271,7 @@ msgstr "لا توجد مستندات تتطابق حاليًا مع هذه ال�
 msgid "No documents found"
 msgstr "لم يتم العثور على مستندات"
 
-#: src/pages/requests/components/InboxList.tsx:1218
+#: src/pages/requests/components/InboxList.tsx:1220
 msgid "No Due Date"
 msgstr "No Due التاريخ"
 
@@ -7174,7 +7279,7 @@ msgstr "No Due التاريخ"
 msgid "No Duplicate"
 msgstr "لا تكرار"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3338
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3408
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "لم يتم اكتشاف تكرارات"
@@ -7234,7 +7339,7 @@ msgstr "لم يتم العثور على لوحات نماذج لهذا الطل�
 #~ msgid "No forms found for this source type."
 #~ msgstr "لم يتم العثور على نماذج لنوع المصدر هذا."
 
-#: src/pages/settings/components/ManageUser.tsx:2195
+#: src/pages/settings/components/ManageUser.tsx:2198
 msgid "No groups available from the API yet."
 msgstr "لا توجد مجموعات متاحة من API حتى الآن."
 
@@ -7272,7 +7377,7 @@ msgstr "لم يتم العثور على سجلات"
 msgid "No matching columns found — CSV/Excel headers must match table column names."
 msgstr "لم يتم العثور على أعمدة متطابقة - يجب أن تتطابق رؤوس CSV/Excel مع أسماء أعمدة الجدول."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:898
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:907
 msgid "No matching folders"
 msgstr "لا توجد مجلدات متطابقة"
 
@@ -7284,7 +7389,7 @@ msgstr "لا توجد سجلات فواتير مطابقة في هذه الشر�
 msgid "No matching invoices found"
 msgstr "لم يتم العثور على فواتير مطابقة"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1044
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1053
 msgid "No matching keywords"
 msgstr "لا توجد كلمات رئيسية متطابقة"
 
@@ -7296,7 +7401,7 @@ msgstr "لا توجد حقول رئيسية مطابقة"
 msgid "No matching permissions found"
 msgstr "لم يتم العثور على أذونات مطابقة"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:343
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:358
 msgid "No matching results found"
 msgstr "لم يتم العثور على نتائج مطابقة"
 
@@ -7316,7 +7421,7 @@ msgstr "لا توجد قوائم حتى الآن"
 msgid "No metadata fields available"
 msgstr "لا توجد حقول بيانات وصفية متاحة"
 
-#: src/pages/settings/components/ManageUser.tsx:2587
+#: src/pages/settings/components/ManageUser.tsx:2548
 msgid "No methods"
 msgstr "لا توجد طرق"
 
@@ -7341,7 +7446,7 @@ msgstr "لم يتم منح أي أذونات"
 msgid "No permissions to configure"
 msgstr "لا أذونات للتكوين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3313
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3383
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "لم يتم العثور على أمر شراء"
@@ -7354,7 +7459,7 @@ msgstr "لا توجد بوابات بعد"
 msgid "No preview rows available in this file."
 msgstr "لا توجد صفوف معاينة في هذا الملف."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:773
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:787
 msgid "No preview yet"
 msgstr "لا توجد معاينة بعد"
 
@@ -7370,7 +7475,7 @@ msgstr "لا توجد توصيات متاحة."
 msgid "No related documents are linked with this file yet."
 msgstr "لا توجد مستندات مرتبطة بهذا الملف بعد."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1123
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1132
 msgid "No related documents found."
 msgstr "لم يتم العثور على وثائق ذات صلة."
 
@@ -7566,10 +7671,10 @@ msgstr "لا يساوي"
 msgid "Not mapped"
 msgstr "غير مرتبط"
 
-#: src/pages/requests/components/InboxList.tsx:1894
+#: src/pages/requests/components/InboxList.tsx:1895
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3303
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3588
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3373
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3678
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "غير مطابق"
@@ -7588,7 +7693,7 @@ msgstr "غير مجدول"
 msgid "Not selected"
 msgstr "غير محدد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3350
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3420
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "غير مُتحقق"
@@ -7596,6 +7701,14 @@ msgstr "غير مُتحقق"
 #: src/pages/folders/components/StartWorkflowView.tsx:197
 msgid "Note to Approver"
 msgstr "ملاحظة للموافق"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:343
+msgid "Nothing — starting empty"
+msgstr "لا شيء — البدء فارغاً"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:370
+msgid "Nothing is purged"
+msgstr "لا يتم حذف أي شيء"
 
 #: src/layouts/app/components/topbar/components/notifications/components/header/Header.tsx:33
 #: src/layouts/app/components/topbar/components/notifications/components/NotificationsTrigger.tsx:20
@@ -7660,6 +7773,10 @@ msgstr "ل"
 msgid "of {0}"
 msgstr "من {0}"
 
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:93
+msgid "of trial period used"
+msgstr "من الفترة التجريبية المستخدمة"
+
 #: src/pages/settings/components/PortalConfiguration.tsx:1101
 msgid "Off"
 msgstr "عن"
@@ -7668,7 +7785,7 @@ msgstr "عن"
 msgid "old will be evaluated for"
 msgstr "سيتم تقييم القديم ل"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:113
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:110
 msgid "On Boarding"
 msgstr "الإعداد الأولي"
 
@@ -7822,6 +7939,10 @@ msgstr "تعيين حقول REST في Oracle Fusion"
 msgid "Order"
 msgstr "طلب"
 
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:30
+msgid "Organized"
+msgstr "منظم"
+
 #: src/pages/requests/components/KanbanView.tsx:191
 #: src/pages/requests/components/KanbanView.tsx:196
 msgid "Other"
@@ -7849,7 +7970,7 @@ msgstr "مبالغ فيه"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:140
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:705
-#: src/pages/requests/components/InboxList.tsx:1208
+#: src/pages/requests/components/InboxList.tsx:1210
 #: src/pages/requests/components/QuickFilters.tsx:132
 #: src/pages/requests/utils/localizeRequestUi.ts:28
 msgid "Overdue"
@@ -7894,7 +8015,7 @@ msgstr "موافق عليه جزئياً"
 msgid "PARTIALLY APPROVED"
 msgstr "تمت الموافقة عليه جزئيًا"
 
-#: src/pages/requests/components/InboxList.tsx:1896
+#: src/pages/requests/components/InboxList.tsx:1899
 #: src/pages/requests/components/request/components/sections/history/History.tsx:328
 #: src/pages/requests/utils/localizeRequestUi.ts:22
 msgid "Partially Matched"
@@ -7904,8 +8025,8 @@ msgstr "مطابق جزئياً"
 #: src/pages/portal/components/PortalLogin.tsx:326
 #: src/pages/settings/components/ManageUser.tsx:169
 #: src/pages/settings/components/ManageUser.tsx:360
-#: src/pages/settings/components/ManageUser.tsx:2458
-#: src/pages/settings/components/ManageUser.tsx:2463
+#: src/pages/settings/components/ManageUser.tsx:2460
+#: src/pages/settings/components/ManageUser.tsx:2465
 #: src/pages/sign-in/components/ShareSignInForm.tsx:278
 #: src/pages/sign-in/components/ShareSignInForm.tsx:312
 #: src/pages/sign-in/components/SignInForm.tsx:711
@@ -7922,8 +8043,8 @@ msgid "Password & authentication method"
 msgstr "كلمة المرور وطريقة المصادقة"
 
 #: src/pages/settings/components/ManageUser.tsx:2482
-msgid "Password Expiry (Days)"
-msgstr "انتهاء صلاحية كلمة المرور (أيام)"
+#~ msgid "Password Expiry (Days)"
+#~ msgstr "انتهاء صلاحية كلمة المرور (أيام)"
 
 #: src/pages/settings/components/PortalConfiguration.tsx:967
 #: src/pages/settings/components/PortalConfiguration.tsx:1299
@@ -7969,7 +8090,7 @@ msgstr "تقويم المدفوعات"
 msgid "Payment Channel"
 msgstr "قناة الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3878
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3968
 msgid "Payment Deadlines"
 msgstr "مواعيد الدفع"
 
@@ -7985,14 +8106,18 @@ msgstr "تاريخ استحقاق الدفع"
 msgid "Payment Method"
 msgstr "طريقة الدفع"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3548
+msgid "Payment Status"
+msgstr "حالة الدفع"
+
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3473
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3563
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "شروط الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3962
 msgid "Payment Terms Analysis"
 msgstr "تحليل شروط الدفع"
 
@@ -8016,7 +8141,7 @@ msgstr "سمك القلم"
 #: src/pages/portal/components/PortalHome.tsx:90
 #: src/pages/portal/components/PortalHome.tsx:141
 #: src/pages/settings/components/ManageUser.tsx:1426
-#: src/pages/settings/components/ManageUser.tsx:2609
+#: src/pages/settings/components/ManageUser.tsx:2570
 msgid "Pending"
 msgstr "قيد الانتظار"
 
@@ -8071,11 +8196,11 @@ msgstr "الصلاحيات"
 msgid "Permissions Matrix"
 msgstr "مصفوفة الأذونات"
 
-#: src/pages/settings/components/ManageUser.tsx:2549
+#: src/pages/settings/components/ManageUser.tsx:2510
 msgid "Phone"
 msgstr "الهاتف"
 
-#: src/pages/settings/components/ManageUser.tsx:2317
+#: src/pages/settings/components/ManageUser.tsx:2319
 msgid "Phone Number"
 msgstr "رقم الهاتف"
 
@@ -8137,16 +8262,16 @@ msgstr "قيمة بسيطة"
 #~ msgid "Platform and monitoring"
 #~ msgstr "المنصة والمراقبة"
 
-#: src/pages/settings/SettingsMain.tsx:416
+#: src/pages/settings/SettingsMain.tsx:431
 msgid "Platform Management"
 msgstr "إدارة المنصة"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:117
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:114
 msgid "Playground"
 msgstr "ساحة التجربة"
 
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:45
-#: src/pages/settings/SettingsMain.tsx:347
+#: src/pages/settings/SettingsMain.tsx:362
 msgid "Playground API"
 msgstr "واجهة برمجة تطبيقات بيئة الاختبار"
 
@@ -8162,7 +8287,7 @@ msgstr "يرجى تعيين مستودع لجميع الملفات قبل الم
 #~ msgid "Please attach a file to continue."
 #~ msgstr "يرجى إرفاق ملف للمتابعة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3369
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3439
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "يرجى النقر على «تحقق» للتحقق من شرعية هذا المورد ومنع الاحتيال."
 
@@ -8354,12 +8479,12 @@ msgstr "نجح استيراد PO!"
 msgid "PO issuer or procurement contact"
 msgstr "مصدر أمر الشراء أو جهة اتصال المشتريات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4526
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4616
 msgid "PO Line Items"
 msgstr "بنود أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1061
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1361
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1086
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1386
 msgid "PO Master"
 msgstr "بو ماستر"
 
@@ -8381,22 +8506,22 @@ msgstr "تم استلام ملف PO الرئيسي"
 msgid "PO Master Update"
 msgstr "تحديث PO الرئيسي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3295
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3365
 msgid "PO Matching"
 msgstr "مطابقة أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3584
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3674
 msgid "PO Matching Analysis"
 msgstr "تحليل مطابقة أمر الشراء"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1632
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1633
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "PO Number"
 msgstr "رقم أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3605
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3695
 msgid "PO Number (Extracted)"
 msgstr "رقم أمر الشراء (مستخرج)"
 
@@ -8455,7 +8580,7 @@ msgstr "اسم السياسة *"
 #: src/pages/settings/components/PortalConfiguration.tsx:655
 #: src/pages/settings/components/PortalConfiguration.tsx:1109
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:37
-#: src/pages/settings/SettingsMain.tsx:304
+#: src/pages/settings/SettingsMain.tsx:313
 msgid "Portal Configuration"
 msgstr "تكوين البوابة"
 
@@ -8509,7 +8634,7 @@ msgstr "عنوان URL للبوابة"
 msgid "Portal URL copied"
 msgstr "تم نسخ عنوان URL للبوابة"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:115
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:112
 #: src/pages/settings/components/PortalConfiguration.tsx:737
 msgid "Portals"
 msgstr "البوابات"
@@ -8557,7 +8682,7 @@ msgstr "جاري تجهيز طلبك..."
 msgid "Preparing..."
 msgstr "جاري التحضير..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:507
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:529
 msgid "Press"
 msgstr "اضغط"
 
@@ -8633,19 +8758,20 @@ msgstr "المتابعة إلى الفهرسة"
 msgid "Process documents faster with our agentic pipeline"
 msgstr "عالج المستندات أسرع مع خط أنابيب الوكلاء لدينا"
 
-#: src/pages/requests/components/Header.tsx:65
+#: src/pages/requests/components/Header.tsx:88
 msgid "Process Overview"
 msgstr "نظرة عامة على العملية"
 
-#: src/pages/requests/components/Header.tsx:90
-#: src/pages/requests/components/InboxList.tsx:2055
+#: src/pages/requests/components/InboxList.tsx:2063
+#: src/pages/requests/RequestsPage.tsx:138
 #: src/pages/requests/utils/localizeRequestUi.ts:37
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:22
 msgid "Processed"
 msgstr "المعالجة"
 
 #: src/pages/requests/components/Header.tsx:90
-msgid "Processed ({processedCount})"
-msgstr "المعالجة ({processedCount})"
+#~ msgid "Processed ({processedCount})"
+#~ msgstr "المعالجة ({processedCount})"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2438
 msgid "Processing"
@@ -8672,6 +8798,18 @@ msgstr "جاري المعالجة..."
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3977
 msgid "Procurement (POs & Requisitions)"
 msgstr "المشتريات (أوامر الشراء والطلبات)"
+
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:57
+msgid "Production"
+msgstr "الإنتاج"
+
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:49
+msgid "Production Plan"
+msgstr "خطة الإنتاج"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:116
+msgid "Production Upgrade"
+msgstr "ترقية الإنتاج"
 
 #: src/layouts/app/components/topbar/components/user-menu/UserMenu.tsx:40
 #: src/pages/my-account/components/profile/Profile.tsx:13
@@ -8737,6 +8875,10 @@ msgstr "رقم أمر الشراء"
 msgid "Purchase Order Reference ID"
 msgstr "معرّف مرجع أمر الشراء"
 
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:351
+msgid "Purged"
+msgstr "محذوف"
+
 #: src/pages/dashboard/components/DashboardApiBuilder.tsx:220
 #~ msgid "Put overdue first in red. Donut on the left in blue..."
 #~ msgstr "ضع المتأخر أولاً باللون الأحمر. مخطط دائري مجوف على اليسار باللون الأزرق..."
@@ -8771,8 +8913,8 @@ msgstr "حجم القائمة"
 msgid "Quick Drop selected. You'll be able to upload your first invoices once your setup is complete."
 msgstr "تم تحديد Quick Drop. ستتمكن من رفع فواتيرك الأولى عند اكتمال الإعداد."
 
-#: src/layouts/app/components/topbar/Topbar.tsx:50
-#: src/layouts/app/components/topbar/Topbar.tsx:54
+#: src/layouts/app/components/topbar/Topbar.tsx:53
+#: src/layouts/app/components/topbar/Topbar.tsx:57
 msgid "Quick Help"
 msgstr "مساعدة سريعة"
 
@@ -8783,6 +8925,10 @@ msgstr "تلميح سريع"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:914
 msgid "Quick Try"
 msgstr "تجربة سريعة"
+
+#: src/pages/settings/components/license/LicenseRecentResources.tsx:49
+msgid "Quickly view resources created during your evaluation"
+msgstr "عرض الموارد التي تم إنشاؤها أثناء فترة التقييم بسرعة"
 
 #: src/pages/requests/components/Table.tsx:74
 msgid "Raised At"
@@ -8827,6 +8973,10 @@ msgstr "جاهز للموافقة"
 msgid "Ready to confirm"
 msgstr "جاهز للتأكيد"
 
+#: src/pages/settings/components/license/LicenseSettings.tsx:100
+msgid "Ready to go live? Upgrade to Production."
+msgstr "هل أنت مستعد للانطلاق؟ قم بالترقية إلى بيئة الإنتاج."
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:381
 msgid "Ready to use"
 msgstr "جاهز للاستخدام"
@@ -8842,6 +8992,10 @@ msgstr "احصل على تصنيفات ثقة شفافة لأفضل مطابقا
 #: src/pages/folders/components/Upload/Upload.tsx:590
 msgid "Received"
 msgstr "مستلم"
+
+#: src/pages/settings/components/license/LicenseRecentResources.tsx:46
+msgid "Recent Trial Resources"
+msgstr "الموارد التجريبية الأخيرة"
 
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:120
 msgid "Recipients"
@@ -8890,9 +9044,9 @@ msgstr "رقم المستند المرجعي"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:786
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1133
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:743
-#: src/pages/dashboard/DashboardPage.tsx:249
-#: src/pages/dashboard/DashboardPage.tsx:256
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:751
+#: src/pages/dashboard/DashboardPage.tsx:310
+#: src/pages/dashboard/DashboardPage.tsx:317
 #: src/pages/folders/components/FolderFilterBar.tsx:743
 #: src/pages/folders/components/SignRequestAssignForm.tsx:461
 #: src/pages/forms/FormEntriesPage.tsx:2126
@@ -8901,7 +9055,7 @@ msgstr "رقم المستند المرجعي"
 #: src/pages/portal/components/PortalHome.tsx:434
 #: src/pages/requests/components/buttons/RefreshButton.tsx:31
 #: src/pages/requests/components/buttons/RefreshButton.tsx:36
-#: src/pages/requests/components/InboxList.tsx:1916
+#: src/pages/requests/components/InboxList.tsx:1920
 #: src/pages/settings/components/AuditMonitoring.tsx:193
 #: src/pages/settings/components/credits/Credits.tsx:899
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2137
@@ -8927,7 +9081,7 @@ msgid "Refreshing..."
 msgstr "منعش..."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:940
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:606
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:614
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2001
 msgid "Regenerate"
 msgstr "إعادة إنشاء"
@@ -8940,7 +9094,7 @@ msgstr "خيارات إقامة البيانات الإقليمية"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "تحليل الحجم والإنفاق الإقليمي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1529
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1554
 msgid "Reject Transaction"
 msgstr "رفض المعاملة"
 
@@ -9007,6 +9161,10 @@ msgstr "إزالة العنصر"
 msgid "Remove signer"
 msgstr "إزالة الموقّع"
 
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:102
+msgid "Remove tab"
+msgstr "إزالة علامة التبويب"
+
 #: src/pages/folders/components/DocumentDetailsView.tsx:557
 msgid "Removed from related"
 msgstr "تمت الإزالة من ذات الصلة"
@@ -9039,7 +9197,7 @@ msgstr "استبدال الملف"
 #: src/pages/report-builder/components/ReportBuilderSettingsPage.tsx:65
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:224
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:241
-#: src/pages/settings/SettingsMain.tsx:311
+#: src/pages/settings/SettingsMain.tsx:320
 msgid "Report Builder"
 msgstr "منشئ التقارير"
 
@@ -9080,7 +9238,7 @@ msgid "Report subject line"
 msgstr "سطر موضوع التقرير"
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:38
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:91
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:88
 #: src/pages/report-builder/components/ReportBuilderWizard.tsx:227
 #: src/pages/reports/components/Table.tsx:52
 #: src/pages/reports/ReportsPage.tsx:13
@@ -9113,7 +9271,7 @@ msgstr "معرف المستودع مفقود. لا يمكن تشغيل OCR."
 msgid "Repository ID is missing. Cannot upload."
 msgstr "معرف المستودع مفقود. لا يمكن الرفع."
 
-#: src/pages/dashboard/DashboardPage.tsx:225
+#: src/pages/dashboard/DashboardPage.tsx:286
 msgid "Repository or workflow"
 msgstr "المستودع أو سير العمل"
 
@@ -9194,9 +9352,9 @@ msgstr "تم إرسال الطلب بنجاح"
 msgid "Request submitted."
 msgstr "تم تقديم الطلب."
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:79
-#: src/pages/requests/components/InboxList.tsx:2051
-#: src/pages/requests/components/InboxList.tsx:2056
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:76
+#: src/pages/requests/components/InboxList.tsx:2059
+#: src/pages/requests/components/InboxList.tsx:2064
 #: src/pages/requests/components/Table.tsx:178
 msgid "Requests"
 msgstr "الطلبات"
@@ -9245,16 +9403,21 @@ msgid "Reset mappings to matching suggestions."
 msgstr "إعادة ضبط التعيينات على الاقتراحات المطابقة."
 
 #: src/pages/settings/components/ManageUser.tsx:2442
-msgid "Reset password"
-msgstr "إعادة تعيين كلمة المرور"
+#~ msgid "Reset password"
+#~ msgstr "إعادة تعيين كلمة المرور"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:111
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:108
+#: src/pages/settings/components/ManageUser.tsx:2438
 msgid "Reset Password"
 msgstr "إعادة تعيين كلمة المرور"
 
 #: src/pages/folders/components/DocumentsListView.tsx:920
 msgid "Reset Search"
 msgstr "إعادة تعيين البحث"
+
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:126
+msgid "Reset to default"
+msgstr "إعادة التعيين إلى الوضع الافتراضي"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:760
 msgid "Reset to default suggestions"
@@ -9280,13 +9443,17 @@ msgstr "يعيد"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entry"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:448
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:470
 msgid "Result"
 msgstr "النتيجة"
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1161
 msgid "Resumed your saved folder setup. Continue from where you left off."
 msgstr "تم استئناف إعداد المجلد المحفوظ. تابع من حيث توقفت."
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:324
+msgid "Retained"
+msgstr "المحتفظ به"
 
 #: src/pages/settings/components/Folders/FolderRetention.tsx:231
 msgid "Retention Policies"
@@ -9340,9 +9507,13 @@ msgstr "مراجعة"
 msgid "Review & Apply"
 msgstr "المراجعة والتطبيق"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:771
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:773
 msgid "Review & Complete Setup"
 msgstr "المراجعة والإعداد الكامل"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:70
+msgid "Review & confirm"
+msgstr "المراجعة والتأكيد"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:32
 msgid "Review & Confirm"
@@ -9448,7 +9619,7 @@ msgstr "معرّف مستخدم RFC"
 #: src/pages/settings/components/ManageUser.tsx:1581
 #: src/pages/settings/components/ManageUser.tsx:1843
 #: src/pages/settings/components/ManageUser.tsx:1844
-#: src/pages/settings/components/ManageUser.tsx:2573
+#: src/pages/settings/components/ManageUser.tsx:2534
 #: src/pages/settings/components/RolesPermissions.tsx:1582
 #: src/pages/settings/components/RolesPermissions.tsx:1584
 msgid "Role"
@@ -9496,7 +9667,7 @@ msgstr "الأدوار"
 #: src/pages/settings/components/RolesPermissions.tsx:967
 #: src/pages/settings/components/RolesPermissions.tsx:1760
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:25
-#: src/pages/settings/SettingsMain.tsx:329
+#: src/pages/settings/SettingsMain.tsx:338
 msgid "Roles & Permissions"
 msgstr "الأدوار والصلاحيات"
 
@@ -9630,7 +9801,7 @@ msgid "Save Changes"
 msgstr "حفظ التغييرات"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1149
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:754
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:762
 msgid "Save Dashboard"
 msgstr "حفظ لوحة القيادة"
 
@@ -9688,7 +9859,7 @@ msgstr "حفظ الدور"
 msgid "Save Rules"
 msgstr "حفظ القواعد"
 
-#: src/pages/settings/components/ManageUser.tsx:2835
+#: src/pages/settings/components/ManageUser.tsx:2796
 msgid "Save User"
 msgstr "حفظ المستخدم"
 
@@ -9772,10 +9943,10 @@ msgstr "المبيعات ومعالجة الطلبات (SD)"
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:933
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:247
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:251
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:262
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:266
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:833
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:842
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
 #: src/pages/settings/components/SettingsSearchInput.tsx:53
 #: src/pages/settings/components/SettingsSearchInput.tsx:94
@@ -9786,17 +9957,17 @@ msgstr "بحث"
 msgid "Search {selectedColumnLabel}"
 msgstr "بحث {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:284
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:299
 msgid "Search AI"
 msgstr "بحث AI"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:751
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:776
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:760
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:785
 msgid "Search and link related documents, contracts, records or files associated with this document."
 msgstr "البحث عن المستندات أو العقود أو السجلات أو الملفات المرتبطة بهذه الوثيقة وربطها."
 
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:573
-#: src/pages/settings/components/ManageUser.tsx:2159
+#: src/pages/settings/components/ManageUser.tsx:2162
 msgid "Search and select groups..."
 msgstr "بحث واختيار المجموعات..."
 
@@ -9813,7 +9984,7 @@ msgstr "بحث واختيار سير العمل..."
 msgid "Search business unit..."
 msgstr "بحث عن وحدة الأعمال..."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:807
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:816
 msgid "Search by document name, reference number, or keywords..."
 msgstr "البحث حسب اسم المستند أو الرقم المرجعي أو الكلمات الأساسية..."
 
@@ -9846,7 +10017,7 @@ msgstr "بحث department..."
 msgid "Search description..."
 msgstr "وصف البحث..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:292
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:307
 msgid "Search documents, folders, requests, and more across your workspace."
 msgstr "ابحث في المستندات والمجلدات والطلبات والمزيد عبر مساحة عملك."
 
@@ -9881,7 +10052,7 @@ msgstr "مجلد البحث..."
 #~ msgid "Search folders and files..."
 #~ msgstr "البحث في المجلدات والملفات..."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:880
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:889
 msgid "Search folders..."
 msgstr "البحث في المجلدات..."
 
@@ -9902,7 +10073,7 @@ msgstr "أيقونات البحث"
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1195
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:219
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:639
-#: src/pages/requests/components/InboxList.tsx:1848
+#: src/pages/requests/components/InboxList.tsx:1839
 msgid "Search invoice, supplier, PO..."
 msgstr "ابحث عن فاتورة، مورد، أمر شراء..."
 
@@ -9910,7 +10081,7 @@ msgstr "ابحث عن فاتورة، مورد، أمر شراء..."
 msgid "Search job title..."
 msgstr "البحث عن المسمى الوظيفي..."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1026
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1035
 msgid "Search keywords..."
 msgstr "البحث عن الكلمات الرئيسية..."
 
@@ -9996,15 +10167,15 @@ msgstr "بحث workflows..."
 msgid "Search workflows…"
 msgstr "بحث سير العمل..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:198
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:213
 msgid "Search..."
 msgstr "بحث..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:319
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:334
 msgid "Searching AI"
 msgstr "جاري البحث بالذكاء الاصطناعي"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:324
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:339
 msgid "Searching…"
 msgstr "جاري البحث…"
 
@@ -10029,7 +10200,7 @@ msgstr "القسم {0}"
 msgid "Security"
 msgstr "الأمان"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3708
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3798
 msgid "Security & Auditing Policy"
 msgstr "سياسة الأمان والتدقيق"
 
@@ -10037,7 +10208,7 @@ msgstr "سياسة الأمان والتدقيق"
 msgid "Security & verification"
 msgstr "الأمان والتحقق"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:821
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:823
 msgid "Security Protocol"
 msgstr "بروتوكول الأمان"
 
@@ -10084,7 +10255,7 @@ msgid "Select a repository before uploading."
 msgstr "حدد مستودعًا قبل التحميل."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:354
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:112
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:114
 msgid "Select a repository first."
 msgstr "حدد مستودعاً أولاً."
 
@@ -10178,7 +10349,7 @@ msgstr "حدد عمود الملف"
 msgid "Select first name field"
 msgstr "حدد حقل الاسم الأول"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:866
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:875
 msgid "Select folders"
 msgstr "حدد المجلدات"
 
@@ -10198,7 +10369,7 @@ msgstr "تحديد المجموعات"
 msgid "Select Groups"
 msgstr "حدد المجموعات"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1012
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1021
 msgid "Select keywords"
 msgstr "حدد الكلمات الرئيسية"
 
@@ -10275,7 +10446,7 @@ msgstr "حدد الصف"
 msgid "Select Storage"
 msgstr "حدد التخزين"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:649
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:657
 msgid "Select suggested KPIs and charts from your data."
 msgstr "حدد مؤشرات الأداء الرئيسية والرسوم البيانية المقترحة من بياناتك."
 
@@ -10319,7 +10490,7 @@ msgstr "تحديد المستخدمين أو المجموعات..."
 msgid "Select users..."
 msgstr "حدد المستخدمين..."
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:776
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:790
 msgid "Select widgets in step 2, then click Apply & Preview to load live data."
 msgstr "حدد عناصر واجهة المستخدم في الخطوة 2، ثم انقر فوق «تطبيق ومعاينة» لتحميل البيانات المباشرة."
 
@@ -10331,7 +10502,7 @@ msgstr "حدد قالب سير العمل"
 msgid "Select your preferred language"
 msgstr "حدد لغتك المفضلة"
 
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:534
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:536
 msgid "Selected {enabledKpiCount} KPIs and {enabledChartCount} charts"
 msgstr "تم تحديد {enabledKpiCount} من مؤشرات الأداء الرئيسية و{enabledChartCount} من الرسوم البيانية"
 
@@ -10404,13 +10575,14 @@ msgstr "يرسل تنبيهًا إلى المالك المدرج في البيا
 msgid "Sends OTP to the Email"
 msgstr "يرسل OTP إلى البريد الإلكتروني"
 
-#: src/pages/requests/components/Header.tsx:101
+#: src/pages/requests/RequestsPage.tsx:139
+#: src/pages/workflows/components/settings/RequestTabsSettingsSection.tsx:23
 msgid "Sent"
 msgstr "المرسل"
 
 #: src/pages/requests/components/Header.tsx:101
-msgid "Sent ({sentCount})"
-msgstr "المرسل ({sentCount})"
+#~ msgid "Sent ({sentCount})"
+#~ msgstr "المرسل ({sentCount})"
 
 #: src/pages/settings/components/credits/Credits.tsx:75
 msgid "September"
@@ -10442,7 +10614,7 @@ msgstr "اضبط المشغل وأي شروط إضافية."
 msgid "Set up document security rules"
 msgstr "قم بإعداد قواعد أمان المستندات"
 
-#: src/pages/settings/SettingsMain.tsx:277
+#: src/pages/settings/SettingsMain.tsx:286
 msgid "Set up folders with custom fields, storage, security, and versioning."
 msgstr "قم بإعداد المجلدات بحقول مخصصة وتخزين وأمان وإصدارات."
 
@@ -10464,7 +10636,7 @@ msgid "Setting up..."
 msgstr "جاري الإعداد..."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:61
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:89
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:86
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:878
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:163
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:19
@@ -10472,7 +10644,7 @@ msgstr "جاري الإعداد..."
 #: src/pages/settings/components/SettingsSetupHeader.tsx:41
 #: src/pages/settings/components/SettingsWizardLayout.tsx:93
 #: src/pages/settings/hooks/useSettingsOriginBreadcrumbs.ts:25
-#: src/pages/settings/SettingsMain.tsx:386
+#: src/pages/settings/SettingsMain.tsx:401
 msgid "Settings"
 msgstr "الإعدادات"
 
@@ -10619,7 +10791,7 @@ msgstr "إظهار المجلدات فقط"
 msgid "Show Forms in Settings → Configuration"
 msgstr "إظهار النماذج في الإعدادات ← التكوين"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1281
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1290
 msgid "Show less"
 msgstr "عرض أقل"
 
@@ -10628,7 +10800,7 @@ msgid "Show matching documents to target users."
 msgstr "إظهار المستندات المطابقة للمستخدمين المستهدفين."
 
 #. placeholder {0}: matchCount - RESULTS_PREVIEW_COUNT
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1282
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1291
 msgid "Show more ({0} more)"
 msgstr "عرض المزيد ({0} المزيد)"
 
@@ -10681,7 +10853,7 @@ msgstr "وقّع هنا"
 msgid "Sign in"
 msgstr "تسجيل الدخول"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:105
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:102
 #: src/layouts/auth/components/AuthHeader.tsx:24
 #: src/layouts/auth/components/AuthHeader.tsx:36
 #: src/pages/sign-in/components/ShareSignInForm.tsx:301
@@ -10729,7 +10901,7 @@ msgstr "تسجيل الخروج"
 msgid "Sign request sent. Assigned places stay visible on the document."
 msgstr "تم إرسال طلب التوقيع. تظل الأماكن المخصصة مرئية في المستند."
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:107
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:104
 #: src/layouts/auth/components/AuthHeader.tsx:30
 msgid "Sign Up"
 msgstr "إنشاء حساب"
@@ -10820,7 +10992,7 @@ msgstr "تم تخطي ملف غير مدعوم: {fileName}"
 msgid "Smart PO Matching"
 msgstr "مطابقة PO ذكية"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:823
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/StepFour.tsx:825
 msgid "SOC2 Compliant"
 msgstr "متوافق مع SOC2"
 
@@ -10875,7 +11047,7 @@ msgstr "ملف المصدر:"
 msgid "Source Type"
 msgstr "نوع المصدر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1041
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1066
 msgid "Source: Manual Entry"
 msgstr "المصدر: الإدخال اليدوي"
 
@@ -10883,7 +11055,7 @@ msgstr "المصدر: الإدخال اليدوي"
 msgid "Source: OCR Document"
 msgstr "المصدر: وثيقة التعرف الضوئي على الحروف"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1055
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1080
 msgid "Source: PO Master (ERP/Excel Data)"
 msgstr "المصدر: أمر الشراء الرئيسي (ERP/بيانات Excel)"
 
@@ -10906,7 +11078,7 @@ msgstr "الجدول الزمني القياسي لاتفاقية مستوى ا�
 msgid "Start"
 msgstr "بدء"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:762
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:771
 msgid "Start search"
 msgstr "ابدأ البحث"
 
@@ -10914,9 +11086,13 @@ msgstr "ابدأ البحث"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr "ابدأ هذا الطلب وسنجمع التفاصيل التي تحتاج إليها."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:289
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:304
 msgid "Start typing to search"
 msgstr "ابدأ الكتابة للبحث"
+
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:62
+msgid "Started {startDate} · Expires {expiryDate}"
+msgstr "بدأ في {startDate} · ينتهي في {expiryDate}"
 
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:79
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:92
@@ -11019,6 +11195,10 @@ msgstr "لا يزال مفتوحًا... وهذا يستغرق وقتًا أطو�
 msgid "Storage"
 msgstr "التخزين"
 
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:41
+msgid "Storage across all folders"
+msgstr "سعة التخزين عبر جميع المجلدات"
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:344
 msgid "Storage provider"
 msgstr "مزود التخزين"
@@ -11119,7 +11299,7 @@ msgstr "تم التحميل بنجاح إلى"
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "تم اقتراح {schemaKpiCount} من مؤشرات الأداء الرئيسية و{schemaChartCount} من الرسوم البيانية"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3824
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3914
 msgid "Suggested Allocation"
 msgstr "التوزيع المقترح"
 
@@ -11132,7 +11312,7 @@ msgid "Suggested report plan"
 msgstr "خطة التقرير المقترحة"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1002
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:665
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:673
 msgid "Suggesting KPIs and charts for {repositoryName}..."
 msgstr "جارٍ اقتراح مؤشرات الأداء الرئيسية والرسوم البيانية لـ {repositoryName}..."
 
@@ -11142,7 +11322,7 @@ msgstr "المورد"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:840
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1943
-#: src/pages/requests/components/InboxList.tsx:1866
+#: src/pages/requests/components/InboxList.tsx:1863
 #: src/pages/requests/components/QuickFilters.tsx:351
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:19
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:203
@@ -11158,7 +11338,7 @@ msgstr "اسم كيان المورد / البائع"
 msgid "Supplier Address"
 msgstr "عنوان المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3753
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3843
 msgid "Supplier Code"
 msgstr "رمز المورد"
 
@@ -11170,7 +11350,7 @@ msgstr "رمز المورد"
 msgid "Supplier Conflict"
 msgstr "تعارض المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3748
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3838
 msgid "Supplier Details"
 msgstr "تفاصيل المورد"
 
@@ -11207,22 +11387,22 @@ msgstr "رادار مخاطر الموردين"
 msgid "Supplier Trend Insight"
 msgstr "رؤية اتجاه المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3349
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3381
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3401
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3419
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3451
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3471
 msgid "Supplier Verification"
 msgstr "التحقق من المورد"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1946
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2016
 msgid "Supplier verification completed: {0}"
 msgstr "اكتمل التحقق من المورد: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3735
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3825
 msgid "Supplier Verification Registry"
 msgstr "سجل التحقق من المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3413
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3483
 msgid "Supplier verified"
 msgstr "تم التحقق من المورد"
 
@@ -11270,13 +11450,13 @@ msgstr "يدعم PDF والصور · الحد الأقصى 4 ميجابايت"
 msgid "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 msgstr "يدعم ملفات PDF وWord وExcel وPowerPoint والصور والمستندات · بحد أقصى 50 ميجابايت"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:219
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:230
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:245
 msgid "Switch to Dummy Data"
 msgstr "قم بالتبديل إلى البيانات الوهمية"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:218
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:229
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:233
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:244
 msgid "Switch to Original Data"
 msgstr "التبديل إلى البيانات الأصلية"
 
@@ -11334,7 +11514,7 @@ msgstr "معرف النظام (SID)"
 msgid "System menus cannot be deleted"
 msgstr "لا يمكن حذف قوائم النظام"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3697
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3787
 msgid "System Response"
 msgstr "استجابة النظام"
 
@@ -11346,6 +11526,14 @@ msgstr "جدول"
 #: src/components/common/DynamicFilter.tsx:830
 msgid "Table View"
 msgstr "عرض الجدول"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:119
+msgid "Take your workspace to Production"
+msgstr "انقل مساحة عملك إلى بيئة الإنتاج"
+
+#: src/pages/settings/components/license/LicenseSettings.tsx:110
+msgid "Talk to Sales"
+msgstr "تحدث مع المبيعات"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1651
 msgid "Tap your highlighted sign area to place your signature."
@@ -11382,7 +11570,7 @@ msgstr "الهدف:"
 msgid "Task Requirements"
 msgstr "متطلبات المهمة"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:93
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:90
 msgid "Tasks"
 msgstr "المهام"
 
@@ -11407,7 +11595,7 @@ msgid "Tenant ID is missing."
 msgstr "معرّف المستأجر مفقود."
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:347
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:105
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:107
 msgid "Tenant is missing. Sign in again and retry."
 msgstr "المستأجر مفقود. يرجى تسجيل الدخول مرة أخرى وإعادة المحاولة."
 
@@ -11415,6 +11603,10 @@ msgstr "المستأجر مفقود. يرجى تسجيل الدخول مرة أ�
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3915
 msgid "Test Connection"
 msgstr "اختبار الاتصال"
+
+#: src/pages/settings/components/license/LicenseSettings.tsx:49
+msgid "Thanks! Our team will reach out within one business day."
+msgstr "شكراً لك! سيتواصل فريقنا معك خلال يوم عمل واحد."
 
 #: src/pages/folders/components/SignRequestAssignForm.tsx:202
 msgid "That email is already in the signing list."
@@ -11457,6 +11649,10 @@ msgstr "تتوافق هذه المستندات حاليًا مع القاعدة 
 msgid "Thinking..."
 msgstr "جارٍ التفكير..."
 
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:384
+msgid "This action carries no destructive impact — your workspace continues exactly as it is today, just marked as production."
+msgstr "هذا الإجراء ليس له أي تأثير إتلافي — ستستمر مساحة عملك تماماً كما هي اليوم، مع تصنيفها فقط كإنتاج."
+
 #: src/pages/forms/FormEntriesPage.tsx:2073
 #: src/pages/forms/FormsPage.tsx:513
 #: src/pages/reports/components/ReportsListView.tsx:277
@@ -11472,8 +11668,8 @@ msgid "This branded sign-in link is invalid or no longer available."
 msgstr "رابط تسجيل الدخول ذو العلامة التجارية هذا غير صالح أو لم يعد متاحًا."
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:101
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1240
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1330
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1265
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1355
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:261
 msgid "This field is required."
@@ -11542,7 +11738,7 @@ msgstr "يفتقد هذا الطلب معرف المثيل."
 msgid "This result cannot be added to related documents."
 msgstr "لا يمكن إضافة هذه النتيجة إلى المستندات ذات الصلة."
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:667
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:676
 msgid "This result cannot be attached."
 msgstr "لا يمكن إرفاق هذه النتيجة."
 
@@ -11554,10 +11750,22 @@ msgstr "منطقة التوقيع هذه تخص مستخدماً آخر."
 msgid "This sign request link is invalid."
 msgstr "رابط طلب التوقيع هذا غير صالح."
 
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:296
+msgid "This usually takes under a minute. Don't close this page."
+msgstr "عادةً ما يستغرق هذا أقل من دقيقة. لا تغلق هذه الصفحة."
+
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:155
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:443
 msgid "This week"
 msgstr "هذا الاسبوع"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:386
+msgid "This will permanently delete all trial requests, test files and mock transactions. Your designs and access setup are kept."
+msgstr "سيؤدي هذا إلى حذف جميع طلبات الفترة التجريبية وملفات الاختبار والمعاملات الوهمية نهائياً. سيتم الاحتفاظ بتصميماتك وإعدادات الوصول."
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:387
+msgid "This will permanently delete every trial configuration and file. This cannot be undone — production starts completely empty."
+msgstr "سيؤدي هذا إلى حذف كل ملفات وإعدادات الفترة التجريبية نهائياً. لا يمكن التراجع عن هذا الإجراء — ستبدأ بيئة الإنتاج فارغة تماماً."
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:176
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:203
@@ -11581,7 +11789,7 @@ msgstr "المطابقة الثلاثية"
 msgid "Time"
 msgstr "وقت"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3903
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3993
 msgid "Time Remaining"
 msgstr "الوقت المتبقي"
 
@@ -11708,7 +11916,7 @@ msgstr "إجمالي عمليات التشغيل"
 msgid "Total Submitted"
 msgstr "إجمالي المقدم"
 
-#: src/pages/requests/components/columns/useDynamicColumns.tsx:1673
+#: src/pages/requests/components/columns/useDynamicColumns.tsx:1674
 msgid "Total Value"
 msgstr "القيمة الإجمالية"
 
@@ -11744,7 +11952,7 @@ msgstr "عملة المعاملات"
 msgid "Transactions"
 msgstr "المعاملات"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:95
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:92
 #: src/pages/forms/FormEntriesPage.tsx:2028
 msgid "Trash"
 msgstr "سلة المهملات"
@@ -11752,6 +11960,14 @@ msgstr "سلة المهملات"
 #: src/pages/settings/components/credits/Credits.tsx:1581
 msgid "Trend"
 msgstr "اتجاه"
+
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:53
+msgid "Trial"
+msgstr "تجريبي"
+
+#: src/pages/settings/components/license/LicenseTrialBanner.tsx:49
+msgid "Trial Plan"
+msgstr "الخطة التجريبية"
 
 #: src/pages/settings/components/Folders/FolderRetention.tsx:97
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:717
@@ -11762,7 +11978,7 @@ msgstr "المُشغل"
 msgid "Trigger field"
 msgstr "حقل الزناد"
 
-#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1124
+#: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:1133
 msgid "Try a different keyword, another folder, or switch off one of the invoice conditions."
 msgstr "جرّب كلمة رئيسية مختلفة، أو مجلدًا آخر، أو قم بإيقاف تشغيل أحد شروط الفاتورة."
 
@@ -12016,7 +12232,7 @@ msgstr "غير مقروء ({unreadCount})"
 msgid "Unsupported file type. Please upload a CSV or XLSX file."
 msgstr "نوع ملف غير مدعوم. يرجى رفع ملف CSV أو XLSX."
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:121
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:118
 #: src/pages/folders/components/DocumentDetailsView.tsx:458
 #: src/pages/folders/components/ShareView.tsx:323
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:636
@@ -12080,12 +12296,12 @@ msgstr "حدّث مزود التخزين لهذا المجلد."
 msgid "Update the versioning strategy for this folder."
 msgstr "حدّث استراتيجية الإصدارات لهذا المجلد."
 
-#: src/pages/settings/components/ManageUser.tsx:2835
+#: src/pages/settings/components/ManageUser.tsx:2796
 msgid "Update User"
 msgstr "تحديث المستخدم"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:446
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:468
 msgid "Updated from {0}"
 msgstr "تم التحديث من {0}"
 
@@ -12093,6 +12309,23 @@ msgstr "تم التحديث من {0}"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1004
 msgid "Updates records in master database"
 msgstr "يحدّث السجلات في قاعدة البيانات الرئيسية"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:73
+msgid "Upgrade complete"
+msgstr "اكتملت الترقية"
+
+#: src/pages/settings/components/license/LicenseSettings.tsx:39
+#: src/pages/settings/components/license/LicenseSettings.tsx:118
+msgid "Upgrade to Production"
+msgstr "الترقية إلى بيئة الإنتاج"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:293
+msgid "Upgrading your workspace…"
+msgstr "جارٍ ترقية مساحة عملك…"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:72
+msgid "Upgrading…"
+msgstr "جارٍ الترقية…"
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2104
 #: src/pages/folders/components/FolderExplorer.tsx:319
@@ -12332,9 +12565,9 @@ msgstr "البريد الإلكتروني للمستخدم"
 
 #: src/pages/settings/components/AuditMonitoring.tsx:139
 #: src/pages/settings/components/ManageUser.tsx:1544
-#: src/pages/settings/components/ManageUser.tsx:2834
+#: src/pages/settings/components/ManageUser.tsx:2795
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:23
-#: src/pages/settings/SettingsMain.tsx:317
+#: src/pages/settings/SettingsMain.tsx:326
 msgid "User Management"
 msgstr "إدارة المستخدمين"
 
@@ -12346,7 +12579,7 @@ msgstr "اسم المستخدم"
 msgid "User Profile"
 msgstr "ملف المستخدم"
 
-#: src/pages/settings/components/ManageUser.tsx:2533
+#: src/pages/settings/components/ManageUser.tsx:2494
 msgid "User Summary"
 msgstr "ملخص المستخدم"
 
@@ -12359,7 +12592,7 @@ msgid "username"
 msgstr "اسم المستخدم"
 
 #: src/pages/portal/components/PortalLogin.tsx:82
-#: src/pages/settings/components/ManageUser.tsx:2306
+#: src/pages/settings/components/ManageUser.tsx:2308
 msgid "Username"
 msgstr "اسم المستخدم"
 
@@ -12374,6 +12607,8 @@ msgstr "حقل اسم المستخدم"
 #~ msgid "Username Field *"
 #~ msgstr "حقل اسم المستخدم *"
 
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:52
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:144
 #: src/pages/settings/components/ManageUser.tsx:1663
 #: src/pages/settings/components/RolesPermissions.tsx:1069
 #: src/pages/settings/components/RolesPermissions.tsx:1612
@@ -12428,7 +12663,7 @@ msgstr "تصديق"
 msgid "VALIDATION"
 msgstr "التحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3632
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3722
 msgid "Validation Log"
 msgstr "سجل التحقق"
 
@@ -12462,7 +12697,7 @@ msgstr "فحص البائع"
 msgid "Vendor identity mismatch."
 msgstr "عدم تطابق هوية البائع."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3613
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3703
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "اسم البائع"
@@ -12471,7 +12706,7 @@ msgstr "اسم البائع"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "موردون يحتاجون تواصلًا سريعًا أو حل استفسارات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1953
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2023
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "فشل التحقق. تم استرداد رصيد واحد."
 
@@ -12479,7 +12714,7 @@ msgstr "فشل التحقق. تم استرداد رصيد واحد."
 msgid "Verified"
 msgstr "مُتحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3364
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3434
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "تحقق"
@@ -12504,8 +12739,8 @@ msgstr "تحقق من السياسة التي تم تكوينها قبل تنش�
 msgid "Verify your security rules before applying settings."
 msgstr "تحقق من قواعد الأمان الخاصة بك قبل تطبيق الإعدادات."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3379
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3391
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3449
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3461
 msgid "Verifying..."
 msgstr "جاري التحقق..."
 
@@ -12535,9 +12770,13 @@ msgstr "عرض"
 msgid "View {remainingCount} more suggestions"
 msgstr "عرض {remainingCount} من الاقتراحات الإضافية"
 
-#: src/pages/settings/SettingsMain.tsx:350
+#: src/pages/settings/SettingsMain.tsx:365
 msgid "View activity logs, security events, and configuration change history."
 msgstr "اعرض سجلات النشاط وأحداث الأمان وسجل تغييرات التكوين."
+
+#: src/pages/settings/components/license/LicenseRecentResources.tsx:53
+msgid "View all {totalFolders} folders"
+msgstr "عرض جميع المجلدات ({totalFolders})"
 
 #: src/pages/folders/components/DocumentsListView.tsx:1024
 #: src/pages/folders/components/FolderTable.tsx:824
@@ -12557,6 +12796,14 @@ msgstr "وضع العرض"
 msgid "View suggestions"
 msgstr "عرض الاقتراحات"
 
+#: src/pages/settings/components/license/LicenseSettings.tsx:75
+msgid "View trial usage summary and upgrade to production."
+msgstr "عرض ملخص استخدام الفترة التجريبية والترقية إلى بيئة الإنتاج."
+
+#: src/pages/settings/SettingsMain.tsx:353
+msgid "View trial usage summary, manage license status, and upgrade to production."
+msgstr "عرض ملخص استخدام الفترة التجريبية، وإدارة حالة الترخيص، والترقية إلى بيئة الإنتاج."
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1408
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2301
 #~ msgid "Volume"
@@ -12574,7 +12821,7 @@ msgstr "مقابل الفترة الماضية"
 msgid "Wait for AI classification to finish before indexing."
 msgstr "انتظر حتى ينتهي التصنيف بالذكاء الاصطناعي قبل الفهرسة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1537
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1562
 msgid "Wait for Balance"
 msgstr "انتظر الرصيد"
 
@@ -12599,7 +12846,7 @@ msgid "Waiting for user approval"
 msgstr "في انتظار موافقة المستخدم"
 
 #: src/pages/dashboard/components/DashboardAiBuilder.tsx:1083
-#: src/pages/dashboard/components/DashboardApiBuilder.tsx:711
+#: src/pages/dashboard/components/DashboardApiBuilder.tsx:719
 msgid "Waiting to generate dashboard schema"
 msgstr "في انتظار إنشاء مخطط لوحة المعلومات"
 
@@ -12616,7 +12863,7 @@ msgstr "تحذير"
 msgid "Warning: Column \"{column}\" is already mapped to \"{colLabel}\"."
 msgstr "تحذير: العمود «{column}» مرتبط بالفعل بـ «{colLabel}»."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:346
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:361
 msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
 msgstr "لم نتمكن من العثور على أي سجلات مطابقة لـ «{debouncedQuery}». حاول البحث باستخدام كلمات رئيسية مختلفة أو تحقق من الإملاء."
 
@@ -12705,19 +12952,25 @@ msgstr "ما استراتيجية الإصدارات التي يجب تطبيق�
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:51
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:230
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:735
+#: src/pages/settings/components/license/LicenseRecentResources.tsx:90
 #: src/pages/settings/components/PortalConfiguration.tsx:978
 #: src/pages/settings/components/PortalConfiguration.tsx:986
 msgid "Workflow"
 msgstr "سير العمل"
 
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:101
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:147
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:98
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:140
 msgid "Workflow Builder"
 msgstr "منشئ سير العمل"
 
 #: src/pages/settings/components/WorkflowConfiguration.tsx:16
 msgid "Workflow Configuration"
 msgstr "تكوين مهام سير العمل"
+
+#: src/pages/dashboard/DashboardPage.tsx:133
+#: src/pages/dashboard/DashboardPage.tsx:233
+msgid "Workflow document processing and automation"
+msgstr "معالجة مستندات سير العمل وأتمتتها"
 
 #: src/pages/forms/components/AiFormBuilder.tsx:69
 #: src/pages/forms/components/AiFormBuilder.tsx:98
@@ -12741,14 +12994,16 @@ msgid "Workflow started but did not return any data."
 msgstr "بدأ سير العمل لكنه لم يُرجع أي بيانات."
 
 #: src/layouts/app/components/sidebar/Sidebar.tsx:26
-#: src/layouts/app/components/topbar/components/PageTitle.tsx:83
+#: src/layouts/app/components/topbar/components/PageTitle.tsx:80
 #: src/pages/portal/components/PortalHome.tsx:275
+#: src/pages/settings/components/license/LicenseStatsRow.tsx:25
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:129
 #: src/pages/settings/components/PortalConfiguration.tsx:88
 #: src/pages/settings/components/PortalConfiguration.tsx:486
 #: src/pages/settings/components/PortalConfiguration.tsx:1376
 #: src/pages/settings/components/PortalConfiguration.tsx:1530
 #: src/pages/settings/components/SettingsBreadcrumbs.tsx:35
-#: src/pages/settings/SettingsMain.tsx:297
+#: src/pages/settings/SettingsMain.tsx:306
 #: src/pages/workflows/components/Table.tsx:519
 #: src/pages/workflows/WorkflowsPage.tsx:13
 msgid "Workflows"
@@ -12809,6 +13064,10 @@ msgstr "ليس لديك إذن للإرسال للتوقيع."
 msgid "You don't have permission to start a submission for these workflows."
 msgstr "ليس لديك إذن لبدء عملية إرسال لعمليات سير العمل هذه."
 
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:470
+msgid "You're live on Production"
+msgstr "أنت الآن تعمل على بيئة الإنتاج"
+
 #: src/pages/portal/components/PortalLogin.tsx:85
 msgid "you@company.com"
 msgstr "you@company.com"
@@ -12845,6 +13104,18 @@ msgstr "تم إرسال توقيعك بنجاح. يمكنك إغلاق هذه ا
 #: src/pages/sign-in/BrandedSignInPage.tsx:118
 msgid "your workspace"
 msgstr "مساحة العمل الخاصة بك"
+
+#: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:473
+msgid "Your workspace has been upgraded using the \"{optionTitle}\" strategy. Refresh to see your production workspace."
+msgstr "تمت ترقية مساحة عملك باستخدام استراتيجية \"{optionTitle}\". قم بالتحديث لرؤية مساحة عمل الإنتاج الخاصة بك."
+
+#: src/pages/settings/components/license/LicenseSettings.tsx:57
+msgid "Your workspace is now on Production."
+msgstr "مساحة عملك الآن على بيئة الإنتاج."
+
+#: src/pages/settings/components/license/LicenseSettings.tsx:97
+msgid "Zero-Downtime Transition"
+msgstr "انتقال بدون توقف عن العمل"
 
 #: src/components/common/document-preview/DocumentPreviewViewer.tsx:284
 #: src/pages/folders/components/DocumentSigningPage.tsx:2930

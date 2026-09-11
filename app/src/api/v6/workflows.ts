@@ -151,6 +151,7 @@ export interface V6WorkflowDetail {
     general?: {
       initiateUsing?: { formId?: string | number }
       name?: string
+      requestTabs?: { id: string; label: string }[]
     }
   }
 }

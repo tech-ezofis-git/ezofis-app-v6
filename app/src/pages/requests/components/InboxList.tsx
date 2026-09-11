@@ -1240,6 +1240,7 @@ const InboxList: React.FC<InboxListProps> = ({
     sortState,
     setExpandState,
     setFiltersState,
+    setGroupState,
     setSearchState,
     ...rest
   } = useDataTableState({
@@ -1253,6 +1254,13 @@ const InboxList: React.FC<InboxListProps> = ({
       onGroupByChange(groupState)
     }
   }, [groupState, onGroupByChange])
+
+  // Grouping options come from the current workflow's columns — a column
+  // grouped on one workflow (e.g. "PO Number" on Accounts Payable) may not
+  // exist on another, so clear grouping whenever the workflow changes.
+  React.useEffect(() => {
+    setGroupState([])
+  }, [workflow?.id, setGroupState])
 
   // ✅ Use your actual API shape: data[0].items etc.
   const flatRows = useMemo(() => flattenRows(data as any), [data])
@@ -1784,6 +1792,7 @@ const InboxList: React.FC<InboxListProps> = ({
       sortState,
       setExpandState,
       setFiltersState,
+      setGroupState,
       setSearchState,
       ...rest,
     },
