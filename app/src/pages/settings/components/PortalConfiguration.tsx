@@ -263,7 +263,7 @@ export default function PortalConfiguration({
       ...stored,
       authentication: {
         ...emptyPortalConfig().authentication,
-        ...(stored.authentication || {}),
+        ...stored.authentication,
       },
       loginType:
         stored.loginType === 'masterLogin' ||

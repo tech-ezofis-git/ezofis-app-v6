@@ -37,7 +37,7 @@ export const setFieldForAttachment = (
   if (!instanceId || !attachmentKey || !fieldId) return
   const store = readStore()
   const key = String(instanceId)
-  store[key] = { ...(store[key] || {}), [String(attachmentKey)]: fieldId }
+  store[key] = { ...store[key], [String(attachmentKey)]: fieldId }
   writeStore(store)
 }
 

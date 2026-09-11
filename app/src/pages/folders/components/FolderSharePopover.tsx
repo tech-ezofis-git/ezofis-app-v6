@@ -223,7 +223,7 @@ export default function FolderSharePopover({
 
   useEffect(() => {
     if (!sharedIds) return
-    setSharedUsers(new Set([...sharedIds]))
+    setSharedUsers(new Set(sharedIds))
   }, [sharedIds])
 
   useEffect(() => {

@@ -1,4 +1,11 @@
-import { ArrowLeft, CheckCircle2, Loader2, PenLine, ScanText } from 'lucide-react'
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  PenLine,
+  ScanText,
+} from 'lucide-react'
 import { useLingui } from '@lingui/react/macro'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import fileApi from '@/api/file/file'
@@ -29,10 +36,15 @@ import {
   getRepositoryById,
   persistEditedDocumentToRepository,
   type RepositoryFieldDto,
+  type UploadArchiveResponse,
 } from '@/api/v6/folder/folder'
 import CollaboraEditor from './CollaboraEditor'
 import authUserStore from '@/stores/authUserStore'
-import { formatUtcToLocalDate, formatUtcToLocalDateTime, parseUtcDate } from '@/utils/utcDate'
+import {
+  formatUtcToLocalDate,
+  formatUtcToLocalDateTime,
+  parseUtcDate,
+} from '@/utils/utcDate'
 import { folderApi } from '../api/folderApi'
 import {
   getFileExtension,
@@ -42,7 +54,10 @@ import {
   type DocumentPreviewKind,
 } from '../utils/documentDetailsUtils'
 import { resolveShareContext } from '../utils/shareContextStorage'
-import { getFieldDisplayValue, getFieldSearchVariantStrings } from '../utils/fieldPdfSearch'
+import {
+  getFieldDisplayValue,
+  getFieldSearchVariantStrings,
+} from '../utils/fieldPdfSearch'
 import {
   loadSignRequestFields,
   saveSignRequestFields,
@@ -123,9 +138,7 @@ const toRelatedDoc = (
   },
   untitled: string,
 ): RelatedDoc | null => {
-  const relatedItemId = String(
-    row?.relatedItemId || row?.id || '',
-  ).trim()
+  const relatedItemId = String(row?.relatedItemId || row?.id || '').trim()
   const relatedRepositoryId = String(
     row?.relatedRepositoryId || row?.repositoryId || '',
   ).trim()
@@ -204,9 +217,12 @@ const formatTimeOnly = (value?: string) => {
   if (!value) return ''
   const d = parseUtcDate(value)
   if (!d) return ''
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+  return d.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  })
 }
-
 
 const formatRelatedFileSize = (bytes?: number | null) => {
   if (bytes == null || Number.isNaN(Number(bytes)) || Number(bytes) <= 0) {
@@ -406,6 +422,8 @@ export function DocumentDetailsView({
   const [isEditingDoc, setIsEditingDoc] = useState(false)
   /** Bump after a successful sign so the details viewer reloads the signed file. */
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0)
+  /** Bump to reload document details and metadata from the backend. */
+  const [detailsRefreshKey, setDetailsRefreshKey] = useState(0)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
   const [isSigning, setIsSigning] = useState(Boolean(forceSigning))
@@ -419,9 +437,7 @@ export function DocumentDetailsView({
   const canSign = Boolean(forceSigning || activeInviteToken)
   const canDownload = permissions ? permissions.download === true : true
   const canPrint = permissions ? permissions.print === true : true
-  const canEditDocument = permissions
-    ? permissions.editDocument === true
-    : true
+  const canEditDocument = permissions ? permissions.editDocument === true : true
   const canSendForSignature = permissions
     ? permissions.sendForSignature === true
     : true
@@ -452,7 +468,10 @@ export function DocumentDetailsView({
   )
 
   const applyRelatedDocs = useCallback(
-    (response: { data?: Array<Parameters<typeof toRelatedDoc>[0]>; totalCount?: number }) => {
+    (response: {
+      data?: Array<Parameters<typeof toRelatedDoc>[0]>
+      totalCount?: number
+    }) => {
       const rows = Array.isArray(response?.data) ? response.data : []
       const mapped = rows
         .map((row) => toRelatedDoc(row, t`Untitled`))
@@ -530,7 +549,12 @@ export function DocumentDetailsView({
         item.relatedRepositoryId || item.repositoryId || '',
       ).trim()
       const relatedItemId = String(item.relatedItemId || item.id || '').trim()
-      if (!openRepoId || !openItemId || !relatedRepositoryId || !relatedItemId) {
+      if (
+        !openRepoId ||
+        !openItemId ||
+        !relatedRepositoryId ||
+        !relatedItemId
+      ) {
         showToast({
           message: t`This related document cannot be removed.`,
           variant: 'error',
@@ -575,10 +599,10 @@ export function DocumentDetailsView({
   const currentUserEmail = String(session?.email || '')
     .trim()
     .toLowerCase()
-  const signerName = [session?.firstName, session?.lastName]
-    .filter(Boolean)
-    .join(' ')
-    .trim() || session?.name || ''
+  const signerName =
+    [session?.firstName, session?.lastName].filter(Boolean).join(' ').trim() ||
+    session?.name ||
+    ''
 
   useEffect(() => {
     setSavedSignatures([])
@@ -611,7 +635,10 @@ export function DocumentDetailsView({
       ]
       let requestId = String(initialSignRequestId || '').trim()
 
-      const itemRequests = await listItemSignRequests({ itemId: id, repositoryId })
+      const itemRequests = await listItemSignRequests({
+        itemId: id,
+        repositoryId,
+      })
       if (!mounted) return
 
       const activeRequests = (itemRequests.data || []).filter((request) => {
@@ -621,19 +648,19 @@ export function DocumentDetailsView({
 
       const pendingForUser = currentUserEmail
         ? activeRequests.find((request) => {
-          return (request.signers || []).some((signer) => {
-            const email = String(signer.email || '')
-              .trim()
-              .toLowerCase()
-            const signerStatus = String(signer.status || '').toUpperCase()
-            return (
-              email === currentUserEmail &&
-              !signerStatus.includes('SIGNED') &&
-              !signerStatus.includes('DECLINE') &&
-              !signerStatus.includes('CANCEL')
-            )
+            return (request.signers || []).some((signer) => {
+              const email = String(signer.email || '')
+                .trim()
+                .toLowerCase()
+              const signerStatus = String(signer.status || '').toUpperCase()
+              return (
+                email === currentUserEmail &&
+                !signerStatus.includes('SIGNED') &&
+                !signerStatus.includes('DECLINE') &&
+                !signerStatus.includes('CANCEL')
+              )
+            })
           })
-        })
         : undefined
 
       // Latest active request — so the owner also sees marked places after refresh.
@@ -676,10 +703,10 @@ export function DocumentDetailsView({
           fields = fromDto.length
             ? fromDto
             : loadSignRequestFields({
-              itemId: id,
-              repositoryId,
-              signRequestId: requestId,
-            })
+                itemId: id,
+                repositoryId,
+                signRequestId: requestId,
+              })
         }
       } else if (requestId && !fields.length) {
         const detail = await getSignRequest({ signRequestId: requestId })
@@ -798,9 +825,9 @@ export function DocumentDetailsView({
           id,
           useShareToken
             ? {
-              shareToken: shareCtx.shareToken,
-              tenantId: shareCtx.sourceTenantId,
-            }
+                shareToken: shareCtx.shareToken,
+                tenantId: shareCtx.sourceTenantId,
+              }
             : undefined,
         )
         if (mounted) setData(response as WorkspaceDocumentDetail)
@@ -821,7 +848,14 @@ export function DocumentDetailsView({
     return () => {
       mounted = false
     }
-  }, [repositoryId, id, inviteToken, invitePreview?.fileName, t])
+  }, [
+    repositoryId,
+    id,
+    inviteToken,
+    invitePreview?.fileName,
+    t,
+    detailsRefreshKey,
+  ])
 
   useEffect(() => {
     let mounted = true
@@ -855,7 +889,10 @@ export function DocumentDetailsView({
       }
 
       try {
-        const requests = await listItemSignRequests({ itemId: id, repositoryId })
+        const requests = await listItemSignRequests({
+          itemId: id,
+          repositoryId,
+        })
         for (const request of requests.data || []) {
           const status = String(request.status || '').toUpperCase()
           if (status === 'CANCELLED' || status === 'COMPLETED') continue
@@ -930,7 +967,9 @@ export function DocumentDetailsView({
           page: nextPage,
           pageSize: 50,
         })
-        const fetchedComments = Array.isArray(response?.comments) ? response.comments : []
+        const fetchedComments = Array.isArray(response?.comments)
+          ? response.comments
+          : []
         if (fetchedComments.length > 0) {
           setComments((prev) => [...fetchedComments.reverse(), ...prev])
           setCommentsPage(nextPage)
@@ -938,7 +977,8 @@ export function DocumentDetailsView({
 
           setTimeout(() => {
             if (commentsContainerRef.current) {
-              commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight - previousScrollHeight
+              commentsContainerRef.current.scrollTop =
+                commentsContainerRef.current.scrollHeight - previousScrollHeight
             }
           }, 0)
         } else {
@@ -1104,11 +1144,7 @@ export function DocumentDetailsView({
     setPreviewKind((previous) => {
       if (previous && previous !== 'unsupported') return previous
       return resolveDocumentPreviewKind(
-        resolvePreviewMimeType(
-          previewMimeType,
-          data?.fileName,
-          data?.fileType,
-        ),
+        resolvePreviewMimeType(previewMimeType, data?.fileName, data?.fileType),
         data?.fileName || data?.fileType,
       )
     })
@@ -1158,10 +1194,7 @@ export function DocumentDetailsView({
         })
         if (inviteFile.error || !(inviteFile.data instanceof Blob)) {
           throw new Error(
-            toUiErrorMessage(
-              inviteFile.error,
-              t`Unable to download file`,
-            ),
+            toUiErrorMessage(inviteFile.error, t`Unable to download file`),
           )
         }
         blob = inviteFile.data
@@ -1173,10 +1206,7 @@ export function DocumentDetailsView({
         )
         if (!(response?.data instanceof Blob)) {
           throw new Error(
-            toUiErrorMessage(
-              response?.error,
-              t`Unable to download file`,
-            ),
+            toUiErrorMessage(response?.error, t`Unable to download file`),
           )
         }
         blob = response.data
@@ -1197,7 +1227,10 @@ export function DocumentDetailsView({
     } catch (exception: any) {
       console.error(exception)
       setDownloadError(
-        toUiErrorMessage(exception?.message || exception, t`Unable to download file`),
+        toUiErrorMessage(
+          exception?.message || exception,
+          t`Unable to download file`,
+        ),
       )
     } finally {
       setIsDownloading(false)
@@ -1237,7 +1270,9 @@ export function DocumentDetailsView({
     setIsEditingDoc(false)
   }
 
-  const extractMetadataFromDetail = (detail: WorkspaceDocumentDetail | null): Record<string, string> => {
+  const extractMetadataFromDetail = (
+    detail: WorkspaceDocumentDetail | null,
+  ): Record<string, string> => {
     const metadata: Record<string, string> = {}
     if (!detail) return metadata
 
@@ -1246,7 +1281,12 @@ export function DocumentDetailsView({
         if (Array.isArray(section.fields)) {
           for (const field of section.fields) {
             const key = field?.key || field?.label
-            if (key && field?.value !== undefined && field?.value !== null && field?.value !== '') {
+            if (
+              key &&
+              field?.value !== undefined &&
+              field?.value !== null &&
+              field?.value !== ''
+            ) {
               metadata[key] = String(field.value)
             }
           }
@@ -1306,6 +1346,21 @@ export function DocumentDetailsView({
     return Object.keys(metadata).length ? metadata : labelValues
   }
 
+  const handleOpenFile = useCallback(
+    (targetItemId: string, targetRepoId: string) => {
+      if (targetItemId && targetItemId !== id) {
+        onOpenRelatedDocument?.({
+          id: targetItemId,
+          repositoryId: targetRepoId,
+        })
+      } else {
+        setDetailsRefreshKey((prev) => prev + 1)
+        setPreviewRefreshKey((prev) => prev + 1)
+      }
+    },
+    [id, onOpenRelatedDocument],
+  )
+
   const handleCollaboraSave = async (blob: Blob) => {
     setIsEditingDoc(false)
 
@@ -1342,11 +1397,38 @@ export function DocumentDetailsView({
         variant: 'error',
       })
     } else {
+      const responsePayload = (
+        Array.isArray(resData) ? resData[0] : resData?.data || resData
+      ) as UploadArchiveResponse | undefined
+
+      const savedItemId = String(responsePayload?.itemId || id).trim()
+      const savedFileName = String(responsePayload?.fileName || fileName).trim()
+      const savedVersion = responsePayload?.fileVersion
+
       showToast({
-        message: t`Document updated successfully.`,
+        autoClose: 10000,
+        message: (
+          <div className='flex flex-col gap-1.5 py-0.5 text-[13px]'>
+            <span className='leading-snug text-gray-12'>
+              {savedVersion !== undefined && savedVersion !== null
+                ? t`${savedFileName} created as version ${savedVersion}.`
+                : t`${savedFileName} updated successfully.`}
+            </span>
+            <button
+              type='button'
+              className='inline-flex w-fit cursor-pointer items-center gap-1 text-[12px] font-semibold text-primary-10 transition-colors hover:text-primary-11 hover:underline'
+              onClick={(e) => {
+                e.stopPropagation()
+                handleOpenFile(savedItemId, repositoryId)
+              }}
+            >
+              <span>{t`Open file`}</span>
+              <ExternalLink size={12} className='shrink-0' />
+            </button>
+          </div>
+        ),
         variant: 'success',
       })
-      setPreviewRefreshKey((previous) => previous + 1)
     }
   }
 
@@ -1591,8 +1673,7 @@ export function DocumentDetailsView({
               for (const placement of placements) {
                 if (activeInviteToken) {
                   const submitted = await submitInviteSignRequest({
-                    accessToken:
-                      authUserStore.getState().identity?.accessToken,
+                    accessToken: authUserStore.getState().identity?.accessToken,
                     inviteToken: activeInviteToken,
                     signature: {
                       fieldId: placement.signatureId,
@@ -1759,12 +1840,12 @@ export function DocumentDetailsView({
       ) : null}
 
       <div className='no-print relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-2 overflow-visible border-b border-gray-3 bg-surface-primary px-5'>
-        <div className='flex items-center gap-3 min-w-0 flex-1 mr-4'>
+        <div className='mr-4 flex min-w-0 flex-1 items-center gap-3'>
           {forceSigning || !onBack ? (
             <div className='h-8 w-[72px] shrink-0' aria-hidden />
           ) : (
             <Button
-              className='h-8 border-transparent px-3 text-[13px] shadow-none shrink-0'
+              className='h-8 shrink-0 border-transparent px-3 text-[13px] shadow-none'
               onClick={onBack}
             >
               <ArrowLeft size={12} /> {t`Back`}
@@ -1772,17 +1853,13 @@ export function DocumentDetailsView({
           )}
 
           {data?.fileName && (
-            <Tooltip
-              content={data.fileName}
-              position='bottom'
-              width={240}
-            >
-              <div className='flex items-center gap-2 min-w-0 select-none'>
+            <Tooltip content={data.fileName} position='bottom' width={240}>
+              <div className='flex min-w-0 items-center gap-2 select-none'>
                 <Icon
                   className='size-5 shrink-0 text-gray-10'
                   name={getFileIcon(data.fileName)}
                 />
-                <span className='truncate text-[14px] font-semibold text-gray-12 max-w-[200px] sm:max-w-[300px] md:max-w-[400px]'>
+                <span className='max-w-[200px] truncate text-[14px] font-semibold text-gray-12 sm:max-w-[300px] md:max-w-[400px]'>
                   {data.fileName}
                 </span>
               </div>
@@ -1790,7 +1867,7 @@ export function DocumentDetailsView({
           )}
         </div>
 
-        <div className='flex items-center gap-1.5 shrink-0'>
+        <div className='flex shrink-0 items-center gap-1.5'>
           {!compactActions ? (
             <>
               {isEditableDocType && canEditDocument ? (
@@ -1799,9 +1876,7 @@ export function DocumentDetailsView({
                     aria-label={t`Edit file`}
                     className='inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-11 transition-all hover:bg-gray-2 hover:text-gray-12 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50'
                     disabled={
-                      !previewBlobRef.current ||
-                      isPreviewLoading ||
-                      isSigning
+                      !previewBlobRef.current || isPreviewLoading || isSigning
                     }
                     type='button'
                     onClick={() => setIsEditingDoc(true)}
@@ -1929,15 +2004,12 @@ export function DocumentDetailsView({
                           })),
                           signingMode:
                             meta?.signingMode ||
-                            (signShares.length === 1
-                              ? 'single'
-                              : 'multiple'),
+                            (signShares.length === 1 ? 'single' : 'multiple'),
                         })
                         if (created.error || !created.data?.signRequestId) {
                           throw new Error(
                             String(
-                              created.error ||
-                              'Unable to create sign request',
+                              created.error || 'Unable to create sign request',
                             ),
                           )
                         }
@@ -1982,10 +2054,11 @@ export function DocumentDetailsView({
               ref={signTriggerRef}
               aria-label={t`My Sign`}
               aria-expanded={isSigning}
-              className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${isSigning
-                ? 'border-primary-6 bg-primary-1 text-primary-9'
-                : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
-                }`}
+              className={`inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-3.5 text-[13px] font-semibold transition-all hover:shadow-sm active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+                isSigning
+                  ? 'border-primary-6 bg-primary-1 text-primary-9'
+                  : 'border-gray-3 bg-surface text-gray-11 hover:border-gray-5 hover:bg-gray-2 hover:text-gray-13'
+              }`}
               disabled={!previewUrl || isPreviewLoading}
               type='button'
               onClick={() => {
@@ -2044,10 +2117,11 @@ export function DocumentDetailsView({
 
       <div className='ez-detail-scroll min-h-0 flex-1 overflow-y-auto p-5'>
         <div
-          className={`grid gap-5 ${forceSigning && infoCards.length === 0
-            ? 'grid-cols-1'
-            : 'grid-cols-[minmax(0,1fr)_400px]'
-            }`}
+          className={`grid gap-5 ${
+            forceSigning && infoCards.length === 0
+              ? 'grid-cols-1'
+              : 'grid-cols-[minmax(0,1fr)_400px]'
+          }`}
         >
           <main className='min-w-0 space-y-4'>
             {data.alert ? (
@@ -2082,10 +2156,11 @@ export function DocumentDetailsView({
               ) : null}
 
               <div
-                className={`ez-detail-scroll overflow-hidden bg-gray-1 ${isSigning || assignedFields.length > 0
-                  ? 'h-[min(72vh,820px)]'
-                  : 'h-[560px]'
-                  }`}
+                className={`ez-detail-scroll overflow-hidden bg-gray-1 ${
+                  isSigning || assignedFields.length > 0
+                    ? 'h-[min(72vh,820px)]'
+                    : 'h-[560px]'
+                }`}
               >
                 {hasValidFileUrl || isPreviewLoading ? (
                   <div
@@ -2099,6 +2174,7 @@ export function DocumentDetailsView({
                       enableHighlight={
                         isPdfPreview && fieldHighlightTerms.length > 0
                       }
+                      fileBlob={previewBlobRef.current}
                       fileName={data.fileName}
                       fileUrl={previewUrl}
                       focusRequestId={fieldFocusRequestId}
@@ -2133,8 +2209,9 @@ export function DocumentDetailsView({
                       <tr className='text-left text-gray-10'>
                         {lineItemColumns.map((key, index) => (
                           <th
-                            className={`sticky top-0 z-30 whitespace-nowrap border-b border-gray-3 px-3 py-3 text-left text-[12px] font-semibold tracking-wide text-gray-10 ${lineItemStickyClass(index, 'th')} ${index < 2 ? 'z-40' : ''
-                              }`}
+                            className={`sticky top-0 z-30 border-b border-gray-3 px-3 py-3 text-left text-[12px] font-semibold tracking-wide whitespace-nowrap text-gray-10 ${lineItemStickyClass(index, 'th')} ${
+                              index < 2 ? 'z-40' : ''
+                            }`}
                             key={key}
                           >
                             {formatLineItemHeader(key)}
@@ -2144,13 +2221,10 @@ export function DocumentDetailsView({
                     </thead>
                     <tbody>
                       {lineItems.map((row, rowIndex) => (
-                        <tr
-                          className='group text-gray-13'
-                          key={rowIndex}
-                        >
+                        <tr className='group text-gray-13' key={rowIndex}>
                           {lineItemColumns.map((key, index) => (
                             <td
-                              className={`whitespace-nowrap border-b border-gray-3 px-3 py-3 font-medium group-last:border-b-0 ${lineItemStickyClass(index, 'td')}`}
+                              className={`border-b border-gray-3 px-3 py-3 font-medium whitespace-nowrap group-last:border-b-0 ${lineItemStickyClass(index, 'td')}`}
                               key={`${rowIndex}-${key}`}
                             >
                               <span className='block truncate'>
@@ -2201,7 +2275,8 @@ export function DocumentDetailsView({
                         <div className='space-y-0'>
                           {timeline.map((item, index) => {
                             const isLast = index === timeline.length - 1
-                            const prevItem = index > 0 ? timeline[index - 1] : null
+                            const prevItem =
+                              index > 0 ? timeline[index - 1] : null
                             const isSameDate =
                               prevItem &&
                               formatDateOnly(item.createdAtUtc) ===
@@ -2220,7 +2295,10 @@ export function DocumentDetailsView({
                                   <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-blue-11'>
                                     <DynamicIcon
                                       className='h-4 w-4'
-                                      name={eventIconMap[item.eventType || ''] || 'clock'}
+                                      name={
+                                        eventIconMap[item.eventType || ''] ||
+                                        'clock'
+                                      }
                                     />
                                   </span>
                                   {!isLast && (
@@ -2234,7 +2312,16 @@ export function DocumentDetailsView({
                                     <b className='font-semibold text-gray-12'>
                                       {item.title}
                                     </b>
-                                    {item.description ? (<span className='text-gray-10'>{': '}<b className='font-semibold'>{'"'}</b><i className='not-italic italic'>{item.description}</i><b className='font-semibold'>{'"'}</b></span>) : null}
+                                    {item.description ? (
+                                      <span className='text-gray-10'>
+                                        {': '}
+                                        <b className='font-semibold'>{'"'}</b>
+                                        <i className='italic not-italic'>
+                                          {item.description}
+                                        </i>
+                                        <b className='font-semibold'>{'"'}</b>
+                                      </span>
+                                    ) : null}
                                   </p>
                                   <p className='mt-0.5 text-[12px] text-gray-9'>
                                     {[
@@ -2283,116 +2370,162 @@ export function DocumentDetailsView({
                               </div>
                             ) : null}
                             {comments.length ? (
-                          <div className='flex flex-col gap-2'>
-                            {(() => {
-                              let lastDateHeader = ''
-                              return comments.map((item, index) => {
-                                const author =
-                                  item.authorName ||
-                                  item.author ||
-                                  item.actorName ||
-                                  t`User`
-                                const message =
-                                  item.body ||
-                                  item.message ||
-                                  item.comment ||
-                                  item.text ||
-                                  ''
-                                const isMine = item.authorEmail === currentUserEmail || item.authorName === currentUserEmail || item.authorUserId === currentUserEmail
+                              <div className='flex flex-col gap-2'>
+                                {(() => {
+                                  let lastDateHeader = ''
+                                  return comments.map((item, index) => {
+                                    const author =
+                                      item.authorName ||
+                                      item.author ||
+                                      item.actorName ||
+                                      t`User`
+                                    const message =
+                                      item.body ||
+                                      item.message ||
+                                      item.comment ||
+                                      item.text ||
+                                      ''
+                                    const isMine =
+                                      item.authorEmail === currentUserEmail ||
+                                      item.authorName === currentUserEmail ||
+                                      item.authorUserId === currentUserEmail
 
-                                let dateHeader = ''
-                                const dateStr = item.createdAtUtc || item.date
-                                let messageTime = ''
+                                    let dateHeader = ''
+                                    const dateStr =
+                                      item.createdAtUtc || item.date
+                                    let messageTime = ''
 
-                                if (dateStr) {
-                                  const d = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z')
-                                  if (!isNaN(d.getTime())) {
-                                    messageTime = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+                                    if (dateStr) {
+                                      const d = new Date(
+                                        dateStr.endsWith('Z')
+                                          ? dateStr
+                                          : dateStr + 'Z',
+                                      )
+                                      if (!isNaN(d.getTime())) {
+                                        messageTime = d.toLocaleTimeString(
+                                          undefined,
+                                          {
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                          },
+                                        )
 
-                                    const today = new Date()
-                                    const yesterday = new Date(today)
-                                    yesterday.setDate(yesterday.getDate() - 1)
+                                        const today = new Date()
+                                        const yesterday = new Date(today)
+                                        yesterday.setDate(
+                                          yesterday.getDate() - 1,
+                                        )
 
-                                    const isSameDay = (d1: Date, d2: Date) =>
-                                      d1.getFullYear() === d2.getFullYear() &&
-                                      d1.getMonth() === d2.getMonth() &&
-                                      d1.getDate() === d2.getDate()
+                                        const isSameDay = (
+                                          d1: Date,
+                                          d2: Date,
+                                        ) =>
+                                          d1.getFullYear() ===
+                                            d2.getFullYear() &&
+                                          d1.getMonth() === d2.getMonth() &&
+                                          d1.getDate() === d2.getDate()
 
-                                    if (isSameDay(d, today)) dateHeader = t`Today`
-                                    else if (isSameDay(d, yesterday)) dateHeader = t`Yesterday`
-                                    else {
-                                      const diffTime = Math.abs(today.getTime() - d.getTime())
-                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                                      if (diffDays <= 7) {
-                                        dateHeader = d.toLocaleDateString(undefined, { weekday: 'long' })
-                                      } else {
-                                        dateHeader = d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                                        if (isSameDay(d, today))
+                                          dateHeader = t`Today`
+                                        else if (isSameDay(d, yesterday))
+                                          dateHeader = t`Yesterday`
+                                        else {
+                                          const diffTime = Math.abs(
+                                            today.getTime() - d.getTime(),
+                                          )
+                                          const diffDays = Math.ceil(
+                                            diffTime / (1000 * 60 * 60 * 24),
+                                          )
+                                          if (diffDays <= 7) {
+                                            dateHeader = d.toLocaleDateString(
+                                              undefined,
+                                              { weekday: 'long' },
+                                            )
+                                          } else {
+                                            dateHeader = d.toLocaleDateString(
+                                              undefined,
+                                              {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                              },
+                                            )
+                                          }
+                                        }
                                       }
                                     }
-                                  }
-                                }
 
-                                const showDateHeader = dateHeader && dateHeader !== lastDateHeader
-                                if (showDateHeader) {
-                                  lastDateHeader = dateHeader
-                                }
+                                    const showDateHeader =
+                                      dateHeader &&
+                                      dateHeader !== lastDateHeader
+                                    if (showDateHeader) {
+                                      lastDateHeader = dateHeader
+                                    }
 
-                                return (
-                                  <div key={`${item.id || author}-${index}`}>
-                                    {showDateHeader && (
-                                      <div className='my-4 flex justify-center'>
-                                        <span className='px-3 py-1 text-[12px] font-medium text-gray-10'>
-                                          {dateHeader}
-                                        </span>
-                                      </div>
-                                    )}
-                                    <div
-                                      className={`mb-1.5 flex gap-3 ${isMine ? 'justify-end' : 'justify-start'}`}
-                                    >
-                                      {!isMine && (
-                                        <div className='flex flex-col justify-end pb-1'>
-                                          <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-[12px] font-semibold text-blue-11'>
-                                            {author.charAt(0).toUpperCase()}
-                                          </span>
-                                        </div>
-                                      )}
-
+                                    return (
                                       <div
-                                        className={`relative flex min-w-[100px] max-w-[75%] flex-col px-3 py-2 shadow-sm ${isMine
-                                          ? 'rounded-2xl rounded-br-none border border-gray-3 bg-surface-primary text-gray-13'
-                                          : 'rounded-2xl rounded-bl-none bg-gray-3 text-gray-13'
-                                          }`}
+                                        key={`${item.id || author}-${index}`}
                                       >
-                                        <p className='break-words whitespace-pre-wrap pb-1 text-[13px] leading-5'>
-                                          {message}
-                                        </p>
-
-                                        <div className={`flex items-end gap-2 mt-0.5 ${!isMine ? 'justify-between' : 'justify-end'}`}>
-                                          {!isMine && (
-                                            <span className='truncate text-[10px] text-gray-9 max-w-[120px]' title={author}>
-                                              {author}
+                                        {showDateHeader && (
+                                          <div className='my-4 flex justify-center'>
+                                            <span className='px-3 py-1 text-[12px] font-medium text-gray-10'>
+                                              {dateHeader}
                                             </span>
+                                          </div>
+                                        )}
+                                        <div
+                                          className={`mb-1.5 flex gap-3 ${isMine ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                          {!isMine && (
+                                            <div className='flex flex-col justify-end pb-1'>
+                                              <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-3 text-[12px] font-semibold text-blue-11'>
+                                                {author.charAt(0).toUpperCase()}
+                                              </span>
+                                            </div>
                                           )}
 
-                                          <span className='shrink-0 text-[10px] text-gray-9'>
-                                            {messageTime}
-                                          </span>
+                                          <div
+                                            className={`relative flex max-w-[75%] min-w-[100px] flex-col px-3 py-2 shadow-sm ${
+                                              isMine
+                                                ? 'rounded-2xl rounded-br-none border border-gray-3 bg-surface-primary text-gray-13'
+                                                : 'rounded-2xl rounded-bl-none bg-gray-3 text-gray-13'
+                                            }`}
+                                          >
+                                            <p className='pb-1 text-[13px] leading-5 break-words whitespace-pre-wrap'>
+                                              {message}
+                                            </p>
+
+                                            <div
+                                              className={`mt-0.5 flex items-end gap-2 ${!isMine ? 'justify-between' : 'justify-end'}`}
+                                            >
+                                              {!isMine && (
+                                                <span
+                                                  className='max-w-[120px] truncate text-[10px] text-gray-9'
+                                                  title={author}
+                                                >
+                                                  {author}
+                                                </span>
+                                              )}
+
+                                              <span className='shrink-0 text-[10px] text-gray-9'>
+                                                {messageTime}
+                                              </span>
+                                            </div>
+                                          </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  </div>
-                                )
-                              })
-                            })()}
-                            <div ref={commentsEndRef} />
-                          </div>
-                        ) : (
-                          <NoDataState
-                            description={t`No comments are available for this document. Add the first comment to start collaboration.`}
-                            icon='messageSquare'
-                            title={t`No comments found`}
-                          />
-                        )}
+                                    )
+                                  })
+                                })()}
+                                <div ref={commentsEndRef} />
+                              </div>
+                            ) : (
+                              <NoDataState
+                                description={t`No comments are available for this document. Add the first comment to start collaboration.`}
+                                icon='messageSquare'
+                                title={t`No comments found`}
+                              />
+                            )}
                           </>
                         )}
                       </div>
@@ -2400,11 +2533,13 @@ export function DocumentDetailsView({
                       <div className='shrink-0 border-t border-[var(--gray-3)] bg-surface p-4'>
                         <div className='flex items-center gap-3'>
                           <textarea
-                            className='h-12 flex-1 resize-none rounded-xl border border-[var(--gray-4)] bg-surface px-4 py-3 text-[13px] font-medium text-[var(--gray-13)] placeholder:text-[var(--gray-8)] outline-none transition-all focus:border-[var(--primary-6)] focus:ring-1 focus:ring-[var(--primary-4)]'
+                            className='h-12 flex-1 resize-none rounded-xl border border-[var(--gray-4)] bg-surface px-4 py-3 text-[13px] font-medium text-[var(--gray-13)] transition-all outline-none placeholder:text-[var(--gray-8)] focus:border-[var(--primary-6)] focus:ring-1 focus:ring-[var(--primary-4)]'
                             placeholder={t`Add a comment...`}
                             rows={1}
                             value={commentText}
-                            onChange={(event) => setCommentText(event.target.value)}
+                            onChange={(event) =>
+                              setCommentText(event.target.value)
+                            }
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault()
@@ -2478,7 +2613,10 @@ export function DocumentDetailsView({
                             ],
                           )
 
-                          if (Array.isArray(saved.data) && saved.data.length > 0) {
+                          if (
+                            Array.isArray(saved.data) &&
+                            saved.data.length > 0
+                          ) {
                             applyRelatedDocs(saved)
                             return
                           }
@@ -2498,167 +2636,181 @@ export function DocumentDetailsView({
                             </div>
                           ) : null}
                           {relatedDocs.length ? (
-                        <div className='space-y-2'>
-                          {relatedDocs.map((item) => {
-                            const sizeLabel = formatRelatedFileSize(item.fileSize)
-                            const dateLabel = item.createdAtUtc
-                              ? formatUtcToLocalDate(item.createdAtUtc, '')
-                              : ''
-                            const repoName =
-                              item.repositoryName && item.repositoryName !== 'Main Repository'
-                                ? item.repositoryName
-                                : 'Accounts Payable'
-                            const secondary = [
-                              dateLabel,
-                              repoName || item.supplier || null,
-                            ]
-                              .filter(Boolean)
-                              .join(' • ')
-                            const ext = String(
-                              item.fileType ||
-                              item.fileName.split('.').pop() ||
-                              'pdf',
-                            )
-                              .replace(/^\./, '')
-                              .toLowerCase()
+                            <div className='space-y-2'>
+                              {relatedDocs.map((item) => {
+                                const sizeLabel = formatRelatedFileSize(
+                                  item.fileSize,
+                                )
+                                const dateLabel = item.createdAtUtc
+                                  ? formatUtcToLocalDate(item.createdAtUtc, '')
+                                  : ''
+                                const repoName =
+                                  item.repositoryName &&
+                                  item.repositoryName !== 'Main Repository'
+                                    ? item.repositoryName
+                                    : 'Accounts Payable'
+                                const secondary = [
+                                  dateLabel,
+                                  repoName || item.supplier || null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(' • ')
+                                const ext = String(
+                                  item.fileType ||
+                                    item.fileName.split('.').pop() ||
+                                    'pdf',
+                                )
+                                  .replace(/^\./, '')
+                                  .toLowerCase()
 
-                            return (
-                              <div
-                                key={`${item.repositoryId}:${item.id}`}
-                                className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface-primary px-3 py-2.5 transition-colors hover:border-gray-5 hover:bg-gray-1'
-                              >
-                                <button
-                                  type='button'
-                                  className='flex min-w-0 flex-1 items-center gap-3 text-left'
-                                  onClick={() => {
-                                    onOpenRelatedDocument?.({
-                                      id: item.id,
-                                      repositoryId: item.repositoryId,
-                                    })
-                                  }}
-                                >
-                                  <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--gray-2)] border border-[var(--gray-3)]'>
-                                    <Icon
-                                      className='size-5 shrink-0'
-                                      name={getFileIcon(item.fileName)}
-                                    />
-                                  </span>
-                                  <span className='min-w-0 flex-1'>
-                                    <span className='flex min-w-0 flex-wrap items-baseline gap-x-1.5'>
-                                      <b className='truncate text-[13px] font-semibold text-gray-13'>
-                                        {item.fileName}
-                                      </b>
-                                      {sizeLabel ? (
-                                        <span className='shrink-0 text-[12px] text-gray-9'>
-                                          ({sizeLabel})
-                                        </span>
-                                      ) : ext ? (
-                                        <span className='shrink-0 text-[12px] uppercase text-gray-9'>
-                                          {ext}
-                                        </span>
-                                      ) : null}
-                                    </span>
-                                    {secondary ? (
-                                      <span className='mt-0.5 block truncate text-[12px] text-gray-9'>
-                                        {secondary}
-                                      </span>
-                                    ) : null}
-                                  </span>
-                                </button>
-
-                                {canDownload ? (
-                                  <Tooltip content={t`Download`} position='top'>
+                                return (
+                                  <div
+                                    key={`${item.repositoryId}:${item.id}`}
+                                    className='flex items-center gap-3 rounded-xl border border-gray-3 bg-surface-primary px-3 py-2.5 transition-colors hover:border-gray-5 hover:bg-gray-1'
+                                  >
                                     <button
                                       type='button'
-                                      aria-label={t`Download`}
-                                      className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
-                                      onClick={async (event) => {
-                                        event.stopPropagation()
-                                        try {
-                                          const response =
-                                            await fileApi.viewBinaryV6(
-                                              item.repositoryId,
-                                              item.id,
-                                              'attachment',
-                                            )
-                                          if (
-                                            !(response?.data instanceof Blob)
-                                          ) {
-                                            throw new Error(
-                                              toUiErrorMessage(
-                                                response?.error,
-                                                t`Unable to download file`,
-                                              ),
-                                            )
-                                          }
-                                          const downloadUrl =
-                                            URL.createObjectURL(response.data)
-                                          const link =
-                                            document.createElement('a')
-                                          link.href = downloadUrl
-                                          link.download =
-                                            item.fileName || 'document'
-                                          document.body.appendChild(link)
-                                          link.click()
-                                          link.remove()
-                                          URL.revokeObjectURL(downloadUrl)
-                                        } catch (exception: any) {
-                                          showToast({
-                                            message: toUiErrorMessage(
-                                              exception?.message || exception,
-                                              t`Unable to download file`,
-                                            ),
-                                            variant: 'error',
-                                          })
-                                        }
+                                      className='flex min-w-0 flex-1 items-center gap-3 text-left'
+                                      onClick={() => {
+                                        onOpenRelatedDocument?.({
+                                          id: item.id,
+                                          repositoryId: item.repositoryId,
+                                        })
                                       }}
                                     >
-                                      <DynamicIcon
-                                        className='h-4 w-4'
-                                        name='download'
-                                      />
+                                      <span className='flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[var(--gray-3)] bg-[var(--gray-2)]'>
+                                        <Icon
+                                          className='size-5 shrink-0'
+                                          name={getFileIcon(item.fileName)}
+                                        />
+                                      </span>
+                                      <span className='min-w-0 flex-1'>
+                                        <span className='flex min-w-0 flex-wrap items-baseline gap-x-1.5'>
+                                          <b className='truncate text-[13px] font-semibold text-gray-13'>
+                                            {item.fileName}
+                                          </b>
+                                          {sizeLabel ? (
+                                            <span className='shrink-0 text-[12px] text-gray-9'>
+                                              ({sizeLabel})
+                                            </span>
+                                          ) : ext ? (
+                                            <span className='shrink-0 text-[12px] text-gray-9 uppercase'>
+                                              {ext}
+                                            </span>
+                                          ) : null}
+                                        </span>
+                                        {secondary ? (
+                                          <span className='mt-0.5 block truncate text-[12px] text-gray-9'>
+                                            {secondary}
+                                          </span>
+                                        ) : null}
+                                      </span>
                                     </button>
-                                  </Tooltip>
-                                ) : null}
-                                <Tooltip content={t`Remove from related`} position='top'>
-                                  <button
-                                    type='button'
-                                    aria-label={t`Remove from related`}
-                                    disabled={
-                                      removingRelatedKey ===
-                                      `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}`
-                                    }
-                                    className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95 disabled:opacity-50'
-                                    onClick={(event) => {
-                                      event.stopPropagation()
-                                      void removeRelatedDoc(item)
-                                    }}
-                                  >
-                                    {removingRelatedKey ===
-                                    `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}` ? (
-                                      <DynamicIcon
-                                        className='h-4 w-4 animate-spin'
-                                        name='spinner'
-                                      />
-                                    ) : (
-                                      <DynamicIcon
-                                        className='h-4 w-4'
-                                        name='trash'
-                                      />
-                                    )}
-                                  </button>
-                                </Tooltip>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <NoDataState
-                          description={t`No related documents are linked with this file yet.`}
-                          icon='paperclip'
-                          title={t`Related documents not found`}
-                        />
-                      )}
+
+                                    {canDownload ? (
+                                      <Tooltip
+                                        content={t`Download`}
+                                        position='top'
+                                      >
+                                        <button
+                                          type='button'
+                                          aria-label={t`Download`}
+                                          className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-gray-3 hover:text-gray-12 active:scale-95'
+                                          onClick={async (event) => {
+                                            event.stopPropagation()
+                                            try {
+                                              const response =
+                                                await fileApi.viewBinaryV6(
+                                                  item.repositoryId,
+                                                  item.id,
+                                                  'attachment',
+                                                )
+                                              if (
+                                                !(
+                                                  response?.data instanceof Blob
+                                                )
+                                              ) {
+                                                throw new Error(
+                                                  toUiErrorMessage(
+                                                    response?.error,
+                                                    t`Unable to download file`,
+                                                  ),
+                                                )
+                                              }
+                                              const downloadUrl =
+                                                URL.createObjectURL(
+                                                  response.data,
+                                                )
+                                              const link =
+                                                document.createElement('a')
+                                              link.href = downloadUrl
+                                              link.download =
+                                                item.fileName || 'document'
+                                              document.body.appendChild(link)
+                                              link.click()
+                                              link.remove()
+                                              URL.revokeObjectURL(downloadUrl)
+                                            } catch (exception: any) {
+                                              showToast({
+                                                message: toUiErrorMessage(
+                                                  exception?.message ||
+                                                    exception,
+                                                  t`Unable to download file`,
+                                                ),
+                                                variant: 'error',
+                                              })
+                                            }
+                                          }}
+                                        >
+                                          <DynamicIcon
+                                            className='h-4 w-4'
+                                            name='download'
+                                          />
+                                        </button>
+                                      </Tooltip>
+                                    ) : null}
+                                    <Tooltip
+                                      content={t`Remove from related`}
+                                      position='top'
+                                    >
+                                      <button
+                                        type='button'
+                                        aria-label={t`Remove from related`}
+                                        disabled={
+                                          removingRelatedKey ===
+                                          `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}`
+                                        }
+                                        className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-9 transition-all hover:bg-red-2 hover:text-red-11 active:scale-95 disabled:opacity-50'
+                                        onClick={(event) => {
+                                          event.stopPropagation()
+                                          void removeRelatedDoc(item)
+                                        }}
+                                      >
+                                        {removingRelatedKey ===
+                                        `${item.relatedRepositoryId || item.repositoryId}:${item.relatedItemId || item.id}` ? (
+                                          <DynamicIcon
+                                            className='h-4 w-4 animate-spin'
+                                            name='spinner'
+                                          />
+                                        ) : (
+                                          <DynamicIcon
+                                            className='h-4 w-4'
+                                            name='trash'
+                                          />
+                                        )}
+                                      </button>
+                                    </Tooltip>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          ) : (
+                            <NoDataState
+                              description={t`No related documents are linked with this file yet.`}
+                              icon='paperclip'
+                              title={t`Related documents not found`}
+                            />
+                          )}
                         </>
                       )}
                     </div>
@@ -2691,8 +2843,11 @@ export function DocumentDetailsView({
                       return (
                         <button
                           type='button'
-                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${isActive ? 'bg-gray-2 ring-1 ring-primary-5/30 z-10' : 'hover:bg-gray-1'
-                            } ${hasPdfMatch ? '' : 'cursor-default'}`}
+                          className={`group flex w-full items-start gap-2 border-b border-gray-3 px-3.5 py-2.5 text-left transition-all last:border-0 ${
+                            isActive
+                              ? 'z-10 bg-gray-2 ring-1 ring-primary-5/30'
+                              : 'hover:bg-gray-1'
+                          } ${hasPdfMatch ? '' : 'cursor-default'}`}
                           key={rowKey}
                           onClick={() => {
                             if (!hasPdfMatch) return
@@ -2703,10 +2858,11 @@ export function DocumentDetailsView({
                           {/* 1. OCR Icon Only with Tooltip */}
                           <span className='flex h-5 w-5 shrink-0 items-center justify-center pt-0.5'>
                             {hasPdfMatch ? (
-                              <Tooltip content={t`Source: OCR Document`} position='top'>
-                                <span
-                                  className='inline-flex h-5 w-5 items-center justify-center rounded border border-[var(--teal-3)] bg-[var(--teal-1)] text-[var(--teal-9)] shadow-2xs transition-all hover:scale-105'
-                                >
+                              <Tooltip
+                                content={t`Source: OCR Document`}
+                                position='top'
+                              >
+                                <span className='inline-flex h-5 w-5 items-center justify-center rounded border border-[var(--teal-3)] bg-[var(--teal-1)] text-[var(--teal-9)] shadow-2xs transition-all hover:scale-105'>
                                   <ScanText className='h-3 w-3' />
                                 </span>
                               </Tooltip>
@@ -2715,14 +2871,14 @@ export function DocumentDetailsView({
 
                           {/* 2. Label */}
                           <div className='min-w-0 flex-1 overflow-hidden pt-0.5 text-[13px] text-gray-10'>
-                            <span className='block truncate text-left hover:overflow-hidden hover:whitespace-normal hover:break-words'>
+                            <span className='block truncate text-left hover:overflow-hidden hover:break-words hover:whitespace-normal'>
                               {row.label}
                             </span>
                           </div>
 
                           {/* 3. Value — truncated on one line; hover wraps in this column only */}
                           <div className='ml-auto max-w-[50%] min-w-0 shrink-0 overflow-hidden pt-0.5 text-right'>
-                            <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:whitespace-normal hover:break-words'>
+                            <b className='block w-full min-w-0 truncate text-right text-[13px] font-semibold text-gray-13 hover:overflow-hidden hover:break-words hover:whitespace-normal'>
                               {displayVal}
                             </b>
                           </div>
@@ -2743,8 +2899,7 @@ export function DocumentDetailsView({
             fileBlob={previewBlobRef.current}
             fileName={data.fileName}
             fileType={
-              getFileExtension(data.fileName) ||
-              getFileExtension(data.fileType)
+              getFileExtension(data.fileName) || getFileExtension(data.fileType)
             }
             onClose={handleCollaboraClose}
             onSave={handleCollaboraSave}

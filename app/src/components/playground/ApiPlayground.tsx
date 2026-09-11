@@ -140,7 +140,7 @@ export const ApiPlayground = ({ context, onClose }: ApiPlaygroundProps) => {
           requestPayload: config.requestPayload ||
             config.payload || {
               ...DEFAULT_DOCUMENT,
-              ...(config.document || {}),
+              ...config.document,
             },
           responsePayload: config.responsePayload || {
             message: 'Action completed successfully',

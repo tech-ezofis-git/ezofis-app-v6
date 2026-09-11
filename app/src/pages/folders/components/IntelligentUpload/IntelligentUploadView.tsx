@@ -55,6 +55,7 @@ export default function IntelligentUploadView({
   const [files, setFiles] = useState<ClassifiedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadIndex, setUploadIndex] = useState(0)
+  const [indexingFileId, setIndexingFileId] = useState<string | null>(null)
 
   // Track processing concurrency
   const activeProcessingCount = useRef(0)
@@ -230,40 +231,63 @@ export default function IntelligentUploadView({
     )
   }, [])
 
-  const handleClearAll = useCallback(() => {
-    if (isUploading || files.length === 0) return
-    const backup = [...files]
-    const clearedCount = backup.length
-    setFiles([])
-    showToast({
-      message: (
-        <div className='flex items-center justify-between gap-3'>
-          <span>
-            {clearedCount === 1
-              ? t`Cleared 1 document from queue.`
-              : t`Cleared ${clearedCount} documents from queue.`}
-          </span>
-          <button
-            className='cursor-pointer font-semibold text-primary-9 underline hover:text-primary-10'
-            type='button'
-            onClick={() => setFiles(backup)}
-          >
-            {t`Undo`}
-          </button>
-        </div>
+
+  // Single file indexing handler
+  const handleIndexSingleFile = async (fileId: string) => {
+    if (isUploading || indexingFileId) return
+    const targetFile = files.find((f) => f.id === fileId)
+    if (!targetFile) return
+
+    if (!targetFile.selectedRepositoryId) {
+      showToast({
+        message: t`Please select a target folder before indexing.`,
+        variant: 'error',
+      })
+      return
+    }
+
+    setIndexingFileId(fileId)
+    const sleep = (ms: number) =>
+      new Promise((resolve) => setTimeout(resolve, ms))
+
+    // Simulate indexing single file
+    await sleep(600)
+
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === fileId ? { ...f, status: 'uploaded' as const } : f,
       ),
-      variant: 'default',
+    )
+    setIndexingFileId(null)
+
+    const folderName =
+      candidateRepositories.find(
+        (r) => r.id === targetFile.selectedRepositoryId,
+      )?.name ||
+      targetFile.suggestions?.find(
+        (s) => s.repositoryId === targetFile.selectedRepositoryId,
+      )?.repositoryName ||
+      t`target folder`
+
+    showToast({
+      message: t`"${targetFile.file.name}" successfully indexed to ${folderName}.`,
+      variant: 'success',
     })
-  }, [files, isUploading, t])
+  }
 
   // Proceed to Indexing: Front-end UI only simulation (no upload-archive API call)
   const handleProceedToIndexing = async () => {
-    if (files.length === 0 || isUploading) return
+    const pendingUploadFiles = files.filter((f) => f.status !== 'uploaded')
+    if (pendingUploadFiles.length === 0) {
+      await onDone()
+      return
+    }
+    if (isUploading || indexingFileId) return
 
-    const unassigned = files.some((f) => !f.selectedRepositoryId)
+    const unassigned = pendingUploadFiles.some((f) => !f.selectedRepositoryId)
     if (unassigned) {
       showToast({
-        message: t`Please assign a repository for all files before proceeding.`,
+        message: t`Please assign a folder for all files before proceeding.`,
         variant: 'error',
       })
       return
@@ -273,8 +297,8 @@ export default function IntelligentUploadView({
     const sleep = (ms: number) =>
       new Promise((resolve) => setTimeout(resolve, ms))
 
-    for (let i = 0; i < files.length; i++) {
-      const item = files[i]
+    for (let i = 0; i < pendingUploadFiles.length; i++) {
+      const item = pendingUploadFiles[i]
       if (!item) continue
 
       setUploadIndex(i + 1)
@@ -287,7 +311,7 @@ export default function IntelligentUploadView({
 
     setIsUploading(false)
 
-    const count = files.length
+    const count = pendingUploadFiles.length
     showToast({
       message:
         count === 1
@@ -301,17 +325,25 @@ export default function IntelligentUploadView({
 
   // Derived metrics
   const filesCount = files.length
+  const uploadedCount = files.filter((f) => f.status === 'uploaded').length
   const doneCount = files.filter(
     (f) => f.status === 'done' || f.status === 'uploaded',
   ).length
   const processingCount = files.filter(
     (f) => f.status === 'processing' || f.status === 'pending',
   ).length
+  const pendingUploadFiles = files.filter((f) => f.status !== 'uploaded')
+  const allIndexed = filesCount > 0 && pendingUploadFiles.length === 0
+
   const canProceed =
     filesCount > 0 &&
     !isUploading &&
+    !indexingFileId &&
     processingCount === 0 &&
-    files.every((f) => Boolean(f.selectedRepositoryId) && f.status !== 'error')
+    (allIndexed ||
+      pendingUploadFiles.every(
+        (f) => Boolean(f.selectedRepositoryId) && f.status !== 'error',
+      ))
 
   return (
     <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface-secondary text-sm text-text-primary'>
@@ -340,33 +372,22 @@ export default function IntelligentUploadView({
               </div>
             </div>
             <p className='mt-0.5 text-12 text-text-secondary'>
-              {t`Drop multiple files to automatically classify document types and route to target repositories.`}
+              {t`Drop multiple files to automatically classify document types and route to target folders.`}
             </p>
           </div>
         </div>
 
         {/* Action button if queue has items */}
         {files.length > 0 && (
-          <div className='flex items-center gap-2'>
-            <Button
-              color='gray'
-              disabled={isUploading}
-              icon='lucide:plus'
-              label={t`Add more files`}
-              size='sm'
-              variant='outline'
-              onClick={() => dropzoneRef.current?.open()}
-            />
-            <Button
-              color='gray'
-              disabled={isUploading}
-              icon='lucide:trash-2'
-              label={t`Clear queue`}
-              size='sm'
-              variant='ghost'
-              onClick={handleClearAll}
-            />
-          </div>
+          <Button
+            color='primary'
+            disabled={isUploading}
+            icon='lucide:plus'
+            label={t`Add more files`}
+            size='md'
+            variant='solid'
+            onClick={() => dropzoneRef.current?.open()}
+          />
         )}
       </header>
 
@@ -412,7 +433,7 @@ export default function IntelligentUploadView({
                       {t`Confidence Scoring`}
                     </h3>
                     <p className='mt-0.5 line-clamp-2 min-h-[2rem] text-11 leading-relaxed text-text-secondary'>
-                      {t`Receive transparent confidence rankings for top candidate repository matches.`}
+                      {t`Receive transparent confidence rankings for top candidate folder matches.`}
                     </p>
                   </div>
                 </div>
@@ -447,6 +468,15 @@ export default function IntelligentUploadView({
                   <span className='text-12 font-medium text-success-main'>
                     {t`${doneCount} ready`}
                   </span>
+                  {uploadedCount > 0 && (
+                    <>
+                      <span className='text-12 text-text-secondary'>•</span>
+                      <span className='inline-flex items-center gap-1 text-12 font-medium text-success-main'>
+                        <Icon className='size-3.5' name='lucide:check-circle-2' />
+                        {t`${uploadedCount} indexed`}
+                      </span>
+                    </>
+                  )}
                   {processingCount > 0 && (
                     <>
                       <span className='text-12 text-text-secondary'>•</span>
@@ -460,7 +490,7 @@ export default function IntelligentUploadView({
 
                 {isUploading && (
                   <div className='text-12 font-medium text-accent-primary'>
-                    {t`Uploading file ${uploadIndex} of ${filesCount}...`}
+                    {t`Uploading file ${uploadIndex} of ${pendingUploadFiles.length}...`}
                   </div>
                 )}
               </div>
@@ -483,7 +513,10 @@ export default function IntelligentUploadView({
                   <IntelligentUploadFileCard
                     candidateRepositories={candidateRepositories}
                     fileItem={fileItem}
+                    isIndexing={indexingFileId === fileItem.id}
                     key={fileItem.id}
+                    totalFilesCount={files.length}
+                    onIndexSingleFile={handleIndexSingleFile}
                     onRemove={handleRemoveFile}
                     onRetry={handleRetry}
                     onSelectRepository={handleSelectRepository}
@@ -499,13 +532,25 @@ export default function IntelligentUploadView({
       {files.length > 0 && (
         <footer className='flex shrink-0 items-center justify-between border-t border-border-default bg-surface-primary px-6 py-3.5'>
           <div className='flex items-center gap-2'>
-            {canProceed ? (
+            {allIndexed ? (
               <div className='flex items-center gap-2 rounded-lg bg-success-subtle/80 px-3 py-1.5 text-12 font-medium text-success-main'>
                 <Icon
                   className='size-4 shrink-0 text-success-main'
                   name='lucide:check-circle-2'
                 />
-                <span>{t`All files ready for ingestion and indexing.`}</span>
+                <span>{t`All files successfully ingested and indexed.`}</span>
+              </div>
+            ) : canProceed ? (
+              <div className='flex items-center gap-2 rounded-lg bg-success-subtle/80 px-3 py-1.5 text-12 font-medium text-success-main'>
+                <Icon
+                  className='size-4 shrink-0 text-success-main'
+                  name='lucide:check-circle-2'
+                />
+                <span>
+                  {uploadedCount > 0
+                    ? t`Remaining files ready for indexing.`
+                    : t`All files ready for ingestion and indexing.`}
+                </span>
               </div>
             ) : processingCount > 0 ? (
               <div className='flex items-center gap-2 text-12 text-accent-primary'>
@@ -521,7 +566,7 @@ export default function IntelligentUploadView({
                   className='size-4 shrink-0 text-text-muted'
                   name='lucide:info'
                 />
-                <span>{t`Ensure all files have target repositories assigned.`}</span>
+                <span>{t`Ensure all files have target folders assigned.`}</span>
               </div>
             )}
           </div>
@@ -529,24 +574,38 @@ export default function IntelligentUploadView({
           <div className='flex items-center gap-3'>
             <Button
               color='gray'
-              disabled={isUploading}
-              label={t`Cancel`}
+              disabled={isUploading || Boolean(indexingFileId)}
+              label={allIndexed ? t`Back to Explorer` : t`Cancel`}
               variant='outline'
               onClick={onBack}
             />
-            <Button
-              color='primary'
-              disabled={!canProceed}
-              icon={isUploading ? 'tabler:loader-2' : 'lucide:upload-cloud'}
-              iconClass={isUploading ? 'animate-spin' : undefined}
-              variant='solid'
-              label={
-                isUploading
-                  ? t`Uploading (${uploadIndex}/${filesCount})...`
-                  : t`Proceed to Indexing`
-              }
-              onClick={handleProceedToIndexing}
-            />
+            {allIndexed ? (
+              <Button
+                color='primary'
+                icon='lucide:check'
+                label={t`Done`}
+                variant='solid'
+                onClick={async () => {
+                  await onDone()
+                }}
+              />
+            ) : (
+              <Button
+                color='primary'
+                disabled={!canProceed}
+                icon={isUploading ? 'tabler:loader-2' : 'lucide:upload-cloud'}
+                iconClass={isUploading ? 'animate-spin' : undefined}
+                variant='solid'
+                label={
+                  isUploading
+                    ? t`Uploading (${uploadIndex}/${pendingUploadFiles.length})...`
+                    : uploadedCount > 0
+                      ? t`Index Remaining (${pendingUploadFiles.length})`
+                      : t`Proceed to Indexing`
+                }
+                onClick={handleProceedToIndexing}
+              />
+            )}
           </div>
         </footer>
       )}

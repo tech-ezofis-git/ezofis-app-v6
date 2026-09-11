@@ -197,7 +197,7 @@ export default function EmailSettingsPanel({
         updateNodeData('externalAccountEmail', email)
         updateNodeData('account', email || connector)
         updateNodeData('mailInitiate', {
-          ...(nodeData.mailInitiate || {}),
+          ...nodeData.mailInitiate,
           connectorId: connectorId,
           connectorType: provider.toUpperCase(),
         })
@@ -311,7 +311,7 @@ export default function EmailSettingsPanel({
                                     option.label,
                                   )
                                   updateNodeData('mailInitiate', {
-                                    ...(nodeData.mailInitiate || {}),
+                                    ...nodeData.mailInitiate,
                                     connectorId: option.value,
                                     connectorType: provider.toUpperCase(),
                                   })

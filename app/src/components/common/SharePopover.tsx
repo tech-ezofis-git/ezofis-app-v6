@@ -130,7 +130,7 @@ export default function SharePopover({
 
   useEffect(() => {
     if (!sharedIds) return
-    setSharedUsers(new Set([...sharedIds]))
+    setSharedUsers(new Set(sharedIds))
   }, [sharedIds])
 
   useEffect(() => {

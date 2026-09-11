@@ -74,11 +74,11 @@ function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='italic text-gray-500'>null</span>
+        <span className='text-gray-500 italic'>null</span>
         {!isLast && <span className='text-gray-400'>,</span>}
       </div>
     )
@@ -89,11 +89,11 @@ function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='font-semibold text-blue-600 dark:text-blue-400'>
+        <span className='text-blue-600 dark:text-blue-400 font-semibold'>
           {String(data)}
         </span>
         {!isLast && <span className='text-gray-400'>,</span>}
@@ -106,11 +106,11 @@ function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='font-medium text-amber-600 dark:text-amber-400'>
+        <span className='text-amber-600 dark:text-amber-400 font-medium'>
           {data}
         </span>
         {!isLast && <span className='text-gray-400'>,</span>}
@@ -123,13 +123,11 @@ function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
       <div className='flex items-center gap-1 font-mono text-xs leading-5 break-all'>
         <div className='size-4 shrink-0' />
         {name !== undefined && (
-          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
             "{name}":{' '}
           </span>
         )}
-        <span className='text-emerald-700 dark:text-emerald-400'>
-          "{data}"
-        </span>
+        <span className='text-emerald-700 dark:text-emerald-400'>"{data}"</span>
         {!isLast && <span className='text-gray-400'>,</span>}
       </div>
     )
@@ -159,14 +157,12 @@ function JsonNode({ data, name, isLast = true }: JsonNodeProps) {
         </button>
 
         {name !== undefined && (
-          <span className='font-semibold text-purple-700 dark:text-purple-300'>
+          <span className='text-purple-700 dark:text-purple-300 font-semibold'>
             "{name}":{' '}
           </span>
         )}
 
-        <span className='font-bold text-[var(--gray-12)]'>
-          {openBracket}
-        </span>
+        <span className='font-bold text-[var(--gray-12)]'>{openBracket}</span>
 
         {isCollapsed ? (
           <button
@@ -628,33 +624,46 @@ export default function Upload({
     )
   }, [fileData?.name, repositoryFields])
 
-  const [ocrExtractedValues, setOcrExtractedValues] = useState<Record<string, string>>({})
-  const [masterSyncedValues, setMasterSyncedValues] = useState<Record<string, string>>({})
+  const [ocrExtractedValues, setOcrExtractedValues] = useState<
+    Record<string, string>
+  >({})
+  const [masterSyncedValues, setMasterSyncedValues] = useState<
+    Record<string, string>
+  >({})
   const [rawOcrJson, setRawOcrJson] = useState<any>({})
   const [rawOcrText, setRawOcrText] = useState<string>('')
 
   const masterFormSyncData = useMemo(() => {
-    if (!repositoryData?.storageDrive || !repositoryData.storageDrive.includes('[')) return null
+    if (
+      !repositoryData?.storageDrive ||
+      !repositoryData.storageDrive.includes('[')
+    )
+      return null
     const sd = repositoryData.storageDrive
     const prefix = sd.substring(0, sd.indexOf('[')).trim()
     const mappingStr = sd.substring(sd.indexOf('[') + 1, sd.length - 1)
 
-    const formIds = prefix.split(',').map(id => id.trim())
+    const formIds = prefix.split(',').map((id) => id.trim())
     const mapping: Record<string, string> = {}
-    const syncFields: Array<{ formId: string; formFieldId: string; repoField: string }> = []
+    const syncFields: Array<{
+      formId: string
+      formFieldId: string
+      repoField: string
+    }> = []
 
     mappingStr.split(',').forEach((pair: string) => {
-      const parts = pair.split(':').map(p => p.trim())
+      const parts = pair.split(':').map((p) => p.trim())
       if (parts.length === 0 || !parts[0]) return
 
       const repoField = parts[0]
-      const isMultiFormFormat = parts.length === 4 || (parts.length === 3 && parts[2] !== 'sync')
+      const isMultiFormFormat =
+        parts.length === 4 || (parts.length === 3 && parts[2] !== 'sync')
 
       if (isMultiFormFormat) {
         // Multi form format: repoField:formIdOrIndex:formFieldId[:sync]
         const formIdOrIndex = parts[1]
         const formFieldId = parts[2]
-        
+
         let formId = formIdOrIndex
         const idx = parseInt(formIdOrIndex, 10)
         if (!isNaN(idx) && idx >= 0 && idx < formIds.length) {
@@ -684,7 +693,9 @@ export default function Upload({
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncingField, setSyncingField] = useState<string | null>(null)
   const activeSyncCountRef = useRef(0)
-  const [masterFormSyncLabels, setMasterFormSyncLabels] = useState<Record<string, string>>({})
+  const [masterFormSyncLabels, setMasterFormSyncLabels] = useState<
+    Record<string, string>
+  >({})
 
   useEffect(() => {
     if (!masterFormSyncData || !masterFormSyncData.syncFields.length) {
@@ -696,27 +707,34 @@ export default function Upload({
     const fetchForm = async () => {
       try {
         const uniqueFormIds = Array.from(
-          new Set(Object.values(masterFormSyncData.mapping).map((_v, idx) => {
-            // Find formId from the mapping keys (since keys are formId:formFieldId)
-            const keys = Object.keys(masterFormSyncData.mapping)
-            return keys[idx]?.split(':')?.[0]
-          }).filter(Boolean))
+          new Set(
+            Object.values(masterFormSyncData.mapping)
+              .map((_v, idx) => {
+                // Find formId from the mapping keys (since keys are formId:formFieldId)
+                const keys = Object.keys(masterFormSyncData.mapping)
+                return keys[idx]?.split(':')?.[0]
+              })
+              .filter(Boolean),
+          ),
         )
 
         const formResponses = await Promise.all(
-          uniqueFormIds.map(fId =>
-            formApi.getFormDataById(fId)
-              .then(res => ({ formId: fId, data: res.data }))
-              .catch(() => ({ formId: fId, data: null }))
-          )
+          uniqueFormIds.map((fId) =>
+            formApi
+              .getFormDataById(fId)
+              .then((res) => ({ formId: fId, data: res.data }))
+              .catch(() => ({ formId: fId, data: null })),
+          ),
         )
 
         const fieldsByForm: Record<string, any[]> = {}
-        formResponses.forEach(res => {
+        formResponses.forEach((res) => {
           if (!res.data) return
           const formJson = res.data.formJson
           const fieldsArray = Array.isArray(formJson?.panels)
-            ? formJson.panels.flatMap((panel: any) => Array.isArray(panel?.fields) ? panel.fields : [])
+            ? formJson.panels.flatMap((panel: any) =>
+                Array.isArray(panel?.fields) ? panel.fields : [],
+              )
             : Array.isArray(formJson?.fields)
               ? formJson.fields
               : Array.isArray(formJson?.components)
@@ -726,23 +744,25 @@ export default function Upload({
         })
 
         const newLabels: Record<string, string> = {}
-        masterFormSyncData.syncFields.forEach(syncField => {
+        masterFormSyncData.syncFields.forEach((syncField) => {
           const { formId, formFieldId, repoField } = syncField
           const fieldsArray = fieldsByForm[formId] || []
-          const fieldDef = fieldsArray.find((f: any) => String(f.id || f.key || f.name) === formFieldId)
+          const fieldDef = fieldsArray.find(
+            (f: any) => String(f.id || f.key || f.name) === formFieldId,
+          )
 
-          const formRes = formResponses.find(r => r.formId === formId)
+          const formRes = formResponses.find((r) => r.formId === formId)
           const formName = formRes?.data?.name || formRes?.data?.title || formId
 
           newLabels[repoField] = fieldDef
             ? `${formName} - ${String(
                 fieldDef.displayLabel ||
-                fieldDef.label ||
-                fieldDef.name ||
-                fieldDef.title ||
-                fieldDef.id ||
-                fieldDef.key ||
-                formFieldId
+                  fieldDef.label ||
+                  fieldDef.name ||
+                  fieldDef.title ||
+                  fieldDef.id ||
+                  fieldDef.key ||
+                  formFieldId,
               )}`
             : `${formName} - ${formFieldId}`
         })
@@ -757,25 +777,32 @@ export default function Upload({
 
     void fetchForm()
 
-    return () => { isMounted = false }
+    return () => {
+      isMounted = false
+    }
   }, [masterFormSyncData])
 
   const handleSync = async (
     fieldValue: string,
     repoFieldName: string,
     formId: string,
-    currentOcrValues?: Record<string, string>
+    currentOcrValues?: Record<string, string>,
   ) => {
     if (!masterFormSyncData || !fieldValue || !formId) return
     activeSyncCountRef.current++
     setIsSyncing(true)
     setSyncingField(repoFieldName)
     try {
-      const criteriaFieldEntry = Object.entries(masterFormSyncData.mapping).find(
-        ([combinedKey, repoName]) => repoName === repoFieldName && combinedKey.startsWith(`${formId}:`)
+      const criteriaFieldEntry = Object.entries(
+        masterFormSyncData.mapping,
+      ).find(
+        ([combinedKey, repoName]) =>
+          repoName === repoFieldName && combinedKey.startsWith(`${formId}:`),
       )
       if (!criteriaFieldEntry) {
-        throw new Error(`No mapping entry for field: ${repoFieldName} on form: ${formId}`)
+        throw new Error(
+          `No mapping entry for field: ${repoFieldName} on form: ${formId}`,
+        )
       }
       const criteriaFieldId = criteriaFieldEntry[0].split(':')[1]
 
@@ -827,9 +854,7 @@ export default function Upload({
             if (fId !== formId) return
             if (repoName === repoFieldName) return
 
-            const normalizedRepoName = String(repoName)
-              .trim()
-              .toLowerCase()
+            const normalizedRepoName = String(repoName).trim().toLowerCase()
 
             const repoField = repositoryFields.find((field: any) => {
               const fieldName = String(field?.name || '')
@@ -870,7 +895,11 @@ export default function Upload({
               String(mappedValue).trim() !== ''
             ) {
               next[targetKey] = mappedValue
-            } else if (ocrValue !== undefined && ocrValue !== null && String(ocrValue).trim() !== '') {
+            } else if (
+              ocrValue !== undefined &&
+              ocrValue !== null &&
+              String(ocrValue).trim() !== ''
+            ) {
               next[targetKey] = ocrValue
             } else if (mappedValue !== undefined && mappedValue !== null) {
               next[targetKey] = mappedValue
@@ -891,9 +920,16 @@ export default function Upload({
 
             const normalizedRepoName = String(repoName).trim().toLowerCase()
             const repoField = repositoryFields.find((field: any) => {
-              const fieldName = String(field?.name || '').trim().toLowerCase()
-              const sqlColumnName = String(field?.sqlColumnName || '').trim().toLowerCase()
-              return fieldName === normalizedRepoName || sqlColumnName === normalizedRepoName
+              const fieldName = String(field?.name || '')
+                .trim()
+                .toLowerCase()
+              const sqlColumnName = String(field?.sqlColumnName || '')
+                .trim()
+                .toLowerCase()
+              return (
+                fieldName === normalizedRepoName ||
+                sqlColumnName === normalizedRepoName
+              )
             })
 
             if (!repoField) return
@@ -901,7 +937,11 @@ export default function Upload({
             const sourceFieldId = String(formFieldId)
             let mappedValue = values?.[sourceFieldId]
 
-            if (typeof mappedValue === 'object' && mappedValue !== null && 'value' in mappedValue) {
+            if (
+              typeof mappedValue === 'object' &&
+              mappedValue !== null &&
+              'value' in mappedValue
+            ) {
               mappedValue = mappedValue.value
             }
 
@@ -914,12 +954,16 @@ export default function Upload({
               String(mappedValue).trim() !== ''
             ) {
               next[targetKey] = String(mappedValue)
-            } else if (ocrValue !== undefined && ocrValue !== null && String(ocrValue).trim() !== '') {
+            } else if (
+              ocrValue !== undefined &&
+              ocrValue !== null &&
+              String(ocrValue).trim() !== ''
+            ) {
               next[targetKey] = String(ocrValue)
             } else if (mappedValue !== undefined && mappedValue !== null) {
               next[targetKey] = String(mappedValue)
             }
-          }
+          },
         )
         return next
       })
@@ -928,7 +972,6 @@ export default function Upload({
         message: 'Fields synced successfully.',
         variant: 'success',
       })
-
     } catch (e: any) {
       console.log({ message: `Sync error: ${e.message}`, variant: 'error' })
     } finally {
@@ -980,7 +1023,10 @@ export default function Upload({
         if (requestId !== ocrRequestIdRef.current) return
 
         if (error) {
-          console.warn('[uploadForOcr] OCR extraction failed/unavailable:', error)
+          console.warn(
+            '[uploadForOcr] OCR extraction failed/unavailable:',
+            error,
+          )
           setOcrStatus('idle')
           return
         }
@@ -1000,15 +1046,25 @@ export default function Upload({
 
         // Auto-sync trigger
         if (masterFormSyncData && masterFormSyncData.syncFields.length > 0) {
-          const activeSyncs: Array<{ fieldName: string; fieldValue: string; formId: string }> = []
+          const activeSyncs: Array<{
+            fieldName: string
+            fieldValue: string
+            formId: string
+          }> = []
 
           masterFormSyncData.syncFields.forEach((syncField) => {
             const { formId, repoField: name } = syncField
             const normalizedName = name.trim().toLowerCase()
             const repoField = repositoryFields.find((f) => {
-              const fieldName = String(f.name || '').trim().toLowerCase()
-              const sqlColumnName = String(f.sqlColumnName || '').trim().toLowerCase()
-              return fieldName === normalizedName || sqlColumnName === normalizedName
+              const fieldName = String(f.name || '')
+                .trim()
+                .toLowerCase()
+              const sqlColumnName = String(f.sqlColumnName || '')
+                .trim()
+                .toLowerCase()
+              return (
+                fieldName === normalizedName || sqlColumnName === normalizedName
+              )
             })
 
             if (repoField) {
@@ -1018,7 +1074,7 @@ export default function Upload({
                 activeSyncs.push({
                   fieldName: name,
                   fieldValue: val,
-                  formId: formId
+                  formId: formId,
                 })
               }
             }
@@ -1027,17 +1083,22 @@ export default function Upload({
           const uniqueSyncsToTrigger: typeof activeSyncs = []
           const triggeredFormIds = new Set<string>()
 
-          activeSyncs.forEach(sync => {
+          activeSyncs.forEach((sync) => {
             if (!triggeredFormIds.has(sync.formId)) {
               triggeredFormIds.add(sync.formId)
               uniqueSyncsToTrigger.push(sync)
             }
           })
 
-          uniqueSyncsToTrigger.forEach(sync => {
+          uniqueSyncsToTrigger.forEach((sync) => {
             // We use setTimeout to allow state to settle before firing the sync
             setTimeout(() => {
-              void handleSync(sync.fieldValue, sync.fieldName, sync.formId, mappedValues)
+              void handleSync(
+                sync.fieldValue,
+                sync.fieldName,
+                sync.formId,
+                mappedValues,
+              )
             }, 0)
           })
         }
@@ -1303,7 +1364,7 @@ export default function Upload({
 
   const [debouncedFocusedValue] = useDebouncedValue(
     focusedFieldKey ? fieldValues[focusedFieldKey] : '',
-    400
+    400,
   )
 
   const highlightTerms = useMemo(() => {
@@ -1315,7 +1376,10 @@ export default function Upload({
     setFocusedFieldKey(getFieldKey(field))
   }, [])
 
-  const renderFieldControl = (field: RepositoryField, isSyncField: boolean = false) => {
+  const renderFieldControl = (
+    field: RepositoryField,
+    isSyncField: boolean = false,
+  ) => {
     const column = toDynamicColumn(field)
     const fieldKey = getFieldKey(field)
     const fieldType = normalizeType(field.dataType)
@@ -1330,13 +1394,13 @@ export default function Upload({
     }
 
     const normalizedFieldName = String(field.name).trim().toLowerCase()
-    const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
-    const matchingSyncFields = masterFormSyncData?.syncFields?.filter(
-      sf => {
-        const norm = sf.repoField.trim().toLowerCase()
-        return norm === normalizedFieldName || norm === normalizedColName
-      }
-    )
+    const normalizedColName = String(field.sqlColumnName || '')
+      .trim()
+      .toLowerCase()
+    const matchingSyncFields = masterFormSyncData?.syncFields?.filter((sf) => {
+      const norm = sf.repoField.trim().toLowerCase()
+      return norm === normalizedFieldName || norm === normalizedColName
+    })
 
     const renderRightSection = () => {
       const elements = []
@@ -1349,33 +1413,47 @@ export default function Upload({
       if (currentValue) {
         if (currentValue === syncValue) {
           elements.push(
-            <Tooltip key="master-icon" content={t`Master Sync Data`} position="top">
-              <div className="flex items-center justify-center text-[var(--indigo-11)] transition-colors hover:text-[var(--indigo-9)]">
-                <Icon className="size-4" name="lucide:database" />
+            <Tooltip
+              key='master-icon'
+              content={t`Master Sync Data`}
+              position='top'
+            >
+              <div className='flex items-center justify-center text-[var(--indigo-11)] transition-colors hover:text-[var(--indigo-9)]'>
+                <Icon className='size-4' name='lucide:database' />
               </div>
-            </Tooltip>
+            </Tooltip>,
           )
         } else if (currentValue === ocrValue) {
           elements.push(
-            <Tooltip key="ocr-icon" content={t`OCR Extracted Data`} position="top">
-              <div className="flex items-center justify-center text-[var(--primary-11)] transition-colors hover:text-[var(--primary-9)]">
-                <Icon className="size-4" name="tabler:scan" />
+            <Tooltip
+              key='ocr-icon'
+              content={t`OCR Extracted Data`}
+              position='top'
+            >
+              <div className='flex items-center justify-center text-[var(--primary-11)] transition-colors hover:text-[var(--primary-9)]'>
+                <Icon className='size-4' name='tabler:scan' />
               </div>
-            </Tooltip>
+            </Tooltip>,
           )
         }
       }
 
       if (matchingSyncFields && matchingSyncFields.length > 0) {
-        const isThisFieldSyncing = syncingField === matchingSyncFields[0].repoField
+        const isThisFieldSyncing =
+          syncingField === matchingSyncFields[0].repoField
         elements.push(
-          <Tooltip key="sync-btn-tooltip" content={t`Sync Master Data`} position="top" disabled={!value}>
+          <Tooltip
+            key='sync-btn-tooltip'
+            content={t`Sync Master Data`}
+            position='top'
+            disabled={!value}
+          >
             <Button
-              key="sync-btn"
+              key='sync-btn'
               aria-label={t`Sync`}
               onClick={() => {
                 const uniqueFormIds = new Set<string>()
-                matchingSyncFields.forEach(sf => {
+                matchingSyncFields.forEach((sf) => {
                   if (!uniqueFormIds.has(sf.formId)) {
                     uniqueFormIds.add(sf.formId)
                     void handleSync(toTextValue(value), sf.repoField, sf.formId)
@@ -1386,13 +1464,13 @@ export default function Upload({
               className={cn(
                 'flex h-[20px] w-[40px] items-center justify-center gap-1',
                 'rounded-[4px] px-1.5',
-                'text-[10px] font-medium uppercase tracking-[0.04em]',
+                'text-[10px] font-medium tracking-[0.04em] uppercase',
                 'transition-colors',
                 isThisFieldSyncing
                   ? 'cursor-not-allowed bg-[var(--primary-4)] text-[var(--primary-11)]'
                   : value
                     ? 'border border-[var(--primary-5)] bg-[var(--surface)] text-[var(--primary-9)] shadow-sm hover:bg-[var(--gray-2)]'
-                    : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]'
+                    : 'cursor-not-allowed bg-transparent text-[var(--gray-8)]',
               )}
             >
               {isThisFieldSyncing && (
@@ -1400,36 +1478,43 @@ export default function Upload({
               )}
               <span className='text-[9px]'> {t`SYNC`}</span>
             </Button>
-          </Tooltip>
+          </Tooltip>,
         )
       }
 
       if (elements.length === 0) return undefined
 
       return (
-        <div className="flex w-full items-center justify-end pr-2.5 gap-1.5">
+        <div className='flex w-full items-center justify-end gap-1.5 pr-2.5'>
           {elements}
         </div>
       )
     }
 
-    const fieldClassName = cn('w-full', isSyncField &&
-      '[&_input]:bg-[var(--gray-1)] [&_input]:border-[var(--gray-4)] [&_button]:bg-[var(--surface)] [&_textarea]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)]')
+    const fieldClassName = cn(
+      'w-full',
+      isSyncField &&
+        '[&_button]:bg-[var(--surface)] [&_input]:border-[var(--gray-4)] [&_input]:bg-[var(--gray-1)] [&_textarea]:border-[var(--gray-4)] [&_textarea]:bg-[var(--gray-1)]',
+    )
 
     const renderSuggestionCapsule = () => {
       const ocrValue = ocrExtractedValues[fieldKey]
       const syncValue = masterSyncedValues[fieldKey]
       const currentValue = fieldValues[fieldKey]
 
-      if (ocrValue && ocrValue !== currentValue && (!syncValue || syncValue === currentValue)) {
+      if (
+        ocrValue &&
+        ocrValue !== currentValue &&
+        (!syncValue || syncValue === currentValue)
+      ) {
         return (
           <button
-            type="button"
+            type='button'
             onClick={() => updateFieldValue(field, ocrValue)}
-            className="mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)]"
+            className='mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--primary-11)] transition-colors hover:bg-[var(--primary-2)]'
           >
-            <Icon className="size-3 shrink-0" name="tabler:scan" />
-            <span className="truncate text-xs ml-2">{ocrValue}</span>
+            <Icon className='size-3 shrink-0' name='tabler:scan' />
+            <span className='ml-2 truncate text-xs'>{ocrValue}</span>
           </button>
         )
       }
@@ -1437,12 +1522,12 @@ export default function Upload({
       if (syncValue && syncValue !== currentValue) {
         return (
           <button
-            type="button"
+            type='button'
             onClick={() => updateFieldValue(field, syncValue)}
-            className="mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--indigo-4)] bg-[var(--indigo-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--indigo-11)] transition-colors hover:bg-[var(--indigo-2)]"
+            className='mt-1 flex w-fit max-w-full items-center gap-1 rounded-full border border-[var(--indigo-4)] bg-[var(--indigo-1)] px-2 py-0.5 text-[10px] font-medium text-[var(--indigo-11)] transition-colors hover:bg-[var(--indigo-2)]'
           >
-            <Icon className="size-3 shrink-0" name="lucide:database" />
-            <span className="truncate text-xs ml-2">{syncValue}</span>
+            <Icon className='size-3 shrink-0' name='lucide:database' />
+            <span className='ml-2 truncate text-xs'>{syncValue}</span>
           </button>
         )
       }
@@ -1489,7 +1574,8 @@ export default function Upload({
               String(selectedOption.value ?? '').toLowerCase() ||
             String(o.name).toLowerCase() ===
               selectedOption.name.toLowerCase() ||
-            String(o.id).toLowerCase() === String(selectedOption.id).toLowerCase(),
+            String(o.id).toLowerCase() ===
+              String(selectedOption.id).toLowerCase(),
         )
           ? [...options, selectedOption]
           : options
@@ -1552,10 +1638,10 @@ export default function Upload({
           value={toTextValue(value)}
           type={
             fieldType === 'decimal' ||
-              fieldType === 'number' ||
-              fieldType === 'int' ||
-              fieldType === 'integer' ||
-              fieldType === 'currency'
+            fieldType === 'number' ||
+            fieldType === 'int' ||
+            fieldType === 'integer' ||
+            fieldType === 'currency'
               ? 'number'
               : 'text'
           }
@@ -1569,7 +1655,7 @@ export default function Upload({
     }
 
     return (
-      <div className="flex w-full flex-col">
+      <div className='flex w-full flex-col'>
         {InputComponent}
         {renderSuggestionCapsule()}
       </div>
@@ -1682,9 +1768,7 @@ export default function Upload({
                       <div className='text-center'>
                         <h2 className='text-base font-medium tracking-tight text-[var(--gray-13)]'>
                           {t`Drop your file here, or`}{' '}
-                          <span className='text-[var(--primary-9)]'>
-                            {t`browse`}
-                          </span>
+                          <span className='text-[var(--primary-9)]'>{t`browse`}</span>
                         </h2>
                         <p className='text-xs font-medium text-[var(--gray-9)]'>
                           {t`Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB`}
@@ -1781,8 +1865,7 @@ export default function Upload({
             const isFieldsStep = step === 'Fields'
             const isDoneStep = step === 'Done'
             const showStepSpinner =
-              (isAnalysisStep && isAnalyzing) ||
-              (isDoneStep && isExporting)
+              (isAnalysisStep && isAnalyzing) || (isDoneStep && isExporting)
 
             return (
               <div
@@ -1894,6 +1977,7 @@ export default function Upload({
               }}
             >
               <DocumentPreviewViewer
+                fileBlob={fileData}
                 fileName={fileData.name}
                 fileUrl={previewUrl}
                 highlightTerms={highlightTerms}
@@ -1923,9 +2007,7 @@ export default function Upload({
                   <Icon className='size-5' name='tabler:code' />
                 </div>
                 <div>
-                  <h2 className='text-base font-bold text-[var(--gray-13)]'>
-                    {t`Extracted Data`}
-                  </h2>
+                  <h2 className='text-base font-bold text-[var(--gray-13)]'>{t`Extracted Data`}</h2>
                   <p className='text-xs font-medium text-[var(--gray-9)]'>
                     {isAnalyzing
                       ? t`Extracting fields...`
@@ -1975,53 +2057,64 @@ export default function Upload({
                 </div>
               ) : null}
 
-              {activeTab === 'fields' ? (() => {
-                const syncRepoFields = repositoryFields.filter((field) => {
-                  const normalizedFieldName = String(field.name).trim().toLowerCase()
-                  const normalizedColName = String(field.sqlColumnName || '').trim().toLowerCase()
-                  return masterFormSyncData?.syncFields?.some((sf) => {
-                    const norm = sf.repoField.trim().toLowerCase()
-                    return norm === normalizedFieldName || norm === normalizedColName
+              {activeTab === 'fields' ? (
+                (() => {
+                  const syncRepoFields = repositoryFields.filter((field) => {
+                    const normalizedFieldName = String(field.name)
+                      .trim()
+                      .toLowerCase()
+                    const normalizedColName = String(field.sqlColumnName || '')
+                      .trim()
+                      .toLowerCase()
+                    return masterFormSyncData?.syncFields?.some((sf) => {
+                      const norm = sf.repoField.trim().toLowerCase()
+                      return (
+                        norm === normalizedFieldName ||
+                        norm === normalizedColName
+                      )
+                    })
                   })
-                })
 
-                const otherRepoFields = repositoryFields.filter(f => !syncRepoFields.includes(f))
+                  const otherRepoFields = repositoryFields.filter(
+                    (f) => !syncRepoFields.includes(f),
+                  )
 
-                return (
-                  <div className='flex h-full flex-col'>
-                    {syncRepoFields.length > 0 && (
-                      <div className='shrink-0 pb-3'>
+                  return (
+                    <div className='flex h-full flex-col'>
+                      {syncRepoFields.length > 0 && (
+                        <div className='shrink-0 pb-3'>
+                          <div className='grid grid-cols-1 gap-4'>
+                            {syncRepoFields.map((field) => (
+                              <div
+                                className='space-y-1.5 rounded-[5px] border border-gray-4 bg-[var(--gray-2)] p-[5px]'
+                                key={field.id}
+                              >
+                                {renderFieldControl(field, true)}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto pr-1.5'>
                         <div className='grid grid-cols-1 gap-4'>
-                          {syncRepoFields.map((field) => (
-                            <div
-                              className='space-y-1.5 rounded-[5px] bg-[var(--gray-2)] p-[5px] border border-gray-4'
-                              key={field.id}
-                            >
-                              {renderFieldControl(field, true)}
+                          {otherRepoFields.map((field) => (
+                            <div className='space-y-1.5' key={field.id}>
+                              {renderFieldControl(field, false)}
                             </div>
                           ))}
+
+                          {!repositoryFields.length ? (
+                            <div className='rounded-xl border border-dashed border-[var(--gray-4)] p-8 text-center text-sm font-medium text-[var(--gray-9)]'>
+                              {t`No repository fields configured.`}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
-                    )}
-
-                    <div className='ez-scrollbar min-h-0 flex-1 overflow-y-auto pr-1.5'>
-                      <div className='grid grid-cols-1 gap-4'>
-                        {otherRepoFields.map((field) => (
-                          <div className='space-y-1.5' key={field.id}>
-                            {renderFieldControl(field, false)}
-                          </div>
-                        ))}
-
-                        {!repositoryFields.length ? (
-                          <div className='rounded-xl border border-dashed border-[var(--gray-4)] p-8 text-center text-sm font-medium text-[var(--gray-9)]'>
-                            {t`No repository fields configured.`}
-                          </div>
-                        ) : null}
-                      </div>
                     </div>
-                  </div>
-                )
-              })() : (
+                  )
+                })()
+              ) : (
                 <div className='relative flex h-full min-h-0 flex-1 flex-col'>
                   <div className='absolute top-2.5 right-3.5 z-20'>
                     <Tooltip content={t`Copy JSON`} position='top'>

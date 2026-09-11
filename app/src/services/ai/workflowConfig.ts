@@ -801,7 +801,7 @@ Respond ONLY with JSON shape: { "name": string, "description": string, "blocks":
       basePayload.settings.general.name = wfName
       basePayload.settings.general.description = wfDesc
       basePayload.settings.publish = {
-        ...(basePayload.settings.publish || {}),
+        ...basePayload.settings.publish,
         publishOption: 'DRAFT',
       }
 

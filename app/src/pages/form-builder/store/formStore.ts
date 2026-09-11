@@ -890,7 +890,7 @@ export const useFormStore = create<FormStore>()(
         set((state) => ({
           panels: state.panels.map((p) =>
             p.id === id
-              ? { ...p, settings: { ...(p.settings || {}), ...updates } }
+              ? { ...p, settings: { ...p.settings, ...updates } }
               : p,
           ),
         })),
