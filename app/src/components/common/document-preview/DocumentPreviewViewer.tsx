@@ -11,6 +11,7 @@ import {
 } from '@react-pdf-viewer/search'
 import { FileText } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import * as XLSX from 'xlsx'
 import Icon from '@/components/base/icon/Icon'
 import SkeletonDocumentPreview from '@/components/common/skeletons/SkeletonDocumentPreview'
 import {
@@ -18,9 +19,78 @@ import {
   getFieldDisplayValue,
   getFieldSearchVariantStrings,
 } from '@/pages/folders/utils/fieldPdfSearch'
-import { resolveDocumentPreviewKind } from '@/pages/folders/utils/documentDetailsUtils'
+import {
+  getFileExtension,
+  resolveDocumentPreviewKind,
+} from '@/pages/folders/utils/documentDetailsUtils'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
+
+type ViewerMode =
+  | 'pdf'
+  | 'image'
+  | 'tiff'
+  | 'spreadsheet'
+  | 'word'
+  | 'text'
+  | 'office-remote'
+  | 'unsupported'
+
+const SPREADSHEET_EXTS = new Set(['xlsx', 'xls', 'xlsm', 'xlsb', 'csv', 'ods'])
+const WORD_EXTS = new Set(['docx', 'doc', 'rtf', 'odt'])
+const TEXT_EXTS = new Set([
+  'txt',
+  'json',
+  'xml',
+  'md',
+  'log',
+  'html',
+  'htm',
+  'tsv',
+])
+const OFFICE_REMOTE_EXTS = new Set([
+  ...SPREADSHEET_EXTS,
+  ...WORD_EXTS,
+  'ppt',
+  'pptx',
+])
+
+const isHttpUrl = (url: string) => /^https?:\/\//i.test(url)
+
+const resolveViewerMode = ({
+  fileName,
+  fileUrl,
+  isImage,
+  isPdf,
+}: {
+  fileName?: string
+  fileUrl: string | null
+  isImage: boolean
+  isPdf: boolean
+}): ViewerMode => {
+  if (isPdf) return 'pdf'
+  if (isImage) {
+    const kind = resolveDocumentPreviewKind('image/*', fileName)
+    return kind === 'tiff' ? 'tiff' : 'image'
+  }
+
+  const ext = getFileExtension(fileName)
+  const kind = resolveDocumentPreviewKind('', fileName)
+  if (kind === 'pdf') return 'pdf'
+  if (kind === 'image') return 'image'
+  if (kind === 'tiff') return 'tiff'
+
+  if (SPREADSHEET_EXTS.has(ext)) return 'spreadsheet'
+  if (WORD_EXTS.has(ext)) return 'word'
+  if (TEXT_EXTS.has(ext)) return 'text'
+
+  // Public Office URLs can use Microsoft's online viewer as a fallback.
+  if (fileUrl && isHttpUrl(fileUrl) && OFFICE_REMOTE_EXTS.has(ext)) {
+    return 'office-remote'
+  }
+
+  return 'unsupported'
+}
 
 const PDF_WORKER_URL = new URL(
   'pdfjs-dist/build/pdf.worker.min.js',
@@ -310,16 +380,12 @@ export default function DocumentPreviewViewer({
   probeTerms = [],
   showScanOverlay = false,
 }: DocumentPreviewViewerProps) {
-  // Trust explicit parent flags first so kind does not flip after mount.
-  const treatAsPdf = Boolean(isPdf)
-  const treatAsImage = !treatAsPdf && Boolean(isImage)
-  const resolvedKind = resolveDocumentPreviewKind(
-    treatAsPdf ? 'application/pdf' : treatAsImage ? 'image/*' : '',
+  const mode = resolveViewerMode({
     fileName,
-  )
-  const treatAsTiff = treatAsImage && resolvedKind === 'tiff'
-  const treatAsRasterImage = treatAsImage && !treatAsTiff
-  const treatAsFallbackPdf = !treatAsPdf && !treatAsImage && resolvedKind === 'pdf'
+    fileUrl,
+    isImage,
+    isPdf,
+  })
 
   let content = null
 
@@ -327,17 +393,12 @@ export default function DocumentPreviewViewer({
     content = <SkeletonDocumentPreview />
   } else if (!fileUrl) {
     content = (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
-        <FileText className='text-[var(--primary-9)]' size={40} />
-        <p className='text-sm font-semibold text-[var(--gray-13)]'>
-          Preview not available
-        </p>
-        {fileName ? (
-          <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
-        ) : null}
-      </div>
+      <UnsupportedPreview
+        fileName={fileName}
+        message='Preview not available'
+      />
     )
-  } else if (treatAsPdf || treatAsFallbackPdf) {
+  } else if (mode === 'pdf') {
     content = (
       <PdfViewer
         activeHighlightColor={activeHighlightColor}
@@ -351,36 +412,32 @@ export default function DocumentPreviewViewer({
         probeTerms={probeTerms}
       />
     )
-  } else if (treatAsTiff) {
+  } else if (mode === 'tiff') {
     content = (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
-        <FileText className='text-[var(--primary-9)]' size={40} />
-        <p className='text-sm font-semibold text-[var(--gray-13)]'>
-          TIFF preview is not supported in the browser
-        </p>
-        {fileName ? (
-          <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
-        ) : null}
-        <p className='max-w-sm text-xs text-[var(--gray-10)]'>
-          Download the file to view it, or upload a PDF / PNG / JPEG for in-app preview.
-        </p>
-      </div>
+      <UnsupportedPreview
+        fileName={fileName}
+        message='TIFF preview is not supported in the browser'
+        hint='Download the file to view it, or upload a PDF / PNG / JPEG for in-app preview.'
+      />
     )
-  } else if (treatAsRasterImage) {
-    content = (
-      <ImagePreview fileName={fileName} fileUrl={fileUrl} />
-    )
+  } else if (mode === 'image') {
+    content = <ImagePreview fileName={fileName} fileUrl={fileUrl} />
+  } else if (mode === 'spreadsheet') {
+    content = <SpreadsheetPreview fileName={fileName} fileUrl={fileUrl} />
+  } else if (mode === 'word') {
+    content = <WordPreview fileName={fileName} fileUrl={fileUrl} />
+  } else if (mode === 'text') {
+    content = <TextFilePreview fileName={fileName} fileUrl={fileUrl} />
+  } else if (mode === 'office-remote') {
+    content = <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
   } else {
     content = (
-      <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
-        <FileText className='text-[var(--primary-9)]' size={40} />
-        <p className='text-sm font-semibold text-[var(--gray-13)]'>
-          Preview not available
-        </p>
-        {fileName ? (
-          <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
-        ) : null}
-      </div>
+      <UnsupportedPreview
+        fileName={fileName}
+        fileUrl={fileUrl}
+        message='Preview not available'
+        hint='This file type cannot be previewed here. Open or download it instead.'
+      />
     )
   }
 
@@ -399,6 +456,624 @@ export default function DocumentPreviewViewer({
       ) : null}
     </div>
   )
+}
+
+function UnsupportedPreview({
+  fileName,
+  fileUrl,
+  hint,
+  message,
+}: {
+  fileName?: string
+  fileUrl?: string | null
+  hint?: string
+  message: string
+}) {
+  return (
+    <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
+      <FileText className='text-[var(--primary-9)]' size={40} />
+      <p className='text-sm font-semibold text-[var(--gray-13)]'>{message}</p>
+      {fileName ? (
+        <p className='text-xs font-medium text-[var(--gray-9)]'>{fileName}</p>
+      ) : null}
+      {hint ? (
+        <p className='max-w-sm text-xs text-[var(--gray-10)]'>{hint}</p>
+      ) : null}
+      {fileUrl ? (
+        <a
+          className='mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--gray-4)] bg-surface px-3 py-1.5 text-xs font-semibold text-[var(--primary-9)] transition hover:bg-[var(--primary-1)]'
+          href={fileUrl}
+          rel='noreferrer'
+          target='_blank'
+        >
+          <Icon className='size-3.5' name='lucide:external-link' />
+          Open file
+        </a>
+      ) : null}
+    </div>
+  )
+}
+
+function SpreadsheetPreview({
+  fileName,
+  fileUrl,
+}: {
+  fileName?: string
+  fileUrl: string
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [rows, setRows] = useState<string[][]>([])
+  const [sheetNames, setSheetNames] = useState<string[]>([])
+  const [activeSheet, setActiveSheet] = useState('')
+  const workbookRef = useRef<XLSX.WorkBook | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      workbookRef.current = null
+      try {
+        const response = await fetch(fileUrl)
+        if (!response.ok) throw new Error('Unable to load spreadsheet')
+        const buffer = await response.arrayBuffer()
+        const workbook = XLSX.read(buffer, { type: 'array' })
+        const names = workbook.SheetNames || []
+        if (!names.length) throw new Error('No sheets found in this file')
+        if (cancelled) return
+        workbookRef.current = workbook
+        setSheetNames(names)
+        setActiveSheet(names[0])
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : 'Unable to preview spreadsheet',
+          )
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [fileUrl])
+
+  useEffect(() => {
+    const workbook = workbookRef.current
+    if (!workbook || !activeSheet) return
+    const sheet = workbook.Sheets[activeSheet]
+    if (!sheet) {
+      setRows([])
+      return
+    }
+    const matrix = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(
+      sheet,
+      {
+        blankrows: false,
+        defval: '',
+        header: 1,
+      },
+    )
+    setRows(
+      matrix
+        .slice(0, 200)
+        .map((row) =>
+          (Array.isArray(row) ? row : []).map((cell) =>
+            cell == null ? '' : String(cell),
+          ),
+        ),
+    )
+  }, [activeSheet, loading, sheetNames])
+
+  if (loading) return <SkeletonDocumentPreview />
+  if (error) {
+    return (
+      <UnsupportedPreview
+        fileName={fileName}
+        fileUrl={fileUrl}
+        hint={error}
+        message='Unable to preview spreadsheet'
+      />
+    )
+  }
+
+  const colCount = Math.max(1, ...rows.map((row) => row.length))
+
+  return (
+    <div className='flex h-full min-h-[320px] w-full flex-col bg-[var(--gray-1)]'>
+      {sheetNames.length > 1 ? (
+        <div className='flex shrink-0 gap-1 overflow-x-auto border-b border-[var(--gray-3)] bg-surface px-3 py-2'>
+          {sheetNames.map((name) => (
+            <button
+              className={`rounded-md px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition ${
+                name === activeSheet
+                  ? 'bg-[var(--primary-9)] text-white'
+                  : 'bg-[var(--gray-2)] text-[var(--gray-11)] hover:bg-[var(--gray-3)]'
+              }`}
+              key={name}
+              type='button'
+              onClick={() => setActiveSheet(name)}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div className='min-h-0 flex-1 overflow-auto p-3'>
+        {rows.length === 0 ? (
+          <div className='flex h-full items-center justify-center text-xs text-[var(--gray-10)]'>
+            Sheet is empty
+          </div>
+        ) : (
+          <table className='min-w-full border-collapse text-left text-[12px]'>
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr
+                  className={
+                    rowIndex === 0
+                      ? 'bg-[var(--gray-2)] font-semibold text-[var(--gray-13)]'
+                      : 'text-[var(--gray-12)]'
+                  }
+                  key={`row-${rowIndex}`}
+                >
+                  {Array.from({ length: colCount }, (_, colIndex) => (
+                    <td
+                      className='max-w-[240px] truncate border border-[var(--gray-4)] bg-surface px-2.5 py-1.5'
+                      key={`cell-${rowIndex}-${colIndex}`}
+                      title={row[colIndex] || ''}
+                    >
+                      {row[colIndex] || ''}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className='shrink-0 border-t border-[var(--gray-3)] bg-surface px-3 py-1.5 text-[10px] text-[var(--gray-9)]'>
+        Showing first {rows.length} row{rows.length === 1 ? '' : 's'}
+        {fileName ? ` · ${fileName}` : ''}
+      </div>
+    </div>
+  )
+}
+
+function WordPreview({
+  fileName,
+  fileUrl,
+}: {
+  fileName?: string
+  fileUrl: string
+}) {
+  const ext = getFileExtension(fileName)
+
+  // Public URLs can be embedded via Microsoft Office Online.
+  if (isHttpUrl(fileUrl)) {
+    return <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
+  }
+
+  // Local/blob .docx → extract readable text from the Open XML package.
+  if (ext === 'docx') {
+    return <DocxTextPreview fileName={fileName} fileUrl={fileUrl} />
+  }
+
+  return (
+    <UnsupportedPreview
+      fileName={fileName}
+      fileUrl={fileUrl}
+      hint='Legacy Word (.doc) and some Office formats cannot be rendered in the browser. Open the file instead.'
+      message='Preview not available'
+    />
+  )
+}
+
+function DocxTextPreview({
+  fileName,
+  fileUrl,
+}: {
+  fileName?: string
+  fileUrl: string
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const [html, setHtml] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await fetch(fileUrl)
+        if (!response.ok) throw new Error('Unable to load document')
+        const buffer = await response.arrayBuffer()
+        if (buffer.byteLength < 4) {
+          throw new Error('File is empty or not a valid Word document')
+        }
+
+        const xml = await extractDocxDocumentXml(buffer)
+        if (!xml) {
+          throw new Error(
+            'Could not read Word document contents. Try Open file, or re-save as .docx.',
+          )
+        }
+
+        const paragraphs = xml
+          .split(/<\/w:p>/i)
+          .map((chunk) => {
+            const texts = [...chunk.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map(
+              (match) => decodeXmlEntities(match[1] || ''),
+            )
+            return texts.join('')
+          })
+          .map((text) => text.replace(/\s+/g, ' ').trim())
+          .filter(Boolean)
+
+        if (!paragraphs.length) {
+          // Tables / text boxes may still have content under <w:t>.
+          const loose = [...xml.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)]
+            .map((match) => decodeXmlEntities(match[1] || '').trim())
+            .filter(Boolean)
+          if (!loose.length) {
+            throw new Error('No readable text found in this Word document')
+          }
+          if (!cancelled) {
+            setHtml(
+              `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(loose.join(' '))}</p>`,
+            )
+          }
+          return
+        }
+
+        if (!cancelled) {
+          setHtml(
+            paragraphs
+              .map(
+                (paragraph) =>
+                  `<p class="mb-2 leading-relaxed text-[13px] text-[var(--gray-12)]">${escapeHtml(paragraph)}</p>`,
+              )
+              .join(''),
+          )
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : 'Unable to preview Word document',
+          )
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [fileUrl])
+
+  if (loading) return <SkeletonDocumentPreview />
+  if (error) {
+    return (
+      <UnsupportedPreview
+        fileName={fileName}
+        fileUrl={fileUrl}
+        hint={error}
+        message='Unable to preview Word document'
+      />
+    )
+  }
+
+  return (
+    <div className='h-full min-h-[320px] overflow-auto bg-[var(--gray-1)] p-5'>
+      <div
+        className='mx-auto min-h-full max-w-3xl rounded-xl border border-[var(--gray-3)] bg-surface p-6 shadow-sm'
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    </div>
+  )
+}
+
+function TextFilePreview({
+  fileName,
+  fileUrl,
+}: {
+  fileName?: string
+  fileUrl: string
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [text, setText] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const response = await fetch(fileUrl)
+        if (!response.ok) throw new Error('Unable to load file')
+        const content = await response.text()
+        if (!cancelled) setText(content.slice(0, 200_000))
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Unable to preview file')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [fileUrl])
+
+  if (loading) return <SkeletonDocumentPreview />
+  if (error) {
+    return (
+      <UnsupportedPreview
+        fileName={fileName}
+        fileUrl={fileUrl}
+        hint={error}
+        message='Unable to preview file'
+      />
+    )
+  }
+
+  return (
+    <div className='h-full min-h-[320px] overflow-auto bg-[var(--gray-1)] p-4'>
+      <pre className='whitespace-pre-wrap break-words rounded-xl border border-[var(--gray-3)] bg-surface p-4 text-[12px] leading-relaxed text-[var(--gray-12)]'>
+        {text}
+      </pre>
+    </div>
+  )
+}
+
+function OfficeOnlinePreview({
+  fileName,
+  fileUrl,
+}: {
+  fileName?: string
+  fileUrl: string
+}) {
+  const embedUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`
+
+  return (
+    <div className='relative h-full min-h-[320px] w-full bg-[var(--gray-1)]'>
+      <iframe
+        className='h-full w-full border-0'
+        src={embedUrl}
+        title={fileName || 'Office document preview'}
+      />
+    </div>
+  )
+}
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+const decodeXmlEntities = (value: string) =>
+  value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+
+async function inflateRaw(payload: Uint8Array): Promise<Uint8Array> {
+  const copy = Uint8Array.from(payload)
+  const stream = new Blob([copy])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate-raw'))
+  return new Uint8Array(await new Response(stream).arrayBuffer())
+}
+
+/**
+ * Read `word/document.xml` from a .docx (ZIP) using the central directory.
+ * Local-header-only parsing fails on many Office files that use data descriptors.
+ */
+async function extractDocxDocumentXml(
+  buffer: ArrayBuffer,
+): Promise<string | null> {
+  const bytes = new Uint8Array(buffer)
+  const view = new DataView(buffer)
+  const decoder = new TextDecoder('utf-8')
+
+  // PK\x03\x04 = local, PK\x01\x02 = central, PK\x05\x06 = EOCD
+  if (
+    bytes.length < 22 ||
+    bytes[0] !== 0x50 ||
+    bytes[1] !== 0x4b ||
+    bytes[2] !== 0x03 ||
+    bytes[3] !== 0x04
+  ) {
+    return null
+  }
+
+  // Find End of Central Directory (scan backwards; comment can follow it).
+  let eocd = -1
+  for (let i = bytes.length - 22; i >= 0; i--) {
+    if (
+      bytes[i] === 0x50 &&
+      bytes[i + 1] === 0x4b &&
+      bytes[i + 2] === 0x05 &&
+      bytes[i + 3] === 0x06
+    ) {
+      eocd = i
+      break
+    }
+    // Don't scan forever on huge trailing comments.
+    if (bytes.length - i > 65_536) break
+  }
+  if (eocd < 0) return extractDocxDocumentXmlFallback(bytes, view, decoder)
+
+  const totalEntries = view.getUint16(eocd + 10, true)
+  const centralOffset = view.getUint32(eocd + 16, true)
+  if (centralOffset >= bytes.length) {
+    return extractDocxDocumentXmlFallback(bytes, view, decoder)
+  }
+
+  let offset = centralOffset
+  for (let entry = 0; entry < totalEntries; entry++) {
+    if (
+      offset + 46 > bytes.length ||
+      bytes[offset] !== 0x50 ||
+      bytes[offset + 1] !== 0x4b ||
+      bytes[offset + 2] !== 0x01 ||
+      bytes[offset + 3] !== 0x02
+    ) {
+      break
+    }
+
+    const compression = view.getUint16(offset + 10, true)
+    const compressedSize = view.getUint32(offset + 20, true)
+    const nameLength = view.getUint16(offset + 28, true)
+    const extraLength = view.getUint16(offset + 30, true)
+    const commentLength = view.getUint16(offset + 32, true)
+    const localHeaderOffset = view.getUint32(offset + 42, true)
+    const nameStart = offset + 46
+    const nameEnd = nameStart + nameLength
+    if (nameEnd > bytes.length) break
+
+    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
+    offset = nameEnd + extraLength + commentLength
+
+    if (!/(^|\/)word\/document\.xml$/i.test(name)) continue
+
+    if (
+      localHeaderOffset + 30 > bytes.length ||
+      bytes[localHeaderOffset] !== 0x50 ||
+      bytes[localHeaderOffset + 1] !== 0x4b ||
+      bytes[localHeaderOffset + 2] !== 0x03 ||
+      bytes[localHeaderOffset + 3] !== 0x04
+    ) {
+      return null
+    }
+
+    const localNameLength = view.getUint16(localHeaderOffset + 26, true)
+    const localExtraLength = view.getUint16(localHeaderOffset + 28, true)
+    const dataStart =
+      localHeaderOffset + 30 + localNameLength + localExtraLength
+    const dataEnd = dataStart + compressedSize
+    if (dataEnd > bytes.length) return null
+
+    const payload = bytes.subarray(dataStart, dataEnd)
+    if (compression === 0) return decoder.decode(payload)
+    if (compression !== 8) return null
+
+    try {
+      return decoder.decode(await inflateRaw(payload))
+    } catch {
+      return null
+    }
+  }
+
+  return extractDocxDocumentXmlFallback(bytes, view, decoder)
+}
+
+/** Fallback when EOCD/central directory is missing or incomplete. */
+async function extractDocxDocumentXmlFallback(
+  bytes: Uint8Array,
+  view: DataView,
+  decoder: TextDecoder,
+): Promise<string | null> {
+  for (let offset = 0; offset + 30 < bytes.length; ) {
+    if (
+      bytes[offset] !== 0x50 ||
+      bytes[offset + 1] !== 0x4b ||
+      bytes[offset + 2] !== 0x03 ||
+      bytes[offset + 3] !== 0x04
+    ) {
+      offset += 1
+      continue
+    }
+
+    const flags = view.getUint16(offset + 6, true)
+    const compression = view.getUint16(offset + 8, true)
+    let compressedSize = view.getUint32(offset + 18, true)
+    const nameLength = view.getUint16(offset + 26, true)
+    const extraLength = view.getUint16(offset + 28, true)
+    const nameStart = offset + 30
+    const nameEnd = nameStart + nameLength
+    if (nameEnd > bytes.length) break
+
+    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
+    const dataStart = nameEnd + extraLength
+    const hasDataDescriptor = (flags & 0x08) !== 0
+
+    // When bit 3 is set, sizes in the local header are zero — scan for
+    // the data descriptor (PK\x07\x08) or next local header.
+    if (hasDataDescriptor && compressedSize === 0) {
+      let cursor = dataStart
+      let found = -1
+      while (cursor + 16 < bytes.length) {
+        if (
+          bytes[cursor] === 0x50 &&
+          bytes[cursor + 1] === 0x4b &&
+          ((bytes[cursor + 2] === 0x07 && bytes[cursor + 3] === 0x08) ||
+            (bytes[cursor + 2] === 0x03 && bytes[cursor + 3] === 0x04) ||
+            (bytes[cursor + 2] === 0x01 && bytes[cursor + 3] === 0x02))
+        ) {
+          found = cursor
+          break
+        }
+        cursor += 1
+      }
+      if (found < 0) break
+      compressedSize = found - dataStart
+      // Optional signature before CRC in data descriptor.
+      const nextOffset =
+        bytes[found + 2] === 0x07 && bytes[found + 3] === 0x08
+          ? found + 16
+          : found
+
+      if (/(^|\/)word\/document\.xml$/i.test(name)) {
+        const payload = bytes.subarray(dataStart, dataStart + compressedSize)
+        if (compression === 0) return decoder.decode(payload)
+        if (compression !== 8) return null
+        try {
+          return decoder.decode(await inflateRaw(payload))
+        } catch {
+          return null
+        }
+      }
+
+      offset = nextOffset
+      continue
+    }
+
+    const dataEnd = dataStart + compressedSize
+    if (dataEnd > bytes.length) break
+
+    if (/(^|\/)word\/document\.xml$/i.test(name)) {
+      const payload = bytes.subarray(dataStart, dataEnd)
+      if (compression === 0) return decoder.decode(payload)
+      if (compression !== 8) return null
+      try {
+        return decoder.decode(await inflateRaw(payload))
+      } catch {
+        return null
+      }
+    }
+
+    offset = dataEnd
+  }
+
+  return null
 }
 
 function ImagePreview({
