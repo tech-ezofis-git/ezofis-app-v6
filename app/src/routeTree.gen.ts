@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as V5AppRouteImport } from './routes/v5-app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as EncryptedNameRouteImport } from './routes/$encryptedName'
 import { Route as StoriesRouteRouteImport } from './routes/stories/route'
@@ -100,6 +101,11 @@ import { Route as AppReportsReportIdRouteImport } from './routes/_app/reports_.$
 import { Route as AppMyAccountChar123SlugChar125RouteImport } from './routes/_app/my-account.{-$slug}'
 import { Route as AppFormsFormIdEntriesRouteImport } from './routes/_app/forms_.$formId.entries'
 
+const V5AppRoute = V5AppRouteImport.update({
+  id: '/v5-app',
+  path: '/v5-app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -560,6 +566,7 @@ export interface FileRoutesByFullPath {
   '/stories': typeof StoriesRouteRouteWithChildren
   '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
+  '/v5-app': typeof V5AppRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
@@ -649,6 +656,7 @@ export interface FileRoutesByTo {
   '/playground': typeof PlaygroundRouteRoute
   '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
+  '/v5-app': typeof V5AppRoute
   '/folders': typeof AppFoldersRoute
   '/forms': typeof AppFormsRoute
   '/help-center': typeof AppHelpCenterRoute
@@ -742,6 +750,7 @@ export interface FileRoutesById {
   '/stories': typeof StoriesRouteRouteWithChildren
   '/$encryptedName': typeof EncryptedNameRoute
   '/auth': typeof AuthRoute
+  '/v5-app': typeof V5AppRoute
   '/_app/folders': typeof AppFoldersRoute
   '/_app/forms': typeof AppFormsRoute
   '/_app/help-center': typeof AppHelpCenterRoute
@@ -834,6 +843,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/$encryptedName'
     | '/auth'
+    | '/v5-app'
     | '/folders'
     | '/forms'
     | '/help-center'
@@ -923,6 +933,7 @@ export interface FileRouteTypes {
     | '/playground'
     | '/$encryptedName'
     | '/auth'
+    | '/v5-app'
     | '/folders'
     | '/forms'
     | '/help-center'
@@ -1015,6 +1026,7 @@ export interface FileRouteTypes {
     | '/stories'
     | '/$encryptedName'
     | '/auth'
+    | '/v5-app'
     | '/_app/folders'
     | '/_app/forms'
     | '/_app/help-center'
@@ -1108,6 +1120,7 @@ export interface RootRouteChildren {
   StoriesRouteRoute: typeof StoriesRouteRouteWithChildren
   EncryptedNameRoute: typeof EncryptedNameRoute
   AuthRoute: typeof AuthRoute
+  V5AppRoute: typeof V5AppRoute
   FormBuilderFormIdRoute: typeof FormBuilderFormIdRoute
   OnBoardingTokenRoute: typeof OnBoardingTokenRoute
   PortalPortalIdRoute: typeof PortalPortalIdRoute
@@ -1120,6 +1133,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/v5-app': {
+      id: '/v5-app'
+      path: '/v5-app'
+      fullPath: '/v5-app'
+      preLoaderRoute: typeof V5AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -1951,6 +1971,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoriesRouteRoute: StoriesRouteRouteWithChildren,
   EncryptedNameRoute: EncryptedNameRoute,
   AuthRoute: AuthRoute,
+  V5AppRoute: V5AppRoute,
   FormBuilderFormIdRoute: FormBuilderFormIdRoute,
   OnBoardingTokenRoute: OnBoardingTokenRoute,
   PortalPortalIdRoute: PortalPortalIdRoute,

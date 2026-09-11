@@ -88,9 +88,12 @@ export const verifyDualAuth = async (
   if (v5Result.status === 'fulfilled') {
     const res = v5Result.value
     if (res.status === 200 && res.data) {
-      const identity = res.data
+      const identity = {
+        ...res.data,
+        rawTokenData: res.rawTokenData,
+      }
       // Retrieve V5 User Session details
-      const sessionRes = await getUserSessionV5(identity)
+      const sessionRes = await getUserSessionV5(res.data)
 
       result.v5 = {
         data: identity,
