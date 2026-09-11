@@ -22,6 +22,7 @@ import IntelligentUploadView from './IntelligentUpload/IntelligentUploadView'
 import { StartWorkflowView } from './StartWorkflowView'
 import { TreeSidebar } from './TreeSidebar'
 import Upload from './Upload/Upload'
+import { isDemoAppOrigin } from '@/utils/origin'
 
 export function FolderExplorer() {
   const { i18n, t } = useLingui()
@@ -168,6 +169,7 @@ export function FolderExplorer() {
   const canUpload = Boolean(
     activeFolder && resolvedRepositoryId && folderPermissions.upload,
   )
+  const canIntelligentUpload = Boolean(canUpload && !isDemoAppOrigin())
 
   useEffect(() => {
     if (appView === 'Upload' && !folderPermissions.upload) {
@@ -331,6 +333,7 @@ export function FolderExplorer() {
   useFoldersTopbar(foldersTopbar)
 
   const handleIntelligentUpload = () => {
+    if (isDemoAppOrigin()) return
     if (!resolvedRepositoryId) {
       showToast({
         message: t`Select a repository before uploading.`,
@@ -459,6 +462,11 @@ export function FolderExplorer() {
   }
 
   if (appView === 'intelligentUpload') {
+    if (isDemoAppOrigin()) {
+      setAppView('explorer')
+      return null
+    }
+
     const candidateRepos = repositoryNodes.map((node) => ({
       id: String(getRepositoryIdFromFolder(node.id) || node.id),
       name: node.title,
@@ -557,7 +565,9 @@ export function FolderExplorer() {
             setFileFilters(filters)
             setFolderFilters(filters)
           }}
-          onIntelligentUpload={canUpload ? handleIntelligentUpload : undefined}
+          onIntelligentUpload={
+            canIntelligentUpload ? handleIntelligentUpload : undefined
+          }
           onOpenFile={openDetailsFile}
           onPageChange={changeServerPage}
           onPageSizeChange={changePageSize}
@@ -607,7 +617,9 @@ export function FolderExplorer() {
         }}
         onFolderFiltersChange={setFolderFilters}
         onFolderSearchChange={setFolderSearch}
-        onIntelligentUpload={canUpload ? handleIntelligentUpload : undefined}
+        onIntelligentUpload={
+          canIntelligentUpload ? handleIntelligentUpload : undefined
+        }
         onRefresh={handleRefresh}
         onUpload={canUpload ? handleUpload : undefined}
       />
