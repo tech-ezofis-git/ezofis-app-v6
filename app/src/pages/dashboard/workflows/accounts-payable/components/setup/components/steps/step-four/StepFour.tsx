@@ -114,7 +114,7 @@ const applyMailInitiateConnector = (
     block.settings.mailInitiate = {
       connectorId: '',
       connectorType: '',
-      ...(block.settings.mailInitiate || {}),
+      ...block.settings.mailInitiate,
       ...(connectorType ? { connectorId, connectorType } : {}),
     }
   }

@@ -7,6 +7,8 @@ export function isDemoAppOrigin(): boolean {
   const hostname = (window.location.hostname || '').toLowerCase()
   return (
     origin === 'https://demoapp.ezofis.com' ||
-    hostname === 'demoapp.ezofis.com'
+    origin === 'https://demoapp.ezois.com' ||
+    hostname === 'demoapp.ezofis.com' ||
+    hostname === 'demoapp.ezois.com'
   )
 }

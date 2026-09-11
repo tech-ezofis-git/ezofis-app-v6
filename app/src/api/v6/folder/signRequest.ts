@@ -674,7 +674,7 @@ export const getSignRequestInviteFile = async (payload: {
 
   try {
     const headers: Record<string, string> = {
-      ...(getTenantHeaders(payload.tenantId) || {}),
+      ...getTenantHeaders(payload.tenantId),
     }
     if (payload.accessToken) {
       headers.Authorization = `Bearer ${payload.accessToken}`
@@ -802,7 +802,7 @@ export const submitInviteSignRequest = async (payload: {
 
   try {
     const headers: Record<string, string> = {
-      ...(getTenantHeaders(payload.signature.tenantId) || {}),
+      ...getTenantHeaders(payload.signature.tenantId),
     }
     if (payload.accessToken) {
       headers.Authorization = `Bearer ${payload.accessToken}`

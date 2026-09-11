@@ -123,12 +123,53 @@ const GENERIC_BLOB_TYPES = new Set([
   'application/download',
 ])
 
-export type DocumentPreviewKind = 'pdf' | 'image' | 'tiff' | 'unsupported'
+export type DocumentPreviewKind =
+  | 'image'
+  | 'office'
+  | 'pdf'
+  | 'tiff'
+  | 'unsupported'
+
+export const OFFICE_EXTENSIONS = new Set([
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
+  'csv',
+  'ppt',
+  'pptx',
+  'rtf',
+  'odt',
+  'ods',
+  'odp',
+])
+
+const OFFICE_MIME_TYPES = new Set([
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/csv',
+  'application/rtf',
+  'text/rtf',
+  'application/vnd.oasis.opendocument.text',
+  'application/vnd.oasis.opendocument.spreadsheet',
+  'application/vnd.oasis.opendocument.presentation',
+])
 
 export const getFileExtension = (fileName?: string | null) => {
-  const name = String(fileName || '').trim().toLowerCase()
+  const name = String(fileName || '')
+    .trim()
+    .toLowerCase()
   if (!name.includes('.')) return ''
-  return name.split('.').pop()?.replace(/[^a-z0-9]/g, '') || ''
+  return (
+    name
+      .split('.')
+      .pop()
+      ?.replace(/[^a-z0-9]/g, '') || ''
+  )
 }
 
 /** Prefer real Content-Type; fall back to file extension when the API returns a generic blob type. */
@@ -151,6 +192,17 @@ export const resolvePreviewMimeType = (
   if (ext === 'gif') return 'image/gif'
   if (ext === 'webp') return 'image/webp'
   if (ext === 'bmp') return 'image/bmp'
+  if (ext === 'docx')
+    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  if (ext === 'doc') return 'application/msword'
+  if (ext === 'xlsx')
+    return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  if (ext === 'xls') return 'application/vnd.ms-excel'
+  if (ext === 'pptx')
+    return 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  if (ext === 'ppt') return 'application/vnd.ms-powerpoint'
+  if (ext === 'csv') return 'text/csv'
+  if (ext === 'rtf') return 'application/rtf'
 
   const hint = String(fileTypeHint || '').toLowerCase()
   if (hint.includes('pdf')) return 'application/pdf'
@@ -171,7 +223,11 @@ export const resolveDocumentPreviewKind = (
     .toLowerCase()
   const ext = getFileExtension(fileName)
 
-  if (mime === 'application/pdf' || mime === 'application/x-pdf' || ext === 'pdf') {
+  if (
+    mime === 'application/pdf' ||
+    mime === 'application/x-pdf' ||
+    ext === 'pdf'
+  ) {
     return 'pdf'
   }
 
@@ -189,6 +245,17 @@ export const resolveDocumentPreviewKind = (
     ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'].includes(ext)
   ) {
     return 'image'
+  }
+
+  if (
+    OFFICE_EXTENSIONS.has(ext) ||
+    OFFICE_MIME_TYPES.has(mime) ||
+    mime.includes('officedocument') ||
+    mime.includes('msword') ||
+    mime.includes('ms-excel') ||
+    mime.includes('ms-powerpoint')
+  ) {
+    return 'office'
   }
 
   return 'unsupported'
@@ -216,13 +283,24 @@ export const sniffBlobMimeType = async (blob: Blob): Promise<string> => {
     ) {
       return 'image/png'
     }
-    if (header.length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) {
+    if (
+      header.length >= 3 &&
+      header[0] === 0xff &&
+      header[1] === 0xd8 &&
+      header[2] === 0xff
+    ) {
       return 'image/jpeg'
     }
     if (
       header.length >= 4 &&
-      ((header[0] === 0x49 && header[1] === 0x49 && header[2] === 0x2a && header[3] === 0x00) ||
-        (header[0] === 0x4d && header[1] === 0x4d && header[2] === 0x00 && header[3] === 0x2a))
+      ((header[0] === 0x49 &&
+        header[1] === 0x49 &&
+        header[2] === 0x2a &&
+        header[3] === 0x00) ||
+        (header[0] === 0x4d &&
+          header[1] === 0x4d &&
+          header[2] === 0x00 &&
+          header[3] === 0x2a))
     ) {
       return 'image/tiff'
     }

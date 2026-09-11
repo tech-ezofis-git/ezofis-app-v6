@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react'
 import AiBrandIcon from '@/components/common/AiBrandIcon'
+import { isDemoAppOrigin } from '@/utils/origin'
 import CustomFilter, {
   type FilterDefinition,
   type FilterGroup,
@@ -715,7 +716,9 @@ export function FolderFilterBar({
               },
             ]
           : []),
-        ...(onIntelligentUpload && String(repositoryId || '').trim()
+        ...(onIntelligentUpload &&
+        String(repositoryId || '').trim() &&
+        !isDemoAppOrigin()
           ? [
               {
                 color: 'primary' as const,

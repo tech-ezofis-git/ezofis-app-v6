@@ -266,7 +266,7 @@ const TableInputWidget = ({
       const updated = [...prev]
 
       updated[rowIndex] = {
-        ...(updated[rowIndex] || {}),
+        ...updated[rowIndex],
         [columnId]: value,
       }
 
@@ -1872,7 +1872,7 @@ export const WorkflowChatPage: React.FC<WorkflowChatPageProps> = ({
       workflowName: activeWorkflow.name,
     })
 
-    const mergedAnswers = { ...updatedAnswers, ...(stepResult.extractedAnswers || {}) }
+    const mergedAnswers = { ...updatedAnswers, ...stepResult.extractedAnswers }
     setAnswers(mergedAnswers)
     setIsTyping(false)
 

@@ -1165,6 +1165,21 @@ export const UploadFiles = async (repositoryId: string, formData: FormData) => {
   return response
 }
 
+export interface UploadArchiveResponse {
+  itemId: string
+  fileName: string
+  filePath?: string
+  storageProviderCode?: string
+  fileVersion?: number
+  folderId?: string
+  folderPathSegments?: string[]
+  repositoryName?: string
+  workflowAttached?: boolean
+  workflowId?: string | null
+  processId?: string | null
+  instanceId?: string | null
+}
+
 /**
  * Uploads a Collabora-edited document back into a V6 repository
  * using the UploadFiles binary multipart form API.
