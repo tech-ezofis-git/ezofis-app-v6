@@ -58,7 +58,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     // Base settings to be included in the legacy 'settings' object
     const settings: any = {
       label: data.label || '',
-      ...(data.settings || {}),
+      ...data.settings,
       ...data,
     }
     delete settings.settings
@@ -169,7 +169,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     ) {
       const connId = data.connectorId || data.connection || data.mailInitiate?.connectorId || ''
       settings.mailInitiate = {
-        ...(settings.mailInitiate || {}),
+        ...settings.mailInitiate,
         conditions: {
           fromAddress: data.fromMailAddresses?.map((a: any) => a.id) || [],
           fromDomain: data.fromDomainName ? [data.fromDomainName.id] : [],

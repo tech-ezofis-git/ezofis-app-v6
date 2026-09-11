@@ -43,8 +43,31 @@ export const uploadDocumentToCollabora = async (
   blob: Blob,
   fileName: string,
 ): Promise<CollaboraUploadResult> => {
+  const lower = fileName.toLowerCase()
+  const mimeType = lower.endsWith('.docx')
+    ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    : lower.endsWith('.doc')
+      ? 'application/msword'
+      : lower.endsWith('.xlsx')
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : lower.endsWith('.xls')
+          ? 'application/vnd.ms-excel'
+          : lower.endsWith('.pptx')
+            ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            : lower.endsWith('.ppt')
+              ? 'application/vnd.ms-powerpoint'
+              : lower.endsWith('.csv')
+                ? 'text/csv'
+                : lower.endsWith('.rtf')
+                  ? 'application/rtf'
+                  : blob.type || 'application/octet-stream'
+
+  const typedBlob =
+    blob.type && blob.type === mimeType
+      ? blob
+      : new Blob([blob], { type: mimeType })
   const formData = new FormData()
-  formData.append('document', blob, fileName)
+  formData.append('document', typedBlob, fileName)
 
   const { data } = await collaboraAxios.post('/upload', formData)
 
@@ -60,27 +83,28 @@ export const buildWopiSrc = (fileId: string) =>
 export const buildViewerUrl = ({
   accessToken,
   wopiSrc,
+  permission = 'readonly',
+  ui = 'compact',
   postMessageOrigin,
 }: {
-  accessToken: string
+  accessToken?: string
   wopiSrc: string
+  permission?: 'edit' | 'readonly'
+  ui?: 'classic' | 'compact'
   postMessageOrigin?: string
 }) => {
   const viewerUrl = withScheme(COLLABORA_VIEWER_URL_RAW)
+  let url = `${viewerUrl}?WOPISrc=${encodeURIComponent(wopiSrc)}&ui=${ui}&permission=${permission}`
+  if (accessToken) {
+    url += `&access_token=${encodeURIComponent(accessToken)}`
+  }
   const origin =
     postMessageOrigin ||
     (typeof window !== 'undefined' ? window.location.origin : '')
-  const originParam = origin
-    ? `&PostMessageOrigin=${encodeURIComponent(origin)}`
-    : ''
-
-  return (
-    `${viewerUrl}?WOPISrc=${encodeURIComponent(wopiSrc)}` +
-    `&access_token=${encodeURIComponent(accessToken)}` +
-    `&ui_defaults=UIMode=classic;TextRuler=false;TextSidebar=false` +
-    `&permission=edit` +
-    originParam
-  )
+  if (origin) {
+    url += `&PostMessageOrigin=${encodeURIComponent(origin)}`
+  }
+  return url
 }
 
 export const downloadEditedDocument = async (
@@ -92,7 +116,9 @@ export const downloadEditedDocument = async (
   if (!isPdf) {
     const { data } = await collaboraAxios.get(
       `/wopi/files/${fileId}/contents`,
-      { responseType: 'blob' },
+      {
+        responseType: 'blob',
+      },
     )
     return data
   }

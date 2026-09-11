@@ -855,7 +855,7 @@ const ErpSystem = () => {
                             const headerPo =
                               m['PO Number'] || m['Purchase Order']
                             const nextLineItemMapping = {
-                              ...(erpSettings.lineItemMapping || {}),
+                              ...erpSettings.lineItemMapping,
                             }
                             if (headerPo && erpSettings.lineItemHeaders) {
                               const matchedLiCol =

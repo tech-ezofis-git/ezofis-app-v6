@@ -1,9 +1,5 @@
 import { useLingui } from '@lingui/react/macro'
-import {
-  type DocumentLoadEvent,
-  Viewer,
-  Worker,
-} from '@react-pdf-viewer/core'
+import { type DocumentLoadEvent, Viewer, Worker } from '@react-pdf-viewer/core'
 import {
   searchPlugin,
   type HighlightArea,
@@ -23,6 +19,7 @@ import {
   getFileExtension,
   resolveDocumentPreviewKind,
 } from '@/pages/folders/utils/documentDetailsUtils'
+import CollaboraPreviewViewer from '@/pages/folders/components/CollaboraPreviewViewer'
 import '@react-pdf-viewer/core/lib/styles/index.css'
 import '@react-pdf-viewer/search/lib/styles/index.css'
 
@@ -30,6 +27,7 @@ type ViewerMode =
   | 'pdf'
   | 'image'
   | 'tiff'
+  | 'office'
   | 'spreadsheet'
   | 'word'
   | 'text'
@@ -79,6 +77,7 @@ const resolveViewerMode = ({
   if (kind === 'pdf') return 'pdf'
   if (kind === 'image') return 'image'
   if (kind === 'tiff') return 'tiff'
+  if (kind === 'office') return 'office'
 
   if (SPREADSHEET_EXTS.has(ext)) return 'spreadsheet'
   if (WORD_EXTS.has(ext)) return 'word'
@@ -115,6 +114,7 @@ type DocumentPreviewViewerProps = {
   activeHighlightTerm?: string | null
   className?: string
   enableHighlight?: boolean
+  fileBlob?: Blob | null
   fileName?: string
   fileUrl: string | null
   /** Increment to force scroll to the active highlight term. */
@@ -210,7 +210,9 @@ const getScrollParent = (element: HTMLElement | null) => {
     const style = window.getComputedStyle(node)
     const overflowY = style.overflowY
     if (
-      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      (overflowY === 'auto' ||
+        overflowY === 'scroll' ||
+        overflowY === 'overlay') &&
       node.scrollHeight > node.clientHeight + 1
     ) {
       return node
@@ -337,7 +339,7 @@ function ZoomToolbar({
   }
 
   return (
-    <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 shadow-2xl backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300'>
+    <div className='animate-in fade-in slide-in-from-bottom-2 absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 shadow-2xl backdrop-blur-sm duration-300'>
       <button
         aria-label={t`Zoom out`}
         className='p-1 text-[var(--gray-11)] transition-all hover:text-[var(--primary-9)] active:scale-90 disabled:cursor-not-allowed disabled:opacity-40'
@@ -368,6 +370,7 @@ export default function DocumentPreviewViewer({
   activeHighlightTerm,
   className = '',
   enableHighlight = false,
+  fileBlob,
   fileName,
   fileUrl,
   focusRequestId = 0,
@@ -391,27 +394,41 @@ export default function DocumentPreviewViewer({
 
   if (isLoading) {
     content = <SkeletonDocumentPreview />
-  } else if (!fileUrl) {
+  } else if (!fileUrl && !fileBlob) {
     content = (
-      <UnsupportedPreview
+      <UnsupportedPreview fileName={fileName} message='Preview not available' />
+    )
+  } else if (mode === 'office') {
+    content = (
+      <CollaboraPreviewViewer
+        fileBlob={fileBlob}
         fileName={fileName}
-        message='Preview not available'
+        fileUrl={fileUrl}
       />
     )
   } else if (mode === 'pdf') {
-    content = (
-      <PdfViewer
-        activeHighlightColor={activeHighlightColor}
-        activeHighlightTerm={activeHighlightTerm}
-        fileUrl={fileUrl}
-        focusRequestId={focusRequestId}
-        highlightColors={enableHighlight ? highlightColors : {}}
-        highlightTerms={enableHighlight ? highlightTerms : []}
-        key={fileUrl}
-        onProbeComplete={onProbeComplete}
-        probeTerms={probeTerms}
-      />
-    )
+    if (!fileUrl) {
+      content = (
+        <UnsupportedPreview
+          fileName={fileName}
+          message='Preview not available'
+        />
+      )
+    } else {
+      content = (
+        <PdfViewer
+          activeHighlightColor={activeHighlightColor}
+          activeHighlightTerm={activeHighlightTerm}
+          fileUrl={fileUrl}
+          focusRequestId={focusRequestId}
+          highlightColors={enableHighlight ? highlightColors : {}}
+          highlightTerms={enableHighlight ? highlightTerms : []}
+          key={fileUrl}
+          onProbeComplete={onProbeComplete}
+          probeTerms={probeTerms}
+        />
+      )
+    }
   } else if (mode === 'tiff') {
     content = (
       <UnsupportedPreview
@@ -420,15 +437,15 @@ export default function DocumentPreviewViewer({
         hint='Download the file to view it, or upload a PDF / PNG / JPEG for in-app preview.'
       />
     )
-  } else if (mode === 'image') {
+  } else if (mode === 'image' && fileUrl) {
     content = <ImagePreview fileName={fileName} fileUrl={fileUrl} />
-  } else if (mode === 'spreadsheet') {
+  } else if (mode === 'spreadsheet' && fileUrl) {
     content = <SpreadsheetPreview fileName={fileName} fileUrl={fileUrl} />
-  } else if (mode === 'word') {
+  } else if (mode === 'word' && fileUrl) {
     content = <WordPreview fileName={fileName} fileUrl={fileUrl} />
-  } else if (mode === 'text') {
+  } else if (mode === 'text' && fileUrl) {
     content = <TextFilePreview fileName={fileName} fileUrl={fileUrl} />
-  } else if (mode === 'office-remote') {
+  } else if (mode === 'office-remote' && fileUrl) {
     content = <OfficeOnlinePreview fileName={fileName} fileUrl={fileUrl} />
   } else {
     content = (
@@ -442,7 +459,9 @@ export default function DocumentPreviewViewer({
   }
 
   return (
-    <div className={`relative h-full w-full overflow-hidden bg-[var(--gray-1)] ${className}`}>
+    <div
+      className={`relative h-full w-full overflow-hidden bg-[var(--gray-1)] ${className}`}
+    >
       {content}
 
       {showScanOverlay && fileUrl ? (
@@ -529,7 +548,9 @@ function SpreadsheetPreview({
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : 'Unable to preview spreadsheet',
+            err instanceof Error
+              ? err.message
+              : 'Unable to preview spreadsheet',
           )
         }
       } finally {
@@ -551,14 +572,13 @@ function SpreadsheetPreview({
       setRows([])
       return
     }
-    const matrix = XLSX.utils.sheet_to_json<Array<string | number | boolean | null>>(
-      sheet,
-      {
-        blankrows: false,
-        defval: '',
-        header: 1,
-      },
-    )
+    const matrix = XLSX.utils.sheet_to_json<
+      Array<string | number | boolean | null>
+    >(sheet, {
+      blankrows: false,
+      defval: '',
+      header: 1,
+    })
     setRows(
       matrix
         .slice(0, 200)
@@ -708,9 +728,9 @@ function DocxTextPreview({
         const paragraphs = xml
           .split(/<\/w:p>/i)
           .map((chunk) => {
-            const texts = [...chunk.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map(
-              (match) => decodeXmlEntities(match[1] || ''),
-            )
+            const texts = [
+              ...chunk.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi),
+            ].map((match) => decodeXmlEntities(match[1] || ''))
             return texts.join('')
           })
           .map((text) => text.replace(/\s+/g, ' ').trim())
@@ -745,7 +765,9 @@ function DocxTextPreview({
       } catch (err) {
         if (!cancelled) {
           setError(
-            err instanceof Error ? err.message : 'Unable to preview Word document',
+            err instanceof Error
+              ? err.message
+              : 'Unable to preview Word document',
           )
         }
       } finally {
@@ -804,7 +826,9 @@ function TextFilePreview({
         if (!cancelled) setText(content.slice(0, 200_000))
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Unable to preview file')
+          setError(
+            err instanceof Error ? err.message : 'Unable to preview file',
+          )
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -830,7 +854,7 @@ function TextFilePreview({
 
   return (
     <div className='h-full min-h-[320px] overflow-auto bg-[var(--gray-1)] p-4'>
-      <pre className='whitespace-pre-wrap break-words rounded-xl border border-[var(--gray-3)] bg-surface p-4 text-[12px] leading-relaxed text-[var(--gray-12)]'>
+      <pre className='rounded-xl border border-[var(--gray-3)] bg-surface p-4 text-[12px] leading-relaxed break-words whitespace-pre-wrap text-[var(--gray-12)]'>
         {text}
       </pre>
     </div>
@@ -949,7 +973,9 @@ async function extractDocxDocumentXml(
     const nameEnd = nameStart + nameLength
     if (nameEnd > bytes.length) break
 
-    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
+    const name = decoder
+      .decode(bytes.subarray(nameStart, nameEnd))
+      .replace(/\\/g, '/')
     offset = nameEnd + extraLength + commentLength
 
     if (!/(^|\/)word\/document\.xml$/i.test(name)) continue
@@ -1011,7 +1037,9 @@ async function extractDocxDocumentXmlFallback(
     const nameEnd = nameStart + nameLength
     if (nameEnd > bytes.length) break
 
-    const name = decoder.decode(bytes.subarray(nameStart, nameEnd)).replace(/\\/g, '/')
+    const name = decoder
+      .decode(bytes.subarray(nameStart, nameEnd))
+      .replace(/\\/g, '/')
     const dataStart = nameEnd + extraLength
     const hasDataDescriptor = (flags & 0x08) !== 0
 
@@ -1169,9 +1197,9 @@ function PdfViewer({
       )
     },
   })
-  const searchPluginInstanceRef = useRef<ReturnType<typeof searchPlugin> | null>(
-    null,
-  )
+  const searchPluginInstanceRef = useRef<ReturnType<
+    typeof searchPlugin
+  > | null>(null)
   if (searchPluginInstanceRef.current) {
     Object.assign(searchPluginInstanceRef.current, currentSearchPluginInstance)
   } else {
@@ -1196,7 +1224,9 @@ function PdfViewer({
       onViewerStateChange: (viewerState: any) => {
         if (viewerState?.scale) {
           setScale((previous) =>
-            previous === viewerState.scale ? previous : viewerState.scale || previous,
+            previous === viewerState.scale
+              ? previous
+              : viewerState.scale || previous,
           )
         }
         return viewerState
@@ -1375,9 +1405,7 @@ function PdfViewer({
       if (cancelled || runId !== probeRunIdRef.current || !plugin) return
 
       const matched: string[] = []
-      const uniqueTerms = [
-        ...new Set(probeKey.split('\u0001').filter(Boolean)),
-      ]
+      const uniqueTerms = [...new Set(probeKey.split('\u0001').filter(Boolean))]
 
       for (const term of uniqueTerms) {
         if (cancelled || runId !== probeRunIdRef.current) return
@@ -1437,17 +1465,15 @@ function PdfViewer({
           plugin.clearHighlights()
           return
         }
-        const keywords = highlightKey
-          .split('\u0001')
-          .flatMap((term) => {
-            const variants = buildFieldSearchKeywords(term)
-            if (!variants.length) return []
-            // Date variants only — amounts use the full phrase to avoid false hits.
-            if (/^\d{4}-\d{2}-\d{2}$/.test(term)) {
-              return variants
-            }
-            return [variants[0]]
-          })
+        const keywords = highlightKey.split('\u0001').flatMap((term) => {
+          const variants = buildFieldSearchKeywords(term)
+          if (!variants.length) return []
+          // Date variants only — amounts use the full phrase to avoid false hits.
+          if (/^\d{4}-\d{2}-\d{2}$/.test(term)) {
+            return variants
+          }
+          return [variants[0]]
+        })
         if (!keywords.length) {
           matchesRef.current = []
           plugin.clearHighlights()
