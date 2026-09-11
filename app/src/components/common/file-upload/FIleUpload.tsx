@@ -85,7 +85,7 @@ const FileUpload = forwardRef<DropzoneUploadCardHandle, Props>(
 
     return (
       <div className='rounded-2xl border border-[var(--gray-4)] bg-[var(--gray-0)] p-4 shadow-sm'>
-        <AnimateEntrancePop>
+        <AnimateEntrancePop className='gap-1.5'>
           <h3 className='text-center text-15 font-semibold text-[var(--gray-13)]'>
             {title}
           </h3>

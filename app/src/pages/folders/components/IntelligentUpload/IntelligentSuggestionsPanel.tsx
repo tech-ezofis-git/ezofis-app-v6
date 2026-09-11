@@ -1,5 +1,4 @@
 import { useLingui } from '@lingui/react/macro'
-import { RingProgress } from '@mantine/core'
 import { useMemo, useState } from 'react'
 import type { Option } from '@/types/option'
 import Badge from '@/components/base/Badge'
@@ -73,7 +72,7 @@ export default function IntelligentSuggestionsPanel({
               <Badge color='indigo' label={documentType} />
             </div>
             <p className='text-11 text-text-secondary'>
-              {t`Predicted repository routing based on detected document semantics.`}
+              {t`Predicted folder routing based on detected document semantics.`}
             </p>
           </div>
         </div>
@@ -94,7 +93,6 @@ export default function IntelligentSuggestionsPanel({
       <div className='grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 lg:grid-cols-3'>
         {visibleSuggestions.map((suggestion) => {
           const isSelected = selectedRepositoryId === suggestion.repositoryId
-          const confidenceColor = getConfidenceColor(suggestion.confidence)
           const percentage = Math.round(suggestion.confidence * 100)
 
           return (
@@ -129,21 +127,29 @@ export default function IntelligentSuggestionsPanel({
                       </div>
                     </div>
 
-                    <div className='shrink-0'>
-                      <RingProgress
-                        sections={[{ color: confidenceColor, value: percentage }]}
-                        size={46}
-                        thickness={4}
-                        roundCaps
-                        label={
-                          <div
-                            className='text-center font-semibold text-text-primary leading-none'
-                            style={{ fontSize: '10px' }}
-                          >
-                            {percentage}%
-                          </div>
-                        }
-                      />
+                    <div className='flex shrink-0 items-center pt-0.5'>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-11 font-semibold tabular-nums',
+                          percentage >= 80
+                            ? 'bg-green-3 text-green-11'
+                            : percentage >= 50
+                              ? 'bg-orange-3 text-orange-11'
+                              : 'bg-gray-3 text-gray-11',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'size-1.5 rounded-full',
+                            percentage >= 80
+                              ? 'bg-green-9'
+                              : percentage >= 50
+                                ? 'bg-orange-9'
+                                : 'bg-gray-8',
+                          )}
+                        />
+                        <span>{percentage}%</span>
+                      </span>
                     </div>
                   </div>
 
@@ -202,16 +208,16 @@ export default function IntelligentSuggestionsPanel({
               name='lucide:corner-down-right'
             />
             <span className='text-12 font-medium text-text-secondary'>
-              {t`Or override with another repository:`}
+              {t`Route to a different folder:`}
             </span>
           </div>
 
-          <div className='w-full sm:w-72'>
+          <div className='w-full sm:w-80'>
             <InputSelect
-              aria-label={t`Override repository`}
-              className='w-full bg-surface-primary'
+              aria-label={t`Select folder`}
+              className='w-full bg-surface-primary [&_.mantine-Input-placeholder]:truncate [&_.mantine-Input-placeholder]:whitespace-nowrap'
               options={selectOptions}
-              placeholder={t`Choose a different repository to override...`}
+              placeholder={t`Select folder...`}
               value={manualOverrideOption}
               searchable
               onChange={(opt) => {
@@ -235,14 +241,4 @@ export default function IntelligentSuggestionsPanel({
       </div>
     </AnimateFadeIn>
   )
-}
-
-function getConfidenceColor(confidence: number): string {
-  if (confidence >= 0.8) {
-    return 'var(--success-main)'
-  }
-  if (confidence >= 0.5) {
-    return 'var(--warning-main)'
-  }
-  return 'var(--gray-8)'
 }

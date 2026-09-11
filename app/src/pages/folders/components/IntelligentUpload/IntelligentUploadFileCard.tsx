@@ -15,6 +15,9 @@ import IntelligentSuggestionsPanel from './IntelligentSuggestionsPanel'
 interface IntelligentUploadFileCardProps {
   candidateRepositories: CandidateRepository[]
   fileItem: ClassifiedFile
+  isIndexing?: boolean
+  totalFilesCount?: number
+  onIndexSingleFile?: (fileId: string) => void
   onRemove: (fileId: string) => void
   onRetry: (fileId: string) => void
   onSelectRepository: (fileId: string, repositoryId: string) => void
@@ -23,6 +26,9 @@ interface IntelligentUploadFileCardProps {
 export default function IntelligentUploadFileCard({
   candidateRepositories,
   fileItem,
+  isIndexing = false,
+  totalFilesCount = 1,
+  onIndexSingleFile,
   onRemove,
   onRetry,
   onSelectRepository,
@@ -157,7 +163,36 @@ export default function IntelligentUploadFileCard({
         </div>
 
         {/* Right: Actions */}
-        <div className='flex shrink-0 items-center gap-1.5'>
+        <div className='flex shrink-0 items-center gap-2'>
+          {fileItem.status === 'done' && (
+            <Tooltip
+              content={
+                totalFilesCount <= 1
+                  ? t`Use the bottom button to index when only 1 file is in queue`
+                  : !fileItem.selectedRepositoryId
+                    ? t`Select a target folder before indexing`
+                    : t`Index only this document now`
+              }
+            >
+              <span>
+                <Button
+                  color='primary'
+                  disabled={
+                    totalFilesCount <= 1 ||
+                    isIndexing ||
+                    !fileItem.selectedRepositoryId
+                  }
+                  icon={isIndexing ? 'tabler:loader-2' : 'lucide:upload-cloud'}
+                  iconClass={isIndexing ? 'animate-spin' : undefined}
+                  label={isIndexing ? t`Indexing...` : t`Index this file`}
+                  size='xs'
+                  variant='outline'
+                  onClick={() => onIndexSingleFile?.(fileItem.id)}
+                />
+              </span>
+            </Tooltip>
+          )}
+
           {fileItem.status === 'done' &&
             fileItem.suggestions &&
             fileItem.suggestions.length > 0 && (

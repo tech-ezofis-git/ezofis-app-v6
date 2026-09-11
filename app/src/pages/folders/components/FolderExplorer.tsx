@@ -336,7 +336,7 @@ export function FolderExplorer() {
     if (isDemoAppOrigin()) return
     if (!resolvedRepositoryId) {
       showToast({
-        message: t`Select a repository before uploading.`,
+        message: t`Select a folder before uploading.`,
         variant: 'error',
       })
       return
