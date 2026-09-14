@@ -21,7 +21,7 @@ export const getApiBaseUrl = (): string => {
   return (
     import.meta.env?.VITE_BASE_URL ||
     process.env.REACT_APP_API_URL ||
-    'https://demo.ezofis.com/v6api/api'
+    'https://cloud.ezofis.com/api'
   )
 }
 
@@ -33,7 +33,7 @@ export const getV6ApiBaseUrl = (): string => {
     return 'https://cloud.ezofis.com/api'
   }
   return (
-    import.meta.env?.VITE_V6_BASE_URL || 'https://demo.ezofis.com/v6api/api'
+    import.meta.env?.VITE_V6_BASE_URL || 'https://cloud.ezofis.com/api'
   )
 }
 
