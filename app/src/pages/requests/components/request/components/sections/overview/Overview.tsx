@@ -772,6 +772,64 @@ const FALLBACK_PO_COLS_MAP: Record<string, string> = {
   'ZpY63z5PRSjClud4PDpKV': 'Description',
 }
 
+const normalizeColumnLabel = (label: string): string => {
+  if (!label) return ''
+  const norm = label.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (
+    norm === 'qty' ||
+    norm === 'quantity' ||
+    norm === 'quantities' ||
+    norm === 'orderqty' ||
+    norm === 'poqty'
+  ) {
+    return 'Qty'
+  }
+  if (
+    norm === 'line' ||
+    norm === 'lin' ||
+    norm === 'lineitem' ||
+    norm === 'lineno' ||
+    norm === 'lineid' ||
+    norm === 'itemno' ||
+    norm === 'itemid' ||
+    norm === 'pos'
+  ) {
+    return 'Line'
+  }
+  if (
+    norm === 'amount' ||
+    norm === 'amountusd' ||
+    norm === 'lineamount' ||
+    norm === 'totalamount' ||
+    norm === 'extended' ||
+    norm === 'extendedamount' ||
+    norm === 'total' ||
+    norm.startsWith('amount')
+  ) {
+    return 'Amount'
+  }
+  if (
+    norm === 'price' ||
+    norm === 'rate' ||
+    norm === 'unitprice' ||
+    norm === 'unitcost'
+  ) {
+    return 'Price'
+  }
+  if (
+    norm === 'description' ||
+    norm === 'itemdescription' ||
+    norm === 'desc' ||
+    norm === 'item'
+  ) {
+    return 'Description'
+  }
+  if (norm === 'uom' || norm === 'unit' || norm === 'unitofmeasure') {
+    return 'UOM'
+  }
+  return label.trim()
+}
+
 const getPoTableColumnsMapping = (formJson: any) => {
   const colMap = new Map<string, string>()
   if (!formJson) return colMap
@@ -980,6 +1038,159 @@ const hasComparableValue = (val: unknown) => {
   return normalized !== '' && normalized !== '-'
 }
 
+const getPoRowObj = (agentData: any, selectedItem: any, matchingProc: any) => {
+  const candidates = [
+    agentData?.po_row,
+    agentData?.agentResponse?.po_row,
+    agentData?._agentResponse?.po_row,
+    agentData,
+    agentData?.agentResponse,
+    agentData?._agentResponse,
+    selectedItem?.po_row,
+    selectedItem?.agentResponse?.po_row,
+    selectedItem?._agentResponse?.po_row,
+    selectedItem,
+    matchingProc?.po_row,
+    matchingProc?.agentResponse?.po_row,
+    matchingProc?._agentResponse?.po_row,
+  ]
+
+  for (const cand of candidates) {
+    if (!cand) continue
+    if (typeof cand === 'object' && !Array.isArray(cand)) {
+      if (cand.po_row && typeof cand.po_row === 'object') return cand.po_row
+      if (
+        cand['PO Number'] ||
+        cand['PO Amount'] ||
+        cand['PO Date'] ||
+        cand['Supplier'] ||
+        cand['po_number'] ||
+        cand['po_amount'] ||
+        cand['source']
+      ) {
+        return cand
+      }
+    }
+    if (typeof cand === 'string') {
+      try {
+        const parsed = JSON.parse(cand)
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.po_row && typeof parsed.po_row === 'object')
+            return parsed.po_row
+          if (
+            parsed['PO Number'] ||
+            parsed['PO Amount'] ||
+            parsed['PO Date'] ||
+            parsed['Supplier'] ||
+            parsed['po_number'] ||
+            parsed['po_amount'] ||
+            parsed['source']
+          ) {
+            return parsed
+          }
+        }
+      } catch {}
+    }
+  }
+  return null
+}
+
+const getValueFromPoRow = (poRow: any, key: string) => {
+  if (!poRow || typeof poRow !== 'object') return undefined
+
+  if (
+    key in poRow &&
+    poRow[key] !== undefined &&
+    poRow[key] !== null &&
+    poRow[key] !== ''
+  ) {
+    return poRow[key]
+  }
+
+  const normalizePoKey = (k: string) => {
+    const norm = k.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (
+      norm === 'vendor' ||
+      norm === 'vendorname' ||
+      norm === 'supplier' ||
+      norm === 'suppliername'
+    ) {
+      return 'supplier'
+    }
+    if (
+      norm === 'poamount' ||
+      norm === 'totaldue'
+    ) {
+      return 'poamount'
+    }
+    if (
+      norm === 'invoiceamount' ||
+      norm === 'totalamount'
+    ) {
+      return 'invoiceamount'
+    }
+    if (norm === 'ponumber' || norm === 'pono' || norm === 'purchaseorder') {
+      return 'ponumber'
+    }
+    if (norm === 'podate') {
+      return 'podate'
+    }
+    if (norm === 'invoicedate') {
+      return 'invoicedate'
+    }
+    if (norm === 'invoicenumber' || norm === 'invoiceno') {
+      return 'invoicenumber'
+    }
+    if (norm === 'currency') {
+      return 'currency'
+    }
+    return norm
+  }
+
+  const targetNormKey = normalizePoKey(key)
+
+  if (
+    targetNormKey === 'invoicedate' ||
+    targetNormKey === 'invoicenumber' ||
+    targetNormKey === 'invoiceamount'
+  ) {
+    for (const [pKey, pVal] of Object.entries(poRow)) {
+      if (pVal === undefined || pVal === null || pVal === '') continue
+      if (
+        pKey === 'source' ||
+        pKey === 'PO Line Item Mapped' ||
+        pKey === 'source_type'
+      )
+        continue
+      const pNormKey = normalizePoKey(pKey)
+      if (pNormKey === targetNormKey) {
+        return pVal
+      }
+    }
+    return undefined
+  }
+
+  for (const [pKey, pVal] of Object.entries(poRow)) {
+    if (pVal === undefined || pVal === null || pVal === '') continue
+    if (
+      pKey === 'source' ||
+      pKey === 'PO Line Item Mapped' ||
+      pKey === 'source_type'
+    )
+      continue
+
+    const pNormKey = normalizePoKey(pKey)
+    if (
+      pNormKey === targetNormKey ||
+      pKey.toLowerCase().trim() === key.toLowerCase().trim()
+    ) {
+      return pVal
+    }
+  }
+
+  return undefined
+}
+
 const FormCard = ({
   fieldKey,
   highlight = false,
@@ -990,6 +1201,7 @@ const FormCard = ({
   missing = false,
   options = [],
   poValue,
+  poSourceLabel = 'PO Master',
   score,
   source,
   type = 'text',
@@ -1011,7 +1223,10 @@ const FormCard = ({
 
   const isUsingPo =
     hasComparableValue(poValue) &&
-    normalizeComparable(value) === normalizeComparable(poValue)
+    (normalizeComparable(value) === normalizeComparable(poValue) ||
+      appliedSource === 'po_master' ||
+      appliedSource === 'sap' ||
+      !hasComparableValue(value))
   const canSwitchSources =
     hasComparableValue(poValue) &&
     hasComparableValue(invoiceValue) &&
@@ -1040,7 +1255,7 @@ const FormCard = ({
       return appliedSource
     }
     if (isUsingPo) {
-      return 'po_master'
+      return poSourceLabel.toLowerCase() === 'sap' ? 'sap' : 'po_master'
     }
     if (source) {
       return source
@@ -1055,7 +1270,7 @@ const FormCard = ({
       return 'ai'
     }
     return 'ocr'
-  }, [userEdited, localValue, value, appliedSource, isUsingPo, source, label])
+  }, [userEdited, localValue, value, appliedSource, isUsingPo, poSourceLabel, source, label])
 
   const renderSourceBadge = (src: string) => {
     const norm = String(src || '').toLowerCase()
@@ -1073,17 +1288,25 @@ const FormCard = ({
         </span>
       )
     }
-    if (norm === 'po_master' || norm === 'po') {
+    if (norm === 'po_master' || norm === 'po' || norm === 'sap' || norm === 'hana cloud') {
+      const isSap =
+        poSourceLabel.toLowerCase() === 'sap' ||
+        norm === 'sap' ||
+        norm === 'hana cloud'
       return (
         <span
           className='inline-flex shrink-0 items-center gap-1 rounded border border-[var(--blue-3)] bg-[var(--blue-1)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--blue-10)]'
-          title={t`Source: PO Master (ERP/Excel Data)`}
+          title={
+            isSap
+              ? t`Source: SAP (HANA Cloud)`
+              : t`Source: PO Master (ERP/Excel Data)`
+          }
         >
           <Icon
             className='h-2.5 w-2.5 text-[var(--blue-9)]'
             name='lucide:database'
           />
-          <span>{t`PO Master`}</span>
+          <span>{isSap ? t`SAP` : t`PO Master`}</span>
         </span>
       )
     }
@@ -1115,7 +1338,13 @@ const FormCard = ({
   const applySourceValue = (nextValue: unknown) => {
     setLocalValue(nextValue)
     const isSwitchingToPo = !isUsingPo
-    setAppliedSource(isSwitchingToPo ? 'po_master' : 'ocr')
+    setAppliedSource(
+      isSwitchingToPo
+        ? poSourceLabel.toLowerCase() === 'sap'
+          ? 'sap'
+          : 'po_master'
+        : 'ocr',
+    )
     setUserEdited(false)
     onChange?.(nextValue)
   }
@@ -1357,14 +1586,9 @@ const FormCard = ({
             ) : null}
             {canSwitchSources && (
               <div
-                className='group/suggest animate-in fade-in zoom-in-95 mt-0.5 flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all duration-200 hover:bg-[var(--primary-2)] active:scale-98'
+                className='group/suggest animate-in fade-in zoom-in-95 mt-0.5 flex w-full cursor-pointer items-start justify-between gap-2 rounded-md border-l-4 border-l-[var(--primary-9)] bg-[var(--primary-2)] px-2.5 py-1 text-xs transition-all duration-200 hover:bg-[var(--primary-2)] active:scale-98'
                 role='button'
                 tabIndex={0}
-                title={
-                  isUsingPo
-                    ? `Switch to Invoice: ${invoiceValue}`
-                    : `Switch to PO: ${poValue}`
-                }
                 onClick={(e) => {
                   e.stopPropagation()
                   applySourceValue(isUsingPo ? invoiceValue : poValue)
@@ -1377,16 +1601,18 @@ const FormCard = ({
                   }
                 }}
               >
-                <div className='flex min-w-0 items-center gap-1.5'>
-                  <AiBrandIcon
-                    className='size-[13px] shrink-0'
-                    variant='outline-purple'
-                  />
-                  <span className='shrink-0 font-semibold text-[var(--primary-9)]'>
-                    {isUsingPo ? t`Invoice` : t`PO Master`}
-                  </span>
-                  <span className='shrink-0 text-[var(--primary-9)]/60'>·</span>
-                  <span className='truncate font-bold text-[var(--gray-13)]'>
+                <div className='min-w-0 flex-1 text-xs leading-normal'>
+                  <span className='inline-flex items-center gap-1 align-middle'>
+                    <AiBrandIcon
+                      className='size-[13px] shrink-0'
+                      variant='outline-purple'
+                    />
+                    <span className='font-semibold text-[var(--primary-9)]'>
+                      {isUsingPo ? t`Invoice` : poSourceLabel}
+                    </span>
+                    <span className='text-[var(--primary-9)]/60'>·</span>
+                  </span>{' '}
+                  <span className='truncate inline-block max-w-[calc(100%-80px)] align-middle font-bold text-[var(--gray-13)] group-hover/suggest:inline group-hover/suggest:max-w-none group-hover/suggest:whitespace-normal group-hover/suggest:break-words'>
                     {isUsingPo ? invoiceValue : poValue}
                   </span>
                 </div>
@@ -1667,6 +1893,77 @@ const Overview = (props: any) => {
       ? !!matchingProc || selectedItem?.isProcessing
       : isProcessing
 
+  const poSourceType = useMemo(() => {
+    const poRow = getPoRowObj(agentData, selectedItem, matchingProc)
+    if (poRow?.source) return String(poRow.source).trim()
+    if (poRow?.source_type) return String(poRow.source_type).trim()
+    if (poRow?.sourceType) return String(poRow.sourceType).trim()
+
+    const getSourceFromObj = (obj: any) => {
+      if (!obj) return null
+      if (typeof obj === 'object') {
+        if (obj.source_type || obj.sourceType || obj.source)
+          return obj.source_type || obj.sourceType || obj.source
+        if (obj.agentResponse && typeof obj.agentResponse === 'object') {
+          return (
+            obj.agentResponse.source_type ||
+            obj.agentResponse.sourceType ||
+            obj.agentResponse.source ||
+            null
+          )
+        }
+        if (obj._agentResponse && typeof obj._agentResponse === 'object') {
+          return (
+            obj._agentResponse.source_type ||
+            obj._agentResponse.sourceType ||
+            obj._agentResponse.source ||
+            null
+          )
+        }
+        return null
+      }
+      if (typeof obj === 'string') {
+        try {
+          const parsed = JSON.parse(obj)
+          if (parsed && typeof parsed === 'object')
+            return parsed.source_type || parsed.sourceType || parsed.source || null
+        } catch {}
+      }
+      return null
+    }
+
+    const candidates = [
+      agentData,
+      agentData?._agentResponse,
+      agentData?.agentResponse,
+      selectedItem,
+      selectedItem?._agentResponse,
+      selectedItem?.agentResponse,
+      matchingProc,
+      matchingProc?.agentResponse,
+      matchingProc?._agentResponse,
+    ]
+
+    for (const cand of candidates) {
+      const src = getSourceFromObj(cand)
+      if (src) return String(src).trim()
+    }
+    return ''
+  }, [agentData, selectedItem, matchingProc])
+
+  const poSourceLabel = useMemo(() => {
+    const norm = poSourceType.toLowerCase()
+    if (
+      norm === 'hana_cloud' ||
+      norm === 'hana cloud' ||
+      norm.includes('hana') ||
+      norm.includes('sap')
+    ) {
+      return 'SAP'
+    }
+    return 'PO Master'
+  }, [poSourceType])
+
   const isScanning = useMemo(() => {
     const hasData =
       formModel &&
@@ -1762,6 +2059,30 @@ const Overview = (props: any) => {
   }
 
   const getFieldPoValue = (key: string) => {
+    const normKey = String(key || '').toLowerCase().trim()
+    if (
+      normKey.includes('invoice amount') ||
+      normKey.includes('invoice date') ||
+      normKey.includes('invoice number') ||
+      normKey.includes('invoice no') ||
+      normKey === 'invoice_amount' ||
+      normKey === 'invoice_date' ||
+      normKey === 'invoice_no' ||
+      normKey === 'invoice_number'
+    ) {
+      return undefined
+    }
+
+    const poRow = getPoRowObj(agentData, selectedItem, matchingProc)
+    const valFromPoRow = getValueFromPoRow(poRow, key)
+    if (
+      valFromPoRow !== undefined &&
+      valFromPoRow !== null &&
+      valFromPoRow !== ''
+    ) {
+      return valFromPoRow
+    }
+
     const normalizeName = (name: string) => {
       const normalized = name.toLowerCase().trim()
       if (
@@ -1774,24 +2095,30 @@ const Overview = (props: any) => {
       }
       if (
         normalized === 'total due' ||
-        normalized === 'invoice amount' ||
-        normalized === 'invoice value' ||
+        normalized === 'po amount' ||
+        normalized === 'po_amount' ||
         normalized === 'amount' ||
         normalized === 'total amount'
       ) {
-        return 'total due'
+        return 'po amount'
       }
       if (
-        normalized === 'invoice number' ||
-        normalized === 'invoice no' ||
-        normalized === 'invoice no.'
+        normalized === 'po number' ||
+        normalized === 'po no' ||
+        normalized === 'po no.' ||
+        normalized === 'po_number' ||
+        normalized === 'po_no'
       ) {
-        return 'invoice number'
+        return 'po number'
+      }
+      if (normalized === 'po date' || normalized === 'po_date') {
+        return 'po date'
       }
       return normalized
     }
 
     const cleanK = normalizeName(key)
+
     const matchingFields =
       agentData?.debug?.['Side-by-side Field Matching'] || []
     for (const field of matchingFields) {
@@ -2210,22 +2537,63 @@ const Overview = (props: any) => {
   }, [formModel, parsedFormData])
 
   const rawPoLineItems = useMemo(() => {
-    if (!poLineItemsKey) return []
-    let val = formModel ? formModel[poLineItemsKey] : undefined
-    if (val === undefined && parsedFormData) {
-      val = parsedFormData[poLineItemsKey]
-    }
-    if (Array.isArray(val)) return val
-    if (typeof val === 'string') {
-      try {
-        const parsed = JSON.parse(val)
-        return Array.isArray(parsed) ? parsed : []
-      } catch {
-        return []
+    // 1. Check formModel / parsedFormData by key starting with 'awai'
+    if (poLineItemsKey) {
+      let val = formModel ? formModel[poLineItemsKey] : undefined
+      if (val === undefined && parsedFormData) {
+        val = parsedFormData[poLineItemsKey]
+      }
+      if (Array.isArray(val) && val.length > 0) return val
+      if (typeof val === 'string') {
+        try {
+          const parsed = JSON.parse(val)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch {}
       }
     }
+
+    // 2. Check po_row in agentData / selectedItem / matchingProc
+    const poRow = getPoRowObj(agentData, selectedItem, matchingProc)
+    if (poRow && typeof poRow === 'object') {
+      const lineItemCandidates = [
+        poRow['PO Line Item Mapped'],
+        poRow['po_line_items'],
+        poRow['PO Line Items'],
+        poRow['line_items'],
+        poRow['items'],
+        poRow['po_items'],
+      ]
+      for (const cand of lineItemCandidates) {
+        if (Array.isArray(cand) && cand.length > 0) return cand
+        if (typeof cand === 'string') {
+          try {
+            const parsed = JSON.parse(cand)
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed
+          } catch {}
+        }
+      }
+    }
+
+    // 3. Check agentData directly
+    const agentCandidates = [
+      agentData?.po_line_items,
+      agentData?.po_items,
+      agentData?.['Extracted Invoice JSON']?.line_items,
+      agentData?.['Extracted Invoice JSON']?.invoice_items,
+      selectedItem?.po_line_items,
+    ]
+    for (const cand of agentCandidates) {
+      if (Array.isArray(cand) && cand.length > 0) return cand
+      if (typeof cand === 'string') {
+        try {
+          const parsed = JSON.parse(cand)
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed
+        } catch {}
+      }
+    }
+
     return []
-  }, [formModel, parsedFormData, poLineItemsKey])
+  }, [formModel, parsedFormData, poLineItemsKey, agentData, selectedItem, matchingProc])
 
   const poColMap = useMemo(() => {
     return getPoTableColumnsMapping(
@@ -2241,8 +2609,17 @@ const Overview = (props: any) => {
 
       Object.entries(item).forEach(([k, v]) => {
         if (k === '_id') return
-        const label = poColMap.get(k) || FALLBACK_PO_COLS_MAP[k] || k
-        mappedItem[label] = v
+        const rawLabel = poColMap.get(k) || FALLBACK_PO_COLS_MAP[k] || k
+        const label = normalizeColumnLabel(rawLabel)
+        if (
+          mappedItem[label] === undefined ||
+          mappedItem[label] === null ||
+          mappedItem[label] === ''
+        ) {
+          mappedItem[label] = v
+        } else if (v !== undefined && v !== null && v !== '') {
+          mappedItem[label] = v
+        }
       })
 
       return mappedItem
@@ -2250,16 +2627,6 @@ const Overview = (props: any) => {
   }, [rawPoLineItems, poColMap])
 
   const poDynamicColumns = useMemo(() => {
-    const cols = new Set<string>()
-
-    poColMap.forEach((label) => {
-      cols.add(label)
-    })
-
-    Object.values(FALLBACK_PO_COLS_MAP).forEach((label) => {
-      cols.add(label)
-    })
-
     const activeCols = new Set<string>()
     poLineItems.forEach((item: any) => {
       Object.keys(item).forEach((k) => {
@@ -2269,8 +2636,41 @@ const Overview = (props: any) => {
       })
     })
 
-    return Array.from(cols).filter((c) => activeCols.has(c))
-  }, [poLineItems, poColMap])
+    if (activeCols.size === 0) return []
+
+    const standardOrder = [
+      'Line',
+      'Description',
+      'Qty',
+      'Quantity',
+      'Unit Cost',
+      'Price',
+      'Rate',
+      'Extended',
+      'Amount',
+      'Line Amount',
+      'UOM',
+      'Tax Rate',
+      'Class',
+      'Part Number',
+      'Ref Code',
+      'Date',
+    ]
+
+    const result: string[] = []
+    standardOrder.forEach((col) => {
+      if (activeCols.has(col)) {
+        result.push(col)
+        activeCols.delete(col)
+      }
+    })
+
+    activeCols.forEach((col) => {
+      result.push(col)
+    })
+
+    return result
+  }, [poLineItems])
 
   const poDynamicWidths = useMemo(() => {
     if (!poLineItems || poLineItems.length === 0) return [60, 100, 100]
@@ -2349,14 +2749,7 @@ const Overview = (props: any) => {
     fieldLabel: string,
     value: any,
   ) => {
-    const originalKey =
-      Array.from(poColMap.entries()).find(
-        ([_, label]) => label === fieldLabel,
-      )?.[0] ||
-      Object.entries(FALLBACK_PO_COLS_MAP).find(
-        ([_, label]) => label === fieldLabel,
-      )?.[0] ||
-      fieldLabel
+    const canonicalField = normalizeColumnLabel(fieldLabel)
 
     setFormModel?.((prevForm: any) => {
       const nextForm = { ...prevForm }
@@ -2375,10 +2768,23 @@ const Overview = (props: any) => {
       }
 
       if (currentItems[index]) {
-        currentItems[index] = {
-          ...currentItems[index],
-          [originalKey]: value,
+        const itemToUpdate = { ...currentItems[index] }
+        let updatedAny = false
+        Object.keys(itemToUpdate).forEach((k) => {
+          const rawLabel = poColMap.get(k) || FALLBACK_PO_COLS_MAP[k] || k
+          if (
+            normalizeColumnLabel(rawLabel) === canonicalField ||
+            normalizeColumnLabel(k) === canonicalField ||
+            k === fieldLabel
+          ) {
+            itemToUpdate[k] = value
+            updatedAny = true
+          }
+        })
+        if (!updatedAny) {
+          itemToUpdate[fieldLabel] = value
         }
+        currentItems[index] = itemToUpdate
       }
 
       nextForm[poLineItemsKey] = currentItems
@@ -3382,6 +3788,11 @@ const Overview = (props: any) => {
                               ? `${poVal}`
                               : t`No PO Found`
                           }
+                          subtitle={
+                            poVal && poVal !== '-' && poVal !== 'N/A'
+                              ? `via ${poSourceLabel === 'SAP' ? 'SAP (HANA Cloud)' : 'PO Master'}`
+                              : undefined
+                          }
                           onClick={() => setActiveDetailView('po_matching')}
                         />
                       )
@@ -3696,6 +4107,16 @@ const Overview = (props: any) => {
                                   </span>
                                   <span className='font-bold text-[var(--gray-13)]'>
                                     {poVal || 'N/A'}
+                                  </span>
+                                </div>
+                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
+                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                    {t`Source System`}
+                                  </span>
+                                  <span className='font-bold text-[var(--gray-13)]'>
+                                    {poSourceLabel === 'SAP'
+                                      ? 'SAP (HANA Cloud)'
+                                      : 'PO Master'}
                                   </span>
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
@@ -4480,6 +4901,8 @@ const Overview = (props: any) => {
                                     label,
                                   )}
                                   options={getOptions(label)}
+                                  poValue={getFieldPoValue(label)}
+                                  poSourceLabel={poSourceLabel}
                                   type={getFieldType(label)}
                                   value={'-'}
                                   onChange={(newVal: string) =>
@@ -4563,6 +4986,7 @@ const Overview = (props: any) => {
                                       )}
                                       options={getOptions(key)}
                                       poValue={getFieldPoValue(key)}
+                                      poSourceLabel={poSourceLabel}
                                       score={getFieldScore(key)}
                                       type={fieldType}
                                       value={displayValue}

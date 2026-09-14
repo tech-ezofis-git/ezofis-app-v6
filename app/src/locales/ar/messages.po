@@ -986,7 +986,7 @@ msgstr "كافة المجلدات"
 msgid "All options must be checked to fulfill requirements."
 msgstr "يجب التحقق من جميع الخيارات للوفاء بالمتطلبات."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:526
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:703
 msgid "All search results for “{searchLabel}”"
 msgstr "جميع نتائج البحث عن «{searchLabel}»"
 
@@ -1082,7 +1082,7 @@ msgstr "جاري تحليل السياق والكلمات المفتاحية"
 msgid "Analyzing document..."
 msgstr "جاري تحليل المستند..."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:602
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:605
 msgid "Analyzing file and mapping fields..."
 msgstr "جاري تحليل الملف وربط الحقول..."
 
@@ -1173,6 +1173,10 @@ msgstr "مفتاح واجهة برمجة التطبيقات"
 #: src/layouts/app/components/topbar/Topbar.tsx:67
 msgid "API Playground"
 msgstr "ملعب API"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:527
+msgid "API results"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSettings.tsx:20
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSettings.tsx:20
@@ -1378,7 +1382,7 @@ msgstr "مرفق"
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3622
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4033
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "المرفقات"
@@ -1416,7 +1420,7 @@ msgstr "المصادقة مطلوبة. الرجاء تسجيل الدخول مر
 msgid "Authenticator App"
 msgstr "تطبيق المصادقة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3712
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
 msgid "Authorized Amount"
 msgstr "المبلغ المصرح به"
 
@@ -1525,8 +1529,8 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:933
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4100
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:991
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4521
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1546,7 +1550,7 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 msgid "Back"
 msgstr "رجوع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3520
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
 msgid "Back Order"
 msgstr "طلب متأخر"
 
@@ -1594,8 +1598,7 @@ msgstr "العودة إلى التقارير"
 msgid "Back to review"
 msgstr "العودة إلى المراجعة"
 
-#: src/pages/sign-in/components/SignInForm.tsx:624
-#: src/pages/sign-in/components/VersionSelectionCard.tsx:132
+#: src/pages/sign-in/components/SignInForm.tsx:565
 msgid "Back to Sign In"
 msgstr "العودة لتسجيل الدخول"
 
@@ -1624,7 +1627,7 @@ msgstr "أساسي"
 msgid "Between"
 msgstr "بين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3973
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4394
 msgid "Billing Terms"
 msgstr "شروط الفوترة"
 
@@ -1685,7 +1688,7 @@ msgstr "تصفح"
 msgid "Browse"
 msgstr "تصفح"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:621
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:624
 msgid "browse files"
 msgstr "تصفح الملفات"
 
@@ -1788,6 +1791,10 @@ msgstr "حسب الموظف"
 msgid "By supplier / vendor"
 msgstr "حسب المورد / البائع"
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:530
+msgid "Cached results"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:20
 msgid "Calculated"
 msgstr "محسوب"
@@ -1844,7 +1851,7 @@ msgstr "لا يمكن التحميل: لم يتم تكوين مستودع لسي
 msgid "Cancel"
 msgstr "إلغاء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1578
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1804
 msgid "Cancel Remaining"
 msgstr "إلغاء المتبقية"
 
@@ -2064,8 +2071,8 @@ msgid "Choosing the best trigger field…"
 msgstr "اختيار أفضل مجال الزناد ..."
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:100
-msgid "Classic Version"
-msgstr ""
+#~ msgid "Classic Version"
+#~ msgstr ""
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:243
 msgid "Classification failed for this file."
@@ -2244,7 +2251,7 @@ msgstr "قريباً"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3627
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4038
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "التعليقات"
@@ -2455,7 +2462,7 @@ msgstr "الاتصال مطلوب"
 msgid "Connect your accounting software"
 msgstr "اربط برنامج المحاسبة الخاص بك"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:947
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:950
 msgid "Connect your provider to automate data matching."
 msgstr "اربط مزودك لأتمتة مطابقة البيانات."
 
@@ -2463,7 +2470,7 @@ msgstr "اربط مزودك لأتمتة مطابقة البيانات."
 msgid "Connect your provider to securely store and manage invoice documents."
 msgstr "قم بتوصيل المزود الخاص بك لتخزين مستندات الفاتورة وإدارتها بشكل آمن."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:964
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:967
 msgid "Connect your QuickBooks account to sync PO and invoice data automatically."
 msgstr "اربط حساب QuickBooks لمزامنة بيانات أوامر الشراء والفواتير تلقائياً."
 
@@ -2499,7 +2506,7 @@ msgstr "نجح الاتصال! تم التحقق من وجهة RFC لـ SAP ERP 
 msgid "Connector"
 msgstr "الموصل"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1570
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1796
 msgid "Contact Vendor"
 msgstr "اتصل بالمورد"
 
@@ -2527,7 +2534,7 @@ msgstr "يتضمن"
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:844
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:195
 #: src/pages/settings/components/SettingsWizardLayout.tsx:80
-#: src/pages/sign-in/components/SignInForm.tsx:838
+#: src/pages/sign-in/components/SignInForm.tsx:779
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
 msgid "Continue"
 msgstr "متابعة"
@@ -2832,7 +2839,7 @@ msgstr "حرج"
 #~ msgid "Critical Exceptions"
 #~ msgstr "استثناءات حرجة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3770
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4191
 msgid "Cross-Check Status"
 msgstr "حالة الفحص المتقاطع"
 
@@ -2840,7 +2847,7 @@ msgstr "حالة الفحص المتقاطع"
 msgid "Cross-referencing records"
 msgstr "جاري الإسناد الترافقي للسجلات"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:656
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:659
 msgid "CSV File"
 msgstr "ملف CSV"
 
@@ -3332,7 +3339,7 @@ msgstr "الكلمات المفتاحية المكتشفة:"
 msgid "Didn't receive the code? Resend"
 msgstr "لم تستلم الرمز؟ إعادة الإرسال"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:948
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:951
 msgid "Direct Integration"
 msgstr "تكامل مباشر"
 
@@ -3405,7 +3412,7 @@ msgstr "معلومات الوثيقة"
 msgid "Document ingested via email"
 msgstr "تم استيعاب المستند عبر البريد الإلكتروني"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3690
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4101
 msgid "Document Mapping"
 msgstr "ربط المستند"
 
@@ -3559,7 +3566,7 @@ msgstr "تنزيل المستندات"
 msgid "Download file"
 msgstr "تنزيل الملف"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:576
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:579
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:965
 msgid "Download PO Master Demo Data"
 msgstr "تنزيل بيانات تجريبية رئيسية لأمر الشراء"
@@ -3576,7 +3583,7 @@ msgstr "تحميل قالب العينة"
 msgid "Download Template"
 msgstr "تنزيل القالب"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:570
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:573
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:960
 msgid "Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching."
 msgstr "قم بتنزيل ملف قالب بيانات PO Master المحدد مسبقاً لعرض السجلات المرجعية. استخدم هذا الملف لفهم هيكل المخطط الافتراضي وقيم العينات المستخدمة للمطابقة."
@@ -3617,7 +3624,7 @@ msgstr "صياغة الشروط المقترحة..."
 msgid "Drag and drop documents here, or click to browse. Ezofis AI will classify and route them automatically."
 msgstr "اسحب المستندات وأفلتها هنا، أو انقر للاستعراض. سيقوم Ezofis AI بتصنيفها وتوجيهها تلقائياً."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:619
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:622
 msgid "Drag and drop your spreadsheet here, or"
 msgstr "اسحب وأفلت جدول البيانات هنا، أو"
 
@@ -3723,11 +3730,15 @@ msgstr "مستحق في الأيام السبعة القادمة"
 msgid "Due Today"
 msgstr "مستحق اليوم"
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:529
+msgid "Dummy results"
+msgstr ""
+
 #: src/pages/requests/utils/localizeRequestUi.ts:32
 msgid "Duplicate"
 msgstr "مكرر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3393
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3804
 msgid "Duplicate Detection"
 msgstr "اكتشاف التكرار"
 
@@ -3735,7 +3746,7 @@ msgstr "اكتشاف التكرار"
 msgid "Duplicate invoice watch"
 msgstr "مراقبة الفواتير المكررة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3749
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4170
 msgid "Duplicate Payment Check"
 msgstr "فحص الدفع المكرر"
 
@@ -3969,13 +3980,13 @@ msgstr "تاريخ النفاذ"
 #: src/pages/settings/components/ManageUser.tsx:2506
 #: src/pages/settings/components/RolesPermissions.tsx:2050
 #: src/pages/settings/components/RolesPermissions.tsx:2052
-#: src/pages/sign-in/components/SignInForm.tsx:769
-#: src/pages/sign-in/components/SignInForm.tsx:819
+#: src/pages/sign-in/components/SignInForm.tsx:710
+#: src/pages/sign-in/components/SignInForm.tsx:760
 msgid "Email"
 msgstr "البريد الإلكتروني"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:268
-#: src/pages/sign-in/components/SignInForm.tsx:894
+#: src/pages/sign-in/components/SignInForm.tsx:835
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:299
 msgid "Email / Username"
 msgstr "البريد / اسم المستخدم"
@@ -3993,8 +4004,8 @@ msgstr "البريد الإلكتروني وكلمة المرور"
 msgid "Email content"
 msgstr "محتوى البريد الإلكتروني"
 
-#: src/pages/sign-in/components/SignInForm.tsx:399
-#: src/pages/sign-in/components/SignInForm.tsx:417
+#: src/pages/sign-in/components/SignInForm.tsx:364
+#: src/pages/sign-in/components/SignInForm.tsx:382
 msgid "Email is required"
 msgstr "البريد الإلكتروني مطلوب"
 
@@ -4210,7 +4221,7 @@ msgstr "خطأ في رفع الملف"
 msgid "Error uploading file: {error}"
 msgstr "خطأ في رفع الملف: {error}"
 
-#: src/pages/sign-in/components/SignInForm.tsx:439
+#: src/pages/sign-in/components/SignInForm.tsx:404
 msgid "Error validating email"
 msgstr "خطأ في التحقق من البريد الإلكتروني"
 
@@ -4240,7 +4251,7 @@ msgstr "قيمة المثال"
 msgid "Excel Fields"
 msgstr "حقول اكسل"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:657
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:660
 msgid "Excel Spreadsheet"
 msgstr "جدول Excel"
 
@@ -4329,7 +4340,7 @@ msgid "EXTRACTED"
 msgstr "مستخرج"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3612
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4023
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "البيانات المستخرجة"
@@ -4397,12 +4408,12 @@ msgid "EZOFIS Fields"
 msgstr "حقول إزوفيس"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:97
-msgid "EZOFIS V5"
-msgstr ""
+#~ msgid "EZOFIS V5"
+#~ msgstr ""
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:58
-msgid "EZOFIS V6"
-msgstr ""
+#~ msgid "EZOFIS V6"
+#~ msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:665
 msgid "Failed to add to related documents."
@@ -4545,7 +4556,7 @@ msgstr "فشل في تحليل ملف Excel"
 msgid "Failed to parse file"
 msgstr "فشل تحليل الملف"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:427
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:430
 msgid "Failed to parse file. Please upload a valid CSV or Excel file."
 msgstr "فشل تحليل الملف. يرجى رفع ملف CSV أو Excel صالح."
 
@@ -4997,7 +5008,7 @@ msgstr "توقعات الاستخدام لنهاية الشهر"
 msgid "Forgot Password"
 msgstr "نسيت كلمة المرور"
 
-#: src/pages/sign-in/components/SignInForm.tsx:951
+#: src/pages/sign-in/components/SignInForm.tsx:892
 msgid "Forgot password?"
 msgstr "نسيت كلمة المرور؟"
 
@@ -5055,6 +5066,10 @@ msgstr "النماذج"
 #: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:68
 msgid "Formula"
 msgstr "الصيغة"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:533
+msgid "found"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:479
 #~ msgid "Found in {0}"
@@ -5162,11 +5177,11 @@ msgstr "قم بتسمية تقريرك، وحدد مصدر البيانات، و
 msgid "GL & Category"
 msgstr "GL والفئة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3496
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
 msgid "GL Account Matching"
 msgstr "مطابقة حساب دفتر الأستاذ"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3901
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4322
 msgid "GL Account Matching Report"
 msgstr "تقرير مطابقة حساب دفتر الأستاذ"
 
@@ -5205,12 +5220,12 @@ msgid "Google Drive"
 msgstr "جوجل درايف"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:180
-#: src/pages/sign-in/components/SignInForm.tsx:479
+#: src/pages/sign-in/components/SignInForm.tsx:444
 msgid "Google sign-in failed"
 msgstr "فشل تسجيل الدخول عبر Google"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:144
-#: src/pages/sign-in/components/SignInForm.tsx:448
+#: src/pages/sign-in/components/SignInForm.tsx:413
 msgid "Google sign-in was cancelled or failed"
 msgstr "تم إلغاء تسجيل الدخول عبر Google أو فشل"
 
@@ -5328,7 +5343,7 @@ msgstr "مكتوب بخط اليد"
 msgid "Handwritten Invoice"
 msgstr "فاتورة مكتوبة بخط اليد"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:807
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:810
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1477
 msgid "Header Fields"
 msgstr "حقول الرأس"
@@ -5337,7 +5352,7 @@ msgstr "حقول الرأس"
 #~ msgid "Header Mapping"
 #~ msgstr "ربط الرأس"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:662
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 msgid "Header Records"
 msgstr "سجلات الرأس"
 
@@ -5367,7 +5382,7 @@ msgstr "إليك ما يمكنك توقعه:"
 msgid "Hi, Welcome back"
 msgstr "مرحباً، مرحباً بعودتك"
 
-#: src/pages/sign-in/components/SignInForm.tsx:570
+#: src/pages/sign-in/components/SignInForm.tsx:535
 msgid "Hi, Welcome back to {appName}"
 msgstr "مرحباً بعودتك إلى {appName}"
 
@@ -5376,7 +5391,7 @@ msgstr "مرحباً بعودتك إلى {appName}"
 msgid "Hi, Welcome back to EZOFIS"
 msgstr "مرحباً بعودتك إلى EZOFIS"
 
-#: src/pages/sign-in/components/SignInForm.tsx:561
+#: src/pages/sign-in/components/SignInForm.tsx:526
 msgid "Hi, Welcome!"
 msgstr "مرحباً، أهلاً بك!"
 
@@ -5442,13 +5457,13 @@ msgstr "قيمة عالية (≥10 آلاف دولار)"
 msgid "Highest Credit Consumption"
 msgstr "أعلى استهلاك للرصيد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3765
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4186
 msgid "Historical Match Results"
 msgstr "نتائج المطابقة التاريخية"
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3632
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4043
 msgid "History"
 msgstr "السجل"
 
@@ -5532,7 +5547,7 @@ msgstr "استيراد العناصر المستخرجة"
 msgid "Import PO Data"
 msgstr "استيراد بيانات أمر الشراء"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:472
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:475
 msgid "Import PO master records to validate invoices against approved purchase orders"
 msgstr "استورد سجلات PO الرئيسية للتحقق من الفواتير مقابل أوامر الشراء المعتمدة"
 
@@ -5544,7 +5559,7 @@ msgstr "استيراد سجلات أوامر الشراء الرئيسية لل�
 msgid "Import Strategy"
 msgstr "استراتيجية الاستيراد"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:514
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:517
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:828
 msgid "Import your records via CSV or Excel."
 msgstr "استورد سجلاتك عبر CSV أو Excel."
@@ -5768,7 +5783,7 @@ msgstr "مدعو"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:839
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1942
 #: src/pages/portal/components/PortalWizard.tsx:160
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1386
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1611
 msgid "Invoice"
 msgstr "الفاتورة"
 
@@ -5821,7 +5836,7 @@ msgid "Invoice exceeds PO value."
 msgstr "تتجاوز الفاتورة قيمة أمر الشراء."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2203
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4667
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5091
 msgid "Invoice Line Items"
 msgstr "بنود الفاتورة"
 
@@ -5902,7 +5917,7 @@ msgstr "ليست فارغة"
 #~ msgid "Is payables growth eating margin · future liquidity needs"
 #~ msgstr "هل نمو الذمم الدائنة يضغط الهامش · احتياجات السيولة المستقبلية"
 
-#: src/pages/sign-in/components/SignInForm.tsx:634
+#: src/pages/sign-in/components/SignInForm.tsx:575
 msgid "is used with more than one account. Which account do you want to use?"
 msgstr "مستخدم مع أكثر من حساب. أي حساب تريد استخدامه؟"
 
@@ -5914,7 +5929,7 @@ msgstr "رمز عملة ISO"
 msgid "Issue Date"
 msgstr "تاريخ الإصدار"
 
-#: src/pages/sign-in/components/SignInForm.tsx:630
+#: src/pages/sign-in/components/SignInForm.tsx:571
 msgid "It looks like"
 msgstr "يبدو أن"
 
@@ -5967,7 +5982,7 @@ msgstr "يونيو"
 msgid "Kanban View"
 msgstr "عرض كانبان"
 
-#: src/pages/sign-in/components/SignInForm.tsx:941
+#: src/pages/sign-in/components/SignInForm.tsx:882
 msgid "Keep me logged in"
 msgstr "ابقني متصلاً"
 
@@ -6092,8 +6107,8 @@ msgid "Ledger Verification Note:"
 msgstr "ملاحظة التحقق من دفتر الأستاذ:"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:104
-msgid "Legacy EZOFIS platform & repository management."
-msgstr ""
+#~ msgid "Legacy EZOFIS platform & repository management."
+#~ msgstr ""
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1006
 msgid "Legal Contracts"
@@ -6107,7 +6122,7 @@ msgstr "مجلد العقود القانونية"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "القانوني لديه أطول دورة اعتماد في العرض الحالي، بمتوسط 8.0 أيام لكل فاتورة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4021
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4442
 msgid "Legal Matter Association Check"
 msgstr "فحص ارتباط المسألة القانونية"
 
@@ -6165,7 +6180,7 @@ msgstr "السطر {0}: كمية الفاتورة {1} مقابل كمية أمر
 msgid "Line #{0}"
 msgstr "السطر #{0}"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:790
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:793
 msgid "Line item info: No line item data found in this file."
 msgstr "معلومات البند: لم يتم العثور على بيانات بنود في هذا الملف."
 
@@ -6173,7 +6188,7 @@ msgstr "معلومات البند: لم يتم العثور على بيانات 
 msgid "Line item info: PO Number column could not be matched."
 msgstr "معلومات البند: تعذر مطابقة عمود رقم أمر الشراء."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:776
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:779
 msgid "Line item info: PO Number mapping not matched. Please map the same PO Number column in both sections."
 msgstr "معلومات البند: لم يتم مطابقة ربط رقم أمر الشراء. يرجى ربط عمود رقم أمر الشراء نفسه في كلا القسمين."
 
@@ -6185,12 +6200,12 @@ msgstr "معلومات البند: لم يتم مطابقة ربط رقم أمر
 msgid "Line Item Matching"
 msgstr "مطابقة بنود السطر"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:670
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:829
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:673
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:832
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3617
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4028
 msgid "Line Items"
 msgstr "بنود السطر"
 
@@ -6257,7 +6272,7 @@ msgstr "جارٍ تحميل النشاط..."
 msgid "Loading attachments..."
 msgstr "جارٍ تحميل المرفقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4711
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5135
 msgid "Loading Attachments..."
 msgstr "جاري تحميل المرفقات..."
 
@@ -6266,7 +6281,7 @@ msgstr "جاري تحميل المرفقات..."
 msgid "Loading comments..."
 msgstr "جاري تحميل التعليقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4754
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5178
 msgid "Loading Comments..."
 msgstr "جاري تحميل التعليقات..."
 
@@ -6309,7 +6324,7 @@ msgstr "جارٍ تحميل المجموعات..."
 msgid "Loading history..."
 msgstr "جارٍ تحميل السجل..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4783
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5207
 msgid "Loading History..."
 msgstr "جاري تحميل السجل..."
 
@@ -6543,7 +6558,7 @@ msgstr "إلزامي"
 msgid "Mandatory — click to make optional"
 msgstr "إلزامي — انقر لجعله اختيارياً"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1072
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1287
 msgid "Manual"
 msgstr "يدوي"
 
@@ -6583,7 +6598,7 @@ msgstr "تعيين حقول بنية SAP إلى حقول المجلد"
 msgid "Map spreadsheet columns to active form fields and import response records in bulk."
 msgstr "قم بتعيين أعمدة جدول البيانات لحقول النماذج النشطة واستيراد سجلات الاستجابة بشكل مجمّع."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:763
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:766
 msgid "Map the columns from your uploaded file to the platform schema."
 msgstr "اربط الأعمدة من ملفك المرفوع بمخطط المنصة."
 
@@ -6596,7 +6611,7 @@ msgstr "المصدر المرتبط"
 msgid "MAPPING"
 msgstr "الربط"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:760
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:763
 msgid "Mapping Fields"
 msgstr "ربط الحقول"
 
@@ -6726,19 +6741,19 @@ msgstr "مباراة:"
 #: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3372
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3677
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3778
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "مطابق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3919
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4340
 msgid "Matched GL Account"
 msgstr "حساب دفتر الأستاذ المطابق"
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:504
-msgid "Matched in:"
-msgstr "متطابق في:"
+#~ msgid "Matched in:"
+#~ msgstr "متطابق في:"
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:611
 msgid "Matched search criteria"
@@ -6758,7 +6773,7 @@ msgstr "جاري مطابقة تفاصيل أمر الشراء"
 #~ msgid "Matching supplier records..."
 #~ msgstr "مطابقة سجلات الموردين..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3587
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3998
 msgid "Matter Validation"
 msgstr "التحقق من المسألة"
 
@@ -6908,12 +6923,12 @@ msgid "Microsoft OneDrive"
 msgstr "مايكروسوفت ون درايف"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:224
-#: src/pages/sign-in/components/SignInForm.tsx:522
+#: src/pages/sign-in/components/SignInForm.tsx:487
 msgid "Microsoft sign-in failed"
 msgstr "فشل تسجيل الدخول عبر Microsoft"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:222
-#: src/pages/sign-in/components/SignInForm.tsx:520
+#: src/pages/sign-in/components/SignInForm.tsx:485
 msgid "Microsoft sign-in was cancelled."
 msgstr "تم إلغاء تسجيل الدخول عبر Microsoft."
 
@@ -7247,8 +7262,8 @@ msgid "Next step"
 msgstr "الخطوة التالية"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:65
-msgid "Next-gen AI workspace, dynamic forms & automation."
-msgstr ""
+#~ msgid "Next-gen AI workspace, dynamic forms & automation."
+#~ msgstr ""
 
 #: src/pages/reports/components/ReportsListView.tsx:188
 msgid "No"
@@ -7373,16 +7388,16 @@ msgstr "No Due التاريخ"
 msgid "No Duplicate"
 msgstr "لا تكرار"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3408
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3819
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "لم يتم اكتشاف تكرارات"
 
-#: src/pages/sign-in/components/SignInForm.tsx:468
+#: src/pages/sign-in/components/SignInForm.tsx:433
 msgid "No email returned from Google"
 msgstr "لم يُرجع Google بريداً إلكترونياً"
 
-#: src/pages/sign-in/components/SignInForm.tsx:505
+#: src/pages/sign-in/components/SignInForm.tsx:470
 msgid "No email returned from Microsoft"
 msgstr "لم يُرجع Microsoft بريداً إلكترونياً"
 
@@ -7463,6 +7478,10 @@ msgstr "لا توجد تكاملات"
 msgid "No key facts extracted."
 msgstr "لم يتم استخراج أي حقائق أساسية."
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:510
+msgid "No local matches for “{searchLabel}”. API search starts when you stop typing."
+msgstr ""
+
 #: src/pages/settings/components/AuditMonitoring.tsx:227
 msgid "No logs found"
 msgstr "لم يتم العثور على سجلات"
@@ -7495,7 +7514,7 @@ msgstr "لا توجد حقول رئيسية مطابقة"
 msgid "No matching permissions found"
 msgstr "لم يتم العثور على أذونات مطابقة"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:358
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:506
 msgid "No matching results found"
 msgstr "لم يتم العثور على نتائج مطابقة"
 
@@ -7540,7 +7559,7 @@ msgstr "لم يتم منح أي أذونات"
 msgid "No permissions to configure"
 msgstr "لا أذونات للتكوين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3383
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3789
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "لم يتم العثور على أمر شراء"
@@ -7597,6 +7616,10 @@ msgstr "لا توجد طلبات في هذه المرحلة"
 #: src/pages/requests/components/QuickFilters.tsx:339
 msgid "No results found"
 msgstr "لم يتم العثور على نتائج"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:505
+msgid "No Results Found"
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderRetention.tsx:252
 msgid "No Retention Policies"
@@ -7767,8 +7790,8 @@ msgstr "غير مرتبط"
 
 #: src/pages/requests/components/InboxList.tsx:1895
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3373
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3678
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3779
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4089
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "غير مطابق"
@@ -7787,7 +7810,7 @@ msgstr "غير مجدول"
 msgid "Not selected"
 msgstr "غير محدد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3420
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3831
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "غير مُتحقق"
@@ -7987,7 +8010,7 @@ msgstr "أو"
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:578
 #: src/pages/sign-in/components/ShareSignInForm.tsx:337
-#: src/pages/sign-in/components/SignInForm.tsx:971
+#: src/pages/sign-in/components/SignInForm.tsx:912
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:373
 msgid "Or"
 msgstr "أو"
@@ -8127,9 +8150,9 @@ msgstr "مطابق جزئياً"
 #: src/pages/settings/components/ManageUser.tsx:2465
 #: src/pages/sign-in/components/ShareSignInForm.tsx:278
 #: src/pages/sign-in/components/ShareSignInForm.tsx:312
-#: src/pages/sign-in/components/SignInForm.tsx:787
-#: src/pages/sign-in/components/SignInForm.tsx:874
-#: src/pages/sign-in/components/SignInForm.tsx:912
+#: src/pages/sign-in/components/SignInForm.tsx:728
+#: src/pages/sign-in/components/SignInForm.tsx:815
+#: src/pages/sign-in/components/SignInForm.tsx:853
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:309
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:346
 msgid "Password"
@@ -8157,7 +8180,7 @@ msgstr "حقل كلمة المرور"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:85
 #: src/pages/sign-in/components/ShareSignInForm.tsx:114
-#: src/pages/sign-in/components/SignInForm.tsx:403
+#: src/pages/sign-in/components/SignInForm.tsx:368
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:137
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:172
 msgid "Password is required"
@@ -8188,7 +8211,7 @@ msgstr "تقويم المدفوعات"
 msgid "Payment Channel"
 msgstr "قناة الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3968
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4389
 msgid "Payment Deadlines"
 msgstr "مواعيد الدفع"
 
@@ -8204,18 +8227,18 @@ msgstr "تاريخ استحقاق الدفع"
 msgid "Payment Method"
 msgstr "طريقة الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3548
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
 msgid "Payment Status"
 msgstr "حالة الدفع"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3563
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3974
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "شروط الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3962
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4383
 msgid "Payment Terms Analysis"
 msgstr "تحليل شروط الدفع"
 
@@ -8389,7 +8412,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "يرجى إرفاق ملف للمتابعة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3439
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3850
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "يرجى النقر على «تحقق» للتحقق من شرعية هذا المورد ومنع الاحتيال."
 
@@ -8539,7 +8562,7 @@ msgstr "يرجى رفع ملفات CSV أو XLSX فقط"
 msgid "Please upload your PO data file (CSV or XLSX) to begin the configuration."
 msgstr "يرجى رفع ملف بيانات PO (CSV أو XLSX) لبدء التكوين."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:605
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:608
 msgid "Please wait a moment"
 msgstr "يرجى الانتظار لحظة"
 
@@ -8585,26 +8608,25 @@ msgstr "نجح استيراد PO!"
 msgid "PO issuer or procurement contact"
 msgstr "مصدر أمر الشراء أو جهة اتصال المشتريات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4616
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5040
 msgid "PO Line Items"
 msgstr "بنود أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1086
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1386
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1309
 msgid "PO Master"
 msgstr "بو ماستر"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:473
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:476
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:723
 msgid "PO Master Data"
 msgstr "بيانات PO الرئيسية"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:566
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:569
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:957
 msgid "PO Master File"
 msgstr "ملف PO الرئيسي"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:635
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:638
 msgid "PO Master file received"
 msgstr "تم استلام ملف PO الرئيسي"
 
@@ -8612,11 +8634,11 @@ msgstr "تم استلام ملف PO الرئيسي"
 msgid "PO Master Update"
 msgstr "تحديث PO الرئيسي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3365
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3771
 msgid "PO Matching"
 msgstr "مطابقة أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3674
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4085
 msgid "PO Matching Analysis"
 msgstr "تحليل مطابقة أمر الشراء"
 
@@ -8627,7 +8649,7 @@ msgstr "تحليل مطابقة أمر الشراء"
 msgid "PO Number"
 msgstr "رقم أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3695
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4106
 msgid "PO Number (Extracted)"
 msgstr "رقم أمر الشراء (مستخرج)"
 
@@ -8792,13 +8814,17 @@ msgstr "جاري تجهيز طلبك..."
 msgid "Preparing..."
 msgstr "جاري التحضير..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:529
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:706
 msgid "Press"
 msgstr "اضغط"
 
 #: src/pages/folders/components/ShareView.tsx:339
 msgid "Press Enter to add this email"
 msgstr "اضغط Enter لإضافة هذا البريد"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:702
+msgid "Press Enter to search API for “{searchLabel}”"
+msgstr ""
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:700
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:351
@@ -9125,7 +9151,6 @@ msgid "Recommend fields"
 msgstr "الحقول الموصى بها"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:101
-#: src/pages/sign-in/components/VersionSelectionCard.tsx:61
 msgid "Recommended"
 msgstr "موصى به"
 
@@ -9209,7 +9234,7 @@ msgstr "خيارات إقامة البيانات الإقليمية"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "تحليل الحجم والإنفاق الإقليمي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1554
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1780
 msgid "Reject Transaction"
 msgstr "رفض المعاملة"
 
@@ -9258,7 +9283,7 @@ msgstr "إزالة المرفق"
 msgid "Remove condition"
 msgstr "إزالة الشرط"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:688
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:691
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:217
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:219
 #: src/pages/portal/components/PortalDocumentUpload.tsx:131
@@ -9309,7 +9334,7 @@ msgstr "استبدال الموجود"
 msgid "Replace existing data"
 msgstr "استبدال البيانات الموجودة"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:680
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:683
 msgid "Replace File"
 msgstr "استبدال الملف"
 
@@ -9562,7 +9587,7 @@ msgstr "يعيد"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entry"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:470
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:573
 msgid "Result"
 msgstr "النتيجة"
 
@@ -9870,6 +9895,10 @@ msgstr "قواعد"
 msgid "Sample template downloaded successfully"
 msgstr "تم تنزيل نموذج النموذج بنجاح"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1309
+msgid "SAP"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3589
 msgid "SAP ERP Connection"
 msgstr "اتصال SAP ERP"
@@ -10066,8 +10095,9 @@ msgstr "المبيعات ومعالجة الطلبات (SD)"
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:933
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:262
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:266
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:360
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:394
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:842
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -10080,7 +10110,7 @@ msgstr "بحث"
 msgid "Search {selectedColumnLabel}"
 msgstr "بحث {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:299
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:445
 msgid "Search AI"
 msgstr "بحث AI"
 
@@ -10141,8 +10171,8 @@ msgid "Search description..."
 msgstr "وصف البحث..."
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:307
-msgid "Search documents, folders, requests, and more across your workspace."
-msgstr "ابحث في المستندات والمجلدات والطلبات والمزيد عبر مساحة عملك."
+#~ msgid "Search documents, folders, requests, and more across your workspace."
+#~ msgstr "ابحث في المستندات والمجلدات والطلبات والمزيد عبر مساحة عملك."
 
 #: src/pages/settings/components/ManageUser.tsx:1579
 msgid "Search email..."
@@ -10290,15 +10320,15 @@ msgstr "بحث workflows..."
 msgid "Search workflows…"
 msgstr "بحث سير العمل..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:213
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:375
 msgid "Search..."
 msgstr "بحث..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:334
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:480
 msgid "Searching AI"
 msgstr "جاري البحث بالذكاء الاصطناعي"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:339
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:485
 msgid "Searching…"
 msgstr "جاري البحث…"
 
@@ -10323,7 +10353,7 @@ msgstr "القسم {0}"
 msgid "Security"
 msgstr "الأمان"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3798
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4219
 msgid "Security & Auditing Policy"
 msgstr "سياسة الأمان والتدقيق"
 
@@ -10568,8 +10598,8 @@ msgid "Select password field"
 msgstr "حدد حقل كلمة المرور"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:34
-msgid "Select Platform Version"
-msgstr ""
+#~ msgid "Select Platform Version"
+#~ msgstr ""
 
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:128
 msgid "Select recipients"
@@ -10991,7 +11021,7 @@ msgid "Sign here"
 msgstr "وقّع هنا"
 
 #: src/pages/portal/components/PortalLogin.tsx:335
-#: src/pages/sign-in/components/SignInForm.tsx:804
+#: src/pages/sign-in/components/SignInForm.tsx:745
 msgid "Sign in"
 msgstr "تسجيل الدخول"
 
@@ -11000,22 +11030,22 @@ msgstr "تسجيل الدخول"
 #: src/layouts/auth/components/AuthHeader.tsx:36
 #: src/pages/sign-in/components/ShareSignInForm.tsx:301
 #: src/pages/sign-in/components/ShareSignInForm.tsx:326
-#: src/pages/sign-in/components/SignInForm.tsx:958
+#: src/pages/sign-in/components/SignInForm.tsx:899
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:360
 msgid "Sign In"
 msgstr "تسجيل الدخول"
 
-#: src/pages/sign-in/components/SignInForm.tsx:219
+#: src/pages/sign-in/components/SignInForm.tsx:229
 msgid "Sign in succeeded but no access token was returned."
 msgstr "نجح تسجيل الدخول ولكن لم يتم إرجاع رمز الوصول."
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:262
-#: src/pages/sign-in/components/SignInForm.tsx:754
+#: src/pages/sign-in/components/SignInForm.tsx:695
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:293
 msgid "Sign in to your account"
 msgstr "سجّل الدخول إلى حسابك"
 
-#: src/pages/sign-in/components/SignInForm.tsx:726
+#: src/pages/sign-in/components/SignInForm.tsx:667
 msgid "Sign in with a different email address"
 msgstr "تسجيل الدخول ببريد إلكتروني آخر"
 
@@ -11185,11 +11215,15 @@ msgstr "ملف المصدر:"
 #~ msgid "Source Form"
 #~ msgstr "نموذج المصدر"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4114
+msgid "Source System"
+msgstr ""
+
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:200
 msgid "Source Type"
 msgstr "نوع المصدر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1066
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1281
 msgid "Source: Manual Entry"
 msgstr "المصدر: الإدخال اليدوي"
 
@@ -11197,9 +11231,13 @@ msgstr "المصدر: الإدخال اليدوي"
 msgid "Source: OCR Document"
 msgstr "المصدر: وثيقة التعرف الضوئي على الحروف"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1080
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1302
 msgid "Source: PO Master (ERP/Excel Data)"
 msgstr "المصدر: أمر الشراء الرئيسي (ERP/بيانات Excel)"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1301
+msgid "Source: SAP (HANA Cloud)"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/history/History.tsx:209
 msgid "Stage processed"
@@ -11228,7 +11266,7 @@ msgstr "ابدأ البحث"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr "ابدأ هذا الطلب وسنجمع التفاصيل التي تحتاج إليها."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:304
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:450
 msgid "Start typing to search"
 msgstr "ابدأ الكتابة للبحث"
 
@@ -11428,8 +11466,8 @@ msgstr "المجموع الفرعي"
 msgid "Successfully imported {successCount} entries!"
 msgstr "تم استيراد {successCount} إدخالات بنجاح!"
 
-#: src/pages/sign-in/components/SignInForm.tsx:222
-#: src/pages/sign-in/components/SignInForm.tsx:234
+#: src/pages/sign-in/components/SignInForm.tsx:232
+#: src/pages/sign-in/components/SignInForm.tsx:244
 msgid "Successfully logged in"
 msgstr "تم تسجيل الدخول بنجاح"
 
@@ -11441,7 +11479,7 @@ msgstr "تم التحميل بنجاح إلى"
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "تم اقتراح {schemaKpiCount} من مؤشرات الأداء الرئيسية و{schemaChartCount} من الرسوم البيانية"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3914
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4335
 msgid "Suggested Allocation"
 msgstr "التوزيع المقترح"
 
@@ -11480,7 +11518,7 @@ msgstr "اسم كيان المورد / البائع"
 msgid "Supplier Address"
 msgstr "عنوان المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3843
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4264
 msgid "Supplier Code"
 msgstr "رمز المورد"
 
@@ -11492,7 +11530,7 @@ msgstr "رمز المورد"
 msgid "Supplier Conflict"
 msgstr "تعارض المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3838
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4259
 msgid "Supplier Details"
 msgstr "تفاصيل المورد"
 
@@ -11529,22 +11567,22 @@ msgstr "رادار مخاطر الموردين"
 msgid "Supplier Trend Insight"
 msgstr "رؤية اتجاه المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3419
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3451
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3471
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3830
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3862
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3882
 msgid "Supplier Verification"
 msgstr "التحقق من المورد"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2016
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2343
 msgid "Supplier verification completed: {0}"
 msgstr "اكتمل التحقق من المورد: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3825
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4246
 msgid "Supplier Verification Registry"
 msgstr "سجل التحقق من المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3483
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
 msgid "Supplier verified"
 msgstr "تم التحقق من المورد"
 
@@ -11573,7 +11611,7 @@ msgstr "دعم لملفات PDF وPNG وTIFF وJPG حتى 50 ميغابايت."
 msgid "Supported formats: PNG, JPG, JPEG."
 msgstr "الصيغ المدعومة: PNG و JPG و JPEG."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:626
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:629
 #: src/pages/forms/components/GenericFormImportModal.tsx:405
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:878
 msgid "Supports Excel (.xlsx, .xls) and CSV formats"
@@ -11594,13 +11632,13 @@ msgstr "يدعم ملفات PDF وWord وExcel وPowerPoint والصور وال�
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:245
-msgid "Switch to Dummy Data"
-msgstr "قم بالتبديل إلى البيانات الوهمية"
+#~ msgid "Switch to Dummy Data"
+#~ msgstr "قم بالتبديل إلى البيانات الوهمية"
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:233
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:244
-msgid "Switch to Original Data"
-msgstr "التبديل إلى البيانات الأصلية"
+#~ msgid "Switch to Original Data"
+#~ msgstr "التبديل إلى البيانات الأصلية"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1453
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:160
@@ -11656,7 +11694,7 @@ msgstr "معرف النظام (SID)"
 msgid "System menus cannot be deleted"
 msgstr "لا يمكن حذف قوائم النظام"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3787
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4208
 msgid "System Response"
 msgstr "استجابة النظام"
 
@@ -11814,8 +11852,8 @@ msgid "This branded sign-in link is invalid or no longer available."
 msgstr "رابط تسجيل الدخول ذو العلامة التجارية هذا غير صالح أو لم يعد متاحًا."
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:101
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1265
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1355
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1494
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1584
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:261
 msgid "This field is required."
@@ -11935,7 +11973,7 @@ msgstr "المطابقة الثلاثية"
 msgid "Time"
 msgstr "وقت"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3993
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4414
 msgid "Time Remaining"
 msgstr "الوقت المتبقي"
 
@@ -12132,7 +12170,7 @@ msgstr "جرّب كلمة رئيسية مختلفة، أو مجلدًا آخر،
 msgid "Try changing the file search or resetting the selected filters."
 msgstr "حاول تغيير بحث الملف أو إعادة تعيين عوامل التصفية المحددة."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:485
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:488
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:782
 msgid "Try the platform with sample invoices and records."
 msgstr "جرّب المنصة بفواتير وسجلات نموذجية."
@@ -12165,6 +12203,10 @@ msgstr "النوع"
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:423
 msgid "Type custom option..."
 msgstr "اكتب خيارًا مخصصًا..."
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:453
+msgid "Type to search local data. If nothing matches, the API runs automatically."
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:520
 #~ msgid "Type what you remember, pick the folders to look in, then press Search."
@@ -12301,8 +12343,7 @@ msgid "Unable to set password"
 msgstr "تعذر تعيين كلمة المرور"
 
 #: src/pages/portal/components/PortalLogin.tsx:228
-#: src/pages/sign-in/components/SignInForm.tsx:347
-#: src/pages/sign-in/components/SignInForm.tsx:387
+#: src/pages/sign-in/components/SignInForm.tsx:352
 msgid "Unable to sign in"
 msgstr "تعذر تسجيل الدخول"
 
@@ -12451,9 +12492,13 @@ msgid "Update User"
 msgstr "تحديث المستخدم"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:468
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:566
 msgid "Updated from {0}"
 msgstr "تم التحديث من {0}"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:563
+msgid "Updated from Document"
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:490
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1004
@@ -12543,14 +12588,14 @@ msgstr "رفع فاتورة"
 msgid "Upload new files"
 msgstr "تحميل ملفات جديدة"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:73
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:516
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:521
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:76
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:519
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:524
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:825
 msgid "Upload PO master file"
 msgstr "رفع ملف PO الرئيسي"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:616
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:619
 msgid "Upload PO Master File"
 msgstr "رفع ملف PO الرئيسي"
 
@@ -12662,9 +12707,9 @@ msgstr "استخدم كلمة مرور لمرة واحدة لتسجيل الدخ
 msgid "Use built-in secure storage for invoice documents."
 msgstr "استخدم التخزين الآمن المدمج لمستندات الفاتورة."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:72
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:487
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:75
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:490
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:493
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:779
 msgid "Use demo data"
 msgstr "استخدام بيانات تجريبية"
@@ -12735,7 +12780,7 @@ msgstr "البريد الإلكتروني للمستخدم"
 msgid "User Management"
 msgstr "إدارة المستخدمين"
 
-#: src/pages/sign-in/components/SignInForm.tsx:858
+#: src/pages/sign-in/components/SignInForm.tsx:799
 msgid "User name"
 msgstr "اسم المستخدم"
 
@@ -12751,7 +12796,7 @@ msgstr "ملخص المستخدم"
 msgid "User updated successfully"
 msgstr "تم تحديث المستخدم بنجاح"
 
-#: src/pages/sign-in/components/SignInForm.tsx:859
+#: src/pages/sign-in/components/SignInForm.tsx:800
 msgid "username"
 msgstr "اسم المستخدم"
 
@@ -12827,7 +12872,7 @@ msgstr "تصديق"
 msgid "VALIDATION"
 msgstr "التحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3722
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4143
 msgid "Validation Log"
 msgstr "سجل التحقق"
 
@@ -12861,7 +12906,7 @@ msgstr "فحص البائع"
 msgid "Vendor identity mismatch."
 msgstr "عدم تطابق هوية البائع."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3703
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4124
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "اسم البائع"
@@ -12870,7 +12915,7 @@ msgstr "اسم البائع"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "موردون يحتاجون تواصلًا سريعًا أو حل استفسارات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2023
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2350
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "فشل التحقق. تم استرداد رصيد واحد."
 
@@ -12878,7 +12923,7 @@ msgstr "فشل التحقق. تم استرداد رصيد واحد."
 msgid "Verified"
 msgstr "مُتحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3434
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3845
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "تحقق"
@@ -12903,8 +12948,8 @@ msgstr "تحقق من السياسة التي تم تكوينها قبل تنش�
 msgid "Verify your security rules before applying settings."
 msgstr "تحقق من قواعد الأمان الخاصة بك قبل تطبيق الإعدادات."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3449
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3461
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3860
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
 msgid "Verifying..."
 msgstr "جاري التحقق..."
 
@@ -12985,7 +13030,7 @@ msgstr "مقابل الفترة الماضية"
 msgid "Wait for AI classification to finish before indexing."
 msgstr "انتظر حتى ينتهي التصنيف بالذكاء الاصطناعي قبل الفهرسة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1562
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1788
 msgid "Wait for Balance"
 msgstr "انتظر الرصيد"
 
@@ -13028,8 +13073,12 @@ msgid "Warning: Column \"{column}\" is already mapped to \"{colLabel}\"."
 msgstr "تحذير: العمود «{column}» مرتبط بالفعل بـ «{colLabel}»."
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:361
-msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
-msgstr "لم نتمكن من العثور على أي سجلات مطابقة لـ «{debouncedQuery}». حاول البحث باستخدام كلمات رئيسية مختلفة أو تحقق من الإملاء."
+#~ msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
+#~ msgstr "لم نتمكن من العثور على أي سجلات مطابقة لـ «{debouncedQuery}». حاول البحث باستخدام كلمات رئيسية مختلفة أو تحقق من الإملاء."
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:511
+msgid "We couldn't find any records matching “{searchLabel}”. Try searching with different keywords or check spelling."
+msgstr ""
 
 #: src/pages/requests/components/KanbanView.tsx:305
 msgid "We couldn’t identify this request, so it couldn’t be moved."
@@ -13242,8 +13291,8 @@ msgid "Your {0} account is connected. Invoice documents will be saved here durin
 msgstr "حساب {0} متصل. ستُحفظ مستندات الفواتير هنا أثناء المعالجة."
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:35
-msgid "Your account is available in both versions. Choose which workspace you want to launch."
-msgstr ""
+#~ msgid "Your account is available in both versions. Choose which workspace you want to launch."
+#~ msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/WhatHappensNext.tsx:10
 msgid "Your AI agent will start monitoring your email and processing incoming invoices automatically."
@@ -13285,12 +13334,12 @@ msgstr "مساحة عملك الآن على بيئة الإنتاج."
 msgid "Zero-Downtime Transition"
 msgstr "انتقال بدون توقف عن العمل"
 
-#: src/components/common/document-preview/DocumentPreviewViewer.tsx:356
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:357
 #: src/pages/folders/components/DocumentSigningPage.tsx:2930
 msgid "Zoom in"
 msgstr "تكبير"
 
-#: src/components/common/document-preview/DocumentPreviewViewer.tsx:344
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:345
 #: src/pages/folders/components/DocumentSigningPage.tsx:2916
 msgid "Zoom out"
 msgstr "تصغير"

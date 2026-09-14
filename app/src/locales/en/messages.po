@@ -1011,7 +1011,7 @@ msgstr "All folders"
 msgid "All options must be checked to fulfill requirements."
 msgstr "All options must be checked to fulfill requirements."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:526
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:703
 msgid "All search results for “{searchLabel}”"
 msgstr "All search results for “{searchLabel}”"
 
@@ -1107,7 +1107,7 @@ msgstr "Analyzing context & keywords"
 msgid "Analyzing document..."
 msgstr "Analyzing document..."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:602
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:605
 msgid "Analyzing file and mapping fields..."
 msgstr "Analyzing file and mapping fields..."
 
@@ -1198,6 +1198,10 @@ msgstr "API Key"
 #: src/layouts/app/components/topbar/Topbar.tsx:67
 msgid "API Playground"
 msgstr "API Playground"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:527
+msgid "API results"
+msgstr "API results"
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-three/components/StorageSettings.tsx:20
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSettings.tsx:20
@@ -1403,7 +1407,7 @@ msgstr "Attachment"
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3622
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4033
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "Attachments"
@@ -1441,7 +1445,7 @@ msgstr "Authentication required. Please log in again."
 msgid "Authenticator App"
 msgstr "Authenticator App"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3712
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
 msgid "Authorized Amount"
 msgstr "Authorized Amount"
 
@@ -1550,8 +1554,8 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 #: src/pages/requests/components/request/components/generic-overview/AttachmentSplitView.tsx:192
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:933
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4100
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:991
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4521
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1571,7 +1575,7 @@ msgstr "Azure Blob storage integration for organizations using Microsoft Azure."
 msgid "Back"
 msgstr "Back"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3520
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
 msgid "Back Order"
 msgstr "Back Order"
 
@@ -1619,8 +1623,7 @@ msgstr "Back to Reports"
 msgid "Back to review"
 msgstr "Back to review"
 
-#: src/pages/sign-in/components/SignInForm.tsx:624
-#: src/pages/sign-in/components/VersionSelectionCard.tsx:132
+#: src/pages/sign-in/components/SignInForm.tsx:565
 msgid "Back to Sign In"
 msgstr "Back to Sign In"
 
@@ -1649,7 +1652,7 @@ msgstr "Basic"
 msgid "Between"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3973
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4394
 msgid "Billing Terms"
 msgstr "Billing Terms"
 
@@ -1710,7 +1713,7 @@ msgstr "browse"
 msgid "Browse"
 msgstr "Browse"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:621
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:624
 msgid "browse files"
 msgstr "browse files"
 
@@ -1813,6 +1816,10 @@ msgstr "By employee"
 msgid "By supplier / vendor"
 msgstr "By supplier / vendor"
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:530
+msgid "Cached results"
+msgstr "Cached results"
+
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:20
 msgid "Calculated"
 msgstr "Calculated"
@@ -1869,7 +1876,7 @@ msgstr "Can't upload: this workflow has no repository configured."
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1578
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1804
 msgid "Cancel Remaining"
 msgstr "Cancel Remaining"
 
@@ -2093,8 +2100,8 @@ msgid "Choosing the best trigger field…"
 msgstr "Choosing the best trigger field…"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:100
-msgid "Classic Version"
-msgstr "Classic Version"
+#~ msgid "Classic Version"
+#~ msgstr "Classic Version"
 
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:243
 msgid "Classification failed for this file."
@@ -2273,7 +2280,7 @@ msgstr "Coming Soon"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3627
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4038
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "Comments"
@@ -2492,7 +2499,7 @@ msgstr "Connect required"
 msgid "Connect your accounting software"
 msgstr "Connect your accounting software"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:947
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:950
 msgid "Connect your provider to automate data matching."
 msgstr "Connect your provider to automate data matching."
 
@@ -2500,7 +2507,7 @@ msgstr "Connect your provider to automate data matching."
 msgid "Connect your provider to securely store and manage invoice documents."
 msgstr "Connect your provider to securely store and manage invoice documents."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:964
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:967
 msgid "Connect your QuickBooks account to sync PO and invoice data automatically."
 msgstr "Connect your QuickBooks account to sync PO and invoice data automatically."
 
@@ -2536,7 +2543,7 @@ msgstr "Connection Successful! SAP ERP ({sapSystemId}) RFC Destination verified 
 msgid "Connector"
 msgstr "Connector"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1570
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1796
 msgid "Contact Vendor"
 msgstr "Contact Vendor"
 
@@ -2564,7 +2571,7 @@ msgstr "Contains"
 #: src/pages/settings/components/Folders/FolderSecurityPolicyWizard.tsx:844
 #: src/pages/settings/components/license/LicenseUpgradeScreen.tsx:195
 #: src/pages/settings/components/SettingsWizardLayout.tsx:80
-#: src/pages/sign-in/components/SignInForm.tsx:838
+#: src/pages/sign-in/components/SignInForm.tsx:779
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:335
 msgid "Continue"
 msgstr "Continue"
@@ -2877,7 +2884,7 @@ msgstr "Critical"
 #~ msgid "Critical Exceptions"
 #~ msgstr "Critical Exceptions"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3770
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4191
 msgid "Cross-Check Status"
 msgstr "Cross-Check Status"
 
@@ -2885,7 +2892,7 @@ msgstr "Cross-Check Status"
 msgid "Cross-referencing records"
 msgstr "Cross-referencing records"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:656
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:659
 msgid "CSV File"
 msgstr "CSV File"
 
@@ -3389,7 +3396,7 @@ msgstr "Detected keywords:"
 msgid "Didn't receive the code? Resend"
 msgstr "Didn't receive the code? Resend"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:948
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:951
 msgid "Direct Integration"
 msgstr "Direct Integration"
 
@@ -3462,7 +3469,7 @@ msgstr "Document Info"
 msgid "Document ingested via email"
 msgstr "Document ingested via email"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3690
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4101
 msgid "Document Mapping"
 msgstr "Document Mapping"
 
@@ -3616,7 +3623,7 @@ msgstr "Download documents"
 msgid "Download file"
 msgstr "Download file"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:576
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:579
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:965
 msgid "Download PO Master Demo Data"
 msgstr "Download PO Master Demo Data"
@@ -3633,7 +3640,7 @@ msgstr "Download Sample Template"
 msgid "Download Template"
 msgstr "Download Template"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:570
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:573
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:960
 msgid "Download the predefined PO Master Data template file to view reference records. Use this file to understand the default schema structure and sample values used for matching."
 msgstr ""
@@ -3674,7 +3681,7 @@ msgstr "Drafting suggested conditions…"
 msgid "Drag and drop documents here, or click to browse. Ezofis AI will classify and route them automatically."
 msgstr "Drag and drop documents here, or click to browse. Ezofis AI will classify and route them automatically."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:619
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:622
 msgid "Drag and drop your spreadsheet here, or"
 msgstr ""
 
@@ -3780,11 +3787,15 @@ msgstr "Due in Next 7 Days"
 msgid "Due Today"
 msgstr "Due Today"
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:529
+msgid "Dummy results"
+msgstr "Dummy results"
+
 #: src/pages/requests/utils/localizeRequestUi.ts:32
 msgid "Duplicate"
 msgstr "Duplicate"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3393
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3804
 msgid "Duplicate Detection"
 msgstr "Duplicate Detection"
 
@@ -3792,7 +3803,7 @@ msgstr "Duplicate Detection"
 msgid "Duplicate invoice watch"
 msgstr "Duplicate invoice watch"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3749
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4170
 msgid "Duplicate Payment Check"
 msgstr "Duplicate Payment Check"
 
@@ -4042,13 +4053,13 @@ msgstr "Effective Date"
 #: src/pages/settings/components/ManageUser.tsx:2506
 #: src/pages/settings/components/RolesPermissions.tsx:2050
 #: src/pages/settings/components/RolesPermissions.tsx:2052
-#: src/pages/sign-in/components/SignInForm.tsx:769
-#: src/pages/sign-in/components/SignInForm.tsx:819
+#: src/pages/sign-in/components/SignInForm.tsx:710
+#: src/pages/sign-in/components/SignInForm.tsx:760
 msgid "Email"
 msgstr "Email"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:268
-#: src/pages/sign-in/components/SignInForm.tsx:894
+#: src/pages/sign-in/components/SignInForm.tsx:835
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:299
 msgid "Email / Username"
 msgstr "Email / Username"
@@ -4066,8 +4077,8 @@ msgstr "Email and password"
 msgid "Email content"
 msgstr "Email content"
 
-#: src/pages/sign-in/components/SignInForm.tsx:399
-#: src/pages/sign-in/components/SignInForm.tsx:417
+#: src/pages/sign-in/components/SignInForm.tsx:364
+#: src/pages/sign-in/components/SignInForm.tsx:382
 msgid "Email is required"
 msgstr "Email is required"
 
@@ -4283,7 +4294,7 @@ msgstr "Error uploading file"
 msgid "Error uploading file: {error}"
 msgstr "Error uploading file: {error}"
 
-#: src/pages/sign-in/components/SignInForm.tsx:439
+#: src/pages/sign-in/components/SignInForm.tsx:404
 msgid "Error validating email"
 msgstr "Error validating email"
 
@@ -4313,7 +4324,7 @@ msgstr "Example Value"
 msgid "Excel Fields"
 msgstr "Excel Fields"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:657
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:660
 msgid "Excel Spreadsheet"
 msgstr "Excel Spreadsheet"
 
@@ -4402,7 +4413,7 @@ msgid "EXTRACTED"
 msgstr "EXTRACTED"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3612
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4023
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "Extracted Data"
@@ -4470,12 +4481,12 @@ msgid "EZOFIS Fields"
 msgstr "EZOFIS Fields"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:97
-msgid "EZOFIS V5"
-msgstr "EZOFIS V5"
+#~ msgid "EZOFIS V5"
+#~ msgstr "EZOFIS V5"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:58
-msgid "EZOFIS V6"
-msgstr "EZOFIS V6"
+#~ msgid "EZOFIS V6"
+#~ msgstr "EZOFIS V6"
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:665
 msgid "Failed to add to related documents."
@@ -4618,7 +4629,7 @@ msgstr "Failed to parse Excel file"
 msgid "Failed to parse file"
 msgstr "Failed to parse file"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:427
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:430
 msgid "Failed to parse file. Please upload a valid CSV or Excel file."
 msgstr "Failed to parse file. Please upload a valid CSV or Excel file."
 
@@ -5078,7 +5089,7 @@ msgstr "Forecast EOM usage"
 msgid "Forgot Password"
 msgstr "Forgot Password"
 
-#: src/pages/sign-in/components/SignInForm.tsx:951
+#: src/pages/sign-in/components/SignInForm.tsx:892
 msgid "Forgot password?"
 msgstr "Forgot password?"
 
@@ -5136,6 +5147,10 @@ msgstr "Forms"
 #: src/pages/report-builder/components/steps/FormFieldSettingsPanel.tsx:68
 msgid "Formula"
 msgstr "Formula"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:533
+msgid "found"
+msgstr "found"
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:479
 #~ msgid "Found in {0}"
@@ -5243,11 +5258,11 @@ msgstr "Give your report a name, select the data source, and configure sharing p
 msgid "GL & Category"
 msgstr "GL & Category"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3496
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
 msgid "GL Account Matching"
 msgstr "GL Account Matching"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3901
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4322
 msgid "GL Account Matching Report"
 msgstr "GL Account Matching Report"
 
@@ -5286,12 +5301,12 @@ msgid "Google Drive"
 msgstr "Google Drive"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:180
-#: src/pages/sign-in/components/SignInForm.tsx:479
+#: src/pages/sign-in/components/SignInForm.tsx:444
 msgid "Google sign-in failed"
 msgstr "Google sign-in failed"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:144
-#: src/pages/sign-in/components/SignInForm.tsx:448
+#: src/pages/sign-in/components/SignInForm.tsx:413
 msgid "Google sign-in was cancelled or failed"
 msgstr "Google sign-in was cancelled or failed"
 
@@ -5413,7 +5428,7 @@ msgstr "Handwritten"
 msgid "Handwritten Invoice"
 msgstr "Handwritten Invoice"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:807
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:810
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1477
 msgid "Header Fields"
 msgstr "Header Fields"
@@ -5422,7 +5437,7 @@ msgstr "Header Fields"
 #~ msgid "Header Mapping"
 #~ msgstr "Header Mapping"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:662
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:665
 msgid "Header Records"
 msgstr "Header Records"
 
@@ -5452,7 +5467,7 @@ msgstr "Here's what you can expect:"
 msgid "Hi, Welcome back"
 msgstr "Hi, Welcome back"
 
-#: src/pages/sign-in/components/SignInForm.tsx:570
+#: src/pages/sign-in/components/SignInForm.tsx:535
 msgid "Hi, Welcome back to {appName}"
 msgstr "Hi, Welcome back to {appName}"
 
@@ -5461,7 +5476,7 @@ msgstr "Hi, Welcome back to {appName}"
 msgid "Hi, Welcome back to EZOFIS"
 msgstr "Hi, Welcome back to EZOFIS"
 
-#: src/pages/sign-in/components/SignInForm.tsx:561
+#: src/pages/sign-in/components/SignInForm.tsx:526
 msgid "Hi, Welcome!"
 msgstr "Hi, Welcome!"
 
@@ -5527,13 +5542,13 @@ msgstr "High Value (≥$10k)"
 msgid "Highest Credit Consumption"
 msgstr "Highest Credit Consumption"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3765
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4186
 msgid "Historical Match Results"
 msgstr "Historical Match Results"
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3632
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4043
 msgid "History"
 msgstr "History"
 
@@ -5617,7 +5632,7 @@ msgstr "Import extracted items"
 msgid "Import PO Data"
 msgstr "Import PO Data"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:472
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:475
 msgid "Import PO master records to validate invoices against approved purchase orders"
 msgstr "Import PO master records to validate invoices against approved purchase orders"
 
@@ -5629,7 +5644,7 @@ msgstr "Import PO master records to validate invoices against approved purchase 
 msgid "Import Strategy"
 msgstr "Import Strategy"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:514
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:517
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:828
 msgid "Import your records via CSV or Excel."
 msgstr "Import your records via CSV or Excel."
@@ -5853,7 +5868,7 @@ msgstr "Invited"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:839
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1942
 #: src/pages/portal/components/PortalWizard.tsx:160
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1386
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1611
 msgid "Invoice"
 msgstr "Invoice"
 
@@ -5906,7 +5921,7 @@ msgid "Invoice exceeds PO value."
 msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2203
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4667
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5091
 msgid "Invoice Line Items"
 msgstr "Invoice Line Items"
 
@@ -5987,7 +6002,7 @@ msgstr "Is Not Empty"
 #~ msgid "Is payables growth eating margin · future liquidity needs"
 #~ msgstr "Is payables growth eating margin · future liquidity needs"
 
-#: src/pages/sign-in/components/SignInForm.tsx:634
+#: src/pages/sign-in/components/SignInForm.tsx:575
 msgid "is used with more than one account. Which account do you want to use?"
 msgstr "is used with more than one account. Which account do you want to use?"
 
@@ -5999,7 +6014,7 @@ msgstr "ISO Currency Code"
 msgid "Issue Date"
 msgstr "Issue Date"
 
-#: src/pages/sign-in/components/SignInForm.tsx:630
+#: src/pages/sign-in/components/SignInForm.tsx:571
 msgid "It looks like"
 msgstr "It looks like"
 
@@ -6052,7 +6067,7 @@ msgstr "June"
 msgid "Kanban View"
 msgstr "Kanban View"
 
-#: src/pages/sign-in/components/SignInForm.tsx:941
+#: src/pages/sign-in/components/SignInForm.tsx:882
 msgid "Keep me logged in"
 msgstr ""
 
@@ -6177,8 +6192,8 @@ msgid "Ledger Verification Note:"
 msgstr "Ledger Verification Note:"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:104
-msgid "Legacy EZOFIS platform & repository management."
-msgstr "Legacy EZOFIS platform & repository management."
+#~ msgid "Legacy EZOFIS platform & repository management."
+#~ msgstr "Legacy EZOFIS platform & repository management."
 
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1006
 msgid "Legal Contracts"
@@ -6192,7 +6207,7 @@ msgstr "Legal contracts folder"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4021
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4442
 msgid "Legal Matter Association Check"
 msgstr "Legal Matter Association Check"
 
@@ -6250,7 +6265,7 @@ msgstr "Line {0}: Invoice Qty {1} vs PO Qty {2}. Remaining: {3}"
 msgid "Line #{0}"
 msgstr "Line #{0}"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:790
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:793
 msgid "Line item info: No line item data found in this file."
 msgstr "Line item info: No line item data found in this file."
 
@@ -6258,7 +6273,7 @@ msgstr "Line item info: No line item data found in this file."
 msgid "Line item info: PO Number column could not be matched."
 msgstr "Line item info: PO Number column could not be matched."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:776
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:779
 msgid "Line item info: PO Number mapping not matched. Please map the same PO Number column in both sections."
 msgstr "Line item info: PO Number mapping not matched. Please map the same PO Number column in both sections."
 
@@ -6270,12 +6285,12 @@ msgstr "Line item info: PO Number mapping not matched. Please map the same PO Nu
 msgid "Line Item Matching"
 msgstr "Line Item Matching"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:670
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:829
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:673
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:832
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3617
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4028
 msgid "Line Items"
 msgstr "Line Items"
 
@@ -6342,7 +6357,7 @@ msgstr "Loading activity..."
 msgid "Loading attachments..."
 msgstr "Loading attachments..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4711
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5135
 msgid "Loading Attachments..."
 msgstr ""
 
@@ -6351,7 +6366,7 @@ msgstr ""
 msgid "Loading comments..."
 msgstr "Loading comments..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4754
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5178
 msgid "Loading Comments..."
 msgstr "Loading Comments..."
 
@@ -6394,7 +6409,7 @@ msgstr "Loading groups..."
 msgid "Loading history..."
 msgstr "Loading history..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4783
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5207
 msgid "Loading History..."
 msgstr ""
 
@@ -6628,7 +6643,7 @@ msgstr ""
 msgid "Mandatory — click to make optional"
 msgstr "Mandatory — click to make optional"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1072
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1287
 msgid "Manual"
 msgstr "Manual"
 
@@ -6672,7 +6687,7 @@ msgstr "Map SAP structure fields to folder fields"
 msgid "Map spreadsheet columns to active form fields and import response records in bulk."
 msgstr "Map spreadsheet columns to active form fields and import response records in bulk."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:763
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:766
 msgid "Map the columns from your uploaded file to the platform schema."
 msgstr "Map the columns from your uploaded file to the platform schema."
 
@@ -6685,7 +6700,7 @@ msgstr "Mapped Source"
 msgid "MAPPING"
 msgstr "MAPPING"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:760
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:763
 msgid "Mapping Fields"
 msgstr "Mapping Fields"
 
@@ -6815,19 +6830,19 @@ msgstr "Match:"
 #: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3372
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3677
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3778
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "Matched"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3919
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4340
 msgid "Matched GL Account"
 msgstr "Matched GL Account"
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:504
-msgid "Matched in:"
-msgstr "Matched in:"
+#~ msgid "Matched in:"
+#~ msgstr "Matched in:"
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:611
 msgid "Matched search criteria"
@@ -6847,7 +6862,7 @@ msgstr "Matching PO details"
 #~ msgid "Matching supplier records..."
 #~ msgstr "Matching supplier records..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3587
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3998
 msgid "Matter Validation"
 msgstr "Matter Validation"
 
@@ -6997,12 +7012,12 @@ msgid "Microsoft OneDrive"
 msgstr "Microsoft OneDrive"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:224
-#: src/pages/sign-in/components/SignInForm.tsx:522
+#: src/pages/sign-in/components/SignInForm.tsx:487
 msgid "Microsoft sign-in failed"
 msgstr "Microsoft sign-in failed"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:222
-#: src/pages/sign-in/components/SignInForm.tsx:520
+#: src/pages/sign-in/components/SignInForm.tsx:485
 msgid "Microsoft sign-in was cancelled."
 msgstr "Microsoft sign-in was cancelled."
 
@@ -7345,8 +7360,8 @@ msgid "Next step"
 msgstr "Next step"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:65
-msgid "Next-gen AI workspace, dynamic forms & automation."
-msgstr "Next-gen AI workspace, dynamic forms & automation."
+#~ msgid "Next-gen AI workspace, dynamic forms & automation."
+#~ msgstr "Next-gen AI workspace, dynamic forms & automation."
 
 #: src/pages/reports/components/ReportsListView.tsx:188
 msgid "No"
@@ -7471,16 +7486,16 @@ msgstr "No Due Date"
 msgid "No Duplicate"
 msgstr "No Duplicate"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3408
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3819
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "No duplicates detected"
 
-#: src/pages/sign-in/components/SignInForm.tsx:468
+#: src/pages/sign-in/components/SignInForm.tsx:433
 msgid "No email returned from Google"
 msgstr "No email returned from Google"
 
-#: src/pages/sign-in/components/SignInForm.tsx:505
+#: src/pages/sign-in/components/SignInForm.tsx:470
 msgid "No email returned from Microsoft"
 msgstr ""
 
@@ -7565,6 +7580,10 @@ msgstr "No integrations"
 msgid "No key facts extracted."
 msgstr "No key facts extracted."
 
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:510
+msgid "No local matches for “{searchLabel}”. API search starts when you stop typing."
+msgstr "No local matches for “{searchLabel}”. API search starts when you stop typing."
+
 #: src/pages/settings/components/AuditMonitoring.tsx:227
 msgid "No logs found"
 msgstr "No logs found"
@@ -7597,7 +7616,7 @@ msgstr "No matching master fields"
 msgid "No matching permissions found"
 msgstr "No matching permissions found"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:358
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:506
 msgid "No matching results found"
 msgstr "No matching results found"
 
@@ -7642,7 +7661,7 @@ msgstr "No permissions granted"
 msgid "No permissions to configure"
 msgstr ""
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3383
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3789
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "No PO Found"
@@ -7699,6 +7718,10 @@ msgstr "No requests in this stage"
 #: src/pages/requests/components/QuickFilters.tsx:339
 msgid "No results found"
 msgstr "No results found"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:505
+msgid "No Results Found"
+msgstr "No Results Found"
 
 #: src/pages/settings/components/Folders/FolderRetention.tsx:252
 msgid "No Retention Policies"
@@ -7875,8 +7898,8 @@ msgstr "Not mapped"
 
 #: src/pages/requests/components/InboxList.tsx:1895
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3373
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3678
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3779
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4089
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "Not Matched"
@@ -7895,7 +7918,7 @@ msgstr "Not scheduled"
 msgid "Not selected"
 msgstr "Not selected"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3420
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3831
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "Not Verified"
@@ -8099,7 +8122,7 @@ msgstr "or"
 
 #: src/pages/settings/components/Folders/FolderRetentionPolicyWizard.tsx:578
 #: src/pages/sign-in/components/ShareSignInForm.tsx:337
-#: src/pages/sign-in/components/SignInForm.tsx:971
+#: src/pages/sign-in/components/SignInForm.tsx:912
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:373
 msgid "Or"
 msgstr "Or"
@@ -8239,9 +8262,9 @@ msgstr "Partially Matched"
 #: src/pages/settings/components/ManageUser.tsx:2465
 #: src/pages/sign-in/components/ShareSignInForm.tsx:278
 #: src/pages/sign-in/components/ShareSignInForm.tsx:312
-#: src/pages/sign-in/components/SignInForm.tsx:787
-#: src/pages/sign-in/components/SignInForm.tsx:874
-#: src/pages/sign-in/components/SignInForm.tsx:912
+#: src/pages/sign-in/components/SignInForm.tsx:728
+#: src/pages/sign-in/components/SignInForm.tsx:815
+#: src/pages/sign-in/components/SignInForm.tsx:853
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:309
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:346
 msgid "Password"
@@ -8269,7 +8292,7 @@ msgstr "Password Field"
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:85
 #: src/pages/sign-in/components/ShareSignInForm.tsx:114
-#: src/pages/sign-in/components/SignInForm.tsx:403
+#: src/pages/sign-in/components/SignInForm.tsx:368
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:137
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:172
 msgid "Password is required"
@@ -8300,7 +8323,7 @@ msgstr "Payment calendar"
 msgid "Payment Channel"
 msgstr "Payment Channel"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3968
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4389
 msgid "Payment Deadlines"
 msgstr "Payment Deadlines"
 
@@ -8316,18 +8339,18 @@ msgstr "Payment due date"
 msgid "Payment Method"
 msgstr "Payment Method"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3548
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
 msgid "Payment Status"
 msgstr "Payment Status"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3563
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3974
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "Payment Terms"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3962
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4383
 msgid "Payment Terms Analysis"
 msgstr "Payment Terms Analysis"
 
@@ -8501,7 +8524,7 @@ msgstr "Please assign a folder for all files before proceeding."
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Please attach a file to continue."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3439
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3850
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 
@@ -8651,7 +8674,7 @@ msgstr "Please upload only CSV or XLSX files"
 msgid "Please upload your PO data file (CSV or XLSX) to begin the configuration."
 msgstr "Please upload your PO data file (CSV or XLSX) to begin the configuration."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:605
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:608
 msgid "Please wait a moment"
 msgstr "Please wait a moment"
 
@@ -8697,26 +8720,25 @@ msgstr "PO Ingestion Successful!"
 msgid "PO issuer or procurement contact"
 msgstr "PO issuer or procurement contact"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4616
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5040
 msgid "PO Line Items"
 msgstr "PO Line Items"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1086
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1386
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1309
 msgid "PO Master"
 msgstr "PO Master"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:473
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:476
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:723
 msgid "PO Master Data"
 msgstr "PO Master Data"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:566
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:569
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:957
 msgid "PO Master File"
 msgstr "PO Master File"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:635
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:638
 msgid "PO Master file received"
 msgstr "PO Master file received"
 
@@ -8724,11 +8746,11 @@ msgstr "PO Master file received"
 msgid "PO Master Update"
 msgstr "PO Master Update"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3365
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3771
 msgid "PO Matching"
 msgstr "PO Matching"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3674
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4085
 msgid "PO Matching Analysis"
 msgstr "PO Matching Analysis"
 
@@ -8739,7 +8761,7 @@ msgstr "PO Matching Analysis"
 msgid "PO Number"
 msgstr "PO Number"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3695
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4106
 msgid "PO Number (Extracted)"
 msgstr "PO Number (Extracted)"
 
@@ -8904,13 +8926,17 @@ msgstr "Preparing your request..."
 msgid "Preparing..."
 msgstr "Preparing..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:529
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:706
 msgid "Press"
 msgstr "Press"
 
 #: src/pages/folders/components/ShareView.tsx:339
 msgid "Press Enter to add this email"
 msgstr "Press Enter to add this email"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:702
+msgid "Press Enter to search API for “{searchLabel}”"
+msgstr "Press Enter to search API for “{searchLabel}”"
 
 #: src/pages/my-account/components/color-preference/ColorPreference.tsx:700
 #: src/pages/settings/components/Folders/AiFolderBuilderWorkspace.tsx:351
@@ -9245,7 +9271,6 @@ msgid "Recommend fields"
 msgstr "Recommend fields"
 
 #: src/pages/folders/components/StartWorkflowView.tsx:101
-#: src/pages/sign-in/components/VersionSelectionCard.tsx:61
 msgid "Recommended"
 msgstr "Recommended"
 
@@ -9329,7 +9354,7 @@ msgstr "Regional data residency options"
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "Regional volume and spend exposure analysis"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1554
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1780
 msgid "Reject Transaction"
 msgstr "Reject Transaction"
 
@@ -9378,7 +9403,7 @@ msgstr "Remove attachment"
 msgid "Remove condition"
 msgstr "Remove condition"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:688
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:691
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:217
 #: src/pages/folders/components/IntelligentUpload/IntelligentUploadFileCard.tsx:219
 #: src/pages/portal/components/PortalDocumentUpload.tsx:131
@@ -9429,7 +9454,7 @@ msgstr "Replace Existing"
 msgid "Replace existing data"
 msgstr "Replace existing data"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:680
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:683
 msgid "Replace File"
 msgstr "Replace File"
 
@@ -9686,7 +9711,7 @@ msgstr "Restore"
 #~ msgid "Restore Entry"
 #~ msgstr "Restore Entry"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:470
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:573
 msgid "Result"
 msgstr ""
 
@@ -9994,6 +10019,10 @@ msgstr "Rules"
 msgid "Sample template downloaded successfully"
 msgstr "Sample template downloaded successfully"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1309
+msgid "SAP"
+msgstr "SAP"
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3589
 msgid "SAP ERP Connection"
 msgstr "SAP ERP Connection"
@@ -10194,8 +10223,9 @@ msgstr "SD (Sales & Order Processing)"
 #: src/components/base/data-table/actions/TableSearch.tsx:131
 #: src/components/base/data-table/actions/TableSearch.tsx:190
 #: src/components/common/CustomFilter.tsx:933
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:262
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:266
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:356
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:360
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:394
 #: src/layouts/app/components/topbar/components/notifications/components/header/components/Search.tsx:37
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:842
 #: src/pages/settings/components/SettingsSearchInput.tsx:21
@@ -10208,7 +10238,7 @@ msgstr "Search"
 msgid "Search {selectedColumnLabel}"
 msgstr "Search {selectedColumnLabel}"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:299
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:445
 msgid "Search AI"
 msgstr ""
 
@@ -10269,8 +10299,8 @@ msgid "Search description..."
 msgstr "Search description..."
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:307
-msgid "Search documents, folders, requests, and more across your workspace."
-msgstr "Search documents, folders, requests, and more across your workspace."
+#~ msgid "Search documents, folders, requests, and more across your workspace."
+#~ msgstr "Search documents, folders, requests, and more across your workspace."
 
 #: src/pages/settings/components/ManageUser.tsx:1579
 msgid "Search email..."
@@ -10418,15 +10448,15 @@ msgstr "Search workflows..."
 msgid "Search workflows…"
 msgstr "Search workflows…"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:213
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:375
 msgid "Search..."
 msgstr "Search..."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:334
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:480
 msgid "Searching AI"
 msgstr "Searching AI"
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:339
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:485
 msgid "Searching…"
 msgstr "Searching…"
 
@@ -10451,7 +10481,7 @@ msgstr "Section {0}"
 msgid "Security"
 msgstr "Security"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3798
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4219
 msgid "Security & Auditing Policy"
 msgstr "Security & Auditing Policy"
 
@@ -10713,8 +10743,8 @@ msgid "Select password field"
 msgstr "Select password field"
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:34
-msgid "Select Platform Version"
-msgstr "Select Platform Version"
+#~ msgid "Select Platform Version"
+#~ msgstr "Select Platform Version"
 
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:128
 msgid "Select recipients"
@@ -11166,7 +11196,7 @@ msgid "Sign here"
 msgstr "Sign here"
 
 #: src/pages/portal/components/PortalLogin.tsx:335
-#: src/pages/sign-in/components/SignInForm.tsx:804
+#: src/pages/sign-in/components/SignInForm.tsx:745
 msgid "Sign in"
 msgstr "Sign in"
 
@@ -11175,22 +11205,22 @@ msgstr "Sign in"
 #: src/layouts/auth/components/AuthHeader.tsx:36
 #: src/pages/sign-in/components/ShareSignInForm.tsx:301
 #: src/pages/sign-in/components/ShareSignInForm.tsx:326
-#: src/pages/sign-in/components/SignInForm.tsx:958
+#: src/pages/sign-in/components/SignInForm.tsx:899
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:360
 msgid "Sign In"
 msgstr "Sign In"
 
-#: src/pages/sign-in/components/SignInForm.tsx:219
+#: src/pages/sign-in/components/SignInForm.tsx:229
 msgid "Sign in succeeded but no access token was returned."
 msgstr "Sign in succeeded but no access token was returned."
 
 #: src/pages/sign-in/components/ShareSignInForm.tsx:262
-#: src/pages/sign-in/components/SignInForm.tsx:754
+#: src/pages/sign-in/components/SignInForm.tsx:695
 #: src/pages/sign-in/components/SignRequestSignInForm.tsx:293
 msgid "Sign in to your account"
 msgstr "Sign in to your account"
 
-#: src/pages/sign-in/components/SignInForm.tsx:726
+#: src/pages/sign-in/components/SignInForm.tsx:667
 msgid "Sign in with a different email address"
 msgstr "Sign in with a different email address"
 
@@ -11360,11 +11390,15 @@ msgstr "Source File:"
 #~ msgid "Source Form"
 #~ msgstr "Source Form"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4114
+msgid "Source System"
+msgstr "Source System"
+
 #: src/pages/report-builder/components/steps/DetailsStep.tsx:200
 msgid "Source Type"
 msgstr "Source Type"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1066
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1281
 msgid "Source: Manual Entry"
 msgstr "Source: Manual Entry"
 
@@ -11372,9 +11406,13 @@ msgstr "Source: Manual Entry"
 msgid "Source: OCR Document"
 msgstr "Source: OCR Document"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1080
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1302
 msgid "Source: PO Master (ERP/Excel Data)"
 msgstr "Source: PO Master (ERP/Excel Data)"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1301
+msgid "Source: SAP (HANA Cloud)"
+msgstr "Source: SAP (HANA Cloud)"
 
 #: src/pages/requests/components/request/components/sections/history/History.tsx:209
 msgid "Stage processed"
@@ -11403,7 +11441,7 @@ msgstr "Start search"
 #~ msgid "Start this request and we'll collect the details you need."
 #~ msgstr "Start this request and we'll collect the details you need."
 
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:304
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:450
 msgid "Start typing to search"
 msgstr ""
 
@@ -11610,8 +11648,8 @@ msgstr "Subtotal"
 msgid "Successfully imported {successCount} entries!"
 msgstr "Successfully imported {successCount} entries!"
 
-#: src/pages/sign-in/components/SignInForm.tsx:222
-#: src/pages/sign-in/components/SignInForm.tsx:234
+#: src/pages/sign-in/components/SignInForm.tsx:232
+#: src/pages/sign-in/components/SignInForm.tsx:244
 msgid "Successfully logged in"
 msgstr "Successfully logged in"
 
@@ -11623,7 +11661,7 @@ msgstr "Successfully uploaded to"
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3914
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4335
 msgid "Suggested Allocation"
 msgstr "Suggested Allocation"
 
@@ -11662,7 +11700,7 @@ msgstr "Supplier / Vendor Entity Name"
 msgid "Supplier Address"
 msgstr "Supplier Address"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3843
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4264
 msgid "Supplier Code"
 msgstr "Supplier Code"
 
@@ -11674,7 +11712,7 @@ msgstr "Supplier Code"
 msgid "Supplier Conflict"
 msgstr "Supplier Conflict"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3838
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4259
 msgid "Supplier Details"
 msgstr "Supplier Details"
 
@@ -11711,22 +11749,22 @@ msgstr "Supplier Risk Radar"
 msgid "Supplier Trend Insight"
 msgstr "Supplier Trend Insight"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3419
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3451
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3471
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3830
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3862
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3882
 msgid "Supplier Verification"
 msgstr "Supplier Verification"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2016
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2343
 msgid "Supplier verification completed: {0}"
 msgstr "Supplier verification completed: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3825
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4246
 msgid "Supplier Verification Registry"
 msgstr "Supplier Verification Registry"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3483
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
 msgid "Supplier verified"
 msgstr "Supplier verified"
 
@@ -11755,7 +11793,7 @@ msgstr "Support for PDF, PNG, TIFF, JPG up to 50MB."
 msgid "Supported formats: PNG, JPG, JPEG."
 msgstr "Supported formats: PNG, JPG, JPEG."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:626
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:629
 #: src/pages/forms/components/GenericFormImportModal.tsx:405
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:878
 msgid "Supports Excel (.xlsx, .xls) and CSV formats"
@@ -11776,13 +11814,13 @@ msgstr "Supports PDF, Word, Excel, PowerPoint, Images & Documents · Max 50 MB"
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:234
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:245
-msgid "Switch to Dummy Data"
-msgstr "Switch to Dummy Data"
+#~ msgid "Switch to Dummy Data"
+#~ msgstr "Switch to Dummy Data"
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:233
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:244
-msgid "Switch to Original Data"
-msgstr "Switch to Original Data"
+#~ msgid "Switch to Original Data"
+#~ msgstr "Switch to Original Data"
 
 #: src/pages/folders/components/Upload/Upload.tsx:1453
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:160
@@ -11838,7 +11876,7 @@ msgstr "System ID (SID)"
 msgid "System menus cannot be deleted"
 msgstr "System menus cannot be deleted"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3787
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4208
 msgid "System Response"
 msgstr "System Response"
 
@@ -11996,8 +12034,8 @@ msgid "This branded sign-in link is invalid or no longer available."
 msgstr "This branded sign-in link is invalid or no longer available."
 
 #: src/pages/requests/components/request/components/generic-overview/IndexingFieldsForm.tsx:101
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1265
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1355
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1494
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1584
 #: src/pages/requests/components/workflow-request/components/RepoFieldsPanel.tsx:103
 #: src/pages/requests/components/workflow-request/WorkflowFormRenderer.tsx:261
 msgid "This field is required."
@@ -12117,7 +12155,7 @@ msgstr "Three-Way Matching"
 msgid "Time"
 msgstr "Time"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3993
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4414
 msgid "Time Remaining"
 msgstr "Time Remaining"
 
@@ -12318,7 +12356,7 @@ msgstr "Try a different keyword, another folder, or switch off one of the invoic
 msgid "Try changing the file search or resetting the selected filters."
 msgstr "Try changing the file search or resetting the selected filters."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:485
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:488
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:782
 msgid "Try the platform with sample invoices and records."
 msgstr "Try the platform with sample invoices and records."
@@ -12351,6 +12389,10 @@ msgstr "Type"
 #: src/pages/requests/components/workflow-request/components/FieldRenderer.tsx:423
 msgid "Type custom option..."
 msgstr "Type custom option..."
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:453
+msgid "Type to search local data. If nothing matches, the API runs automatically."
+msgstr "Type to search local data. If nothing matches, the API runs automatically."
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:520
 #~ msgid "Type what you remember, pick the folders to look in, then press Search."
@@ -12487,8 +12529,7 @@ msgid "Unable to set password"
 msgstr "Unable to set password"
 
 #: src/pages/portal/components/PortalLogin.tsx:228
-#: src/pages/sign-in/components/SignInForm.tsx:347
-#: src/pages/sign-in/components/SignInForm.tsx:387
+#: src/pages/sign-in/components/SignInForm.tsx:352
 msgid "Unable to sign in"
 msgstr "Unable to sign in"
 
@@ -12637,9 +12678,13 @@ msgid "Update User"
 msgstr "Update User"
 
 #. placeholder {0}: hit.name
-#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:468
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:566
 msgid "Updated from {0}"
 msgstr "Updated from {0}"
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:563
+msgid "Updated from Document"
+msgstr "Updated from Document"
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:490
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1004
@@ -12729,14 +12774,14 @@ msgstr "Upload invoice"
 msgid "Upload new files"
 msgstr "Upload new files"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:73
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:516
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:521
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:76
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:519
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:524
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:825
 msgid "Upload PO master file"
 msgstr "Upload PO master file"
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:616
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:619
 msgid "Upload PO Master File"
 msgstr "Upload PO Master File"
 
@@ -12848,9 +12893,9 @@ msgstr "Use a one-time password for initial login"
 msgid "Use built-in secure storage for invoice documents."
 msgstr "Use built-in secure storage for invoice documents."
 
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:72
-#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:487
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:75
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:490
+#: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:493
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:779
 msgid "Use demo data"
 msgstr ""
@@ -12925,7 +12970,7 @@ msgstr "User Email"
 msgid "User Management"
 msgstr "User Management"
 
-#: src/pages/sign-in/components/SignInForm.tsx:858
+#: src/pages/sign-in/components/SignInForm.tsx:799
 msgid "User name"
 msgstr "User name"
 
@@ -12941,7 +12986,7 @@ msgstr "User Summary"
 msgid "User updated successfully"
 msgstr "User updated successfully"
 
-#: src/pages/sign-in/components/SignInForm.tsx:859
+#: src/pages/sign-in/components/SignInForm.tsx:800
 msgid "username"
 msgstr "username"
 
@@ -13017,7 +13062,7 @@ msgstr "Validation"
 msgid "VALIDATION"
 msgstr "VALIDATION"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3722
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4143
 msgid "Validation Log"
 msgstr "Validation Log"
 
@@ -13051,7 +13096,7 @@ msgstr "Vendor Check"
 msgid "Vendor identity mismatch."
 msgstr "Vendor identity mismatch."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3703
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4124
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "Vendor Name"
@@ -13060,7 +13105,7 @@ msgstr "Vendor Name"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "Vendors needing prompt outreach or query resolution"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2023
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2350
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "Verification failed. 1 credit has been refunded."
 
@@ -13068,7 +13113,7 @@ msgstr "Verification failed. 1 credit has been refunded."
 msgid "Verified"
 msgstr "Verified"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3434
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3845
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "Verify"
@@ -13093,8 +13138,8 @@ msgstr "Verify the configured policy before activating it for \"{folderName}\"."
 msgid "Verify your security rules before applying settings."
 msgstr "Verify your security rules before applying settings."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3449
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3461
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3860
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
 msgid "Verifying..."
 msgstr "Verifying..."
 
@@ -13179,7 +13224,7 @@ msgstr "vs last period"
 msgid "Wait for AI classification to finish before indexing."
 msgstr "Wait for AI classification to finish before indexing."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1562
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1788
 msgid "Wait for Balance"
 msgstr "Wait for Balance"
 
@@ -13222,8 +13267,12 @@ msgid "Warning: Column \"{column}\" is already mapped to \"{colLabel}\"."
 msgstr "Warning: Column \"{column}\" is already mapped to \"{colLabel}\"."
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:361
-msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
-msgstr "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
+#~ msgid "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
+#~ msgstr "We couldn't find any records matching “{debouncedQuery}”. Try searching with different keywords or check spelling."
+
+#: src/layouts/app/components/topbar/components/GlobalSearch.tsx:511
+msgid "We couldn't find any records matching “{searchLabel}”. Try searching with different keywords or check spelling."
+msgstr "We couldn't find any records matching “{searchLabel}”. Try searching with different keywords or check spelling."
 
 #: src/pages/requests/components/KanbanView.tsx:305
 msgid "We couldn’t identify this request, so it couldn’t be moved."
@@ -13436,8 +13485,8 @@ msgid "Your {0} account is connected. Invoice documents will be saved here durin
 msgstr "Your {0} account is connected. Invoice documents will be saved here during processing."
 
 #: src/pages/sign-in/components/VersionSelectionCard.tsx:35
-msgid "Your account is available in both versions. Choose which workspace you want to launch."
-msgstr "Your account is available in both versions. Choose which workspace you want to launch."
+#~ msgid "Your account is available in both versions. Choose which workspace you want to launch."
+#~ msgstr "Your account is available in both versions. Choose which workspace you want to launch."
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/WhatHappensNext.tsx:10
 msgid "Your AI agent will start monitoring your email and processing incoming invoices automatically."
@@ -13479,12 +13528,12 @@ msgstr "Your workspace is now on Production."
 msgid "Zero-Downtime Transition"
 msgstr "Zero-Downtime Transition"
 
-#: src/components/common/document-preview/DocumentPreviewViewer.tsx:356
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:357
 #: src/pages/folders/components/DocumentSigningPage.tsx:2930
 msgid "Zoom in"
 msgstr "Zoom in"
 
-#: src/components/common/document-preview/DocumentPreviewViewer.tsx:344
+#: src/components/common/document-preview/DocumentPreviewViewer.tsx:345
 #: src/pages/folders/components/DocumentSigningPage.tsx:2916
 msgid "Zoom out"
 msgstr "Zoom out"

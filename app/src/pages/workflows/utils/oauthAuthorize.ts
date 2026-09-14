@@ -8,10 +8,15 @@ const PROVIDER_CODE_BY_VALUE: Record<string, OAuthProviderCode> = {
   ONE_DRIVE: 'ONEDRIVE',
   OUTLOOK: 'OUTLOOK',
   QUICKBOOKS: 'QUICKBOOKS',
+  SAP: 'SAP_XSUAA',
+  'SAP-XSUAA': 'SAP_XSUAA',
+  SAP_XSUAA: 'SAP_XSUAA',
   gmail: 'GMAIL',
   google: 'GOOGLE_DRIVE',
   onedrive: 'ONEDRIVE',
   outlook: 'OUTLOOK',
+  sap: 'SAP_XSUAA',
+  sap_xsuaa: 'SAP_XSUAA',
 }
 
 export const getWorkflowOAuthProviderCode = (
@@ -27,6 +32,9 @@ export const openWorkflowOAuthAuthorize = async (
     return { error: `Unsupported OAuth provider: ${providerValue}` }
   }
 
+  // Pre-open blank popup to prevent browser popup blocker from blocking authorizationUrl
+  const popup = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null
+
   const response = await connectorApi.authorizeOAuth({
     name,
     providerCode,
@@ -34,10 +42,19 @@ export const openWorkflowOAuthAuthorize = async (
   })
 
   if (response.error || !response.payload) {
+    if (popup && !popup.closed) {
+      popup.close()
+    }
     return { error: response.error || 'Failed to start OAuth' }
   }
 
-  window.open(response.payload, '_blank')
+  // Navigate popup window to authorizationUrl
+  if (popup && !popup.closed) {
+    popup.location.href = response.payload
+  } else {
+    window.open(response.payload, '_blank')
+  }
+
   return { error: '' }
 }
 

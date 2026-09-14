@@ -314,6 +314,9 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           queryClient.invalidateQueries({
             queryKey: ['connections', 'SAP'],
           })
+          queryClient.invalidateQueries({
+            queryKey: ['connections', 'SAP_XSUAA'],
+          })
         }
       }
     }
@@ -350,7 +353,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   const handleConnectSap = async () => {
     const name = newSapHost.trim() || 'SAP Connection'
     setIsConnectingSap(true)
-    const { error } = await openWorkflowOAuthAuthorize('SAP', name)
+    const { error } = await openWorkflowOAuthAuthorize('SAP_XSUAA', name)
     if (error) {
       // Fallback / local connect mode if OAuth authorize API fails
       const newAcc = { id: 'sap_' + Date.now(), name }

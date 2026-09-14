@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 // import OracleLogo from '@/assets/brands/oracle.svg'
 import QuickBooksLogo from '@/assets/brands/quickbooks.svg'
 import poMasterUrl from '@/assets/PO Master.xlsx?url'
-// import SapLogo from '@/assets/brands/sap.svg'
+import SapLogo from '@/assets/brands/sap.svg'
 // import XeroLogo from '@/assets/brands/xero.svg'
 import Button from '@/components/base/button/Button'
 import Icon from '@/components/base/icon/Icon'
@@ -38,8 +38,13 @@ import { extractHeadersAndData } from '../utils/fileParser'
 import ApColumnMapping from './ApColumnMapping'
 
 const items = [
-  // { logo: SapLogo, name: 'SAP', value: 'SAP' },
-  // { logo: OracleLogo, name: 'Oracle NetSuite', value: 'Oracle NetSuite' },
+  {
+    description:
+      'Connect your SAP ERP or S/4HANA system to sync PO and invoice data automatically.',
+    logo: SapLogo,
+    name: 'SAP',
+    value: 'SAP',
+  },
   {
     description:
       'Connect your QuickBooks account to sync PO and invoice data automatically.',
@@ -47,8 +52,6 @@ const items = [
     name: 'QuickBooks',
     value: 'QuickBooks',
   },
-  // { logo: MondayLogo, name: 'Monday.com', value: 'Monday.com' },
-  // { logo: XeroLogo, name: 'Xero', value: 'Xero' },
 ]
 
 const ErpSystem = () => {

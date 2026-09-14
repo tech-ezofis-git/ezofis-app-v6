@@ -83,7 +83,18 @@ export const getConnection = async (payload: ConnectorPayload) => {
             item.ConnectorType,
             item.provider,
             item.type,
-          ].some((code) => normalizeConnectorCode(code) === expectedCode),
+          ].some((code) => {
+            const norm = normalizeConnectorCode(code)
+            if (!norm) return false
+            if (norm === expectedCode) return true
+            if (
+              (expectedCode === 'SAP' || expectedCode === 'SAPXSUAA') &&
+              (norm === 'SAP' || norm === 'SAPXSUAA')
+            ) {
+              return true
+            }
+            return false
+          }),
         )
       : normalized
   } catch (e: any) {
@@ -131,6 +142,8 @@ export type OAuthProviderCode =
   | 'GOOGLE_DRIVE'
   | 'GCP'
   | 'ONEDRIVE'
+  | 'SAP'
+  | 'SAP_XSUAA'
 
 export interface AuthorizeOAuthPayload {
   name: string

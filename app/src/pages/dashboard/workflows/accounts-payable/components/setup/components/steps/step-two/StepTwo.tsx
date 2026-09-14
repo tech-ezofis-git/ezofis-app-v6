@@ -11,7 +11,7 @@ import authUserStore from '@/stores/authUserStore'
 import { StepFooter, StepLayout } from '../components/StepLayout'
 import ErpSystem from './components/ErpSystem'
 
-const OAUTH_ERP_SYSTEMS = ['QuickBooks'] as const
+const OAUTH_ERP_SYSTEMS = ['QuickBooks', 'SAP'] as const
 
 const StepTwo = () => {
   const { t } = useLingui()
