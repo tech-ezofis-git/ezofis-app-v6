@@ -4,8 +4,13 @@ import axios from 'axios'
  * Talks to the shared Collabora/WOPI host (a separate service from the V6
  * backend) — no bearer auth, no V6 base URL, no request/response encryption.
  */
-const COLLABORA_API_URL = String(
-  import.meta.env?.VITE_COLLABORA_API_URL || '',
+const DEFAULT_COLLABORA_API_URL = 'https://collabora-2wf8.onrender.com'
+const DEFAULT_COLLABORA_VIEWER_URL =
+  'https://ez-officeviewer-app.graycoast-78e47e4a.southindia.azurecontainerapps.io/browser/dist/cool.html'
+
+const COLLABORA_API_URL = (
+  String(import.meta.env?.VITE_COLLABORA_API_URL || '').trim() ||
+  DEFAULT_COLLABORA_API_URL
 ).replace(/\/$/, '')
 
 /**
@@ -16,13 +21,14 @@ const COLLABORA_API_URL = String(
  * In production both are the same public URL, so this var is optional and
  * falls back to VITE_COLLABORA_API_URL.
  */
-const COLLABORA_WOPI_HOST_URL = String(
-  import.meta.env?.VITE_COLLABORA_WOPI_HOST_URL || COLLABORA_API_URL,
+const COLLABORA_WOPI_HOST_URL = (
+  String(import.meta.env?.VITE_COLLABORA_WOPI_HOST_URL || '').trim() ||
+  COLLABORA_API_URL
 ).replace(/\/$/, '')
 
-const COLLABORA_VIEWER_URL_RAW = String(
-  import.meta.env?.VITE_COLLABORA_VIEWER_URL || '',
-)
+const COLLABORA_VIEWER_URL_RAW =
+  String(import.meta.env?.VITE_COLLABORA_VIEWER_URL || '').trim() ||
+  DEFAULT_COLLABORA_VIEWER_URL
 
 const collaboraAxios = axios.create({
   baseURL: COLLABORA_API_URL,

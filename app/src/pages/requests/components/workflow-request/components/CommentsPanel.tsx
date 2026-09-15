@@ -79,7 +79,7 @@ const CommentsPanel = ({ comments, draft, onDraftChange, onSend }: Props) => {
                 {initials}
               </div>
               <div className='min-w-0 flex-1'>
-                <div className='flex items-baseline gap-2'>
+                <div className='flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5'>
                   <span className='text-12 font-bold text-gray-13'>{t`You`}</span>
                   <span className='text-11 font-medium text-gray-9'>
                     {formatDatetime(c.createdAt, 'hh:mm A')}
@@ -94,8 +94,8 @@ const CommentsPanel = ({ comments, draft, onDraftChange, onSend }: Props) => {
         </div>
       )}
 
-      <div className='flex items-center gap-2.5'>
-        <div className='flex size-8 shrink-0 items-center justify-center rounded-full border border-primary-4 bg-primary-3 text-13 font-bold text-primary-9'>
+      <div className='flex items-start gap-2.5'>
+        <div className='mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-primary-4 bg-primary-3 text-13 font-bold text-primary-9'>
           {initials}
         </div>
         <div className='flex-1 overflow-hidden rounded-xl border border-[var(--gray-4)] bg-surface transition-all focus-within:border-[var(--primary-6)] focus-within:ring-1 focus-within:ring-[var(--primary-4)]'>
@@ -119,7 +119,7 @@ const CommentsPanel = ({ comments, draft, onDraftChange, onSend }: Props) => {
           disabled={!canSend}
           title={t`Send comment`}
           type='button'
-          className={`flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-xl bg-primary-9 text-white transition-all active:scale-95 ${
+          className={`mt-0.5 flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-xl bg-primary-9 text-white transition-all active:scale-95 ${
             canSend
               ? 'cursor-pointer hover:opacity-90'
               : 'cursor-not-allowed opacity-45'

@@ -218,7 +218,7 @@ export function FolderExplorer() {
   const canUpload = Boolean(
     activeFolder && resolvedRepositoryId && folderPermissions.upload,
   )
-  const canIntelligentUpload = Boolean(canUpload && !isDemoAppOrigin())
+  const canIntelligentUpload = Boolean(!isDemoAppOrigin())
 
   useEffect(() => {
     if (appView === 'Upload' && !folderPermissions.upload) {

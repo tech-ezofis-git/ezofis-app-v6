@@ -196,7 +196,9 @@ const Table = ({ onCreate }: TableProps) => {
 
   const setActiveFilters = useCallback(
     (
-      next: Record<string, string>,
+      next:
+        | Record<string, string>
+        | ((prev: Record<string, string>) => Record<string, string>),
       options?: { fromAskAi?: boolean },
     ) => {
       filtersEphemeralRef.current = Boolean(options?.fromAskAi)
