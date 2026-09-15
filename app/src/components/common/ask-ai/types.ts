@@ -16,10 +16,15 @@ export type AskAiBrowseFilterGroup = {
   id?: string
 }
 
+/** demo.ezofis.com filter groups, or cloud.ezofis.com flat key→value map */
+export type AskAiFilterBy =
+  | AskAiBrowseFilterGroup[]
+  | Record<string, string | number | boolean | null | undefined>
+
 export type AskAiBrowseRequest = {
   contentSearchValue?: string
   currentPage?: number
-  filterBy?: AskAiBrowseFilterGroup[]
+  filterBy?: AskAiFilterBy
   fuzzy?: number
   groupBy?: string
   itemsPerPage?: number
@@ -47,9 +52,13 @@ export type AskAiField = {
 }
 
 export type AskAiCard = {
+  description?: string
   fields?: AskAiField[]
+  id?: Record<string, unknown> | string | number
+  matchSource?: string | null
   subtitle?: string
   title?: string
+  type?: string
 }
 
 export type AskAiTextBlock =
@@ -87,6 +96,8 @@ export type AskAiAnswer = {
 export type AskAiCtaMode = 'navigate' | 'apply'
 
 export type AskAiPendingAction = {
+  /** When true, clear filters/search on leaving the target page (Ask AI only). */
+  ephemeral?: boolean
   fileSearch?: string
   filters: Record<string, string>
   openItemId?: string

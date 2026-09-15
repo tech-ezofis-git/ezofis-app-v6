@@ -550,6 +550,10 @@ export const getRepositoryItems = async (payload: RepositoryItemsQuery) => {
     if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
+    if (isRequestCanceled(e)) {
+      response.canceled = true
+      return response
+    }
     console.error(e)
     response.error = e?.response?.data || 'error fetching repository items'
   }
@@ -581,6 +585,10 @@ export const getRepositoryItemWorkspace = async (payload: {
     if (status !== 200) throw 'invalid status code'
     response.data = unwrap(data)
   } catch (e: any) {
+    if (isRequestCanceled(e)) {
+      response.canceled = true
+      return response
+    }
     console.error(e)
     response.error = e?.response?.data || 'error fetching document workspace'
   }

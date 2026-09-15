@@ -3,6 +3,7 @@ import FormEntriesPage from '@/pages/forms/FormEntriesPage'
 
 type FormEntriesDeepLinkSearch = {
   entryId?: string
+  search?: string
 }
 
 export const Route = createFileRoute('/_app/forms_/$formId/entries')({
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/_app/forms_/$formId/entries')({
     search: Record<string, unknown>,
   ): FormEntriesDeepLinkSearch => ({
     entryId: typeof search.entryId === 'string' ? search.entryId : undefined,
+    search: typeof search.search === 'string' ? search.search : undefined,
   }),
 })
 

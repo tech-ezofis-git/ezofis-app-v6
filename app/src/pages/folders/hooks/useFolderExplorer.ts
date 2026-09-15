@@ -42,23 +42,42 @@ import { matchesSearchText } from '../components/FolderFilterBar'
 import useEmbedMode from '@/hooks/useEmbedMode'
 import { resolveShareContext } from '../utils/shareContextStorage'
 import { setFolderExplorerSearchSnapshot } from '../stores/folderExplorerSearchCache'
-
-const SESSION_STORAGE_KEY = 'ezofis_folder_explorer_state'
-
-function getStoredState() {
-  try {
-    const stored = sessionStorage.getItem(SESSION_STORAGE_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch {
-    return null
-  }
-}
+import {
+  clearAskAiFolderExplorerQuery,
+  clearFolderExplorerAskAiQueryMarker,
+  FOLDER_EXPLORER_SESSION_KEY,
+  hasFolderExplorerAskAiQueryMarker,
+  markFolderExplorerAskAiQuery,
+  readFolderExplorerStoredState,
+  writeFolderExplorerStoredState,
+} from '../utils/folderExplorerSession'
 
 export type UseFolderExplorerReturn = ReturnType<typeof useFolderExplorer>
 
 export function useFolderExplorer() {
   const embedMode = useEmbedMode()
-  const storedState = useMemo(() => getStoredState(), [])
+  const storedState = useMemo(() => {
+    const stored = readFolderExplorerStoredState()
+    if (!stored) return null
+
+    // Only chatbot-applied search/filters are ephemeral.
+    if (
+      stored.filterSource === 'ask-ai' ||
+      hasFolderExplorerAskAiQueryMarker()
+    ) {
+      clearAskAiFolderExplorerQuery()
+      return {
+        ...stored,
+        fileFilters: {},
+        fileSearch: '',
+        filterSource: null,
+        folderFilters: {},
+        folderSearch: '',
+      }
+    }
+
+    return stored
+  }, [])
   
   const [tree, setTree] = useState<TreeNode[]>([])
   const [activeFolder, setActiveFolder] = useState(storedState?.activeFolder ?? '')
@@ -85,8 +104,10 @@ export function useFolderExplorer() {
   const [treeLoadingId, setTreeLoadingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [pageSize, setPageSize] = useState(storedState?.pageSize ?? DEFAULT_PAGE_SIZE)
-  const [folderSearch, setFolderSearch] = useState(storedState?.folderSearch ?? '')
-  const [fileSearch, setFileSearch] = useState(storedState?.fileSearch ?? '')
+  const [folderSearch, setFolderSearchState] = useState(
+    storedState?.folderSearch ?? '',
+  )
+  const [fileSearch, setFileSearchState] = useState(storedState?.fileSearch ?? '')
   const [fileFilters, setFileFiltersState] = useState<Record<string, string>>(
     (embedMode.isEmbed ? embedMode.filters : undefined) || storedState?.fileFilters || {},
   )
@@ -118,6 +139,17 @@ export function useFolderExplorer() {
   const deferFilterSnapshotRef = useRef('')
   const treeRef = useRef(tree)
   const lastDeepFolderRef = useRef<string | null>(null)
+  /** Ask AI filters should not survive leaving /folders via the side menu. */
+  const filtersEphemeralRef = useRef(
+    storedState?.filterSource === 'ask-ai',
+  )
+  const filterSourceRef = useRef<'ask-ai' | 'manual' | null>(
+    storedState?.filterSource === 'ask-ai'
+      ? 'ask-ai'
+      : storedState?.filterSource === 'manual'
+        ? 'manual'
+        : null,
+  )
 
   treeRef.current = tree
   pageSizeRef.current = pageSize
@@ -132,15 +164,58 @@ export function useFolderExplorer() {
       folder: folderFiltersRef.current,
     })
 
-  const setFileFilters = useCallback((next: Record<string, string>) => {
-    fileFiltersRef.current = next
-    setFileFiltersState(next)
-  }, [])
+  type FilterWriteOptions = { fromAskAi?: boolean; manual?: boolean }
 
-  const setFolderFilters = useCallback((next: Record<string, string>) => {
-    folderFiltersRef.current = next
-    setFolderFiltersState(next)
-  }, [])
+  const markFilterSource = (source: 'ask-ai' | 'manual' | null) => {
+    filterSourceRef.current = source
+    filtersEphemeralRef.current = source === 'ask-ai'
+    if (source === 'ask-ai') {
+      markFolderExplorerAskAiQuery()
+    } else {
+      writeFolderExplorerStoredState({ filterSource: source })
+      clearFolderExplorerAskAiQueryMarker()
+    }
+  }
+
+  const setFileFilters = useCallback(
+    (next: Record<string, string>, options?: FilterWriteOptions) => {
+      fileFiltersRef.current = next
+      if (options?.fromAskAi) markFilterSource('ask-ai')
+      else if (options?.manual) markFilterSource('manual')
+      setFileFiltersState(next)
+    },
+    [],
+  )
+
+  const setFileSearch = useCallback(
+    (value: string, options?: FilterWriteOptions) => {
+      fileSearchRef.current = value
+      if (options?.fromAskAi) markFilterSource('ask-ai')
+      else if (options?.manual) markFilterSource('manual')
+      setFileSearchState(value)
+    },
+    [],
+  )
+
+  const setFolderFilters = useCallback(
+    (next: Record<string, string>, options?: FilterWriteOptions) => {
+      folderFiltersRef.current = next
+      if (options?.fromAskAi) markFilterSource('ask-ai')
+      else if (options?.manual) markFilterSource('manual')
+      setFolderFiltersState(next)
+    },
+    [],
+  )
+
+  const setFolderSearch = useCallback(
+    (value: string, options?: FilterWriteOptions) => {
+      folderSearchRef.current = value
+      if (options?.fromAskAi) markFilterSource('ask-ai')
+      else if (options?.manual) markFilterSource('manual')
+      setFolderSearchState(value)
+    },
+    [],
+  )
 
   const hasActiveFolderBrowseQuery = (
     nextFolderFilters: Record<string, string> = folderFiltersRef.current,
@@ -173,7 +248,7 @@ export function useFolderExplorer() {
   useEffect(() => {
     try {
       sessionStorage.setItem(
-        SESSION_STORAGE_KEY,
+        FOLDER_EXPLORER_SESSION_KEY,
         JSON.stringify({
           activeFolder,
           appView,
@@ -184,6 +259,7 @@ export function useFolderExplorer() {
           fileSearch,
           folderFilters,
           fileFilters,
+          filterSource: filterSourceRef.current,
           pageSize,
         }),
       )
@@ -655,10 +731,14 @@ export function useFolderExplorer() {
     let filtersStateUpdated = false
 
     if (folderChanged && !isInitialMount && !isViewChanging) {
-      setFolderSearch('')
-      setFileSearch('')
-      setFolderFilters({})
-      setFileFilters({})
+      markFilterSource(null)
+      folderSearchRef.current = ''
+      setFolderSearchState('')
+      fileSearchRef.current = ''
+      setFileSearchState('')
+      setFolderFiltersState({})
+      fileFiltersRef.current = {}
+      setFileFiltersState({})
       setFolderFilterOptionSource([])
       setFilterOptionsCache({})
       filtersStateUpdated = true
