@@ -4278,7 +4278,7 @@ const Overview = (props: any) => {
                                     {t`Source System`}
                                   </span>
                                   <div className='font-semibold text-[var(--gray-13)] text-xs'>
-                                    {resolvedAgentData?.source_type || 'N/A'}
+                                    {formatErpSystem(resolvedAgentData?.source_type) || 'N/A'}
                                   </div>
                                 </div>
                                 <div className='space-y-0.5 border-l border-[var(--gray-2)] pl-3'>
@@ -4321,15 +4321,21 @@ const Overview = (props: any) => {
                                 <div className='space-y-2.5'>
                                   <div className='flex items-center justify-between'>
                                     <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
-                                      {t`Side-by-Side Field Matching`}
+                                      {t`Field Matching`}
                                     </h4>
-                                    <span className='text-[10px] font-medium text-[var(--gray-10)]'>
-                                      {
-                                        resolvedAgentData.debug[
-                                          'Side-by-side Field Matching'
-                                        ].length
-                                      }{' '}
-                                      {t`Header Fields Checked`}
+                                    <span className='inline-flex items-center gap-1 rounded-md border border-[var(--green-3)] bg-[var(--green-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--green-10)]'>
+                                      <Icon
+                                        className='h-3 w-3 text-[var(--green-9)] shrink-0'
+                                        name='tabler:circle-check'
+                                      />
+                                      <span>
+                                        {
+                                          resolvedAgentData.debug[
+                                            'Side-by-side Field Matching'
+                                          ].length
+                                        }{' '}
+                                        {t`Header Fields Checked`}
+                                      </span>
                                     </span>
                                   </div>
                                   <div className='overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface'>
@@ -4393,15 +4399,21 @@ const Overview = (props: any) => {
                                 <div className='space-y-2.5'>
                                   <div className='flex items-center justify-between'>
                                     <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
-                                      {t`Side-by-Side Line Item Matching`}
+                                      {t`Line Item Matching`}
                                     </h4>
-                                    <span className='text-[10px] font-medium text-[var(--gray-10)]'>
-                                      {
-                                        resolvedAgentData.debug[
-                                          'Side-by-side Line Item matching'
-                                        ].length
-                                      }{' '}
-                                      {t`Line Items Verified`}
+                                    <span className='inline-flex items-center gap-1 rounded-md border border-[var(--green-3)] bg-[var(--green-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--green-10)]'>
+                                      <Icon
+                                        className='h-3 w-3 text-[var(--green-9)] shrink-0'
+                                        name='tabler:circle-check'
+                                      />
+                                      <span>
+                                        {
+                                          resolvedAgentData.debug[
+                                            'Side-by-side Line Item matching'
+                                          ].length
+                                        }{' '}
+                                        {t`Line Items Verified`}
+                                      </span>
                                     </span>
                                   </div>
                                   <div className='overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface'>
