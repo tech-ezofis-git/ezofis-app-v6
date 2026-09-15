@@ -59,6 +59,18 @@ const formatPaymentSyncTime = (dateStr: any): string => {
   if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`
   return dayjs(parsed).format('DD-MMM-YYYY hh:mm A')
 }
+
+const formatErpSystem = (erp: string | null | undefined): string => {
+  if (!erp) return 'SAP'
+  const trimmed = String(erp).trim()
+  if (trimmed === 'HANA Cloud' || trimmed === 'HANA') {
+    return 'SAP HANA Cloud'
+  }
+  if (trimmed.includes('HANA') && !trimmed.includes('SAP')) {
+    return `SAP ${trimmed}`
+  }
+  return trimmed
+}
 import {
   buildFieldMetaMap,
   findPreferredLineItemsTable,
@@ -3852,7 +3864,7 @@ const Overview = (props: any) => {
                             poVal !== '-' &&
                             poVal !== 'N/A' &&
                             resolvedAgentData?.source_type
-                              ? `via ${resolvedAgentData.source_type}`
+                              ? `via ${formatErpSystem(resolvedAgentData.source_type)}`
                               : undefined
                           }
                           onClick={() => setActiveDetailView('po_matching')}
@@ -4715,20 +4727,28 @@ const Overview = (props: any) => {
                       )}
                       {activeDetailView === 'payment_terms' && (
                         <DetailReportView
-                          icon={Calendar}
+                          icon={isRequestCompleted ? CreditCard : Calendar}
                           status={
-                            paymentTermsDisplay.calculationText ||
-                            resolvedAgentData?.payment_terms?.raw ||
-                            'In due'
+                            isRequestCompleted
+                              ? agentData?.paymentStatus || agentData?.payment_status || 'Paid'
+                              : paymentTermsDisplay.calculationText ||
+                                resolvedAgentData?.payment_terms?.raw ||
+                                'In due'
                           }
-                          statusType={paymentTermsDisplay.statusType}
-                          title={t`Payment Terms Analysis`}
+                          statusType={isRequestCompleted ? 'success' : paymentTermsDisplay.statusType}
+                          title={
+                            isRequestCompleted
+                              ? t`Payment Status Analysis`
+                              : t`Payment Terms Analysis`
+                          }
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                             <div className='space-y-3'>
                               <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
-                                {t`Payment Deadlines & Terms`}
+                                {isRequestCompleted
+                                  ? t`Payment Details & Status`
+                                  : t`Payment Deadlines & Terms`}
                               </h4>
                               <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
@@ -4750,29 +4770,50 @@ const Overview = (props: any) => {
                                   <span
                                     className={cn(
                                       'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
-                                      getStatusBorderStyles(paymentTermsDisplay.statusType),
+                                      getStatusBorderStyles(
+                                        isRequestCompleted ? 'success' : paymentTermsDisplay.statusType,
+                                      ),
                                     )}
                                   >
-                                    {paymentTermsDisplay.calculationText ||
-                                      resolvedAgentData?.payment_terms?.raw ||
-                                      'In due'}
+                                    {isRequestCompleted
+                                      ? agentData?.paymentStatus || agentData?.payment_status || 'Paid'
+                                      : paymentTermsDisplay.calculationText ||
+                                        resolvedAgentData?.payment_terms?.raw ||
+                                        'In due'}
                                   </span>
                                 </div>
-                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
-                                  <span className='font-medium text-[var(--gray-11)]'>
-                                    {t`Days`}
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
-                                      getStatusBorderStyles(paymentTermsDisplay.statusType),
-                                    )}
-                                  >
-                                    {paymentTermsDisplay.daysText
-                                      ? paymentTermsDisplay.daysText.replace(/days/i, 'Days')
-                                      : '0 Days'}
-                                  </span>
-                                </div>
+                                {!isRequestCompleted && (
+                                  <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      {t`Days`}
+                                    </span>
+                                    <span
+                                      className={cn(
+                                        'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
+                                        getStatusBorderStyles(paymentTermsDisplay.statusType),
+                                      )}
+                                    >
+                                      {paymentTermsDisplay.daysText
+                                        ? paymentTermsDisplay.daysText.replace(/days/i, 'Days')
+                                        : '0 Days'}
+                                    </span>
+                                  </div>
+                                )}
+                                {isRequestCompleted && (
+                                  <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      {t`ERP System`}
+                                    </span>
+                                    <span className='inline-flex items-center rounded-md border border-[var(--purple-3)] bg-[var(--purple-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--purple-9)]'>
+                                      {formatErpSystem(
+                                        agentData?.erpSystem ||
+                                          (agentData?.poMasterSourceType === 'quickbooks'
+                                            ? 'QuickBooks'
+                                            : resolvedAgentData?.source_type || 'SAP'),
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
                                   <span className='font-medium text-[var(--gray-11)]'>
                                     {t`Invoice Date`}
@@ -4787,31 +4828,54 @@ const Overview = (props: any) => {
                                       'N/A'}
                                   </span>
                                 </div>
-                                <div className='flex justify-between items-center'>
-                                  <span className='font-medium text-[var(--gray-11)]'>
-                                    {t`Due Date`}
-                                  </span>
-                                  <span className='font-semibold text-[var(--gray-13)]'>
-                                    {resolvedAgentData?.payment_terms?.due_date ||
-                                      resolvedAgentData?.[
-                                        'Extracted Invoice JSON'
-                                      ]?.invoice_header?.['Due Date'] ||
-                                      extractDueDate(
-                                        selectedItem,
-                                        agentData,
-                                        formModel,
-                                      )}
-                                  </span>
-                                </div>
+                                {isRequestCompleted ? (
+                                  <div className='flex justify-between items-center'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      {t`Paid Date`}
+                                    </span>
+                                    <span className='font-semibold text-[var(--gray-13)]'>
+                                      {agentData?.payment_date ||
+                                        agentData?.paymentDate ||
+                                        (selectedItem?.completedAtUtc
+                                          ? dayjs(selectedItem.completedAtUtc).format('YYYY-MM-DD')
+                                          : selectedItem?.completedAt
+                                            ? dayjs(selectedItem.completedAt).format('YYYY-MM-DD')
+                                            : agentData?.completedAt
+                                              ? dayjs(agentData.completedAt).format('YYYY-MM-DD')
+                                              : dayjs().format('YYYY-MM-DD'))}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className='flex justify-between items-center'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      {t`Due Date`}
+                                    </span>
+                                    <span className='font-semibold text-[var(--gray-13)]'>
+                                      {resolvedAgentData?.payment_terms?.due_date ||
+                                        resolvedAgentData?.[
+                                          'Extracted Invoice JSON'
+                                        ]?.invoice_header?.['Due Date'] ||
+                                        extractDueDate(
+                                          selectedItem,
+                                          agentData,
+                                          formModel,
+                                        )}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className='space-y-3'>
                               <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
-                                {t`Deadlines & Penalty Insights`}
+                                {isRequestCompleted
+                                  ? t`Payment Completion Insights`
+                                  : t`Deadlines & Penalty Insights`}
                               </h4>
                               <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-12)]'>
-                                  {t`Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries.`}
+                                  {isRequestCompleted
+                                    ? t`Invoice payment has been successfully processed and synced with ERP database (${agentData?.erpSystem || (agentData?.poMasterSourceType === 'quickbooks' ? 'QuickBooks' : 'SAP')}). No outstanding balance or late penalties remain.`
+                                    : t`Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries.`}
                                 </p>
                               </div>
                             </div>
