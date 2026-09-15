@@ -945,12 +945,21 @@ const FormEntriesPage = () => {
     setIsAddOpen(false)
   }
 
-  // Notification deep-link: open the requested entry once entries have loaded
+  // Notification / Ask AI deep-link: open entry and optionally seed table search
   useEffect(() => {
-    if (!deepLinkSearch.entryId || entries.length === 0) return
+    const entryId = String(deepLinkSearch.entryId || '').trim()
+    const searchText = String(deepLinkSearch.search || '').trim()
+    if (!entryId && !searchText) return
+    if (entries.length === 0 && entryId) return
 
-    const target = entries.find((entry) => entry.id === deepLinkSearch.entryId)
-    if (target) openEditEntry(target)
+    if (searchText) {
+      setSearchState({ id: '', value: searchText })
+    }
+
+    if (entryId) {
+      const target = entries.find((entry) => entry.id === entryId)
+      if (target) openEditEntry(target)
+    }
 
     void navigate({
       params: { formId },

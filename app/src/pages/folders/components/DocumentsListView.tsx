@@ -437,11 +437,14 @@ export function DocumentsListView({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      // Parent already owns this value (e.g. Ask AI apply) — don't echo back
+      // as a manual change, or ephemeral Ask AI search won't clear on leave.
+      if (searchQuery === searchQueryProp) return
       onSearchChange?.(searchQuery)
     }, 300)
 
     return () => window.clearTimeout(timer)
-  }, [onSearchChange, searchQuery])
+  }, [onSearchChange, searchQuery, searchQueryProp])
 
   const isAPFolder = useMemo(
     () =>

@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import {
+  clearAskAiFolderExplorerQuery,
+} from '@/pages/folders/utils/folderExplorerSession'
 import authApi from '@/api/auth'
 import AskAI from '@/components/common/ask-ai/AskAI'
 import useAskAIStore from '@/components/common/ask-ai/stores/useAskAIStore'
@@ -39,6 +42,15 @@ const AppLayout = ({ children }: Props) => {
   )
   const isAuthenticated = authUserStore((state) => state.isAuthenticated)
   const isMobile = useIsMobile()
+  const prevPathRef = useRef(pathname)
+
+  useEffect(() => {
+    const prev = prevPathRef.current
+    if (prev.startsWith('/folders') && !pathname.startsWith('/folders')) {
+      clearAskAiFolderExplorerQuery()
+    }
+    prevPathRef.current = pathname
+  }, [pathname])
 
   useEffect(() => {
     if (isNewRequestOpen) {

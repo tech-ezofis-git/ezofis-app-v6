@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
 import type { Column } from '@/components/base/data-table/types'
@@ -189,8 +189,20 @@ const Table = ({ onCreate }: TableProps) => {
   const [page, setPage] = useState(storedState?.page ?? 1)
   const [pageSize, setPageSize] = useState(storedState?.pageSize ?? 100)
   const [rowSize, setRowSize] = useState<RowSize>('default')
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>(
+  const [activeFilters, setActiveFiltersState] = useState<Record<string, string>>(
     storedState?.activeFilters ?? {},
+  )
+  const filtersEphemeralRef = useRef(false)
+
+  const setActiveFilters = useCallback(
+    (
+      next: Record<string, string>,
+      options?: { fromAskAi?: boolean },
+    ) => {
+      filtersEphemeralRef.current = Boolean(options?.fromAskAi)
+      setActiveFiltersState(next)
+    },
+    [],
   )
 
   useEffect(() => {
@@ -203,6 +215,26 @@ const Table = ({ onCreate }: TableProps) => {
       // ignore
     }
   }, [page, pageSize, activeFilters])
+
+  // Chatbot-applied filters must not stick after leaving Workflows.
+  useEffect(() => {
+    return () => {
+      if (!filtersEphemeralRef.current) return
+      try {
+        const raw = sessionStorage.getItem(SESSION_KEY)
+        const stored = raw ? JSON.parse(raw) : {}
+        sessionStorage.setItem(
+          SESSION_KEY,
+          JSON.stringify({
+            ...stored,
+            activeFilters: {},
+          }),
+        )
+      } catch {
+        // ignore
+      }
+    }
+  }, [])
 
   const pendingAskAiAction = useAskAiActionStore((state) => state.pending)
   const setPageContext = useAskAiActionStore((state) => state.setPageContext)
@@ -223,10 +255,12 @@ const Table = ({ onCreate }: TableProps) => {
 
   useEffect(() => {
     if (!pendingAskAiAction || pendingAskAiAction.target !== 'Workflow') return
-    setActiveFilters(pendingAskAiAction.filters || {})
+    setActiveFilters(pendingAskAiAction.filters || {}, {
+      fromAskAi: Boolean(pendingAskAiAction.ephemeral),
+    })
     setPage(1)
     clearPending()
-  }, [clearPending, pendingAskAiAction])
+  }, [clearPending, pendingAskAiAction, setActiveFilters])
 
   const payload = useMemo((): WorkflowBrowsePayload => {
     const sortColumn = sortState?.[0]?.id

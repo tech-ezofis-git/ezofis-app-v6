@@ -8,7 +8,12 @@ import { serializeFilterValues } from '@/utils/filterUtils'
 import type {
   AskAiAnswer,
   AskAiBrowseFilterGroup,
+  AskAiBrowseRequest,
+  AskAiCard,
+  AskAiField,
+  AskAiFilterBy,
   AskAiPageContext,
+  AskAiTextBlock,
 } from './types'
 
 export const CHATBOT_API_BASE = (
@@ -107,13 +112,153 @@ export function resolveChatbotAuth(): {
   return { accessToken, tenantId }
 }
 
-/** Convert chatbot browse_request.filterBy → UI Record<string, string> filters. */
-export function browseFilterByToUiFilters(
-  filterBy: AskAiBrowseFilterGroup[] | undefined,
+function serializeUiFilterMap(
+  next: Record<string, string[]>,
 ): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(next).map(([key, values]) => [
+      key,
+      serializeFilterValues(Array.from(new Set(values))),
+    ]),
+  )
+}
+
+/** cloud.ezofis.com sends filterBy as a flat map; demo uses filter groups. */
+function isFlatFilterBy(
+  filterBy: AskAiFilterBy,
+): filterBy is Record<string, string | number | boolean | null | undefined> {
+  return !Array.isArray(filterBy)
+}
+
+function flatFilterByToGroups(
+  flat: Record<string, string | number | boolean | null | undefined>,
+): AskAiBrowseFilterGroup[] {
+  return Object.entries(flat)
+    .filter(([, value]) => value != null && String(value).trim() !== '')
+    .map(([key, value], index) => {
+      const values = Array.isArray(value)
+        ? value.map(String).filter(Boolean)
+        : [String(value)].filter(Boolean)
+      return {
+        filters: [
+          {
+            arrayValue: values,
+            condition: 'IS_EQUALS_TO',
+            criteria: key,
+            criteriaArray: [key],
+            dataType: 'SHORT_TEXT',
+            id: `cloud-f-${index}`,
+            value: JSON.stringify(values),
+          },
+        ],
+        groupCondition: index === 0 ? '' : 'AND',
+        id: `cloud-g-${index}`,
+      }
+    })
+}
+
+/** Meta keys in cloud flat filterBy — not repository item field filters. */
+const CLOUD_META_FILTER_KEYS = new Set([
+  'folder',
+  'foldername',
+  'repo',
+  'repository',
+  'repositoryid',
+  'repositoryname',
+  'workspace',
+  'workspaceid',
+])
+
+const CLOUD_FILTER_KEY_ALIASES: Record<string, string> = {
+  file_name: 'FileName',
+  filename: 'FileName',
+  invoice_date: 'InvoiceDate',
+  invoice_no: 'InvoiceNo',
+  invoiceno: 'InvoiceNo',
+  po_date: 'PoDate',
+  po_number: 'PONumber',
+  ponumber: 'PONumber',
+  supplier: 'Supplier',
+}
+
+function normalizeCloudFilterKey(key: string): string | null {
+  const trimmed = String(key || '').trim()
+  if (!trimmed) return null
+
+  const compact = trimmed.toLowerCase().replace(/[\s_-]+/g, '')
+  if (CLOUD_META_FILTER_KEYS.has(compact)) return null
+
+  const snakeKey = trimmed.toLowerCase().replace(/\s+/g, '_')
+  if (CLOUD_FILTER_KEY_ALIASES[snakeKey]) {
+    return CLOUD_FILTER_KEY_ALIASES[snakeKey]
+  }
+  if (CLOUD_FILTER_KEY_ALIASES[compact]) {
+    return CLOUD_FILTER_KEY_ALIASES[compact]
+  }
+
+  if (trimmed.includes('_')) {
+    return trimmed
+      .split('_')
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join('')
+  }
+
+  return trimmed
+}
+
+function collectFilterValues(
+  value: string | number | boolean | null | undefined | string[],
+): string[] {
+  if (value == null || value === '') return []
+  if (Array.isArray(value)) return value.map(String).filter(Boolean)
+  return [String(value)].filter(Boolean)
+}
+
+export type BrowseUiFilterResult = {
+  fileSearch: string
+  filters: Record<string, string>
+}
+
+/** Split cloud/demo browse_request.filterBy into UI filters + file search text. */
+export function browseFilterByToUiFiltersAndSearch(
+  filterBy: AskAiFilterBy | undefined,
+  contentSearchValue?: string,
+): BrowseUiFilterResult {
+  let fileSearch = String(contentSearchValue || '').trim()
   const next: Record<string, string[]> = {}
 
-  for (const group of filterBy || []) {
+  if (!filterBy) {
+    return { fileSearch, filters: {} }
+  }
+
+  // cloud.ezofis.com: { search, repository, file_name, po_date, ... }
+  if (isFlatFilterBy(filterBy)) {
+    for (const [key, value] of Object.entries(filterBy)) {
+      const k = String(key).trim()
+      if (!k || value == null || value === '') continue
+
+      const values = collectFilterValues(value)
+      if (!values.length) continue
+
+      if (k.toLowerCase() === 'search') {
+        fileSearch = values[values.length - 1] || fileSearch
+        continue
+      }
+
+      const normalizedKey = normalizeCloudFilterKey(k)
+      if (!normalizedKey) continue
+
+      next[normalizedKey] = [...(next[normalizedKey] || []), ...values]
+    }
+
+    return {
+      fileSearch,
+      filters: serializeUiFilterMap(next),
+    }
+  }
+
+  for (const group of filterBy) {
     for (const filter of group.filters || []) {
       const key = String(
         filter.criteriaArray?.[0] || filter.criteria || '',
@@ -140,12 +285,200 @@ export function browseFilterByToUiFilters(
     }
   }
 
-  return Object.fromEntries(
-    Object.entries(next).map(([key, values]) => [
-      key,
-      serializeFilterValues(Array.from(new Set(values))),
-    ]),
+  return {
+    fileSearch,
+    filters: serializeUiFilterMap(next),
+  }
+}
+
+/** Convert chatbot browse_request.filterBy → UI Record<string, string> filters. */
+export function browseFilterByToUiFilters(
+  filterBy: AskAiFilterBy | undefined,
+): Record<string, string> {
+  return browseFilterByToUiFiltersAndSearch(filterBy).filters
+}
+
+function normalizeCardItem(raw: unknown): AskAiCard {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { title: '' }
+  }
+
+  const item = raw as Record<string, unknown>
+  const title = String(item.title ?? item.entity_name ?? item.name ?? '').trim()
+  const subtitle =
+    item.subtitle != null && String(item.subtitle).trim()
+      ? String(item.subtitle)
+      : undefined
+  const description =
+    item.description != null && String(item.description).trim()
+      ? String(item.description)
+      : undefined
+
+  let fields: AskAiField[] | undefined
+  if (Array.isArray(item.fields) && item.fields.length > 0) {
+    fields = item.fields
+      .filter((f): f is AskAiField => Boolean(f && typeof f === 'object'))
+      .map((f) => ({
+        label: String((f as AskAiField).label ?? ''),
+        value: (f as AskAiField).value,
+      }))
+  }
+
+  return {
+    description,
+    fields,
+    id:
+      item.id && typeof item.id === 'object' && !Array.isArray(item.id)
+        ? (item.id as Record<string, unknown>)
+        : undefined,
+    matchSource:
+      item.matchSource == null ? null : String(item.matchSource),
+    subtitle,
+    title,
+    type: item.type != null ? String(item.type) : undefined,
+  }
+}
+
+function normalizeTextBlock(raw: unknown): AskAiTextBlock | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const block = raw as Record<string, unknown>
+  const type = String(block.type || '').trim()
+
+  if (type === 'paragraph') {
+    return {
+      text: String(block.text ?? ''),
+      type: 'paragraph',
+    }
+  }
+
+  if (type === 'bullets') {
+    const items = Array.isArray(block.items)
+      ? block.items
+          .filter((item): item is AskAiField => Boolean(item && typeof item === 'object'))
+          .map((item) => ({
+            label: String((item as AskAiField).label ?? ''),
+            value: (item as AskAiField).value,
+          }))
+      : []
+    return {
+      items,
+      title: block.title != null ? String(block.title) : undefined,
+      type: 'bullets',
+      variant: block.variant != null ? String(block.variant) : undefined,
+    }
+  }
+
+  if (type === 'card') {
+    return {
+      ...normalizeCardItem(block),
+      type: 'card',
+    }
+  }
+
+  if (type === 'cards') {
+    const items = Array.isArray(block.items)
+      ? block.items.map(normalizeCardItem)
+      : []
+    return {
+      items,
+      title: block.title != null ? String(block.title) : undefined,
+      type: 'cards',
+    }
+  }
+
+  return null
+}
+
+function normalizeBrowseRequest(
+  browse: AskAiBrowseRequest | undefined,
+): AskAiBrowseRequest | undefined {
+  if (!browse || typeof browse !== 'object') return browse
+
+  const filterBy = browse.filterBy
+  if (!filterBy || Array.isArray(filterBy)) return browse
+
+  const flat = filterBy as Record<
+    string,
+    string | number | boolean | null | undefined
+  >
+  const searchValue =
+    String(browse.contentSearchValue || '').trim() ||
+    (flat.search != null ? String(flat.search).trim() : '')
+
+  return {
+    ...browse,
+    contentSearchValue: searchValue || browse.contentSearchValue,
+    filterBy: flatFilterByToGroups(flat),
+  }
+}
+
+/**
+ * Normalize demo.ezofis.com + cloud.ezofis.com chatbot payloads into the
+ * shape Ask AI UI already renders (paragraph / bullets / cards + browse filters).
+ */
+export function normalizeChatbotAnswer(raw: unknown): AskAiAnswer | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const data = raw as Record<string, unknown>
+
+  const textPayload =
+    data.text && typeof data.text === 'object' && !Array.isArray(data.text)
+      ? (data.text as { blocks?: unknown })
+      : null
+
+  let blocks: AskAiTextBlock[] = Array.isArray(textPayload?.blocks)
+    ? textPayload.blocks
+        .map(normalizeTextBlock)
+        .filter((b): b is AskAiTextBlock => Boolean(b))
+    : []
+
+  // If cloud returns hits but no text.blocks, synthesize a readable answer.
+  if (!blocks.length && Array.isArray(data.hits) && data.hits.length > 0) {
+    const cards = data.hits.map(normalizeCardItem).filter((c) => c.title)
+    blocks = [
+      {
+        text: `I found ${cards.length} matching result${cards.length === 1 ? '' : 's'}.`,
+        type: 'paragraph',
+      },
+      ...(cards.length
+        ? ([{ items: cards, type: 'cards' }] as AskAiTextBlock[])
+        : []),
+    ]
+  }
+
+  if (!blocks.length) return null
+
+  const actionRaw =
+    data.action && typeof data.action === 'object' && !Array.isArray(data.action)
+      ? (data.action as Record<string, unknown>)
+      : undefined
+
+  const browse = normalizeBrowseRequest(
+    actionRaw?.browse_request as AskAiBrowseRequest | undefined,
   )
+
+  return {
+    action: actionRaw
+      ? {
+          ...actionRaw,
+          browse_request: browse,
+        }
+      : undefined,
+    actionContext:
+      data.actionContext &&
+      typeof data.actionContext === 'object' &&
+      !Array.isArray(data.actionContext)
+        ? (data.actionContext as AskAiAnswer['actionContext'])
+        : undefined,
+    actionTo:
+      data.actionTo != null ? String(data.actionTo) : undefined,
+    conversationId:
+      data.conversationId != null
+        ? String(data.conversationId)
+        : data.conversation_id != null
+          ? String(data.conversation_id)
+          : undefined,
+    text: { blocks },
+  }
 }
 
 export function hasBrowsableAction(answer: AskAiAnswer | null | undefined) {
@@ -154,14 +487,21 @@ export function hasBrowsableAction(answer: AskAiAnswer | null | undefined) {
   if (target !== 'repository' && target !== 'workflow') return false
 
   const browse = answer.action?.browse_request
-  const filters = browseFilterByToUiFilters(browse?.filterBy)
+  const { fileSearch, filters } = browseFilterByToUiFiltersAndSearch(
+    browse?.filterBy,
+    browse?.contentSearchValue,
+  )
   const repositoryId = String(
     answer.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
   ).trim()
   const workflowId = String(answer.actionContext?.workflowId ?? '').trim()
 
   if (target === 'repository') {
-    return Boolean(repositoryId) || Object.keys(filters).length > 0
+    return (
+      Boolean(repositoryId) ||
+      Object.keys(filters).length > 0 ||
+      Boolean(fileSearch)
+    )
   }
   return Boolean(workflowId) || Object.keys(filters).length > 0
 }
@@ -307,11 +647,12 @@ export async function postChatbotMessage(
     }
 
     const data = await response.json().catch(() => null)
-    if (!data || !data.text) {
+    const normalized = normalizeChatbotAnswer(data)
+    if (!normalized) {
       return DEFAULT_CHATBOT_FALLBACK_ANSWER
     }
 
-    return data as AskAiAnswer
+    return normalized
   } catch {
     return DEFAULT_CHATBOT_FALLBACK_ANSWER
   }
