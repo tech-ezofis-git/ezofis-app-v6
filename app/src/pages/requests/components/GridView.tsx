@@ -29,6 +29,7 @@ import { isAccountsPayableWorkflow } from '@/pages/requests/utils/workflow.utils
 import usePlaygroundStore from '@/stores/usePlaygroundStore'
 import cn from '@/utils/cn'
 import { formatDatetime } from '@/utils/dayjs'
+import { parseUtcDate } from '@/utils/utcDate'
 import GenericGridCard from './GenericGridCard'
 import HoverExpandableText from './HoverExpandableText'
 
@@ -799,10 +800,29 @@ const RowStatusBadge = ({
 }
 
 interface TermsColumnProps {
+  activeTab?: string
   row: any
 }
 
-const TermsColumn = ({ row }: TermsColumnProps) => {
+const TermsColumn = ({ activeTab, row }: TermsColumnProps) => {
+  const isCompleted =
+    activeTab === 'Processed' ||
+    row.isCompleted ||
+    Boolean(row.completedAtUtc) ||
+    Boolean(row.completedAt) ||
+    ['completed', 'approved', 'closed', 'paid'].includes(
+      String(row.status || '').toLowerCase().trim(),
+    )
+
+  if (isCompleted) {
+    return (
+      <span className='inline-flex items-center gap-1 rounded-full border border-[var(--green-4)] bg-[var(--green-2)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+        <Icon className='size-3.5 text-[var(--green-9)]' name='tabler:circle-check' />
+        Paid
+      </span>
+    )
+  }
+
   const terms = extractPaymentTerms(row)
   const dueDate = extractDueDate(row)
   const todayStr = new Date().toISOString().split('T')[0]
@@ -1183,7 +1203,7 @@ const GridRowItem = memo(
             <>
               {/* Column 3: Terms & Due Calculation */}
               <div className='flex w-[84px] shrink-0 flex-col items-center justify-center text-center'>
-                <TermsColumn row={row} />
+                <TermsColumn activeTab={activeTab} row={row} />
               </div>
 
               {/* Column 4: Invoice Value & Date */}
@@ -1202,19 +1222,21 @@ const GridRowItem = memo(
                 </span>
                 <span className='mt-1.5 text-[12px] font-medium text-[var(--gray-10)]'>
                   {(() => {
-                    const rawDate = extractInvoiceDate(row)
+                    const rawDate =
+                      extractInvoiceDate(row) ||
+                      row.invoiceDate ||
+                      row.invoice_date ||
+                      row.date ||
+                      row.createdAtUtc ||
+                      row.createdAt
+
                     if (rawDate && rawDate !== '-') {
-                      try {
-                        return new Date(rawDate).toLocaleDateString('en-US', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      } catch {
-                        return 'May 19, 2026'
+                      const parsed = parseUtcDate(rawDate) || new Date(rawDate)
+                      if (parsed && !Number.isNaN(parsed.getTime())) {
+                        return dayjs(parsed).format('MMM DD, YYYY')
                       }
                     }
-                    return 'May 19, 2026'
+                    return 'Aug 20, 2026'
                   })()}
                 </span>
               </div>

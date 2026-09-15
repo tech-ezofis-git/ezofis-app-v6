@@ -274,23 +274,132 @@ const normalizeExtractedLineItem = (item: any) => {
   return normalized
 }
 
+const getCanonicalColumnKey = (rawKey: string): string => {
+  if (!rawKey || !rawKey.trim()) return ''
+  const normalized = rawKey.trim().toLowerCase().replace(/[\s_-]+/g, '')
+
+  if (
+    normalized === 'description' ||
+    normalized === 'descriptior' ||
+    normalized === 'itemdescription' ||
+    normalized === 'productdescription' ||
+    normalized === 'details' ||
+    normalized === 'desc' ||
+    normalized === 'itemno' ||
+    normalized === 'item_no'
+  ) {
+    return 'Description'
+  }
+
+  if (
+    normalized === 'qty' ||
+    normalized === 'quantity' ||
+    normalized === 'qtyinvoiced' ||
+    normalized === 'quantityinvoiced' ||
+    normalized === 'invoicedqty' ||
+    normalized === 'count' ||
+    normalized === 'units'
+  ) {
+    return 'Qty'
+  }
+
+  if (
+    normalized === 'price' ||
+    normalized === 'rate' ||
+    normalized === 'unitprice' ||
+    normalized === 'unitrate' ||
+    normalized === 'priceunit' ||
+    normalized === 'unitcost' ||
+    normalized === 'cost'
+  ) {
+    return 'Price'
+  }
+
+  if (
+    normalized === 'lineno' ||
+    normalized === 'linenumber' ||
+    normalized === 'line' ||
+    normalized === 'seqno' ||
+    normalized === 'srno' ||
+    normalized === 'slno' ||
+    normalized === 'sno'
+  ) {
+    return 'Line No'
+  }
+
+  if (
+    normalized === 'amount' ||
+    normalized === 'lineamount' ||
+    normalized === 'totalamount' ||
+    normalized === 'total' ||
+    normalized === 'netamount' ||
+    normalized === 'grossamount' ||
+    normalized === 'extended' ||
+    normalized === 'extendedamount'
+  ) {
+    return 'Amount'
+  }
+
+  return rawKey.trim()
+}
+
 const updateItemField = (item: any, fieldKey: string, value: any) => {
-  const fields = FIELD_KEYS_MAP[fieldKey]
+  const fields =
+    FIELD_KEYS_MAP[fieldKey] || FIELD_KEYS_MAP[fieldKey.toLowerCase()]
   if (fields) {
     for (const key of fields) {
       if (key in item) {
         updateValueInStructure(item, key, value)
       }
     }
+  }
+
+  const canonical = getCanonicalColumnKey(fieldKey)
+  if (canonical === 'Qty') {
+    ;['Qty', 'Quantity', 'quantity', 'qty'].forEach((k) => {
+      if (k in item) updateValueInStructure(item, k, value)
+    })
+  } else if (canonical === 'Price') {
+    ;['Price', 'rate', 'unit_price', 'price'].forEach((k) => {
+      if (k in item) updateValueInStructure(item, k, value)
+    })
+  } else if (canonical === 'Amount') {
+    ;[
+      'Amount',
+      'Line Amount',
+      'line amount',
+      'LineAmount',
+      'total',
+      'amount',
+      'line_amount',
+      'lineAmount',
+    ].forEach((k) => {
+      if (k in item) updateValueInStructure(item, k, value)
+    })
+  } else if (canonical === 'Description') {
+    ;['Description', 'description', 'item_no', 'itemNo', 'descriptior'].forEach(
+      (k) => {
+        if (k in item) updateValueInStructure(item, k, value)
+      },
+    )
   } else {
     updateValueInStructure(item, fieldKey, value)
   }
 }
 
 const recalculateItemAmount = (item: any) => {
-  const qtyVal = item.Quantity?.['Invoice Value'] ?? item.quantity
+  const qtyVal =
+    item.Quantity?.['Invoice Value'] ??
+    item.quantity ??
+    item.Qty?.['Invoice Value'] ??
+    item.Qty ??
+    item.qty
   const priceVal =
-    item.Price?.['Invoice Value'] ?? item.rate ?? item.unit_price ?? item.price
+    item.Price?.['Invoice Value'] ??
+    item.rate ??
+    item.unit_price ??
+    item.price ??
+    item.Price
 
   const qtyNum = Number.parseFloat(String(qtyVal).replace(/[^0-9.-]+/g, ''))
   const priceNum = Number.parseFloat(String(priceVal).replace(/[^0-9.-]+/g, ''))
@@ -298,21 +407,26 @@ const recalculateItemAmount = (item: any) => {
   if (!Number.isNaN(qtyNum) && !Number.isNaN(priceNum)) {
     const calculatedAmount = qtyNum * priceNum
     const formattedAmount = calculatedAmount.toFixed(2)
-    if ('Amount' in item)
+    const amountKeys = [
+      'Amount',
+      'Line Amount',
+      'line amount',
+      'LineAmount',
+      'total',
+      'amount',
+      'line_amount',
+      'lineAmount',
+    ]
+    let updatedAny = false
+    for (const k of amountKeys) {
+      if (k in item) {
+        updateValueInStructure(item, k, formattedAmount)
+        updatedAny = true
+      }
+    }
+    if (!updatedAny) {
       updateValueInStructure(item, 'Amount', formattedAmount)
-    if ('Line Amount' in item)
-      updateValueInStructure(item, 'Line Amount', formattedAmount)
-    if ('line amount' in item)
-      updateValueInStructure(item, 'line amount', formattedAmount)
-    if ('LineAmount' in item)
-      updateValueInStructure(item, 'LineAmount', formattedAmount)
-    if ('total' in item) updateValueInStructure(item, 'total', formattedAmount)
-    if ('amount' in item)
-      updateValueInStructure(item, 'amount', formattedAmount)
-    if ('line_amount' in item)
-      updateValueInStructure(item, 'line_amount', formattedAmount)
-    if ('lineAmount' in item)
-      updateValueInStructure(item, 'lineAmount', formattedAmount)
+    }
   }
 }
 
@@ -931,7 +1045,7 @@ const AnalysisCard = ({
       {isPulsing && (
         <div className='pointer-events-none absolute inset-0 animate-pulse rounded-xl ring-2 ring-[var(--orange-6)]/50' />
       )}
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-between gap-1 flex-wrap'>
         <div
           className={cn(
             'shrink-0 rounded p-1.5 transition-colors',
@@ -1459,8 +1573,8 @@ const FormCard = ({
           <FieldIcon className='h-3.5 w-3.5' />
         </div>
         <div className='min-w-0 flex-1'>
-          <div className='mb-0.5 flex items-center justify-between gap-2'>
-            <p className='min-w-0 truncate text-[10px] font-semibold text-[var(--gray-11)]'>
+          <div className='mb-0.5 flex items-center justify-between gap-1 flex-wrap min-w-0'>
+            <p className='min-w-0 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
               {label}
             </p>
             <div className='flex shrink-0 items-center gap-1.5'>
@@ -1533,8 +1647,8 @@ const FormCard = ({
         <FieldIcon className='h-3.5 w-3.5' />
       </div>
       <div className='min-w-0 flex-1'>
-        <div className='mb-0.5 flex items-center justify-between gap-2'>
-          <p className='min-w-0 truncate text-[10px] font-semibold text-[var(--gray-11)]'>
+        <div className='mb-0.5 flex items-center justify-between gap-1 flex-wrap min-w-0'>
+          <p className='min-w-0 text-[10px] font-semibold text-[var(--gray-11)] shrink-0'>
             {label}
           </p>
           <div className='flex shrink-0 items-center gap-1.5'>
@@ -2679,28 +2793,43 @@ const Overview = (props: any) => {
   }, [rawPoLineItems, poColMap])
 
   const poDynamicColumns = useMemo(() => {
-    const activeCols = new Set<string>()
+    if (!poLineItems || poLineItems.length === 0) return []
+
+    const canonicalKeyMap = new Map<string, string>()
+
     poLineItems.forEach((item: any) => {
-      Object.keys(item).forEach((k) => {
-        if (k !== '_id') {
-          activeCols.add(k)
-        }
-      })
+      if (item && typeof item === 'object') {
+        Object.keys(item).forEach((k) => {
+          if (
+            !k ||
+            !k.trim() ||
+            k === '_id' ||
+            k === '_localFileUrl' ||
+            k === 'localUrl' ||
+            k === 'score' ||
+            k === 'Line Score' ||
+            k === 'status'
+          ) {
+            return
+          }
+
+          const canonical = getCanonicalColumnKey(k)
+          if (!canonical) return
+
+          const groupKey = canonical.toLowerCase()
+          if (!canonicalKeyMap.has(groupKey)) {
+            canonicalKeyMap.set(groupKey, canonical)
+          }
+        })
+      }
     })
 
-    if (activeCols.size === 0) return []
-
+    const columns = Array.from(canonicalKeyMap.values())
     const standardOrder = [
-      'Line',
+      'Line No',
       'Description',
       'Qty',
-      'Quantity',
-      'Unit Cost',
       'Price',
-      'Rate',
-      'Extended',
-      'Amount',
-      'Line Amount',
       'UOM',
       'Tax Rate',
       'Class',
@@ -2710,18 +2839,19 @@ const Overview = (props: any) => {
     ]
 
     const result: string[] = []
-    standardOrder.forEach((col) => {
-      if (activeCols.has(col)) {
-        result.push(col)
-        activeCols.delete(col)
+    const colSet = new Set(columns)
+
+    standardOrder.forEach((std) => {
+      if (colSet.has(std)) {
+        result.push(std)
+        colSet.delete(std)
       }
     })
 
-    activeCols.forEach((col) => {
-      result.push(col)
-    })
+    const amountCols = Array.from(colSet).filter(isLineItemAmountColumn)
+    const otherCols = Array.from(colSet).filter((k) => !isLineItemAmountColumn(k))
 
-    return result
+    return [...result, ...otherCols, ...amountCols]
   }, [poLineItems])
 
   const poDynamicWidths = useMemo(() => {
@@ -3044,17 +3174,63 @@ const Overview = (props: any) => {
   const tableFieldKey = lineItemsTable?.label ?? null
 
   const rawLineItems = useMemo(() => {
-    if (lineItemsTable?.rows?.length) {
+    const hasMeaningfulLineData = (rows: any[]) => {
+      if (!Array.isArray(rows) || rows.length === 0) return false
+      return rows.some((r) => {
+        if (!r || typeof r !== 'object') return false
+        return Object.entries(r).some(([k, v]) => {
+          if (
+            k === '_id' ||
+            k === '_localFileUrl' ||
+            k === 'localUrl' ||
+            k === 'score' ||
+            k === 'Line Score' ||
+            k === 'status'
+          )
+            return false
+          const val =
+            v && typeof v === 'object' && 'Invoice Value' in v
+              ? (v as any)['Invoice Value']
+              : v
+          return (
+            val !== null &&
+            val !== undefined &&
+            String(val).trim() !== '' &&
+            String(val).trim() !== '0'
+          )
+        })
+      })
+    }
+
+    if (
+      lineItemsTable?.rows?.length &&
+      hasMeaningfulLineData(lineItemsTable.rows)
+    ) {
       return lineItemsTable.rows
     }
 
+    const candidates = [
+      agentData?.debug?.['Side-by-side Line Item matching'],
+      agentData?.line_items,
+      agentData?.['Extracted Invoice JSON']?.invoice_items,
+      agentData?.['Extracted Invoice JSON']?.line_items,
+      agentData?.invoice_items,
+      selectedItem?.line_items,
+      selectedItem?.invoice_items,
+    ]
+
+    for (const cand of candidates) {
+      if (hasMeaningfulLineData(cand)) {
+        return cand
+      }
+    }
+
     return (
-      agentData?.debug?.['Side-by-side Line Item matching'] ||
-      agentData?.line_items ||
-      agentData?.['Extracted Invoice JSON']?.invoice_items ||
+      lineItemsTable?.rows ||
+      candidates.find((c) => Array.isArray(c) && c.length > 0) ||
       []
     )
-  }, [agentData, lineItemsTable])
+  }, [agentData, lineItemsTable, selectedItem])
 
   const tableFieldMeta = useMemo(() => {
     if (!tableFieldKey) return null
@@ -3067,27 +3243,56 @@ const Overview = (props: any) => {
 
   const dynamicColumns = useMemo(() => {
     if (!rawLineItems || rawLineItems.length === 0) return []
-    const keys = new Set<string>()
+
+    const canonicalKeyMap = new Map<string, string>()
+
     rawLineItems.forEach((item: any) => {
       if (item && typeof item === 'object') {
         Object.keys(item).forEach((k) => {
           if (
-            k !== '_id' &&
-            k !== '_localFileUrl' &&
-            k !== 'localUrl' &&
-            k !== 'score' &&
-            k !== 'Line Score' &&
-            k !== 'status'
+            !k ||
+            !k.trim() ||
+            k === '_id' ||
+            k === '_localFileUrl' ||
+            k === 'localUrl' ||
+            k === 'score' ||
+            k === 'Line Score' ||
+            k === 'status'
           ) {
-            keys.add(k)
+            return
+          }
+
+          const canonical = getCanonicalColumnKey(k)
+          if (!canonical) return
+
+          const groupKey = canonical.toLowerCase()
+          if (!canonicalKeyMap.has(groupKey)) {
+            canonicalKeyMap.set(groupKey, canonical)
           }
         })
       }
     })
-    const columns = Array.from(keys)
-    const amountCols = columns.filter(isLineItemAmountColumn)
-    const otherCols = columns.filter((k) => !isLineItemAmountColumn(k))
-    return [...otherCols, ...amountCols]
+
+    const columns = Array.from(canonicalKeyMap.values())
+    const standardOrder = ['Description', 'Qty', 'Price', 'Line No']
+    const result: string[] = []
+    const colSet = new Set(columns)
+
+    if (colSet.has('Line No')) {
+      result.push('Line No')
+      colSet.delete('Line No')
+    }
+    standardOrder.forEach((std) => {
+      if (colSet.has(std)) {
+        result.push(std)
+        colSet.delete(std)
+      }
+    })
+
+    const amountCols = Array.from(colSet).filter(isLineItemAmountColumn)
+    const otherCols = Array.from(colSet).filter((k) => !isLineItemAmountColumn(k))
+
+    return [...result, ...otherCols, ...amountCols]
   }, [rawLineItems])
 
   useEffect(() => {
@@ -3809,7 +4014,7 @@ const Overview = (props: any) => {
                     className={cn(
                       'grid gap-3',
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
-                      analysisCardCount === 4 && 'grid-cols-2 lg:grid-cols-4',
+                      analysisCardCount === 4 && 'grid-cols-2 md:grid-cols-2 xl:grid-cols-4',
                       analysisCardCount === 5 &&
                         'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
@@ -4115,9 +4320,9 @@ const Overview = (props: any) => {
                 </div>
 
                 {!activeDetailView && (
-                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-6 pt-2'>
-                    <div className='flex items-center justify-between gap-8'>
-                      <div className='flex items-center gap-8'>
+                  <div className='sticky top-0 z-10 shrink-0 border-b border-[var(--gray-3)] bg-surface px-3 sm:px-6 pt-2 overflow-x-auto no-scrollbar scrollbar-none'>
+                    <div className='flex items-center justify-between gap-4'>
+                      <div className='flex items-center gap-2 sm:gap-6 md:gap-8 min-w-0 overflow-x-auto no-scrollbar'>
                         {[
                           {
                             icon: FileText,
@@ -4148,15 +4353,15 @@ const Overview = (props: any) => {
                           <button
                             key={tab.id}
                             className={cn(
-                              '-mb-[2px] flex items-center gap-2 border-b-2 pb-4 text-[11px] font-semibold transition-all',
+                              '-mb-[2px] flex shrink-0 whitespace-nowrap items-center gap-1.5 sm:gap-2 border-b-2 pb-3.5 text-[11px] font-semibold transition-all',
                               activeTab === tab.id
                                 ? 'border-[var(--primary-9)] text-[var(--primary-9)]'
-                                : 'border-transparent text-[var(--gray-11)]',
+                                : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
                             )}
                             onClick={() => setActiveTab(tab.id)}
                           >
-                            <tab.icon className='h-4 w-4' />
-                            {tab.label}
+                            <tab.icon className='h-4 w-4 shrink-0' />
+                            <span>{tab.label}</span>
                             {tab.id === 'attachments' &&
                               attachmentData?.length > 0 && (
                                 <span className='rounded bg-[var(--gray-2)] px-1.5 py-0.5 text-[10px] text-[var(--gray-11)]'>
@@ -4739,28 +4944,14 @@ const Overview = (props: any) => {
                       )}
                       {activeDetailView === 'payment_terms' && (
                         <DetailReportView
-                          icon={isRequestCompleted ? CreditCard : Calendar}
-                          status={
-                            isRequestCompleted
-                              ? agentData?.paymentStatus || agentData?.payment_status || 'Paid'
-                              : paymentTermsDisplay.calculationText ||
-                                resolvedAgentData?.payment_terms?.raw ||
-                                'In due'
-                          }
-                          statusType={isRequestCompleted ? 'success' : paymentTermsDisplay.statusType}
-                          title={
-                            isRequestCompleted
-                              ? t`Payment Status Analysis`
-                              : t`Payment Terms Analysis`
-                          }
+                          icon={Calendar}
+                          title={t`Payment Terms Analysis`}
                           onClose={() => setActiveDetailView(null)}
                         >
                           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                             <div className='space-y-3'>
                               <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
-                                {isRequestCompleted
-                                  ? t`Payment Details & Status`
-                                  : t`Payment Deadlines & Terms`}
+                                {t`Payment Deadlines & Terms`}
                               </h4>
                               <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
@@ -4777,21 +4968,23 @@ const Overview = (props: any) => {
                                 </div>
                                 <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
                                   <span className='font-medium text-[var(--gray-11)]'>
-                                    {t`Status`}
+                                    {t`SAP Invoice Status`}
                                   </span>
                                   <span
                                     className={cn(
                                       'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
-                                      getStatusBorderStyles(
-                                        isRequestCompleted ? 'success' : paymentTermsDisplay.statusType,
-                                      ),
+                                      getStatusBorderStyles(isRequestCompleted ? 'success' : 'info'),
                                     )}
                                   >
                                     {isRequestCompleted
-                                      ? agentData?.paymentStatus || agentData?.payment_status || 'Paid'
-                                      : paymentTermsDisplay.calculationText ||
-                                        resolvedAgentData?.payment_terms?.raw ||
-                                        'In due'}
+                                      ? agentData?.sapInvoiceStatus ||
+                                        agentData?.sap_invoice_status ||
+                                        'Paid'
+                                      : agentData?.sapInvoiceStatus ||
+                                        agentData?.sap_invoice_status ||
+                                        agentData?.po_row?.sap_invoice_status ||
+                                        agentData?.po_row?.['SAP Invoice Status'] ||
+                                        'Follow-On Documents'}
                                   </span>
                                 </div>
                                 {!isRequestCompleted && (
@@ -5338,7 +5531,7 @@ const Overview = (props: any) => {
                   ) : (
                     <>
                       {activeTab === 'summary' && (
-                        <div className='grid flex-1 grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
+                        <div className='grid flex-1 grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                           {!formModel ||
                           Object.keys(formModel).length === 0 ||
                           !Object.values(formModel).some(
@@ -5430,7 +5623,7 @@ const Overview = (props: any) => {
                                       : val
 
                                   const fieldType = getFieldType(key)
-                                  const displayValue =
+                                  let displayValue =
                                     fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
@@ -5438,6 +5631,16 @@ const Overview = (props: any) => {
                                       rawVal === '-')
                                       ? null
                                       : rawVal || '-'
+
+                                  if (
+                                    typeof displayValue === 'string' &&
+                                    (key.toLowerCase().includes('invoice no') ||
+                                      key.toLowerCase().includes('invoice number'))
+                                  ) {
+                                    displayValue = displayValue
+                                      .replace(/\s*PO\s*(Number|No|num|#)?:?\s*\d+/gi, '')
+                                      .trim()
+                                  }
 
                                   return (
                                     <FormCard
@@ -5674,6 +5877,7 @@ const Overview = (props: any) => {
                           ) : (
                             <History
                               enabled={true}
+                              isCompleted={isRequestCompleted}
                               processId={processId}
                               workflowId={workflowId}
                               instanceId={

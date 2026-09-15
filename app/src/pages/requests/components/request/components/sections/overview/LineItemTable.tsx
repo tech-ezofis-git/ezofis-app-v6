@@ -31,17 +31,40 @@ const getRawVal = (obj: any, pathKey: string) => {
 }
 
 const getLineItemAmount = (item: any): any => {
-  return (
-    item.Amount?.['Invoice Value'] ??
-    item['Line Amount']?.['Invoice Value'] ??
-    item['line amount'] ??
-    item.LineAmount ??
-    item.total ??
-    item.amount ??
-    item.line_amount ??
-    item.lineAmount ??
-    0
-  )
+  if (!item || typeof item !== 'object') return 0
+  const keys = [
+    'Amount',
+    'Line Amount',
+    'line amount',
+    'LineAmount',
+    'total',
+    'amount',
+    'line_amount',
+    'lineAmount',
+    'total_amount',
+    'extended',
+    'extended_amount',
+  ]
+  for (const k of keys) {
+    const v = getRawVal(item, k)
+    if (v !== undefined && v !== null && v !== '') return v
+  }
+  const qtyVal =
+    getRawVal(item, 'Quantity') ??
+    getRawVal(item, 'quantity') ??
+    getRawVal(item, 'Qty') ??
+    getRawVal(item, 'qty')
+  const priceVal =
+    getRawVal(item, 'Price') ??
+    getRawVal(item, 'rate') ??
+    getRawVal(item, 'unit_price') ??
+    getRawVal(item, 'price')
+  const qNum = Number.parseFloat(String(qtyVal).replace(/[^0-9.-]+/g, ''))
+  const pNum = Number.parseFloat(String(priceVal).replace(/[^0-9.-]+/g, ''))
+  if (!Number.isNaN(qNum) && !Number.isNaN(pNum)) {
+    return (qNum * pNum).toFixed(2)
+  }
+  return 0
 }
 
 const formatHeaderLabel = (key: string) => {
@@ -276,43 +299,164 @@ export default function LineItemTable({
   }
 
   const getCellVal = (item: any, col: ColumnConfig): string => {
-    if (col.type === 'dynamic' && col.key) {
-      return getRawVal(item, col.key) ?? ''
+    if (!item || typeof item !== 'object') return ''
+
+    // 1. Direct lookup by key if present
+    if (col.key) {
+      const direct = getRawVal(item, col.key)
+      if (direct !== undefined && direct !== null && direct !== '') {
+        return String(direct)
+      }
     }
+
+    // 2. Lookup by column group (works for dynamic and static types)
+    const keyOrType = (col.key || col.type || '')
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '')
+
+    // Description Group
+    if (
+      keyOrType.includes('description') ||
+      keyOrType.includes('descriptior') ||
+      keyOrType === 'item' ||
+      keyOrType === 'desc'
+    ) {
+      const keys = [
+        'Description',
+        'description',
+        'item_no',
+        'itemNo',
+        'descriptior',
+        'item_description',
+        'product_description',
+        'details',
+        'item',
+      ]
+      for (const k of keys) {
+        const v = getRawVal(item, k)
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+    }
+
+    // Qty Group
+    if (keyOrType.includes('qty') || keyOrType.includes('quantity')) {
+      const keys = [
+        'Qty',
+        'Quantity',
+        'quantity',
+        'qty',
+        'qty_invoiced',
+        'invoiced_qty',
+        'quantity_invoiced',
+        'count',
+        'units',
+      ]
+      for (const k of keys) {
+        const v = getRawVal(item, k)
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+    }
+
+    // Price / Rate Group
+    if (
+      keyOrType.includes('price') ||
+      keyOrType.includes('rate') ||
+      keyOrType.includes('cost')
+    ) {
+      const keys = [
+        'Price',
+        'rate',
+        'unit_price',
+        'price',
+        'unit_rate',
+        'unitprice',
+        'unitcost',
+        'cost',
+      ]
+      for (const k of keys) {
+        const v = getRawVal(item, k)
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+    }
+
+    // Amount Group
+    if (isLineItemAmountColumn(col.key || col.type)) {
+      const keys = [
+        'Amount',
+        'Line Amount',
+        'line amount',
+        'LineAmount',
+        'total',
+        'amount',
+        'line_amount',
+        'lineAmount',
+        'total_amount',
+        'extended',
+        'extended_amount',
+      ]
+      for (const k of keys) {
+        const v = getRawVal(item, k)
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+      const calcAmt = getLineItemAmount(item)
+      if (
+        calcAmt !== undefined &&
+        calcAmt !== null &&
+        calcAmt !== 0 &&
+        calcAmt !== '0'
+      ) {
+        return String(calcAmt)
+      }
+    }
+
+    // Line No Group
+    if (keyOrType.includes('line')) {
+      const keys = [
+        'Line No',
+        'Line',
+        'line_no',
+        'line',
+        'line_number',
+        'seq_no',
+        'sr_no',
+        'sl_no',
+      ]
+      for (const k of keys) {
+        const v = getRawVal(item, k)
+        if (v !== undefined && v !== null && v !== '') return String(v)
+      }
+    }
+
+    // Fallbacks for static columns
     if (col.type === 'description') {
-      return (
-        item.Description?.['Invoice Value'] ??
-        item.description ??
-        item.item_no ??
-        item.itemNo ??
-        ''
-      )
+      const val =
+        getRawVal(item, 'Description') ??
+        getRawVal(item, 'description') ??
+        getRawVal(item, 'item_no') ??
+        getRawVal(item, 'itemNo')
+      return val !== undefined && val !== null ? String(val) : ''
     }
     if (col.type === 'qty') {
-      return item.Quantity?.['Invoice Value'] ?? item.quantity ?? ''
+      const val =
+        getRawVal(item, 'Quantity') ??
+        getRawVal(item, 'quantity') ??
+        getRawVal(item, 'Qty') ??
+        getRawVal(item, 'qty')
+      return val !== undefined && val !== null ? String(val) : ''
     }
     if (col.type === 'rate') {
-      return (
-        item.Price?.['Invoice Value'] ??
-        item.rate ??
-        item.unit_price ??
-        item.price ??
-        ''
-      )
+      const val =
+        getRawVal(item, 'Price') ??
+        getRawVal(item, 'rate') ??
+        getRawVal(item, 'unit_price') ??
+        getRawVal(item, 'price')
+      return val !== undefined && val !== null ? String(val) : ''
     }
     if (col.type === 'amount') {
-      return (
-        item.Amount?.['Invoice Value'] ??
-        item['Line Amount']?.['Invoice Value'] ??
-        item['line amount'] ??
-        item.LineAmount ??
-        item.total ??
-        item.amount ??
-        item.line_amount ??
-        item.lineAmount ??
-        ''
-      )
+      const val = getLineItemAmount(item)
+      return val !== undefined && val !== null ? String(val) : ''
     }
+
     return ''
   }
 
