@@ -162,12 +162,20 @@ export function ExplorerToolbar({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      // Parent already owns this value (e.g. Ask AI apply) — don't echo back.
+      if (searchQuery === searchFromParent) return
       onFileSearchChange?.(searchQuery)
       onFolderSearchChange?.(searchQuery)
     }, 300)
 
     return () => window.clearTimeout(timer)
-  }, [filterMode, onFileSearchChange, onFolderSearchChange, searchQuery])
+  }, [
+    filterMode,
+    onFileSearchChange,
+    onFolderSearchChange,
+    searchFromParent,
+    searchQuery,
+  ])
 
   const isBusy = refreshing || loading || loadingPage || disabled
 

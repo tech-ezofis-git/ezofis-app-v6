@@ -1223,37 +1223,42 @@ const Request = ({
   )
 
   const resolvedRequestNo = useMemo(() => {
+    let raw = ''
     if (isGenericWorkflow) {
       const genericNo = extractGenericRequestNumber(selectedItem)
-      return genericNo === '-' ? 'REQ - ...' : genericNo
+      raw = genericNo === '-' ? 'REQ - ...' : genericNo
+    } else {
+      raw =
+        formModel?.['Invoice Number'] ||
+        formModel?.['Invoice No'] ||
+        formModel?.['invoice_number'] ||
+        formModel?.['invoice_no'] ||
+        currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+          'Invoice No'
+        ] ||
+        currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+          'invoice_no'
+        ] ||
+        currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+          'Invoice Number'
+        ] ||
+        currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+          'invoice_number'
+        ] ||
+        currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
+          'invoice_num'
+        ] ||
+        currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
+        selectedItem?.reqNo ||
+        selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
+        selectedItem?.invoiceNumber ||
+        selectedItem?.requestNo ||
+        'REQ - ...'
     }
-    return (
-      formModel?.['Invoice Number'] ||
-      formModel?.['Invoice No'] ||
-      formModel?.['invoice_number'] ||
-      formModel?.['invoice_no'] ||
-      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'Invoice No'
-      ] ||
-      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'invoice_no'
-      ] ||
-      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'Invoice Number'
-      ] ||
-      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'invoice_number'
-      ] ||
-      currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-        'invoice_num'
-      ] ||
-      currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
-      selectedItem?.reqNo ||
-      selectedItem?.['kvcYuknkDumkTenjvrVLj'] ||
-      selectedItem?.invoiceNumber ||
-      selectedItem?.requestNo ||
-      'REQ - ...'
-    )
+    if (typeof raw === 'string' && raw.includes('PO Number:')) {
+      return raw.replace(/\s*PO\s*(Number|No|num|#)?:?\s*\d+/gi, '').trim()
+    }
+    return raw
   }, [isGenericWorkflow, selectedItem, formModel, currentAgentData])
 
   useEffect(() => {

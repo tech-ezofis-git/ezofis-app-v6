@@ -12,6 +12,7 @@ import {
   findRepositoryNodeId,
   getRepositoryRootNodeId,
 } from '../utils/folderExplorerUtils'
+import { markFolderExplorerAskAiQuery } from '../utils/folderExplorerSession'
 import { AiSummaryView } from './AiSummaryView'
 import { DocumentDetailsView } from './DocumentDetailsView'
 import { DocumentsListView } from './DocumentsListView'
@@ -80,33 +81,7 @@ export function FolderExplorer() {
   const isBusy = loading || loadingPage || refreshing
   const navigate = useNavigate()
   const deepLinkSearch: any = useSearch({ strict: false })
-  const applyingDeepLinkRef = useRef(false)
-
-  useEffect(() => {
-    const { folderId, itemId, repositoryId } = deepLinkSearch || {}
-    if (!repositoryId) return
-    if (applyingDeepLinkRef.current) return
-    if (tree.length === 0) return
-
-    applyingDeepLinkRef.current = true
-
-    const nodeId =
-      folderId ||
-      findRepositoryNodeId(tree, repositoryId) ||
-      encodeRepositoryNodeId({
-        kind: 'repository',
-        label: 'Repository',
-        repositoryId,
-      })
-
-    void openFolder(nodeId).then(() => {
-      if (itemId) openDetailsFile(itemId)
-      if (!globalThis.location?.pathname?.startsWith('/embed')) {
-        void navigate({ replace: true, search: {}, to: '/folders' })
-      }
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deepLinkSearch, tree])
+  const applyingDeepLinkRef = useRef<string | null>(null)
 
   const pendingAskAiAction = useAskAiActionStore((state) => state.pending)
   const setPageContext = useAskAiActionStore((state) => state.setPageContext)
@@ -151,10 +126,19 @@ export function FolderExplorer() {
     [openFileAction],
   )
 
+  /** Prefer an explicit repositoryId (Ask AI / deep-link) so workspace fetch
+   *  does not depend on activeFolder having finished switching. */
   const openDetailsFile = useCallback(
-    (fileId: string) => {
-      setDetailsDocument(null)
-      openFile(fileId)
+    (fileId: string, repositoryId?: string) => {
+      const trimmedId = String(fileId || '').trim()
+      if (!trimmedId) return
+      const trimmedRepo = String(repositoryId || '').trim()
+      if (trimmedRepo) {
+        setDetailsDocument({ id: trimmedId, repositoryId: trimmedRepo })
+      } else {
+        setDetailsDocument(null)
+      }
+      openFile(trimmedId)
     },
     [openFile],
   )
@@ -162,6 +146,71 @@ export function FolderExplorer() {
   const resolvedRepositoryId = String(
     selectedRepository?.id || getRepositoryIdFromFolder(activeFolder) || '',
   )
+  const currentRepositoryId = resolvedRepositoryId
+
+  const selectRepositoryById = useCallback(
+    (repositoryId: string, label = 'Repository') => {
+      const repoId = String(repositoryId || '').trim()
+      if (!repoId) return false
+      if (currentRepositoryId.toLowerCase() === repoId.toLowerCase()) {
+        return false
+      }
+      const nodeId =
+        findRepositoryNodeId(tree, repoId) ||
+        encodeRepositoryNodeId({
+          kind: 'repository',
+          label,
+          repositoryId: repoId,
+        })
+      // selectFolder bypasses openFolder's loading guard.
+      selectFolder(nodeId)
+      return true
+    },
+    [currentRepositoryId, selectFolder, tree],
+  )
+
+  // Deep-link: /folders?repositoryId&itemId (Global Search + Ask AI).
+  useEffect(() => {
+    const { folderId, itemId, repositoryId } = deepLinkSearch || {}
+    const repoId = String(repositoryId || '').trim()
+    const openItemId = String(itemId || '').trim()
+    const folderKey = String(folderId || '').trim()
+    const deepLinkKey = `${repoId}|${openItemId}|${folderKey}`
+
+    if (!repoId && !folderKey) {
+      applyingDeepLinkRef.current = null
+      return
+    }
+    if (tree.length === 0) return
+    if (applyingDeepLinkRef.current === deepLinkKey) return
+
+    applyingDeepLinkRef.current = deepLinkKey
+
+    const nodeId =
+      folderKey ||
+      findRepositoryNodeId(tree, repoId) ||
+      (repoId
+        ? encodeRepositoryNodeId({
+            kind: 'repository',
+            label: 'Repository',
+            repositoryId: repoId,
+          })
+        : '')
+
+    if (nodeId && nodeId !== activeFolder) {
+      selectFolder(nodeId)
+    }
+
+    if (openItemId) {
+      openDetailsFile(openItemId, repoId || undefined)
+    }
+
+    if (!globalThis.location?.pathname?.startsWith('/embed')) {
+      void navigate({ replace: true, search: {}, to: '/folders' })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkSearch, tree.length])
+
   const { permissions: folderPermissions } = useFolderSecurityPermissions(
     resolvedRepositoryId,
     activeFolder,
@@ -187,8 +236,6 @@ export function FolderExplorer() {
     setAppView,
   ])
 
-  const currentRepositoryId = resolvedRepositoryId
-
   useEffect(() => {
     setPageContext({
       actionFrom: 'Repository',
@@ -202,81 +249,88 @@ export function FolderExplorer() {
     }
   }, [currentRepositoryId, setPageContext])
 
+  // Ask AI / Global Search pending: switch repo, apply search/filters, open file.
   useEffect(() => {
     if (!pendingAskAiAction || pendingAskAiAction.target !== 'Repository') {
+      applyingAskAiRef.current = false
       return
     }
     if (applyingAskAiRef.current) return
     if (tree.length === 0) return
+    // Wait for folder content settle after a repo switch, otherwise search/filter
+    // writes get wiped by the activeFolder effect.
     if (loading || loadingPage) return
 
     applyingAskAiRef.current = true
-    let cancelled = false
 
-    const apply = async () => {
-      try {
-        const repoId = String(pendingAskAiAction.repositoryId || '').trim()
-        const filters = pendingAskAiAction.filters || {}
+    const repoId = String(pendingAskAiAction.repositoryId || '').trim()
+    const legacyMetaKeys = new Set([
+      'repo',
+      'repository',
+      'repositoryid',
+      'repositoryname',
+      'workspace',
+      'workspaceid',
+    ])
+    let fileSearch = pendingAskAiAction.fileSearch?.trim() || ''
+    const filters = Object.fromEntries(
+      Object.entries(pendingAskAiAction.filters || {}).flatMap(
+        ([key, value]) => {
+          const normalized = key.toLowerCase().replace(/[\s_-]/g, '')
+          if (normalized === 'search') {
+            if (!fileSearch) {
+              fileSearch = String(value || '').trim()
+            }
+            return []
+          }
+          if (legacyMetaKeys.has(normalized)) return []
+          return [[key, value]]
+        },
+      ),
+    )
 
-        if (viewMode !== 'list') {
-          changeViewMode('list')
-          // viewMode change clears filters via explorer effect; retry after settle
-          applyingAskAiRef.current = false
-          return
-        }
-
-        if (
-          repoId &&
-          currentRepositoryId.toLowerCase() !== repoId.toLowerCase()
-        ) {
-          const treeNodeId = findRepositoryNodeId(tree, repoId)
-          const nodeId =
-            treeNodeId ||
-            encodeRepositoryNodeId({
-              kind: 'repository',
-              label: pendingAskAiAction.repositoryLabel || 'Repository',
-              repositoryId: repoId,
-            })
-          await openFolder(nodeId)
-          // Folder switch clears filters; leave pending so effect re-runs.
-          applyingAskAiRef.current = false
-          return
-        }
-
-        await new Promise((resolve) => window.setTimeout(resolve, 120))
-        if (cancelled) return
-
-        setFileFilters(filters)
-        setFileSearch(pendingAskAiAction.fileSearch?.trim() || '')
-
-        if (pendingAskAiAction.openItemId?.trim()) {
-          openDetailsFile(pendingAskAiAction.openItemId.trim())
-        } else {
-          setAppView('explorer')
-        }
-        clearPending()
-      } finally {
-        applyingAskAiRef.current = false
-      }
+    if (viewMode !== 'list') {
+      changeViewMode('list')
+      applyingAskAiRef.current = false
+      return
     }
 
-    void apply()
-    return () => {
-      cancelled = true
+    if (
+      selectRepositoryById(
+        repoId,
+        pendingAskAiAction.repositoryLabel || 'Repository',
+      )
+    ) {
+      applyingAskAiRef.current = false
+      return
     }
+
+    const fromAskAi = Boolean(pendingAskAiAction.ephemeral)
+    if (fromAskAi) {
+      markFolderExplorerAskAiQuery()
+    }
+    setFileFilters(filters, { fromAskAi })
+    setFileSearch(fileSearch, { fromAskAi })
+    setFolderSearch(fileSearch, { fromAskAi })
+
+    const openItemId = pendingAskAiAction.openItemId?.trim() || ''
+    if (openItemId) {
+      openDetailsFile(openItemId, repoId || undefined)
+    }
+
+    clearPending()
+    applyingAskAiRef.current = false
   }, [
     changeViewMode,
     clearPending,
-    currentRepositoryId,
     loading,
     loadingPage,
     openDetailsFile,
-    openFolder,
     pendingAskAiAction,
-    setAppView,
+    selectRepositoryById,
     setFileFilters,
     setFileSearch,
-    tree,
+    setFolderSearch,
     tree.length,
     viewMode,
   ])
@@ -562,8 +616,8 @@ export function FolderExplorer() {
             else commitFilterDefer()
           }}
           onFiltersChange={(filters) => {
-            setFileFilters(filters)
-            setFolderFilters(filters)
+            setFileFilters(filters, { manual: true })
+            setFolderFilters(filters, { manual: true })
           }}
           onIntelligentUpload={
             canIntelligentUpload ? handleIntelligentUpload : undefined
@@ -574,8 +628,8 @@ export function FolderExplorer() {
           onRefresh={handleRefresh}
           onRepositoryChange={openFolder}
           onSearchChange={(value) => {
-            setFileSearch(value)
-            setFolderSearch(value)
+            setFileSearch(value, { manual: true })
+            setFolderSearch(value, { manual: true })
           }}
           onShare={openShareForFile}
           onUpload={canUpload ? handleUpload : undefined}
@@ -609,14 +663,22 @@ export function FolderExplorer() {
         repositoryId={resolvedRepositoryId}
         view={viewMode}
         setView={changeViewMode}
-        onFileFiltersChange={setFileFilters}
-        onFileSearchChange={setFileSearch}
+        onFileFiltersChange={(filters) => {
+          setFileFilters(filters, { manual: true })
+        }}
+        onFileSearchChange={(value) => {
+          setFileSearch(value, { manual: true })
+        }}
         onFilterMenuOpenChange={(id) => {
           if (id) beginFilterDefer()
           else commitFilterDefer()
         }}
-        onFolderFiltersChange={setFolderFilters}
-        onFolderSearchChange={setFolderSearch}
+        onFolderFiltersChange={(filters) => {
+          setFolderFilters(filters, { manual: true })
+        }}
+        onFolderSearchChange={(value) => {
+          setFolderSearch(value, { manual: true })
+        }}
         onIntelligentUpload={
           canIntelligentUpload ? handleIntelligentUpload : undefined
         }

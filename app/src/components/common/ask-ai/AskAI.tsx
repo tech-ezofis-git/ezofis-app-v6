@@ -51,7 +51,7 @@ import Tooltip from '@/components/base/Tooltip'
 import AiBrandIcon from '../AiBrandIcon'
 import Icon from '@/components/base/icon/Icon'
 import {
-  browseFilterByToUiFilters,
+  browseFilterByToUiFiltersAndSearch,
   hasBrowsableAction,
   postChatbotMessage,
   resolveAskAiPageContext,
@@ -144,7 +144,10 @@ function resolveCtaMode(
 
   const target = String(answer.actionTo || '').toLowerCase()
   const browse = answer.action?.browse_request
-  const filters = browseFilterByToUiFilters(browse?.filterBy)
+  const { filters } = browseFilterByToUiFiltersAndSearch(
+    browse?.filterBy,
+    browse?.contentSearchValue,
+  )
   if (!Object.keys(filters).length && target !== 'repository' && target !== 'workflow') {
     return null
   }
@@ -175,6 +178,71 @@ async function fetchAskAIAnswer(
   pageContext: { actionFrom: string; specificId: string },
 ): Promise<AskAiAnswer> {
   return postChatbotMessage(question, pageContext)
+}
+
+function pickCardIdValue(
+  id: AskAiCard['id'],
+  ...keys: string[]
+): string {
+  if (!id || typeof id !== 'object' || Array.isArray(id)) return ''
+  for (const key of keys) {
+    const value = (id as Record<string, unknown>)[key]
+    if (value == null || value === '' || value === 0 || value === '0') continue
+    const text = String(value).trim()
+    if (text) return text
+  }
+  return ''
+}
+
+function getCardTypeLabel(type?: string) {
+  const normalized = String(type || '')
+    .trim()
+    .toLowerCase()
+  if (normalized === 'ticket' || normalized === 'request') return 'Request'
+  if (!normalized) return ''
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1)
+}
+
+function getCardBodyText(card: AskAiCard) {
+  const description = String(card.description || '').trim()
+  const type = String(card.type || '')
+    .trim()
+    .toLowerCase()
+
+  // Ticket descriptions are often raw form_data JSON — prefer stage/request info.
+  if (
+    (type === 'ticket' || type === 'request') &&
+    (description.startsWith('{') || description.startsWith('['))
+  ) {
+    const stage = pickCardIdValue(card.id, 'stage')
+    const requestNo = pickCardIdValue(card.id, 'requestNo')
+    const workflowName = pickCardIdValue(card.id, 'workflowName')
+    return [requestNo, workflowName, stage].filter(Boolean).join(' · ')
+  }
+
+  return description
+}
+
+function isCardNavigable(card: AskAiCard) {
+  const type = String(card.type || '')
+    .trim()
+    .toLowerCase()
+  const formId = pickCardIdValue(card.id, 'formId', 'masterFormId')
+  const itemId = pickCardIdValue(card.id, 'itemId', 'documentId')
+  const repositoryId = pickCardIdValue(card.id, 'repositoryId', 'repoId')
+  const workflowId = pickCardIdValue(card.id, 'workflowId')
+  const instanceId = pickCardIdValue(card.id, 'instanceId')
+
+  if (type === 'form' || type.includes('master') || formId) {
+    return Boolean(formId)
+  }
+  if (type === 'ticket' || type === 'request') {
+    return Boolean(workflowId && instanceId)
+  }
+  if (type === 'document' || type === 'file' || itemId) {
+    return Boolean(itemId || repositoryId)
+  }
+  return false
 }
 
 
@@ -635,7 +703,10 @@ const AskAI = () => {
     if (target !== 'repository' && target !== 'workflow') return
 
     const browse = msg.browseRequest
-    const filters = browseFilterByToUiFilters(browse?.filterBy)
+    const { fileSearch, filters } = browseFilterByToUiFiltersAndSearch(
+      browse?.filterBy,
+      browse?.contentSearchValue,
+    )
     const repositoryId = String(
       msg.actionContext?.repositoryId ?? browse?.repositoryId ?? '',
     ).trim()
@@ -643,6 +714,8 @@ const AskAI = () => {
 
     if (target === 'repository') {
       setPending({
+        ephemeral: true,
+        fileSearch: fileSearch || undefined,
         filters,
         repositoryId,
         repositoryLabel: 'Repository',
@@ -655,6 +728,7 @@ const AskAI = () => {
     }
 
     setPending({
+      ephemeral: true,
       filters,
       target: 'Workflow',
       workflowId,
@@ -662,6 +736,73 @@ const AskAI = () => {
     if (!pathname.startsWith('/workflows')) {
       void navigate({ to: '/workflows' })
     }
+  }
+
+  const openResultCard = (card: AskAiCard) => {
+    if (!isCardNavigable(card)) return
+
+    const type = String(card.type || '')
+      .trim()
+      .toLowerCase()
+    const formId = pickCardIdValue(card.id, 'formId', 'masterFormId')
+    const formEntryId = pickCardIdValue(card.id, 'formEntryId')
+    const itemId = pickCardIdValue(card.id, 'itemId', 'documentId')
+    const repositoryId = pickCardIdValue(card.id, 'repositoryId', 'repoId')
+    const repositoryName = pickCardIdValue(card.id, 'repositoryName')
+    const workflowId = pickCardIdValue(card.id, 'workflowId')
+    const instanceId = pickCardIdValue(card.id, 'instanceId')
+    const searchText = getCardBodyText(card) || String(card.title || '').trim()
+
+    // Forms → open entry + seed table search with matched value
+    if (type === 'form' || type.includes('master') || formId) {
+      if (!formId) return
+      void navigate({
+        params: { formId },
+        search: {
+          ...(formEntryId ? { entryId: formEntryId } : {}),
+          ...(searchText ? { search: searchText } : {}),
+        },
+        to: '/forms/$formId/entries',
+      })
+      closeAskAI()
+      return
+    }
+
+    // Tickets / requests → requests deep-link
+    if (type === 'ticket' || type === 'request') {
+      if (workflowId && instanceId) {
+        void navigate({
+          search: {
+            processId: instanceId,
+            workflowId,
+          },
+          to: '/requests',
+        })
+      } else {
+        void navigate({ to: '/requests' })
+      }
+      closeAskAI()
+      return
+    }
+
+    // Documents / files → open in folders (same path as Global Search)
+    setPending({
+      ephemeral: true,
+      fileSearch: String(card.title || '').trim() || searchText || undefined,
+      filters: {},
+      openItemId: itemId || undefined,
+      repositoryId: repositoryId || undefined,
+      repositoryLabel: repositoryName || 'Repository',
+      target: 'Repository',
+    })
+    void navigate({
+      search: {
+        ...(repositoryId ? { repositoryId } : {}),
+        ...(itemId ? { itemId } : {}),
+      },
+      to: '/folders',
+    })
+    closeAskAI()
   }
 
   const sendMessage = async (value?: string) => {
@@ -926,6 +1067,7 @@ const AskAI = () => {
                         key={msg.id}
                         msg={msg}
                         onActionClick={() => applyAnswerAction(msg)}
+                        onCardClick={openResultCard}
                         onTypingComplete={() => finishTyping(msg.id)}
                         onTypingProgress={() =>
                           bottomRef.current?.scrollIntoView({ behavior: 'auto' })
@@ -1098,11 +1240,13 @@ const HistoryView = ({
 const ChatMessage = ({
   msg,
   onActionClick,
+  onCardClick,
   onTypingComplete,
   onTypingProgress,
 }: {
   msg: Message
   onActionClick?: () => void
+  onCardClick?: (card: AskAiCard) => void
   onTypingComplete?: () => void
   onTypingProgress?: () => void
 }) => {
@@ -1172,6 +1316,7 @@ const ChatMessage = ({
                     ctaMode={msg.ctaMode}
                     key={`${block.type}-${index}`}
                     onActionClick={onActionClick}
+                    onCardClick={onCardClick}
                   />
                 ))}
                 onProgress={onTypingProgress}
@@ -1188,10 +1333,12 @@ const AnswerBlock = ({
   block,
   ctaMode,
   onActionClick,
+  onCardClick,
 }: {
   block: TextBlock
   ctaMode?: AskAiCtaMode | null
   onActionClick?: () => void
+  onCardClick?: (card: AskAiCard) => void
 }) => {
   if (block.type === 'paragraph') {
     return <p className='mb-2.5'>{block.text}</p>
@@ -1228,10 +1375,10 @@ const AnswerBlock = ({
         </div>
 
         <div className='flex flex-wrap gap-1.5 px-3 py-2.5'>
-          {bulletItems.map((item) => (
+          {bulletItems.map((item, index) => (
             <span
               className='inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[12px] text-[var(--text1)]'
-              key={`${item.label}-${item.value}`}
+              key={`${item.label}-${item.value}-${index}`}
             >
               <span className='font-medium text-[var(--text2)]'>
                 {item.label}
@@ -1282,7 +1429,7 @@ const AnswerBlock = ({
   }
 
   if (block.type === 'card') {
-    return <AnswerCard card={block} />
+    return <AnswerCard card={block} onCardClick={onCardClick} />
   }
 
   if (block.type === 'cards') {
@@ -1297,7 +1444,11 @@ const AnswerBlock = ({
           </div>
         )}
         {cards.map((card, index) => (
-          <AnswerCard card={card} key={`${card.title || 'card'}-${index}`} />
+          <AnswerCard
+            card={card}
+            key={`${card.title || 'card'}-${index}`}
+            onCardClick={onCardClick}
+          />
         ))}
       </div>
     )
@@ -1306,40 +1457,93 @@ const AnswerBlock = ({
   return null
 }
 
-const AnswerCard = ({ card }: { card: AskAiCard }) => {
+const AnswerCard = ({
+  card,
+  onCardClick,
+}: {
+  card: AskAiCard
+  onCardClick?: (card: AskAiCard) => void
+}) => {
   const fields = card.fields ?? []
+  const description = getCardBodyText(card)
+  const truncatedDescription =
+    description.length > 180 ? `${description.slice(0, 177)}…` : description
+  const typeLabel = getCardTypeLabel(card.type)
+  const clickable = Boolean(onCardClick && isCardNavigable(card))
+
+  const content = (
+    <>
+      <div className='border-b border-[var(--border)] px-3 py-2.5'>
+        <div className='flex items-start justify-between gap-2'>
+          <div className='min-w-0 flex-1'>
+            <div className='text-[13.5px] font-semibold text-[var(--text1)]'>
+              {card.title}
+            </div>
+            {card.subtitle && (
+              <div className='mt-0.5 text-[11.5px] leading-snug text-[var(--text3)]'>
+                {card.subtitle}
+              </div>
+            )}
+          </div>
+          <div className='flex shrink-0 items-center gap-1.5'>
+            {typeLabel ? (
+              <span className='rounded-md border border-[var(--border)] bg-[var(--bg2)] px-1.5 py-0.5 text-[10px] font-medium tracking-[.3px] text-[var(--text2)] uppercase'>
+                {typeLabel}
+              </span>
+            ) : null}
+            {clickable ? (
+              <ExternalLink
+                className='size-3.5 text-[var(--purple)] opacity-70 transition group-hover:translate-x-0.5 group-hover:opacity-100'
+                strokeWidth={2}
+              />
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {fields.length > 0 ? (
+        <div className='grid grid-cols-2'>
+          {fields.map((field, index) => (
+            <div
+              key={`${field.label}-${index}`}
+              className={`border-b border-[var(--border)] px-3 py-2 ${index % 2 === 0 ? 'border-r' : ''
+                } ${fields.length % 2 === 1 && index === fields.length - 1
+                  ? 'col-span-2 border-r-0'
+                  : ''
+                }`}
+            >
+              <div className='mb-0.5 text-[10px] tracking-[.3px] text-[var(--text3)] uppercase'>
+                {field.label}
+              </div>
+              <div className='text-xs font-medium text-[var(--text1)]'>
+                {field.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : truncatedDescription ? (
+        <div className='px-3 py-2.5 text-xs leading-relaxed text-[var(--text2)]'>
+          {truncatedDescription}
+        </div>
+      ) : null}
+    </>
+  )
+
+  if (clickable) {
+    return (
+      <button
+        className='group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-7)] active:scale-[0.995]'
+        type='button'
+        onClick={() => onCardClick?.(card)}
+      >
+        {content}
+      </button>
+    )
+  }
 
   return (
-    <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)]'>
-      <div className='border-b border-[var(--border)] px-3 py-2.5'>
-        <div className='text-[13.5px] font-semibold text-[var(--text1)]'>
-          {card.title}
-        </div>
-        {card.subtitle && (
-          <div className='mt-0.5 text-[11.5px] text-[var(--text3)]'>
-            {card.subtitle}
-          </div>
-        )}
-      </div>
-      <div className='grid grid-cols-2'>
-        {fields.map((field, index) => (
-          <div
-            key={`${field.label}-${index}`}
-            className={`border-b border-[var(--border)] px-3 py-2 ${index % 2 === 0 ? 'border-r' : ''
-              } ${fields.length % 2 === 1 && index === fields.length - 1
-                ? 'col-span-2 border-r-0'
-                : ''
-              }`}
-          >
-            <div className='mb-0.5 text-[10px] tracking-[.3px] text-[var(--text3)] uppercase'>
-              {field.label}
-            </div>
-            <div className='text-xs font-medium text-[var(--text1)]'>
-              {field.value}
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)]'>
+      {content}
     </div>
   )
 }

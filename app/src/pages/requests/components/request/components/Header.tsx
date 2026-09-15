@@ -483,8 +483,8 @@ const Header: React.FC<HeaderProps> = ({
       ]
 
     return (
-      <OverlayHeaderWrapper className='h-14 flex-nowrap justify-between gap-3 overflow-hidden px-4'>
-        <div className='flex min-w-0 flex-1 items-center gap-2 overflow-hidden'>
+      <OverlayHeaderWrapper className='min-h-14 py-2 flex-wrap justify-between gap-3 px-4 w-full'>
+        <div className='flex items-center gap-2 flex-wrap min-w-0'>
           <IconButton
             className='shrink-0 cursor-pointer hover:bg-gray-2'
             color='gray'
@@ -493,7 +493,7 @@ const Header: React.FC<HeaderProps> = ({
             variant='ghost'
             onClick={onBack}
           />
-          <div className='flex min-w-0 items-center gap-2 overflow-hidden'>
+          <div className='flex items-center gap-2 flex-wrap min-w-0'>
             <Tooltip content={t`Previous Request`} position='bottom'>
               <IconButton
                 className='size-7 shrink-0 cursor-pointer hover:bg-surface'
@@ -547,21 +547,21 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        <div className='flex shrink-0 items-center gap-2 sm:gap-3'>
+        <div className='flex shrink-0 items-center gap-2 sm:gap-3 flex-wrap'>
           {(raisedByDisplay || raisedAt || lastActionAt) && (
-            <div className='hidden min-w-0 max-w-[28rem] items-center gap-2.5 border-r border-gray-3 pr-3 text-[12px] text-gray-11 md:flex'>
+            <div className='flex items-center gap-2.5 border-r border-gray-3 pr-3 text-[12px] text-gray-11 flex-wrap'>
               {raisedByDisplay && (
                 <Tooltip
                   className='min-w-0 max-w-[9rem] lg:max-w-[12rem]'
                   content={String(raisedByDisplay)}
                   position='bottom'
                 >
-                  <div className='flex min-w-0 max-w-full items-center gap-1.5'>
+                  <div className='flex items-center gap-1.5 min-w-0'>
                     <Icon
                       className='size-3.5 shrink-0 text-gray-9'
                       name='lucide:user'
                     />
-                    <span className='min-w-0 truncate font-medium text-gray-12'>
+                    <span className='truncate font-medium text-gray-12'>
                       {raisedByDisplay}
                     </span>
                   </div>
@@ -570,7 +570,7 @@ const Header: React.FC<HeaderProps> = ({
 
               {raisedAt && (
                 <div
-                  className='hidden shrink-0 items-center gap-1.5 whitespace-nowrap lg:flex'
+                  className='flex shrink-0 items-center gap-1.5 whitespace-nowrap'
                   title={t`Raised Date`}
                 >
                   <Icon
@@ -671,11 +671,11 @@ const Header: React.FC<HeaderProps> = ({
   }
 
   return (
-    <OverlayHeaderWrapper className='h-14 justify-between gap-4 px-4'>
+    <OverlayHeaderWrapper className='min-h-14 py-2 flex-wrap justify-between gap-x-3 gap-y-2 px-3 sm:px-4 min-w-0 w-full'>
       {/* Left Side Group: Request Number + Navigation Buttons */}
-      <div className='flex items-center gap-4 p-0'>
+      <div className='flex items-center gap-2 sm:gap-3 flex-wrap min-w-0'>
         <IconButton
-          className='cursor-pointer hover:bg-[var(--gray-2)]'
+          className='shrink-0 cursor-pointer hover:bg-[var(--gray-2)]'
           color='gray'
           icon='tabler:arrow-left'
           size='sm'
@@ -683,36 +683,38 @@ const Header: React.FC<HeaderProps> = ({
           onClick={onBack}
         />
 
-        <div className='flex flex-col pb-1'>
-          <div className='flex items-center gap-3'>
-            <Tooltip content={t`Previous Request`} position='bottom'>
-              <IconButton
-                className='size-7 cursor-pointer hover:bg-surface'
-                color='gray'
-                disabled={!onPrev}
-                icon='tabler:chevron-left'
-                size='sm'
-                variant='ghost'
-                onClick={onPrev}
-              />
-            </Tooltip>
-            <h1 className='text-[15px] font-semibold tracking-tight text-[var(--gray-13)]'>
-              {requestNo}
-            </h1>
-            <Tooltip content={t`Next Request`} position='bottom'>
-              <IconButton
-                className='size-7 cursor-pointer hover:bg-surface'
-                color='gray'
-                disabled={!onNext}
-                icon='tabler:chevron-right'
-                size='sm'
-                variant='ghost'
-                onClick={onNext}
-              />
-            </Tooltip>
-            <div className='flex items-center gap-2'>
+        <div className='flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0'>
+          <Tooltip content={t`Previous Request`} position='bottom'>
+            <IconButton
+              className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+              color='gray'
+              disabled={!onPrev}
+              icon='tabler:chevron-left'
+              size='sm'
+              variant='ghost'
+              onClick={onPrev}
+            />
+          </Tooltip>
+          <h1
+            className='text-[13px] sm:text-[14px] md:text-[15px] font-semibold tracking-tight text-[var(--gray-13)] whitespace-nowrap'
+            title={requestNo}
+          >
+            {requestNo}
+          </h1>
+          <Tooltip content={t`Next Request`} position='bottom'>
+            <IconButton
+              className='size-7 shrink-0 cursor-pointer hover:bg-surface'
+              color='gray'
+              disabled={!onNext}
+              icon='tabler:chevron-right'
+              size='sm'
+              variant='ghost'
+              onClick={onNext}
+            />
+          </Tooltip>
+          <div className='flex shrink-0 items-center gap-1.5 sm:gap-2 flex-wrap'>
               {poNumber && poNumber !== '-' && poNumber !== 'N/A' && (
-                <span className='animate-in fade-in slide-in-from-left-2 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-3 py-1 text-[11px] font-semibold text-[var(--gray-11)] duration-300'>
+                <span className='animate-in fade-in slide-in-from-left-2 shrink-0 rounded-full border border-[var(--gray-3)] bg-[var(--gray-1)] px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[var(--gray-11)] duration-300 whitespace-nowrap'>
                   {`# ${poNumber.replace(/^#\s*/, '')}`}
                 </span>
               )}
@@ -824,10 +826,9 @@ const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         </div>
-      </div>
 
       {/* Right Side Group: Total Amount + Actions */}
-      <div className='flex items-center gap-6'>
+      <div className='flex items-center gap-2 sm:gap-3 flex-wrap ml-auto'>
         {(() => {
           const getCurrencyDisplay = (curr: string) => {
             if (!curr) return '$'
@@ -891,9 +892,9 @@ const Header: React.FC<HeaderProps> = ({
           }
 
           return (
-            <div className='flex items-center gap-3 pr-3'>
-              <div className='flex flex-col border-[var(--gray-3)] pl-3 text-right'>
-                <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+            <div className='flex shrink-0 items-center gap-2 sm:gap-3 pr-1 sm:pr-3'>
+              <div className='flex flex-col border-[var(--gray-3)] pl-2 sm:pl-3 text-right'>
+                <span className='mb-1 text-[9px] sm:text-[10px] leading-none font-semibold text-[var(--gray-11)] whitespace-nowrap'>
                   {t`Invoice Value`}
                 </span>
                 <div
@@ -903,23 +904,23 @@ const Header: React.FC<HeaderProps> = ({
                   )}
                 >
                   {formatAmount(totalAmount) === '0.00' ? (
-                    <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                    <div className='h-3 w-12 sm:w-16 animate-pulse rounded bg-[var(--gray-4)]' />
                   ) : (
-                    <span className='text-[13px] leading-tight font-semibold'>
+                    <span className='text-[12px] sm:text-[13px] leading-tight font-semibold whitespace-nowrap'>
                       {currDisplay} {formatAmount(totalAmount)}
                     </span>
                   )}
                 </div>
               </div>
-              <div className='flex flex-col border-l border-[var(--gray-3)] pl-3 text-right'>
-                <span className='mb-1.5 text-[10px] leading-none font-semibold text-[var(--gray-11)]'>
+              <div className='flex flex-col border-l border-[var(--gray-3)] pl-2 sm:pl-3 text-right'>
+                <span className='mb-1 text-[9px] sm:text-[10px] leading-none font-semibold text-[var(--gray-11)] whitespace-nowrap'>
                   {t`PO Value`}
                 </span>
                 <div className='flex items-center justify-end text-[var(--primary-9)]'>
                   {formatAmount(poValue) === '0.00' ? (
-                    <div className='h-3 w-16 animate-pulse rounded bg-[var(--gray-4)]' />
+                    <div className='h-3 w-12 sm:w-16 animate-pulse rounded bg-[var(--gray-4)]' />
                   ) : (
-                    <span className='text-[13px] leading-tight font-semibold'>
+                    <span className='text-[12px] sm:text-[13px] leading-tight font-semibold whitespace-nowrap'>
                       {currDisplay} {formatAmount(poValue)}
                     </span>
                   )}
@@ -929,7 +930,7 @@ const Header: React.FC<HeaderProps> = ({
           )
         })()}
 
-        <div className='flex items-center gap-2'>
+        <div className='flex shrink-0 items-center gap-1.5 sm:gap-2'>
           {/* AI Insights Toggle & Overlay */}
           {enableAIInsights && (
             <div className='relative' ref={containerRef}>

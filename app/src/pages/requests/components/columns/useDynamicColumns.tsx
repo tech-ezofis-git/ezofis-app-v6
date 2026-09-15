@@ -1434,25 +1434,12 @@ const getBaseColumns = (
       size: 140,
       renderCell: (row: any, _index = 0) => {
         if (activeTab === 'Processed') {
-          return null
-          /*
-          const isPaid = index % 2 === 0
-          if (isPaid) {
-            return (
-              <span className='flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
-                <Icon className='size-3.5' name='tabler:circle-check' />
-                Paid
-              </span>
-            )
-          } else {
-            return (
-              <span className='flex items-center gap-1 rounded-md border border-[var(--orange-4)] bg-[var(--orange-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--orange-11)]'>
-                <Icon className='size-3.5' name='tabler:clock' />
-                Pending for Payment
-              </span>
-            )
-          }
-          */
+          return (
+            <span className='inline-flex items-center gap-1 rounded-md border border-[var(--green-4)] bg-[var(--green-2)] px-2 py-0.5 text-[11px] font-semibold text-[var(--green-11)]'>
+              <Icon className='size-3.5 text-[var(--green-9)]' name='tabler:circle-check' />
+              Paid
+            </span>
+          )
         }
 
         const rowId = row.processId || row.id
