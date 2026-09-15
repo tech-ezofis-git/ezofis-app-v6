@@ -7,6 +7,7 @@ import { workflowsApiV6 } from '@/api/v6/workflows'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
 import Tooltip from '@/components/base/Tooltip'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import { useComments } from '@/pages/requests/hooks/useComments'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
@@ -213,11 +214,16 @@ export default function Comments({
           const isMe =
             c?.createdByEmail === currentUserEmail ||
             (c?.createdBy && c.createdBy === session?.id)
-          const name = isMe
-            ? t`You`
-            : isUuid(c?.createdByName || '')
-              ? t`User`
-              : (c?.createdByName ?? c?.createdByEmail ?? t`User`)
+          const rawName = String(
+            c?.createdByName || c?.createdByEmail || c?.userName || c?.author || '',
+          ).trim()
+          const isAi =
+            !rawName ||
+            isUuid(rawName) ||
+            ['system', 'bot', 'ai', 'ai agent', 'ezofis ai'].includes(
+              rawName.toLowerCase(),
+            )
+          const name = isMe ? t`You` : isAi ? t`AI` : rawName
           const fileIds = extractFileIds(c)
           const timeDisplay = c?.createdAt
             ? formatDatetime(
@@ -227,35 +233,37 @@ export default function Comments({
             : ''
           const initials = isMe
             ? myInitials
-            : getInitials(c?.createdByName ?? c?.createdByEmail ?? 'User')
+            : isAi
+              ? 'AI'
+              : getInitials(rawName)
 
           return (
             <div
               className='flex items-start gap-3'
               key={`${c?.id ?? idx}`}
             >
-              <div
-                className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold',
-                  getAvatarColors(initials, isMe),
-                )}
-              >
-                {initials}
-              </div>
+              {isAi ? (
+                <div className='flex size-8 shrink-0 items-center justify-center rounded-full border border-purple-4/50 bg-purple-1 text-purple-9 shadow-2xs'>
+                  <AiBrandIcon className='size-4 shrink-0' />
+                </div>
+              ) : (
+                <div
+                  className={cn(
+                    'flex size-8 shrink-0 items-center justify-center rounded-full text-13 font-bold',
+                    getAvatarColors(initials, isMe),
+                  )}
+                >
+                  {initials}
+                </div>
+              )}
 
               <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-                <div className='flex min-w-0 items-baseline gap-2'>
-                  <Tooltip
-                    className='min-w-0 max-w-full flex-1 justify-start'
-                    content={name}
-                    position='top'
-                  >
-                    <span className='block min-w-0 truncate text-[13px] font-bold text-gray-13'>
-                      {name}
-                    </span>
-                  </Tooltip>
+                <div className='flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5'>
+                  <span className='font-bold text-[13px] text-gray-13'>
+                    {name}
+                  </span>
                   {timeDisplay && (
-                    <span className='shrink-0 text-[11px] font-medium text-gray-9'>
+                    <span className='text-[11px] font-medium text-gray-9'>
                       {timeDisplay}
                     </span>
                   )}
@@ -320,10 +328,10 @@ export default function Comments({
             </div>
           )}
 
-          <div className='flex items-center gap-2.5'>
+          <div className='flex items-start gap-2.5'>
             <div
               className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold',
+                'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold',
                 getAvatarColors(myInitials, true),
               )}
             >
@@ -335,7 +343,7 @@ export default function Comments({
                 className='w-full resize-none bg-transparent px-3 py-2 text-[13px] leading-5 font-medium text-gray-13 placeholder:text-gray-9 focus:outline-none'
                 disabled={posting}
                 placeholder={t`Add a comment...`}
-                rows={3}
+                rows={2}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
@@ -353,7 +361,7 @@ export default function Comments({
               title={t`Send comment`}
               type='button'
               className={cn(
-                'flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-9 text-text-on-accent transition-all active:scale-95',
+                'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-9 text-text-on-accent transition-all active:scale-95',
                 canSend
                   ? 'cursor-pointer hover:opacity-90'
                   : 'cursor-not-allowed opacity-45',
