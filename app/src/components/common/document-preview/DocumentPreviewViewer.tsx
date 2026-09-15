@@ -1677,11 +1677,10 @@ function PdfViewer({
 
       {loadError ? (
         <div className='absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-[var(--gray-1)] px-6 text-center'>
-          <FileText className='text-[var(--primary-9)]' size={40} />
-          <p className='text-sm font-semibold text-[var(--gray-13)]'>
-            Unable to display this document
+          <FileText className='text-[var(--gray-4)]' size={40} />
+          <p className='text-sm font-semibold text-[var(--gray-11)]'>
+            No document preview available
           </p>
-          <p className='text-xs text-[var(--gray-10)]'>{loadError}</p>
         </div>
       ) : null}
 
@@ -1697,8 +1696,11 @@ function PdfViewer({
             fileUrl={fileUrl}
             plugins={[searchPluginInstance, zoomPluginInstance]}
             renderError={() => (
-              <div className='flex h-full min-h-[320px] items-center justify-center bg-[var(--gray-1)] text-sm text-[var(--gray-11)]'>
-                Unable to display this document
+              <div className='flex h-full min-h-[320px] flex-col items-center justify-center gap-2 bg-[var(--gray-1)] text-center'>
+                <FileText className='text-[var(--gray-4)]' size={40} />
+                <p className='text-sm font-semibold text-[var(--gray-11)]'>
+                  No document preview available
+                </p>
               </div>
             )}
             onDocumentLoad={handleDocumentLoad}

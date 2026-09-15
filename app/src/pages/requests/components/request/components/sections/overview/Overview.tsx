@@ -3567,6 +3567,17 @@ const Overview = (props: any) => {
               fileUrl={previewUrl}
               key={`${requestFileKey}-${previewUrl}`}
               plugins={[toolbarPluginInstance, searchPluginInstance]}
+              renderError={() => (
+                <div className='flex h-full flex-col items-center justify-center p-6 text-center'>
+                  <Icon
+                    className='mb-4 size-12 text-[var(--gray-4)]'
+                    name='tabler:file-off'
+                  />
+                  <p className='text-[15px] font-semibold text-[var(--gray-11)]'>
+                    No document preview available
+                  </p>
+                </div>
+              )}
             />
             <div className='absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-xl border border-[var(--gray-3)] bg-surface/90 px-4 py-2 opacity-0 shadow-2xl backdrop-blur-sm transition-all duration-300 group-hover:opacity-100'>
               <button
