@@ -873,8 +873,13 @@ msgid "AI generated"
 msgstr "Généré par IA"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1593
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4545
 msgid "AI Insight"
 msgstr "Aperçu de l'IA"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4204
+msgid "AI Insight & Verification Summary"
+msgstr ""
 
 #: src/pages/requests/components/request/components/Header.tsx:951
 msgid "AI Insights"
@@ -1094,7 +1099,7 @@ msgstr "ANALYTIQUE"
 msgid "Analyzing Columns..."
 msgstr "Analyse des colonnes..."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:609
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:620
 msgid "Analyzing context & keywords"
 msgstr "Analyse du contexte et des mots-clés"
 
@@ -1169,7 +1174,7 @@ msgstr "Agent PA"
 msgid "AP Agent"
 msgstr "Agent PA"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:587
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:598
 msgid "AP Agent Decision"
 msgstr "Décision de l'agent AP"
 
@@ -1357,6 +1362,10 @@ msgstr "Utilisateurs et groupes attribués"
 msgid "Assigned Users & Groups ({0})"
 msgstr "Utilisateurs et groupes attribués ({0})"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4844
+msgid "Associated Entity"
+msgstr ""
+
 #: src/layouts/auth/components/PasswordRequirements.tsx:13
 msgid "At least 1 lowercase (a-z)"
 msgstr "Au moins 1 minuscule (a-z)"
@@ -1407,7 +1416,7 @@ msgstr "Pièce jointe"
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4033
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4123
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "Pièces jointes"
@@ -1445,7 +1454,7 @@ msgstr "Authentification requise. Veuillez vous reconnecter."
 msgid "Authenticator App"
 msgstr "Application d'authentification"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4288
 msgid "Authorized Amount"
 msgstr "Montant autorisé"
 
@@ -1555,7 +1564,7 @@ msgstr "Intégration du stockage Azure Blob pour les organisations utilisant Mic
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:991
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4521
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4909
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1575,7 +1584,7 @@ msgstr "Intégration du stockage Azure Blob pour les organisations utilisant Mic
 msgid "Back"
 msgstr "Retour"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4017
 msgid "Back Order"
 msgstr "Commande en souffrance"
 
@@ -1635,6 +1644,10 @@ msgstr "Retour aux flux de travail"
 msgid "Backorder"
 msgstr "Commande en souffrance"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5134
+msgid "Balance Qty"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:18
 msgid "Barcode"
 msgstr "Code-barres"
@@ -1653,8 +1666,8 @@ msgid "Between"
 msgstr "Entre"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4394
-msgid "Billing Terms"
-msgstr "Conditions de facturation"
+#~ msgid "Billing Terms"
+#~ msgstr "Conditions de facturation"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:428
 msgid "Blob container mapping"
@@ -2280,7 +2293,7 @@ msgstr "À venir"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4038
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4128
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "Commentaires"
@@ -2337,6 +2350,10 @@ msgstr "Terminé en 0,9 s"
 #: src/pages/folders/components/AiSummaryView.tsx:350
 msgid "Compliance & Risk Assessment"
 msgstr "Évaluation de la conformité et des risques"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4871
+msgid "Compliance Note"
+msgstr ""
 
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:50
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:56
@@ -2634,6 +2651,10 @@ msgstr "Copiez cette URL et ouvrez-la dans un autre onglet pour utiliser le port
 msgid "Copy URL"
 msgstr "Copier l'URL"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4889
+msgid "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2067
 msgid "Cost Center"
 msgstr "Centre de coûts"
@@ -2884,11 +2905,11 @@ msgstr "Critique"
 #~ msgid "Critical Exceptions"
 #~ msgstr "Exceptions critiques"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4191
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4490
 msgid "Cross-Check Status"
 msgstr "Statut de vérification croisée"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:503
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:514
 msgid "Cross-referencing records"
 msgstr "Dossiers de référencement croisés"
 
@@ -2911,6 +2932,10 @@ msgstr "Devise"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3574
 msgid "Currency Key"
 msgstr "Clé de devise"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5080
+msgid "Current Invoice Back Order Status"
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:2061
 #: src/pages/settings/components/RolesPermissions.tsx:2063
@@ -3037,7 +3062,7 @@ msgstr "Destination des données"
 msgid "Data extracted"
 msgstr "Données extraites"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:437
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:448
 msgid "Data extraction complete"
 msgstr "Extraction des données terminée"
 
@@ -3086,9 +3111,17 @@ msgstr "Jour {trialDay} sur {trialLengthDays}"
 msgid "days"
 msgstr "jours"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4763
+msgid "Days"
+msgstr ""
+
 #: src/pages/settings/components/license/LicenseTrialBanner.tsx:73
 msgid "days remaining in evaluation"
 msgstr "jours restants dans l'évaluation"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4810
+msgid "Deadlines & Penalty Insights"
+msgstr ""
 
 #: src/pages/settings/components/credits/Credits.tsx:78
 msgid "December"
@@ -3436,6 +3469,10 @@ msgstr "Agent de documentation"
 msgid "Document"
 msgstr "Document"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4251
+msgid "Document & Procurement Ledger Mapping"
+msgstr ""
+
 #: src/pages/requests/components/request/components/generic-overview/TaskRequirements.tsx:100
 msgid "Document attached"
 msgstr "Document joint"
@@ -3470,8 +3507,8 @@ msgid "Document ingested via email"
 msgstr "Document ingéré par e-mail"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4101
-msgid "Document Mapping"
-msgstr "Mappage de documents"
+#~ msgid "Document Mapping"
+#~ msgstr "Mappage de documents"
 
 #: src/pages/requests/components/Table.tsx:60
 msgid "Document Number"
@@ -3484,7 +3521,7 @@ msgstr "Les propriétaires de documents sont informés au préalable."
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:171
 #: src/pages/folders/components/Upload/Upload.tsx:1952
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:276
 msgid "Document Preview"
 msgstr "Aperçu du document"
 
@@ -3605,6 +3642,10 @@ msgstr "Personnalisation terminée"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1799
 msgid "Double payments flagged by ledger algorithms"
 msgstr "Doubles paiements signalés par les algorithmes du grand livre"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4562
+msgid "Double-payment prevention checks analyze historical invoices by combining:"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2712
 #: src/pages/folders/components/DocumentDetailsView.tsx:2717
@@ -3765,6 +3806,7 @@ msgstr "date d'échéance"
 #: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4792
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Due Date"
 msgstr "Date d'échéance"
@@ -3795,7 +3837,7 @@ msgstr ""
 msgid "Duplicate"
 msgstr "Doublon"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3804
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3875
 msgid "Duplicate Detection"
 msgstr "Détection des doublons"
 
@@ -3803,7 +3845,7 @@ msgstr "Détection des doublons"
 msgid "Duplicate invoice watch"
 msgstr "Surveillance des factures en double"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4170
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4465
 msgid "Duplicate Payment Check"
 msgstr "Contrôle des paiements en double"
 
@@ -4278,6 +4320,10 @@ msgstr "Les données ERP seront utilisées pour valider les factures entrantes a
 msgid "ERP Settings"
 msgstr "Paramètres ERP"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4507
+msgid "Error Severity"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:778
 msgid "Error starting workflow"
 msgstr "Erreur lors du démarrage du flux de travail"
@@ -4310,6 +4356,10 @@ msgstr "Escaladé{assignee}"
 #: src/pages/settings/components/AuditMonitoring.tsx:318
 msgid "Event Title"
 msgstr "Titre de l'événement"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4566
+msgid "Exact Invoice Number string similarity."
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:779
 msgid "Example"
@@ -4413,12 +4463,12 @@ msgid "EXTRACTED"
 msgstr "EXTRAIT"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4023
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4113
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "Données extraites"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:417
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:428
 msgid "Extracting data"
 msgstr "Extraction des données"
 
@@ -4730,6 +4780,7 @@ msgid "FI / MM (Financial Accounting & Materials)"
 msgstr "FI / MM (Comptabilité financière et gestion des articles)"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:102
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4327
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:906
 msgid "Field"
 msgstr "Champ"
@@ -4845,7 +4896,7 @@ msgstr "Taille du fichier"
 msgid "File Upload"
 msgstr "Téléversement de fichier"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:361
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:372
 msgid "File uploaded successfully"
 msgstr "Fichier téléversé avec succès"
 
@@ -4876,7 +4927,7 @@ msgstr "Les fichiers doivent faire moins de 5 Mo"
 msgid "Filters"
 msgstr "Filtres"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:608
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:619
 msgid "Final decision determined"
 msgstr "Décision finale déterminée"
 
@@ -5258,11 +5309,11 @@ msgstr "Donnez un nom à votre rapport, sélectionnez la source de données et c
 msgid "GL & Category"
 msgstr "GL et catégorie"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3991
 msgid "GL Account Matching"
 msgstr "Rapprochement de comptes GL"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4322
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4660
 msgid "GL Account Matching Report"
 msgstr "Rapport de rapprochement de comptes GL"
 
@@ -5280,7 +5331,7 @@ msgstr "Retourner"
 msgid "Go to {0}"
 msgstr "Accédez à {0}"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:634
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:645
 msgid "Go to Inbox"
 msgstr "Accédez à la boîte de réception"
 
@@ -5317,6 +5368,10 @@ msgstr "Espace de travail Google"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:410
 msgid "Google Workspace sign-in"
 msgstr "Connexion à Google Workspace"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4567
+msgid "Grand Total and individual line-item value mapping."
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:444
 msgid "Granted Permissions"
@@ -5416,7 +5471,7 @@ msgstr "Groupe mis à jour avec succès"
 msgid "Groups"
 msgstr "Groupes"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:555
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:566
 msgid "Guidelines validated"
 msgstr "Lignes directrices validées"
 
@@ -5432,6 +5487,10 @@ msgstr "Facture manuscrite"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1477
 msgid "Header Fields"
 msgstr "Champs d'en-tête"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4320
+msgid "Header Fields Checked"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1046
 #~ msgid "Header Mapping"
@@ -5542,13 +5601,17 @@ msgstr "Valeur élevée (≥ 10 000 $)"
 msgid "Highest Credit Consumption"
 msgstr "Consommation maximale de crédits"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4485
+msgid "Historical Match & Integrity Results"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4186
-msgid "Historical Match Results"
-msgstr "Résultats des matchs historiques"
+#~ msgid "Historical Match Results"
+#~ msgstr "Résultats des matchs historiques"
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4043
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
 msgid "History"
 msgstr "Histoire"
 
@@ -5761,7 +5824,7 @@ msgstr "Résumé de l'ingestion"
 msgid "Ingestion timeline"
 msgstr "Chronologie de l'ingestion"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:386
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:397
 msgid "Initializing upload..."
 msgstr "Initialisation du téléchargement..."
 
@@ -5830,6 +5893,10 @@ msgstr "Aperçu du tableau de bord interactif"
 msgid "Interactive preview of your customized dashboard design for {repositoryName}."
 msgstr "Aperçu interactif de la conception de votre tableau de bord personnalisé pour {repositoryName}."
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5137
+msgid "Inv Amount"
+msgstr ""
+
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:55
 msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "Type de fichier invalide. Veuillez télécharger un PDF ou une image."
@@ -5889,6 +5956,7 @@ msgstr "Facture #"
 #~ msgid "Invoice aging analysis"
 #~ msgstr "Analyse d'ancienneté des factures"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5020
 #: src/pages/requests/utils/localizeRequestUi.ts:9
 msgid "Invoice Amount"
 msgstr "Montant de la facture"
@@ -5896,6 +5964,7 @@ msgstr "Montant de la facture"
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1697
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4778
 #: src/pages/requests/utils/localizeRequestUi.ts:8
 msgid "Invoice Date"
 msgstr "Date de facture"
@@ -5921,7 +5990,7 @@ msgid "Invoice exceeds PO value."
 msgstr "La facture dépasse la valeur du bon de commande."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2203
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5091
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5479
 msgid "Invoice Line Items"
 msgstr "Lignes de facture"
 
@@ -5938,6 +6007,10 @@ msgstr "Numéro de facture"
 msgid "Invoice processing funnel"
 msgstr "Entonnoir de traitement des factures"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4516
+msgid "Invoice Ref"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2381
 msgid "Invoice status distribution"
 msgstr "Répartition des statuts de factures"
@@ -5948,6 +6021,7 @@ msgid "Invoice Summary"
 msgstr "Résumé de la facture"
 
 #: src/pages/requests/components/request/components/Header.tsx:897
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4328
 msgid "Invoice Value"
 msgstr "Valeur de la facture"
 
@@ -6017,6 +6091,10 @@ msgstr "Date d'émission"
 #: src/pages/sign-in/components/SignInForm.tsx:571
 msgid "It looks like"
 msgstr "Il semble que"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4399
+msgid "Item Description"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:317
 msgid "ITEM DESCRIPTION"
@@ -6207,7 +6285,7 @@ msgstr "Dossier contrats juridiques"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "Le juridique a le cycle d'approbation le plus long dans la vue actuelle, moyenne de 8,0 jours par facture."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4442
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4824
 msgid "Legal Matter Association Check"
 msgstr "Vérification d'association juridique"
 
@@ -6265,6 +6343,10 @@ msgstr "Ligne {0} : quantité facturée {1} par rapport à la quantité command
 msgid "Line #{0}"
 msgstr "Ligne n°{0}"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5125
+msgid "Line Item"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:793
 msgid "Line item info: No line item data found in this file."
 msgstr "Info ligne : aucune donnée de ligne trouvée dans ce fichier."
@@ -6290,13 +6372,25 @@ msgstr "Correspondance des lignes"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4028
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4118
 msgid "Line Items"
 msgstr "Lignes"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4392
+msgid "Line Items Verified"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4403
+msgid "Line Score"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:430
 msgid "Line Variance"
 msgstr "Écart de ligne"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5029
+msgid "Lines Received"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:22
 msgid "Link"
@@ -6357,7 +6451,7 @@ msgstr "Chargement de l'activité..."
 msgid "Loading attachments..."
 msgstr "Chargement des pièces jointes..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5135
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5523
 msgid "Loading Attachments..."
 msgstr "Chargement des pièces jointes..."
 
@@ -6366,12 +6460,12 @@ msgstr "Chargement des pièces jointes..."
 msgid "Loading comments..."
 msgstr "Chargement des commentaires..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5178
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5566
 msgid "Loading Comments..."
 msgstr "Chargement des commentaires..."
 
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:209
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:274
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:285
 msgid "Loading document..."
 msgstr "Chargement du document..."
 
@@ -6409,7 +6503,7 @@ msgstr "Chargement des groupes..."
 msgid "Loading history..."
 msgstr "Chargement de l'historique..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5207
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5595
 msgid "Loading History..."
 msgstr "Chargement de l'historique..."
 
@@ -6819,6 +6913,7 @@ msgid "Match ANY condition (OR logic)"
 msgstr "Correspond à TOUTE condition (OU logique)"
 
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:94
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4227
 msgid "Match Score"
 msgstr "Score du match"
 
@@ -6830,13 +6925,13 @@ msgstr "Correspondre:"
 #: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3778
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3841
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4179
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "Correspondant"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4340
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4678
 msgid "Matched GL Account"
 msgstr "Compte GL correspondant"
 
@@ -6854,7 +6949,7 @@ msgstr "Critères de recherche correspondants"
 msgid "Matched today: {0} of {1} documents"
 msgstr "Correspondance aujourd'hui : {0} sur {1} documents"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:481
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:492
 msgid "Matching PO details"
 msgstr "Détails du bon de commande correspondant"
 
@@ -6862,9 +6957,17 @@ msgstr "Détails du bon de commande correspondant"
 #~ msgid "Matching supplier records..."
 #~ msgstr "Correspondance des enregistrements des fournisseurs..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3998
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4849
+msgid "Matter Reference"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
 msgid "Matter Validation"
 msgstr "Validation du sujet"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4885
+msgid "Matter Validation Rules"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1105
 msgid "Maximum file size is 5 MB."
@@ -7024,6 +7127,14 @@ msgstr "La connexion Microsoft a été annulée."
 #: src/layouts/auth/components/PasswordRequirements.tsx:11
 msgid "Minimum 8 characters"
 msgstr "Minimum 8 caractères"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4634
+msgid "Mismatches"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4639
+msgid "Mismatches Found"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1945
 #: src/pages/folders/components/ShareView.tsx:195
@@ -7252,6 +7363,10 @@ msgstr "Affiner les lignes"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "Affinez les lignes incluses dans ce rapport. Laissez vide pour inclure toutes les lignes."
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4858
+msgid "Needs Manual Entry"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:80
 msgid "Net 30 Days"
 msgstr "Net 30 jours"
@@ -7364,6 +7479,7 @@ msgstr "Étape suivante"
 #~ msgstr ""
 
 #: src/pages/reports/components/ReportsListView.tsx:188
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4864
 msgid "No"
 msgstr "Non"
 
@@ -7486,7 +7602,7 @@ msgstr "Aucune date d'échéance"
 msgid "No Duplicate"
 msgstr "Pas de doublon"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3819
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "Aucun doublon détecté"
@@ -7661,7 +7777,7 @@ msgstr "Aucune autorisation accordée"
 msgid "No permissions to configure"
 msgstr "Aucune autorisation à configurer"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3789
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3848
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "Aucun bon de commande trouvé"
@@ -7898,8 +8014,8 @@ msgstr "Non cartographié"
 
 #: src/pages/requests/components/InboxList.tsx:1895
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3779
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4089
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3842
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4180
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "Ne correspond pas"
@@ -7918,7 +8034,7 @@ msgstr "Non planifié"
 msgid "Not selected"
 msgstr "Non sélectionné"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3831
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3908
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "Non vérifié"
@@ -8324,8 +8440,12 @@ msgid "Payment Channel"
 msgstr "Canal de paiement"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4389
-msgid "Payment Deadlines"
-msgstr "Délais de paiement"
+#~ msgid "Payment Deadlines"
+#~ msgstr "Délais de paiement"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4731
+msgid "Payment Deadlines & Terms"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2170
 msgid "Payment Due"
@@ -8339,20 +8459,25 @@ msgstr "Date d'échéance du paiement"
 msgid "Payment Method"
 msgstr "Mode de paiement"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4047
 msgid "Payment Status"
 msgstr "Statut du paiement"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3974
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4066
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4736
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "Conditions de paiement"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4383
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4725
 msgid "Payment Terms Analysis"
 msgstr "Analyse des conditions de paiement"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4814
+msgid "Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries."
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:344
 #~ msgid "Payments due this week total $298.7K, below last week by 67%."
@@ -8385,6 +8510,10 @@ msgstr "En attente de classification"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:386
 msgid "Pending delivery items."
 msgstr "Articles en attente de livraison."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5037
+msgid "Pending Items"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:128
 msgid "Pending Payments"
@@ -8524,7 +8653,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Veuillez joindre un fichier pour continuer."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3850
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3927
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "Veuillez cliquer sur « Vérifier » pour vérifier si ce fournisseur est légitime et éviter la fraude."
 
@@ -8720,9 +8849,13 @@ msgstr "Ingestion PO réussie !"
 msgid "PO issuer or procurement contact"
 msgstr "Émetteur du bon de commande ou contact en matière d'approvisionnement"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5040
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5428
 msgid "PO Line Items"
 msgstr "Lignes du BC"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4920
+msgid "PO Line Items vs Invoices"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1309
 msgid "PO Master"
@@ -8746,24 +8879,29 @@ msgstr "Fichier PO Master reçu"
 msgid "PO Master Update"
 msgstr "Mise à jour PO Master"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3771
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3837
 msgid "PO Matching"
 msgstr "Rapprochement BC"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4085
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4175
 msgid "PO Matching Analysis"
 msgstr "Analyse du rapprochement BC"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1633
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4256
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "PO Number"
 msgstr "Numéro de BC"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4106
-msgid "PO Number (Extracted)"
-msgstr "Numéro de BC (extrait)"
+#~ msgid "PO Number (Extracted)"
+#~ msgstr "Numéro de BC (extrait)"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5128
+msgid "PO Qty"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:255
 msgid "po ref"
@@ -8780,6 +8918,7 @@ msgstr "Configuration PO"
 
 #: src/pages/requests/components/request/components/Header.tsx:916
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4329
 msgid "PO Value"
 msgstr "Valeur du BC"
 
@@ -8800,7 +8939,7 @@ msgstr "Politiques"
 msgid "Policy"
 msgstr "Politique"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:534
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:545
 msgid "Policy Compliance"
 msgstr "Conformité aux politiques"
 
@@ -8985,6 +9124,10 @@ msgstr "Imprimer des documents"
 msgid "Print file"
 msgstr "Imprimer le fichier"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5081
+msgid "Prior Ticket {activeBackOrderTab} Details"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1875
 msgid "Prioritized invoice items requiring attention today"
 msgstr "Éléments de facture prioritaires nécessitant une attention aujourd'hui"
@@ -9038,7 +9181,7 @@ msgstr "Traitement de « {0} »"
 msgid "Processing & Bottlenecks"
 msgstr "Traitement et goulots"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:295
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:306
 msgid "Processing Timeline"
 msgstr "Chronologie du traitement"
 
@@ -9148,6 +9291,10 @@ msgstr "Quantité"
 msgid "Quantity"
 msgstr "Quantité"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4400
+msgid "Quantity (Inv / PO)"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:426
 msgid "Quantity line discrepancy."
 msgstr "Écart de ligne de quantité."
@@ -9174,7 +9321,7 @@ msgstr "Dépôt rapide sélectionné. Vous pourrez télécharger vos premières 
 msgid "Quick Help"
 msgstr "Aide rapide"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:624
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:635
 msgid "Quick Hint"
 msgstr "Astuce rapide"
 
@@ -9284,13 +9431,17 @@ msgstr "Champs {0} recommandés pour « {1} ». Ajustez-les ci-dessous, puis con
 msgid "records"
 msgstr "enregistrements"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:502
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:513
 msgid "Records matched successfully"
 msgstr "Les enregistrements ont été mis en correspondance avec succès"
 
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:49
 msgid "Recurrence"
 msgstr "Périodicité"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5131
+msgid "Recv Qty"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2847
 #: src/pages/folders/components/DocumentSigningPage.tsx:2962
@@ -9353,6 +9504,10 @@ msgstr "Options de résidence des données régionales"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1301
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "Analyse du volume régional et de l'exposition aux dépenses"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4646
+msgid "Registry Verification Log"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1780
 msgid "Reject Transaction"
@@ -10213,6 +10368,7 @@ msgid "Schema Validation"
 msgstr "Validation du schéma"
 
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:399
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4330
 msgid "Score"
 msgstr "Score"
 
@@ -10481,7 +10637,7 @@ msgstr "Rubrique {0}"
 msgid "Security"
 msgstr "Sécurité"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4219
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4558
 msgid "Security & Auditing Policy"
 msgstr "Politique de sécurité et d'audit"
 
@@ -11184,6 +11340,14 @@ msgstr "Affichage des 50 premières factures {0}."
 msgid "Showing records matching this metrics slice"
 msgstr "Afficher les enregistrements correspondant à cette tranche de métriques"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4312
+msgid "Side-by-Side Field Matching"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4384
+msgid "Side-by-Side Line Item Matching"
+msgstr ""
+
 #: src/pages/folders/components/FolderSharePopover.tsx:155
 #: src/pages/folders/components/FolderSharePopover.tsx:856
 msgid "Sign"
@@ -11390,7 +11554,7 @@ msgstr "Fichier source :"
 #~ msgid "Source Form"
 #~ msgstr "Formulaire source"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4114
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4266
 msgid "Source System"
 msgstr ""
 
@@ -11475,6 +11639,7 @@ msgstr "statut"
 #: src/pages/forms/FormsPage.tsx:604
 #: src/pages/reports/components/ReportsListView.tsx:173
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4748
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2158
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3362
@@ -11545,6 +11710,10 @@ msgstr "Étape 5"
 #: src/pages/folders/components/CollaboraEditor.tsx:305
 msgid "Still opening... this is taking longer than expected. Check the browser console / the document editor below for details."
 msgstr "Toujours ouvert... cela prend plus de temps que prévu. Consultez la console du navigateur/l'éditeur de documents ci-dessous pour plus de détails."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5046
+msgid "Still Pending"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:132
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:914
@@ -11661,7 +11830,7 @@ msgstr "Téléchargé avec succès sur"
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "{schemaKpiCount} KPI et {schemaChartCount} graphiques suggérés"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4335
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4673
 msgid "Suggested Allocation"
 msgstr "Allocation suggérée"
 
@@ -11701,8 +11870,8 @@ msgid "Supplier Address"
 msgstr "Adresse du fournisseur"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4264
-msgid "Supplier Code"
-msgstr "Code fournisseur"
+#~ msgid "Supplier Code"
+#~ msgstr "Code fournisseur"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1129
 #~ msgid "Supplier Concentration & Risk"
@@ -11712,7 +11881,7 @@ msgstr "Code fournisseur"
 msgid "Supplier Conflict"
 msgstr "Conflit de fournisseur"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4259
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4596
 msgid "Supplier Details"
 msgstr "Détails du fournisseur"
 
@@ -11745,26 +11914,34 @@ msgstr "Adresse de facturation physique du fournisseur"
 msgid "Supplier Risk Radar"
 msgstr "Radar des risques fournisseurs"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4614
+msgid "Supplier Status"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4565
+msgid "Supplier tax identity and banking details."
+msgstr ""
+
 #: src/pages/folders/components/AiSummaryView.tsx:414
 msgid "Supplier Trend Insight"
 msgstr "Aperçu des tendances fournisseur"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3830
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3862
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3882
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3939
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
 msgid "Supplier Verification"
 msgstr "Vérification du fournisseur"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2343
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2383
 msgid "Supplier verification completed: {0}"
 msgstr "Vérification du fournisseur terminée : {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4246
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4577
 msgid "Supplier Verification Registry"
 msgstr "Registre de vérification fournisseur"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3978
 msgid "Supplier verified"
 msgstr "Fournisseur vérifié"
 
@@ -11877,8 +12054,8 @@ msgid "System menus cannot be deleted"
 msgstr "Les menus système ne peuvent pas être supprimés"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4208
-msgid "System Response"
-msgstr "Réponse du système"
+#~ msgid "System Response"
+#~ msgstr "Réponse du système"
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:17
 msgid "Table"
@@ -12059,7 +12236,7 @@ msgstr "Ce dossier ne contient pas encore de dossiers ou de fichiers."
 #~ msgid "This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content."
 #~ msgstr "Ce dossier ne contient encore aucun dossier ni fichier. Téléversez des documents ou créez un nouveau dossier pour commencer à organiser le contenu du référentiel."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:627
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:638
 msgid "This is taking a bit longer. You can safely navigate away; we'll notify you in the inbox once ready."
 msgstr "Cela prend un peu plus de temps. Vous pouvez vous éloigner en toute sécurité ; nous vous informerons dans la boîte de réception une fois prêt."
 
@@ -12156,8 +12333,8 @@ msgid "Time"
 msgstr "Heure"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4414
-msgid "Time Remaining"
-msgstr "Temps restant"
+#~ msgid "Time Remaining"
+#~ msgstr "Temps restant"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1390
 msgid "Time Running"
@@ -12236,6 +12413,10 @@ msgstr "Total"
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:41
 msgid "Total Amount"
 msgstr "Montant total"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4402
+msgid "Total Amount (Inv / PO)"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:692
 msgid "Total AP"
@@ -12580,6 +12761,10 @@ msgstr "Unité"
 msgid "Unit Price"
 msgstr "Prix ​​unitaire"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4401
+msgid "Unit Price (Inv / PO)"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1532
 msgid "Unknown error"
 msgstr "Erreur inconnue"
@@ -12750,7 +12935,7 @@ msgstr "Télécharger des documents pour la classification par IA"
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Téléversez des documents en toute sécurité, assignez des métadonnées et organisez les fichiers dans votre dépôt pour une recherche et une gestion efficaces."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:363
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:374
 msgid "Upload failed"
 msgstr "Échec de l'envoi"
 
@@ -12834,7 +13019,7 @@ msgstr ""
 #~ msgid "Uploading file {uploadIndex} of {filesCount}..."
 #~ msgstr "Téléchargement du fichier {uploadIndex} sur {filesCount}..."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:364
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:375
 msgid "Uploading file..."
 msgstr "Téléversement du fichier..."
 
@@ -13045,7 +13230,7 @@ msgstr "Valide les champs système obligatoires"
 msgid "Validating data consistency"
 msgstr "Validation de la cohérence des données"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:556
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:567
 msgid "Validating guidelines"
 msgstr "Validation des directives"
 
@@ -13059,8 +13244,8 @@ msgid "VALIDATION"
 msgstr "VALIDATION"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4143
-msgid "Validation Log"
-msgstr "Journal de validation"
+#~ msgid "Validation Log"
+#~ msgstr "Journal de validation"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:140
 msgid "Value"
@@ -13092,7 +13277,9 @@ msgstr "Vérification fournisseur"
 msgid "Vendor identity mismatch."
 msgstr "Incohérence d'identité du fournisseur."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4124
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4274
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4529
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4601
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "Nom du vendeur"
@@ -13101,15 +13288,23 @@ msgstr "Nom du vendeur"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "Fournisseurs nécessitant un contact rapide ou une résolution de requête"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2350
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4650
+msgid "Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists."
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2390
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "Échec de la vérification. 1 crédit a été remboursé."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4623
+msgid "Verification Rationale"
+msgstr ""
 
 #: src/pages/requests/utils/localizeRequestUi.ts:30
 msgid "Verified"
 msgstr "Vérifié"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3845
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3922
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "Vérifier"
@@ -13134,8 +13329,8 @@ msgstr "Vérifiez la stratégie configurée avant de l'activer pour « {folderNa
 msgid "Verify your security rules before applying settings."
 msgstr "Vérifiez vos règles de sécurité avant d'appliquer les paramètres."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3860
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3937
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3949
 msgid "Verifying..."
 msgstr "Vérification..."
 
@@ -13433,6 +13628,7 @@ msgid "years"
 msgstr "années"
 
 #: src/pages/reports/components/ReportsListView.tsx:185
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4863
 msgid "Yes"
 msgstr "Oui"
 

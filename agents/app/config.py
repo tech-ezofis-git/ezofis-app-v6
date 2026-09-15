@@ -20,6 +20,16 @@ class Settings(BaseSettings):
     # (app/llm/model_presets.py). Kept out of git via .env — see .env.example.
     azure_south_india_api_key: Optional[str] = None
     azure_east_us_api_key: Optional[str] = None
+    # OpenAI-compatible Qwen host (ezqwenmac ACI) — default console preset.
+    qwen_mac_api_key: Optional[str] = None
+    # Code-review finding #16: preset endpoints (api_base), unlike their
+    # keys above, used to be hardcoded literals in app/llm/model_presets.py
+    # with no env override at all — rotating/relocating any of these
+    # required a code change + redeploy. Defaults match today's hardcoded
+    # values (no behavior change out of the box); override via env/.env.
+    azure_south_india_api_base: str = "https://ezazopenai.openai.azure.com"
+    azure_east_us_api_base: str = "https://api-4omin-ez.openai.azure.com"
+    qwen_mac_api_base: str = "http://ezqwenmac-aci.canadacentral.azurecontainer.io:8080/v1"
     # Eval harness (Phase 5c) LLM-judge scoring — see app/evals/scoring.py.
     # Defaults to `llm_model` when unset (rule 4), so a stronger/different
     # model can judge than the one under test without requiring a second
@@ -42,6 +52,16 @@ class Settings(BaseSettings):
     # --- Infra ---------------------------------------------------------
     redis_url: str = "redis://localhost:6379/0"
     database_url: str = "postgresql://orchestrator:orchestrator@localhost:5432/orchestrator"
+    # Ezofis catalog DB (agents, model URLs/keys, per-tenant model selection).
+    # Separate from DATABASE_URL and from per-tenant ezofis_Tenant_* DBs.
+    # Example: postgresql://USER:PASSWORD@HOST:5432/ezofis_catalog_new?sslmode=require
+    catalog_database_url: Optional[str] = None
+    # Keep the asyncpg pool tiny on shared Azure Flexible Server SKUs
+    # (B1ms ≈ 50 max_connections server-wide). asyncpg's default min_size=10
+    # exhausts the server when agents crash-restarts, taking the whole
+    # multi-container App Service down with it.
+    database_pool_min_size: int = 1
+    database_pool_max_size: int = 3
 
     # --- App -----------------------------------------------------------
     app_name: str = "ai-orchestrator"
@@ -69,6 +89,62 @@ class Settings(BaseSettings):
     embedding_cache_ttl_seconds: int = 60 * 60 * 24  # 24h
     search_result_cache_ttl_seconds: int = 60 * 5  # 5 minutes
     forecast_narration_cache_ttl_seconds: int = 60 * 5  # 5 minutes
+
+    # --- OCR document extraction (blob / upload → extract_text → JSON) ---
+    ocr_extract_url: Optional[str] = (
+        "https://ez-container-app.calmsmoke-6661997a.southindia.azurecontainerapps.io/api/extract_text"
+    )
+    ocr_engine: str = "paddle"
+    ocr_default_model: Optional[str] = None
+    ocr_fallback_model: Optional[str] = None
+    ocr_max_pages: int = 5
+    ocr_max_recommended_fields: int = 15
+    ocr_allowed_host_suffixes: str = ".blob.core.windows.net"
+    ocr_download_timeout_seconds: float = 60.0
+    ocr_max_file_bytes: int = 25 * 1024 * 1024  # 25 MiB
+    # Hard cap for LLM provider calls — prevents /chat from hanging forever
+    # when a preset endpoint is unreachable.
+    llm_request_timeout_seconds: float = 60.0
+    azure_storage_connection_string: Optional[str] = None
+    azure_blob_container_prefix: str = "ezts"
+
+    # --- Agent skill packs (SKILL.md + rules/*.mdc for Summary / OCR / Insight / Prompt) ---
+    # Defaults to <repo>/skills. Override root or a single agent pack so
+    # customers can drop in their own instructions without code changes.
+    agent_skills_root: Optional[str] = None
+    summary_skill_dir: Optional[str] = None
+    ocr_skill_dir: Optional[str] = None
+    insight_skill_dir: Optional[str] = None
+    prompt_skill_dir: Optional[str] = None
+    # Local sample: SQLite path for tenant Summary extras (custom rules only).
+    # Defaults stay on disk; not used in Docker unless set explicitly.
+    tenant_skills_sqlite_path: Optional[str] = None
+
+    # --- Ezofis cloud API (AP skills: auth, credits, PO/vendor masters) ---
+    ezofis_api_base: str = "https://cloud.ezofis.com/api"
+    ezofis_login_email: Optional[str] = None
+    ezofis_login_password: Optional[str] = None
+    ezofis_env: str = "trial"
+    ezofis_timeout_seconds: float = 30.0
+    ap_llm_planner: bool = False
+    ap_amount_tolerance: float = 0.02
+    ap_approved_threshold: int = 80
+    ap_partial_threshold: int = 50
+    # AP tables live in ezofis_Tenant_{first 8 of tenant_id} on the same
+    # server as DATABASE_URL. Empty prefix disables routing (main DB only).
+    ap_tenant_db_prefix: str = "ezofis_Tenant_"
+    # Workflow step name used to resolve ActivityId from workflow.WorkflowSteps
+    # (same default as apagentv6). Env: AP_AGENT_WORKFLOW_STEP_NAME.
+    ap_agent_workflow_step_name: str = "AP AGENT 1"
+    # De-duplication window (Phase 1 item 2, code-review finding #2): a
+    # retried/duplicate document job for the same (tenant_id, item_key)
+    # within this many seconds of a prior *completed* run short-circuits
+    # to that run's stored result instead of re-running skills, re-pushing
+    # metadata, and re-charging credits. A genuinely concurrent duplicate
+    # (a second run still "running" for the same item) is rejected
+    # outright regardless of this window — see ApStore.create_run /
+    # ApSkillRunner.run.
+    ap_dedupe_window_seconds: int = 300
 
     model_config = SettingsConfigDict(
         env_file=".env",

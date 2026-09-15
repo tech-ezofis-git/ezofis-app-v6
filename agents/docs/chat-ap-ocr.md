@@ -1,0 +1,291 @@
+# OCR and AP agents — sample `curl`
+
+Live endpoint: `POST https://cloud.ezofis.com/chat`
+
+On Windows use `curl.exe` (not the PowerShell `curl` alias). Save JSON to a file and pass `--data-binary "@file.json"` so quotes survive.
+
+```bash
+# health
+curl.exe -sS "https://cloud.ezofis.com/health"
+```
+
+Every `/chat` call needs a `session_id`. Set `intent` to `ocr` or `ap` (do not rely on keyword routing for document jobs).
+
+---
+
+## OCR agent
+
+Needs a **file upload** or a **blob filepath**. `message` is optional.
+
+### JSON — blob path
+
+```bash
+curl.exe -sS -X POST "https://cloud.ezofis.com/chat" ^
+  -H "Content-Type: application/json" ^
+  --data-binary "@ocr-blob.json"
+```
+
+`ocr-blob.json`:
+
+```json
+{
+  "session_id": "ocr-demo-1",
+  "intent": "ocr",
+  "instruction": "Region: India. Normalize DATE fields to YYYY-MM-DD.",
+  "payload": {
+    "tenant_id": "2e3b7b37-38a3-4f94-878e-a006dad93230",
+    "filepath": "ac40db26306b4d138aebf80a056d9a73/b4df8469e49743379c40609a5690053a.pdf",
+    "pageno": "1",
+    "parameters": ["Invoice No,SHORT_TEXT", "Due Date,DATE"],
+    "tableparameters": []
+  }
+}
+```
+
+`pageno`: `"1"` (one page) or `"-1"` (up to max pages). Relative blob paths need `payload.tenant_id` (container `ezts{tenantid}`) and `AZURE_STORAGE_CONNECTION_STRING` on the agents app.
+
+### Multipart — local file (wins over filepath)
+
+```bash
+curl.exe -sS -X POST "https://cloud.ezofis.com/chat" ^
+  -F "session_id=ocr-demo-2" ^
+  -F "intent=ocr" ^
+  -F "pageno=1" ^
+  -F "instruction=Region: India. Normalize DATE fields to YYYY-MM-DD." ^
+  -F "parameters=Invoice No,SHORT_TEXT" ^
+  -F "parameters=Due Date,DATE" ^
+  -F "file=@invoice.pdf"
+```
+
+Success: HTTP 200 with `ocr_result` (extracted fields). Failure examples: `400` missing file/filepath, `502` extract engine error.
+
+---
+
+## AP agent
+
+Set `intent` to `ap` plus one of: `invoice_json`, blob `filepath`, uploaded `file`, or `item_id` (re-run from stored artifacts). Optional `formid` (aliases `form_id` / `formId`) selects PO master table `ezfb_{token}_items` — numeric id, or the first 8 hex chars of a GUID (`29171de4-…` → `ezfb_29171de4_items`). The console AP panel has the same field.
+
+`tenant_id` should be the full tenant UUID. The app keeps App Settings `DATABASE_URL` and opens database `ezofis_Tenant_{first 8}` (example: `2e3b7b37-38a3-4f94-878e-a006dad93230` → `ezofis_Tenant_2e3b7b37`).
+
+If `skills` is omitted / null, the **default pipeline** runs:
+
+`extract_invoice` → `po_match` → `duplicate_detect` → `vendor_validate` → `backorder_detect` → `finalize_decision` → `workflow_move_next`
+
+`workflow_move_next` posts to Ezofis when `instance_id` is set **and** `activityid` is known. `activityid` is the workflow step's `WorkflowSteps.ActivityId` (for example `DR97uPaylMtwahvi3XYr_`), not a random value. Python looks it up from the tenant DB (`workflow.WorkflowSteps` where `Name = AP AGENT 1`, optional `WorkflowId` filter). The app does not need to send it on `/chat`; it may send `activityid` to override. If it cannot be resolved, move-next is skipped (no credit) so .NET does not receive an invalid AP Agent move-next.
+
+`review` on move-next is the workflow label, not the internal code: `Matched`, `Partially Matched`, `Not Matched`, or `Non-Invoice`. The body also includes `comments`, `AIAGENTResponse`, `itemId`, `repositoryId`, `formId`, `formEntryId`, `isItemTable` — same shape as apagentv6.
+
+`AIAGENTResponse` (persisted on `workflow.agent_data_validation_*`) matches the apagentv6 Agent validation shape:
+
+| Field | Example |
+|-------|---------|
+| `decision` | `Matched` |
+| `score` | `98.0` |
+| `ai_insight` | `PO vendor totals and line amounts match - approve for posting` |
+| `reason` | Narrative with score, vendor, and line match summary |
+| `source_type` | `HANA Cloud` \| `SAP` \| `QuickBooks` \| `Sage` \| `EZOFIS DB` \| `Not validated` |
+| `debug` | Side-by-side field + line item matching scores |
+| `po_row` | PO master display row (`PO Number`, `Supplier`, `PO Line Item Mapped`, …) |
+| `payment_terms` | Raw + normalized terms / due date |
+| `supplier_validation` | Vendor mismatch / master details |
+| `invoice_errors` | Duplicate / severity |
+| `back_order` | Short-ship detection |
+| `Extracted Invoice JSON` | `invoice_header` + `Line Item` |
+| `matter_validation` | Matter ID status (or `NOT_PRESENT`) |
+
+If `skills` is a list, **only those skills** run (in that order). Unknown ids → 400. Opt-in skills (QB/SAP/Sage, GL, GRN, matter, `workflow_progress`) must be listed explicitly.
+
+Each skill that actually runs (not skipped) charges 1 credit (mocked if `EZOFIS_LOGIN_EMAIL` / `PASSWORD` are empty).
+
+### SAP PO master (sample or live connector)
+
+Use when validating the invoice PO against an SAP connector (`ConfigJson.mode=sample` or live API later).
+
+| Field | Example |
+|---|---|
+| `resource` | `SAP` (also accepts `SAP ECC`, `S4`, `SAP_XSUAA`, …) |
+| `connector_id` | SAP connector GUID, or HANA Cloud PO connector on EZOFIS tenant: `f7636e21-1a0c-457c-a2b4-e28430705477` (defaults when omitted on tenant `b843b988-00ec-44e3-aca2-b8470133ef63`) |
+| `skills` | include `po_lookup_sap` **before** `po_match` |
+| Sample PO | `PO-60001` (vendor APEX INDUSTRIAL COMPONENTS LTD, total 5203.65 CAD) |
+
+`source=sap_sample` hits are trusted demo masters: `finalize_decision` does **not** set `used_mock_data`, so move-next is allowed. Offline ACME mocks (`mock: true` without `sap_sample`) still cap MATCHED in `EZOFIS_ENV=live`.
+
+EMAIL workflows: set mailbox `masterSource=SAP` + `masterConnectorId` so Hangfire injects these fields automatically (v641Api Phase 4).
+
+`ap-sap-po.json`:
+
+```json
+{
+  "session_id": "ap-sap-1",
+  "intent": "ap",
+  "payload": {
+    "tenant_id": "b843b988-00ec-44e3-aca2-b8470133ef63",
+    "item_id": "sap-po-60001",
+    "resource": "SAP",
+    "connector_id": "983bddbe-6a1a-4cd8-a024-9b4d84ba9981",
+    "skills": [
+      "extract_invoice",
+      "po_lookup_sap",
+      "po_match",
+      "finalize_decision"
+    ],
+    "invoice_json": {
+      "invoice_number": "INV-2026-6001",
+      "vendor": "APEX INDUSTRIAL COMPONENTS LTD",
+      "po_number": "PO-60001",
+      "total": 5203.65,
+      "currency": "CAD",
+      "line_items": [
+        {"description": "Bearing assembly kit", "qty": 5, "amount": 3250.00},
+        {"description": "Seal pack", "qty": 10, "amount": 1250.00},
+        {"description": "Freight", "qty": 1, "amount": 703.65}
+      ]
+    }
+  }
+}
+```
+
+```bash
+curl.exe -sS -X POST "https://cloud.ezofis.com/chat" ^
+  -H "Content-Type: application/json" ^
+  --data-binary "@ap-sap-po.json"
+```
+
+Expect (legacy SAP sample): `artifacts.po_lookup_sap.po.source == "sap_sample"`, `po_match.decision == "MATCHED"`.
+
+**HANA Cloud PO (EZOFIS tenant):** Resource `SAP` or `HANA`, connector `f7636e21-1a0c-457c-a2b4-e28430705477`, `po_number`=`4500069456`. Orchestrator calls Core `POST /api/connector/{id}/hana/purchase-orders` and, after a matched run with `workflow_move_next`, `POST …/hana/purchase-orders/match` to persist `PO_INVOICE_MATCH`.
+
+Console: [https://cloud.ezofis.com/console](https://cloud.ezofis.com/console) → AP document → set Resource + Connector + skills as above.
+
+### JSON — pre-extracted invoice (skips OCR)
+
+```bash
+curl.exe -sS -X POST "https://cloud.ezofis.com/chat" ^
+  -H "Content-Type: application/json" ^
+  --data-binary "@ap-invoice.json"
+```
+
+`ap-invoice.json`:
+
+```json
+{
+  "session_id": "ap-demo-1",
+  "intent": "ap",
+  "payload": {
+    "tenant_id": "2e3b7b37-38a3-4f94-878e-a006dad93230",
+    "formid": "29171de4-e210-466e-9e90-40fa9fa4354d",
+    "item_id": "inv-100",
+    "instance_id": "a96efa0d-28f1-4b48-afc2-c9791a346ce9",
+    "repositoryId": "ef178e9c-e44b-4a88-b827-05268b54264e",
+    "repositoryItemId": "00000000-0000-0000-0000-000000000003",
+    "transactionId": "100",
+    "formentryId": "42",
+    "processId": "200",
+    "invoice_json": {
+      "invoice_number": "INV-100",
+      "vendor": "ACME Supplies",
+      "po_number": "PO-1",
+      "total": 1234.56,
+      "currency": "USD",
+      "line_items": [{"description": "Widget", "qty": 10, "amount": 1234.56}]
+    }
+  }
+}
+```
+
+### JSON — blob + optional skill subset
+
+Use `item_id` so later re-runs can reuse artifacts.
+
+```json
+{
+  "session_id": "ap-demo-2",
+  "intent": "ap",
+  "payload": {
+    "tenant_id": "2e3b7b37-38a3-4f94-878e-a006dad93230",
+    "item_id": "doc-b4df8469",
+    "filepath": "ac40db26306b4d138aebf80a056d9a73/b4df8469e49743379c40609a5690053a.pdf",
+    "pageno": "1",
+    "skills": ["extract_invoice", "po_match", "finalize_decision"]
+  }
+}
+```
+
+### JSON — re-run one skill from stored artifacts
+
+```json
+{
+  "session_id": "ap-demo-3",
+  "intent": "ap",
+  "payload": {
+    "tenant_id": "2e3b7b37-38a3-4f94-878e-a006dad93230",
+    "item_id": "inv-100",
+    "skills": ["vendor_validate"]
+  }
+}
+```
+
+### Multipart — local invoice file
+
+```bash
+curl.exe -sS -X POST "https://cloud.ezofis.com/chat" ^
+  -F "session_id=ap-demo-4" ^
+  -F "intent=ap" ^
+  -F "tenant_id=2e3b7b37-38a3-4f94-878e-a006dad93230" ^
+  -F "item_id=upload-inv-100" ^
+  -F "pageno=1" ^
+  -F "file=@invoice.pdf"
+```
+
+### Opt-in skills (pass in `payload.skills`)
+
+Pass them in `skills`. Extra payload fields as needed:
+
+| Skills | Extra fields |
+|---|---|
+| `po_lookup_quickbooks`, `po_lookup_sap`, `po_lookup_sage` | `connector_id`, `resource` (`QUICKBOOKS`, `SAP` / `SAP ECC` / `S4`, or `SAGE`). For EMAIL workflows, Core Hangfire start can inject these when mailbox `masterSource` is QuickBooks or SAP — see v641Api `PHASE4_SAP_PO_MASTER_START_PAYLOAD.md`. |
+| `gl_match`, `grn_match`, `matter_validate` | `matter_master_id` for matter |
+| `workflow_progress`, `workflow_move_next` | `workflow_id`, `instance_id`, plus `repositoryId`, `transactionId`, `formentryId`, `repositoryItemId`, `processId`; `activityid` looked up from `workflow.WorkflowSteps` unless sent |
+
+```json
+{
+  "session_id": "ap-demo-5",
+  "intent": "ap",
+  "payload": {
+    "tenant_id": "2e3b7b37-38a3-4f94-878e-a006dad93230",
+    "item_id": "inv-100",
+    "invoice_json": {
+      "invoice_number": "INV-100",
+      "vendor": "ACME Supplies",
+      "po_number": "PO-1",
+      "total": 1234.56,
+      "currency": "USD",
+      "line_items": [{"description": "Widget", "qty": 10, "amount": 1234.56}]
+    },
+    "skills": ["extract_invoice", "po_match", "finalize_decision", "workflow_move_next"],
+    "workflow_id": "967f9423-ac93-4c70-93cb-df500f0d4cc9",
+    "instance_id": "a96efa0d-28f1-4b48-afc2-c9791a346ce9"
+  }
+}
+```
+
+Success: HTTP 200 with `ap_result` (`run_id`, `skills_run`, `credits_charged`, `decision`, `artifacts`).
+
+| Status | Meaning |
+|---|---|
+| 400 | Missing file / filepath / `invoice_json` / `item_id`, or skill not enabled |
+| 503 | AP store unavailable (wrong DB or tables missing on `ezofis_Tenant_…`) |
+
+---
+
+## Bash (Git Bash / macOS / Linux)
+
+Replace `^` line continuations with `\`:
+
+```bash
+curl -sS -X POST "https://cloud.ezofis.com/chat" \
+  -H "Content-Type: application/json" \
+  --data-binary @ap-invoice.json
+```
+
+Interactive UI: [https://cloud.ezofis.com/console](https://cloud.ezofis.com/console)

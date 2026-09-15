@@ -13,8 +13,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     volumes:
       - ./app:/app/app
+      - ./skills:/app/skills
 
   postgres:
     image: pgvector/pgvector:pg16
@@ -36,6 +38,10 @@ services:
       - ./db/migrations/0001_create_documents_and_chunks.sql:/docker-entrypoint-initdb.d/02-create-documents-and-chunks.sql
       - ./db/migrations/0002_create_audit_log.sql:/docker-entrypoint-initdb.d/03-create-audit-log.sql
       - ./db/migrations/0003_create_memories.sql:/docker-entrypoint-initdb.d/04-create-memories.sql
+      - ./db/migrations/0004_create_ap_tables.sql:/docker-entrypoint-initdb.d/05-create-ap-tables.sql
+      - ./db/migrations/0005_create_catalog_tables.sql:/docker-entrypoint-initdb.d/06-create-catalog-tables.sql
+      - ./db/migrations/0006_create_catalog_tenant_agent_models.sql:/docker-entrypoint-initdb.d/07-create-catalog-tenant-agent-models.sql
+      - ./db/migrations/0007_ap_runs_dedupe_and_quality.sql:/docker-entrypoint-initdb.d/08-ap-runs-dedupe-and-quality.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U orchestrator -d orchestrator"]
       interval: 5s

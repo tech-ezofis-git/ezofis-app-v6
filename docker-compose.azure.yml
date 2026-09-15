@@ -1,5 +1,6 @@
 version: '3.8'
 
+# Multi-container Azure stack. Secrets live in .env.azure (see .env.azure.example).
 services:
   app:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/app:latest
@@ -10,17 +11,33 @@ services:
   api:
     image: ghcr.io/tech-ezofis-git/ezofis-app-v6/api:latest
     restart: always
+    env_file:
+      - .env.azure
+    environment:
+      # TLS is terminated at Azure/nginx; API listens on HTTP :5000.
+      ASPNETCORE_ENVIRONMENT: Production
+      HttpsRedirection__Enabled: "false"
+      Swagger__Enabled: "true"
 
-  # agents + redis temporarily disabled until DATABASE_URL is configured.
-  # When agents crashes on startup, Azure marks the whole multi-container
-  # site unhealthy and stops the .NET API too.
-  # agents:
-  #   image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
-  #   restart: always
-  #   environment:
-  #     REDIS_URL: redis://redis:6379/0
-  #   depends_on:
-  #     - redis
-  # redis:
-  #   image: redis:7-alpine
-  #   restart: always
+  agents:
+    image: ghcr.io/tech-ezofis-git/ezofis-app-v6/agents:latest
+    restart: always
+    env_file:
+      - .env.azure
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DATABASE_POOL_MIN_SIZE: "1"
+      DATABASE_POOL_MAX_SIZE: "3"
+      # Azure App Service does not interpolate ${VAR} from App Settings.
+      # Empty ${EZOFIS_LOGIN_*} / ${DATABASE_URL} would override injected secrets.
+      # Login, Postgres, and blob CS come from App Settings (or env_file locally).
+      EZOFIS_API_BASE: http://app/api
+      EZOFIS_ENV: live
+    depends_on:
+      - redis
+
+  redis:
+    # Pull via public ECR mirror — App Service GHCR registry creds break
+    # anonymous pulls from docker.io/library/*.
+    image: public.ecr.aws/docker/library/redis:7-alpine
+    restart: always

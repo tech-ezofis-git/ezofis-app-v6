@@ -2,11 +2,10 @@
 
 Phase 1 registered only the Chat agent. Phase 2 registered Search, Phase 3a
 registered Summary and Insight, Phase 3b registered OCR and Forecast,
-Phase 3c registered AP, and Phase 3d registers Mail — all the same way
-Phase 1 said they would: `agent_router.register(Intent.X, x_agent.handle)`
-in app/main.py's lifespan, no changes needed to this file's routing logic.
-Every Intent value is now registered; the NotImplementedError path below
-still guards any future Intent added to the enum before it's registered.
+Phase 3c registered AP, Phase 3d registers Mail, and Prompt is registered
+the same way: `agent_router.register(Intent.X, x_agent.handle)` in
+app/main.py's lifespan. The NotImplementedError path below still guards
+any future Intent added to the enum before it's registered.
 """
 from typing import Any, Awaitable, Callable
 
@@ -30,10 +29,18 @@ class AgentRouter:
         self._handlers[intent] = handler
 
     async def route(
-        self, intent: Intent, *, session_id: str, message: str, history: list[dict]
+        self,
+        intent: Intent,
+        *,
+        session_id: str,
+        message: str,
+        history: list[dict],
+        **kwargs,
     ) -> dict[str, Any]:
         handler = self._handlers.get(intent)
         if handler is None:
             # TODO(phase-3): implement agents for the remaining capabilities.
             raise NotImplementedError(f"No agent registered for intent '{intent.value}' yet.")
-        return await handler(session_id=session_id, message=message, history=history)
+        return await handler(
+            session_id=session_id, message=message, history=history, **kwargs
+        )

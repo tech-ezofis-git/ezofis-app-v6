@@ -1,9 +1,11 @@
 using Hangfire;
+using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 using SaaSApp.Api.Middleware;
+using SaaSApp.Api.Configuration;
 using SaaSApp.Api.Options;
 using SaaSApp.Api.Services;
 using SaaSApp.Api.Services.Jira;
@@ -24,17 +26,21 @@ using SaaSApp.Workflow.Infrastructure.Jobs;
 using SaaSApp.Dms.Infrastructure;
 using Serilog;
 using System.Reflection;
+using System.Text;
 using SaaSApp.BlobStorage;
 using SaaSApp.Repository.Application;
 using SaaSApp.Repository.Infrastructure;
 using SaaSApp.ActivityLog.Application;
 using SaaSApp.ActivityLog.Infrastructure;
+using SaaSApp.SharedKernel.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration
     .AddJsonFile("appsettings.ActivityLog.json", optional: true, reloadOnChange: true)
-    .AddJsonFile("appsettings.EventLog.json", optional: true, reloadOnChange: true);
+    .AddJsonFile("appsettings.EventLog.json", optional: true, reloadOnChange: true)
+    // Loaded last so committed production secrets (EzofisAuth, TenantPilotUser) win over blank .env.azure overrides.
+    .AddJsonFile("appsettings.Production.json", optional: true, reloadOnChange: true);
 
 
 // Serilog + Application Insights (clear default providers to avoid duplicate log lines)
@@ -53,12 +59,24 @@ builder.Services.AddMultiTenancy();
 builder.Services.AddCatalog(builder.Configuration);
 builder.Services.AddScoped<IPlaygroundApiKeyService, PlaygroundApiKeyService>();
 builder.Services.AddScoped<ITenantSignupService, TenantSignupService>();
+builder.Services.Configure<BrandingOptions>(builder.Configuration.GetSection(BrandingOptions.SectionName));
+builder.Services.AddSingleton<IBrandingCryptoService, BrandingCryptoService>();
+builder.Services.AddScoped<IBrandingService, BrandingService>();
+builder.Services.AddScoped<IPortalJsonService, PortalJsonService>();
+builder.Services.AddScoped<IFolderCreationDraftService, FolderCreationDraftService>();
+builder.Services.AddScoped<IUserCreationDraftService, UserCreationDraftService>();
+builder.Services.AddScoped<IReportBuilderDraftService, ReportBuilderDraftService>();
+builder.Services.AddScoped<IDashboardSchemaService, DashboardSchemaService>();
 builder.Services.Configure<TenantPilotUserOptions>(
     builder.Configuration.GetSection(TenantPilotUserOptions.SectionName));
+builder.Services.AddScoped<ITenantPilotUserProvisioningService, TenantPilotUserProvisioningService>();
+builder.Services.AddScoped<SaaSApp.Workflow.Application.Contracts.IApAgentPilotAuthProvider, TenantPilotTokenService>();
 builder.Services.Configure<TenantDefaultCreditOptions>(
     builder.Configuration.GetSection(TenantDefaultCreditOptions.SectionName));
 builder.Services.Configure<JiraOptions>(
     builder.Configuration.GetSection(JiraOptions.SectionName));
+builder.Services.Configure<AgentsChatOptions>(
+    builder.Configuration.GetSection(AgentsChatOptions.SectionName));
 builder.Services.AddHttpClient<JiraIssueClient>();
 builder.Services.AddScoped<SupportTicketStore>();
 builder.Services.AddScoped<SupportTicketEmailService>();
@@ -90,10 +108,20 @@ builder.Services.AddScoped<SaaSApp.Users.Application.Contracts.IUserTenantRoleSy
 // JWT Bearer: Microsoft Entra ID (Azure AD), Auth0, and Ezofis
 var azureAdClientId = builder.Configuration["AzureAd:ClientId"];
 var auth0Domain = builder.Configuration["Auth0:Domain"];
-var ezofisKey = builder.Configuration["EzofisAuth:SigningKey"];
+var ezofisKey = EzofisAuthConfiguration.ResolveSigningKey(builder.Configuration);
 var hasAzureAd = !string.IsNullOrWhiteSpace(azureAdClientId);
 var hasAuth0 = !string.IsNullOrEmpty(auth0Domain);
 var hasEzofis = !string.IsNullOrEmpty(ezofisKey);
+
+if (string.IsNullOrEmpty(ezofisKey))
+{
+    Log.Warning(
+        "EzofisAuth:SigningKey is not configured. Email/password login will fail when issuing JWT (pilot user, Ezofis login).");
+}
+else if (Encoding.UTF8.GetBytes(ezofisKey).Length < 32)
+{
+    Log.Warning("EzofisAuth:SigningKey is shorter than 32 bytes. Email/password login will fail when issuing JWT.");
+}
 
 var authenticationSchemes = new List<string>();
 string? defaultScheme = null;
@@ -151,9 +179,9 @@ if (hasEzofis)
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["EzofisAuth:Issuer"] ?? "Ezofis",
+            ValidIssuer = EzofisAuthConfiguration.ResolveIssuer(builder.Configuration),
             ValidateAudience = true,
-            ValidAudience = builder.Configuration["EzofisAuth:Audience"] ?? "Ezofis",
+            ValidAudience = EzofisAuthConfiguration.ResolveAudience(builder.Configuration),
             ValidateLifetime = true,
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(ezofisKey!)),
             ValidateIssuerSigningKey = true,
@@ -187,8 +215,22 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var hangfireEnabled = !string.IsNullOrWhiteSpace(connectionString);
 if (hangfireEnabled)
 {
+    // Hangfire must not inherit Command Timeout=0 / unbounded pool from DefaultConnection —
+    // that lets workers hold catalog connections forever and makes BackgroundJob.Enqueue hang.
+    var hangfireCsBuilder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString)
+    {
+        MaxPoolSize = Math.Clamp(builder.Configuration.GetValue("Hangfire:MaxPoolSize", 5), 2, 15),
+        Timeout = Math.Clamp(builder.Configuration.GetValue("Hangfire:ConnectionTimeoutSeconds", 10), 5, 60),
+        CommandTimeout = Math.Clamp(builder.Configuration.GetValue("Hangfire:CommandTimeoutSeconds", 30), 5, 120),
+        ApplicationName = "V6Api-Hangfire"
+    };
+    var hangfireConnectionString = hangfireCsBuilder.ConnectionString;
+
     var hangfireStorageOptions = new PostgreSqlStorageOptions
     {
+        // Catalog hangfire.lock already has updatecount; auto-migrate loops on
+        // "column already exists" and hangs /hangfire (504). Schema is present — skip install.
+        PrepareSchemaIfNecessary = false,
         // Reduce catalog DB polling so HTTP requests are not competing with Hangfire every few seconds.
         QueuePollInterval = TimeSpan.FromSeconds(15),
         JobExpirationCheckInterval = TimeSpan.FromHours(1),
@@ -198,7 +240,7 @@ if (hangfireEnabled)
         .SetDataCompatibilityLevel(Hangfire.CompatibilityLevel.Version_180)
         .UseSimpleAssemblyNameTypeSerializer()
         .UseRecommendedSerializerSettings()
-        .UsePostgreSqlStorage(connectionString, hangfireStorageOptions));
+        .UsePostgreSqlStorage(hangfireConnectionString, hangfireStorageOptions));
 
     if (builder.Configuration.GetValue<bool?>("Hangfire:RunServerInApi") ?? true)
     {
@@ -206,8 +248,8 @@ if (hangfireEnabled)
         // starves IIS/Kestrel threads and makes every API call feel slow.
         var apiWorkers = builder.Configuration.GetValue<int?>("Hangfire:ApiWorkerCount")
             ?? builder.Configuration.GetValue<int?>("Hangfire:WorkerCount")
-            ?? 5;
-        apiWorkers = Math.Clamp(apiWorkers, 1, 10);
+            ?? 1;
+        apiWorkers = Math.Clamp(apiWorkers, 1, 3);
 
         builder.Services.AddHangfireServer(options =>
         {
@@ -217,7 +259,12 @@ if (hangfireEnabled)
             options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
         });
 
-        Log.Information("Hangfire server in API process: {WorkerCount} worker(s)", apiWorkers);
+        Log.Information(
+            "Hangfire server in API process: {WorkerCount} worker(s), MaxPoolSize={MaxPoolSize}, ConnTimeout={ConnTimeout}s, CmdTimeout={CmdTimeout}s",
+            apiWorkers,
+            hangfireCsBuilder.MaxPoolSize,
+            hangfireCsBuilder.Timeout,
+            hangfireCsBuilder.CommandTimeout);
     }
 }
 else
@@ -270,9 +317,9 @@ if (!string.IsNullOrWhiteSpace(pathBase))
     app.UsePathBase(pathBase);
 }
 
-// HTTPS redirection (configurable; keep off when hosting IIS on HTTP-only localhost)
-var httpsRedirectionEnabled = builder.Configuration.GetValue<bool?>("HttpsRedirection:Enabled")
-    ?? !app.Environment.IsDevelopment();
+// HTTPS redirection (off by default: Azure/nginx terminate TLS and proxy HTTP :5000.
+// Enabling this without forwarded headers 307-loops /swagger and /hangfire.)
+var httpsRedirectionEnabled = builder.Configuration.GetValue<bool?>("HttpsRedirection:Enabled") ?? false;
 if (httpsRedirectionEnabled)
 {
     app.UseHttpsRedirection();
@@ -287,7 +334,7 @@ app.UseMiddleware<RequestPerformanceLoggingMiddleware>();
 
 app.UseCors();
 
-var swaggerEnabled = app.Environment.IsDevelopment() || (builder.Configuration.GetValue<bool?>("Swagger:Enabled") ?? false);
+var swaggerEnabled = app.Environment.IsDevelopment() || (builder.Configuration.GetValue<bool?>("Swagger:Enabled") ?? true);
 if (swaggerEnabled)
 {
     app.UseSwagger(options =>
@@ -331,25 +378,38 @@ app.MapHealthChecks("/health");
 // Hangfire dashboard (protect in production with auth)
 if (hangfireEnabled)
 {
-    app.MapHangfireDashboard("/hangfire");
+    // Default Hangfire auth is localhost-only; that blocks the dashboard
+    // behind Azure nginx. Same public model as /swagger for now.
+    app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = Array.Empty<IDashboardAuthorizationFilter>(),
+        IgnoreAntiforgeryToken = true
+    });
 
     var emailIngestHangfire = app.Configuration.GetValue("EmailIngest:HangfireEnabled", true);
-    if (emailIngestHangfire)
+    try
     {
-        var cron = app.Configuration.GetValue("EmailIngest:HangfireCron", "*/5 * * * *")
-                   ?? "*/5 * * * *";
-        RecurringJob.AddOrUpdate<RunEmailIngestPollJob>(
-            "email-ingest-poll",
-            job => job.Execute(null),
-            cron);
-        Log.Information(
-            "Registered Hangfire email-ingest-poll cron={Cron} (only tenants with enabled mailboxes)",
-            cron);
+        if (emailIngestHangfire)
+        {
+            var cron = app.Configuration.GetValue("EmailIngest:HangfireCron", "*/30 * * * * *")
+                       ?? "*/30 * * * * *";
+            RecurringJob.AddOrUpdate<RunEmailIngestPollJob>(
+                "email-ingest-poll",
+                job => job.Execute(null),
+                cron);
+            Log.Information(
+                "Registered Hangfire email-ingest-poll cron={Cron} (only tenants with enabled mailboxes)",
+                cron);
+        }
+        else
+        {
+            RecurringJob.RemoveIfExists("email-ingest-poll");
+            Log.Information("Email ingest Hangfire job disabled (EmailIngest:HangfireEnabled=false)");
+        }
     }
-    else
+    catch (Exception ex)
     {
-        RecurringJob.RemoveIfExists("email-ingest-poll");
-        Log.Information("Email ingest Hangfire job disabled (EmailIngest:HangfireEnabled=false)");
+        Log.Warning(ex, "Hangfire storage could not be reached. API will start without the email-ingest recurring job.");
     }
 }
 

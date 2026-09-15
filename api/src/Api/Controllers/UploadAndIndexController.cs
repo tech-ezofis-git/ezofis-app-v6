@@ -45,7 +45,7 @@ public sealed class UploadAndIndexController : ControllerBase
             return BadRequest(new { error = "repositoryId is required (GUID)." });
 
         var tenantId = RequireTenantId();
-        var uploadName = string.IsNullOrWhiteSpace(filename) ? file.FileName : filename;
+        var uploadName = ResolveUploadFileName(filename, file.FileName);
 
         try
         {
@@ -109,6 +109,66 @@ public sealed class UploadAndIndexController : ControllerBase
                 ocrType,
                 validateType,
                 file.FileName,
+                cancellationToken);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Stage file to monitor storage using pre-extracted OCR metadata (from uploadForOcr). Does not call OCR.
+    /// Form: file, repositoryId, metadata (JSON), optional ocrJson / ocrText.
+    /// </summary>
+    [HttpPost("/api/uploadAndIndex/uploadWithOcr")]
+    [DisableRequestSizeLimit]
+    [RequestFormLimits(MultipartBodyLengthLimit = 104_857_600)]
+    [ProducesResponseType(typeof(UploadWithOcrResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UploadWithOcr(
+        IFormFile? file,
+        [FromForm] string? repositoryId,
+        [FromForm] string? filename,
+        [FromForm] string? metadata,
+        [FromForm] List<string>? fields,
+        [FromForm] string? ocrJson,
+        [FromForm] string? ocrText,
+        CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest(new { error = "No file received." });
+
+        if (!TryParseRepositoryId(repositoryId, out var repoId))
+            return BadRequest(new { error = "repositoryId is required (GUID)." });
+
+        var tenantId = RequireTenantId();
+        var uploadName = ResolveUploadFileName(filename, file.FileName);
+        // Prefer flat metadata object; otherwise merge Swagger/FE "fields" array JSON.
+        var metadataJson = !string.IsNullOrWhiteSpace(metadata)
+            ? metadata
+            : ResolveFieldsFormInput(fields);
+        // When both are sent, keep metadata as the stage values; fields still flow via ocrJson/parser.
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var result = await _uploadIndex.UploadWithOcrAsync(
+                repoId,
+                tenantId,
+                stream,
+                uploadName!,
+                file.ContentType,
+                file.Length,
+                metadataJson,
+                ocrJson,
+                ocrText,
+                GetUserId(),
                 cancellationToken);
 
             return Ok(result);
@@ -233,6 +293,32 @@ public sealed class UploadAndIndexController : ControllerBase
     }
 
     /// <summary>
+    /// Swagger form default is <c>filename=string</c>. That must not become archive <c>string.pdf</c>
+    /// when the last naming column is Filename — use the uploaded file's original name.
+    /// </summary>
+    private static string ResolveUploadFileName(string? filename, string? uploadedFileName)
+    {
+        var formName = string.IsNullOrWhiteSpace(filename) ? null : filename.Trim();
+        var fileName = string.IsNullOrWhiteSpace(uploadedFileName) ? null : uploadedFileName.Trim();
+
+        if (IsPlaceholderFileName(formName))
+            formName = null;
+        if (IsPlaceholderFileName(fileName))
+            fileName = null;
+
+        return formName ?? fileName ?? "upload.bin";
+    }
+
+    private static bool IsPlaceholderFileName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return true;
+
+        var stem = Path.GetFileNameWithoutExtension(name.Trim());
+        return stem.Equals("string", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// Swagger/multipart often sends each OCR parameter as a separate <c>fields</c> form value.
     /// <see cref="string"/> binding only keeps the first; merge all values here.
     /// </summary>
@@ -252,7 +338,36 @@ public sealed class UploadAndIndexController : ControllerBase
         if (values.Count == 1)
             return values[0];
 
-        return JsonSerializer.Serialize(values);
+        // Each "fields" form value is often one JSON object. Keep them as objects, not quoted strings,
+        // so name/value pairs survive into stage columns.
+        var objects = new List<JsonElement>();
+        foreach (var value in values)
+        {
+            if (!value.StartsWith('{') && !value.StartsWith('['))
+                continue;
+
+            try
+            {
+                using var doc = JsonDocument.Parse(value);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in doc.RootElement.EnumerateArray())
+                        objects.Add(item.Clone());
+                }
+                else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                {
+                    objects.Add(doc.RootElement.Clone());
+                }
+            }
+            catch (JsonException)
+            {
+                // Leave non-JSON lines for the service parser.
+            }
+        }
+
+        return objects.Count > 0
+            ? JsonSerializer.Serialize(objects)
+            : JsonSerializer.Serialize(values);
     }
 
     private static bool TryParseRepositoryId(string? raw, out Guid repositoryId)

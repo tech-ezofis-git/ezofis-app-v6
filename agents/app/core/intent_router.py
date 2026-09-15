@@ -39,6 +39,7 @@ approach; revisit it for real classification if that turns out to matter
 more than the layered mitigation covers.
 """
 from enum import Enum
+from typing import Any, Optional
 
 
 class Intent(str, Enum):
@@ -50,10 +51,45 @@ class Intent(str, Enum):
     OCR = "ocr"
     MAIL = "mail"
     AP = "ap"
+    PROMPT = "prompt"
+    PDF = "pdf"
+    GLOBAL_SEARCH = "global_search"
+    CHATBOT = "chatbot"
 
 
 # Keyword/phrase triggers per intent. Checked as substrings of the
 # lowercased message — simple and deterministic, not ML-based.
+_CHATBOT_TRIGGERS = (
+    "open chatbot",
+    "use chatbot",
+    "ezofis chatbot",
+    "chatbot help",
+)
+
+_PDF_TRIGGERS = (
+    "generate pdf",
+    "generate a pdf",
+    "create pdf",
+    "create a pdf",
+    "make a pdf",
+    "make pdf",
+    "build pdf",
+    "export to pdf",
+    "export pdf",
+    "convert json to pdf",
+    "print pdf",
+)
+
+_GLOBAL_SEARCH_TRIGGERS = (
+    "global search",
+    "search repository",
+    "search repositories",
+    "search workflow",
+    "search workflows",
+    "find repository",
+    "find workflow",
+)
+
 _SEARCH_TRIGGERS = (
     "search",
     "find",
@@ -126,19 +162,53 @@ _MAIL_TRIGGERS = (
 class IntentRouter:
     """Classifies free-text messages into one of the platform's Intents."""
 
+    def __init__(self) -> None:
+        self._custom: list[tuple[str, tuple[str, ...]]] = []
+
+    def set_custom_agents(self, agents: list[dict[str, Any]]) -> None:
+        """Refresh keyword triggers for catalog custom agents (checked after builtins)."""
+        custom: list[tuple[str, tuple[str, ...]]] = []
+        for agent in agents:
+            slug = str(agent.get("slug") or "").strip()
+            phrases = tuple(
+                str(p).strip().lower()
+                for p in (agent.get("trigger_phrases") or [])
+                if p and str(p).strip()
+            )
+            if slug and phrases:
+                custom.append((slug, phrases))
+        self._custom = custom
+
+    def match_custom_slug(self, message: str) -> Optional[str]:
+        normalized = message.strip().lower()
+        if not normalized:
+            return None
+        for slug, phrases in self._custom:
+            if any(phrase in normalized for phrase in phrases):
+                return slug
+        return None
+
     async def classify(self, message: str) -> Intent:
         """Return the Intent for `message`.
 
         Checked in order: `search`, `summary`, `insight`, `ocr`,
-        `forecast`, `ap`, `mail`; everything else resolves to `chat`. No
-        branch is a hardcoded bypass — a message genuinely has to match
-        (or not match) each trigger set in turn. See the module
-        docstring's CAUTION/NOTE before touching `_MAIL_TRIGGERS` or
-        adding another send-capable intent.
+        `forecast`, `ap`, `mail`; everything else resolves to `chat`.
+        `prompt` is explicit-only (`intent: "prompt"`) so the word
+        "prompt" never steals another job. No branch is a hardcoded
+        bypass — a message genuinely has to match (or not match) each
+        trigger set in turn. See the module docstring's CAUTION/NOTE
+        before touching `_MAIL_TRIGGERS` or adding another send-capable
+        intent.
         """
         normalized = message.strip().lower()
         if not normalized:
             return Intent.CHAT
+        if any(trigger in normalized for trigger in _CHATBOT_TRIGGERS):
+            return Intent.CHATBOT
+        if any(trigger in normalized for trigger in _PDF_TRIGGERS):
+            return Intent.PDF
+        if any(trigger in normalized for trigger in _GLOBAL_SEARCH_TRIGGERS):
+            return Intent.GLOBAL_SEARCH
         if any(trigger in normalized for trigger in _SEARCH_TRIGGERS):
             return Intent.SEARCH
         if any(trigger in normalized for trigger in _SUMMARY_TRIGGERS):
@@ -153,6 +223,5 @@ class IntentRouter:
             return Intent.AP
         if any(trigger in normalized for trigger in _MAIL_TRIGGERS):
             return Intent.MAIL
-        # Every Intent value is now classified. Everything unmatched
-        # resolves to chat.
+        # Prompt is explicit-only. Unmatched free-text stays chat.
         return Intent.CHAT

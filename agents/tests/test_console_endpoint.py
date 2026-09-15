@@ -12,6 +12,74 @@ def test_console_serves_html(client):
     assert "text/html" in response.headers["content-type"]
     assert "AI Orchestrator" in response.text
     assert "/chat" in response.text  # the page's own fetch() call target
+    assert "Ask AI" in response.text
+    assert "attachConsoleTenantBody" in response.text
+    assert 'id="consoleTenantId"' in response.text
+    assert "refreshConsoleAgents" in response.text
+    assert "Save tenant settings" in response.text
+    assert "AP agent" in response.text
+    assert 'id="apPanel"' in response.text
+    assert "Run AP" in response.text
+    assert "invoice_json" in response.text
+    assert 'id="summaryFields"' in response.text
+    assert 'id="docPanel"' in response.text
+    assert 'id="summaryOcrText"' in response.text
+    assert ".docx" in response.text
+    assert "summary-card" in response.text
+    assert "summary-code" in response.text
+    assert "cURL" in response.text
+    assert "intent: 'summary'" in response.text
+    assert "intent: 'ocr'" in response.text
+    assert "intent: 'ap'" in response.text
+    assert "intent: 'prompt'" in response.text
+    assert "OCR agent" in response.text
+    assert "Summary agent" in response.text
+    assert "Insight agent" in response.text
+    assert "Global Search" in response.text
+    assert 'id="gsPanel"' in response.text
+    assert "intent: 'global_search'" in response.text
+    assert "function sendGlobalSearchJob" in response.text
+    assert "function renderGlobalSearchResult" in response.text
+    assert "gsSpecificId" in response.text
+    assert 'id="gsWorkspaceId"' not in response.text
+    assert 'id="gsActionFrom"' not in response.text
+    assert "buildChatCurl(request, 'global_search')" in response.text
+    assert "Chatbot" in response.text
+    assert 'id="cbPanel"' in response.text
+    assert "intent: 'chatbot'" in response.text
+    assert "function sendChatbotJob" in response.text
+    assert "function renderChatbotResult" in response.text
+    assert "cbSpecificId" in response.text
+    assert "buildChatCurl(request, 'chatbot')" in response.text
+    assert 'id="promptFields"' in response.text
+    assert "buildChatCurl" in response.text
+    assert "function renderOcrResult" in response.text
+    assert "function renderApResult" in response.text
+    assert "function renderPromptResult" in response.text
+    assert "skills/prompt/SKILL.md" in response.text
+    assert 'id="summaryPackInspector"' in response.text
+    assert 'data-pack-tab="tenant"' in response.text
+    assert "tenant-item-edit" in response.text
+    assert "custom-skills" in response.text
+    assert "/console/summary-skills/defaults" in response.text
+    assert "summaryRuleSaveBtn" in response.text
+    assert "Enable" in response.text
+    assert "const body = attachConsoleTenantBody({ session_id: sessionId, message });" in response.text
+    assert "function restoreEmptyState" in response.text
+    assert "function renderChatReply" in response.text
+    assert 'id="catalogView"' in response.text
+    assert 'id="viewCatalogBtn"' in response.text
+    assert 'id="catTenantSelect"' in response.text
+    assert 'id="tenantGateSelect"' in response.text
+    assert "fillTenantSelect" in response.text
+    assert "Choose tenant" in response.text
+    assert "Or paste tenant id" not in response.text
+    assert 'id="catalogTenantWorkspace"' in response.text
+    assert "Available models" in response.text
+    assert "/console/catalog/agents" in response.text
+    assert "/console/catalog/tenants" in response.text
+    assert "overflow-y: auto" in response.text
+    assert 'class="catalog-shell"' in response.text
 
 
 def test_console_static_logo_is_served(client):

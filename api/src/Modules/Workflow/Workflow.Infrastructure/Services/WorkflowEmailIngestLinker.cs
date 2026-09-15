@@ -42,37 +42,64 @@ public sealed class WorkflowEmailIngestLinker : IWorkflowEmailIngestLinker
             json = JsonSerializer.Deserialize<WorkflowJsonDto>(workflowJsonRaw, Deserialize);
         }
 
-        var existing = await _emailIngest.GetMailboxByWorkflowIdAsync(workflowId, cancellationToken);
+        var isEmail = IsEmailInitiate(json, options);
 
         // Partial update with no email fields and no designer JSON: leave mailbox unchanged
         if (json == null && options == null)
         {
+            var unchanged = await _emailIngest.GetMailboxByWorkflowIdAsync(workflowId, cancellationToken);
             return new WorkflowEmailIngestLinkResult(
-                existing?.Id,
-                existing?.ConnectorId,
-                existing?.IsEnabled ?? false);
+                unchanged?.Id,
+                unchanged?.ConnectorId,
+                unchanged?.IsEnabled ?? false);
         }
 
-        var isEmail = IsEmailInitiate(json, options);
-
+        // Non-email workflows (DOCUMENT / DOCUMENT_FORM / FORM): no mailbox required.
+        // Still persist Settings.PoMaster when masterSource/masterConnectorId are supplied.
         if (!isEmail)
         {
-            if (existing is { IsEnabled: true })
+            var existingNonEmail = await _emailIngest.GetMailboxByWorkflowIdAsync(workflowId, cancellationToken);
+            if (existingNonEmail is { IsEnabled: true })
             {
-                await _emailIngest.UpdateMailboxAsync(existing.Id, ToUpsert(existing, isEnabled: false), cancellationToken);
-                _logger.LogInformation("Disabled email ingest mailbox {MailboxId} for workflow {WorkflowId}", existing.Id, workflowId);
+                await _emailIngest.UpdateMailboxAsync(
+                    existingNonEmail.Id,
+                    ToUpsert(existingNonEmail, isEnabled: false),
+                    cancellationToken);
+                _logger.LogInformation(
+                    "Disabled email ingest mailbox {MailboxId} for workflow {WorkflowId}",
+                    existingNonEmail.Id,
+                    workflowId);
             }
 
+            await PersistPoMasterInWorkflowJsonAsync(
+                workflowId,
+                workflowJsonRaw,
+                options?.MasterSource ?? json?.Settings?.PoMaster?.MasterSource,
+                options?.MasterConnectorId
+                    ?? (Guid.TryParse(json?.Settings?.PoMaster?.MasterConnectorId, out var fromJson) ? fromJson : null),
+                options?.MasterFormId ?? json?.Settings?.PoMaster?.MasterFormId,
+                cancellationToken);
+
             return new WorkflowEmailIngestLinkResult(
-                existing?.Id,
-                existing?.ConnectorId,
+                existingNonEmail?.Id,
+                existingNonEmail?.ConnectorId,
                 false);
         }
+
+        var existing = await _emailIngest.GetMailboxByWorkflowIdAsync(workflowId, cancellationToken);
 
         var connectorId = ResolveConnectorId(options, json);
         if (connectorId == null || connectorId == Guid.Empty)
         {
             // Connector is optional at create/update — workflow can be saved; link mailbox later when OAuth Guid is set.
+            // Still persist PO master onto Settings.PoMaster for Hangfire enrichment.
+            await PersistPoMasterInWorkflowJsonAsync(
+                workflowId,
+                workflowJsonRaw,
+                options?.MasterSource ?? existing?.MasterSource,
+                options?.MasterConnectorId ?? existing?.MasterConnectorId,
+                options?.MasterFormId ?? existing?.MasterFormId,
+                cancellationToken);
             _logger.LogInformation(
                 "Skipping email ingest mailbox link for workflow {WorkflowId}: emailConnectorId not provided.",
                 workflowId);
@@ -88,11 +115,10 @@ public sealed class WorkflowEmailIngestLinker : IWorkflowEmailIngestLinker
         if (code is not ("GMAIL" or "OUTLOOK"))
             throw new InvalidOperationException("emailConnectorId must be a GMAIL or OUTLOOK connector.");
 
+        var masterConnectorId = options?.MasterConnectorId ?? existing?.MasterConnectorId;
         var masterSource = options?.MasterSource
             ?? existing?.MasterSource
-            ?? (options?.MasterConnectorId != null
-                ? EmailIngestMasterSources.QuickBooks
-                : EmailIngestMasterSources.InternalForm);
+            ?? await ResolveDefaultMasterSourceAsync(masterConnectorId, cancellationToken);
 
         var masterFormId = options?.MasterFormId
             ?? existing?.MasterFormId
@@ -108,7 +134,7 @@ public sealed class WorkflowEmailIngestLinker : IWorkflowEmailIngestLinker
             QueryFilter: options?.EmailQueryFilter ?? existing?.QueryFilter,
             MasterSource: masterSource,
             MasterFormId: masterFormId,
-            MasterConnectorId: options?.MasterConnectorId ?? existing?.MasterConnectorId,
+            MasterConnectorId: masterConnectorId,
             AttachmentExtensions: existing?.AttachmentExtensions);
 
         if (string.Equals(upsert.MasterSource, EmailIngestMasterSources.InternalForm, StringComparison.OrdinalIgnoreCase)
@@ -126,6 +152,13 @@ public sealed class WorkflowEmailIngestLinker : IWorkflowEmailIngestLinker
             mailbox = (await _emailIngest.UpdateMailboxAsync(existing.Id, upsert, cancellationToken))!;
 
         await PersistConnectorIdInWorkflowJsonAsync(workflowId, json, workflowJsonRaw, connectorId.Value, cancellationToken);
+        await PersistPoMasterInWorkflowJsonAsync(
+            workflowId,
+            workflowJsonRaw,
+            mailbox.MasterSource,
+            mailbox.MasterConnectorId,
+            mailbox.MasterFormId,
+            cancellationToken);
 
         _logger.LogInformation(
             "Linked email ingest mailbox {MailboxId} workflow {WorkflowId} connector {ConnectorId} enabled={Enabled}",
@@ -153,6 +186,55 @@ public sealed class WorkflowEmailIngestLinker : IWorkflowEmailIngestLinker
             return legacy.ToString(CultureInfo.InvariantCulture);
 
         return null;
+    }
+
+    private async Task<string> ResolveDefaultMasterSourceAsync(
+        Guid? masterConnectorId,
+        CancellationToken cancellationToken)
+    {
+        if (masterConnectorId is null || masterConnectorId == Guid.Empty)
+            return EmailIngestMasterSources.InternalForm;
+
+        var master = await _connectorService.GetByIdAsync(masterConnectorId.Value, cancellationToken);
+        if (master is null)
+            return EmailIngestMasterSources.QuickBooks;
+
+        if (SapConnectorProviderCodes.IsSap(master.ProviderCode))
+            return EmailIngestMasterSources.Sap;
+
+        if (string.Equals(master.ProviderCode, "QUICKBOOKS", StringComparison.OrdinalIgnoreCase))
+            return EmailIngestMasterSources.QuickBooks;
+
+        // Legacy: any other master connector id historically meant QuickBooks.
+        return EmailIngestMasterSources.QuickBooks;
+    }
+
+    private async Task PersistPoMasterInWorkflowJsonAsync(
+        Guid workflowId,
+        string? workflowJsonRaw,
+        string? masterSource,
+        Guid? masterConnectorId,
+        string? masterFormId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(masterSource)
+            && (masterConnectorId is null || masterConnectorId == Guid.Empty)
+            && string.IsNullOrWhiteSpace(masterFormId))
+        {
+            return;
+        }
+
+        var existing = workflowJsonRaw;
+        if (string.IsNullOrWhiteSpace(existing))
+            existing = await _jsonStorage.GetWorkflowJsonAsync(workflowId, cancellationToken);
+
+        var updated = WorkflowPoMasterJson.Upsert(existing, masterSource, masterConnectorId, masterFormId);
+        await _jsonStorage.SaveWorkflowJsonAsync(workflowId, updated, cancellationToken);
+        _logger.LogInformation(
+            "Persisted Settings.PoMaster for workflow {WorkflowId}: source={Source}, connector={ConnectorId}",
+            workflowId,
+            masterSource,
+            masterConnectorId);
     }
 
     private async Task PersistConnectorIdInWorkflowJsonAsync(

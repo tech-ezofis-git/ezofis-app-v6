@@ -88,12 +88,31 @@ public sealed class ConnectorProviderCatalog : IConnectorProviderCatalog
                      'https://appcenter.intuit.com/connect/oauth2',
                      'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer',
                      'com.intuit.quickbooks.accounting openid profile email',
-                     '', '', '', true, now())
+                     '', '', '', true, now()),
+                    (gen_random_uuid(), 'SAP', 'SAP S/4HANA Cloud',
+                     '', '', '',
+                     '', '', '', true, now()),
+                    (gen_random_uuid(), 'SAP_XSUAA', 'SAP BTP XSUAA',
+                     'https://feb80862trial.authentication.ap21.hana.ondemand.com/oauth/authorize',
+                     'https://feb80862trial.authentication.ap21.hana.ondemand.com/oauth/token',
+                     'openid',
+                     '', '', 'https://localhost:44311/api/connector/oauth/callback', true, now())
                 ON CONFLICT ("ProviderCode") DO UPDATE SET
-                    "Scopes" = CASE WHEN EXCLUDED."ProviderCode" IN ('GMAIL', 'OUTLOOK')
+                    "Scopes" = CASE WHEN EXCLUDED."ProviderCode" IN ('GMAIL', 'OUTLOOK', 'SAP_XSUAA')
                                     THEN EXCLUDED."Scopes"
                                     ELSE catalog."ConnectorProviders"."Scopes" END,
-                    "ModifiedAtUtc" = CASE WHEN EXCLUDED."ProviderCode" IN ('GMAIL', 'OUTLOOK')
+                    "AuthUrl" = CASE WHEN EXCLUDED."ProviderCode" = 'SAP_XSUAA'
+                                     THEN EXCLUDED."AuthUrl"
+                                     ELSE catalog."ConnectorProviders"."AuthUrl" END,
+                    "TokenUrl" = CASE WHEN EXCLUDED."ProviderCode" = 'SAP_XSUAA'
+                                      THEN EXCLUDED."TokenUrl"
+                                      ELSE catalog."ConnectorProviders"."TokenUrl" END,
+                    "RedirectUri" = CASE WHEN EXCLUDED."ProviderCode" = 'SAP_XSUAA'
+                                           AND (catalog."ConnectorProviders"."RedirectUri" IS NULL
+                                                OR catalog."ConnectorProviders"."RedirectUri" = '')
+                                         THEN EXCLUDED."RedirectUri"
+                                         ELSE catalog."ConnectorProviders"."RedirectUri" END,
+                    "ModifiedAtUtc" = CASE WHEN EXCLUDED."ProviderCode" IN ('GMAIL', 'OUTLOOK', 'SAP_XSUAA')
                                            THEN now()
                                            ELSE catalog."ConnectorProviders"."ModifiedAtUtc" END;
                 """;

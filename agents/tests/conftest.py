@@ -40,12 +40,20 @@ class _IsolatedFakeRedis:
 def client(monkeypatch):
     monkeypatch.setattr(main_module, "Redis", _IsolatedFakeRedis)
 
-    # Azure preset keys for Test Console — never real secrets in tests.
+    # Azure / Qwen preset keys for Test Console — never real secrets in tests.
     monkeypatch.setenv("AZURE_SOUTH_INDIA_API_KEY", "test-south-india-key")
     monkeypatch.setenv("AZURE_EAST_US_API_KEY", "test-east-us-key")
+    monkeypatch.setenv("QWEN_MAC_API_KEY", "test-qwen-mac-key")
+    # Use local mock OCR (no remote extract_text) unless a test overrides.
+    monkeypatch.setenv("OCR_EXTRACT_URL", "")
+    monkeypatch.delenv("AZURE_STORAGE_CONNECTION_STRING", raising=False)
+    monkeypatch.delenv("CATALOG_DATABASE_URL", raising=False)
     from app.config import get_settings
 
     get_settings.cache_clear()
+    from app.llm.model_presets import set_runtime_presets
+
+    set_runtime_presets(None)
 
     fake_db_pool = FakeDBPool()
 
@@ -54,8 +62,17 @@ def client(monkeypatch):
 
     monkeypatch.setattr(main_module.asyncpg, "create_pool", fake_create_pool)
 
+    async def fake_ap_progress(self, **kwargs):
+        return {"ok": True, "mock": True, **kwargs}
+
+    monkeypatch.setattr(
+        "app.integrations.ezofis_client.EzofisClient.report_ap_progress",
+        fake_ap_progress,
+    )
+
     with TestClient(main_module.app) as test_client:
         test_client.fake_db_pool = fake_db_pool
         yield test_client
 
     get_settings.cache_clear()
+    set_runtime_presets(None)

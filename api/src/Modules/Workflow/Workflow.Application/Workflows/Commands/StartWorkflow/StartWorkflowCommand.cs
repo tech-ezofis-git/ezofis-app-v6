@@ -1,4 +1,5 @@
 using MediatR;
+using SaaSApp.Workflow.Application.Contracts;
 
 namespace SaaSApp.Workflow.Application.Workflows.Commands.StartWorkflow;
 
@@ -8,7 +9,11 @@ public record StartWorkflowCommand(
     string? Context = null,
     string? EnvType = null,
     StartWorkflowAttachmentPayload? Attachment = null,
-    bool TriggerApAgentPythonJob = false) : IRequest<StartWorkflowCommandResult>;
+    bool TriggerApAgentPythonJob = false,
+    IReadOnlyList<string>? Skills = null,
+    IReadOnlyDictionary<string, string>? FormDataFields = null,
+    string? FormLineItemsJson = null,
+    IReadOnlyList<StartWorkflowStagedFileRef>? StagedFiles = null) : IRequest<StartWorkflowCommandResult>;
 
 /// <summary>Optional file uploaded during start (also supported via multipart on the API).</summary>
 public record StartWorkflowAttachmentPayload(
@@ -21,9 +26,12 @@ public record StartWorkflowCommandResult(
     Guid InstanceId,
     int? FirstTransactionId = null,
     int? CurrentTransactionId = null,
-    int? FormEntryId = null,
+    Guid? FormEntryId = null,
     Guid? ApAgentStepInstanceId = null,
     string? FormDataJson = null,
     string? FormDataBlobPath = null,
     IReadOnlyDictionary<string, object?>? StartPayload = null,
-    string? ApAgentJobId = null);
+    string? ApAgentJobId = null,
+    IReadOnlyList<string>? Skills = null,
+    /// <summary>Exact body POSTed to AP Agent <c>/chat</c> (null when no AP job was enqueued).</summary>
+    object? PythonInput = null);

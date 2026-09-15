@@ -4,6 +4,8 @@ public static class EmailIngestMasterSources
 {
     public const string InternalForm = "InternalForm";
     public const string QuickBooks = "QuickBooks";
+    /// <summary>PO Master = SAP connector (sample or live). Payload resource becomes SAP.</summary>
+    public const string Sap = "SAP";
 }
 
 public sealed record EmailIngestMailboxDto(
@@ -29,7 +31,7 @@ public sealed record EmailIngestMailboxUpsertRequest(
     Guid ConnectorId,
     Guid WorkflowId,
     bool IsEnabled = true,
-    int PollIntervalMinutes = 5,
+    int PollIntervalMinutes = 0,
     string? QueryFilter = null,
     string MasterSource = EmailIngestMasterSources.InternalForm,
     string? MasterFormId = null,

@@ -5,6 +5,7 @@ using SaaSApp.Repository.Infrastructure.Options;
 using SaaSApp.Repository.Infrastructure.Jobs;
 using SaaSApp.Repository.Infrastructure.Services;
 using SaaSApp.Repository.Infrastructure.Storage;
+using SaaSApp.SharedKernel.Options;
 
 namespace SaaSApp.Repository.Infrastructure;
 
@@ -12,13 +13,20 @@ public static class RepositoryInfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddRepositoryInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<AgentsChatOptions>(configuration.GetSection(AgentsChatOptions.SectionName));
         services.Configure<RepositoryFileStorageOptions>(configuration.GetSection(RepositoryFileStorageOptions.SectionName));
-        services.Configure<RepositoryOcrOptions>(configuration.GetSection(RepositoryOcrOptions.SectionName));
-        services.Configure<RepositoryAiSummaryOptions>(configuration.GetSection(RepositoryAiSummaryOptions.SectionName));
         services.Configure<RepositoryShareOptions>(configuration.GetSection(RepositoryShareOptions.SectionName));
         services.Configure<RepositorySignRequestOptions>(configuration.GetSection(RepositorySignRequestOptions.SectionName));
+        services.Configure<RepositoryPythonAssistantOptions>(configuration.GetSection(RepositoryPythonAssistantOptions.SectionName));
         services.AddHttpClient<IOcrExtractionService, OcrExtractionService>();
         services.AddHttpClient<IRepositoryAiSummaryService, RepositoryAiSummaryService>();
+        services.AddHttpClient(nameof(RepositoryPythonAssistantClient), (sp, client) =>
+        {
+            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<RepositoryPythonAssistantOptions>>().Value;
+            var timeout = opts.TimeoutSeconds > 0 ? opts.TimeoutSeconds : 120;
+            client.Timeout = TimeSpan.FromSeconds(timeout);
+        });
+        services.AddScoped<IRepositoryPythonAssistantClient, RepositoryPythonAssistantClient>();
         services.AddScoped<IRepositorySchemaService, RepositorySchemaService>();
         services.AddScoped<IRepositoryStorageSeedService, RepositoryStorageSeedService>();
         services.AddScoped<IStaticRepositoryProvisioner, StaticRepositoryProvisioner>();

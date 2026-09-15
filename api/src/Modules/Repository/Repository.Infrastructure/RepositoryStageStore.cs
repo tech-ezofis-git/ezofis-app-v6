@@ -22,6 +22,7 @@ internal sealed class RepositoryStageRow
     public Guid? ModifiedBy { get; init; }
     public bool IsDeleted { get; init; }
     public string? OcrJson { get; init; }
+    public string? OcrText { get; init; }
     public string? SummaryJson { get; init; }
     public Dictionary<string, string> FieldValues { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }
@@ -182,6 +183,7 @@ internal static class RepositoryStageStore
             ModifiedBy = GetNullableGuid(values, "modified_by"),
             IsDeleted = GetBool(values, "is_deleted"),
             OcrJson = GetString(values, "ocr_json"),
+            OcrText = GetString(values, "ocr_text"),
             SummaryJson = GetString(values, "summary_json"),
             FieldValues = fieldValues
         };
@@ -197,7 +199,8 @@ internal static class RepositoryStageStore
         string? stageStatus,
         string? ocrResult,
         Guid? userId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? ocrText = null)
     {
         var table = RepositorySqlHelper.QualifiedItemsTable(repo.StageTableName);
         var tableColumns = await RepositoryItemTableColumns.LoadAsync(connection, repo.StageTableName, cancellationToken);
@@ -211,8 +214,13 @@ internal static class RepositoryStageStore
         };
 
         var index = 0;
+        var usedColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (key, value) in fieldValues)
         {
+            if (string.IsNullOrWhiteSpace(value))
+                continue;
+            if (RepositorySqlHelper.ReservedItemColumns.Contains(key))
+                continue;
             if (!RepositoryItemFilterHelper.TryResolveFilterColumn(key, allowedColumns, repo, out var col))
                 continue;
             var canonical = RepositoryItemTableColumns.TryGetCanonicalName(tableColumns, col, out var canonicalCol)
@@ -221,9 +229,18 @@ internal static class RepositoryStageStore
             if (!RepositoryItemTableColumns.Has(tableColumns, canonical))
                 continue;
 
+            var physical = RepositorySqlHelper.ToPhysicalName(canonical);
+            if (!usedColumns.Add(physical))
+                continue;
+
+            var coerced = RepositoryFieldValueCoercion.TryCoerce(repo.Fields, canonical, value) ?? value;
+            // A date/number column cannot take a raw text parameter. Skip that field instead of failing the whole stage update.
+            if (coerced is string && IsTypedRepositoryField(repo, canonical))
+                continue;
+
             var param = $"@U{index++}";
             updates.Add($"{RepositorySqlHelper.PhysicalColumnRef(canonical)} = {param}");
-            parameters.Add(new NpgsqlParameter(param, value));
+            parameters.Add(RepositoryFieldValueCoercion.CreateParameter(param, coerced));
         }
 
         if (!string.IsNullOrWhiteSpace(status) && RepositoryItemTableColumns.Has(tableColumns, "Status"))
@@ -232,6 +249,8 @@ internal static class RepositoryStageStore
             updates.Add("stage_status = @StageStatus");
         if (!string.IsNullOrWhiteSpace(ocrResult) && RepositoryItemTableColumns.Has(tableColumns, "OcrJson"))
             updates.Add("ocr_json = @OcrJson");
+        if (!string.IsNullOrWhiteSpace(ocrText) && RepositoryItemTableColumns.Has(tableColumns, "OcrText"))
+            updates.Add("ocr_text = @OcrText");
 
         updates.Add("modified_at_utc = now()");
         if (RepositoryItemTableColumns.Has(tableColumns, "ModifiedBy"))
@@ -243,6 +262,8 @@ internal static class RepositoryStageStore
             parameters.Add(new NpgsqlParameter("@StageStatus", stageStatus));
         if (!string.IsNullOrWhiteSpace(ocrResult))
             parameters.Add(new NpgsqlParameter("@OcrJson", ocrResult));
+        if (!string.IsNullOrWhiteSpace(ocrText))
+            parameters.Add(new NpgsqlParameter("@OcrText", ocrText));
         parameters.Add(new NpgsqlParameter("@ModifiedBy", (object?)userId ?? DBNull.Value));
 
         var sql = $"""
@@ -254,7 +275,134 @@ internal static class RepositoryStageStore
         await using var cmd = new NpgsqlCommand(sql, connection);
         foreach (var p in parameters)
             cmd.Parameters.Add(p);
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+        try
+        {
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
+        }
+        catch (PostgresException) when (index > 0)
+        {
+            // One typed column (date/number) must not drop every metadata value.
+            await UpdateFieldsOneByOneAsync(
+                connection,
+                table,
+                stageId,
+                tenantId,
+                repo,
+                fieldValues,
+                tableColumns,
+                allowedColumns,
+                status,
+                stageStatus,
+                ocrResult,
+                ocrText,
+                userId,
+                cancellationToken);
+        }
+    }
+
+    private static async Task UpdateFieldsOneByOneAsync(
+        NpgsqlConnection connection,
+        string table,
+        Guid stageId,
+        Guid tenantId,
+        RepositoryDetailDto repo,
+        IReadOnlyDictionary<string, string> fieldValues,
+        HashSet<string> tableColumns,
+        HashSet<string> allowedColumns,
+        string? status,
+        string? stageStatus,
+        string? ocrResult,
+        string? ocrText,
+        Guid? userId,
+        CancellationToken cancellationToken)
+    {
+        var usedColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, value) in fieldValues)
+        {
+            if (string.IsNullOrWhiteSpace(value) || RepositorySqlHelper.ReservedItemColumns.Contains(key))
+                continue;
+            if (!RepositoryItemFilterHelper.TryResolveFilterColumn(key, allowedColumns, repo, out var col))
+                continue;
+
+            var canonical = RepositoryItemTableColumns.TryGetCanonicalName(tableColumns, col, out var canonicalCol)
+                ? canonicalCol
+                : col;
+            if (!RepositoryItemTableColumns.Has(tableColumns, canonical))
+                continue;
+
+            var physical = RepositorySqlHelper.ToPhysicalName(canonical);
+            if (!usedColumns.Add(physical))
+                continue;
+
+            var coerced = RepositoryFieldValueCoercion.TryCoerce(repo.Fields, canonical, value) ?? value;
+            if (coerced is string && IsTypedRepositoryField(repo, canonical))
+                continue;
+
+            var sql = $"""
+                UPDATE {table}
+                SET {RepositorySqlHelper.PhysicalColumnRef(canonical)} = @Value,
+                    modified_at_utc = now()
+                WHERE id = @Id AND tenant_id = @TenantId AND repository_id = @RepositoryId AND is_deleted = false;
+                """;
+            try
+            {
+                await using var cmd = new NpgsqlCommand(sql, connection);
+                cmd.Parameters.Add(RepositoryFieldValueCoercion.CreateParameter("@Value", coerced));
+                cmd.Parameters.AddWithValue("@Id", stageId);
+                cmd.Parameters.AddWithValue("@TenantId", tenantId);
+                cmd.Parameters.AddWithValue("@RepositoryId", repo.Id);
+                await cmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+            catch (PostgresException)
+            {
+                // Leave this column empty and keep the rest of the metadata.
+            }
+        }
+
+        var tail = new List<string> { "modified_at_utc = now()" };
+        if (!string.IsNullOrWhiteSpace(status) && RepositoryItemTableColumns.Has(tableColumns, "Status"))
+            tail.Add("status = @Status");
+        if (!string.IsNullOrWhiteSpace(stageStatus) && RepositoryItemTableColumns.Has(tableColumns, "StageStatus"))
+            tail.Add("stage_status = @StageStatus");
+        if (!string.IsNullOrWhiteSpace(ocrResult) && RepositoryItemTableColumns.Has(tableColumns, "OcrJson"))
+            tail.Add("ocr_json = @OcrJson");
+        if (!string.IsNullOrWhiteSpace(ocrText) && RepositoryItemTableColumns.Has(tableColumns, "OcrText"))
+            tail.Add("ocr_text = @OcrText");
+        if (RepositoryItemTableColumns.Has(tableColumns, "ModifiedBy"))
+            tail.Add("modified_by = @ModifiedBy");
+
+        var tailSql = $"""
+            UPDATE {table}
+            SET {string.Join(", ", tail)}
+            WHERE id = @Id AND tenant_id = @TenantId AND repository_id = @RepositoryId AND is_deleted = false;
+            """;
+        await using var tailCmd = new NpgsqlCommand(tailSql, connection);
+        tailCmd.Parameters.AddWithValue("@Id", stageId);
+        tailCmd.Parameters.AddWithValue("@TenantId", tenantId);
+        tailCmd.Parameters.AddWithValue("@RepositoryId", repo.Id);
+        if (!string.IsNullOrWhiteSpace(status))
+            tailCmd.Parameters.AddWithValue("@Status", status);
+        if (!string.IsNullOrWhiteSpace(stageStatus))
+            tailCmd.Parameters.AddWithValue("@StageStatus", stageStatus);
+        if (!string.IsNullOrWhiteSpace(ocrResult))
+            tailCmd.Parameters.AddWithValue("@OcrJson", ocrResult);
+        if (!string.IsNullOrWhiteSpace(ocrText))
+            tailCmd.Parameters.AddWithValue("@OcrText", ocrText);
+        tailCmd.Parameters.AddWithValue("@ModifiedBy", (object?)userId ?? DBNull.Value);
+        await tailCmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static bool IsTypedRepositoryField(RepositoryDetailDto repo, string column)
+    {
+        var field = repo.Fields.FirstOrDefault(f =>
+            string.Equals(f.SqlColumnName, column, StringComparison.OrdinalIgnoreCase));
+        if (field == null)
+            return false;
+
+        return (field.DataType ?? "text").Trim().ToLowerInvariant() is
+            "number" or "decimal" or "amount" or "int" or "integer" or "date" or "datetime"
+            or "bit" or "bool" or "boolean";
     }
 
     public static async Task MarkArchivedAsync(

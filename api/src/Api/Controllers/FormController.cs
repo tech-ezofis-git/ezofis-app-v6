@@ -33,6 +33,7 @@ public sealed class FormController : ControllerBase
     /// <summary>
     /// Upload master CSV/XLSX for a form (v5 POST /api/form/uploadMasterFile).
     /// Stores file in tenant blob, creates dbo.masterFileprocess + dbo.notification rows, enqueues Hangfire Python import.
+    /// Response includes <c>pythonInput</c> — the JSON body posted to <c>ezDataImport</c>.
     /// </summary>
     [HttpPost("uploadMasterFile")]
     [DisableRequestSizeLimit]
@@ -72,7 +73,8 @@ public sealed class FormController : ControllerBase
                 result.MasterFileProcessId,
                 result.FilePath,
                 result.NotificationId,
-                result.HangfireJobId));
+                result.HangfireJobId,
+                result.PythonInput));
         }
         catch (ArgumentException ex)
         {
@@ -242,9 +244,9 @@ public sealed class FormController : ControllerBase
 
     /// <summary>
     /// Add or update a form entry (v5 POST /api/form/{id}/entry/{entryId}).
-    /// Use <c>entryId=0</c> to create; existing <c>itemId</c> to update.
+    /// Use <c>entryId=00000000-0000-0000-0000-000000000000</c> to create; existing item id (GUID) to update.
     /// </summary>
-    [HttpPost("{id}/entry/{entryId:int}")]
+    [HttpPost("{id}/entry/{entryId:guid}")]
     [ProducesResponseType(typeof(FormEntryResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(FormEntryResult), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(FormEntryResult), StatusCodes.Status409Conflict)]
@@ -252,7 +254,7 @@ public sealed class FormController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpsertEntry(
         string id,
-        int entryId,
+        Guid entryId,
         [FromBody] JsonElement body,
         CancellationToken cancellationToken)
     {
@@ -376,20 +378,20 @@ public sealed class FormController : ControllerBase
     }
 
     /// <summary>Get form entry by itemId (v5 GET /api/form/{id}/entry/{entryId}).</summary>
-    [HttpGet("{id}/entry/{entryId:int}")]
+    [HttpGet("{id}/entry/{entryId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<Dictionary<string, object?>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetEntry(string id, int entryId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetEntry(string id, Guid entryId, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(id) || entryId <= 0)
+        if (string.IsNullOrWhiteSpace(id) || entryId == Guid.Empty)
             return NotFound();
 
         try
         {
             var result = await _formEntryService.GetEntriesAsync(
                 id,
-                entryId.ToString(CultureInfo.InvariantCulture),
+                entryId.ToString("D"),
                 cancellationToken);
             if (result.Status != FormEntryGetStatus.Found || result.Entries == null || result.Entries.Count == 0)
                 return NotFound();
@@ -440,4 +442,6 @@ public sealed record FormMasterFileUploadResponse(
     int MasterFileProcessId,
     string FilePath,
     int? NotificationId,
-    string? HangfireJobId);
+    string? HangfireJobId,
+    /// <summary>Exact JSON body Hangfire POSTs to Python <c>ezDataImport</c>.</summary>
+    object? PythonInput = null);

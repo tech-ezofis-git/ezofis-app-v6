@@ -93,7 +93,7 @@ Set on Azure App Service (Configuration / `appsettings`):
   "HangfireCron": "*/5 * * * *"
 },
 "ApAgent": {
-  "PythonServiceUrl": "https://<python-host>/api/ap-agent/run",
+  "PythonServiceUrl": "http://agents:8000/chat",
   "ApiBaseUrl": "https://<your-azure-api>/V6API/api/workflows",
   "TimeoutMinutes": 30
 }
@@ -133,16 +133,20 @@ Checklist:
   "DefaultConnection": "<same catalog SQL as Azure API>"
 },
 "ApAgent": {
-  "PythonServiceUrl": "https://<python-host>/api/ap-agent/run",
+  "PythonServiceUrl": "http://agents:8000/chat",
   "ApiBaseUrl": "https://<your-azure-api>/V6API/api/workflows",
   "TimeoutMinutes": 30
 },
 "FormMasterFileImport": {
   "UseHangfirePython": true,
-  "PythonServiceUrl": "https://<python-host>/api/master-file/import"
+  "PythonServiceUrl": "https://cloud.ezofis.com/api/ezDataImport"
+},
+"Agents": {
+  "ChatUrl": "https://cloud.ezofis.com/chat"
 }
 ```
 
+Cloud production overrides are also listed in `src/Api/appsettings.Production.example.json`.
 | Key | Value | Why |
 |-----|-------|-----|
 | `RunServerInApi` | **`true`** | This machine runs workers |

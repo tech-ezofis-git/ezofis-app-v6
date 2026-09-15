@@ -9,8 +9,8 @@ they're pass-through, so they never reach this class's LLM path.
 `compose_chat_response` is the Phase 1 pass-through path — unchanged, still
 just formatting, no LLM call. Every intent uses it to build the final
 response envelope (correlation_id/latency/token_usage/chunk_ids/
-document_id/cited_data_points/ocr_result/forecast_result/invoice_reference/
-mail_draft).
+document_id/cited_data_points/ocr_result/summary_result/insight_result/forecast_result/
+invoice_reference/mail_draft/ap_result).
 
 `synthesize_search_answer` (Phase 2), `synthesize_summary`,
 `synthesize_insight` (Phase 3a), `synthesize_forecast`, and
@@ -94,6 +94,29 @@ _MEMORY_EXTRACTION_SYSTEM_PROMPT = (
     "phone calls.\"). Respond with ONLY the extracted fact, nothing else."
 )
 
+from app.ocr_skills import rules as _ocr_rules
+from app.summary_skills import rules as _summary_rules
+from app.summary_skills.lock import (
+    balance_json_text as _balance_json_text,
+    locked_summary_payload as _locked_summary_payload,
+    loads_json_object as _loads_json_object,
+    parse_summary_json_content as _parse_summary_json_content,
+    payload_from_parsed as _payload_from_parsed,
+)
+from app.summary_skills.rules import (
+    EMPTY_SUMMARY_TEXT as _EMPTY_SUMMARY_TEXT,
+    highlight_summary_text as _highlight_summary_text,
+)
+
+
+def __getattr__(name: str):
+    """Lazy prompt exports so skill packs can be overridden at runtime."""
+    if name == "_FILE_SUMMARY_JSON_SYSTEM_PROMPT":
+        return _summary_rules.system_prompt()
+    if name == "_OCR_JSON_SYSTEM_PROMPT":
+        return _ocr_rules.system_prompt()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 class ResponseComposer:
     def __init__(self, llm_adapter: LLMAdapter):
@@ -111,9 +134,16 @@ class ResponseComposer:
         document_id: Optional[str] = None,
         cited_data_points: Optional[list[str]] = None,
         ocr_result: Optional[dict] = None,
+        summary_result: Optional[dict] = None,
+        insight_result: Optional[dict] = None,
         forecast_result: Optional[dict] = None,
         invoice_reference: Optional[str] = None,
         mail_draft: Optional[dict] = None,
+        ap_result: Optional[dict] = None,
+        prompt_result: Optional[dict] = None,
+        pdf_result: Optional[dict] = None,
+        global_search_result: Optional[dict] = None,
+        chatbot_result: Optional[dict] = None,
     ) -> ChatResponse:
         return ChatResponse(
             session_id=session_id,
@@ -125,9 +155,16 @@ class ResponseComposer:
             document_id=document_id,
             cited_data_points=cited_data_points,
             ocr_result=ocr_result,
+            summary_result=summary_result,
+            insight_result=insight_result,
             forecast_result=forecast_result,
             invoice_reference=invoice_reference,
             mail_draft=mail_draft,
+            ap_result=ap_result,
+            prompt_result=prompt_result,
+            pdf_result=pdf_result,
+            global_search_result=global_search_result,
+            chatbot_result=chatbot_result,
         )
 
     async def _llm_synthesize(self, *, system_prompt: str, user_content: str) -> dict:
@@ -178,6 +215,25 @@ class ResponseComposer:
         return await self._llm_synthesize(
             system_prompt=_SUMMARY_SYSTEM_PROMPT,
             user_content=f"Document: {title}\n\n{content}",
+        )
+
+    async def synthesize_file_summary(
+        self,
+        *,
+        text: str,
+        source: str,
+        page_label: str = "",
+        model: Optional[str] = None,
+    ) -> dict:
+        """Delegate to Summary skill (rules + LLM + lock)."""
+        from app.summary_skills.summarize_document import run as summarize_document
+
+        return await summarize_document(
+            llm=self._llm,
+            text=text,
+            source=source,
+            page_label=page_label,
+            model=model,
         )
 
     async def synthesize_insight(self, *, report: dict) -> dict:
@@ -288,6 +344,104 @@ class ResponseComposer:
             system_prompt=_MEMORY_EXTRACTION_SYSTEM_PROMPT,
             user_content=instruction,
         )
+
+    async def synthesize_ocr_json(
+        self,
+        *,
+        instruction: str,
+        ocr_text: str,
+        parameters: list[str],
+        tableparameters: list[str],
+        page_label: str,
+        model: Optional[str] = None,
+        max_recommended_fields: int = 15,
+    ) -> dict:
+        """Delegate to OCR extract_fields skill (rules + LLM + parse)."""
+        from app.ocr_skills.extract_fields import run as extract_fields
+
+        return await extract_fields(
+            llm=self._llm,
+            instruction=instruction,
+            ocr_text=ocr_text,
+            parameters=parameters,
+            tableparameters=tableparameters,
+            page_label=page_label,
+            model=model,
+            max_recommended_fields=max_recommended_fields,
+        )
+
+
+def _parse_ocr_json_content(
+    content: str,
+    *,
+    expected: list[tuple[str, str]],
+    max_recommended_fields: int,
+) -> tuple[list[dict], Optional[list]]:
+    import json as _json
+    import re as _re
+
+    text = (content or "").strip()
+    if text.startswith("```"):
+        text = _re.sub(r"^```(?:json)?\s*", "", text)
+        text = _re.sub(r"\s*```$", "", text)
+    try:
+        data = _json.loads(text)
+    except _json.JSONDecodeError:
+        # Best-effort: extract first {...} block
+        match = _re.search(r"\{.*\}", text, _re.DOTALL)
+        if not match:
+            if expected:
+                return (
+                    [{"name": n, "value": None, "type": t} for n, t in expected],
+                    None,
+                )
+            return [], None
+        try:
+            data = _json.loads(match.group(0))
+        except _json.JSONDecodeError:
+            if expected:
+                return (
+                    [{"name": n, "value": None, "type": t} for n, t in expected],
+                    None,
+                )
+            return [], None
+
+    raw_fields = data.get("ocrResult") if isinstance(data, dict) else None
+    if not isinstance(raw_fields, list):
+        raw_fields = []
+
+    normalized: list[dict] = []
+    for item in raw_fields:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "").strip()
+        typ = str(item.get("type") or "SHORT_TEXT").strip() or "SHORT_TEXT"
+        value = item.get("value")
+        if value is not None:
+            value = str(value).strip()
+            if value == "":
+                value = None
+        if name:
+            normalized.append({"name": name, "value": value, "type": typ})
+
+    if expected:
+        by_name = {f["name"].lower(): f for f in normalized}
+        ordered = []
+        for name, typ in expected:
+            found = by_name.get(name.lower())
+            if found:
+                ordered.append({"name": name, "value": found.get("value"), "type": typ})
+            else:
+                ordered.append({"name": name, "value": None, "type": typ})
+        normalized = ordered
+    else:
+        normalized = normalized[:max_recommended_fields]
+
+    table_result = data.get("tableResult") if isinstance(data, dict) else None
+    if table_result is not None and not isinstance(table_result, list):
+        table_result = None
+
+    return normalized, table_result
 
 
 def _parse_mail_draft(content: str, *, fallback_subject: str) -> tuple[str, str]:

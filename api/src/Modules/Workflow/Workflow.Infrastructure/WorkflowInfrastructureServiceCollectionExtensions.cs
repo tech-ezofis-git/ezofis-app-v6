@@ -9,6 +9,7 @@ using SaaSApp.Workflow.Infrastructure.Options;
 using SaaSApp.Workflow.Infrastructure.Persistence;
 using SaaSApp.Workflow.Infrastructure.Services;
 using SaaSApp.Workflow.Infrastructure.Services.ConnectorAdapters;
+using SaaSApp.SharedKernel.Options;
 
 namespace SaaSApp.Workflow.Infrastructure;
 
@@ -49,6 +50,7 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
             return new WorkflowDbContext(optionsBuilder.Options, tenantProvider);
         });
 
+        services.Configure<AgentsChatOptions>(configuration.GetSection(AgentsChatOptions.SectionName));
         services.AddScoped<IWorkflowInstanceStore, WorkflowInstanceStore>();
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IUnitOfWork, WorkflowUnitOfWork>();
@@ -63,9 +65,14 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IFormJsonStorageService, FormJsonStorageService>();
         services.AddScoped<IFormService, FormService>();
         services.AddScoped<IFormEntryService, FormEntryService>();
+        services.AddScoped<IEzfbEntryIdMigrationService, EzfbEntryIdMigrationService>();
         services.AddScoped<IWorkflowTicketSearchService, WorkflowTicketSearchService>();
+        services.AddScoped<IWorkflowTicketNumberService, WorkflowTicketNumberService>();
         services.AddScoped<IFormMasterFileUploadService, FormMasterFileUploadService>();
         services.AddScoped<IConnectorService, ConnectorService>();
+        services.AddScoped<ISapPurchaseOrderLookupService, SapPurchaseOrderLookupService>();
+        services.AddScoped<IHanaCloudPurchaseOrderService, HanaCloudPurchaseOrderService>();
+        services.AddHttpClient(nameof(SapPurchaseOrderLookupService));
         services.Configure<ConnectorOAuthOptions>(configuration.GetSection(ConnectorOAuthOptions.SectionName));
         services.AddHttpClient(nameof(IConnectorProviderAdapter));
         services.AddScoped<IConnectorProviderAdapter, GcpConnectorAdapter>();
@@ -75,9 +82,15 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IConnectorProviderAdapter, TeamsConnectorAdapter>();
         services.AddScoped<IConnectorProviderAdapter, DropboxConnectorAdapter>();
         services.AddScoped<IConnectorProviderAdapter, QuickBooksConnectorAdapter>();
+        services.AddScoped<IConnectorProviderAdapter, SapConnectorAdapter>();
+        services.AddScoped<IConnectorProviderAdapter, SapXsuaaConnectorAdapter>();
         services.AddScoped<IConnectorOAuthService, ConnectorOAuthService>();
         services.AddScoped<IEmailIngestService, EmailIngestService>();
+        services.AddScoped<EmailIngestActorResolver>();
+        services.AddScoped<IEmailIngestNormalWorkflowStarter, EmailIngestNormalWorkflowStarter>();
+        services.AddScoped<OcrToFormDataMapper>();
         services.AddScoped<IWorkflowEmailIngestLinker, WorkflowEmailIngestLinker>();
+        services.AddScoped<WorkflowPdfFormDataMapper>();
         services.AddScoped<IMasterResolveService, MasterResolveService>();
         services.AddScoped<RunEmailIngestPollJob>();
         services.AddScoped<IWorkflowSecurityService, WorkflowSecurityService>();
@@ -93,23 +106,37 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IWorkflowLegacyTransactionSyncService, WorkflowLegacyTransactionSyncService>();
         services.AddScoped<IWorkflowInboxShareAssignmentService, WorkflowInboxShareAssignmentService>();
         services.AddScoped<IApDashboardQueryService, ApDashboardQueryService>();
-        services.Configure<ApDashboardInsightsOptions>(configuration.GetSection(ApDashboardInsightsOptions.SectionName));
-        services.AddHttpClient(nameof(ApDashboardInsightsClient), (sp, client) =>
+        services.AddHttpClient(nameof(ApDashboardInsightsClient), client =>
         {
-            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ApDashboardInsightsOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(ApDashboardInsightsDefaults.TimeoutSeconds);
+        });
+        services.AddScoped<IApDashboardInsightsClient, ApDashboardInsightsClient>();
+        services.Configure<DashboardPythonOptions>(configuration.GetSection(DashboardPythonOptions.SectionName));
+        services.AddHttpClient(nameof(DashboardPythonClient), (sp, client) =>
+        {
+            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<DashboardPythonOptions>>().Value;
             var seconds = Math.Clamp(opts.TimeoutSeconds, 5, 300);
             client.Timeout = TimeSpan.FromSeconds(seconds);
         });
-        services.AddScoped<IApDashboardInsightsClient, ApDashboardInsightsClient>();
+        services.AddScoped<IDashboardPythonClient, DashboardPythonClient>();
         services.AddScoped<IWorkflowStepSyncService, WorkflowStepSyncService>();
         services.AddScoped<IWorkflowStartBootstrapService, WorkflowStartBootstrapService>();
+        services.AddScoped<StagedFileEzfbBinder>();
         services.AddScoped<IWorkflowApAgentMoveNextService, WorkflowApAgentMoveNextService>();
         services.AddScoped<IWorkflowEzfbFormDataLoader, WorkflowEzfbFormDataLoader>();
+        services.AddHttpClient(nameof(WorkflowPdfGenerationService), (sp, client) =>
+        {
+            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<WorkflowPdfGenerationOptions>>().Value;
+            var seconds = Math.Clamp(opts.TimeoutSeconds, 5, 600);
+            client.Timeout = TimeSpan.FromSeconds(seconds);
+        });
+        services.AddScoped<IWorkflowPdfGenerationService, WorkflowPdfGenerationService>();
         services.AddScoped<IApAgentJobProgressService, ApAgentJobProgressService>();
         services.AddScoped<IApAgentJobStatusService, ApAgentJobStatusService>();
         services.Configure<FormMasterFileImportOptions>(configuration.GetSection(FormMasterFileImportOptions.SectionName));
         services.Configure<WorkflowMoveNotificationOptions>(configuration.GetSection(WorkflowMoveNotificationOptions.SectionName));
         services.AddScoped<IWorkflowMoveNotificationService, WorkflowMoveNotificationService>();
+        services.AddScoped<IWorkflowNotificationQueryService, WorkflowNotificationQueryService>();
         services.AddHttpClient(nameof(MasterFileImportPythonPipelineService), client =>
         {
             client.Timeout = Timeout.InfiniteTimeSpan;
@@ -118,12 +145,14 @@ public static class WorkflowInfrastructureServiceCollectionExtensions
         services.AddScoped<IMasterFileImportPythonJobClient, MasterFileImportPythonJobClient>();
         services.AddScoped<RunMasterFileImportPythonJob>();
         services.Configure<ApAgentOptions>(configuration.GetSection(ApAgentOptions.SectionName));
+        services.Configure<WorkflowPdfGenerationOptions>(configuration.GetSection(WorkflowPdfGenerationOptions.SectionName));
         services.Configure<EmailIngestOptions>(configuration.GetSection(EmailIngestOptions.SectionName));
         services.AddHttpClient(nameof(ApAgentPythonPipelineService), client =>
         {
             client.Timeout = Timeout.InfiniteTimeSpan;
         });
         services.AddScoped<IApAgentPythonPipelineService, ApAgentPythonPipelineService>();
+        services.AddScoped<IApAgentPilotAuthProvider, NullApAgentPilotAuthProvider>();
         services.AddScoped<IApAgentPythonJobClient, ApAgentPythonJobClient>();
         services.AddScoped<RunApAgentPythonJob>();
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SaaSApp.Workflow.Application.Workflows.Commands.CreateWorkflow;
@@ -20,7 +21,16 @@ public record WorkflowJsonDto(
 
 public record WorkflowSettingsDto(
     WorkflowGeneralDto? General = null,
-    WorkflowPublishDto? Publish = null
+    WorkflowPublishDto? Publish = null,
+    /// <summary>PO Master for AP Agent (works for DOCUMENT / DOCUMENT_FORM without email mailbox).</summary>
+    WorkflowPoMasterDto? PoMaster = null
+);
+
+/// <summary>PO / vendor master binding mirrored from mailbox masterSource fields.</summary>
+public record WorkflowPoMasterDto(
+    string? MasterSource = null,
+    string? MasterConnectorId = null,
+    string? MasterFormId = null
 );
 
 public record WorkflowGeneralDto(
@@ -116,7 +126,13 @@ public record WorkflowBlockSettingsDto(
     bool? MlCompareMaster = null,
     int? MlMasterFormId = null,
     List<WorkflowMlCompareFieldDto>? MlCompareFields = null,
-    string? MlPredictionField = null
+    string? MlPredictionField = null,
+    [property: JsonPropertyName("generatePDF")]
+    bool? GeneratePDF = null,
+    [property: JsonPropertyName("pdfTemplate")]
+    JsonElement? PdfTemplate = null,
+    [property: JsonPropertyName("generatePDFFields")]
+    string[]? GeneratePDFFields = null
 );
 
 public record WorkflowFileSettingsDto(

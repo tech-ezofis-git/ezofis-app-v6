@@ -1,0 +1,1782 @@
+"""Postgres persistence for AP runs, artifacts, tenant plans, and credit audit."""
+from __future__ import annotations
+
+import json
+import logging
+import uuid
+from datetime import date, datetime, timezone
+from decimal import Decimal, InvalidOperation
+from typing import Any, Optional, Protocol
+
+import asyncpg
+
+from app.ap_skills.tenant_db import ezfb_items_table, repository_items_table
+from app.ap_skills.types import ApRunInProgressError
+from app.data_import.ident import quote_ident
+
+logger = logging.getLogger("orchestrator.ap_store")
+
+
+class ApStoreUnavailableError(Exception):
+    """Raised when an AP write/read against Postgres fails."""
+
+
+class DBExecutor(Protocol):
+    async def execute(self, query: str, *args: Any) -> Any: ...
+    async def fetch(self, query: str, *args: Any) -> list[Any]: ...
+    async def fetchrow(self, query: str, *args: Any) -> Any: ...
+
+
+def _json_dump(value: Any) -> str:
+    return json.dumps(value, default=str)
+
+
+def _json_load(value: Any) -> Any:
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return value
+    if isinstance(value, (bytes, bytearray)):
+        value = value.decode("utf-8")
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
+
+
+def _row_get(row: Any, key: str) -> Any:
+    if row is None:
+        return None
+    if isinstance(row, dict):
+        return row.get(key)
+    return row[key]
+
+
+_EZFB_SKIP_COLS = frozenset(
+    {
+        "item_id",
+        "itemid",
+        "id",
+        "createdat",
+        "created_at",
+        "createdby",
+        "created_by",
+        "modifiedat",
+        "modified_at",
+        "modifiedby",
+        "modified_by",
+        "isdeleted",
+        "is_deleted",
+        "todaytask",
+        "ismarked",
+        "is_marked",
+    }
+)
+
+
+_REPO_SKIP_COLS = _EZFB_SKIP_COLS | {
+    "filename",
+    "filepath",
+    "file_path",
+    "file_name",
+    "contenttype",
+    "content_type",
+    "filesize",
+    "file_size",
+    "size",
+    "mimetype",
+    "mime_type",
+    "repositoryid",
+    "repository_id",
+    "parentid",
+    "parent_id",
+    "blobpath",
+    "blob_path",
+    "version",
+    "versionno",
+    "fileversion",
+    "file_version",
+    "islatest",
+    "is_latest",
+    "extension",
+    "fileextension",
+    "ocrscore",
+    "ocr_score",
+    "totalpages",
+    "total_pages",
+    "isverified",
+    "is_verified",
+    "activeitem",
+    "active_item",
+}
+
+_GUID_COL_NAMES = (
+    "itemid",
+    "item_id",
+    "id",
+    "itemguid",
+    "item_guid",
+    "guid",
+    "uuid",
+)
+_GUID_SKIP_COL_NORMS = {
+    "repositoryid",
+    "repository_id",
+    "createdby",
+    "created_by",
+    "modifiedby",
+    "modified_by",
+    "parentid",
+    "parent_id",
+    "workflowid",
+    "workflow_id",
+    "instanceid",
+    "instance_id",
+    "formid",
+    "form_id",
+    "tenantid",
+    "tenant_id",
+}
+_PATH_COL_NORMS = {
+    "filepath",
+    "file_path",
+    "blobpath",
+    "blob_path",
+    "filename",
+    "file_name",
+}
+
+
+def _norm_col(value: str) -> str:
+    return "".join(ch for ch in str(value or "").lower() if ch.isalnum())
+
+
+def guid_compact(value: str) -> str:
+    """Hyphens/braces stripped so UUID text matches compact blob ids."""
+    return "".join(ch for ch in str(value or "") if ch.isalnum()).lower()
+
+
+def guid_hyphenate(value: str) -> str:
+    """Canonical 8-4-4-4-12 UUID text, or empty if not 32 hex chars."""
+    compact = guid_compact(value)
+    if len(compact) != 32 or any(ch not in "0123456789abcdef" for ch in compact):
+        return ""
+    return f"{compact[:8]}-{compact[8:12]}-{compact[12:16]}-{compact[16:20]}-{compact[20:]}"
+
+
+def _is_guid_column_type(data_type: str, udt_name: str = "") -> bool:
+    """True for uuid / uniqueidentifier / text keys. Integer identity is False.
+
+    Babelfish reports uniqueidentifier as data_type USER-DEFINED + udt uniqueidentifier.
+    Looking only at USER-DEFINED would skip the real item GUID column (no_pk → no UPDATE).
+    """
+    blob = f"{data_type} {udt_name}".lower()
+    if any(token in blob for token in ("uuid", "uniqueidentifier", "guid")):
+        return True
+    if "int" in blob:
+        return False
+    if "user-defined" in blob or "user defined" in blob:
+        return True
+    return any(token in blob for token in ("text", "char", "name", "string"))
+
+
+def repository_guid_columns(
+    columns: list[str],
+    types: Optional[dict[str, str]] = None,
+) -> list[str]:
+    """Columns that can hold the repository item GUID (not repositoryId / audit users)."""
+    types = types or {}
+    type_lookup = {str(k).lower(): str(v or "") for k, v in types.items()}
+    lower_map = {c.lower(): c for c in columns}
+    out: list[str] = []
+    seen: set[str] = set()
+
+    def _add(actual: Optional[str]) -> None:
+        if not actual or actual.lower() in seen:
+            return
+        if _norm_col(actual) in {_norm_col(n) for n in _GUID_SKIP_COL_NORMS}:
+            return
+        col_type = type_lookup.get(actual.lower()) or ""
+        if col_type and not _is_guid_column_type(col_type):
+            return
+        out.append(actual)
+        seen.add(actual.lower())
+
+    for candidate in _GUID_COL_NAMES:
+        _add(lower_map.get(candidate))
+    for col in columns:
+        col_type = type_lookup.get(col.lower()) or ""
+        lowered = col_type.lower()
+        if any(token in lowered for token in ("uuid", "uniqueidentifier", "guid")):
+            _add(col)
+    return out
+
+
+def pick_repository_item_pk(
+    columns: list[str],
+    types: Optional[dict[str, str]] = None,
+) -> Optional[str]:
+    """Prefer a GUID/text item key. Do not match a hyphenated UUID against integer id."""
+    found = repository_guid_columns(columns, types)
+    return found[0] if found else None
+
+
+def _sql_compact_guid_expr(ident: str) -> str:
+    """Strip hyphens/braces/spaces from CAST(col AS text). Avoid regexp_replace (Babelfish)."""
+    return (
+        f"lower(replace(replace(replace(replace("
+        f"CAST({ident} AS text), '-', ''), '{{', ''), '}}', ''), ' ', ''))"
+    )
+
+
+def ezfb_pk_match(pk_ident: str, form_entry_id: Any, param: int) -> tuple[str, Any]:
+    """WHERE for ezfb item PK: compact GUID (Babelfish uniqueidentifier) or integer."""
+    text = str(form_entry_id or "").strip()
+    compact = guid_compact(text)
+    if len(compact) == 32 and all(ch in "0123456789abcdef" for ch in compact):
+        return f"{_sql_compact_guid_expr(pk_ident)} = ${param}", compact
+    if text.isdigit() and int(text) > 0:
+        return f"{pk_ident} = ${param}", int(text)
+    return f"CAST({pk_ident} AS text) = ${param}", text
+
+
+def repository_item_match_sql(columns: list[str], types: Optional[dict[str, str]], param: int) -> str:
+    """WHERE compact GUID equals any item-key column, or appears in FilePath/FileName."""
+    clauses: list[str] = []
+    for col in repository_guid_columns(columns, types):
+        clauses.append(f"{_sql_compact_guid_expr(quote_ident(col))} = ${param}")
+    for col in columns:
+        if _norm_col(col) not in {_norm_col(n) for n in _PATH_COL_NORMS}:
+            continue
+        ident = quote_ident(col)
+        clauses.append(f"position(${param} in lower(CAST({ident} AS text))) > 0")
+    if not clauses:
+        return "FALSE"
+    return "(" + " OR ".join(clauses) + ")"
+
+
+# V6 repository custom columns are SanitizeColumnName(field.Name): spaces dropped
+# ("Invoice Number" → InvoiceNumber), not ezfb's Invoice_No. PATCH aliases live in
+# WorkflowApAgentMoveNextService.RepositoryFieldAliases.
+_REPO_HEADER_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("InvoiceNumber", ("Invoice No", "Invoice_No", "InvoiceNo", "Invoice Number", "invoice_number")),
+    ("InvoiceNo", ("Invoice No", "Invoice_No", "InvoiceNumber")),
+    ("PoNumber", ("PO Number", "PO_Number", "PONumber", "PO No", "po_number")),
+    ("PONumber", ("PO Number", "PO_Number", "PoNumber")),
+    ("Supplier", ("Vendor Name", "Vendor_Name", "Vendor", "Supplier")),
+    ("VendorName", ("Vendor Name", "Vendor_Name", "Supplier")),
+    ("Amount", ("Invoice Amount", "Invoice_Amount", "InvoiceAmount", "total")),
+    ("InvoiceAmount", ("Invoice Amount", "Amount")),
+    ("DocumentDate", ("Invoice Date", "Invoice_Date", "InvoiceDate")),
+    ("InvoiceDate", ("Invoice Date", "DocumentDate")),
+    ("PoDate", ("PO Date", "PO_Date", "PO DATE")),
+    ("MatchedStatus", ("Matched Status", "Matched_Status")),
+    ("DocumentType", ("Document Type", "Document_Type", "doc_type")),
+    ("Currency", ("Currency",)),
+    ("Terms", ("Terms", "TERMS")),
+    ("InvoiceTaxAmount", ("Invoice Tax Amount", "tax")),
+    ("SupplierAddress", ("Supplier Address", "Vendor Address")),
+    ("ShipToAddress", ("Ship To Address",)),
+    ("InvoiceExtractedLineItem", ("Invoice Extracted Line Item", "Line Item")),
+    ("OCRText", ("OCR Text", "OCR_Text", "ocr_text")),
+    ("OCRJson", ("OCR Json", "OCR_Json", "OCR JSON", "ocr_json")),
+    ("ocr_text", ("OCR Text", "OCR_Text", "OCRText")),
+    ("ocr_json", ("OCR Json", "OCR_Json", "OCRJson")),
+)
+
+
+def expand_repository_header_aliases(header: dict[str, Any]) -> dict[str, Any]:
+    """Copy invoice_header values onto V6 repository column names (InvoiceNumber, PoNumber, …)."""
+    expanded = dict(header or {})
+    by_norm = {
+        _norm_col(str(key)): value
+        for key, value in expanded.items()
+        if value not in (None, "")
+    }
+    for canonical, aliases in _REPO_HEADER_ALIASES:
+        value = by_norm.get(_norm_col(canonical))
+        if value in (None, ""):
+            for alias in aliases:
+                value = by_norm.get(_norm_col(alias))
+                if value not in (None, ""):
+                    break
+        if value in (None, ""):
+            continue
+        expanded[canonical] = value
+        for alias in aliases:
+            expanded.setdefault(alias, value)
+    return expanded
+
+
+# V6 items_* types Amount as decimal(18,2) and DocumentDate as date. Binding those
+# as text raises Postgres 42804 and aborts the whole UPDATE (InvoiceNumber stays null).
+_AMOUNT_COL_NORMS = frozenset(
+    {
+        "amount",
+        "poamount",
+        "invoiceamount",
+        "invoicetaxamount",
+        "subtotal",
+        "grossamount",
+    }
+)
+_DATE_COL_NORMS = frozenset({"documentdate", "podate", "invoicedate", "duedate"})
+
+
+def _parse_repo_decimal(raw: Any) -> Optional[Decimal]:
+    if isinstance(raw, Decimal):
+        return raw
+    if isinstance(raw, bool):
+        return None
+    if isinstance(raw, (int, float)):
+        return Decimal(str(raw))
+    text = str(raw or "").strip().replace(",", "")
+    for symbol in ("$", "€", "£", "₹", "USD", "EUR", "GBP", "INR", "CAD", "AUD", "NZD"):
+        text = text.replace(symbol, "")
+    text = text.strip()
+    if not text:
+        return None
+    try:
+        return Decimal(text)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _parse_repo_date(raw: Any) -> Optional[date]:
+    if isinstance(raw, datetime):
+        return raw.date()
+    if isinstance(raw, date):
+        return raw
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    try:
+        from dateutil import parser as date_parser
+
+        parsed = date_parser.parse(text, fuzzy=False, dayfirst=False)
+        return parsed.date()
+    except (ValueError, OverflowError, TypeError):
+        return None
+
+
+def coerce_repository_assignment(column: str, value: Any, col_type: str) -> Any:
+    """Coerce like V6 RepositoryItemMetadataUpdateHelper. Return None to skip the column."""
+    if value is None:
+        return None
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, default=str)
+    blob = str(col_type or "").lower()
+    norm = _norm_col(column)
+    text_type = any(
+        token in blob
+        for token in ("text", "char", "varchar", "nvarchar", "json", "xml", "citext", "clob")
+    )
+    numeric_type = any(
+        token in blob
+        for token in (
+            "numeric",
+            "decimal",
+            "money",
+            "double precision",
+            "real",
+            "float",
+            "integer",
+            "bigint",
+            "smallint",
+        )
+    )
+    date_type = any(token in blob for token in ("timestamp", "date"))
+    if numeric_type or (not text_type and not date_type and norm in _AMOUNT_COL_NORMS):
+        return _parse_repo_decimal(value)
+    if date_type or (not text_type and not numeric_type and norm in _DATE_COL_NORMS):
+        return _parse_repo_date(value)
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def repository_item_scope_sql(
+    columns: list[str],
+    types: Optional[dict[str, str]],
+    *,
+    tenant_id: str,
+    repository_id: str,
+    start_param: int,
+) -> tuple[str, list[Any]]:
+    """AND tenant_id / repository_id / is_deleted like V6 UpdateItemMetadataAsync."""
+    types = types or {}
+    type_by_lower = {str(k).lower(): str(v or "") for k, v in types.items()}
+    by_norm = {_norm_col(c): c for c in columns if _norm_col(c)}
+    clauses: list[str] = []
+    args: list[Any] = []
+    param = start_param
+
+    def _actual(*names: str) -> Optional[str]:
+        for name in names:
+            found = by_norm.get(_norm_col(name))
+            if found:
+                return found
+        return None
+
+    tenant_col = _actual("tenant_id", "TenantId")
+    tenant_compact = guid_compact(tenant_id)
+    if tenant_col and len(tenant_compact) == 32:
+        clauses.append(f"{_sql_compact_guid_expr(quote_ident(tenant_col))} = ${param}")
+        args.append(tenant_compact)
+        param += 1
+
+    repo_col = _actual("repository_id", "RepositoryId")
+    repo_compact = guid_compact(repository_id)
+    if repo_col and len(repo_compact) == 32:
+        clauses.append(f"{_sql_compact_guid_expr(quote_ident(repo_col))} = ${param}")
+        args.append(repo_compact)
+        param += 1
+
+    deleted_col = _actual("is_deleted", "IsDeleted")
+    if deleted_col:
+        ident = quote_ident(deleted_col)
+        blob = (type_by_lower.get(deleted_col.lower()) or "").lower()
+        if "bool" in blob:
+            clauses.append(f"{ident} IS NOT TRUE")
+        elif any(token in blob for token in ("int", "bit", "numeric", "decimal")):
+            clauses.append(f"COALESCE({ident}, 0) = 0")
+        else:
+            clauses.append(
+                f"(lower(CAST({ident} AS text)) IN ('false', '0', 'f', '') OR {ident} IS NULL)"
+            )
+
+    if not clauses:
+        return "", []
+    return " AND " + " AND ".join(clauses), args
+
+
+def _sanitize_repo_column(name: str) -> str:
+    """V6 RepositorySqlHelper.SanitizeColumnName: drop spaces/punctuation, keep underscore."""
+    cleaned = "".join(ch for ch in str(name or "").strip() if ch.isalnum() or ch == "_")
+    if cleaned and cleaned[0].isdigit():
+        cleaned = "F_" + cleaned
+    return cleaned
+
+
+def _map_header_to_ezfb_columns(
+    *,
+    header: dict[str, Any],
+    columns: list[str],
+    form_controls: list[dict[str, str]],
+    line_items: Optional[list[Any]] = None,
+    skip_columns: Optional[set[str]] = None,
+) -> dict[str, Any]:
+    by_lower = {c.lower(): c for c in columns}
+    by_norm = {_norm_col(c): c for c in columns if _norm_col(c)}
+    skip = {c.lower() for c in (skip_columns or _EZFB_SKIP_COLS)}
+    assignments: dict[str, Any] = {}
+
+    def _assign(column: Optional[str], value: Any) -> None:
+        if not column or column.lower() in skip or value is None:
+            return
+        actual = by_lower.get(column.lower()) or by_norm.get(_norm_col(column))
+        if actual and actual.lower() not in skip:
+            assignments[actual] = value
+
+    for key, value in (header or {}).items():
+        if value is None or str(value).strip() == "":
+            continue
+        _assign(str(key), value)
+        if " " in str(key):
+            _assign(str(key).replace(" ", "_"), value)
+        stripped = _sanitize_repo_column(str(key))
+        if stripped and stripped != str(key):
+            _assign(stripped, value)
+
+    for control in form_controls or []:
+        names = [
+            str(control.get("name") or "").strip(),
+            str(control.get("column_name") or "").strip(),
+            str(control.get("json_id") or "").strip(),
+        ]
+        value = None
+        for name in names:
+            if name and header.get(name) not in (None, ""):
+                value = header.get(name)
+                break
+            if name and _norm_col(name) in {_norm_col(k): header.get(k) for k in header}:
+                value = next(
+                    (header[k] for k in header if _norm_col(k) == _norm_col(name) and header.get(k) not in (None, "")),
+                    None,
+                )
+                if value is not None:
+                    break
+        if value is None:
+            continue
+        for name in names:
+            _assign(name, value)
+            stripped = _sanitize_repo_column(name)
+            if stripped and stripped != name:
+                _assign(stripped, value)
+        if names[0]:
+            _assign(names[0].replace(" ", "_"), value)
+
+    if line_items:
+        table_col = next((c for c in columns if "line" in c.lower() and "item" in c.lower()), None)
+        if table_col:
+            _assign(table_col, json.dumps(line_items, default=str))
+    return assignments
+
+
+def _row_as_dict(row: Any) -> dict[str, Any]:
+    if row is None:
+        return {}
+    if isinstance(row, dict):
+        return dict(row)
+    keys = getattr(row, "keys", None)
+    if callable(keys):
+        return {str(k): row[k] for k in keys()}
+    return {}
+
+
+def _ci_get(data: dict[str, Any], *names: str) -> Any:
+    if not data:
+        return None
+    lower = {str(k).lower().replace("_", ""): v for k, v in data.items()}
+    for name in names:
+        key = str(name).lower().replace("_", "")
+        if key in lower and lower[key] not in (None, ""):
+            return lower[key]
+    return None
+
+
+def _execute_rowcount(status: Any) -> Optional[int]:
+    if not isinstance(status, str):
+        return None
+    parts = status.replace("\t", " ").split()
+    if not parts:
+        return None
+    try:
+        return int(parts[-1])
+    except (TypeError, ValueError):
+        return None
+
+
+def _column_meta(col_rows: Optional[list[Any]]) -> tuple[list[str], dict[str, str]]:
+    """column_name list + data_type+udt_name so uniqueidentifier is visible."""
+    columns: list[str] = []
+    types: dict[str, str] = {}
+    for row in col_rows or []:
+        name = str(_row_get(row, "column_name") or "")
+        if not name:
+            continue
+        columns.append(name)
+        data_type = str(_row_get(row, "data_type") or "")
+        udt_name = str(_row_get(row, "udt_name") or "")
+        types[name] = f"{data_type} {udt_name}".strip()
+    return columns, types
+
+
+def _row_mostly_empty(
+    row: dict[str, Any],
+    skip_columns: Optional[set[str]] = None,
+) -> bool:
+    skip_norm = {_norm_col(c) for c in (skip_columns or _EZFB_SKIP_COLS)} | {"itemid", "id"}
+    filled = 0
+    for key, value in row.items():
+        if _norm_col(key) in skip_norm:
+            continue
+        if value in (None, "", b""):
+            continue
+        filled += 1
+        if filled >= 2:
+            return False
+    return True
+
+
+class ApStore:
+    def __init__(self, db: DBExecutor, *, tenant_pools: Any = None):
+        self._fallback = db
+        self._tenant_pools = tenant_pools
+
+    async def _db(self, tenant_id: str) -> DBExecutor:
+        try:
+            if self._tenant_pools is not None:
+                return await self._tenant_pools.acquire(tenant_id)
+            return self._fallback
+        except ApStoreUnavailableError:
+            raise
+        except Exception as exc:
+            logger.warning(
+                "ap_tenant_db_acquire_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            raise ApStoreUnavailableError("AP store is currently unavailable.") from exc
+
+    async def create_run(
+        self,
+        *,
+        session_id: str,
+        tenant_id: str,
+        item_key: str,
+        requested_skills: list[str],
+    ) -> str:
+        run_id = str(uuid.uuid4())
+        try:
+            db = await self._db(tenant_id)
+            await db.fetchrow(
+                "INSERT INTO ap_runs (id, session_id, tenant_id, item_key, requested_skills, status) "
+                "VALUES ($1, $2, $3, $4, $5::jsonb, $6) RETURNING id",
+                run_id,
+                session_id,
+                tenant_id,
+                item_key,
+                _json_dump(requested_skills),
+                "running",
+            )
+        except asyncpg.exceptions.UniqueViolationError as exc:
+            # ap_runs_tenant_item_active_idx (partial unique index on
+            # (tenant_id, item_key) WHERE status='running') — a genuinely
+            # concurrent duplicate submission for the same item, not a
+            # store outage. See ApSkillRunner.run for the sequential-retry
+            # (dedupe-window) case, which is handled separately via
+            # get_latest_run below and never reaches this INSERT at all.
+            logger.info(
+                "ap_run_conflict_detected",
+                extra={"tenant_id": tenant_id, "item_key": item_key},
+            )
+            raise ApRunInProgressError(
+                "An AP run is already in progress for this item."
+            ) from exc
+        except Exception as exc:
+            logger.warning(
+                "ap_run_insert_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            raise ApStoreUnavailableError("AP store is currently unavailable.") from exc
+        return run_id
+
+    async def get_latest_run(self, *, tenant_id: str, item_key: str) -> Optional[dict[str, Any]]:
+        """Most recent ap_runs row for this item, or None. Used by
+        ApSkillRunner.run's dedupe-window short-circuit — a soft-fail
+        lookup (never raises ApStoreUnavailableError): if it can't be
+        answered, the caller just proceeds as if there were no prior run,
+        same conservative default as list_skill_artifacts."""
+        try:
+            db = await self._db(tenant_id)
+            row = await db.fetchrow(
+                "SELECT id, status, decision, credits_charged, data_quality, "
+                "created_at, finished_at FROM ap_runs "
+                "WHERE tenant_id = $1 AND item_key = $2 "
+                "ORDER BY created_at DESC LIMIT 1",
+                tenant_id,
+                item_key,
+            )
+        except Exception as exc:
+            logger.warning(
+                "ap_run_latest_lookup_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            return None
+        if row is None:
+            return None
+        return {
+            "id": str(_row_get(row, "id")),
+            "status": _row_get(row, "status"),
+            "decision": _row_get(row, "decision"),
+            "credits_charged": _row_get(row, "credits_charged") or 0,
+            "data_quality": _json_load(_row_get(row, "data_quality")),
+            "created_at": _row_get(row, "created_at"),
+            "finished_at": _row_get(row, "finished_at"),
+        }
+
+    async def finish_run(
+        self,
+        *,
+        run_id: str,
+        tenant_id: str,
+        status: str,
+        decision: Optional[str],
+        credits_charged: int,
+        data_quality: Optional[dict[str, Any]] = None,
+    ) -> None:
+        try:
+            db = await self._db(tenant_id)
+            await db.execute(
+                "UPDATE ap_runs SET status = $2, decision = $3, credits_charged = $4, "
+                "data_quality = $5::jsonb, finished_at = now() WHERE id = $1",
+                run_id,
+                status,
+                decision,
+                credits_charged,
+                _json_dump(data_quality) if data_quality is not None else None,
+            )
+        except Exception as exc:
+            logger.warning(
+                "ap_run_update_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            raise ApStoreUnavailableError("AP store is currently unavailable.") from exc
+
+    async def save_artifact(
+        self,
+        *,
+        run_id: str,
+        tenant_id: str,
+        item_key: str,
+        skill_id: str,
+        result: dict[str, Any],
+    ) -> None:
+        try:
+            db = await self._db(tenant_id)
+            await db.execute(
+                "INSERT INTO ap_skill_artifacts (run_id, tenant_id, item_key, skill_id, result_json) "
+                "VALUES ($1, $2, $3, $4, $5::jsonb)",
+                run_id,
+                tenant_id,
+                item_key,
+                skill_id,
+                _json_dump(result),
+            )
+        except Exception as exc:
+            logger.warning(
+                "ap_artifact_insert_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            raise ApStoreUnavailableError("AP store is currently unavailable.") from exc
+
+    async def load_artifacts(self, *, tenant_id: str, item_key: str) -> dict[str, dict[str, Any]]:
+        try:
+            db = await self._db(tenant_id)
+            rows = await db.fetch(
+                "SELECT skill_id, result_json, created_at FROM ap_skill_artifacts "
+                "WHERE tenant_id = $1 AND item_key = $2",
+                tenant_id,
+                item_key,
+            )
+        except Exception as exc:
+            logger.warning(
+                "ap_artifact_read_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            raise ApStoreUnavailableError("AP store is currently unavailable.") from exc
+
+        latest: dict[str, tuple[datetime, dict[str, Any]]] = {}
+        for row in rows:
+            skill_id = str(_row_get(row, "skill_id"))
+            created = _row_get(row, "created_at") or datetime.min.replace(tzinfo=timezone.utc)
+            payload = _json_load(_row_get(row, "result_json")) or {}
+            if not isinstance(payload, dict):
+                continue
+            prev = latest.get(skill_id)
+            if prev is None or created >= prev[0]:
+                latest[skill_id] = (created, payload)
+        return {skill_id: data for skill_id, (_, data) in latest.items()}
+
+    async def list_skill_artifacts(
+        self, *, tenant_id: str, skill_id: str
+    ) -> list[dict[str, Any]]:
+        try:
+            db = await self._db(tenant_id)
+            rows = await db.fetch(
+                "SELECT item_key, result_json FROM ap_skill_artifacts "
+                "WHERE tenant_id = $1 AND skill_id = $2",
+                tenant_id,
+                skill_id,
+            )
+        except Exception as exc:
+            logger.warning("ap_artifact_list_failed", extra={"error_type": type(exc).__name__})
+            return []
+        out: list[dict[str, Any]] = []
+        for row in rows:
+            payload = _json_load(_row_get(row, "result_json")) or {}
+            if isinstance(payload, dict):
+                out.append({"item_key": _row_get(row, "item_key"), **payload})
+        return out
+
+    async def get_plan(self, tenant_id: str) -> Optional[dict[str, Any]]:
+        try:
+            db = await self._db(tenant_id)
+            row = await db.fetchrow(
+                "SELECT enabled_skills, thresholds FROM ap_tenant_plans WHERE tenant_id = $1",
+                tenant_id,
+            )
+        except Exception as exc:
+            logger.warning(
+                "ap_plan_read_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            return None
+        if row is None:
+            return None
+        enabled = _json_load(_row_get(row, "enabled_skills")) or []
+        thresholds = _json_load(_row_get(row, "thresholds")) or {}
+        if not isinstance(enabled, list):
+            enabled = []
+        if not isinstance(thresholds, dict):
+            thresholds = {}
+        return {
+            "tenant_id": tenant_id,
+            "enabled_skills": [str(s) for s in enabled],
+            "thresholds": thresholds,
+        }
+
+    async def fetch_form_controls(self, *, tenant_id: str, form_id: Optional[str]) -> list[dict[str, str]]:
+        """Load wFormControl name/columnName/jsonId for AP metadata key aliases."""
+        fid = str(form_id or "").strip()
+        if not fid:
+            return []
+        queries = (
+            (
+                'SELECT "name" AS name, "columnName" AS column_name, "jsonId" AS json_id '
+                'FROM dbo.wformcontrol WHERE lower(CAST("wFormId" AS text)) = lower($1) '
+                'AND COALESCE("isDeleted", 0) = 0',
+                (fid,),
+            ),
+            (
+                "SELECT name, columnname AS column_name, jsonid AS json_id "
+                "FROM wformcontrol WHERE lower(wformid::text) = lower($1) "
+                "AND COALESCE(isdeleted, 0) = 0",
+                (fid,),
+            ),
+        )
+        try:
+            db = await self._db(tenant_id)
+        except Exception as exc:
+            logger.warning(
+                "ap_form_controls_db_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            return []
+        for sql, params in queries:
+            try:
+                rows = await db.fetch(sql, *params)
+            except Exception as exc:
+                logger.warning(
+                    "ap_form_controls_lookup_failed",
+                    extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+                )
+                continue
+            out: list[dict[str, str]] = []
+            for row in rows or []:
+                name = str(_row_get(row, "name") or "").strip()
+                column_name = str(_row_get(row, "column_name") or "").strip()
+                json_id = str(_row_get(row, "json_id") or "").strip()
+                if name or column_name or json_id:
+                    out.append({"name": name, "column_name": column_name, "json_id": json_id})
+            if out:
+                return out
+        return []
+
+    async def fetch_repository_fields(
+        self, *, tenant_id: str, repository_id: Optional[str]
+    ) -> list[dict[str, str]]:
+        """Load repository field name/columnName/jsonId for items_* column aliases."""
+        rid = str(repository_id or "").strip()
+        if not rid:
+            return []
+        try:
+            db = await self._db(tenant_id)
+        except Exception as exc:
+            logger.warning(
+                "ap_repo_fields_db_failed",
+                extra={"error_type": type(exc).__name__},
+            )
+            return []
+        located = await self._fetch_repository_fields_from_catalog(db, rid)
+        if located:
+            return located
+        queries = (
+            (
+                'SELECT "name" AS name, "columnName" AS column_name, "jsonId" AS json_id '
+                'FROM dbo.wrepositoryfield WHERE lower(CAST("wRepositoryId" AS text)) = lower($1) '
+                'AND COALESCE("isDeleted", 0) = 0',
+                (rid,),
+            ),
+            (
+                "SELECT name, columnname AS column_name, jsonid AS json_id "
+                "FROM dbo.wrepositoryfield WHERE lower(wrepositoryid::text) = lower($1) "
+                "AND COALESCE(isdeleted, 0) = 0",
+                (rid,),
+            ),
+            (
+                'SELECT "Name" AS name, "ColumnName" AS column_name, "JsonId" AS json_id '
+                'FROM repository."Fields" WHERE lower(CAST("RepositoryId" AS text)) = lower($1)',
+                (rid,),
+            ),
+        )
+        for sql, params in queries:
+            try:
+                rows = await db.fetch(sql, *params)
+            except Exception:
+                continue
+            out: list[dict[str, str]] = []
+            for row in rows or []:
+                name = str(_row_get(row, "name") or "").strip()
+                column_name = str(_row_get(row, "column_name") or "").strip()
+                json_id = str(_row_get(row, "json_id") or "").strip()
+                if name or column_name or json_id:
+                    out.append({"name": name, "column_name": column_name, "json_id": json_id})
+            if out:
+                return out
+        return []
+
+    async def _fetch_repository_fields_from_catalog(
+        self, db: Any, repository_id: str
+    ) -> list[dict[str, str]]:
+        """Resolve wRepositoryField / Fields via information_schema (any schema/casing)."""
+        try:
+            tables = await db.fetch(
+                """
+                SELECT table_schema, table_name
+                FROM information_schema.tables
+                WHERE lower(table_name) IN (
+                    'wrepositoryfield', 'repositoryfields', 'repositoryfield', 'fields'
+                )
+                  AND table_schema NOT IN ('pg_catalog', 'information_schema')
+                ORDER BY CASE
+                    WHEN lower(table_name) = 'wrepositoryfield' THEN 0
+                    WHEN lower(table_name) = 'repositoryfields' THEN 1
+                    WHEN lower(table_name) = 'repositoryfield' THEN 2
+                    ELSE 3
+                END,
+                CASE
+                    WHEN lower(table_schema) = 'repository' THEN 0
+                    WHEN table_schema = 'dbo' THEN 1
+                    ELSE 2
+                END
+                """
+            )
+        except Exception:
+            return []
+        rid_compact = guid_compact(repository_id)
+        for table in tables or []:
+            schema = str(_row_get(table, "table_schema") or "")
+            name = str(_row_get(table, "table_name") or "")
+            if not schema or not name:
+                continue
+            try:
+                col_rows = await db.fetch(
+                    """
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = $1 AND table_name = $2
+                    """,
+                    schema,
+                    name,
+                )
+            except Exception:
+                continue
+            by_lower = {
+                str(_row_get(row, "column_name") or "").lower(): str(
+                    _row_get(row, "column_name") or ""
+                )
+                for row in col_rows or []
+                if _row_get(row, "column_name")
+            }
+            name_col = by_lower.get("name")
+            column_col = by_lower.get("columnname") or by_lower.get("column_name")
+            json_col = by_lower.get("jsonid") or by_lower.get("json_id")
+            repo_col = next(
+                (
+                    by_lower[key]
+                    for key in (
+                        "wrepositoryid",
+                        "repositoryid",
+                        "repository_id",
+                        "w_repository_id",
+                    )
+                    if key in by_lower
+                ),
+                None,
+            )
+            if not name_col or not repo_col or not (column_col or json_col):
+                continue
+            deleted = by_lower.get("isdeleted") or by_lower.get("is_deleted")
+            select_parts = [
+                f"{quote_ident(name_col)} AS name",
+                f"{quote_ident(column_col)} AS column_name" if column_col else "NULL AS column_name",
+                f"{quote_ident(json_col)} AS json_id" if json_col else "NULL AS json_id",
+            ]
+            sql = (
+                f"SELECT {', '.join(select_parts)} "
+                f"FROM {quote_ident(schema)}.{quote_ident(name)} "
+                f"WHERE {_sql_compact_guid_expr(quote_ident(repo_col))} = $1"
+            )
+            args: list[Any] = [rid_compact]
+            if deleted:
+                sql += f" AND COALESCE(CAST({quote_ident(deleted)} AS integer), 0) = 0"
+            try:
+                rows = await db.fetch(sql, *args)
+            except Exception:
+                continue
+            out: list[dict[str, str]] = []
+            for row in rows or []:
+                field_name = str(_row_get(row, "name") or "").strip()
+                column_name = str(_row_get(row, "column_name") or "").strip()
+                json_id = str(_row_get(row, "json_id") or "").strip()
+                if field_name or column_name or json_id:
+                    out.append(
+                        {"name": field_name, "column_name": column_name, "json_id": json_id}
+                    )
+            if out:
+                return out
+        return []
+
+    def _ticket_from_row(self, row: Any) -> dict[str, Any]:
+        data = _row_as_dict(row)
+        item = _ci_get(data, "itemid", "repositoryitemid", "item_id", "id")
+        entry = _ci_get(data, "formentryid", "form_entry_id")
+        out: dict[str, Any] = {}
+        workflow_id = _ci_get(data, "workflowid", "workflow_id")
+        instance_id = _ci_get(data, "instanceid", "instance_id")
+        repository_id = _ci_get(data, "repositoryid", "repository_id")
+        form_id = _ci_get(data, "formid", "form_id", "wformid")
+        if workflow_id:
+            out["workflow_id"] = str(workflow_id).strip()
+        if instance_id:
+            out["instance_id"] = str(instance_id).strip()
+        if repository_id:
+            out["repository_id"] = str(repository_id).strip()
+        if form_id:
+            out["form_id"] = str(form_id).strip()
+        text_item = guid_hyphenate(str(item or "").strip())
+        if text_item:
+            out["item_id"] = text_item
+        if entry not in (None, ""):
+            text_entry = str(entry).strip()
+            if text_entry:
+                hyphenated = guid_hyphenate(text_entry)
+                if hyphenated:
+                    out["form_entry_id"] = hyphenated
+                elif text_entry.isdigit() and int(text_entry) > 0:
+                    out["form_entry_id"] = int(text_entry)
+        return out
+
+    async def fetch_ticket_context(
+        self,
+        *,
+        tenant_id: str,
+        instance_id: Optional[str] = None,
+        repository_item_id: Optional[str] = None,
+        form_id: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Best-effort lookup of formId / formEntryId / repository item from the tenant DB."""
+        inst = str(instance_id or "").strip()
+        repo_item = str(repository_item_id or "").strip()
+        fid = str(form_id or "").strip()
+        if not inst and not repo_item:
+            return {}
+        try:
+            db = await self._db(tenant_id)
+        except Exception as exc:
+            logger.warning("ap_ticket_context_db_failed", extra={"error_type": type(exc).__name__})
+            return {}
+
+        queries: list[tuple[str, tuple[Any, ...]]] = []
+        if inst:
+            queries.extend(
+                [
+                    (
+                        'SELECT * FROM workflow."WorkflowInstances" '
+                        'WHERE CAST("Id" AS text) = $1 LIMIT 1',
+                        (inst,),
+                    ),
+                    (
+                        "SELECT * FROM workflow.workflowinstances "
+                        "WHERE id::text = $1 LIMIT 1",
+                        (inst,),
+                    ),
+                    (
+                        'SELECT * FROM dbo."WorkflowInstances" '
+                        'WHERE CAST("Id" AS text) = $1 LIMIT 1',
+                        (inst,),
+                    ),
+                ]
+            )
+        if repo_item:
+            queries.extend(
+                [
+                    (
+                        'SELECT * FROM dbo."RepositoryItem" WHERE CAST("Id" AS text) = $1 LIMIT 1',
+                        (repo_item,),
+                    ),
+                    (
+                        "SELECT * FROM dbo.repositoryitem WHERE id::text = $1 LIMIT 1",
+                        (repo_item,),
+                    ),
+                    (
+                        'SELECT * FROM dbo."RepositoryItems" WHERE CAST("Id" AS text) = $1 LIMIT 1',
+                        (repo_item,),
+                    ),
+                ]
+            )
+        merged: dict[str, Any] = {}
+        for sql, params in queries:
+            try:
+                row = await db.fetchrow(sql, *params)
+            except Exception:
+                continue
+            if row is None:
+                continue
+            found = self._ticket_from_row(row)
+            for key, value in found.items():
+                if value not in (None, "") and merged.get(key) in (None, ""):
+                    merged[key] = value
+            if merged.get("form_id") and merged.get("form_entry_id") is not None:
+                break
+
+        if (not merged.get("form_id") or merged.get("form_entry_id") is None) and inst:
+            try:
+                col_rows = await db.fetch(
+                    """
+                    SELECT table_schema, table_name, column_name
+                    FROM information_schema.columns
+                    WHERE lower(column_name) IN (
+                        'formentryid', 'form_entry_id', 'formid', 'form_id',
+                        'instanceid', 'instance_id'
+                    )
+                    AND table_schema NOT IN ('pg_catalog', 'information_schema')
+                    """
+                )
+            except Exception:
+                col_rows = []
+            tables: dict[tuple[str, str], set[str]] = {}
+            for row in col_rows or []:
+                schema = str(_row_get(row, "table_schema") or "")
+                name = str(_row_get(row, "table_name") or "")
+                col = str(_row_get(row, "column_name") or "").lower()
+                if schema and name:
+                    tables.setdefault((schema, name), set()).add(col)
+            for (schema, name), cols in list(tables.items())[:12]:
+                has_entry = bool(cols & {"formentryid", "form_entry_id"})
+                has_inst = bool(cols & {"instanceid", "instance_id", "id"})
+                if not has_entry:
+                    continue
+                inst_col = "instanceid" if "instanceid" in cols else (
+                    "instance_id" if "instance_id" in cols else "id"
+                )
+                try:
+                    row = await db.fetchrow(
+                        f"SELECT * FROM {quote_ident(schema)}.{quote_ident(name)} "
+                        f"WHERE CAST({quote_ident(inst_col)} AS text) = $1 LIMIT 1",
+                        inst,
+                    )
+                except Exception:
+                    continue
+                if row is None:
+                    continue
+                found = self._ticket_from_row(row)
+                for key, value in found.items():
+                    if value not in (None, "") and merged.get(key) in (None, ""):
+                        merged[key] = value
+                if merged.get("form_entry_id") is not None:
+                    break
+        if fid and not merged.get("form_id"):
+            merged["form_id"] = fid
+        if merged:
+            logger.info("ap_ticket_context_resolved", extra={k: merged.get(k) for k in (
+                "form_id", "form_entry_id", "item_id", "repository_id"
+            )})
+        return merged
+
+    async def _locate_ezfb_table(
+        self,
+        db: Any,
+        *,
+        form_id: str,
+        form_entry_id: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
+        guessed = ezfb_items_table(form_id)
+        candidates: list[tuple[str, str]] = []
+        if guessed:
+            try:
+                loc = await db.fetchrow(
+                    """
+                    SELECT table_schema, table_name
+                    FROM information_schema.tables
+                    WHERE lower(table_name) = lower($1)
+                      AND table_type = 'BASE TABLE'
+                      AND table_schema NOT IN ('pg_catalog', 'information_schema')
+                    ORDER BY CASE WHEN table_schema = 'dbo' THEN 0 ELSE 1 END, table_schema
+                    LIMIT 1
+                    """,
+                    guessed,
+                )
+            except Exception:
+                loc = None
+            if loc is not None:
+                return {
+                    "schema": str(_row_get(loc, "table_schema") or "dbo"),
+                    "table": str(_row_get(loc, "table_name") or guessed),
+                }
+        try:
+            rows = await db.fetch(
+                """
+                SELECT table_schema, table_name
+                FROM information_schema.tables
+                WHERE table_type = 'BASE TABLE'
+                  AND lower(table_name) LIKE 'ezfb_%_items'
+                  AND table_schema NOT IN ('pg_catalog', 'information_schema')
+                ORDER BY CASE WHEN table_schema = 'dbo' THEN 0 ELSE 1 END, table_schema
+                """
+            )
+        except Exception:
+            rows = []
+        token = (guessed or "").lower()
+        for row in rows or []:
+            schema = str(_row_get(row, "table_schema") or "dbo")
+            name = str(_row_get(row, "table_name") or "")
+            if not name:
+                continue
+            if token and name.lower() == token:
+                candidates.insert(0, (schema, name))
+            else:
+                candidates.append((schema, name))
+        if form_entry_id is None:
+            return (
+                {"schema": candidates[0][0], "table": candidates[0][1]}
+                if len(candidates) == 1
+                else None
+            )
+        for schema, name in candidates:
+            try:
+                col_rows = await db.fetch(
+                    """
+                    SELECT column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = $1 AND table_name = $2
+                    """,
+                    schema,
+                    name,
+                )
+                columns = [str(_row_get(r, "column_name")) for r in col_rows or []]
+                pk = next(
+                    (c for c in columns if c.lower() in {"item_id", "itemid", "id"}),
+                    None,
+                )
+                if pk is None:
+                    continue
+                clause, value = ezfb_pk_match(quote_ident(pk), form_entry_id, 1)
+                hit = await db.fetchrow(
+                    f"SELECT 1 AS ok FROM {quote_ident(schema)}.{quote_ident(name)} "
+                    f"WHERE {clause} LIMIT 1",
+                    value,
+                )
+            except Exception:
+                continue
+            if hit is not None:
+                return {"schema": schema, "table": name}
+        return None
+
+    async def latest_empty_ezfb_item(self, *, tenant_id: str, form_id: str) -> Optional[str]:
+        """Return the newest blank ezfb row for this form (the ticket the workflow just created)."""
+        fid = str(form_id or "").strip()
+        if not fid:
+            return None
+        try:
+            db = await self._db(tenant_id)
+            loc = await self._locate_ezfb_table(db, form_id=fid)
+            if loc is None:
+                return None
+            schema, real_table = loc["schema"], loc["table"]
+            col_rows = await db.fetch(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = $1 AND table_name = $2
+                ORDER BY ordinal_position
+                """,
+                schema,
+                real_table,
+            )
+            columns = [str(_row_get(row, "column_name")) for row in col_rows or []]
+            pk = next((c for c in columns if c.lower() in {"item_id", "itemid", "id"}), None)
+            if pk is None:
+                return None
+            order_col = next(
+                (c for c in columns if c.lower() in {"createdat", "created_at", pk.lower()}),
+                pk,
+            )
+            order_actual = next(c for c in columns if c.lower() == order_col.lower())
+            row = await db.fetchrow(
+                f"SELECT * FROM {quote_ident(schema)}.{quote_ident(real_table)} "
+                f"ORDER BY {quote_ident(order_actual)} DESC LIMIT 1"
+            )
+            if row is None:
+                return None
+            data = _row_as_dict(row)
+            if not _row_mostly_empty(data):
+                return None
+            pk_val = _ci_get(data, pk, "item_id", "itemid", "id")
+            if pk_val is None:
+                return None
+            text = str(pk_val).strip()
+            hyphenated = guid_hyphenate(text)
+            if hyphenated:
+                return hyphenated
+            if text.isdigit() and int(text) > 0:
+                return text
+            return None
+        except Exception as exc:
+            logger.warning(
+                "ap_ezfb_latest_empty_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            return None
+
+    async def apply_ezfb_item_fields(
+        self,
+        *,
+        tenant_id: str,
+        form_id: str,
+        form_entry_id: str,
+        header: dict[str, Any],
+        line_items: Optional[list[Any]] = None,
+        form_controls: Optional[list[dict[str, str]]] = None,
+    ) -> dict[str, Any]:
+        """UPDATE ezfb_{token}_items for the ticket formEntryId. Does not insert a new row."""
+        table = ezfb_items_table(form_id)
+        if not header:
+            return {"ok": False, "updated": 0, "reason": "missing_table_or_header", "table": table}
+        try:
+            db = await self._db(tenant_id)
+            loc = await self._locate_ezfb_table(
+                db, form_id=form_id, form_entry_id=str(form_entry_id).strip()
+            )
+            if loc is None:
+                return {"ok": False, "updated": 0, "reason": "table_not_found", "table": table}
+            schema = loc["schema"]
+            real_table = loc["table"]
+            col_rows = await db.fetch(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = $1 AND table_name = $2
+                ORDER BY ordinal_position
+                """,
+                schema,
+                real_table,
+            )
+            columns = [str(_row_get(row, "column_name")) for row in col_rows or []]
+            assignments = _map_header_to_ezfb_columns(
+                header=header,
+                columns=columns,
+                form_controls=form_controls or [],
+                line_items=line_items,
+            )
+            if not assignments:
+                return {
+                    "ok": False,
+                    "updated": 0,
+                    "reason": "no_column_match",
+                    "table": real_table,
+                    "columns": columns[:40],
+                }
+            pk = next(
+                (name for name in ("item_id", "itemid", "id") if name.lower() in {c.lower() for c in columns}),
+                None,
+            )
+            if pk is None:
+                return {"ok": False, "updated": 0, "reason": "no_pk", "table": real_table}
+            pk_actual = next(c for c in columns if c.lower() == pk.lower())
+            clause, pk_value = ezfb_pk_match(
+                quote_ident(pk_actual), form_entry_id, len(assignments) + 1
+            )
+            sets = []
+            args: list[Any] = []
+            for index, (col, value) in enumerate(assignments.items(), start=1):
+                sets.append(f"{quote_ident(col)} = ${index}")
+                args.append(value if isinstance(value, str) else (
+                    json.dumps(value, default=str) if isinstance(value, (dict, list)) else str(value)
+                ))
+            args.append(pk_value)
+            sql = (
+                f"UPDATE {quote_ident(schema)}.{quote_ident(real_table)} "
+                f"SET {', '.join(sets)} "
+                f"WHERE {clause}"
+            )
+            status = await db.execute(sql, *args)
+            updated = _execute_rowcount(status)
+            if updated == 0:
+                logger.warning(
+                    "ap_ezfb_item_update_zero_rows",
+                    extra={"table": real_table, "form_entry_id": form_entry_id},
+                )
+                return {
+                    "ok": False,
+                    "updated": 0,
+                    "reason": "row_not_found",
+                    "table": real_table,
+                    "form_entry_id": form_entry_id,
+                }
+            logger.info(
+                "ap_ezfb_item_updated",
+                extra={
+                    "table": real_table,
+                    "form_entry_id": form_entry_id,
+                    "columns": sorted(assignments.keys()),
+                    "updated": updated if updated is not None else 1,
+                },
+            )
+            return {
+                "ok": True,
+                "updated": updated if updated is not None else 1,
+                "table": real_table,
+                "columns": sorted(assignments.keys()),
+                "form_entry_id": form_entry_id,
+            }
+        except Exception as exc:
+            logger.warning(
+                "ap_ezfb_item_update_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200], "table": table},
+            )
+            return {"ok": False, "updated": 0, "reason": type(exc).__name__, "table": table}
+
+    async def _locate_table_by_name(self, db: Any, table_name: str) -> Optional[dict[str, Any]]:
+        queries = (
+            """
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE lower(table_name) = lower($1)
+              AND table_type IN ('BASE TABLE', 'TABLE')
+              AND table_schema NOT IN ('pg_catalog', 'information_schema')
+            ORDER BY CASE
+                WHEN lower(table_schema) = 'repository' THEN 0
+                WHEN table_schema = 'dbo' THEN 1
+                ELSE 2
+            END, table_schema
+            LIMIT 1
+            """,
+            """
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE lower(table_name) = lower($1)
+              AND table_schema NOT IN ('pg_catalog', 'information_schema')
+            ORDER BY CASE
+                WHEN lower(table_schema) = 'repository' THEN 0
+                WHEN table_schema = 'dbo' THEN 1
+                ELSE 2
+            END, table_schema
+            LIMIT 1
+            """,
+        )
+        for sql in queries:
+            try:
+                loc = await db.fetchrow(sql, table_name)
+            except Exception:
+                loc = None
+            if loc is None:
+                continue
+            return {
+                "schema": str(_row_get(loc, "table_schema") or "repository"),
+                "table": str(_row_get(loc, "table_name") or table_name),
+            }
+        return None
+
+    async def latest_empty_repository_item(
+        self, *, tenant_id: str, repository_id: str
+    ) -> Optional[str]:
+        """Newest blank row in repository.items_{token} (the ticket item just created)."""
+        table = repository_items_table(repository_id)
+        if not table:
+            return None
+        try:
+            db = await self._db(tenant_id)
+            loc = await self._locate_table_by_name(db, table)
+            if loc is None:
+                return None
+            schema, real_table = loc["schema"], loc["table"]
+            col_rows = await db.fetch(
+                """
+                SELECT column_name, data_type, udt_name
+                FROM information_schema.columns
+                WHERE table_schema = $1 AND table_name = $2
+                ORDER BY ordinal_position
+                """,
+                schema,
+                real_table,
+            )
+            columns, types = _column_meta(col_rows)
+            pk = pick_repository_item_pk(columns, types)
+            if pk is None:
+                return None
+            order_col = next(
+                (c for c in columns if c.lower() in {"createdat", "created_at", pk.lower()}),
+                pk,
+            )
+            order_actual = next(c for c in columns if c.lower() == order_col.lower())
+            row = await db.fetchrow(
+                f"SELECT * FROM {quote_ident(schema)}.{quote_ident(real_table)} "
+                f"ORDER BY {quote_ident(order_actual)} DESC LIMIT 1"
+            )
+            if row is None:
+                return None
+            data = _row_as_dict(row)
+            if not _row_mostly_empty(data, skip_columns=_REPO_SKIP_COLS):
+                return None
+            pk_val = _ci_get(data, pk, "id", "itemid", "item_id")
+            text = guid_hyphenate(str(pk_val).strip() if pk_val not in (None, "") else "")
+            return text or (str(pk_val).strip() if pk_val not in (None, "") else None)
+        except Exception as exc:
+            logger.warning(
+                "ap_repo_latest_empty_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            return None
+
+    async def apply_repository_item_fields(
+        self,
+        *,
+        tenant_id: str,
+        repository_id: str,
+        item_id: str,
+        header: dict[str, Any],
+        line_items: Optional[list[Any]] = None,
+        form_controls: Optional[list[dict[str, str]]] = None,
+    ) -> dict[str, Any]:
+        """UPDATE repository.items_{token} for the ticket item GUID. Does not insert."""
+        table = repository_items_table(repository_id)
+        item_guid = str(item_id or "").strip()
+        if not table or not header or not item_guid:
+            return {
+                "ok": False,
+                "updated": 0,
+                "reason": "missing_table_or_header",
+                "table": table,
+            }
+        try:
+            db = await self._db(tenant_id)
+            loc = await self._locate_table_by_name(db, table)
+            if loc is None:
+                return {"ok": False, "updated": 0, "reason": "table_not_found", "table": table}
+            schema = loc["schema"]
+            real_table = loc["table"]
+            col_rows = await db.fetch(
+                """
+                SELECT column_name, data_type, udt_name
+                FROM information_schema.columns
+                WHERE table_schema = $1 AND table_name = $2
+                ORDER BY ordinal_position
+                """,
+                schema,
+                real_table,
+            )
+            columns, types = _column_meta(col_rows)
+            repo_fields = await self.fetch_repository_fields(
+                tenant_id=tenant_id, repository_id=repository_id
+            )
+            controls = list(form_controls or []) + repo_fields
+            assignments = _map_header_to_ezfb_columns(
+                header=expand_repository_header_aliases(header),
+                columns=columns,
+                form_controls=controls,
+                line_items=line_items,
+                skip_columns=_REPO_SKIP_COLS,
+            )
+            if not assignments:
+                return {
+                    "ok": False,
+                    "updated": 0,
+                    "reason": "no_column_match",
+                    "table": f"{schema}.{real_table}",
+                    "columns": columns[:40],
+                }
+            bound: dict[str, Any] = {}
+            type_by_lower = {str(k).lower(): str(v or "") for k, v in types.items()}
+            for col, value in assignments.items():
+                coerced = coerce_repository_assignment(
+                    col, value, type_by_lower.get(col.lower(), "")
+                )
+                if coerced is None:
+                    continue
+                bound[col] = coerced
+            if not bound:
+                return {
+                    "ok": False,
+                    "updated": 0,
+                    "reason": "no_column_match",
+                    "table": f"{schema}.{real_table}",
+                    "columns": columns[:40],
+                }
+            compact = guid_compact(item_guid)
+            if len(compact) != 32:
+                return {
+                    "ok": False,
+                    "updated": 0,
+                    "reason": "invalid_item_guid",
+                    "table": f"{schema}.{real_table}",
+                    "item_id": item_guid,
+                }
+            if repository_item_match_sql(columns, types, param=len(bound) + 1) == "FALSE":
+                return {
+                    "ok": False,
+                    "updated": 0,
+                    "reason": "no_pk",
+                    "table": f"{schema}.{real_table}",
+                    "columns": columns[:40],
+                }
+            async def _run_update(payload: dict[str, Any]) -> tuple[Optional[int], Optional[str]]:
+                match_sql = repository_item_match_sql(columns, types, param=len(payload) + 1)
+                if match_sql == "FALSE":
+                    return None, "no_pk"
+                sets = []
+                args: list[Any] = []
+                for index, (col, value) in enumerate(payload.items(), start=1):
+                    sets.append(f"{quote_ident(col)} = ${index}")
+                    args.append(value)
+                args.append(compact)
+                scope_sql, scope_args = repository_item_scope_sql(
+                    columns,
+                    types,
+                    tenant_id=tenant_id,
+                    repository_id=repository_id,
+                    start_param=len(args) + 1,
+                )
+                args.extend(scope_args)
+                sql = (
+                    f"UPDATE {quote_ident(schema)}.{quote_ident(real_table)} "
+                    f"SET {', '.join(sets)} "
+                    f"WHERE {match_sql}{scope_sql}"
+                )
+                try:
+                    status = await db.execute(sql, *args)
+                    return _execute_rowcount(status), None
+                except Exception as exc:
+                    return None, type(exc).__name__
+
+            updated, err = await _run_update(bound)
+            if err == "DataError":
+                date_cols = {
+                    col
+                    for col in bound
+                    if _norm_col(col) in _DATE_COL_NORMS
+                    or "date" in (type_by_lower.get(col.lower()) or "").lower()
+                    or "timestamp" in (type_by_lower.get(col.lower()) or "").lower()
+                }
+                reduced = {col: value for col, value in bound.items() if col not in date_cols}
+                if reduced and reduced != bound:
+                    logger.warning(
+                        "ap_repo_item_retry_without_dates",
+                        extra={"table": real_table, "dropped": sorted(date_cols)},
+                    )
+                    updated, err = await _run_update(reduced)
+                    if err is None:
+                        bound = reduced
+            if err is not None:
+                logger.warning(
+                    "ap_repo_item_update_failed",
+                    extra={"error_type": err, "table": table, "item_id": item_guid},
+                )
+                return {"ok": False, "updated": 0, "reason": err, "table": table}
+            if updated == 0:
+                logger.warning(
+                    "ap_repo_item_update_zero_rows",
+                    extra={"table": real_table, "item_id": item_guid},
+                )
+                return {
+                    "ok": False,
+                    "updated": 0,
+                    "reason": "row_not_found",
+                    "table": f"{schema}.{real_table}",
+                    "item_id": item_guid,
+                    "pk_columns": repository_guid_columns(columns, types),
+                }
+            logger.info(
+                "ap_repo_item_updated",
+                extra={
+                    "table": f"{schema}.{real_table}",
+                    "item_id": item_guid,
+                    "columns": sorted(bound.keys()),
+                    "updated": updated if updated is not None else 1,
+                },
+            )
+            return {
+                "ok": True,
+                "updated": updated if updated is not None else 1,
+                "table": f"{schema}.{real_table}",
+                "columns": sorted(bound.keys()),
+                "item_id": item_guid,
+            }
+        except Exception as exc:
+            logger.warning(
+                "ap_repo_item_update_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200], "table": table},
+            )
+            return {"ok": False, "updated": 0, "reason": type(exc).__name__, "table": table}
+
+    async def fetch_workflow_activity_id(
+        self,
+        *,
+        tenant_id: str,
+        workflow_id: Optional[str] = None,
+        step_name: str = "AP AGENT 1",
+    ) -> Optional[str]:
+        """Resolve ActivityId from workflow.WorkflowSteps (Postgres port of apagentv6)."""
+        name = (step_name or "AP AGENT 1").strip() or "AP AGENT 1"
+        wf = (workflow_id or "").strip() or None
+        queries = (
+            (
+                'SELECT "ActivityId" AS activity_id FROM workflow."WorkflowSteps" '
+                'WHERE "Name" = $1 AND ($2::text IS NULL OR CAST("WorkflowId" AS text) = $2) '
+                'ORDER BY "Order" LIMIT 1',
+                (name, wf),
+            ),
+            (
+                "SELECT activityid AS activity_id FROM workflow.workflowsteps "
+                "WHERE name = $1 AND ($2::text IS NULL OR workflowid::text = $2) "
+                'ORDER BY "order" LIMIT 1',
+                (name, wf),
+            ),
+        )
+        try:
+            db = await self._db(tenant_id)
+        except Exception as exc:
+            logger.warning(
+                "ap_activityid_db_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            return None
+        for sql, params in queries:
+            try:
+                row = await db.fetchrow(sql, *params)
+            except Exception as exc:
+                logger.warning(
+                    "ap_activityid_lookup_failed",
+                    extra={
+                        "error_type": type(exc).__name__,
+                        "error": str(exc)[:200],
+                        "step_name": name,
+                    },
+                )
+                continue
+            if row is None:
+                continue
+            value = _row_get(row, "activity_id") or _row_get(row, "ActivityId") or _row_get(row, "activityid")
+            text = str(value).strip() if value not in (None, "") else ""
+            if text:
+                return text
+        return None
+
+    async def record_credit(
+        self,
+        *,
+        run_id: str,
+        tenant_id: str,
+        skill_id: str,
+        credits: int,
+        identify: str,
+        status: str,
+    ) -> None:
+        try:
+            db = await self._db(tenant_id)
+            await db.execute(
+                "INSERT INTO ap_credit_ledger (run_id, tenant_id, skill_id, credits, identify, status) "
+                "VALUES ($1, $2, $3, $4, $5, $6)",
+                run_id,
+                tenant_id,
+                skill_id,
+                credits,
+                identify,
+                status,
+            )
+        except Exception as exc:
+            logger.warning(
+                "ap_credit_ledger_failed",
+                extra={"error_type": type(exc).__name__, "error": str(exc)[:200]},
+            )
+            raise ApStoreUnavailableError("AP store is currently unavailable.") from exc

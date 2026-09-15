@@ -34,10 +34,11 @@ Request flow for POST /chat:
   ContentFilter (check_content) ->
   RateLimiter (check, keyed by session_id) ->
   ContextManager (load history) ->
-  IntentRouter (classify chat/search/summary/insight/ocr/forecast/ap/mail) ->
+  IntentRouter (classify chat/search/summary/insight/ocr/forecast/ap/mail;
+                prompt is explicit-only) ->
   PermissionCheck (check_permission, per classified intent) ->
   AgentRouter -> ChatAgent | SearchAgent | SummaryAgent | InsightAgent |
-                 OcrAgent | ForecastAgent | ApAgent | MailAgent ->
+                 OcrAgent | ForecastAgent | ApAgent | MailAgent | PromptAgent ->
     LLMAdapter / HybridSearch /
     Dispatcher(fetch_document|fetch_report_data|run_ocr|run_forecast|
                fetch_invoice_status) / PendingActionStore (Mail only) ->
@@ -88,28 +89,42 @@ where intent isn't yet known, e.g. content-filter/rate-limit rejections)
 never do — see `_snippet_for_audit` below and
 app/control/pii_redaction.py.
 """
+import asyncio
 import logging
+import os
+import tempfile
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import asyncpg
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import BackgroundTasks, Body, FastAPI, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from redis.asyncio import Redis
 from starlette.background import BackgroundTask
 
 from app.agents.ap_agent import ApAgent
+from app.agents.catalog_agent import CatalogAgent
 from app.agents.chat_agent import ChatAgent
+from app.catalog.store import CatalogConflictError, CatalogStore, CatalogStoreUnavailableError
+from app.catalog.tenant_llm import apply_tenant_agent_llm, restore_runtime_llm
+from app.catalog.url import catalog_pool_kwargs, normalize_catalog_url
+from app.ap_skills.store import ApStoreUnavailableError
+from app.ap_skills.types import ApRunInProgressError
+from app.ap_skills.tenant_db import ApTenantDbPools
 from app.agents.forecast_agent import ForecastAgent
 from app.agents.insight_agent import InsightAgent
 from app.agents.mail_agent import MailAgent
 from app.agents.ocr_agent import OcrAgent
+from app.agents.pdf_agent import PdfAgent
+from app.agents.prompt_agent import PromptAgent
 from app.agents.search_agent import SearchAgent
 from app.agents.summary_agent import SummaryAgent
+from app.agents.global_search_agent import GlobalSearchAgent
+from app.agents.chatbot_agent import ChatbotAgent
 from app.config import get_settings
 from app.control.audit import AuditMiddleware, configure_app_logging
 from app.control.audit_store import AuditStore
@@ -131,6 +146,9 @@ from app.core.dispatcher import Dispatcher, ToolExecutionError
 from app.core.intent_router import Intent, IntentRouter
 from app.core.pending_actions import PendingActionStore, PendingActionStoreUnavailableError
 from app.core.response_composer import ResponseComposer
+from app.data_import.models import DataImportRequest
+from app.data_import.service import run_data_import
+from app.data_import.catalog import resolve_tenant_connection_string
 from app.integrations.email_client import EmailClient
 from app.integrations.ezofis_client import EzofisClient
 from app.integrations.forecast_model import ForecastModelClient
@@ -141,16 +159,52 @@ from app.llm.adapter import LLMAdapter, LLMAdapterError
 from app.llm.embedding_adapter import EmbeddingAdapter, EmbeddingAdapterError
 from app.llm.model_presets import (
     DEFAULT_PRESET_ID,
+    MODEL_PRESETS,
     apply_preset,
     get_preset,
     list_presets_public,
+    preset_has_api_key,
+    resolve_default_preset_id,
+    set_runtime_presets,
 )
+from app.llm.runtime_models import RuntimeModelSelection
 from app.models.chat import ChatRequest, ChatResponse
+from app.models.chat_request_parser import parse_chat_request
 from app.models.pending_action import ConfirmActionResponse
+from app.agents.ocr_helpers import InvalidOcrPageError, resolve_pageno
+from app.agent_skills.loader import resolve_pack_dir_from_settings
+from app.tenant_skills.store import store_from_settings
+from app.tenant_skills.upload import parse_tenant_upload, upload_kind
+from app.tools.chatbot_action_tools import (
+    CHATBOT_CREATE_USER_SCHEMA,
+    CHATBOT_START_TICKET_SCHEMA,
+    CHATBOT_START_WORKFLOW_SCHEMA,
+    CHATBOT_UPLOAD_REPOSITORY_FILE_SCHEMA,
+    make_chatbot_create_user_handler,
+    make_chatbot_start_ticket_handler,
+    make_chatbot_start_workflow_handler,
+    make_chatbot_upload_repository_file_handler,
+)
 from app.tools.fetch_document import FETCH_DOCUMENT_SCHEMA, make_fetch_document_handler
 from app.tools.fetch_invoice_status import FETCH_INVOICE_STATUS_SCHEMA, make_fetch_invoice_status_handler
 from app.tools.fetch_memories import FETCH_MEMORIES_SCHEMA, make_fetch_memories_handler
 from app.tools.fetch_report_data import FETCH_REPORT_DATA_SCHEMA, make_fetch_report_data_handler
+from app.tools.global_search_tools import (
+    SEARCH_COMMENTS_SCHEMA,
+    SEARCH_FORMS_SCHEMA,
+    SEARCH_REPO_METADATA_SCHEMA,
+    SEARCH_REPO_RAG_SCHEMA,
+    SEARCH_REPOSITORIES_SCHEMA,
+    SEARCH_TICKETS_SCHEMA,
+    SEARCH_WORKFLOWS_SCHEMA,
+    make_search_comments_handler,
+    make_search_forms_handler,
+    make_search_repo_metadata_handler,
+    make_search_repo_rag_handler,
+    make_search_repositories_handler,
+    make_search_tickets_handler,
+    make_search_workflows_handler,
+)
 from app.tools.run_forecast import RUN_FORECAST_SCHEMA, make_run_forecast_handler
 from app.tools.run_ocr import RUN_OCR_SCHEMA, make_run_ocr_handler
 from app.tools.send_email import SEND_EMAIL_SCHEMA, make_send_email_handler
@@ -173,16 +227,33 @@ _CONSOLE_HTML_PATH = _STATIC_DIR / "console.html"
 # 3c/3d), and anything where intent isn't classified yet (content filter,
 # rate limit rejections) is conservatively treated the same as AP/Mail:
 # we don't know what it would have been, so we don't snippet it.
-_SNIPPETABLE_INTENTS = {"chat", "search", "summary", "insight", "ocr", "forecast"}
+_SNIPPETABLE_INTENTS = {
+    "chat",
+    "search",
+    "summary",
+    "insight",
+    "ocr",
+    "forecast",
+    "prompt",
+    "global_search",
+    "chatbot",
+}
 
 # Only send_email exists today; mapped explicitly rather than guessed so
 # a future gated tool doesn't silently inherit the wrong intent label.
-_TOOL_NAME_TO_INTENT = {"send_email": "mail"}
+_TOOL_NAME_TO_INTENT = {
+    "send_email": "mail",
+    "chatbot_start_workflow": "chatbot",
+    "chatbot_upload_repository_file": "chatbot",
+    "chatbot_create_user": "chatbot",
+    "chatbot_start_ticket_with_attachments": "chatbot",
+}
 
 _EVENT_TYPE_BY_STATUS_CODE = {
     400: "content_filtered",
     403: "permission_denied",
     404: "action_not_found",
+    409: "ap_run_conflict",
     429: "rate_limited",
     501: "not_implemented",
     502: "upstream_error",
@@ -193,7 +264,7 @@ _EVENT_TYPE_BY_STATUS_CODE = {
 def _status_bucket(status_code: int) -> str:
     if status_code < 300:
         return "success"
-    if status_code in (400, 403, 404, 429):
+    if status_code in (400, 403, 404, 409, 429):
         return "rejected"
     return "error"
 
@@ -201,10 +272,16 @@ def _status_bucket(status_code: int) -> str:
 def _snippet_for_audit(intent: Optional[str], text: Optional[str]) -> Optional[str]:
     """None unless `intent` is one of the six low-stakes intents AND
     `text` is present — conservative by construction: unknown intent
-    (None) and AP/Mail both fall through to None, same as each other."""
-    if text is None or intent not in _SNIPPETABLE_INTENTS:
+    (None) and AP/Mail both fall through to None, same as each other.
+    Custom catalog agents (slugs not in Intent) are treated like chat."""
+    if text is None:
         return None
-    return redact_and_cap(text)
+    if intent in _SNIPPETABLE_INTENTS:
+        return redact_and_cap(text)
+    builtin = {item.value for item in Intent}
+    if intent and intent not in builtin:
+        return redact_and_cap(text)
+    return None
 
 
 @asynccontextmanager
@@ -213,17 +290,105 @@ async def lifespan(app: FastAPI):
     configure_app_logging(settings.log_level)
 
     redis_client = Redis.from_url(settings.redis_url, decode_responses=True)
-    db_pool = await asyncpg.create_pool(settings.database_url)
+    db_pool = await asyncpg.create_pool(
+        settings.database_url,
+        min_size=settings.database_pool_min_size,
+        max_size=settings.database_pool_max_size,
+    )
+    tenant_pools = ApTenantDbPools(
+        settings.database_url,
+        fallback_pool=db_pool,
+        create_pool=asyncpg.create_pool,
+        prefix=settings.ap_tenant_db_prefix,
+        min_size=0,
+        max_size=settings.database_pool_max_size,
+    )
+    try:
+        from app.ap_skills.tenant_db import ensure_ap_schema
+
+        await ensure_ap_schema(db_pool)
+    except Exception as exc:
+        logger.warning(
+            "ap_schema_bootstrap_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+
+    catalog_pool = None
+    catalog_db = db_pool
+    catalog_url = (settings.catalog_database_url or "").strip()
+    if catalog_url:
+        try:
+            catalog_pool = await asyncpg.create_pool(
+                normalize_catalog_url(catalog_url),
+                min_size=settings.database_pool_min_size,
+                max_size=settings.database_pool_max_size,
+                **catalog_pool_kwargs(catalog_url),
+            )
+            catalog_db = catalog_pool
+            logger.info("catalog_db_connected")
+        except Exception as exc:
+            logger.warning(
+                "catalog_db_connect_failed",
+                extra={"error_type": type(exc).__name__},
+            )
+            catalog_pool = None
+            catalog_db = db_pool
+
+    catalog_store = CatalogStore(catalog_db)
+    set_runtime_presets(None)
+    try:
+        await catalog_store.ensure_schema()
+        await catalog_store.seed_defaults(MODEL_PRESETS, settings)
+        db_presets = await catalog_store.list_model_presets_internal()
+        if db_presets:
+            set_runtime_presets(db_presets)
+    except Exception as exc:
+        logger.warning(
+            "catalog_bootstrap_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+        set_runtime_presets(None)
 
     llm_adapter = LLMAdapter(settings)
-    # Prefer a hardcoded Azure preset when .env has no custom endpoint —
-    # the Test Console can switch presets at runtime via /console/llm-config.
+    # Console can switch default/fallback at runtime; selection is persisted
+    # in Redis so hosting restarts keep the last manual Save.
+    runtime_models = RuntimeModelSelection(default_preset_id=DEFAULT_PRESET_ID)
+    loaded_selection = await runtime_models.load_from_redis(redis_client)
+    if runtime_models.default_preset_id == "ezofis-gpu-box":
+        runtime_models.default_preset_id = DEFAULT_PRESET_ID
+        try:
+            await runtime_models.save_to_redis(redis_client)
+        except Exception:
+            logger.warning("runtime_models_default_migrate_failed", extra={"error_type": "redis"})
+    if not loaded_selection and runtime_models.fallback_preset_id is None:
+        env_fallback = (settings.ocr_fallback_model or "").strip()
+        if env_fallback and get_preset(env_fallback):
+            runtime_models.fallback_preset_id = env_fallback
     if not settings.llm_api_base:
-        apply_preset(llm_adapter, DEFAULT_PRESET_ID)
+        preset_id = resolve_default_preset_id(runtime_models.default_preset_id)
+        runtime_models.default_preset_id = preset_id
+        apply_preset(llm_adapter, preset_id)
     embedding_adapter = EmbeddingAdapter(settings)
-    ezofis_client = EzofisClient()
+    ezofis_client = EzofisClient(settings)
+    if not ezofis_client._live_enabled():
+        logger.warning(
+            "ezofis_live_disabled",
+            extra={
+                "hint": (
+                    "Set EZOFIS_LOGIN_EMAIL, EZOFIS_LOGIN_PASSWORD, and EZOFIS_API_BASE "
+                    "on agents — AP metadata will not update ezfb_*_items until then."
+                ),
+            },
+        )
     context_manager = ContextManager(redis_client, settings.session_ttl_seconds, ezofis_client)
     intent_router = IntentRouter()
+    try:
+        intent_router.set_custom_agents(await catalog_store.list_enabled_custom())
+    except Exception as exc:
+        logger.warning(
+            "catalog_custom_agents_load_failed",
+            extra={"error_type": type(exc).__name__},
+        )
     response_composer = ResponseComposer(llm_adapter)
     response_cache = ResponseCache(redis_client)
 
@@ -241,7 +406,7 @@ async def lifespan(app: FastAPI):
         result_cache_ttl_seconds=settings.search_result_cache_ttl_seconds,
     )
 
-    ocr_engine_client = OcrEngineClient()
+    ocr_engine_client = OcrEngineClient(settings)
     forecast_model_client = ForecastModelClient()
     email_client = EmailClient()
     memory_store = MemoryStore(db_pool)
@@ -257,9 +422,48 @@ async def lifespan(app: FastAPI):
     dispatcher.register_tool(SEND_EMAIL_SCHEMA, make_send_email_handler(email_client))
     dispatcher.register_tool(STORE_MEMORY_SCHEMA, make_store_memory_handler(memory_store))
     dispatcher.register_tool(FETCH_MEMORIES_SCHEMA, make_fetch_memories_handler(memory_store))
-    summary_agent = SummaryAgent(dispatcher, response_composer)
-    insight_agent = InsightAgent(dispatcher, response_composer)
-    ocr_agent = OcrAgent(dispatcher)
+    dispatcher.register_tool(SEARCH_REPOSITORIES_SCHEMA, make_search_repositories_handler(tenant_pools, catalog_store))
+    dispatcher.register_tool(SEARCH_WORKFLOWS_SCHEMA, make_search_workflows_handler(tenant_pools, catalog_store))
+    dispatcher.register_tool(SEARCH_REPO_METADATA_SCHEMA, make_search_repo_metadata_handler(tenant_pools, catalog_store))
+    dispatcher.register_tool(SEARCH_FORMS_SCHEMA, make_search_forms_handler(tenant_pools, catalog_store))
+    dispatcher.register_tool(SEARCH_COMMENTS_SCHEMA, make_search_comments_handler(tenant_pools, catalog_store))
+    dispatcher.register_tool(SEARCH_TICKETS_SCHEMA, make_search_tickets_handler(tenant_pools, catalog_store))
+    dispatcher.register_tool(SEARCH_REPO_RAG_SCHEMA, make_search_repo_rag_handler(hybrid_search, vector_store))
+    dispatcher.register_tool(
+        CHATBOT_START_WORKFLOW_SCHEMA, make_chatbot_start_workflow_handler(ezofis_client)
+    )
+    dispatcher.register_tool(
+        CHATBOT_UPLOAD_REPOSITORY_FILE_SCHEMA,
+        make_chatbot_upload_repository_file_handler(ezofis_client),
+    )
+    dispatcher.register_tool(
+        CHATBOT_CREATE_USER_SCHEMA, make_chatbot_create_user_handler(ezofis_client)
+    )
+    dispatcher.register_tool(
+        CHATBOT_START_TICKET_SCHEMA, make_chatbot_start_ticket_handler(ezofis_client)
+    )
+    summary_agent = SummaryAgent(
+        dispatcher,
+        response_composer,
+        settings,
+        llm_adapter=llm_adapter,
+        runtime_models=runtime_models,
+    )
+    insight_agent = InsightAgent(
+        dispatcher,
+        response_composer,
+        settings,
+        llm_adapter=llm_adapter,
+        runtime_models=runtime_models,
+    )
+    ocr_agent = OcrAgent(
+        dispatcher,
+        response_composer,
+        settings,
+        llm_adapter=llm_adapter,
+        runtime_models=runtime_models,
+        catalog_store=catalog_store,
+    )
     forecast_agent = ForecastAgent(
         dispatcher,
         response_composer,
@@ -267,16 +471,37 @@ async def lifespan(app: FastAPI):
         llm_model=settings.llm_model,
         narration_cache_ttl_seconds=settings.forecast_narration_cache_ttl_seconds,
     )
-    ap_agent = ApAgent(dispatcher, response_composer)
+    ap_agent = ApAgent(
+        dispatcher,
+        response_composer,
+        settings=settings,
+        ezofis_client=ezofis_client,
+        llm_adapter=llm_adapter,
+        db_pool=db_pool,
+        tenant_pools=tenant_pools,
+    )
 
     # Constructed only after dispatcher (needs store_memory/fetch_memories
     # registered), response_composer (needs synthesize_memory_fact), and
     # permission_provider (needs get_user_context for user_id scoping)
     # all exist — see app/agents/chat_agent.py.
     chat_agent = ChatAgent(llm_adapter, dispatcher, response_composer, permission_provider)
+    catalog_agent = CatalogAgent(llm_adapter)
 
     pending_action_store = PendingActionStore(redis_client, settings.pending_action_ttl_seconds)
     mail_agent = MailAgent(pending_action_store, response_composer)
+    prompt_agent = PromptAgent(llm_adapter)
+    pdf_agent = PdfAgent(llm_adapter, settings)
+    global_search_agent = GlobalSearchAgent(
+        dispatcher, limit=20, rag_limit=max(settings.search_top_n, 5)
+    )
+    chatbot_agent = ChatbotAgent(
+        dispatcher,
+        pending_action_store,
+        llm_adapter,
+        limit=20,
+        rag_limit=max(settings.search_top_n, 5),
+    )
 
     rate_limiter = RateLimiter(
         redis_client,
@@ -293,9 +518,14 @@ async def lifespan(app: FastAPI):
     agent_router.register(Intent.FORECAST, forecast_agent.handle)
     agent_router.register(Intent.AP, ap_agent.handle)
     agent_router.register(Intent.MAIL, mail_agent.handle)
+    agent_router.register(Intent.PROMPT, prompt_agent.handle)
+    agent_router.register(Intent.PDF, pdf_agent.handle)
+    agent_router.register(Intent.GLOBAL_SEARCH, global_search_agent.handle)
+    agent_router.register(Intent.CHATBOT, chatbot_agent.handle)
 
     app.state.redis_client = redis_client
     app.state.db_pool = db_pool
+    app.state.ap_tenant_pools = tenant_pools
     app.state.context_manager = context_manager
     app.state.intent_router = intent_router
     app.state.agent_router = agent_router
@@ -313,10 +543,17 @@ async def lifespan(app: FastAPI):
     # the same shared instance every agent already calls through, so
     # reconfiguring it here takes effect everywhere with no app restart.
     app.state.llm_adapter = llm_adapter
+    app.state.runtime_models = runtime_models
+    app.state.catalog_store = catalog_store
+    app.state.catalog_agent = catalog_agent
+    app.state.ezofis_client = ezofis_client
 
     yield
 
     await redis_client.aclose()
+    await tenant_pools.close()
+    if catalog_pool is not None:
+        await catalog_pool.close()
     await db_pool.close()
 
 
@@ -330,7 +567,257 @@ app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok"}
+    settings = get_settings()
+    email = (settings.ezofis_login_email or "").strip()
+    password = (settings.ezofis_login_password or "").strip()
+    return {
+        "status": "ok",
+        "ezofis_api_base": (settings.ezofis_api_base or "").rstrip("/"),
+        "ezofis_env": settings.ezofis_env,
+        "ezofis_login_configured": bool(email and password),
+    }
+
+
+@app.get("/api/pdf/download/{filename}")
+async def download_pdf(filename: str) -> FileResponse:
+    """Download a generated PDF document with attachment headers."""
+    import tempfile
+    safe_name = os.path.basename(filename)
+    static_path = _STATIC_DIR / "generated_pdfs" / safe_name
+    temp_path = Path(tempfile.gettempdir()) / safe_name
+    target_path = static_path if static_path.is_file() else (temp_path if temp_path.is_file() else None)
+    if not target_path or not target_path.is_file():
+        raise HTTPException(status_code=404, detail=f"PDF file '{safe_name}' not found.")
+    return FileResponse(
+        path=str(target_path),
+        media_type="application/pdf",
+        filename=safe_name,
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
+    )
+
+
+@app.get("/api/pdf/preview/{filename}")
+async def preview_pdf(filename: str) -> FileResponse:
+    """Preview a generated PDF inline in the browser."""
+    import tempfile
+    safe_name = os.path.basename(filename)
+    static_path = _STATIC_DIR / "generated_pdfs" / safe_name
+    temp_path = Path(tempfile.gettempdir()) / safe_name
+    target_path = static_path if static_path.is_file() else (temp_path if temp_path.is_file() else None)
+    if not target_path or not target_path.is_file():
+        raise HTTPException(status_code=404, detail=f"PDF file '{safe_name}' not found.")
+    return FileResponse(
+        path=str(target_path),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{safe_name}"'},
+    )
+
+
+@app.get("/api/pdf/templates")
+async def list_pdf_templates() -> dict:
+    """Lists available PDF coordinate templates. Pre-installed static templates are removed in favor of dynamic schema JSON."""
+    from app.pdf_skills import list_available_templates
+    templates = list_available_templates()
+    return {
+        "status": "success",
+        "count": len(templates),
+        "templates": templates,
+    }
+
+
+@app.post("/api/pdf/generate")
+async def direct_generate_pdf(
+    body: Any = Body(
+        ...,
+        description=(
+            "PDF generate body. Accepts: "
+            "{ templateJson: {schemas, basePdf}, formData: {...}, fileName: \"...pdf\" }, "
+            "{ schema: {...}, data: {...} }, or standalone schema JSON with 'schemas'."
+        ),
+        examples={
+            "schema_with_form_data": {
+                "summary": "1. PDF Schema JSON + Form Data (Recommended)",
+                "value": {
+                    "templateJson": {
+                        "schemas": [
+                            [
+                                {
+                                    "name": "HeaderTitle",
+                                    "type": "text",
+                                    "content": "PROFORMA DISBURSEMENT ACCOUNT",
+                                    "position": {"x": 10, "y": 10},
+                                    "width": 190,
+                                    "height": 12,
+                                    "fontSize": 16,
+                                    "alignment": "center"
+                                },
+                                {
+                                    "name": "CustomerLabel",
+                                    "type": "text",
+                                    "content": "Customer / Principal",
+                                    "position": {"x": 10, "y": 30},
+                                    "width": 45,
+                                    "height": 8,
+                                    "fontSize": 9
+                                },
+                                {
+                                    "name": "CustomerValue",
+                                    "type": "text",
+                                    "dataKey": "Customer",
+                                    "position": {"x": 55, "y": 30},
+                                    "width": 80,
+                                    "height": 8,
+                                    "fontSize": 9
+                                },
+                                {
+                                    "name": "CostDetailsTable",
+                                    "type": "table",
+                                    "dataKey": "Cost Details",
+                                    "position": {"x": 10, "y": 45},
+                                    "width": 190,
+                                    "head": ["Cost Head", "Vendor", "Qty", "Rate", "Amount"],
+                                    "headWidthPercentages": [30, 30, 10, 15, 15]
+                                }
+                            ]
+                        ],
+                        "basePdf": {
+                            "width": 210,
+                            "height": 297,
+                            "padding": [15, 15, 15, 15]
+                        }
+                    },
+                    "formData": {
+                        "Customer": "Oceanic Bulk Carriers Inc.",
+                        "Job No": "JOB-2026-009",
+                        "Cost Details": [
+                            ["Port Dues", "PSA Singapore", "1", "4,500.00", "4,500.00"],
+                            ["Agency Fee", "Oceanlink Marine", "1", "3,500.00", "3,500.00"]
+                        ]
+                    },
+                    "fileName": "PDA-JOB-2026-009.pdf"
+                }
+            },
+            "embedded_form_data": {
+                "summary": "2. Standalone Schema with embedded formData",
+                "value": {
+                    "schemas": [
+                        [
+                            {
+                                "name": "Title",
+                                "type": "text",
+                                "content": "INVOICE",
+                                "position": {"x": 20, "y": 20},
+                                "width": 170,
+                                "height": 12,
+                                "fontSize": 18,
+                                "alignment": "center"
+                            },
+                            {
+                                "name": "Customer",
+                                "type": "text",
+                                "dataKey": "Customer",
+                                "position": {"x": 20, "y": 40},
+                                "width": 80,
+                                "height": 8
+                            }
+                        ]
+                    ],
+                    "basePdf": {
+                        "width": 210,
+                        "height": 297
+                    },
+                    "formData": {
+                        "Customer": "Apex Cloud Systems Inc."
+                    }
+                }
+            }
+        },
+    ),
+    template_name: Optional[str] = Query(
+        None, description="Optional template identifier (ignored when schema JSON is sent)"
+    ),
+    title: Optional[str] = Query(None, description="Optional document title"),
+) -> dict:
+    """Direct PDF generation from dynamic schema JSON or structured JSON."""
+    from app.pdf_skills import generate_pdf_from_json, is_pdfme_template, normalize_direct_pdf_request
+
+    try:
+        parsed = normalize_direct_pdf_request(body)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    data = parsed["data"]
+    tpl_json = parsed["template_json"]
+    tpl_name = template_name or parsed["template_name"]
+    doc_title = title or parsed["title"]
+
+    if tpl_json is None and not tpl_name:
+        if isinstance(data, dict) and is_pdfme_template(data):
+            tpl_json = data
+            inner = data.get("data")
+            data = inner if isinstance(inner, dict) else {}
+
+    if parsed["output_filename"]:
+        pdf_filename = parsed["output_filename"]
+    else:
+        from datetime import datetime
+
+        pdf_filename = f"document_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+
+    static_out = _STATIC_DIR / "generated_pdfs" / pdf_filename
+    static_out.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        result = generate_pdf_from_json(
+            data,
+            template_name=tpl_name,
+            template_json=tpl_json,
+            output_path=str(static_out),
+            title=doc_title,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("direct_pdf_generate_failed")
+        raise HTTPException(status_code=500, detail="PDF generation failed.") from exc
+
+    return {
+        "status": "success",
+        "filename": result.filename,
+        "page_count": result.page_count,
+        "file_size_bytes": result.file_size_bytes,
+        "title": result.title,
+        "pdf_base64": result.pdf_base64,
+    }
+
+
+@app.post("/api/ezDataImport")
+async def ez_data_import(request: Request, payload: DataImportRequest) -> dict:
+    """Excel import into tenant ezfb_*_items. Exempt from the /chat guardrail pipeline."""
+    store = getattr(request.app.state, "catalog_store", None)
+    try:
+        connection_string, diag = await resolve_tenant_connection_string(payload.tenantId, store)
+    except Exception as exc:
+        logger.warning(
+            "data_import_catalog_cs_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+        connection_string, diag = None, {"resolve_error": type(exc).__name__}
+    try:
+        return await asyncio.to_thread(run_data_import, payload, connection_string)
+    except HTTPException as exc:
+        if exc.status_code in (404, 503):
+            if isinstance(exc.detail, str):
+                raise HTTPException(
+                    status_code=exc.status_code,
+                    detail={"message": exc.detail, **diag},
+                ) from None
+            if isinstance(exc.detail, dict):
+                raise HTTPException(
+                    status_code=exc.status_code,
+                    detail={**exc.detail, **diag},
+                ) from None
+        raise
 
 
 @app.get("/console", response_class=HTMLResponse)
@@ -348,24 +835,32 @@ async def console() -> HTMLResponse:
 
 class LLMConfigUpdate(BaseModel):
     """Body for POST /console/llm-config. Every field is optional — only
-    the fields you send are changed (see LLMAdapter.configure). Send
-    `preset_id` to apply a hardcoded Azure preset (model + base + key +
-    api_version) from app/llm/model_presets.py. Send an empty string for
-    `api_base`/`api_key`/`api_version` to explicitly clear it."""
+    the fields you send are changed. Prefer `default_preset_id` /
+    `fallback_preset_id` (Azure presets; keys stay in .env). `preset_id`
+    is an alias for `default_preset_id`. Send an empty string for
+    `fallback_preset_id` to clear it, or for `api_base`/`api_key`/
+    `api_version` to clear those manual overrides."""
 
-    preset_id: Optional[str] = None
+    default_preset_id: Optional[str] = None
+    fallback_preset_id: Optional[str] = None
+    preset_id: Optional[str] = None  # alias for default_preset_id
     model: Optional[str] = None
     api_base: Optional[str] = None
     api_key: Optional[str] = None
     api_version: Optional[str] = None
 
 
+def _llm_config_response(request: Request) -> dict:
+    llm_adapter: LLMAdapter = request.app.state.llm_adapter
+    runtime: RuntimeModelSelection = request.app.state.runtime_models
+    return {**llm_adapter.describe(), **runtime.describe()}
+
+
 @app.get("/console/llm-presets")
 async def get_llm_presets() -> dict:
     """Hardcoded Azure OpenAI deployments the Test Console can switch
     between. Never includes API keys — those stay server-side in
-    model_presets.py and are applied when POST /console/llm-config sends
-    a preset_id."""
+    .env and are applied when POST /console/llm-config sends a preset id."""
     return {"presets": list_presets_public(), "default_preset_id": DEFAULT_PRESET_ID}
 
 
@@ -373,33 +868,62 @@ async def get_llm_presets() -> dict:
 async def get_llm_config(request: Request) -> dict:
     """Current LLM model/endpoint config, safe to return over the wire —
     never the API key's value, only whether one is set (see
-    LLMAdapter.describe). Backs the Test Console's settings panel on
-    page load. Same guardrail exemption as /console, /health, and /metrics
-    — a dev/admin endpoint, not a user-facing capability."""
-    llm_adapter: LLMAdapter = request.app.state.llm_adapter
-    return llm_adapter.describe()
+    LLMAdapter.describe). Includes default/fallback preset ids for OCR."""
+    return _llm_config_response(request)
 
 
 @app.post("/console/llm-config")
 async def update_llm_config(payload: LLMConfigUpdate, request: Request) -> dict:
-    """Runtime model/endpoint reconfiguration from the Test Console — see
-    LLMAdapter.configure's docstring for why this takes effect for every
-    agent immediately, no app restart needed. In-memory only: a restart
-    reverts to the default preset (or .env if LLM_API_BASE is set).
-    Never logs the submitted api_key's value (see LLMAdapter.configure)."""
+    """Runtime model selection from the Test Console. Preset switches
+    apply model/base/key from .env — no key needed in the UI.
+    Selection is written to Redis so it survives hosting restarts; it only
+    changes again when an operator Saves a new choice."""
     llm_adapter: LLMAdapter = request.app.state.llm_adapter
-    if payload.preset_id is not None and payload.preset_id != "":
-        if get_preset(payload.preset_id) is None:
-            raise HTTPException(status_code=400, detail=f"Unknown preset_id: {payload.preset_id}")
-        apply_preset(llm_adapter, payload.preset_id)
-        return llm_adapter.describe()
-    llm_adapter.configure(
-        model=payload.model,
-        api_base=payload.api_base,
-        api_key=payload.api_key,
-        api_version=payload.api_version,
-    )
-    return llm_adapter.describe()
+    runtime: RuntimeModelSelection = request.app.state.runtime_models
+    redis_client = request.app.state.redis_client
+
+    default_id = payload.default_preset_id if payload.default_preset_id is not None else payload.preset_id
+    if default_id is not None and default_id != "":
+        if get_preset(default_id) is None:
+            raise HTTPException(status_code=400, detail=f"Unknown default_preset_id: {default_id}")
+        if not preset_has_api_key(default_id):
+            raise HTTPException(
+                status_code=400,
+                detail="Selected default model has no API key. Add a key in Catalog → Available models, then Save again.",
+            )
+        apply_preset(llm_adapter, default_id)
+        runtime.set_default(default_id)
+
+    if payload.fallback_preset_id is not None:
+        try:
+            runtime.set_fallback(payload.fallback_preset_id or None)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    # Manual override path (Advanced) — only when no default preset was sent.
+    if default_id is None or default_id == "":
+        if any(
+            v is not None
+            for v in (payload.model, payload.api_base, payload.api_key, payload.api_version)
+        ):
+            llm_adapter.configure(
+                model=payload.model,
+                api_base=payload.api_base,
+                api_key=payload.api_key,
+                api_version=payload.api_version,
+            )
+
+    # Persist whenever a preset selection field was part of the request.
+    if (default_id is not None and default_id != "") or payload.fallback_preset_id is not None:
+        try:
+            await runtime.save_to_redis(redis_client)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Model selection could not be saved; please try again.",
+            ) from exc
+
+    return _llm_config_response(request)
 
 
 @app.post("/console/llm-test")
@@ -421,6 +945,605 @@ async def test_llm_config(request: Request) -> dict:
         return {"ok": False, "error": str(exc)}
 
 
+class SummaryCustomRuleCreate(BaseModel):
+    tenant_id: str
+    body: str
+    changed_by: Optional[str] = "console"
+
+
+class SummaryCustomRuleUpdate(BaseModel):
+    tenant_id: str
+    body: Optional[str] = None
+    is_active: Optional[bool] = None
+    changed_by: Optional[str] = "console"
+
+
+SummaryCustomSkillUpdate = SummaryCustomRuleUpdate
+
+
+@app.get("/console/summary-skills/defaults")
+async def get_summary_skills_defaults() -> dict:
+    """Platform Summary SKILL.md + rules from disk (no tenant required)."""
+    try:
+        settings = get_settings()
+        store = store_from_settings(settings)
+        pack_dir = resolve_pack_dir_from_settings("summary", settings)
+        return {"defaults": store.list_defaults(pack_dir=pack_dir)}
+    except Exception as exc:
+        logger.warning(
+            "summary_skills_defaults_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/console/summary-skills")
+async def get_summary_skills_console(
+    tenant_id: Optional[str] = Query(None),
+) -> dict:
+    """Defaults from disk; custom skills/rules + logs when tenant_id is set."""
+    try:
+        settings = get_settings()
+        store = store_from_settings(settings)
+        pack_dir = resolve_pack_dir_from_settings("summary", settings)
+        tid = (tenant_id or "").strip()
+        payload: dict = {
+            "tenant_id": tid or None,
+            "defaults": store.list_defaults(pack_dir=pack_dir),
+            "custom_skills": [],
+            "custom_rules": [],
+            "logs": [],
+        }
+        if tid:
+            store.migrate_legacy_md_rules_to_skills(tenant_id=tid, agent="summary")
+            payload["custom_skills"] = store.list_custom_skills(tenant_id=tid, agent="summary")
+            payload["custom_rules"] = store.list_custom_rules(tenant_id=tid, agent="summary")
+            payload["logs"] = store.list_logs(tenant_id=tid, agent="summary", limit=20)
+        return payload
+    except Exception as exc:
+        logger.warning(
+            "summary_skills_console_load_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/console/summary-skills/custom-rules")
+async def create_summary_custom_rule(payload: SummaryCustomRuleCreate) -> dict:
+    store = store_from_settings(get_settings())
+    try:
+        rule = store.add_custom_rule(
+            tenant_id=payload.tenant_id,
+            body=payload.body,
+            changed_by=payload.changed_by or "console",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"rule": rule}
+
+
+@app.post("/console/summary-skills/custom-rules/upload")
+async def upload_summary_custom_extra(
+    tenant_id: str = Form(...),
+    file: UploadFile = File(...),
+    changed_by: str = Form("console"),
+) -> dict:
+    """Upload .md → tenant_skills (skill) or .mdc → tenant_rules (rule)."""
+    raw = (await file.read()).decode("utf-8", errors="replace")
+    filename = file.filename or "upload.mdc"
+    try:
+        kind = upload_kind(filename)
+        source_file, body = parse_tenant_upload(filename=filename, raw=raw)
+        store = store_from_settings(get_settings())
+        tid = tenant_id.strip()
+        store.migrate_legacy_md_rules_to_skills(tenant_id=tid, agent="summary")
+        if kind == "skill":
+            skill = store.add_custom_skill(
+                tenant_id=tid,
+                body=body,
+                source_file=source_file,
+                changed_by=changed_by or "console",
+            )
+            return {"kind": "skill", "skill": skill, "source_file": source_file}
+        rule = store.add_custom_rule(
+            tenant_id=tid,
+            body=body,
+            source_file=source_file,
+            changed_by=changed_by or "console",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.warning(
+            "summary_skills_upload_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"kind": "rule", "rule": rule, "source_file": source_file}
+
+
+@app.post("/console/summary-skills/custom-skills/{item_id:int}/upload")
+async def replace_summary_custom_skill(
+    item_id: int,
+    tenant_id: str = Form(...),
+    file: UploadFile = File(...),
+    changed_by: str = Form("console"),
+) -> dict:
+    """Replace an existing tenant custom skill from a .md file."""
+    raw = (await file.read()).decode("utf-8", errors="replace")
+    filename = file.filename or "upload.md"
+    try:
+        if upload_kind(filename) != "skill":
+            raise ValueError("replace skill requires a .md file")
+        source_file, body = parse_tenant_upload(filename=filename, raw=raw)
+        store = store_from_settings(get_settings())
+        tid = tenant_id.strip()
+        store.migrate_legacy_md_rules_to_skills(tenant_id=tid, agent="summary")
+        skill = store.update_custom_skill(
+            item_id=item_id,
+            tenant_id=tenant_id.strip(),
+            body=body,
+            source_file=source_file,
+            changed_by=changed_by or "console",
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.warning(
+            "summary_skills_replace_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"kind": "skill", "skill": skill, "source_file": source_file}
+
+
+@app.post("/console/summary-skills/custom-rules/{item_id:int}/upload")
+async def replace_summary_custom_rule(
+    item_id: int,
+    tenant_id: str = Form(...),
+    file: UploadFile = File(...),
+    changed_by: str = Form("console"),
+) -> dict:
+    """Replace an existing tenant custom rule from a .mdc file."""
+    raw = (await file.read()).decode("utf-8", errors="replace")
+    filename = file.filename or "upload.mdc"
+    try:
+        file_kind = upload_kind(filename)
+        source_file, body = parse_tenant_upload(filename=filename, raw=raw)
+        store = store_from_settings(get_settings())
+        tid = tenant_id.strip()
+        store.migrate_legacy_md_rules_to_skills(tenant_id=tid, agent="summary")
+        if file_kind == "skill":
+            skill = store.update_custom_skill(
+                item_id=item_id,
+                tenant_id=tid,
+                body=body,
+                source_file=source_file,
+                changed_by=changed_by or "console",
+            )
+            return {"kind": "skill", "skill": skill, "source_file": source_file}
+        rule = store.update_custom_rule(
+            item_id=item_id,
+            tenant_id=tid,
+            body=body,
+            source_file=source_file,
+            changed_by=changed_by or "console",
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.warning(
+            "summary_skills_replace_failed",
+            extra={"error_type": type(exc).__name__},
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"kind": "rule", "rule": rule, "source_file": source_file}
+
+
+@app.patch("/console/summary-skills/custom-skills/{item_id:int}")
+async def update_summary_custom_skill(
+    item_id: int, payload: SummaryCustomSkillUpdate
+) -> dict:
+    store = store_from_settings(get_settings())
+    tid = (payload.tenant_id or "").strip()
+    store.migrate_legacy_md_rules_to_skills(tenant_id=tid, agent="summary")
+    try:
+        skill = store.update_custom_skill(
+            item_id=item_id,
+            tenant_id=payload.tenant_id,
+            body=payload.body,
+            is_active=payload.is_active,
+            changed_by=payload.changed_by or "console",
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"kind": "skill", "skill": skill}
+
+
+@app.patch("/console/summary-skills/custom-rules/{item_id:int}")
+async def update_summary_custom_rule(item_id: int, payload: SummaryCustomRuleUpdate) -> dict:
+    store = store_from_settings(get_settings())
+    tid = (payload.tenant_id or "").strip()
+    store.migrate_legacy_md_rules_to_skills(tenant_id=tid, agent="summary")
+    try:
+        rule = store.update_custom_rule(
+            item_id=item_id,
+            tenant_id=payload.tenant_id,
+            body=payload.body,
+            is_active=payload.is_active,
+            changed_by=payload.changed_by or "console",
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"kind": "rule", "rule": rule}
+
+
+@app.delete("/console/summary-skills/custom-skills/{item_id:int}")
+async def delete_summary_custom_skill(
+    item_id: int, tenant_id: str, changed_by: str = "console"
+) -> dict:
+    store = store_from_settings(get_settings())
+    store.migrate_legacy_md_rules_to_skills(tenant_id=tenant_id, agent="summary")
+    try:
+        deleted = store.delete_custom_skill(
+            item_id=item_id,
+            tenant_id=tenant_id,
+            changed_by=changed_by,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"kind": "skill", "deleted": deleted}
+
+
+@app.delete("/console/summary-skills/custom-rules/{item_id:int}")
+async def delete_summary_custom_rule(
+    item_id: int, tenant_id: str, changed_by: str = "console"
+) -> dict:
+    store = store_from_settings(get_settings())
+    store.migrate_legacy_md_rules_to_skills(tenant_id=tenant_id, agent="summary")
+    try:
+        deleted = store.delete_custom_rule(
+            item_id=item_id,
+            tenant_id=tenant_id,
+            changed_by=changed_by,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"kind": "rule", "deleted": deleted}
+
+
+class CatalogAgentCreate(BaseModel):
+    slug: str
+    name: str
+    description: str = ""
+    system_prompt: str
+    trigger_phrases: list[str] = []
+    enabled: bool = True
+
+
+class CatalogAgentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    system_prompt: Optional[str] = None
+    trigger_phrases: Optional[list[str]] = None
+    enabled: Optional[bool] = None
+
+
+class CatalogModelCreate(BaseModel):
+    slug: str
+    label: str
+    model: str
+    api_base: str = ""
+    api_key: str = ""
+    api_version: Optional[str] = None
+    region: Optional[str] = None
+    model_version: Optional[str] = None
+    enabled: bool = True
+    sort_order: int = 100
+
+
+class CatalogModelUpdate(BaseModel):
+    label: Optional[str] = None
+    model: Optional[str] = None
+    api_base: Optional[str] = None
+    api_key: Optional[str] = None
+    api_version: Optional[str] = None
+    region: Optional[str] = None
+    model_version: Optional[str] = None
+    enabled: Optional[bool] = None
+    sort_order: Optional[int] = None
+
+
+class CatalogTenantModelsUpsert(BaseModel):
+    tenant_id: str
+    default_model_id: str
+    fallback_model_id: Optional[str] = None
+
+
+class CatalogTenantAgentModelUpsert(BaseModel):
+    tenant_id: str
+    agent_slug: str
+    model_id: Optional[str] = None
+    fallback_model_id: Optional[str] = None
+
+
+def _catalog_store(request: Request) -> CatalogStore:
+    store = getattr(request.app.state, "catalog_store", None)
+    if store is None:
+        raise HTTPException(status_code=503, detail="Catalog store is currently unavailable.")
+    return store
+
+
+async def _refresh_catalog_runtime(request: Request) -> None:
+    store: CatalogStore = request.app.state.catalog_store
+    router: IntentRouter = request.app.state.intent_router
+    try:
+        presets = await store.list_model_presets_internal()
+        if presets:
+            set_runtime_presets(presets)
+        router.set_custom_agents(await store.list_enabled_custom())
+        llm_adapter = getattr(request.app.state, "llm_adapter", None)
+        runtime = getattr(request.app.state, "runtime_models", None)
+        if llm_adapter is not None and runtime is not None:
+            current = runtime.default_preset_id
+            if current and get_preset(current):
+                apply_preset(llm_adapter, current)
+    except CatalogStoreUnavailableError:
+        logger.warning("catalog_runtime_refresh_failed", extra={"error_type": "store"})
+
+
+def _raise_catalog_http(exc: Exception) -> None:
+    if isinstance(exc, CatalogStoreUnavailableError):
+        raise HTTPException(status_code=503, detail="Catalog store is currently unavailable.") from exc
+    if isinstance(exc, CatalogConflictError):
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if isinstance(exc, KeyError):
+        raise HTTPException(status_code=404, detail=str(exc) or "Not found.") from exc
+    if isinstance(exc, ValueError):
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    raise exc
+
+
+@app.get("/console/catalog/agents")
+async def list_catalog_agents(request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        return {"agents": await store.list_agents()}
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+
+
+@app.post("/console/catalog/agents")
+async def create_catalog_agent(payload: CatalogAgentCreate, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        agent = await store.create_custom_agent(
+            slug=payload.slug,
+            name=payload.name,
+            description=payload.description,
+            system_prompt=payload.system_prompt,
+            trigger_phrases=payload.trigger_phrases,
+            enabled=payload.enabled,
+        )
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    await _refresh_catalog_runtime(request)
+    return agent
+
+
+@app.patch("/console/catalog/agents/{agent_id}")
+async def update_catalog_agent(agent_id: str, payload: CatalogAgentUpdate, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        agent = await store.update_agent(
+            agent_id,
+            name=payload.name,
+            description=payload.description,
+            enabled=payload.enabled,
+            system_prompt=payload.system_prompt,
+            trigger_phrases=payload.trigger_phrases,
+        )
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    await _refresh_catalog_runtime(request)
+    return agent
+
+
+@app.delete("/console/catalog/agents/{agent_id}")
+async def delete_catalog_agent(agent_id: str, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        await store.delete_custom_agent(agent_id)
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    await _refresh_catalog_runtime(request)
+    return {"ok": True}
+
+
+@app.get("/console/catalog/models")
+async def list_catalog_models(request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        return {"models": await store.list_models()}
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+
+
+@app.post("/console/catalog/models")
+async def create_catalog_model(payload: CatalogModelCreate, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        model = await store.create_model(
+            slug=payload.slug,
+            label=payload.label,
+            model=payload.model,
+            api_base=payload.api_base,
+            api_key=payload.api_key,
+            api_version=payload.api_version,
+            region=payload.region,
+            model_version=payload.model_version,
+            enabled=payload.enabled,
+            sort_order=payload.sort_order,
+        )
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    await _refresh_catalog_runtime(request)
+    return model
+
+
+@app.patch("/console/catalog/models/{model_id}")
+async def update_catalog_model(model_id: str, payload: CatalogModelUpdate, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        model = await store.update_model(
+            model_id,
+            label=payload.label,
+            model=payload.model,
+            api_base=payload.api_base,
+            api_key=payload.api_key,
+            api_version=payload.api_version,
+            region=payload.region,
+            model_version=payload.model_version,
+            enabled=payload.enabled,
+            sort_order=payload.sort_order,
+            clear_api_version=payload.api_version == "",
+        )
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    await _refresh_catalog_runtime(request)
+    return model
+
+
+@app.delete("/console/catalog/models/{model_id}")
+async def delete_catalog_model(model_id: str, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        await store.delete_model(model_id)
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    await _refresh_catalog_runtime(request)
+    return {"ok": True}
+
+
+@app.get("/console/catalog/tenants")
+async def list_catalog_tenants(request: Request) -> dict:
+    """Tenants for Chat/Catalog pickers: real catalog.Tenants + Ezofis login names.
+
+    Saved catalog_tenant_models rows are NOT listed on their own — old test
+    mappings (tenant_a, leftover UUIDs) must not appear as selectable tenants.
+    """
+    store = _catalog_store(request)
+    by_id: dict[str, dict[str, str]] = {}
+    try:
+        for item in await store.list_tenant_directory():
+            tenant_id = str(item.get("id") or "").strip()
+            if not tenant_id:
+                continue
+            name = str(item.get("name") or tenant_id).strip() or tenant_id
+            by_id[tenant_id] = {"id": tenant_id, "name": name, "source": "directory"}
+    except Exception as exc:
+        logger.warning("catalog_tenants_directory_failed", extra={"error_type": type(exc).__name__})
+    ezofis = getattr(request.app.state, "ezofis_client", None)
+    if ezofis is not None:
+        try:
+            for item in await ezofis.list_tenants():
+                tenant_id = str(item.get("id") or "").strip()
+                if not tenant_id:
+                    continue
+                name = str(item.get("name") or tenant_id).strip() or tenant_id
+                existing = by_id.get(tenant_id)
+                if existing is None:
+                    by_id[tenant_id] = {"id": tenant_id, "name": name, "source": "ezofis"}
+                elif existing["name"] == existing["id"] and name != tenant_id:
+                    existing["name"] = name
+                    existing["source"] = "ezofis"
+        except Exception as exc:
+            logger.warning("catalog_tenants_ezofis_failed", extra={"error_type": type(exc).__name__})
+    tenants = sorted(by_id.values(), key=lambda item: item["name"].lower())
+    return {"tenants": tenants}
+
+
+@app.get("/console/catalog/tenant-models/{tenant_id}")
+async def get_catalog_tenant_models(tenant_id: str, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        row = await store.get_tenant_models(tenant_id)
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    return {"tenant_model": row}
+
+
+@app.get("/console/catalog/tenant-models")
+async def list_catalog_tenant_models(request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        return {"tenant_models": await store.list_tenant_models()}
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+
+
+@app.put("/console/catalog/tenant-models")
+async def upsert_catalog_tenant_models(payload: CatalogTenantModelsUpsert, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        return await store.upsert_tenant_models(
+            tenant_id=payload.tenant_id,
+            default_model_id=payload.default_model_id,
+            fallback_model_id=payload.fallback_model_id or None,
+        )
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+
+
+@app.get("/console/catalog/tenant-agent-models/{tenant_id}")
+async def list_catalog_tenant_agent_models(tenant_id: str, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        return {"mappings": await store.list_tenant_agent_models(tenant_id)}
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+
+
+@app.put("/console/catalog/tenant-agent-models")
+async def upsert_catalog_tenant_agent_model(payload: CatalogTenantAgentModelUpsert, request: Request) -> dict:
+    store = _catalog_store(request)
+    try:
+        mapping = await store.upsert_tenant_agent_model(
+            tenant_id=payload.tenant_id,
+            agent_slug=payload.agent_slug,
+            model_id=payload.model_id,
+            fallback_model_id=payload.fallback_model_id or None,
+        )
+    except Exception as exc:
+        _raise_catalog_http(exc)
+        raise
+    return {"mapping": mapping}
+
+
 @app.get("/metrics")
 async def metrics() -> Response:
     """Prometheus text-exposition format (Phase 5d) — pure aggregate
@@ -433,9 +1556,286 @@ async def metrics() -> Response:
     return Response(content=render_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat(payload: ChatRequest, request: Request, background_tasks: BackgroundTasks) -> ChatResponse:
+_CHAT_MULTIPART_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "session_id": {"type": "string", "description": "Required session id."},
+        "message": {"type": "string", "description": "Chat text (optional for intent=ocr/summary/insight/ap with file/filepath/ocr_text/summary_json/insight_json/invoice_json)."},
+        "intent": {
+            "type": "string",
+            "description": "Explicit agent (ocr, ap, chat, …). Omit to use keyword routing.",
+        },
+        "instruction": {
+            "type": "string",
+            "description": "OCR hints (region / date format).",
+        },
+        "filepath": {
+            "type": "string",
+            "description": "Blob URL, or folder/file path inside container ezts{tenantid}.",
+        },
+        "pageno": {
+            "type": "string",
+            "description": "Page: omit/1..5 = one page; -1 = up to 5 pages.",
+        },
+        "ocr_text": {
+            "type": "string",
+            "description": "Pre-extracted OCR text (summary/insight). Skips blob download and Paddle. Wins over file/filepath (summary_json / insight_json still win).",
+        },
+        "summary_json": {
+            "type": "string",
+            "description": "Arbitrary JSON object string for intent=summary. Skips OCR. Optional key `no` sets key_facts count (default 6).",
+        },
+        "key_facts_count": {
+            "type": "integer",
+            "description": "Max key_facts_extracted for intent=summary (default 6, max 20). Wins over summary_json.no.",
+        },
+        "insight_json": {
+            "type": "string",
+            "description": "Arbitrary JSON object string for intent=insight. Optional keys: no/insights_count (default 4), insight_area/area/dashboard.",
+        },
+        "insights_count": {
+            "type": "integer",
+            "description": "Max insights for intent=insight (default 4, max 20). Wins over insight_json.no.",
+        },
+        "insight_area": {
+            "type": "string",
+            "description": "Optional dashboard/business area hint for intent=insight (e.g. AP Aging).",
+        },
+        "parameters": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": 'One entry per field as Name,TYPE — e.g. Invoice No,SHORT_TEXT',
+            "example": ["Invoice No,SHORT_TEXT", "Due Date,DATE"],
+        },
+        "tableparameters": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Optional table field definitions (same Name,TYPE format).",
+            "example": [],
+        },
+        "model": {"type": "string", "description": "Optional LLM model override."},
+        "tenant_id": {"type": "string", "description": "Tenant UUID. Required for relative blob filepath (ocr/summary/insight/ap/chat)."},
+        "item_id": {"type": "string", "description": "Stable AP document key for skill re-runs."},
+        "repositoryItemId": {"type": "string", "description": "Repository item UUID (move-next itemId). Alias: repository_item_id."},
+        "workflow_id": {"type": "string", "description": "AP workflow id (progress/move-next). Alias: workflowId."},
+        "instance_id": {"type": "string", "description": "AP workflow instance id (progress/move-next). Alias: instanceId."},
+        "repositoryId": {"type": "string", "description": "Repository UUID for move-next. Alias: repository, repository_id."},
+        "transactionId": {"type": "string", "description": "Workflow transaction id for move-next."},
+        "formentryId": {"type": "string", "description": "Form entry id for move-next. Alias: formEntryId, form_entry_id."},
+        "processId": {"type": "string", "description": "Workflow process id for move-next."},
+        "activityid": {"type": "string", "description": "Workflow step ActivityId for move-next. Omitted => lookup workflow.WorkflowSteps (AP AGENT 1)."},
+        "connector_id": {"type": "string", "description": "QB/Sage/SAP connector id for PO lookup skills."},
+        "resource": {"type": "string", "description": "PO resource: QUICKBOOKS, SAP, or SAGE."},
+        "matter_master_id": {"type": "string", "description": "Matter master id."},
+        "formid": {
+            "type": "string",
+            "description": "PO/document form id (GUID or numeric). Alias: form_id, formId. Selects ezfb_{token}_items.",
+        },
+        "skills": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": 'AP skill ids. Omit/null = default pipeline (ends with finalize_decision + workflow_move_next). List = run only those ids.',
+        },
+        "invoice_json": {
+            "type": "string",
+            "description": "Pre-extracted invoice JSON object (intent=ap).",
+        },
+        "pdf_json": {
+            "type": "string",
+            "description": "Arbitrary structured JSON object or array string for intent=pdf.",
+        },
+        "template_json": {
+            "type": "string",
+            "description": "Optional schema template JSON string for intent=pdf.",
+        },
+        "pdf_title": {
+            "type": "string",
+            "description": "Optional title for generated PDF (intent=pdf).",
+        },
+        "pdf_theme": {
+            "type": "string",
+            "description": "Optional theme for generated PDF: corporate_blue, emerald, graphite, purple, amber.",
+        },
+        "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "Upload PDF, image, .docx, or txt. .docx text is extracted locally (no Paddle). Wins over filepath.",
+        },
+    },
+    "required": ["session_id"],
+}
+
+
+@app.post(
+    "/chat",
+    response_model=ChatResponse,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                # JSON payload textbox in Swagger (select application/json).
+                "application/json": {
+                    "schema": ChatRequest.model_json_schema(
+                        ref_template="#/components/schemas/{model}"
+                    ),
+                    "examples": {
+                        "chat": {
+                            "summary": "Plain chat",
+                            "value": {"session_id": "demo", "message": "Hello"},
+                        },
+                        "pdf_invoice": {
+                            "summary": "PDF Agent: Generate styled PDF from structured invoice JSON",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "pdf",
+                                "payload": {
+                                    "pdf_title": "Invoice INV-2026-001",
+                                    "pdf_theme": "corporate_blue",
+                                    "pdf_json": {
+                                        "invoice_number": "INV-2026-001",
+                                        "date": "2026-08-28",
+                                        "due_date": "2026-09-28",
+                                        "vendor": "Acme Solutions Ltd",
+                                        "customer": "Global Corp Inc",
+                                        "items": [
+                                            {"description": "AI Orchestration Platform", "quantity": 1, "rate": 5000.0, "amount": 5000.0},
+                                            {"description": "Enterprise Cloud Setup", "quantity": 2, "rate": 1200.0, "amount": 2400.0}
+                                        ],
+                                        "subtotal": 7400.0,
+                                        "tax_amount": 740.0,
+                                        "total_amount": 8140.0,
+                                        "currency": "USD",
+                                        "notes": "Thank you for your business. Payment due within 30 days."
+                                    }
+                                }
+                            },
+                        },
+                        "prompt": {
+                            "summary": "Prompt agent (raw model text, no JSON validation)",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "prompt",
+                                "message": "Respond with ONLY a JSON object (no markdown): {\"folderName\": string, \"description\": string}",
+                                "payload": {"model": "ezofis-gpu-box"},
+                            },
+                        },
+                        "ocr_blob": {
+                            "summary": "OCR from blob path",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "ocr",
+                                "instruction": "Region: India. Normalize DATE fields to YYYY-MM-DD.",
+                                "payload": {
+                                    "tenant_id": "2e3b7b37-38a3-4f94-878e-a006dad93230",
+                                    "filepath": "INV26-27002140.pdf",
+                                    "pageno": "1",
+                                    "parameters": ["Invoice No,SHORT_TEXT", "Due Date,DATE"],
+                                    "tableparameters": [],
+                                },
+                            },
+                        },
+                        "ap_invoice_json": {
+                            "summary": "AP skills from invoice JSON",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "ap",
+                                "payload": {
+                                    "tenant_id": "demo-tenant",
+                                    "formid": "29171de4-e210-466e-9e90-40fa9fa4354d",
+                                    "item_id": "inv-100",
+                                    "repositoryId": "ef178e9c-e44b-4a88-b827-05268b54264e",
+                                    "repositoryItemId": "00000000-0000-0000-0000-000000000003",
+                                    "transactionId": "100",
+                                    "formentryId": "42",
+                                    "instance_id": "a96efa0d-28f1-4b48-afc2-c9791a346ce9",
+                                    "invoice_json": {
+                                        "invoice_number": "INV-100",
+                                        "vendor": "ACME Supplies",
+                                        "po_number": "PO-1",
+                                        "total": 1234.56,
+                                        "currency": "USD",
+                                        "line_items": [
+                                            {"description": "Widget", "qty": 10, "amount": 1234.56}
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                        "summary_blob": {
+                            "summary": "Summarize from blob path",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "summary",
+                                "payload": {
+                                    "tenant_id": "2e3b7b37-38a3-4f94-878e-a006dad93230",
+                                    "filepath": "INV26-27002140.pdf",
+                                    "pageno": "1",
+                                    "model": "qwen3.5-9b",
+                                },
+                            },
+                        },
+                        "summary_ocr_text": {
+                            "summary": "Summarize from OCR text (no blob / Paddle)",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "summary",
+                                "payload": {
+                                    "ocr_text": "Niss Internet Services Private Limited\nInvoice Number: INV/26-27/002140\nTotal: 1770.00",
+                                    "model": "qwen3.5-9b",
+                                },
+                            },
+                        },
+                        "summary_json": {
+                            "summary": "Summarize from structured JSON (no blob / Paddle)",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "summary",
+                                "payload": {
+                                    "summary_json": {
+                                        "no": 4,
+                                        "vendor": "Niss Internet Services",
+                                        "invoice_no": "INV/26-27/002140",
+                                        "total": 1770.00,
+                                        "currency": "INR",
+                                    },
+                                    "model": "qwen3.5-9b",
+                                },
+                            },
+                        },
+                        "insight_json": {
+                            "summary": "Insights from arbitrary dashboard JSON",
+                            "value": {
+                                "session_id": "demo",
+                                "intent": "insight",
+                                "payload": {
+                                    "insight_json": {
+                                        "title": "AP Aging",
+                                        "open_invoices": 120,
+                                        "overdue_invoices": 18,
+                                        "total_outstanding": 245000,
+                                        "buckets": {
+                                            "0_30": 80000,
+                                            "31_60": 90000,
+                                            "61_90": 45000,
+                                            "90_plus": 30000,
+                                        },
+                                    },
+                                    "model": "qwen3.5-9b",
+                                },
+                            },
+                        },
+                    },
+                },
+                # File browser in Swagger (select multipart/form-data).
+                "multipart/form-data": {"schema": _CHAT_MULTIPART_SCHEMA},
+            },
+        }
+    },
+)
+async def chat(request: Request, background_tasks: BackgroundTasks) -> ChatResponse:
     started_at = time.perf_counter()
+    parsed = await parse_chat_request(request)
+    payload = parsed.chat
 
     context_manager: ContextManager = request.app.state.context_manager
     intent_router: IntentRouter = request.app.state.intent_router
@@ -445,15 +1845,57 @@ async def chat(payload: ChatRequest, request: Request, background_tasks: Backgro
     permission_provider: MockPermissionProvider = request.app.state.permission_provider
     audit_store: AuditStore = request.app.state.audit_store
 
+    # Build a filterable / history message for document jobs.
+    has_upload = parsed.file_bytes is not None  # empty bytes still count as an upload attempt
+    has_filepath = bool(payload.payload and (payload.payload.filepath or "").strip())
+    has_ocr_text = bool(payload.payload and (payload.payload.ocr_text or "").strip())
+    has_summary_json = bool(payload.payload and payload.payload.summary_json)
+    has_insight_json = bool(payload.payload and payload.payload.insight_json)
+    has_pdf_json = bool(payload.payload and (payload.payload.pdf_json or payload.payload.template_json))
+    message = (payload.message or "").strip()
+    explicit = (payload.intent or "").strip().lower()
+    prompt_alias = (payload.payload.prompt or "").strip() if payload.payload else ""
+    query_alias = (payload.payload.query or "").strip() if payload.payload else ""
+    if not message:
+        if explicit == "prompt" and prompt_alias:
+            message = prompt_alias
+        elif explicit == "global_search":
+            if query_alias:
+                message = query_alias
+            else:
+                raise HTTPException(status_code=400, detail="query is required for intent=global_search.")
+        elif explicit == "chatbot":
+            if query_alias:
+                message = query_alias
+            else:
+                message = "help"
+        elif (
+            has_filepath
+            or has_upload
+            or has_ocr_text
+            or has_summary_json
+            or has_insight_json
+            or has_pdf_json
+            or explicit in {"ocr", "summary", "insight", "ap", "pdf"}
+        ):
+            if explicit == "summary":
+                message = "Summarize the document."
+            elif explicit == "insight":
+                message = "Generate insights from the supplied data."
+            elif explicit == "pdf":
+                message = "Generate PDF document from structured JSON data."
+            else:
+                message = (payload.instruction or "").strip() or "Process the document and generate structured JSON."
+        else:
+            raise HTTPException(status_code=422, detail="message is required.")
+
     request.state.session_id = payload.session_id
-    # Read by the HTTPException audit handler below for any rejection
-    # path; overwritten with the real Intent once classification runs.
-    request.state.raw_message = payload.message
+    request.state.raw_message = message
     request.state.intent = None
 
     # Gate 1: content filter — cheapest, stateless, no I/O.
     try:
-        check_content(payload.message)
+        check_content(message)
     except ContentFilterRejectedError as exc:
         raise HTTPException(status_code=400, detail="Message rejected by content filter.") from exc
 
@@ -478,8 +1920,231 @@ async def chat(payload: ChatRequest, request: Request, background_tasks: Backgro
             status_code=503, detail="Session store is currently unavailable, please try again."
         ) from exc
 
-    intent = await intent_router.classify(payload.message)
-    request.state.intent = intent.value
+    # Explicit intent overrides keyword router. Empty/omitted intent keeps
+    # legacy keyword classification (chat/search/...) so existing clients
+    # keep working. Document OCR requires intent=ocr (filepath alone never
+    # forces OCR / AP). Unknown strings may be catalog custom-agent slugs.
+    custom_agent = None
+    if explicit:
+        try:
+            intent = Intent(explicit)
+        except ValueError as exc:
+            store = getattr(request.app.state, "catalog_store", None)
+            if store is not None:
+                try:
+                    agent_row = await store.get_agent_by_slug(explicit)
+                    if agent_row and agent_row.get("kind") == "custom":
+                        if not agent_row.get("enabled", True):
+                            raise HTTPException(
+                                status_code=403,
+                                detail=f"Agent '{explicit}' is disabled.",
+                            )
+                        custom_agent = agent_row
+                except CatalogStoreUnavailableError:
+                    custom_agent = None
+            if custom_agent is None:
+                raise HTTPException(status_code=400, detail=f"Unknown intent '{payload.intent}'.") from exc
+            intent = Intent.CHAT
+    else:
+        intent = await intent_router.classify(message)
+        if intent == Intent.CHAT:
+            custom_slug = intent_router.match_custom_slug(message)
+            if custom_slug:
+                store = getattr(request.app.state, "catalog_store", None)
+                if store is not None:
+                    try:
+                        custom_agent = await store.get_enabled_custom(custom_slug)
+                    except CatalogStoreUnavailableError:
+                        custom_agent = None
+    request.state.intent = custom_agent["slug"] if custom_agent else intent.value
+    agent_slug = request.state.intent
+
+    catalog_store = getattr(request.app.state, "catalog_store", None)
+    if catalog_store is not None:
+        try:
+            agent_row = await catalog_store.get_agent_by_slug(agent_slug)
+            if (
+                agent_row is not None
+                and agent_row.get("kind") == "custom"
+                and not agent_row.get("enabled", True)
+            ):
+                raise HTTPException(status_code=403, detail=f"Agent '{agent_slug}' is disabled.")
+        except CatalogStoreUnavailableError:
+            pass
+
+    document_job = None
+    has_document = has_filepath or (parsed.file_bytes is not None)
+    if intent == Intent.PROMPT:
+        document_job = {
+            "prompt": message,
+            "model": payload.payload.model if payload.payload else None,
+        }
+    elif intent == Intent.PDF:
+        document_job = {
+            "pdf_json": payload.payload.pdf_json if payload.payload else None,
+            "template_name": payload.payload.template_name if payload.payload else None,
+            "template_json": payload.payload.template_json if payload.payload else None,
+            "pdf_title": payload.payload.pdf_title if payload.payload else None,
+            "pdf_theme": payload.payload.pdf_theme if payload.payload else None,
+            "model": payload.payload.model if payload.payload else None,
+            "tenant_id": payload.payload.tenant_id if payload.payload else None,
+        }
+    elif intent == Intent.GLOBAL_SEARCH:
+        p = payload.payload
+        document_job = {
+            "query": (p.query if p and p.query else None) or message,
+            "tenant_id": p.tenant_id if p else None,
+            "specific_id": p.repository_id if p else None,
+            "repository_id": p.repository_id if p else None,
+            "workspace_id": p.workspace_id if p else None,
+            "action_from": p.action_from if p else None,
+        }
+    elif intent == Intent.CHATBOT:
+        p = payload.payload
+        document_job = {
+            "query": (p.query if p and p.query else None) or message,
+            "tenant_id": p.tenant_id if p else None,
+            "specific_id": p.repository_id if p else None,
+            "repository_id": p.repository_id if p else None,
+            "workspace_id": p.workspace_id if p else None,
+            "action_from": p.action_from if p else None,
+            "propose_action": p.propose_action if p else None,
+            "recent_hits": getattr(p, "recent_hits", None) if p else None,
+            "upload_file": getattr(p, "upload_file", None) if p else None,
+            "pending_action_id": getattr(p, "pending_action_id", None) if p else None,
+        }
+    has_invoice_json = bool(payload.payload and payload.payload.invoice_json)
+    has_item_id = bool(payload.payload and (payload.payload.item_id or "").strip())
+    if intent == Intent.INSIGHT and has_insight_json:
+        document_job = {
+            "instruction": payload.instruction,
+            "insight_json": payload.payload.insight_json if payload.payload else None,
+            "insights_count": payload.payload.insights_count if payload.payload else None,
+            "insight_area": payload.payload.insight_area if payload.payload else None,
+            "summary_json": None,
+            "key_facts_count": payload.payload.key_facts_count if payload.payload else None,
+            "ocr_text": None,
+            "filepath": None,
+            "file_bytes": None,
+            "filename": None,
+            "content_type": None,
+            "pageno": None,
+            "parameters": [],
+            "tableparameters": [],
+            "model": payload.payload.model if payload.payload else None,
+            "tenant_id": payload.payload.tenant_id if payload.payload else None,
+        }
+    elif intent == Intent.SUMMARY and has_summary_json:
+        document_job = {
+            "instruction": payload.instruction,
+            "insight_json": None,
+            "summary_json": payload.payload.summary_json if payload.payload else None,
+            "key_facts_count": payload.payload.key_facts_count if payload.payload else None,
+            "ocr_text": None,
+            "filepath": None,
+            "file_bytes": None,
+            "filename": None,
+            "content_type": None,
+            "pageno": None,
+            "parameters": [],
+            "tableparameters": [],
+            "model": payload.payload.model if payload.payload else None,
+            "tenant_id": payload.payload.tenant_id if payload.payload else None,
+        }
+    elif intent in {Intent.SUMMARY, Intent.INSIGHT} and has_ocr_text:
+        # Direct OCR text: skip blob download and Paddle. Wins over file/filepath.
+        document_job = {
+            "instruction": payload.instruction,
+            "insight_json": None,
+            "insights_count": payload.payload.insights_count if payload.payload else None,
+            "insight_area": payload.payload.insight_area if payload.payload else None,
+            "summary_json": None,
+            "key_facts_count": payload.payload.key_facts_count if payload.payload else None,
+            "ocr_text": (payload.payload.ocr_text or "").strip() if payload.payload else "",
+            "filepath": None,
+            "file_bytes": None,
+            "filename": None,
+            "content_type": None,
+            "pageno": None,
+            "parameters": [],
+            "tableparameters": [],
+            "model": payload.payload.model if payload.payload else None,
+            "tenant_id": payload.payload.tenant_id if payload.payload else None,
+        }
+    elif intent in {Intent.OCR, Intent.SUMMARY, Intent.INSIGHT} and has_document:
+        if parsed.file_bytes is not None and len(parsed.file_bytes) == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        # Prefer upload over filepath when both are present.
+        try:
+            resolve_pageno(
+                payload.payload.pageno if payload.payload else None,
+                max_pages=get_settings().ocr_max_pages,
+            )
+        except InvalidOcrPageError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        document_job = {
+            "instruction": payload.instruction,
+            "insight_json": None,
+            "insights_count": payload.payload.insights_count if payload.payload else None,
+            "insight_area": payload.payload.insight_area if payload.payload else None,
+            "summary_json": None,
+            "key_facts_count": payload.payload.key_facts_count if payload.payload else None,
+            "ocr_text": None,
+            "filepath": None if parsed.file_bytes is not None else (payload.payload.filepath if payload.payload else None),
+            "file_bytes": parsed.file_bytes,
+            "filename": parsed.filename if parsed.file_bytes is not None else None,
+            "content_type": parsed.content_type if parsed.file_bytes is not None else None,
+            "pageno": payload.payload.pageno if payload.payload else None,
+            "parameters": list(payload.payload.parameters) if payload.payload else [],
+            "tableparameters": list(payload.payload.tableparameters) if payload.payload else [],
+            "model": payload.payload.model if payload.payload else None,
+            "tenant_id": payload.payload.tenant_id if payload.payload else None,
+        }
+    elif intent == Intent.OCR and explicit == "ocr" and not has_document:
+        # Explicit OCR without a document still allows legacy "run ocr on SCN-.." messages.
+        pass
+    elif intent == Intent.SUMMARY and explicit == "summary" and not (
+        has_document or has_ocr_text or has_summary_json
+    ):
+        # Explicit summary without a file still allows legacy "summarize DOC-123".
+        pass
+    elif intent == Intent.INSIGHT and explicit == "insight" and not (
+        has_document or has_ocr_text or has_insight_json
+    ):
+        # Explicit insight without data still allows legacy "insights on report RPT-…".
+        pass
+    elif intent == Intent.AP and explicit == "ap" and (
+        has_filepath or parsed.file_bytes is not None or has_invoice_json or has_item_id
+    ):
+        if parsed.file_bytes is not None and len(parsed.file_bytes) == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        document_job = {
+            "instruction": payload.instruction,
+            "filepath": None if parsed.file_bytes is not None else (payload.payload.filepath if payload.payload else None),
+            "file_bytes": parsed.file_bytes,
+            "filename": parsed.filename if parsed.file_bytes is not None else None,
+            "content_type": parsed.content_type if parsed.file_bytes is not None else None,
+            "pageno": payload.payload.pageno if payload.payload else None,
+            "tenant_id": payload.payload.tenant_id if payload.payload else None,
+            "skills": payload.payload.skills if payload.payload else None,
+            "invoice_json": payload.payload.invoice_json if payload.payload else None,
+            "item_id": payload.payload.item_id if payload.payload else None,
+            "repository_item_id": payload.payload.repository_item_id if payload.payload else None,
+            "workflow_id": payload.payload.workflow_id if payload.payload else None,
+            "instance_id": payload.payload.instance_id if payload.payload else None,
+            "repository_id": payload.payload.repository_id if payload.payload else None,
+            "transaction_id": payload.payload.transaction_id if payload.payload else None,
+            "form_entry_id": payload.payload.form_entry_id if payload.payload else None,
+            "process_id": payload.payload.process_id if payload.payload else None,
+            "activity_id": payload.payload.activity_id if payload.payload else None,
+            "connector_id": payload.payload.connector_id if payload.payload else None,
+            "resource": payload.payload.resource if payload.payload else None,
+            "matter_master_id": payload.payload.matter_master_id if payload.payload else None,
+            "form_id": payload.payload.form_id if payload.payload else None,
+            "model": payload.payload.model if payload.payload else None,
+            "force_rerun": bool(payload.payload.force_rerun) if payload.payload else False,
+            "pilot_access_token": payload.payload.pilot_access_token if payload.payload else None,
+        }
 
     # Gate 3: permission check — needs the classified intent, so it can
     # only run here, not earlier. The Dispatcher/agent must never be
@@ -490,10 +2155,91 @@ async def chat(payload: ChatRequest, request: Request, background_tasks: Backgro
     except PermissionDeniedError as exc:
         raise HTTPException(status_code=403, detail="Not permitted to use this capability.") from exc
 
+    tenant_id = (payload.payload.tenant_id if payload.payload else None) or ""
+    tenant_id = tenant_id.strip()
+    llm_adapter: LLMAdapter = request.app.state.llm_adapter
+    runtime_models: RuntimeModelSelection = request.app.state.runtime_models
+    explicit_model = (payload.payload.model if payload.payload else None) or ""
+    if document_job is not None and document_job.get("model"):
+        explicit_model = str(document_job.get("model") or explicit_model)
+
+    # Resolve this request's tenant/agent model selection once, up front.
+    # Document-job agents (AP, OCR, Summary) get a frozen override dict carried on
+    # document_job, passed straight into LLMAdapter.chat_completion(...,
+    # **overrides) for that call only — never by mutating the one shared
+    # LLMAdapter instance, which used to race against any other concurrent
+    # request touching the same adapter (a different tenant, a different
+    # intent, a Console Save) between the mutate and the actual
+    # chat_completion() call, many awaits later. See
+    # app/catalog/tenant_llm.py's module docstring for the full reasoning.
+    # Every OTHER intent (Chat/Search/Summary/Insight/Prompt/Mail, and
+    # legacy AP invoice-status Q&A) still reads the shared adapter's
+    # ambient `self._model` etc. — unchanged, pre-existing behavior; only
+    # AP/OCR document jobs are hardened against the race here.
+    # (ultrareview simplification fix: dropped the pre-declared
+    # `resolved_tenant_llm` default dict — it was only ever read inside
+    # the `elif` branch below that immediately reassigns it, so the
+    # "default" value was dead code a reader had to trace all three
+    # branches to realize was unused.)
+    llm_overrides: Optional[dict] = None
+    llm_fallback_overrides: Optional[dict] = None
+    catalog_fallback_preset: Optional[str] = None
+    if explicit_model.strip():
+        llm_overrides = {"model": explicit_model.strip()}
+    elif tenant_id and catalog_store is not None:
+        resolved_tenant_llm = await apply_tenant_agent_llm(catalog_store, tenant_id, agent_slug)
+        llm_overrides = resolved_tenant_llm["overrides"]
+        llm_fallback_overrides = resolved_tenant_llm["fallback_overrides"]
+        catalog_fallback_preset = resolved_tenant_llm.get("fallback_slug")
+        # Code-review (ultrareview) finding: this used to mutate the shared
+        # adapter unconditionally here, with a comment claiming it only
+        # applied to "non-document-job" intents — but nothing actually
+        # gated it on `document_job is None`, so an AP/OCR request (which
+        # always carries a tenant_id) mutated the ONE shared LLMAdapter too,
+        # even though it doesn't need to (it already gets a race-safe
+        # explicit override via document_job["llm_overrides"] below). That
+        # mutation was pure liability for any OTHER concurrent request
+        # relying on the adapter's ambient default (Chat/Search/Summary/
+        # Insight/Prompt/Mail, and legacy AP invoice-status Q&A) — exactly
+        # the race this whole mechanism exists to close. Only mutate for
+        # the non-document-job intents that still need it.
+        if document_job is None and resolved_tenant_llm["default_slug"]:
+            apply_preset(llm_adapter, resolved_tenant_llm["default_slug"])
+    if llm_overrides is None:
+        # No explicit/tenant selection — freeze the adapter's current
+        # process-wide default so a document-job request's LLM call(s) are
+        # immune to a concurrent request changing that default mid-flight.
+        llm_overrides = llm_adapter.snapshot_overrides()
+    if document_job is not None:
+        document_job["llm_overrides"] = llm_overrides
+        document_job["llm_fallback_overrides"] = llm_fallback_overrides
+        if catalog_fallback_preset:
+            document_job["catalog_fallback_preset"] = catalog_fallback_preset
+
     try:
-        result = await agent_router.route(
-            intent, session_id=payload.session_id, message=payload.message, history=history
-        )
+        if custom_agent:
+            catalog_agent: CatalogAgent = request.app.state.catalog_agent
+            result = await catalog_agent.handle(
+                session_id=payload.session_id,
+                message=message,
+                history=history,
+                catalog_agent=custom_agent,
+            )
+        else:
+            result = await agent_router.route(
+                intent,
+                session_id=payload.session_id,
+                message=message,
+                history=history,
+                document_job=document_job,
+            )
+    except ApRunInProgressError as exc:
+        # More specific than ValueError (its own base) — must be caught
+        # first. A genuinely concurrent duplicate AP submission for the
+        # same item, not a validation error or a store outage.
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except LLMAdapterError as exc:
         raise HTTPException(
             status_code=502, detail="Upstream LLM provider error, please try again."
@@ -503,38 +2249,33 @@ async def chat(payload: ChatRequest, request: Request, background_tasks: Backgro
             status_code=502, detail="Upstream embedding provider error, please try again."
         ) from exc
     except VectorStoreUnavailableError as exc:
-        # Same discipline as SessionStoreUnavailableError below: a
-        # pgvector/Postgres outage must be an explicit error, never a
-        # silent empty-result search.
         raise HTTPException(
             status_code=503, detail="Document store is currently unavailable, please try again."
         ) from exc
+    except ApStoreUnavailableError as exc:
+        raise HTTPException(
+            status_code=503, detail="AP store is currently unavailable, please try again."
+        ) from exc
     except ToolExecutionError as exc:
-        # A registered tool's handler failed (fetch_document/
-        # fetch_report_data/fetch_invoice_status -> mocked EZOFIS; run_ocr
-        # -> mocked OCR engine; run_forecast -> mocked forecast model).
-        # Same "external dependency down" class as LLM/embedding provider
-        # failures. The message below is generic on purpose — it covers
-        # all five (see tests/test_tool_error_no_leak.py).
         raise HTTPException(
             status_code=502, detail="Upstream service error, please try again."
         ) from exc
     except NotImplementedError as exc:
         raise HTTPException(status_code=501, detail=str(exc)) from exc
+    finally:
+        # Only undoes the backward-compat mutation above (tenant catalog
+        # default applied for non-document-job intents) — AP/OCR never
+        # depend on this, since they always pass explicit overrides.
+        restore_runtime_llm(llm_adapter, runtime_models)
 
     try:
-        await context_manager.append_turn(payload.session_id, "user", payload.message)
+        await context_manager.append_turn(payload.session_id, "user", message)
         await context_manager.append_turn(payload.session_id, "assistant", result["reply"])
     except SessionStoreUnavailableError as exc:
-        # The LLM reply was already generated but can't be persisted — per
-        # spec, history must never be silently dropped while still
-        # returning success, so this is a 503, not a 200 with a gap.
         raise HTTPException(
             status_code=503, detail="Session store is currently unavailable, please try again."
         ) from exc
 
-    # Enrich the audit record the middleware logs after this handler
-    # returns (session_id was already set at the top of this handler).
     request.state.token_usage = result.get("usage")
 
     latency_ms = round((time.perf_counter() - started_at) * 1000, 2)
@@ -543,11 +2284,11 @@ async def chat(payload: ChatRequest, request: Request, background_tasks: Backgro
         audit_store.record,
         correlation_id=request.state.correlation_id,
         session_id=payload.session_id,
-        intent=intent.value,
+        intent=request.state.intent,
         event_type="request_completed",
         status="success",
         latency_ms=latency_ms,
-        redacted_request_snippet=_snippet_for_audit(intent.value, payload.message),
+        redacted_request_snippet=_snippet_for_audit(intent.value, message),
         redacted_response_snippet=_snippet_for_audit(intent.value, result["reply"]),
     )
 
@@ -561,9 +2302,16 @@ async def chat(payload: ChatRequest, request: Request, background_tasks: Backgro
         document_id=result.get("document_id"),
         cited_data_points=result.get("cited_data_points"),
         ocr_result=result.get("ocr_result"),
+        summary_result=result.get("summary_result"),
+        insight_result=result.get("insight_result"),
         forecast_result=result.get("forecast_result"),
         invoice_reference=result.get("invoice_reference"),
         mail_draft=result.get("mail_draft"),
+        ap_result=result.get("ap_result"),
+        prompt_result=result.get("prompt_result"),
+        pdf_result=result.get("pdf_result"),
+        global_search_result=result.get("global_search_result"),
+        chatbot_result=result.get("chatbot_result"),
     )
 
 

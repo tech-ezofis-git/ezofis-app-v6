@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
     <PackageReference Include="PDFsharp" Version="6.2.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +25,7 @@
     <ProjectReference Include="..\..\BlobStorage\SaaSApp.BlobStorage.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\MultiTenancy\SaaSApp.MultiTenancy.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Catalog\SaaSApp.Catalog.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\SharedKernel\SaaSApp.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Users\Users.Infrastructure\SaaSApp.Users.Infrastructure.csproj" />
   </ItemGroup>
 

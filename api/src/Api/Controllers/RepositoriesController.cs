@@ -3,7 +3,6 @@ using System.Text.Json;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using SaaSApp.Api.Middleware;
 using SaaSApp.Billing.Application.Contracts;
 using SaaSApp.Billing.Application.Credits.Commands.UpdateCredit;
@@ -35,7 +34,6 @@ public sealed class RepositoriesController : ControllerBase
     private readonly ITenantConnectionStringResolver _connectionResolver;
     private readonly ITenantConnectionProvider _connectionProvider;
     private readonly IRepositoryAiSummaryService _aiSummary;
-    private readonly RepositoryAiSummaryOptions _aiSummaryOptions;
     private readonly IMediator _mediator;
     private readonly ILogger<RepositoriesController> _logger;
 
@@ -54,7 +52,6 @@ public sealed class RepositoriesController : ControllerBase
         ITenantConnectionStringResolver connectionResolver,
         ITenantConnectionProvider connectionProvider,
         IRepositoryAiSummaryService aiSummary,
-        IOptions<RepositoryAiSummaryOptions> aiSummaryOptions,
         IMediator mediator,
         ILogger<RepositoriesController> logger)
     {
@@ -72,7 +69,6 @@ public sealed class RepositoriesController : ControllerBase
         _connectionResolver = connectionResolver;
         _connectionProvider = connectionProvider;
         _aiSummary = aiSummary;
-        _aiSummaryOptions = aiSummaryOptions.Value;
         _mediator = mediator;
         _logger = logger;
     }
@@ -300,9 +296,12 @@ public sealed class RepositoriesController : ControllerBase
         if (await EnsureRepositoryAccessAsync(id, tenantId, RepositorySecurityPermissions.View, cancellationToken) is { } denied)
             return denied;
         var filters = ParseParentFilters(query.ParentFilters);
+        var userId = GetUserId();
+        var isAdmin = IsCurrentUserAdmin();
         return await Browse(async () =>
             await _browse.GetBrowseChildrenAsync(
-                id, tenantId, query.PathId, filters, query.Page, query.PageSize, query.Search, cancellationToken));
+                id, tenantId, query.PathId, filters, query.Page, query.PageSize, query.Search,
+                userId, isAdmin, cancellationToken));
     }
 
     /// <summary>Group items by any folder field name; parentFilters JSON for drill-down context.</summary>
@@ -317,9 +316,12 @@ public sealed class RepositoriesController : ControllerBase
         if (await EnsureRepositoryAccessAsync(id, tenantId, RepositorySecurityPermissions.View, cancellationToken) is { } denied)
             return denied;
         var filters = ParseParentFilters(query.ParentFilters);
+        var userId = GetUserId();
+        var isAdmin = IsCurrentUserAdmin();
         return await Browse(async () =>
             await _browse.GetBrowseGroupsAsync(
-                id, tenantId, fieldName, filters, query.Page, query.PageSize, query.Search, cancellationToken));
+                id, tenantId, fieldName, filters, query.Page, query.PageSize, query.Search,
+                userId, isAdmin, cancellationToken));
     }
 
     /// <summary>Allowed filter keys for GET .../items (per repository fields + standard columns).</summary>
@@ -497,8 +499,10 @@ public sealed class RepositoriesController : ControllerBase
     }
 
     /// <summary>
-    /// Exact related documents: scores every file against all repository fields.
-    /// Score = matchedFields / totalFields × 100 (e.g. 10/14 → 71, 14/14 → 100).
+    /// Exact related documents (match candidates). Does not persist.
+    /// No field → all repository fields with values. With field(s) → only those.
+    /// Optional <c>value</c> overrides the source value when a single field is specified.
+    /// Score = matchedFields / totalFields × 100; only rows with score ≥ 50 are returned.
     /// </summary>
     [HttpGet("/api/repositories/{id:guid}/items/{itemId:guid}/related-exact")]
     [ProducesResponseType(typeof(RepositoryRelatedDocumentsResultDto), StatusCodes.Status200OK)]
@@ -507,6 +511,9 @@ public sealed class RepositoriesController : ControllerBase
         Guid itemId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
+        [FromQuery] string? field = null,
+        [FromQuery] string? fields = null,
+        [FromQuery] string? value = null,
         CancellationToken cancellationToken = default)
     {
         var tenantId = RequireTenantId();
@@ -521,7 +528,16 @@ public sealed class RepositoriesController : ControllerBase
             if (await EnsureItemAccessAsync(id, tenantId, RepositorySecurityFieldMap.FromDetail(source), RepositorySecurityPermissions.View, cancellationToken) is { } deniedItem)
                 return deniedItem;
 
-            var result = await _relatedDocuments.GetRelatedExactAsync(id, tenantId, itemId, page, pageSize, cancellationToken);
+            var fieldList = ParseRelatedExactFields(field, fields);
+            var result = await _relatedDocuments.GetRelatedExactAsync(
+                id,
+                tenantId,
+                itemId,
+                page,
+                pageSize,
+                fieldList,
+                value,
+                cancellationToken);
             if (result == null)
                 return NotFound();
 
@@ -534,7 +550,108 @@ public sealed class RepositoriesController : ControllerBase
         }
     }
 
-    /// <summary>Return the cached AI summary, or generate and cache it before consuming Document Summary credit.</summary>
+    /// <summary>
+    /// Saved related documents for this source item (latest replace-on-save set).
+    /// Call when opening an item to show previously linked related docs.
+    /// </summary>
+    [HttpGet("/api/repositories/{id:guid}/items/{itemId:guid}/related-saved")]
+    [ProducesResponseType(typeof(RepositorySavedRelatedDocumentsResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSavedRelatedDocuments(
+        Guid id,
+        Guid itemId,
+        CancellationToken cancellationToken = default)
+    {
+        var tenantId = RequireTenantId();
+        if (await EnsureRepositoryAccessAsync(id, tenantId, RepositorySecurityPermissions.View, cancellationToken) is { } deniedRepo)
+            return deniedRepo;
+
+        try
+        {
+            var source = await _items.GetItemAsync(id, tenantId, itemId, cancellationToken);
+            if (source == null)
+                return NotFound();
+            if (await EnsureItemAccessAsync(id, tenantId, RepositorySecurityFieldMap.FromDetail(source), RepositorySecurityPermissions.View, cancellationToken) is { } deniedItem)
+                return deniedItem;
+
+            var result = await _relatedDocuments.GetSavedRelatedAsync(id, tenantId, itemId, cancellationToken);
+            if (result == null)
+                return NotFound();
+
+            result = await ApplySavedRelatedDocumentsSecurityAsync(tenantId, result, cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Replace saved related documents for this source item with the selected matches.
+    /// Previous links for this ItemId + RepositoryId are removed; only the new set remains.
+    /// </summary>
+    [HttpPut("/api/repositories/{id:guid}/items/{itemId:guid}/related-saved")]
+    [ProducesResponseType(typeof(RepositorySavedRelatedDocumentsResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SaveRelatedDocuments(
+        Guid id,
+        Guid itemId,
+        [FromBody] SaveRepositoryRelatedDocumentsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var tenantId = RequireTenantId();
+        if (await EnsureRepositoryAccessAsync(id, tenantId, RepositorySecurityPermissions.View, cancellationToken) is { } deniedRepo)
+            return deniedRepo;
+
+        try
+        {
+            var source = await _items.GetItemAsync(id, tenantId, itemId, cancellationToken);
+            if (source == null)
+                return NotFound();
+            if (await EnsureItemAccessAsync(id, tenantId, RepositorySecurityFieldMap.FromDetail(source), RepositorySecurityPermissions.View, cancellationToken) is { } deniedItem)
+                return deniedItem;
+
+            var result = await _relatedDocuments.SaveRelatedAsync(
+                id,
+                tenantId,
+                itemId,
+                request,
+                GetUserId(),
+                cancellationToken);
+            if (result == null)
+                return NotFound();
+
+            result = await ApplySavedRelatedDocumentsSecurityAsync(tenantId, result, cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { error = ex.Message });
+        }
+    }
+
+    private static IReadOnlyList<string>? ParseRelatedExactFields(string? field, string? fields)
+    {
+        var list = new List<string>();
+        void Add(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return;
+            foreach (var part in raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (!string.IsNullOrWhiteSpace(part))
+                    list.Add(part);
+            }
+        }
+
+        Add(field);
+        Add(fields);
+        return list.Count == 0 ? null : list.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    /// <summary>
+    /// Return the cached AI summary, or generate and cache it via agents <c>/chat</c>
+    /// (<c>intent=summary</c>). Uses item <c>ocr_text</c> when present; otherwise sends blob <c>filepath</c>.
+    /// </summary>
     [HttpPost("/api/repositories/{repositoryId:guid}/items/{itemId:guid}/ai-summary")]
     public async Task<IActionResult> GetAiSummary(
         Guid repositoryId,
@@ -565,7 +682,7 @@ public sealed class RepositoriesController : ControllerBase
                                 "repository.items",
                                 0,
                                 $"AI summary for item {itemId}",
-                                _aiSummaryOptions.Credit)),
+                                RepositoryAiSummaryDefaults.Credit)),
                         cancellationToken);
                     creditConsumed = creditResult.Status == CreditUpdateStatus.Success;
                 }
@@ -1227,11 +1344,62 @@ public sealed class RepositoriesController : ControllerBase
         };
     }
 
+    private async Task<RepositorySavedRelatedDocumentsResultDto> ApplySavedRelatedDocumentsSecurityAsync(
+        Guid tenantId,
+        RepositorySavedRelatedDocumentsResultDto result,
+        CancellationToken cancellationToken)
+    {
+        if (IsCurrentUserAdmin() || result.Data.Count == 0)
+            return result;
+
+        var userId = GetUserId();
+        if (userId is null)
+            return result with { Data = Array.Empty<RepositorySavedRelatedDocumentDto>(), TotalCount = 0 };
+
+        var allowed = new List<RepositorySavedRelatedDocumentDto>();
+        foreach (var group in result.Data.GroupBy(x => x.RelatedRepositoryId))
+        {
+            var filtered = await _security.FilterAccessibleItemsAsync(
+                group.Key,
+                tenantId,
+                userId.Value,
+                isAdmin: false,
+                group.ToList(),
+                FromSavedRelatedDocument,
+                RepositorySecurityPermissions.View,
+                cancellationToken);
+            allowed.AddRange(filtered);
+        }
+
+        return result with
+        {
+            Data = allowed
+                .OrderByDescending(x => x.CreatedAtUtc)
+                .ToList(),
+            TotalCount = allowed.Count
+        };
+    }
+
     private static IReadOnlyDictionary<string, string?> FromRelatedDocument(RepositoryRelatedDocumentDto item) =>
         new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["ItemId"] = item.Id.ToString("D"),
             ["Id"] = item.Id.ToString("D"),
+            ["FileName"] = item.FileName,
+            ["FileType"] = item.FileType,
+            ["DocumentType"] = item.DocumentType,
+            ["Supplier"] = item.Supplier,
+            ["PoNumber"] = item.PoNumber,
+            ["PONumber"] = item.PoNumber,
+            ["InvoiceNumber"] = item.InvoiceNumber,
+            ["InvoiceNo"] = item.InvoiceNumber
+        };
+
+    private static IReadOnlyDictionary<string, string?> FromSavedRelatedDocument(RepositorySavedRelatedDocumentDto item) =>
+        new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ItemId"] = item.RelatedItemId.ToString("D"),
+            ["Id"] = item.RelatedItemId.ToString("D"),
             ["FileName"] = item.FileName,
             ["FileType"] = item.FileType,
             ["DocumentType"] = item.DocumentType,

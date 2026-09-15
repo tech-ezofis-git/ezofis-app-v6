@@ -13,11 +13,19 @@ public sealed class ConnectorController : ControllerBase
 {
     private readonly IConnectorService _connectorService;
     private readonly IConnectorOAuthService _oauthService;
+    private readonly ISapPurchaseOrderLookupService _sapPurchaseOrderLookup;
+    private readonly IHanaCloudPurchaseOrderService _hanaPurchaseOrders;
 
-    public ConnectorController(IConnectorService connectorService, IConnectorOAuthService oauthService)
+    public ConnectorController(
+        IConnectorService connectorService,
+        IConnectorOAuthService oauthService,
+        ISapPurchaseOrderLookupService sapPurchaseOrderLookup,
+        IHanaCloudPurchaseOrderService hanaPurchaseOrders)
     {
         _connectorService = connectorService;
         _oauthService = oauthService;
+        _sapPurchaseOrderLookup = sapPurchaseOrderLookup;
+        _hanaPurchaseOrders = hanaPurchaseOrders;
     }
 
     /// <summary>Create a new connector (v5 POST /api/connector).</summary>
@@ -128,12 +136,20 @@ public sealed class ConnectorController : ControllerBase
         [FromQuery] string? code,
         [FromQuery] string? state,
         [FromQuery] string? error,
+        [FromQuery] string? error_description,
         [FromQuery] string? realmId,
         CancellationToken cancellationToken)
     {
         try
         {
-            var redirectUrl = await _oauthService.CompleteCallbackAsync(code, state, error, realmId, cancellationToken);
+            // Prefer provider error detail when present (e.g. invalid_scope from XSUAA).
+            var effectiveError = string.IsNullOrWhiteSpace(error)
+                ? null
+                : string.IsNullOrWhiteSpace(error_description)
+                    ? error
+                    : $"{error}: {error_description}";
+
+            var redirectUrl = await _oauthService.CompleteCallbackAsync(code, state, effectiveError, realmId, cancellationToken);
             return Redirect(redirectUrl);
         }
         catch (InvalidOperationException ex)
@@ -450,6 +466,124 @@ public sealed class ConnectorController : ControllerBase
     }
 
     /// <summary>
+    /// Fetch purchase orders from the HANA Cloud database saved on this connector.
+    /// Omit poNumber to return every row in PURCHASE_ORDERS.
+    /// </summary>
+    [HttpGet("{id:guid}/hana/purchase-orders")]
+    [ProducesResponseType(typeof(ConnectorHanaPoLookupResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<IActionResult> ListHanaPurchaseOrders(
+        Guid id,
+        [FromQuery] string? poNumber,
+        CancellationToken cancellationToken = default) =>
+        FetchHanaPurchaseOrdersAsync(id, poNumber, cancellationToken);
+
+    /// <summary>
+    /// Same as GET /hana/purchase-orders. Body poNumber is optional.
+    /// </summary>
+    [HttpPost("{id:guid}/hana/purchase-orders")]
+    [ProducesResponseType(typeof(ConnectorHanaPoLookupResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<IActionResult> ListHanaPurchaseOrdersPost(
+        Guid id,
+        [FromBody] ConnectorHanaPoLookupRequest? request,
+        CancellationToken cancellationToken = default) =>
+        FetchHanaPurchaseOrdersAsync(id, request?.PoNumber, cancellationToken);
+
+    /// <summary>
+    /// Save one invoice match for a PO. The same PO can have many instance ids in PO_INVOICE_MATCH.
+    /// Call again with the same instanceId and a new status to update that row only.
+    /// </summary>
+    [HttpPost("{id:guid}/hana/purchase-orders/match")]
+    [ProducesResponseType(typeof(ConnectorHanaPoMatchResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MatchHanaPurchaseOrder(
+        Guid id,
+        [FromBody] ConnectorHanaPoMatchRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.PoNumber))
+            return BadRequest(new { error = "poNumber is required." });
+        if (string.IsNullOrWhiteSpace(request.InstanceId))
+            return BadRequest(new { error = "instanceId is required. One PO can match many instances." });
+
+        try
+        {
+            var result = await _hanaPurchaseOrders.MatchAsync(id, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    private async Task<IActionResult> FetchHanaPurchaseOrdersAsync(
+        Guid id,
+        string? poNumber,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _hanaPurchaseOrders.ListAsync(id, poNumber, cancellationToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Look up an SAP Purchase Order by PO number for AP Agent invoice matching.
+    /// Sample mode reads ConfigJson.samplePurchaseOrders (source=sap_sample).
+    /// </summary>
+    [HttpPost("{id:guid}/sap/purchase-orders/lookup")]
+    [ProducesResponseType(typeof(ConnectorSapPoLookupResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LookupSapPurchaseOrder(
+        Guid id,
+        [FromBody] ConnectorSapPoLookupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.PoNumber))
+                return BadRequest(new { error = "poNumber is required." });
+
+            var result = await _sapPurchaseOrderLookup.LookupAsync(id, request.PoNumber, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Missing connector vs wrong provider — 404 for missing, 400 for non-SAP.
+            if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                return NotFound(new { error = ex.Message });
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Look up a QuickBooks Purchase Order by PO Number (DocNumber) for AP Agent invoice matching.
     /// Returns header + line items + full QBO raw object.
     /// </summary>
@@ -466,6 +600,72 @@ public sealed class ConnectorController : ControllerBase
                 return BadRequest(new { error = "poNumber is required." });
 
             var result = await _oauthService.LookupQuickBooksPurchaseOrderAsync(id, request.PoNumber, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (NotSupportedException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Look up an SAP S/4 Purchase Order by PO number using the connected XSUAA connector token.
+    /// Requires connector ConfigJson.apiBaseUrl (or pass apiBaseUrl in body once to save it).
+    /// Distinct from sample/AP lookup on <c>sap/purchase-orders/lookup</c>.
+    /// </summary>
+    [HttpPost("{id:guid}/sap/purchase-orders/live-lookup")]
+    [ProducesResponseType(typeof(ConnectorSapXsuaaPoLookupResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> LookupSapPurchaseOrderLive(
+        Guid id,
+        [FromBody] ConnectorSapXsuaaPoLookupRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (request is null || string.IsNullOrWhiteSpace(request.PoNumber))
+                return BadRequest(new { error = "poNumber is required." });
+
+            var result = await _oauthService.LookupSapPurchaseOrderAsync(id, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (NotSupportedException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Fetch only 1–2 (max 10) SAP purchase orders for connectivity testing — uses OData $top, not full 69k dump.
+    /// </summary>
+    [HttpPost("{id:guid}/sap/purchase-orders/sample")]
+    [ProducesResponseType(typeof(ConnectorSapPoSampleResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SampleSapPurchaseOrders(
+        Guid id,
+        [FromBody] ConnectorSapPoSampleRequest? request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _oauthService.SampleSapPurchaseOrdersAsync(
+                id,
+                request ?? new ConnectorSapPoSampleRequest(Top: 2),
+                cancellationToken);
             return Ok(result);
         }
         catch (ArgumentException ex)

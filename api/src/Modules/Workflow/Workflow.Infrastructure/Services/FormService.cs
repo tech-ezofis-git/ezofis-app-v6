@@ -107,8 +107,11 @@ public sealed partial class FormService : IFormService
             if (fields.Count == 0)
                 return new FormCreateResult(FormCreateStatus.NotFound, formId, "Formfields not found");
 
-            await SyncFormControlsAsync(connection, formId, panels, secondaryPanels, fields, createdBy, now, cancellationToken);
-            await EnsureFormEntryTableAsync(connection, formId, fields, cancellationToken);
+            var fieldCols = BuildFieldColumnsFromLabels(fields);
+            var existingEzfbColumns = await TryLoadEzfbColumnsAsync(connection, formId, cancellationToken);
+            await SyncFormControlsAsync(
+                connection, formId, panels, secondaryPanels, fields, fieldCols, existingEzfbColumns, createdBy, now, cancellationToken);
+            await EnsureFormEntryTableAsync(connection, formId, fields, fieldCols, cancellationToken);
         }
 
         _logger.LogInformation("Created form {FormId} ({Name}), published={Published}", formId, name, isPublished);
@@ -196,6 +199,7 @@ public sealed partial class FormService : IFormService
                 "wFormId" varchar(64) NOT NULL,
                 "jsonId" varchar(200) NULL,
                 name varchar(1000) NULL,
+                "columnName" varchar(200) NULL,
                 type varchar(200) NULL,
                 "isMandatory" boolean NOT NULL DEFAULT false,
                 "parentId" integer NOT NULL DEFAULT 0,
@@ -213,6 +217,13 @@ public sealed partial class FormService : IFormService
             """;
         await using (var cmd = new NpgsqlCommand(controlSql, connection) { CommandTimeout = 120 })
             await cmd.ExecuteNonQueryAsync(cancellationToken);
+
+        // Existing tenant DBs created before columnName: add idempotently.
+        await using (var alterCmd = new NpgsqlCommand(
+            """ALTER TABLE dbo."wFormControl" ADD COLUMN IF NOT EXISTS "columnName" varchar(200) NULL;""",
+            connection)
+        { CommandTimeout = 120 })
+            await alterCmd.ExecuteNonQueryAsync(cancellationToken);
 
         const string securitySql = """
             CREATE TABLE IF NOT EXISTS dbo."wFormSecurity"(
@@ -347,10 +358,14 @@ public sealed partial class FormService : IFormService
         List<FormPanelDto> panels,
         List<FormPanelDto> secondaryPanels,
         List<FormFieldDto> topLevelFields,
+        IReadOnlyList<string> fieldColumnNames,
+        IReadOnlySet<string>? existingEzfbColumns,
         string createdBy,
         string now,
         CancellationToken cancellationToken)
     {
+        var columnByJsonId = BuildColumnNameByJsonId(topLevelFields, fieldColumnNames, existingEzfbColumns);
+
         await using (var delCmd = new NpgsqlCommand("""DELETE FROM dbo."wFormControl" WHERE "wFormId" = @FormId""", connection))
         {
             delCmd.Parameters.AddWithValue("@FormId", formId);
@@ -359,7 +374,9 @@ public sealed partial class FormService : IFormService
 
         foreach (var field in topLevelFields)
         {
-            var parentId = await InsertControlAsync(connection, formId, field, 0, createdBy, now, cancellationToken);
+            columnByJsonId.TryGetValue(field.Id!, out var columnName);
+            var parentId = await InsertControlAsync(
+                connection, formId, field, 0, columnName, createdBy, now, cancellationToken);
 
             if (string.Equals(field.Type, "TABLE", StringComparison.OrdinalIgnoreCase)
                 && field.Settings?.Specific?.TableColumns != null)
@@ -367,7 +384,7 @@ public sealed partial class FormService : IFormService
                 foreach (var col in field.Settings.Specific.TableColumns)
                 {
                     if (col.Type != null && !SkippedFieldTypes.Contains(col.Type) && !string.IsNullOrWhiteSpace(col.Id))
-                        await InsertControlAsync(connection, formId, col, parentId, createdBy, now, cancellationToken);
+                        await InsertControlAsync(connection, formId, col, parentId, null, createdBy, now, cancellationToken);
                 }
             }
             else if (string.Equals(field.Type, "POPUP", StringComparison.OrdinalIgnoreCase)
@@ -380,11 +397,35 @@ public sealed partial class FormService : IFormService
                     foreach (var popupField in secondaryPanels[panelIndex].Fields!)
                     {
                         if (popupField.Type != null && !SkippedFieldTypes.Contains(popupField.Type) && !string.IsNullOrWhiteSpace(popupField.Id))
-                            await InsertControlAsync(connection, formId, popupField, parentId, createdBy, now, cancellationToken);
+                            await InsertControlAsync(connection, formId, popupField, parentId, null, createdBy, now, cancellationToken);
                     }
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Maps top-level field jsonId → physical ezfb column. When the ezfb table already exists,
+    /// only assigns names that are present on the table (no ALTER). When creating a new table,
+    /// <paramref name="existingEzfbColumns"/> is null and all computed names are stored.
+    /// </summary>
+    private static Dictionary<string, string?> BuildColumnNameByJsonId(
+        List<FormFieldDto> topLevelFields,
+        IReadOnlyList<string> fieldColumnNames,
+        IReadOnlySet<string>? existingEzfbColumns)
+    {
+        var map = new Dictionary<string, string?>(StringComparer.Ordinal);
+        for (var i = 0; i < topLevelFields.Count && i < fieldColumnNames.Count; i++)
+        {
+            var jsonId = topLevelFields[i].Id!;
+            var candidate = fieldColumnNames[i];
+            if (existingEzfbColumns == null || existingEzfbColumns.Contains(candidate))
+                map[jsonId] = candidate;
+            else
+                map[jsonId] = null;
+        }
+
+        return map;
     }
 
     private static async Task<int> InsertControlAsync(
@@ -392,6 +433,7 @@ public sealed partial class FormService : IFormService
         string formId,
         FormFieldDto field,
         int parentId,
+        string? columnName,
         string createdBy,
         string now,
         CancellationToken cancellationToken)
@@ -402,8 +444,8 @@ public sealed partial class FormService : IFormService
             || string.Equals(fieldRule, "REQUIRED", StringComparison.Ordinal);
 
         const string sql = """
-            INSERT INTO dbo."wFormControl"("wFormId", "jsonId", name, type, "isMandatory", "parentId", "createdAt", "createdBy", "isDeleted", "validationJson")
-            VALUES(@FormId, @JsonId, @Name, @Type, @Mandatory, @ParentId, @CreatedAt, @CreatedBy, false, @ValidationJson)
+            INSERT INTO dbo."wFormControl"("wFormId", "jsonId", name, "columnName", type, "isMandatory", "parentId", "createdAt", "createdBy", "isDeleted", "validationJson")
+            VALUES(@FormId, @JsonId, @Name, @ColumnName, @Type, @Mandatory, @ParentId, @CreatedAt, @CreatedBy, false, @ValidationJson)
             RETURNING id;
             """;
 
@@ -411,6 +453,7 @@ public sealed partial class FormService : IFormService
         cmd.Parameters.AddWithValue("@FormId", formId);
         cmd.Parameters.AddWithValue("@JsonId", field.Id!);
         cmd.Parameters.AddWithValue("@Name", (object?)field.Label ?? field.Id!);
+        cmd.Parameters.AddWithValue("@ColumnName", (object?)columnName ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@Type", (object?)field.Type ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@Mandatory", isMandatory);
         cmd.Parameters.AddWithValue("@ParentId", parentId);
@@ -453,26 +496,45 @@ public sealed partial class FormService : IFormService
     }
 
     /// <summary>
+    /// System/reserved physical columns on dbo.ezfb_*_items (see below) -- a NEW form's
+    /// Label-derived column must never collide with one of these, so a colliding label gets a
+    /// numeric suffix the same way a duplicate label does (see <see cref="BuildFieldColumnsFromLabels"/>).
+    /// </summary>
+    private static readonly string[] ReservedEntryColumns =
+        { "item_id", "created_at", "modified_at", "created_by", "modified_by", "is_deleted", "today_task", "is_marked" };
+
+    /// <summary>
     /// dbo.ezfb_{id}_items -- trigger-based history (Decision 2) replaces SYSTEM_VERSIONING,
     /// same pattern already proven for workflow.WorkflowInstances (02_CreateTenantDatabase.sql)
     /// and repository items (StaticRepositoryProvisioner.cs). Column set is entirely dynamic
-    /// (one column per form field, sanitized via EzfbColumnNaming), so the trigger function's
-    /// explicit column list is built from the live field list, same approach as
-    /// StaticRepositoryProvisioner.BuildItemsTriggerFunctionScript.
+    /// (one column per form field), so the trigger function's explicit column list is built from
+    /// the live field list, same approach as StaticRepositoryProvisioner.BuildItemsTriggerFunctionScript.
+    ///
+    /// NEW forms (this table doesn't exist yet): column = sanitized field Label, e.g.
+    /// "PO Number" -&gt; "PO_Number", with collision suffixes (Address, Address_2).
+    /// wFormControl.jsonId stays the designer field id; wFormControl.columnName stores the
+    /// exact physical column. OLD forms already have their table (this method returns immediately)
+    /// and keep their existing jsonId-named columns forever; no ALTER/migration from here.
     /// </summary>
     private static async Task EnsureFormEntryTableAsync(
         NpgsqlConnection connection,
         string formId,
         List<FormFieldDto> fields,
+        IReadOnlyList<string> fieldCols,
         CancellationToken cancellationToken)
     {
         var tableSuffix = FormIdNaming.GetEzfbTableSuffix(formId);
         var tableName = $"ezfb_{tableSuffix}_items";
         var historyTable = $"ezfb_{tableSuffix}_history";
         if (await TableExistsAsync(connection, tableName, cancellationToken))
-            return;
+        {
+            var droppedEmptyLegacy = await EzfbEntryIdMigrationService.UpgradeLegacyIntegerTableAsync(
+                connection, tableName, cancellationToken);
+            if (!droppedEmptyLegacy)
+                return;
+        }
 
-        var fieldCols = fields.Select(f => EscapeSqlIdentifier(f.Id!)).ToList();
+        var columns = fieldCols.Count > 0 ? fieldCols : BuildFieldColumnsFromLabels(fields);
 
         // Fixed/system columns are snake_case unquoted (system-controlled, matching the
         // dynamic-DDL convention used everywhere else in this migration -- WorkflowTableCreator.cs,
@@ -486,8 +548,8 @@ public sealed partial class FormService : IFormService
         // string elsewhere (WorkflowEzfbFormDataLoader.cs).
         var sb = new StringBuilder();
         sb.Append($"CREATE TABLE dbo.\"{tableName}\" (");
-        sb.Append("item_id integer GENERATED ALWAYS AS IDENTITY NOT NULL PRIMARY KEY,");
-        foreach (var col in fieldCols)
+        sb.Append("item_id uuid NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),");
+        foreach (var col in columns)
             sb.Append($"\"{col}\" text NULL,");
         sb.Append("created_at varchar(50) NULL, modified_at varchar(50) NULL,");
         sb.Append("created_by varchar(50) NOT NULL DEFAULT '0', modified_by varchar(50) NOT NULL DEFAULT '0',");
@@ -496,8 +558,7 @@ public sealed partial class FormService : IFormService
         await using (var createCmd = new NpgsqlCommand(sb.ToString(), connection) { CommandTimeout = 120 })
             await createCmd.ExecuteNonQueryAsync(cancellationToken);
 
-        var reservedCols = new[] { "item_id", "created_at", "modified_at", "created_by", "modified_by", "is_deleted", "today_task", "is_marked" };
-        var allColsForTrigger = reservedCols.Concat(fieldCols.Select(c => $"\"{c}\"")).ToList();
+        var allColsForTrigger = ReservedEntryColumns.Concat(columns.Select(c => $"\"{c}\"")).ToList();
         var colList = string.Join(", ", allColsForTrigger);
         var oldColList = string.Join(", ", allColsForTrigger.Select(c => $"OLD.{c}"));
 
@@ -537,6 +598,39 @@ public sealed partial class FormService : IFormService
     private static string EscapeSqlIdentifier(string name) =>
         EzfbColumnNaming.ToSqlBracketIdentifier(name);
 
+    /// <summary>
+    /// One ezfb column per field, named from the field's Label (falling back to its jsonId when
+    /// the label sanitizes to nothing, e.g. a label that is pure punctuation). Guards against two
+    /// kinds of collision, both resolved the same way -- append "_2", "_3", ... until free:
+    ///   - two fields whose labels sanitize to the same column ("PO Number" / "PO  Number")
+    ///   - a label that happens to sanitize to a reserved system column name (e.g. "Created At")
+    /// </summary>
+    private static List<string> BuildFieldColumnsFromLabels(List<FormFieldDto> fields)
+    {
+        var reserved = new HashSet<string>(ReservedEntryColumns, StringComparer.OrdinalIgnoreCase);
+        var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var columns = new List<string>(fields.Count);
+
+        foreach (var field in fields)
+        {
+            var label = !string.IsNullOrWhiteSpace(field.Label) ? field.Label! : field.Id!;
+            if (!EzfbColumnNaming.TryToColumnNameFromLabel(label, out var baseColumn) || string.IsNullOrWhiteSpace(baseColumn))
+                baseColumn = EscapeSqlIdentifier(field.Id!);
+
+            var candidate = baseColumn;
+            var suffix = 2;
+            while (reserved.Contains(candidate) || !used.Add(candidate))
+            {
+                candidate = $"{baseColumn}_{suffix}";
+                suffix++;
+            }
+
+            columns.Add(candidate);
+        }
+
+        return columns;
+    }
+
     /// <summary>Always allocates a new dashed GUID for dbo.wForm.id (designer uid stays in wForm.uid only).</summary>
     private static async Task<string> ResolveNewFormIdAsync(
         NpgsqlConnection connection,
@@ -563,5 +657,32 @@ public sealed partial class FormService : IFormService
         await using var cmd = new NpgsqlCommand(sql, connection);
         cmd.Parameters.AddWithValue("@Id", formId);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync(cancellationToken)) > 0;
+    }
+
+    /// <summary>
+    /// Returns existing ezfb_*_items column names when the table already exists; otherwise null
+    /// (caller treats null as "new table — store all computed columnNames").
+    /// </summary>
+    private static async Task<IReadOnlySet<string>?> TryLoadEzfbColumnsAsync(
+        NpgsqlConnection connection,
+        string formId,
+        CancellationToken cancellationToken)
+    {
+        var tableName = $"ezfb_{FormIdNaming.GetEzfbTableSuffix(formId)}_items";
+        if (!await TableExistsAsync(connection, tableName, cancellationToken))
+            return null;
+
+        const string sql = """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'dbo' AND table_name = @TableName
+            """;
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await using var cmd = new NpgsqlCommand(sql, connection);
+        cmd.Parameters.AddWithValue("@TableName", tableName);
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            set.Add(reader.GetString(0));
+        return set;
     }
 }
