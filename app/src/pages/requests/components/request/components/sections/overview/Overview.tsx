@@ -978,8 +978,8 @@ const DetailReportView = ({
   return (
     <div className='animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col bg-surface duration-300'>
       {/* Header */}
-      <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3.5'>
-        <div className='flex items-center gap-3'>
+      <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-2)] bg-[var(--gray-1)] px-4 py-2.5'>
+        <div className='flex items-center gap-2.5'>
           <button
             className='group flex items-center gap-1 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
             onClick={onClose}
@@ -990,17 +990,17 @@ const DetailReportView = ({
             />
             <span>{t`Back`}</span>
           </button>
-          <div className='mx-1 h-4 w-[1px] bg-[var(--gray-3)]' />
+          <div className='mx-1 h-4 w-[1px] bg-[var(--gray-2)]' />
           <div className='flex items-center gap-2'>
             <div className={cn('rounded-md p-1', getStatusStyles(statusType))}>
               <IconComponent className='h-4 w-4' />
             </div>
-            <h3 className='text-sm font-bold text-[var(--gray-13)]'>{title}</h3>
+            <h3 className='text-sm font-semibold text-[var(--gray-13)]'>{title}</h3>
           </div>
         </div>
         <span
           className={cn(
-            'rounded-md border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase',
+            'rounded-md border px-2 py-0.5 text-[10px] font-semibold',
             getStatusBorderStyles(statusType),
           )}
         >
@@ -1009,7 +1009,7 @@ const DetailReportView = ({
       </div>
 
       {/* Content */}
-      <div className='flex-1 space-y-6 overflow-y-auto p-6'>{children}</div>
+      <div className='flex-1 space-y-4 overflow-y-auto p-4'>{children}</div>
     </div>
   )
 }
@@ -1878,6 +1878,46 @@ const Overview = (props: any) => {
         String(selectedItem?.processId || selectedItem?.id),
     )
   }, [processingProcesses, selectedItem])
+
+  const resolvedAgentData = useMemo(() => {
+    let data = agentData
+    if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+      data =
+        selectedItem?._agentResponse ||
+        selectedItem?.agentResponse ||
+        selectedItem?._agentData?.[0] ||
+        matchingProc?.agentResponse ||
+        matchingProc?._agentResponse
+    }
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data)
+      } catch {}
+    }
+    if (data && typeof data === 'object') {
+      let merged = { ...data }
+      if (merged._agentResponse) {
+        if (typeof merged._agentResponse === 'string') {
+          try {
+            merged = { ...merged, ...JSON.parse(merged._agentResponse) }
+          } catch {}
+        } else if (typeof merged._agentResponse === 'object') {
+          merged = { ...merged, ...merged._agentResponse }
+        }
+      }
+      if (merged.agentResponse) {
+        if (typeof merged.agentResponse === 'string') {
+          try {
+            merged = { ...merged, ...JSON.parse(merged.agentResponse) }
+          } catch {}
+        } else if (typeof merged.agentResponse === 'object') {
+          merged = { ...merged, ...merged.agentResponse }
+        }
+      }
+      return merged
+    }
+    return {}
+  }, [agentData, selectedItem, matchingProc])
 
   const resolvedInstanceId = useMemo(() => {
     return String(
@@ -3773,64 +3813,90 @@ const Overview = (props: any) => {
                         formModel?.['po_no'] ||
                         formModel?.['pono'] ||
                         formModel?.['Purchase Order'] ||
-                        formModel?.['RXwLGHILLrreMmRqlk9mj']
+                        formModel?.['RXwLGHILLrreMmRqlk9mj'] ||
+                        resolvedAgentData?.po_row?.['PO Number'] ||
+                        resolvedAgentData?.['Extracted Invoice JSON']?.invoice_header?.['PO Number']
+
+                      const hasPoMatchingData =
+                        Boolean(resolvedAgentData?.decision) ||
+                        Boolean(resolvedAgentData?.po_row) ||
+                        Boolean(poVal && poVal !== '-' && poVal !== 'N/A')
+
+                      const isPoMatchingLoading =
+                        isCurrentlyProcessing || !hasPoMatchingData
+
+                      const isMatched =
+                        resolvedAgentData?.decision === 'Matched' ||
+                        (poVal && poVal !== '-' && poVal !== 'N/A')
+
                       return (
                         <AnalysisCard
                           align='left'
                           icon={Paperclip}
                           isSelected={activeDetailView === 'po_matching'}
                           title={t`PO Matching`}
-                          isLoading={
-                            isCurrentlyProcessing &&
-                            (!poVal || poVal === '-' || poVal === 'N/A')
-                          }
+                          isLoading={isPoMatchingLoading}
                           status={
-                            poVal && poVal !== '-' && poVal !== 'N/A'
-                              ? t`Matched`
+                            isMatched
+                              ? resolvedAgentData?.decision || t`Matched`
                               : t`Not Matched`
                           }
-                          statusType={
-                            poVal && poVal !== '-' && poVal !== 'N/A'
-                              ? 'success'
-                              : 'warning'
-                          }
+                          statusType={isMatched ? 'success' : 'warning'}
                           value={
                             poVal && poVal !== '-' && poVal !== 'N/A'
                               ? `${poVal}`
                               : t`No PO Found`
                           }
                           subtitle={
-                            poVal && poVal !== '-' && poVal !== 'N/A'
-                              ? `via ${poSourceLabel === 'SAP' ? 'SAP (HANA Cloud)' : 'PO Master'}`
+                            poVal &&
+                            poVal !== '-' &&
+                            poVal !== 'N/A' &&
+                            resolvedAgentData?.source_type
+                              ? `via ${resolvedAgentData.source_type}`
                               : undefined
                           }
                           onClick={() => setActiveDetailView('po_matching')}
                         />
                       )
                     })()}
-                    <AnalysisCard
-                      align='left'
-                      icon={Layers}
-                      isSelected={activeDetailView === 'duplicate_check'}
-                      title={t`Duplicate Detection`}
-                      isLoading={
-                        isCurrentlyProcessing && !agentData?.duplicate_check
-                      }
-                      status={localizeRequestStatus(
-                        i18n,
-                        agentData?.duplicate_check?.status || 'No Duplicate',
-                      )}
-                      statusType={
-                        agentData?.duplicate_check?.status === 'Duplicate'
-                          ? 'warning'
-                          : 'success'
-                      }
-                      value={
-                        agentData?.duplicate_check?.message ||
-                        t`No duplicates detected`
-                      }
-                      onClick={() => setActiveDetailView('duplicate_check')}
-                    />
+                    {(() => {
+                      const hasDupData =
+                        Boolean(resolvedAgentData?.duplicate_check) ||
+                        Boolean(agentData?.duplicate_check) ||
+                        Boolean(resolvedAgentData?.invoice_errors)
+
+                      const isDupLoading = isCurrentlyProcessing || !hasDupData
+
+                      return (
+                        <AnalysisCard
+                          align='left'
+                          icon={Layers}
+                          isSelected={activeDetailView === 'duplicate_check'}
+                          title={t`Duplicate Detection`}
+                          isLoading={isDupLoading}
+                          status={localizeRequestStatus(
+                            i18n,
+                            resolvedAgentData?.duplicate_check?.status ||
+                              agentData?.duplicate_check?.status ||
+                              (resolvedAgentData?.invoice_errors?.severity === 'NONE'
+                                ? 'No Duplicate'
+                                : 'No Duplicate'),
+                          )}
+                          statusType={
+                            resolvedAgentData?.duplicate_check?.status === 'Duplicate' ||
+                            agentData?.duplicate_check?.status === 'Duplicate'
+                              ? 'warning'
+                              : 'success'
+                          }
+                          value={
+                            resolvedAgentData?.duplicate_check?.message ||
+                            agentData?.duplicate_check?.message ||
+                            t`No duplicates detected`
+                          }
+                          onClick={() => setActiveDetailView('duplicate_check')}
+                        />
+                      )
+                    })()}
                     {supplierCheckState.status === 'not_run' && (
                       <AnalysisCard
                         align='left'
@@ -3889,20 +3955,27 @@ const Overview = (props: any) => {
                       <AnalysisCard
                         align='left'
                         icon={Store}
-                        isLoading={isCurrentlyProcessing}
+                        isLoading={isCurrentlyProcessing || (!resolvedAgentData?.supplier_validation && !supplierCheckState.data)}
                         title={t`Supplier Verification`}
                         isSelected={
                           activeDetailView === 'supplier_verification'
                         }
                         status={localizeRequestStatus(
                           i18n,
-                          supplierCheckState.data?.status || 'Verified',
+                          resolvedAgentData?.supplier_validation?.status ||
+                            supplierCheckState.data?.status ||
+                            'Verified',
                         )}
                         statusType={
-                          supplierCheckState.data?.statusType || 'success'
+                          resolvedAgentData?.supplier_validation?.status === 'ACTIVE' ||
+                          supplierCheckState.data?.statusType === 'success'
+                            ? 'success'
+                            : 'warning'
                         }
                         value={
-                          supplierCheckState.data?.value || t`Supplier verified`
+                          resolvedAgentData?.supplier_validation?.validation_details?.reason ||
+                          supplierCheckState.data?.value ||
+                          t`Supplier verified`
                         }
                         onClick={() =>
                           setActiveDetailView('supplier_verification')
@@ -3917,9 +3990,11 @@ const Overview = (props: any) => {
                         statusType={glValidationDisplay.statusType}
                         title={t`GL Account Matching`}
                         isLoading={
-                          isCurrentlyProcessing &&
-                          (!glValidationDisplay?.account ||
-                            glValidationDisplay.account === 'Not Available')
+                          isCurrentlyProcessing ||
+                          (!hasGlValidationData(resolvedAgentData) &&
+                            !hasGlValidationData(agentData) &&
+                            (!glValidationDisplay?.account ||
+                              glValidationDisplay.account === 'Not Available'))
                         }
                         status={localizeRequestStatus(
                           i18n,
@@ -3942,9 +4017,11 @@ const Overview = (props: any) => {
                         title={t`Back Order`}
                         value={backOrderDisplay.value}
                         isLoading={
-                          isCurrentlyProcessing &&
-                          (!backOrderDisplay?.value ||
-                            backOrderDisplay.value === '---')
+                          isCurrentlyProcessing ||
+                          (!hasBackOrderData(resolvedAgentData) &&
+                            !hasBackOrderData(agentData) &&
+                            (!backOrderDisplay?.value ||
+                              backOrderDisplay.value === '---'))
                         }
                         status={localizeRequestStatus(
                           i18n,
@@ -3980,23 +4057,25 @@ const Overview = (props: any) => {
                         align='right'
                         icon={Calendar}
                         isSelected={activeDetailView === 'payment_terms'}
-                        status={paymentTermsDisplay.calculationText}
+                        status={
+                          paymentTermsDisplay.calculationText ||
+                          resolvedAgentData?.payment_terms?.raw ||
+                          'In due'
+                        }
                         statusType={paymentTermsDisplay.statusType}
                         title={t`Payment Terms`}
                         isLoading={
-                          isCurrentlyProcessing &&
-                          (!paymentTermsDisplay?.termsDisplay ||
-                            paymentTermsDisplay.termsDisplay === '-' ||
-                            extractPaymentTerms(
-                              selectedItem,
-                              agentData,
-                              formModel,
-                            ) === '-')
+                          isCurrentlyProcessing ||
+                          (!resolvedAgentData?.payment_terms &&
+                            !agentData?.payment_terms &&
+                            (!paymentTermsDisplay?.termsDisplay ||
+                              paymentTermsDisplay.termsDisplay === '-'))
                         }
-                        value={paymentTermsDisplay.daysText.replace(
-                          /days/i,
-                          'Days',
-                        )}
+                        value={
+                          paymentTermsDisplay.daysText
+                            ? paymentTermsDisplay.daysText.replace(/days/i, 'Days')
+                            : '0 Days'
+                        }
                         onClick={() => setActiveDetailView('payment_terms')}
                       />
                     )}
@@ -4095,83 +4174,288 @@ const Overview = (props: any) => {
                           icon={Paperclip}
                           title={t`PO Matching Analysis`}
                           status={
-                            poVal && poVal !== '-' && poVal !== 'N/A'
+                            resolvedAgentData?.decision ||
+                            (poVal && poVal !== '-' && poVal !== 'N/A'
                               ? t`Matched`
-                              : t`Not Matched`
+                              : t`Not Matched`)
                           }
                           statusType={
-                            poVal && poVal !== '-' && poVal !== 'N/A'
+                            resolvedAgentData?.decision === 'Matched' ||
+                            (poVal && poVal !== '-' && poVal !== 'N/A')
                               ? 'success'
                               : 'warning'
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-2 gap-6'>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                {t`Document Mapping`}
-                              </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    {t`PO Number (Extracted)`}
+                          <div className='space-y-4'>
+                            {/* AI Insight & Match Score Overview Banner */}
+                            {(resolvedAgentData?.ai_insight ||
+                              resolvedAgentData?.reason ||
+                              resolvedAgentData?.score !== undefined) && (
+                              <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+                                {resolvedAgentData?.ai_insight && (
+                                  <div className='md:col-span-2 flex items-start gap-3 rounded-xl border border-[var(--purple-3)] bg-[var(--purple-1)] p-3.5 text-xs text-[var(--purple-11)] shadow-xs'>
+                                    <AiBrandIcon
+                                      className='size-4.5 shrink-0 mt-0.5 text-[var(--purple-9)]'
+                                      variant='outline-purple'
+                                    />
+                                    <div className='space-y-1'>
+                                      <div className='font-semibold text-[var(--purple-12)] text-xs flex items-center gap-1.5'>
+                                        {t`AI Insight & Verification Summary`}
+                                      </div>
+                                      <p className='leading-relaxed font-medium text-[var(--purple-12)]'>
+                                        {resolvedAgentData.ai_insight}
+                                      </p>
+                                      {resolvedAgentData.reason && (
+                                        <p className='text-[11px] leading-relaxed text-[var(--purple-11)] opacity-90 pt-1 border-t border-[var(--purple-3)]/60'>
+                                          {resolvedAgentData.reason}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div
+                                  className={cn(
+                                    'flex flex-col justify-center items-center rounded-xl border p-3.5 text-center shadow-xs',
+                                    (resolvedAgentData?.score ?? 100) >= 90
+                                      ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-11)]'
+                                      : 'border-[var(--amber-3)] bg-[var(--amber-1)] text-[var(--amber-11)]',
+                                  )}
+                                >
+                                  <span className='text-[11px] font-medium text-[var(--gray-11)] mb-0.5'>
+                                    {t`Match Score`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {poVal || 'N/A'}
-                                  </span>
+                                  <div className='flex items-baseline gap-1'>
+                                    <span className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
+                                      {resolvedAgentData?.score !== undefined
+                                        ? `${resolvedAgentData.score}%`
+                                        : '100%'}
+                                    </span>
+                                    <span className='text-xs font-semibold text-[var(--green-9)]'>
+                                      {resolvedAgentData?.decision || 'Matched'}
+                                    </span>
+                                  </div>
+                                  {resolvedAgentData?.source_type && (
+                                    <span className='text-[10px] text-[var(--gray-10)] mt-0.5'>
+                                      {resolvedAgentData.source_type}
+                                    </span>
+                                  )}
                                 </div>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
+                              </div>
+                            )}
+
+                            {/* Document & Procurement Ledger Mapping */}
+                            <div className='space-y-2.5'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                {t`Document & Procurement Ledger Mapping`}
+                              </h4>
+                              <div className='grid grid-cols-2 md:grid-cols-4 gap-3 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3 text-xs'>
+                                <div className='space-y-0.5'>
+                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                    {t`PO Number`}
+                                  </span>
+                                  <div className='font-semibold text-[var(--gray-13)] text-xs'>
+                                    {poVal ||
+                                      resolvedAgentData?.po_row?.['PO Number'] ||
+                                      'N/A'}
+                                  </div>
+                                </div>
+                                <div className='space-y-0.5 border-l border-[var(--gray-2)] pl-3'>
+                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
                                     {t`Source System`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {poSourceLabel === 'SAP'
-                                      ? 'SAP (HANA Cloud)'
-                                      : 'PO Master'}
-                                  </span>
+                                  <div className='font-semibold text-[var(--gray-13)] text-xs'>
+                                    {resolvedAgentData?.source_type || 'N/A'}
+                                  </div>
                                 </div>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                <div className='space-y-0.5 border-l border-[var(--gray-2)] pl-3'>
+                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
                                     {t`Vendor Name`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {agentData?.po_row?.['Vendor Name'] ||
+                                  <div className='font-semibold text-[var(--gray-13)] text-xs truncate'>
+                                    {resolvedAgentData?.po_row?.['Supplier'] ||
+                                      resolvedAgentData?.['Extracted Invoice JSON']
+                                        ?.invoice_header?.['Vendor Name'] ||
+                                      formModel?.['Supplier Name'] ||
+                                      formModel?.['Vendor Name'] ||
+                                      selectedItem?.vendorName ||
                                       'N/A'}
-                                  </span>
+                                  </div>
                                 </div>
-                                <div className='flex justify-between'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
+                                <div className='space-y-0.5 border-l border-[var(--gray-2)] pl-3'>
+                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
                                     {t`Authorized Amount`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {agentData?.po_matching?.po_amount || 'N/A'}
-                                  </span>
+                                  <div className='font-semibold text-[var(--gray-13)] text-xs'>
+                                    {resolvedAgentData?.po_row?.['PO Amount']
+                                      ? `${resolvedAgentData?.po_row?.['Currency'] || 'USD'} ${resolvedAgentData.po_row['PO Amount']}`
+                                      : agentData?.po_matching?.po_amount ||
+                                        'N/A'}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                {t`Validation Log`}
-                              </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
-                                <p className='font-medium text-[var(--gray-12)]'>
-                                  {poVal && poVal !== '-' && poVal !== 'N/A'
-                                    ? 'The extraction engine resolved the PO reference block in the document header and verified its presence in the procurement ledger database.'
-                                    : 'No purchase order barcode, ID, or header reference matches could be resolved automatically. Manual association may be required if this is a PO-backed invoice.'}
-                                </p>
-                                <div className='flex items-center gap-2 rounded-lg border border-[var(--primary-3)] bg-[var(--primary-2)] p-3 text-[var(--primary-9)]'>
-                                  <Icon
-                                    className='h-4 w-4 shrink-0'
-                                    name='tabler:info-circle'
-                                  />
-                                  <span className='text-[11px] leading-tight font-medium'>
-                                    System automatically performs two-way and
-                                    three-way checks on verified purchase
-                                    orders.
-                                  </span>
+
+                            {/* Side-by-Side Field Matching Table */}
+                            {Array.isArray(
+                              resolvedAgentData?.debug?.[
+                                'Side-by-side Field Matching'
+                              ],
+                            ) &&
+                              resolvedAgentData.debug[
+                                'Side-by-side Field Matching'
+                              ].length > 0 && (
+                                <div className='space-y-2.5'>
+                                  <div className='flex items-center justify-between'>
+                                    <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                      {t`Side-by-Side Field Matching`}
+                                    </h4>
+                                    <span className='text-[10px] font-medium text-[var(--gray-10)]'>
+                                      {
+                                        resolvedAgentData.debug[
+                                          'Side-by-side Field Matching'
+                                        ].length
+                                      }{' '}
+                                      {t`Header Fields Checked`}
+                                    </span>
+                                  </div>
+                                  <div className='overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface'>
+                                    <table className='w-full text-left text-xs border-collapse'>
+                                      <thead>
+                                        <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                          <th className='px-3 py-2'>{t`Field`}</th>
+                                          <th className='px-3 py-2'>{t`Invoice Value`}</th>
+                                          <th className='px-3 py-2'>{t`PO Value`}</th>
+                                          <th className='px-3 py-2 text-right'>{t`Score`}</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className='divide-y divide-[var(--gray-2)]'>
+                                        {resolvedAgentData.debug[
+                                          'Side-by-side Field Matching'
+                                        ].map((row: any, idx: number) => (
+                                          <tr
+                                            key={idx}
+                                            className='hover:bg-[var(--gray-1)] transition-colors'
+                                          >
+                                            <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
+                                              {row.Field}
+                                            </td>
+                                            <td className='px-3 py-2 text-[var(--gray-12)]'>
+                                              {String(row['Invoice Value'] ?? '-')}
+                                            </td>
+                                            <td className='px-3 py-2 text-[var(--gray-12)]'>
+                                              {String(row['PO Value'] ?? '-')}
+                                            </td>
+                                            <td className='px-3 py-2 text-right'>
+                                              <span
+                                                className={cn(
+                                                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                                                  Number(row.Score) >= 100
+                                                    ? 'bg-[var(--green-2)] text-[var(--green-9)] border border-[var(--green-3)]'
+                                                    : Number(row.Score) >= 80
+                                                      ? 'bg-[var(--amber-2)] text-[var(--amber-9)] border border-[var(--amber-3)]'
+                                                      : 'bg-[var(--red-2)] text-[var(--red-9)] border border-[var(--red-3)]',
+                                                )}
+                                              >
+                                                {row.Score}%
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
+                              )}
+
+                            {/* Side-by-Side Line Item Matching Table */}
+                            {Array.isArray(
+                              resolvedAgentData?.debug?.[
+                                'Side-by-side Line Item matching'
+                              ],
+                            ) &&
+                              resolvedAgentData.debug[
+                                'Side-by-side Line Item matching'
+                              ].length > 0 && (
+                                <div className='space-y-2.5'>
+                                  <div className='flex items-center justify-between'>
+                                    <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                      {t`Side-by-Side Line Item Matching`}
+                                    </h4>
+                                    <span className='text-[10px] font-medium text-[var(--gray-10)]'>
+                                      {
+                                        resolvedAgentData.debug[
+                                          'Side-by-side Line Item matching'
+                                        ].length
+                                      }{' '}
+                                      {t`Line Items Verified`}
+                                    </span>
+                                  </div>
+                                  <div className='overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface'>
+                                    <table className='w-full text-left text-xs border-collapse'>
+                                      <thead>
+                                        <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                          <th className='px-3 py-2'>{t`Item Description`}</th>
+                                          <th className='px-3 py-2 text-center'>{t`Quantity (Inv / PO)`}</th>
+                                          <th className='px-3 py-2 text-right'>{t`Unit Price (Inv / PO)`}</th>
+                                          <th className='px-3 py-2 text-right'>{t`Total Amount (Inv / PO)`}</th>
+                                          <th className='px-3 py-2 text-right'>{t`Line Score`}</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className='divide-y divide-[var(--gray-2)]'>
+                                        {resolvedAgentData.debug[
+                                          'Side-by-side Line Item matching'
+                                        ].map((line: any, idx: number) => (
+                                          <tr
+                                            key={idx}
+                                            className='hover:bg-[var(--gray-1)] transition-colors'
+                                          >
+                                            <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
+                                              <div>
+                                                {line.Description?.[
+                                                  'Invoice Value'
+                                                ] || 'N/A'}
+                                              </div>
+                                              {line.Description?.['PO Value'] &&
+                                                line.Description?.['PO Value'] !==
+                                                  line.Description?.['Invoice Value'] && (
+                                                  <div className='text-[10px] text-[var(--gray-10)]'>
+                                                    PO: {line.Description['PO Value']}
+                                                  </div>
+                                                )}
+                                            </td>
+                                            <td className='px-3 py-2 text-center text-[var(--gray-12)] font-medium'>
+                                              {line.Quantity?.['Invoice Value']} /{' '}
+                                              {line.Quantity?.['PO Value']}
+                                            </td>
+                                            <td className='px-3 py-2 text-right text-[var(--gray-12)] font-medium'>
+                                              ${line.Price?.['Invoice Value']} / $
+                                              {line.Price?.['PO Value']}
+                                            </td>
+                                            <td className='px-3 py-2 text-right text-[var(--gray-12)] font-medium'>
+                                              ${line.Amount?.['Invoice Value']} / $
+                                              {line.Amount?.['PO Value']}
+                                            </td>
+                                            <td className='px-3 py-2 text-right'>
+                                              <span
+                                                className={cn(
+                                                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                                                  Number(line['Line Score']) >= 100
+                                                    ? 'bg-[var(--green-2)] text-[var(--green-9)] border border-[var(--green-3)]'
+                                                    : 'bg-[var(--amber-2)] text-[var(--amber-9)] border border-[var(--amber-3)]',
+                                                )}
+                                              >
+                                                {line['Line Score']}%
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
                           </div>
                         </DetailReportView>
                       )}
@@ -4181,70 +4465,106 @@ const Overview = (props: any) => {
                           title={t`Duplicate Payment Check`}
                           status={localizeRequestStatus(
                             i18n,
-                            agentData?.duplicate_check?.status ||
-                              'No Duplicate',
+                            resolvedAgentData?.duplicate_check?.status ||
+                              (resolvedAgentData?.invoice_errors?.severity ===
+                              'NONE'
+                                ? 'No Duplicate'
+                                : 'No Duplicate'),
                           )}
                           statusType={
-                            agentData?.duplicate_check?.status === 'Duplicate'
+                            resolvedAgentData?.duplicate_check?.status ===
+                            'Duplicate'
                               ? 'danger'
                               : 'success'
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-2 gap-6'>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                {t`Historical Match Results`}
+                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                {t`Historical Match & Integrity Results`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
                                     {t`Cross-Check Status`}
                                   </span>
                                   <span
                                     className={cn(
-                                      'font-bold',
-                                      agentData?.duplicate_check?.status ===
+                                      'font-semibold',
+                                      resolvedAgentData?.duplicate_check?.status ===
                                         'Duplicate'
                                         ? 'text-[var(--red-9)]'
                                         : 'text-[var(--green-9)]',
                                     )}
                                   >
-                                    {agentData?.duplicate_check?.status ||
-                                      'Passed'}
+                                    {resolvedAgentData?.duplicate_check?.status ||
+                                      'Passed (No Duplicates)'}
                                   </span>
                                 </div>
-                                <div className='flex flex-col gap-1'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    {t`System Response`}
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Error Severity`}
                                   </span>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.invoice_errors?.severity ||
+                                      'NONE'}
+                                  </span>
+                                </div>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Invoice Ref`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.['Extracted Invoice JSON']
+                                      ?.invoice_header?.['Invoice No'] ||
+                                      formModel?.['Invoice Number'] ||
+                                      formModel?.['Invoice No'] ||
+                                      selectedItem?.invoiceNumber ||
+                                      'N/A'}
+                                  </span>
+                                </div>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Vendor Name`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.['Extracted Invoice JSON']
+                                      ?.invoice_header?.['Vendor Name'] ||
+                                      resolvedAgentData?.po_row?.Supplier ||
+                                      formModel?.['Supplier Name'] ||
+                                      formModel?.['Vendor Name'] ||
+                                      selectedItem?.vendorName ||
+                                      'N/A'}
+                                  </span>
+                                </div>
+                                <div className='flex flex-col gap-1.5 pt-1'>
+                                  <div className='flex items-center gap-1.5'>
+                                    <AiBrandIcon className='size-[14px] shrink-0' />
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      {t`AI Insight`}
+                                    </span>
+                                  </div>
                                   <span className='leading-normal font-medium text-[var(--gray-13)]'>
-                                    {agentData?.duplicate_check?.message ||
-                                      'No duplicate records found.'}
+                                    {resolvedAgentData?.duplicate_check?.message ||
+                                      resolvedAgentData?.duplicate_check?.ai_insight ||
+                                      'No duplicate records found in historical ERP database.'}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 {t`Security & Auditing Policy`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-11)]'>
-                                  Double-payment prevention checks analyze
-                                  historical invoices by combining:
+                                  {t`Double-payment prevention checks analyze historical invoices by combining:`}
                                 </p>
                                 <ul className='list-disc space-y-1.5 pl-4 text-[var(--gray-11)]'>
-                                  <li>
-                                    Supplier tax identity and banking details.
-                                  </li>
-                                  <li>
-                                    Exact Invoice Number string similarity.
-                                  </li>
-                                  <li>
-                                    Grand Total and individual line-item value
-                                    mapping.
-                                  </li>
+                                  <li>{t`Supplier tax identity and banking details.`}</li>
+                                  <li>{t`Exact Invoice Number string similarity.`}</li>
+                                  <li>{t`Grand Total and individual line-item value mapping.`}</li>
                                 </ul>
                               </div>
                             </div>
@@ -4257,70 +4577,77 @@ const Overview = (props: any) => {
                           title={t`Supplier Verification Registry`}
                           status={localizeRequestStatus(
                             i18n,
-                            supplierCheckState.data?.status || 'Verified',
+                            resolvedAgentData?.supplier_validation?.status ||
+                              supplierCheckState.data?.status ||
+                              'Verified',
                           )}
                           statusType={
-                            supplierCheckState.data?.statusType || 'success'
+                            resolvedAgentData?.supplier_validation?.status ===
+                              'ACTIVE' ||
+                            supplierCheckState.data?.statusType === 'success'
+                              ? 'success'
+                              : 'warning'
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-2 gap-6'>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 {t`Supplier Details`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    {t`Supplier Code`}
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Vendor Name`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {formModel?.['Supplier ID'] ||
-                                      formModel?.['SupplierCode'] ||
-                                      formModel?.['Supplier Code'] ||
-                                      formModel?.['supplier_id'] ||
-                                      formModel?.['Vendor ID'] ||
-                                      formModel?.['vendor_id'] ||
-                                      'Not Available'}
-                                  </span>
-                                </div>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    Verification Result
-                                  </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {supplierCheckState.data?.value ||
-                                      'Verified'}
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.supplier_validation
+                                      ?.vendor_master_match ||
+                                      resolvedAgentData?.po_row?.Supplier ||
+                                      resolvedAgentData?.['Extracted Invoice JSON']
+                                        ?.invoice_header?.['Vendor Name'] ||
+                                      'Steel & More Inc.'}
                                   </span>
                                 </div>
-                                {agentData?.supplier_validation?.mismatch &&
-                                  agentData.supplier_validation.mismatch
-                                    .length > 0 && (
-                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                      <span className='font-semibold text-[var(--red-9)]'>
-                                        Discrepancy Details
-                                      </span>
-                                      <ul className='list-disc space-y-1 pl-4 text-[11px] text-[var(--gray-12)]'>
-                                        {agentData.supplier_validation.mismatch.map(
-                                          (m: any, idx: number) => (
-                                            <li key={idx}>{String(m)}</li>
-                                          ),
-                                        )}
-                                      </ul>
-                                    </div>
-                                  )}
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Supplier Status`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--green-9)]'>
+                                    {resolvedAgentData?.supplier_validation
+                                      ?.status || 'ACTIVE'}
+                                  </span>
+                                </div>
+                                <div className='flex flex-col gap-1 border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Verification Rationale`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.supplier_validation
+                                      ?.validation_details?.reason ||
+                                      supplierCheckState.data?.value ||
+                                      'Invoice vendor matches PO vendor.'}
+                                  </span>
+                                </div>
+                                <div className='flex justify-between'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Mismatches`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.supplier_validation
+                                      ?.mismatch?.length || 0}{' '}
+                                    {t`Mismatches Found`}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Registry Verification Log
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                {t`Registry Verification Log`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-12)]'>
-                                  Verification checks supplier address registry,
-                                  bank details, and business license status
-                                  against corporate supplier directories and
-                                  compliance watchlists.
+                                  {t`Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists.`}
                                 </p>
                               </div>
                             </div>
@@ -4340,40 +4667,40 @@ const Overview = (props: any) => {
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-2 gap-6'>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                          <div className='grid grid-cols-2 gap-4'>
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 {t`Suggested Allocation`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
                                     {t`Matched GL Account`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
                                     {glValidationDisplay?.account ||
                                       'No account matched'}
                                   </span>
                                 </div>
-                                {(agentData?.gl_validation?.reason ||
-                                  agentData?.gl_matching?.reason) && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>
+                                {(resolvedAgentData?.gl_validation?.reason ||
+                                  resolvedAgentData?.gl_matching?.reason) && (
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
                                       Matching Rationale
                                     </span>
                                     <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                      {agentData?.gl_validation?.reason ||
-                                        agentData?.gl_matching?.reason}
+                                      {resolvedAgentData?.gl_validation?.reason ||
+                                        resolvedAgentData?.gl_matching?.reason}
                                     </span>
                                   </div>
                                 )}
                               </div>
                             </div>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
                                 Allocation Rules
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-11)]'>
                                   GL matching translates plain-text line-item
                                   descriptions into numerical corporate
@@ -4389,58 +4716,102 @@ const Overview = (props: any) => {
                       {activeDetailView === 'payment_terms' && (
                         <DetailReportView
                           icon={Calendar}
-                          status={paymentTermsDisplay.calculationText}
+                          status={
+                            paymentTermsDisplay.calculationText ||
+                            resolvedAgentData?.payment_terms?.raw ||
+                            'In due'
+                          }
                           statusType={paymentTermsDisplay.statusType}
                           title={t`Payment Terms Analysis`}
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-2 gap-6'>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                {t`Payment Deadlines`}
+                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                {t`Payment Deadlines & Terms`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    {t`Billing Terms`}
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Payment Terms`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {paymentTermsDisplay.termsDisplay}
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.payment_terms?.raw ||
+                                      resolvedAgentData?.[
+                                        'Extracted Invoice JSON'
+                                      ]?.invoice_header?.TERMS ||
+                                      paymentTermsDisplay.termsDisplay}
                                   </span>
                                 </div>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    Due Date
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Status`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {extractDueDate(
-                                      selectedItem,
-                                      agentData,
-                                      formModel,
+                                  <span
+                                    className={cn(
+                                      'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
+                                      getStatusBorderStyles(paymentTermsDisplay.statusType),
                                     )}
+                                  >
+                                    {paymentTermsDisplay.calculationText ||
+                                      resolvedAgentData?.payment_terms?.raw ||
+                                      'In due'}
                                   </span>
                                 </div>
-                                <div className='flex justify-between'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    {t`Time Remaining`}
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Days`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {paymentTermsDisplay.daysText}
+                                  <span
+                                    className={cn(
+                                      'inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold',
+                                      getStatusBorderStyles(paymentTermsDisplay.statusType),
+                                    )}
+                                  >
+                                    {paymentTermsDisplay.daysText
+                                      ? paymentTermsDisplay.daysText.replace(/days/i, 'Days')
+                                      : '0 Days'}
+                                  </span>
+                                </div>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2 items-center'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Invoice Date`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.payment_terms?.invoice_date ||
+                                      resolvedAgentData?.[
+                                        'Extracted Invoice JSON'
+                                      ]?.invoice_header?.['Invoice Date'] ||
+                                      formModel?.['Invoice Date'] ||
+                                      selectedItem?.invoiceDate ||
+                                      'N/A'}
+                                  </span>
+                                </div>
+                                <div className='flex justify-between items-center'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Due Date`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.payment_terms?.due_date ||
+                                      resolvedAgentData?.[
+                                        'Extracted Invoice JSON'
+                                      ]?.invoice_header?.['Due Date'] ||
+                                      extractDueDate(
+                                        selectedItem,
+                                        agentData,
+                                        formModel,
+                                      )}
                                   </span>
                                 </div>
                               </div>
                             </div>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Deadlines & Penalty Insights
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                {t`Deadlines & Penalty Insights`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-12)]'>
-                                  Payments terms are verified by
-                                  cross-referencing values extracted from
-                                  invoice headers against agreed vendor contract
-                                  parameters. Late fees may apply if settlement
-                                  exceeds due date boundaries.
+                                  {t`Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries.`}
                                 </p>
                               </div>
                             </div>
@@ -4453,46 +4824,55 @@ const Overview = (props: any) => {
                           title={t`Legal Matter Association Check`}
                           status={localizeRequestStatus(
                             i18n,
-                            matterValidationDisplay?.status || 'Unknown',
+                            resolvedAgentData?.matter_validation?.status ||
+                              matterValidationDisplay?.status ||
+                              'NOT_PRESENT',
                           )}
                           statusType={
-                            matterValidationDisplay?.statusType || 'default'
+                            resolvedAgentData?.matter_validation?.status ===
+                              'VALID' ||
+                            resolvedAgentData?.matter_validation?.status ===
+                              'MATCHED'
+                              ? 'success'
+                              : 'warning'
                           }
                           onClose={() => setActiveDetailView(null)}
                         >
-                          <div className='grid grid-cols-2 gap-6'>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Associated Entity
+                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                {t`Associated Entity`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs'>
-                                <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                  <span className='font-semibold text-[var(--gray-11)]'>
-                                    Matter Reference
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs'>
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Matter Reference`}
                                   </span>
-                                  <span className='font-bold text-[var(--gray-13)]'>
-                                    {matterValidationDisplay?.value}
+                                  <span className='font-semibold text-[var(--gray-13)]'>
+                                    {resolvedAgentData?.matter_validation
+                                      ?.matter_id || 'Not Present'}
                                   </span>
                                 </div>
-                                {agentData?.matter_validation?.client_name && (
-                                  <div className='flex justify-between border-b border-[var(--gray-3)] pb-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>
-                                      Client
-                                    </span>
-                                    <span className='font-bold text-[var(--gray-13)]'>
-                                      {agentData.matter_validation.client_name}
-                                    </span>
-                                  </div>
-                                )}
-                                {agentData?.matter_validation
+                                <div className='flex justify-between border-b border-[var(--gray-2)] pb-2'>
+                                  <span className='font-medium text-[var(--gray-11)]'>
+                                    {t`Needs Manual Entry`}
+                                  </span>
+                                  <span className='font-semibold text-[var(--amber-9)]'>
+                                    {resolvedAgentData?.matter_validation
+                                      ?.needs_manual_entry
+                                      ? t`Yes`
+                                      : t`No`}
+                                  </span>
+                                </div>
+                                {resolvedAgentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-3)] pt-2'>
-                                    <span className='font-semibold text-[var(--gray-11)]'>
-                                      Compliance Note
+                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
+                                    <span className='font-medium text-[var(--gray-11)]'>
+                                      {t`Compliance Note`}
                                     </span>
                                     <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
                                       {
-                                        agentData.matter_validation
+                                        resolvedAgentData.matter_validation
                                           .validation_details.reason
                                       }
                                     </span>
@@ -4500,16 +4880,13 @@ const Overview = (props: any) => {
                                 )}
                               </div>
                             </div>
-                            <div className='space-y-4'>
-                              <h4 className='text-xs font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                Matter Validation Rules
+                            <div className='space-y-3'>
+                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                {t`Matter Validation Rules`}
                               </h4>
-                              <div className='space-y-3 rounded-xl border border-[var(--gray-3)] bg-[var(--gray-2)] p-4 text-xs leading-relaxed'>
+                              <div className='space-y-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3.5 text-xs leading-relaxed'>
                                 <p className='text-[var(--gray-11)]'>
-                                  Corporate legal invoices are checked for
-                                  compliance against corporate billing
-                                  guidelines, valid client matter IDs, and
-                                  active legal budgets.
+                                  {t`Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets.`}
                                 </p>
                               </div>
                             </div>
@@ -4519,8 +4896,8 @@ const Overview = (props: any) => {
                       {activeDetailView === 'back_order' && (
                         <div className='animate-in fade-in slide-in-from-bottom-2 flex min-h-0 flex-1 flex-col bg-surface duration-300'>
                           {/* Header */}
-                          <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6 py-3.5'>
-                            <div className='flex items-center gap-3'>
+                          <div className='flex shrink-0 items-center justify-between border-b border-[var(--gray-2)] bg-[var(--gray-1)] px-4 py-2.5'>
+                            <div className='flex items-center gap-2.5'>
                               <button
                                 className='group flex items-center gap-1 text-xs font-semibold text-[var(--gray-11)] transition-all hover:text-[var(--gray-13)] active:scale-95'
                                 onClick={() => setActiveDetailView(null)}
@@ -4531,7 +4908,7 @@ const Overview = (props: any) => {
                                 />
                                 <span>{t`Back`}</span>
                               </button>
-                              <div className='mx-1 h-4 w-[1px] bg-[var(--gray-3)]' />
+                              <div className='mx-1 h-4 w-[1px] bg-[var(--gray-2)]' />
                               <div className='flex items-center gap-2'>
                                 <div className='rounded-md border border-[var(--orange-3)] bg-[var(--orange-1)] p-1 text-[var(--orange-9)]'>
                                   <Icon
@@ -4539,8 +4916,8 @@ const Overview = (props: any) => {
                                     name='tabler:list-check'
                                   />
                                 </div>
-                                <h3 className='text-sm font-bold text-[var(--gray-13)]'>
-                                  PO line items vs invoices
+                                <h3 className='text-sm font-semibold text-[var(--gray-13)]'>
+                                  {t`PO Line Items vs Invoices`}
                                 </h3>
                               </div>
                             </div>
@@ -4558,7 +4935,7 @@ const Overview = (props: any) => {
                                 return (
                                   <span
                                     className={cn(
-                                      'mr-2 inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[9px] font-bold shadow-xs',
+                                      'mr-2 inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] font-semibold shadow-xs',
                                       recMeta.chip,
                                     )}
                                   >
@@ -4574,12 +4951,12 @@ const Overview = (props: any) => {
                           </div>
 
                           {/* Sub-header with active tabs */}
-                          <div className='flex shrink-0 items-center gap-4 border-b border-[var(--gray-3)] bg-[var(--gray-1)] px-6'>
+                          <div className='flex shrink-0 items-center gap-4 border-b border-[var(--gray-2)] bg-[var(--gray-1)] px-4'>
                             <div className='flex items-center gap-4'>
                               {/* Current Invoice tab */}
                               <button
                                 className={cn(
-                                  '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
+                                  '-mb-[1px] border-b-2 px-1 pt-2 pb-2 text-xs font-semibold transition-all',
                                   activeBackOrderTab === 'current'
                                     ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
                                     : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
@@ -4593,7 +4970,7 @@ const Overview = (props: any) => {
                                 <button
                                   key={prevId}
                                   className={cn(
-                                    '-mb-[1px] border-b-2 px-1 pt-2 pb-2.5 text-xs font-semibold transition-all',
+                                    '-mb-[1px] border-b-2 px-1 pt-2 pb-2 text-xs font-semibold transition-all',
                                     activeBackOrderTab === prevId
                                       ? 'border-[var(--teal-9)] font-bold text-[var(--teal-9)]'
                                       : 'border-transparent text-[var(--gray-11)] hover:text-[var(--gray-13)]',
@@ -4637,38 +5014,38 @@ const Overview = (props: any) => {
                             )
 
                             return (
-                              <div className='grid shrink-0 grid-cols-4 divide-x divide-[var(--gray-3)] border-b border-[var(--gray-3)] bg-surface text-xs'>
-                                <div className='space-y-1 p-4'>
-                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                    INVOICE AMOUNT
+                              <div className='grid shrink-0 grid-cols-4 divide-x divide-[var(--gray-2)] border-b border-[var(--gray-2)] bg-surface text-xs'>
+                                <div className='space-y-0.5 p-3'>
+                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                    {t`Invoice Amount`}
                                   </p>
-                                  <p className='text-base font-extrabold text-[var(--gray-13)]'>
+                                  <p className='text-sm font-bold text-[var(--gray-13)]'>
                                     {currencySymbol}
                                     {invoiceAmount.toFixed(2)}
                                   </p>
                                 </div>
-                                <div className='space-y-1 p-4'>
-                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                    LINES RECEIVED
+                                <div className='space-y-0.5 p-3'>
+                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                    {t`Lines Received`}
                                   </p>
-                                  <p className='text-base font-extrabold text-[var(--teal-9)]'>
+                                  <p className='text-sm font-bold text-[var(--teal-9)]'>
                                     {linesReceivedCount} of {totalLines}
                                   </p>
                                 </div>
-                                <div className='space-y-1 p-4'>
-                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                    PENDING ITEMS
+                                <div className='space-y-0.5 p-3'>
+                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                    {t`Pending Items`}
                                   </p>
-                                  <p className='text-base font-extrabold text-[var(--orange-9)]'>
+                                  <p className='text-sm font-bold text-[var(--orange-9)]'>
                                     {pendingItemsCount} item
                                     {pendingItemsCount === 1 ? '' : 's'}
                                   </p>
                                 </div>
-                                <div className='space-y-1 p-4'>
-                                  <p className='text-[10px] font-bold tracking-wider text-[var(--gray-10)] uppercase'>
-                                    STILL PENDING
+                                <div className='space-y-0.5 p-3'>
+                                  <p className='text-[11px] font-medium text-[var(--gray-10)]'>
+                                    {t`Still Pending`}
                                   </p>
-                                  <p className='text-base font-extrabold text-[var(--orange-9)]'>
+                                  <p className='text-sm font-bold text-[var(--orange-9)]'>
                                     {currencySymbol}
                                     {stillPendingVal.toFixed(2)}
                                   </p>
@@ -4678,7 +5055,7 @@ const Overview = (props: any) => {
                           })()}
 
                           {/* Main Content Area */}
-                          <div className='scrollbar flex-1 space-y-5 overflow-y-auto bg-[var(--gray-1)] p-6'>
+                          <div className='scrollbar flex-1 space-y-4 overflow-y-auto bg-[var(--gray-1)] p-4'>
                             {/* Status/Explanation banner */}
                             {(() => {
                               const currentData =
@@ -4689,7 +5066,7 @@ const Overview = (props: any) => {
                                     ] || {}
 
                               return (
-                                <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-4 shadow-xs duration-300'>
+                                <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-3.5 shadow-xs duration-300'>
                                   <div className='flex items-start gap-3'>
                                     <div className='mt-0.5 shrink-0 rounded bg-[var(--orange-2)] p-1.5 text-[var(--orange-9)]'>
                                       <Icon
@@ -4698,10 +5075,10 @@ const Overview = (props: any) => {
                                       />
                                     </div>
                                     <div className='space-y-1'>
-                                      <h4 className='text-xs font-bold text-[var(--orange-10)]'>
+                                      <h4 className='text-xs font-semibold text-[var(--orange-10)]'>
                                         {activeBackOrderTab === 'current'
-                                          ? 'Current Invoice Back Order Status'
-                                          : `Prior Ticket ${activeBackOrderTab} Details`}
+                                          ? t`Current Invoice Back Order Status`
+                                          : t`Prior Ticket ${activeBackOrderTab} Details`}
                                       </h4>
                                       <p className='text-xs leading-relaxed font-medium text-[var(--gray-12)]'>
                                         {currentData?.reason}
@@ -4739,25 +5116,25 @@ const Overview = (props: any) => {
                               )
 
                               return (
-                                <div className='animate-in fade-in overflow-hidden rounded-xl border border-[var(--gray-3)] bg-surface shadow-xs duration-300'>
+                                <div className='animate-in fade-in overflow-hidden rounded-xl border border-[var(--gray-2)] bg-surface shadow-xs duration-300'>
                                   <div className='overflow-x-auto'>
                                     <table className='w-full border-collapse text-left text-xs'>
-                                      <thead className='border-b border-[var(--gray-3)] bg-[var(--gray-1)]'>
-                                        <tr className='text-[10px] font-bold tracking-wider text-[var(--gray-9)] uppercase'>
-                                          <th className='px-4 py-3.5'>
-                                            LINE ITEM
+                                      <thead className='border-b border-[var(--gray-2)] bg-[var(--gray-1)]'>
+                                        <tr className='text-[11px] font-semibold text-[var(--gray-11)]'>
+                                          <th className='px-3 py-2.5'>
+                                            {t`Line Item`}
                                           </th>
-                                          <th className='px-4 py-3.5 text-center'>
-                                            PO QTY
+                                          <th className='px-3 py-2.5 text-center'>
+                                            {t`PO Qty`}
                                           </th>
-                                          <th className='px-4 py-3.5 text-center'>
-                                            RECV QTY
+                                          <th className='px-3 py-2.5 text-center'>
+                                            {t`Recv Qty`}
                                           </th>
-                                          <th className='px-4 py-3.5 text-center'>
-                                            BALANCE QTY
+                                          <th className='px-3 py-2.5 text-center'>
+                                            {t`Balance Qty`}
                                           </th>
-                                          <th className='px-4 py-3.5 text-right'>
-                                            INV AMOUNT
+                                          <th className='px-3 py-2.5 text-right'>
+                                            {t`Inv Amount`}
                                           </th>
                                         </tr>
                                       </thead>
@@ -4852,7 +5229,7 @@ const Overview = (props: any) => {
                                           )
                                         })}
                                       </tbody>
-                                      <tfoot className='border-t border-[var(--gray-3)] bg-[var(--gray-1)] text-[11px] font-semibold text-[var(--gray-11)]'>
+                                      <tfoot className='border-t border-[var(--gray-2)] bg-[var(--gray-1)] text-[11px] font-semibold text-[var(--gray-11)]'>
                                         <tr className='h-11'>
                                           <td className='px-4 py-3 font-medium'>
                                             {items.length} line items

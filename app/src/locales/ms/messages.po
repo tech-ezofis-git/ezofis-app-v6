@@ -873,8 +873,13 @@ msgid "AI generated"
 msgstr "Dijana oleh AI"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1593
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4545
 msgid "AI Insight"
 msgstr "AI Insight"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4204
+msgid "AI Insight & Verification Summary"
+msgstr ""
 
 #: src/pages/requests/components/request/components/Header.tsx:951
 msgid "AI Insights"
@@ -1094,7 +1099,7 @@ msgstr "ANALITIK"
 msgid "Analyzing Columns..."
 msgstr "Menganalisis Lajur..."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:609
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:620
 msgid "Analyzing context & keywords"
 msgstr "Menganalisis konteks & kata kunci"
 
@@ -1169,7 +1174,7 @@ msgstr "ejen AP"
 msgid "AP Agent"
 msgstr "Agen AP"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:587
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:598
 msgid "AP Agent Decision"
 msgstr "Keputusan Agen AP"
 
@@ -1357,6 +1362,10 @@ msgstr "Pengguna & Kumpulan Ditugaskan"
 msgid "Assigned Users & Groups ({0})"
 msgstr "Pengguna & Kumpulan Ditugaskan ({0})"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4844
+msgid "Associated Entity"
+msgstr ""
+
 #: src/layouts/auth/components/PasswordRequirements.tsx:13
 msgid "At least 1 lowercase (a-z)"
 msgstr "Sekurang-kurangnya 1 huruf kecil (a-z)"
@@ -1407,7 +1416,7 @@ msgstr "Lampiran"
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4033
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4123
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "Lampiran"
@@ -1445,7 +1454,7 @@ msgstr "Pengesahan diperlukan. Sila log masuk semula."
 msgid "Authenticator App"
 msgstr "Apl Pengesah"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4288
 msgid "Authorized Amount"
 msgstr "Jumlah Dibenarkan"
 
@@ -1555,7 +1564,7 @@ msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsof
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:991
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4521
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4909
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1575,7 +1584,7 @@ msgstr "Penyepaduan storan Azure Blob untuk organisasi yang menggunakan Microsof
 msgid "Back"
 msgstr "Kembali"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4017
 msgid "Back Order"
 msgstr "Pesanan Belakang"
 
@@ -1635,6 +1644,10 @@ msgstr "Kembali ke aliran kerja"
 msgid "Backorder"
 msgstr "Pesanan belakang"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5134
+msgid "Balance Qty"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:18
 msgid "Barcode"
 msgstr "Kod Bar"
@@ -1653,8 +1666,8 @@ msgid "Between"
 msgstr "antara"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4394
-msgid "Billing Terms"
-msgstr "Syarat Pengebilan"
+#~ msgid "Billing Terms"
+#~ msgstr "Syarat Pengebilan"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:428
 msgid "Blob container mapping"
@@ -2280,7 +2293,7 @@ msgstr "Akan Datang"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4038
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4128
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "Komen"
@@ -2337,6 +2350,10 @@ msgstr "Selesai dalam 0.9s"
 #: src/pages/folders/components/AiSummaryView.tsx:350
 msgid "Compliance & Risk Assessment"
 msgstr "Penilaian Pematuhan & Risiko"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4871
+msgid "Compliance Note"
+msgstr ""
 
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:50
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:56
@@ -2634,6 +2651,10 @@ msgstr "Salin URL ini dan bukanya dalam tab lain untuk menggunakan portal."
 msgid "Copy URL"
 msgstr "Salin URL"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4889
+msgid "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2067
 msgid "Cost Center"
 msgstr "Pusat Kos"
@@ -2884,11 +2905,11 @@ msgstr "Kritikal"
 #~ msgid "Critical Exceptions"
 #~ msgstr "Pengecualian Kritikal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4191
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4490
 msgid "Cross-Check Status"
 msgstr "Status Semak Silang"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:503
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:514
 msgid "Cross-referencing records"
 msgstr "Rekod rujukan silang"
 
@@ -2911,6 +2932,10 @@ msgstr "mata wang"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3574
 msgid "Currency Key"
 msgstr "Kunci Mata Wang"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5080
+msgid "Current Invoice Back Order Status"
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:2061
 #: src/pages/settings/components/RolesPermissions.tsx:2063
@@ -3037,7 +3062,7 @@ msgstr "Destinasi Data"
 msgid "Data extracted"
 msgstr "Data diekstrak"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:437
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:448
 msgid "Data extraction complete"
 msgstr "Pengekstrakan data selesai"
 
@@ -3086,9 +3111,17 @@ msgstr "Hari {trialDay} daripada {trialLengthDays}"
 msgid "days"
 msgstr "hari"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4763
+msgid "Days"
+msgstr ""
+
 #: src/pages/settings/components/license/LicenseTrialBanner.tsx:73
 msgid "days remaining in evaluation"
 msgstr "hari yang tinggal dalam penilaian"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4810
+msgid "Deadlines & Penalty Insights"
+msgstr ""
 
 #: src/pages/settings/components/credits/Credits.tsx:78
 msgid "December"
@@ -3436,6 +3469,10 @@ msgstr "Ejen doc"
 msgid "Document"
 msgstr "Dokumen"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4251
+msgid "Document & Procurement Ledger Mapping"
+msgstr ""
+
 #: src/pages/requests/components/request/components/generic-overview/TaskRequirements.tsx:100
 msgid "Document attached"
 msgstr "Dokumen dilampirkan"
@@ -3470,8 +3507,8 @@ msgid "Document ingested via email"
 msgstr "Dokumen ditelan melalui e-mel"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4101
-msgid "Document Mapping"
-msgstr "Pemetaan Dokumen"
+#~ msgid "Document Mapping"
+#~ msgstr "Pemetaan Dokumen"
 
 #: src/pages/requests/components/Table.tsx:60
 msgid "Document Number"
@@ -3484,7 +3521,7 @@ msgstr "Pemilik dokumen dimaklumkan terlebih dahulu."
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:171
 #: src/pages/folders/components/Upload/Upload.tsx:1952
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:276
 msgid "Document Preview"
 msgstr "Pratonton Dokumen"
 
@@ -3605,6 +3642,10 @@ msgstr "Selesai Menyesuaikan"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1799
 msgid "Double payments flagged by ledger algorithms"
 msgstr "Pembayaran dua kali dibenderakan oleh algoritma lejar"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4562
+msgid "Double-payment prevention checks analyze historical invoices by combining:"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2712
 #: src/pages/folders/components/DocumentDetailsView.tsx:2717
@@ -3765,6 +3806,7 @@ msgstr "tarikh akhir"
 #: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4792
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Due Date"
 msgstr "Tarikh Akhir"
@@ -3795,7 +3837,7 @@ msgstr ""
 msgid "Duplicate"
 msgstr "Pendua"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3804
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3875
 msgid "Duplicate Detection"
 msgstr "Pengesanan Pendua"
 
@@ -3803,7 +3845,7 @@ msgstr "Pengesanan Pendua"
 msgid "Duplicate invoice watch"
 msgstr "Pemantauan invois pendua"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4170
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4465
 msgid "Duplicate Payment Check"
 msgstr "Semakan Pembayaran Pendua"
 
@@ -4278,6 +4320,10 @@ msgstr "Data ERP akan digunakan untuk mengesahkan invois masuk untuk dipadankan 
 msgid "ERP Settings"
 msgstr "Tetapan ERP"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4507
+msgid "Error Severity"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:778
 msgid "Error starting workflow"
 msgstr "Ralat memulakan aliran kerja"
@@ -4310,6 +4356,10 @@ msgstr "Ditingkatkan{assignee}"
 #: src/pages/settings/components/AuditMonitoring.tsx:318
 msgid "Event Title"
 msgstr "Tajuk Acara"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4566
+msgid "Exact Invoice Number string similarity."
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:779
 msgid "Example"
@@ -4413,12 +4463,12 @@ msgid "EXTRACTED"
 msgstr "DIEKSTRAK"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4023
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4113
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "Data Diekstrak"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:417
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:428
 msgid "Extracting data"
 msgstr "Mengekstrak data"
 
@@ -4730,6 +4780,7 @@ msgid "FI / MM (Financial Accounting & Materials)"
 msgstr "FI / MM (Perakaunan Kewangan & Bahan)"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:102
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4327
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:906
 msgid "Field"
 msgstr "Padang"
@@ -4845,7 +4896,7 @@ msgstr "Saiz Fail"
 msgid "File Upload"
 msgstr "Muat Naik Fail"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:361
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:372
 msgid "File uploaded successfully"
 msgstr "Fail berjaya dimuat naik"
 
@@ -4876,7 +4927,7 @@ msgstr "Fail mestilah di bawah 5MB"
 msgid "Filters"
 msgstr "Penapis"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:608
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:619
 msgid "Final decision determined"
 msgstr "Keputusan akhir ditentukan"
 
@@ -5258,11 +5309,11 @@ msgstr "Berikan nama pada laporan anda, pilih sumber data dan konfigurasikan keb
 msgid "GL & Category"
 msgstr "GL & Kategori"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3991
 msgid "GL Account Matching"
 msgstr "Padanan Akaun GL"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4322
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4660
 msgid "GL Account Matching Report"
 msgstr "Laporan Padanan Akaun GL"
 
@@ -5280,7 +5331,7 @@ msgstr "Pergi Balik"
 msgid "Go to {0}"
 msgstr "Pergi ke {0}"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:634
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:645
 msgid "Go to Inbox"
 msgstr "Pergi ke Peti Masuk"
 
@@ -5317,6 +5368,10 @@ msgstr "Google Workspace"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:410
 msgid "Google Workspace sign-in"
 msgstr "Log masuk Google Workspace"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4567
+msgid "Grand Total and individual line-item value mapping."
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:444
 msgid "Granted Permissions"
@@ -5416,7 +5471,7 @@ msgstr "Kumpulan berjaya dikemas kini"
 msgid "Groups"
 msgstr "Kumpulan"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:555
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:566
 msgid "Guidelines validated"
 msgstr "Garis panduan disahkan"
 
@@ -5432,6 +5487,10 @@ msgstr "Invois Tulisan Tangan"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1477
 msgid "Header Fields"
 msgstr "Medan Pengepala"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4320
+msgid "Header Fields Checked"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1046
 #~ msgid "Header Mapping"
@@ -5542,13 +5601,17 @@ msgstr "Nilai Tinggi (≥$10k)"
 msgid "Highest Credit Consumption"
 msgstr "Penggunaan Kredit Tertinggi"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4485
+msgid "Historical Match & Integrity Results"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4186
-msgid "Historical Match Results"
-msgstr "Keputusan Perlawanan Sejarah"
+#~ msgid "Historical Match Results"
+#~ msgstr "Keputusan Perlawanan Sejarah"
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4043
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
 msgid "History"
 msgstr "Sejarah"
 
@@ -5761,7 +5824,7 @@ msgstr "Ringkasan pengingesan"
 msgid "Ingestion timeline"
 msgstr "Garis masa pengingesan"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:386
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:397
 msgid "Initializing upload..."
 msgstr "Memulakan muat naik..."
 
@@ -5830,6 +5893,10 @@ msgstr "Pratonton Papan Pemuka Interaktif"
 msgid "Interactive preview of your customized dashboard design for {repositoryName}."
 msgstr "Pratonton interaktif reka bentuk papan pemuka tersuai anda untuk {repositoryName}."
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5137
+msgid "Inv Amount"
+msgstr ""
+
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:55
 msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "Jenis fail tidak sah. Sila muat naik PDF atau Imej."
@@ -5889,6 +5956,7 @@ msgstr "Invois #"
 #~ msgid "Invoice aging analysis"
 #~ msgstr "Analisis penuaan invois"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5020
 #: src/pages/requests/utils/localizeRequestUi.ts:9
 msgid "Invoice Amount"
 msgstr "Jumlah Invois"
@@ -5896,6 +5964,7 @@ msgstr "Jumlah Invois"
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1697
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4778
 #: src/pages/requests/utils/localizeRequestUi.ts:8
 msgid "Invoice Date"
 msgstr "Tarikh Invois"
@@ -5921,7 +5990,7 @@ msgid "Invoice exceeds PO value."
 msgstr "Invois melebihi nilai PO."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2203
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5091
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5479
 msgid "Invoice Line Items"
 msgstr "Item Baris Invois"
 
@@ -5938,6 +6007,10 @@ msgstr "Nombor Invois"
 msgid "Invoice processing funnel"
 msgstr "Corong pemprosesan invois"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4516
+msgid "Invoice Ref"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2381
 msgid "Invoice status distribution"
 msgstr "Taburan status invois"
@@ -5948,6 +6021,7 @@ msgid "Invoice Summary"
 msgstr "Ringkasan Invois"
 
 #: src/pages/requests/components/request/components/Header.tsx:897
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4328
 msgid "Invoice Value"
 msgstr "Nilai Invois"
 
@@ -6017,6 +6091,10 @@ msgstr "Tarikh Keluaran"
 #: src/pages/sign-in/components/SignInForm.tsx:571
 msgid "It looks like"
 msgstr "Nampaknya"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4399
+msgid "Item Description"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:317
 msgid "ITEM DESCRIPTION"
@@ -6207,7 +6285,7 @@ msgstr "Folder kontrak undang-undang"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "Undang-undang mempunyai kitaran kelulusan terpanjang dalam paparan semasa, purata 8.0 hari setiap invois."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4442
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4824
 msgid "Legal Matter Association Check"
 msgstr "Semakan Perkaitan Matter Undang-undang"
 
@@ -6265,6 +6343,10 @@ msgstr "Talian {0}: Kuantiti Invois __XPH1X__ lwn Kuantiti PO __XPH2X__. Baki: _
 msgid "Line #{0}"
 msgstr "Talian #{0}"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5125
+msgid "Line Item"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:793
 msgid "Line item info: No line item data found in this file."
 msgstr "Maklumat item baris: Tiada data item baris ditemui dalam fail ini."
@@ -6290,13 +6372,25 @@ msgstr "Pemadanan Item Baris"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4028
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4118
 msgid "Line Items"
 msgstr "Item Baris"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4392
+msgid "Line Items Verified"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4403
+msgid "Line Score"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:430
 msgid "Line Variance"
 msgstr "Varians Baris"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5029
+msgid "Lines Received"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:22
 msgid "Link"
@@ -6357,7 +6451,7 @@ msgstr "Memuatkan aktiviti..."
 msgid "Loading attachments..."
 msgstr "Memuatkan lampiran..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5135
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5523
 msgid "Loading Attachments..."
 msgstr "Memuatkan Lampiran..."
 
@@ -6366,12 +6460,12 @@ msgstr "Memuatkan Lampiran..."
 msgid "Loading comments..."
 msgstr "Memuatkan komen..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5178
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5566
 msgid "Loading Comments..."
 msgstr "Memuatkan ulasan..."
 
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:209
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:274
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:285
 msgid "Loading document..."
 msgstr "Memuatkan dokumen..."
 
@@ -6409,7 +6503,7 @@ msgstr "Memuatkan kumpulan..."
 msgid "Loading history..."
 msgstr "Memuatkan sejarah..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5207
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5595
 msgid "Loading History..."
 msgstr "Memuatkan Sejarah..."
 
@@ -6819,6 +6913,7 @@ msgid "Match ANY condition (OR logic)"
 msgstr "Padankan SEBARANG keadaan (ATAU logik)"
 
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:94
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4227
 msgid "Match Score"
 msgstr "Skor Perlawanan"
 
@@ -6830,13 +6925,13 @@ msgstr "Padankan:"
 #: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3778
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3841
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4179
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "dipadankan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4340
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4678
 msgid "Matched GL Account"
 msgstr "Akaun GL yang dipadankan"
 
@@ -6854,7 +6949,7 @@ msgstr "Kriteria carian dipadankan"
 msgid "Matched today: {0} of {1} documents"
 msgstr "Dipadankan hari ini: {0} daripada __XPH1X__ dokumen"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:481
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:492
 msgid "Matching PO details"
 msgstr "Butiran PO yang sepadan"
 
@@ -6862,9 +6957,17 @@ msgstr "Butiran PO yang sepadan"
 #~ msgid "Matching supplier records..."
 #~ msgstr "Memadankan rekod pembekal..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3998
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4849
+msgid "Matter Reference"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
 msgid "Matter Validation"
 msgstr "Pengesahan Perkara"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4885
+msgid "Matter Validation Rules"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1105
 msgid "Maximum file size is 5 MB."
@@ -7024,6 +7127,14 @@ msgstr "Log masuk Microsoft telah dibatalkan."
 #: src/layouts/auth/components/PasswordRequirements.tsx:11
 msgid "Minimum 8 characters"
 msgstr "Minimum 8 aksara"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4634
+msgid "Mismatches"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4639
+msgid "Mismatches Found"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1945
 #: src/pages/folders/components/ShareView.tsx:195
@@ -7252,6 +7363,10 @@ msgstr "Kecilkan baris"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "Kecilkan baris yang disertakan dalam laporan ini. Biarkan kosong untuk menyertakan setiap baris."
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4858
+msgid "Needs Manual Entry"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:80
 msgid "Net 30 Days"
 msgstr "Net 30 Hari"
@@ -7364,6 +7479,7 @@ msgstr "Langkah seterusnya"
 #~ msgstr ""
 
 #: src/pages/reports/components/ReportsListView.tsx:188
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4864
 msgid "No"
 msgstr "Tidak"
 
@@ -7486,7 +7602,7 @@ msgstr "No Due Tarikh"
 msgid "No Duplicate"
 msgstr "Tiada Pendua"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3819
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "Tiada pendua dikesan"
@@ -7661,7 +7777,7 @@ msgstr "Tiada kebenaran diberikan"
 msgid "No permissions to configure"
 msgstr "Tiada kebenaran untuk mengkonfigurasi"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3789
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3848
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "Tiada PO Ditemui"
@@ -7898,8 +8014,8 @@ msgstr "Tidak dipetakan"
 
 #: src/pages/requests/components/InboxList.tsx:1895
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3779
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4089
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3842
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4180
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "Tidak Padan"
@@ -7918,7 +8034,7 @@ msgstr "Tidak dijadualkan"
 msgid "Not selected"
 msgstr "Tidak dipilih"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3831
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3908
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "Tidak Disahkan"
@@ -8324,8 +8440,12 @@ msgid "Payment Channel"
 msgstr "Saluran Pembayaran"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4389
-msgid "Payment Deadlines"
-msgstr "Tarikh Akhir Pembayaran"
+#~ msgid "Payment Deadlines"
+#~ msgstr "Tarikh Akhir Pembayaran"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4731
+msgid "Payment Deadlines & Terms"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2170
 msgid "Payment Due"
@@ -8339,20 +8459,25 @@ msgstr "Tarikh akhir pembayaran"
 msgid "Payment Method"
 msgstr "Kaedah Pembayaran"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4047
 msgid "Payment Status"
 msgstr "Status Pembayaran"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3974
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4066
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4736
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "Syarat Pembayaran"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4383
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4725
 msgid "Payment Terms Analysis"
 msgstr "Analisis Syarat Pembayaran"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4814
+msgid "Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries."
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:344
 #~ msgid "Payments due this week total $298.7K, below last week by 67%."
@@ -8389,6 +8514,10 @@ msgstr "Menunggu klasifikasi"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:386
 msgid "Pending delivery items."
 msgstr "Item penghantaran belum selesai."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5037
+msgid "Pending Items"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:128
 msgid "Pending Payments"
@@ -8528,7 +8657,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "Sila lampirkan fail untuk meneruskan."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3850
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3927
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "Sila klik 'Sahkan' untuk menyemak sama ada pembekal ini sah dan mengelakkan penipuan."
 
@@ -8724,9 +8853,13 @@ msgstr "Pengambilan PO Berjaya!"
 msgid "PO issuer or procurement contact"
 msgstr "Pengeluar PO atau hubungan perolehan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5040
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5428
 msgid "PO Line Items"
 msgstr "Item Baris PO"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4920
+msgid "PO Line Items vs Invoices"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1309
 msgid "PO Master"
@@ -8750,24 +8883,29 @@ msgstr "Fail Induk PO diterima"
 msgid "PO Master Update"
 msgstr "Kemas Kini Induk PO"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3771
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3837
 msgid "PO Matching"
 msgstr "Pemadanan PO"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4085
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4175
 msgid "PO Matching Analysis"
 msgstr "Analisis Pemadanan PO"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1633
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4256
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "PO Number"
 msgstr "Nombor PO"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4106
-msgid "PO Number (Extracted)"
-msgstr "Nombor PO (Diekstrak)"
+#~ msgid "PO Number (Extracted)"
+#~ msgstr "Nombor PO (Diekstrak)"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5128
+msgid "PO Qty"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:255
 msgid "po ref"
@@ -8784,6 +8922,7 @@ msgstr "Persediaan PO"
 
 #: src/pages/requests/components/request/components/Header.tsx:916
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4329
 msgid "PO Value"
 msgstr "Nilai PO"
 
@@ -8804,7 +8943,7 @@ msgstr "Polisi"
 msgid "Policy"
 msgstr "Polisi"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:534
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:545
 msgid "Policy Compliance"
 msgstr "Pematuhan Polisi"
 
@@ -8989,6 +9128,10 @@ msgstr "Cetak dokumen"
 msgid "Print file"
 msgstr "Cetak fail"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5081
+msgid "Prior Ticket {activeBackOrderTab} Details"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1875
 msgid "Prioritized invoice items requiring attention today"
 msgstr "Item invois berprioriti yang memerlukan perhatian hari ini"
@@ -9042,7 +9185,7 @@ msgstr "Memproses \"{0}\""
 msgid "Processing & Bottlenecks"
 msgstr "Pemprosesan & Kesesakan"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:295
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:306
 msgid "Processing Timeline"
 msgstr "Garis Masa Pemprosesan"
 
@@ -9152,6 +9295,10 @@ msgstr "Kuantiti"
 msgid "Quantity"
 msgstr "Kuantiti"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4400
+msgid "Quantity (Inv / PO)"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:426
 msgid "Quantity line discrepancy."
 msgstr "Percanggahan garis kuantiti."
@@ -9178,7 +9325,7 @@ msgstr "Gugur Pantas dipilih. Anda akan dapat memuat naik invois pertama anda se
 msgid "Quick Help"
 msgstr "Bantuan Cepat"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:624
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:635
 msgid "Quick Hint"
 msgstr "Petua Pantas"
 
@@ -9288,13 +9435,17 @@ msgstr "Medan {0} yang disyorkan untuk \"__XPH1X__\". Laraskannya di bawah, kemu
 msgid "records"
 msgstr "rekod"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:502
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:513
 msgid "Records matched successfully"
 msgstr "Rekod berjaya dipadankan"
 
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:49
 msgid "Recurrence"
 msgstr "Pengulangan"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5131
+msgid "Recv Qty"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2847
 #: src/pages/folders/components/DocumentSigningPage.tsx:2962
@@ -9357,6 +9508,10 @@ msgstr "Pilihan residensi data serantau"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1301
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "Analisis volum serantau dan pendedahan perbelanjaan"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4646
+msgid "Registry Verification Log"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1780
 msgid "Reject Transaction"
@@ -10217,6 +10372,7 @@ msgid "Schema Validation"
 msgstr "Pengesahan Skema"
 
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:399
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4330
 msgid "Score"
 msgstr "skor"
 
@@ -10485,7 +10641,7 @@ msgstr "Bahagian {0}"
 msgid "Security"
 msgstr "Keselamatan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4219
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4558
 msgid "Security & Auditing Policy"
 msgstr "Dasar Keselamatan & Pengauditan"
 
@@ -11188,6 +11344,14 @@ msgstr "Menunjukkan 50 pertama daripada {0} invois."
 msgid "Showing records matching this metrics slice"
 msgstr "Menunjukkan rekod yang sepadan dengan kepingan metrik ini"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4312
+msgid "Side-by-Side Field Matching"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4384
+msgid "Side-by-Side Line Item Matching"
+msgstr ""
+
 #: src/pages/folders/components/FolderSharePopover.tsx:155
 #: src/pages/folders/components/FolderSharePopover.tsx:856
 msgid "Sign"
@@ -11394,7 +11558,7 @@ msgstr "Fail Sumber:"
 #~ msgid "Source Form"
 #~ msgstr "Borang Sumber"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4114
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4266
 msgid "Source System"
 msgstr ""
 
@@ -11479,6 +11643,7 @@ msgstr "status"
 #: src/pages/forms/FormsPage.tsx:604
 #: src/pages/reports/components/ReportsListView.tsx:173
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4748
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2158
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3362
@@ -11549,6 +11714,10 @@ msgstr "Langkah 5"
 #: src/pages/folders/components/CollaboraEditor.tsx:305
 msgid "Still opening... this is taking longer than expected. Check the browser console / the document editor below for details."
 msgstr "Masih dibuka... ini mengambil masa lebih lama daripada jangkaan. Semak konsol penyemak imbas / editor dokumen di bawah untuk mendapatkan butiran."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5046
+msgid "Still Pending"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:132
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:914
@@ -11665,7 +11834,7 @@ msgstr "Berjaya dimuat naik ke"
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "{schemaKpiCount} KPI dan {schemaChartCount} carta dicadangkan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4335
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4673
 msgid "Suggested Allocation"
 msgstr "Cadangan Peruntukan"
 
@@ -11705,8 +11874,8 @@ msgid "Supplier Address"
 msgstr "Alamat Pembekal"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4264
-msgid "Supplier Code"
-msgstr "Kod Pembekal"
+#~ msgid "Supplier Code"
+#~ msgstr "Kod Pembekal"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1129
 #~ msgid "Supplier Concentration & Risk"
@@ -11716,7 +11885,7 @@ msgstr "Kod Pembekal"
 msgid "Supplier Conflict"
 msgstr "Konflik Pembekal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4259
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4596
 msgid "Supplier Details"
 msgstr "Butiran Pembekal"
 
@@ -11749,26 +11918,34 @@ msgstr "Alamat pengebilan fizikal pembekal"
 msgid "Supplier Risk Radar"
 msgstr "Radar Risiko Pembekal"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4614
+msgid "Supplier Status"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4565
+msgid "Supplier tax identity and banking details."
+msgstr ""
+
 #: src/pages/folders/components/AiSummaryView.tsx:414
 msgid "Supplier Trend Insight"
 msgstr "Wawasan Trend Pembekal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3830
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3862
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3882
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3939
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
 msgid "Supplier Verification"
 msgstr "Pengesahan Pembekal"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2343
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2383
 msgid "Supplier verification completed: {0}"
 msgstr "Pengesahan pembekal selesai: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4246
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4577
 msgid "Supplier Verification Registry"
 msgstr "Daftar Pengesahan Pembekal"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3978
 msgid "Supplier verified"
 msgstr "Pembekal disahkan"
 
@@ -11881,8 +12058,8 @@ msgid "System menus cannot be deleted"
 msgstr "Menu sistem tidak boleh dipadamkan"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4208
-msgid "System Response"
-msgstr "Respons Sistem"
+#~ msgid "System Response"
+#~ msgstr "Respons Sistem"
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:17
 msgid "Table"
@@ -12063,7 +12240,7 @@ msgstr "Folder ini belum lagi mengandungi sebarang folder atau fail."
 #~ msgid "This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content."
 #~ msgstr "Folder ini belum mengandungi sebarang folder atau fail lagi. Muat naik dokumen atau cipta folder baharu untuk mula menyusun kandungan repositori."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:627
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:638
 msgid "This is taking a bit longer. You can safely navigate away; we'll notify you in the inbox once ready."
 msgstr "Ini mengambil masa yang agak lama. Anda boleh menavigasi dengan selamat; kami akan memberitahu anda dalam peti masuk setelah bersedia."
 
@@ -12160,8 +12337,8 @@ msgid "Time"
 msgstr "Masa"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4414
-msgid "Time Remaining"
-msgstr "Masa Berbaki"
+#~ msgid "Time Remaining"
+#~ msgstr "Masa Berbaki"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1390
 msgid "Time Running"
@@ -12240,6 +12417,10 @@ msgstr "Jumlah"
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:41
 msgid "Total Amount"
 msgstr "Jumlah Jumlah"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4402
+msgid "Total Amount (Inv / PO)"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:692
 msgid "Total AP"
@@ -12584,6 +12765,10 @@ msgstr "Unit"
 msgid "Unit Price"
 msgstr "Harga Unit"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4401
+msgid "Unit Price (Inv / PO)"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1532
 msgid "Unknown error"
 msgstr "Ralat tidak diketahui"
@@ -12754,7 +12939,7 @@ msgstr "Muat Naik Dokumen untuk Klasifikasi AI"
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "Muat naik dokumen dengan selamat, tetapkan metadata, dan susun fail dalam repositori anda untuk carian dan pengurusan yang cekap."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:363
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:374
 msgid "Upload failed"
 msgstr "Muat naik gagal"
 
@@ -12838,7 +13023,7 @@ msgstr ""
 #~ msgid "Uploading file {uploadIndex} of {filesCount}..."
 #~ msgstr "Memuat naik fail {uploadIndex} daripada {filesCount}..."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:364
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:375
 msgid "Uploading file..."
 msgstr "Memuat naik fail..."
 
@@ -13049,7 +13234,7 @@ msgstr "Mengesahkan medan sistem wajib"
 msgid "Validating data consistency"
 msgstr "Mengesahkan konsistensi data"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:556
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:567
 msgid "Validating guidelines"
 msgstr "Mengesahkan garis panduan"
 
@@ -13063,8 +13248,8 @@ msgid "VALIDATION"
 msgstr "PENGESAHAN"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4143
-msgid "Validation Log"
-msgstr "Log Pengesahan"
+#~ msgid "Validation Log"
+#~ msgstr "Log Pengesahan"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:140
 msgid "Value"
@@ -13096,7 +13281,9 @@ msgstr "Semakan Vendor"
 msgid "Vendor identity mismatch."
 msgstr "Identiti vendor tidak sepadan."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4124
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4274
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4529
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4601
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "Nama Vendor"
@@ -13105,15 +13292,23 @@ msgstr "Nama Vendor"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "Vendor yang memerlukan hubungan segera atau penyelesaian pertanyaan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2350
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4650
+msgid "Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists."
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2390
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "Pengesahan gagal. 1 kredit telah dikembalikan."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4623
+msgid "Verification Rationale"
+msgstr ""
 
 #: src/pages/requests/utils/localizeRequestUi.ts:30
 msgid "Verified"
 msgstr "Disahkan"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3845
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3922
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "Sahkan"
@@ -13138,8 +13333,8 @@ msgstr "Sahkan dasar yang dikonfigurasikan sebelum mengaktifkannya untuk \"{fold
 msgid "Verify your security rules before applying settings."
 msgstr "Sahkan peraturan keselamatan anda sebelum menggunakan tetapan."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3860
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3937
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3949
 msgid "Verifying..."
 msgstr "Mengesahkan..."
 
@@ -13437,6 +13632,7 @@ msgid "years"
 msgstr "tahun"
 
 #: src/pages/reports/components/ReportsListView.tsx:185
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4863
 msgid "Yes"
 msgstr "Ya"
 

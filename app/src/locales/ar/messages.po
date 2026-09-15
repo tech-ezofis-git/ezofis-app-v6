@@ -844,8 +844,13 @@ msgid "AI generated"
 msgstr "تم إنشاؤه بالذكاء الاصطناعي"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1593
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4545
 msgid "AI Insight"
 msgstr "انسايت الذكاء الاصطناعي"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4204
+msgid "AI Insight & Verification Summary"
+msgstr ""
 
 #: src/pages/requests/components/request/components/Header.tsx:951
 msgid "AI Insights"
@@ -1069,7 +1074,7 @@ msgstr "التحليلات"
 msgid "Analyzing Columns..."
 msgstr "جاري تحليل الأعمدة..."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:609
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:620
 msgid "Analyzing context & keywords"
 msgstr "جاري تحليل السياق والكلمات المفتاحية"
 
@@ -1144,7 +1149,7 @@ msgstr "وكيل AP"
 msgid "AP Agent"
 msgstr "وكيل الحسابات الدائنة"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:587
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:598
 msgid "AP Agent Decision"
 msgstr "قرار وكيل الحسابات الدائنة"
 
@@ -1332,6 +1337,10 @@ msgstr "المستخدمون والمجموعات المعينة"
 msgid "Assigned Users & Groups ({0})"
 msgstr "المستخدمون والمجموعات المعينة ({0})"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4844
+msgid "Associated Entity"
+msgstr ""
+
 #: src/layouts/auth/components/PasswordRequirements.tsx:13
 msgid "At least 1 lowercase (a-z)"
 msgstr "حرف صغير واحد على الأقل (a-z)"
@@ -1382,7 +1391,7 @@ msgstr "مرفق"
 #: src/pages/requests/components/request/components/Header.tsx:475
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:46
 #: src/pages/requests/components/request/components/sections/attachment/Attachments.tsx:704
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4033
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4123
 #: src/pages/requests/components/workflow-request/components/AttachmentsPanel.tsx:61
 msgid "Attachments"
 msgstr "المرفقات"
@@ -1420,7 +1429,7 @@ msgstr "المصادقة مطلوبة. الرجاء تسجيل الدخول مر
 msgid "Authenticator App"
 msgstr "تطبيق المصادقة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4288
 msgid "Authorized Amount"
 msgstr "المبلغ المصرح به"
 
@@ -1530,7 +1539,7 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:60
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1148
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:991
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4521
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4909
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:1993
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2034
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:2051
@@ -1550,7 +1559,7 @@ msgstr "تكامل تخزين Azure Blob للمؤسسات التي تستخدم 
 msgid "Back"
 msgstr "رجوع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3931
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4017
 msgid "Back Order"
 msgstr "طلب متأخر"
 
@@ -1610,6 +1619,10 @@ msgstr "العودة إلى سير العمل"
 msgid "Backorder"
 msgstr "طلب متأخر"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5134
+msgid "Balance Qty"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:18
 msgid "Barcode"
 msgstr "رمز شريطي"
@@ -1628,8 +1641,8 @@ msgid "Between"
 msgstr "بين"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4394
-msgid "Billing Terms"
-msgstr "شروط الفوترة"
+#~ msgid "Billing Terms"
+#~ msgstr "شروط الفوترة"
 
 #: src/pages/settings/components/Folders/DmsSettings.tsx:428
 msgid "Blob container mapping"
@@ -2251,7 +2264,7 @@ msgstr "قريباً"
 #: src/pages/requests/components/request/components/Header.tsx:481
 #: src/pages/requests/components/request/components/newrequest/Header.tsx:52
 #: src/pages/requests/components/request/components/sections/comment/Comments.tsx:186
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4038
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4128
 #: src/pages/requests/components/workflow-request/components/CommentsPanel.tsx:58
 msgid "Comments"
 msgstr "التعليقات"
@@ -2308,6 +2321,10 @@ msgstr "اكتمل في 0.9 ث"
 #: src/pages/folders/components/AiSummaryView.tsx:350
 msgid "Compliance & Risk Assessment"
 msgstr "تقييم الامتثال والمخاطر"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4871
+msgid "Compliance Note"
+msgstr ""
 
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:50
 #: src/pages/report-builder/components/steps/FieldSettingsPanel.tsx:56
@@ -2597,6 +2614,10 @@ msgstr "انسخ عنوان URL هذا وافتحه في علامة تبويب �
 msgid "Copy URL"
 msgstr "انسخ عنوان URL"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4889
+msgid "Corporate legal invoices are checked for compliance against corporate billing guidelines, valid client matter IDs, and active legal budgets."
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2067
 msgid "Cost Center"
 msgstr "مركز التكلفة"
@@ -2839,11 +2860,11 @@ msgstr "حرج"
 #~ msgid "Critical Exceptions"
 #~ msgstr "استثناءات حرجة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4191
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4490
 msgid "Cross-Check Status"
 msgstr "حالة الفحص المتقاطع"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:503
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:514
 msgid "Cross-referencing records"
 msgstr "جاري الإسناد الترافقي للسجلات"
 
@@ -2866,6 +2887,10 @@ msgstr "العملة"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3574
 msgid "Currency Key"
 msgstr "مفتاح العملة"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5080
+msgid "Current Invoice Back Order Status"
+msgstr ""
 
 #: src/pages/settings/components/RolesPermissions.tsx:2061
 #: src/pages/settings/components/RolesPermissions.tsx:2063
@@ -2992,7 +3017,7 @@ msgstr "وجهة البيانات"
 msgid "Data extracted"
 msgstr "تم استخراج البيانات"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:437
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:448
 msgid "Data extraction complete"
 msgstr "اكتمل استخراج البيانات"
 
@@ -3041,9 +3066,17 @@ msgstr "اليوم {trialDay} من {trialLengthDays}"
 msgid "days"
 msgstr "أيام"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4763
+msgid "Days"
+msgstr ""
+
 #: src/pages/settings/components/license/LicenseTrialBanner.tsx:73
 msgid "days remaining in evaluation"
 msgstr "أيام متبقية في فترة التقييم"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4810
+msgid "Deadlines & Penalty Insights"
+msgstr ""
 
 #: src/pages/settings/components/credits/Credits.tsx:78
 msgid "December"
@@ -3379,6 +3412,10 @@ msgstr "وكيل الوثيقة"
 msgid "Document"
 msgstr "وثيقة"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4251
+msgid "Document & Procurement Ledger Mapping"
+msgstr ""
+
 #: src/pages/requests/components/request/components/generic-overview/TaskRequirements.tsx:100
 msgid "Document attached"
 msgstr "الوثيقة مرفقة"
@@ -3413,8 +3450,8 @@ msgid "Document ingested via email"
 msgstr "تم استيعاب المستند عبر البريد الإلكتروني"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4101
-msgid "Document Mapping"
-msgstr "ربط المستند"
+#~ msgid "Document Mapping"
+#~ msgstr "ربط المستند"
 
 #: src/pages/requests/components/Table.tsx:60
 msgid "Document Number"
@@ -3427,7 +3464,7 @@ msgstr "يتم إخطار مالكي المستندات مسبقًا."
 #: src/pages/folders/components/CollaboraPreviewViewer.tsx:171
 #: src/pages/folders/components/Upload/Upload.tsx:1952
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:206
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:265
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:276
 msgid "Document Preview"
 msgstr "معاينة المستند"
 
@@ -3548,6 +3585,10 @@ msgstr "تم التخصيص"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1799
 msgid "Double payments flagged by ledger algorithms"
 msgstr "مدفوعات مزدوجة رصدتها خوارزميات دفتر الأستاذ"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4562
+msgid "Double-payment prevention checks analyze historical invoices by combining:"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2712
 #: src/pages/folders/components/DocumentDetailsView.tsx:2717
@@ -3708,6 +3749,7 @@ msgstr "تاريخ الاستحقاق"
 #: src/pages/requests/components/InboxList.tsx:1876
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:36
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:35
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4792
 #: src/pages/requests/utils/localizeRequestUi.ts:14
 msgid "Due Date"
 msgstr "تاريخ الاستحقاق"
@@ -3738,7 +3780,7 @@ msgstr ""
 msgid "Duplicate"
 msgstr "مكرر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3804
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3875
 msgid "Duplicate Detection"
 msgstr "اكتشاف التكرار"
 
@@ -3746,7 +3788,7 @@ msgstr "اكتشاف التكرار"
 msgid "Duplicate invoice watch"
 msgstr "مراقبة الفواتير المكررة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4170
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4465
 msgid "Duplicate Payment Check"
 msgstr "فحص الدفع المكرر"
 
@@ -4205,6 +4247,10 @@ msgstr "ستُستخدم بيانات ERP للتحقق من الفواتير ا�
 msgid "ERP Settings"
 msgstr "إعدادات تخطيط موارد المؤسسات"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4507
+msgid "Error Severity"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:778
 msgid "Error starting workflow"
 msgstr "خطأ في بدء سير العمل"
@@ -4237,6 +4283,10 @@ msgstr "تم التصعيد{assignee}"
 #: src/pages/settings/components/AuditMonitoring.tsx:318
 msgid "Event Title"
 msgstr "عنوان الحدث"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4566
+msgid "Exact Invoice Number string similarity."
+msgstr ""
 
 #: src/pages/forms/components/GenericFormImportModal.tsx:779
 msgid "Example"
@@ -4340,12 +4390,12 @@ msgid "EXTRACTED"
 msgstr "مستخرج"
 
 #: src/pages/folders/components/Upload/Upload.tsx:2010
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4023
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4113
 #: src/pages/requests/components/RequestSummary.tsx:194
 msgid "Extracted Data"
 msgstr "البيانات المستخرجة"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:417
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:428
 msgid "Extracting data"
 msgstr "جاري استخراج البيانات"
 
@@ -4657,6 +4707,7 @@ msgid "FI / MM (Financial Accounting & Materials)"
 msgstr "FI / MM (المحاسبة المالية وإدارة المواد)"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:102
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4327
 #: src/pages/settings/components/Folders/DocumentSecurityRuleWizard.tsx:906
 msgid "Field"
 msgstr "مجال"
@@ -4772,7 +4823,7 @@ msgstr "حجم الملف"
 msgid "File Upload"
 msgstr "رفع الملف"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:361
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:372
 msgid "File uploaded successfully"
 msgstr "تم رفع الملف بنجاح"
 
@@ -4803,7 +4854,7 @@ msgstr "يجب أن يكون حجم الملفات أقل من 5 ميغاباي�
 msgid "Filters"
 msgstr "عوامل التصفية"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:608
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:619
 msgid "Final decision determined"
 msgstr "تم تحديد القرار النهائي"
 
@@ -5177,11 +5228,11 @@ msgstr "قم بتسمية تقريرك، وحدد مصدر البيانات، و
 msgid "GL & Category"
 msgstr "GL والفئة"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3991
 msgid "GL Account Matching"
 msgstr "مطابقة حساب دفتر الأستاذ"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4322
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4660
 msgid "GL Account Matching Report"
 msgstr "تقرير مطابقة حساب دفتر الأستاذ"
 
@@ -5199,7 +5250,7 @@ msgstr "رجوع"
 msgid "Go to {0}"
 msgstr "انتقل إلى {0}"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:634
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:645
 msgid "Go to Inbox"
 msgstr "الانتقال إلى الوارد"
 
@@ -5236,6 +5287,10 @@ msgstr "مساحة عمل جوجل"
 #: src/pages/settings/components/Folders/DmsSettings.tsx:410
 msgid "Google Workspace sign-in"
 msgstr "تسجيل الدخول إلى Google Workspace"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4567
+msgid "Grand Total and individual line-item value mapping."
+msgstr ""
 
 #: src/pages/settings/components/Folders/FolderSecurity.tsx:444
 msgid "Granted Permissions"
@@ -5331,7 +5386,7 @@ msgstr "تم تحديث المجموعة بنجاح"
 msgid "Groups"
 msgstr "المجموعات"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:555
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:566
 msgid "Guidelines validated"
 msgstr "تم التحقق من الإرشادات"
 
@@ -5347,6 +5402,10 @@ msgstr "فاتورة مكتوبة بخط اليد"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1477
 msgid "Header Fields"
 msgstr "حقول الرأس"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4320
+msgid "Header Fields Checked"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1046
 #~ msgid "Header Mapping"
@@ -5457,13 +5516,17 @@ msgstr "قيمة عالية (≥10 آلاف دولار)"
 msgid "Highest Credit Consumption"
 msgstr "أعلى استهلاك للرصيد"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4485
+msgid "Historical Match & Integrity Results"
+msgstr ""
+
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4186
-msgid "Historical Match Results"
-msgstr "نتائج المطابقة التاريخية"
+#~ msgid "Historical Match Results"
+#~ msgstr "نتائج المطابقة التاريخية"
 
 #: src/pages/requests/components/request/components/generic-overview/GenericRequestOverview.tsx:632
 #: src/pages/requests/components/request/components/Header.tsx:470
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4043
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4133
 msgid "History"
 msgstr "السجل"
 
@@ -5676,7 +5739,7 @@ msgstr "ملخص الاستيراد"
 msgid "Ingestion timeline"
 msgstr "الجدول الزمني للاستيراد"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:386
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:397
 msgid "Initializing upload..."
 msgstr "جاري تهيئة الرفع..."
 
@@ -5745,6 +5808,10 @@ msgstr "معاينة لوحة المعلومات التفاعلية"
 msgid "Interactive preview of your customized dashboard design for {repositoryName}."
 msgstr "معاينة تفاعلية لتصميم لوحة التحكم المخصصة لـ {repositoryName}."
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5137
+msgid "Inv Amount"
+msgstr ""
+
 #: src/pages/folders/components/EmptyFolderUploadDropzone.tsx:55
 msgid "Invalid file type. Please upload a PDF or Image."
 msgstr "نوع ملف غير صالح. يرجى رفع PDF أو صورة."
@@ -5804,6 +5871,7 @@ msgstr "فاتورة #"
 #~ msgid "Invoice aging analysis"
 #~ msgstr "تحليل تقادم الفواتير"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5020
 #: src/pages/requests/utils/localizeRequestUi.ts:9
 msgid "Invoice Amount"
 msgstr "مبلغ الفاتورة"
@@ -5811,6 +5879,7 @@ msgstr "مبلغ الفاتورة"
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1697
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:31
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:29
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4778
 #: src/pages/requests/utils/localizeRequestUi.ts:8
 msgid "Invoice Date"
 msgstr "تاريخ الفاتورة"
@@ -5836,7 +5905,7 @@ msgid "Invoice exceeds PO value."
 msgstr "تتجاوز الفاتورة قيمة أمر الشراء."
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:2203
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5091
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5479
 msgid "Invoice Line Items"
 msgstr "بنود الفاتورة"
 
@@ -5853,6 +5922,10 @@ msgstr "رقم الفاتورة"
 msgid "Invoice processing funnel"
 msgstr "قمع معالجة الفواتير"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4516
+msgid "Invoice Ref"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2381
 msgid "Invoice status distribution"
 msgstr "توزيع حالة الفواتير"
@@ -5863,6 +5936,7 @@ msgid "Invoice Summary"
 msgstr "ملخص الفاتورة"
 
 #: src/pages/requests/components/request/components/Header.tsx:897
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4328
 msgid "Invoice Value"
 msgstr "قيمة الفاتورة"
 
@@ -5932,6 +6006,10 @@ msgstr "تاريخ الإصدار"
 #: src/pages/sign-in/components/SignInForm.tsx:571
 msgid "It looks like"
 msgstr "يبدو أن"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4399
+msgid "Item Description"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:317
 msgid "ITEM DESCRIPTION"
@@ -6122,7 +6200,7 @@ msgstr "مجلد العقود القانونية"
 #~ msgid "Legal has the longest approval cycle in the current view, averaging 8.0 days per invoice."
 #~ msgstr "القانوني لديه أطول دورة اعتماد في العرض الحالي، بمتوسط 8.0 أيام لكل فاتورة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4442
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4824
 msgid "Legal Matter Association Check"
 msgstr "فحص ارتباط المسألة القانونية"
 
@@ -6180,6 +6258,10 @@ msgstr "السطر {0}: كمية الفاتورة {1} مقابل كمية أمر
 msgid "Line #{0}"
 msgstr "السطر #{0}"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5125
+msgid "Line Item"
+msgstr ""
+
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-two/components/ErpSystem.tsx:793
 msgid "Line item info: No line item data found in this file."
 msgstr "معلومات البند: لم يتم العثور على بيانات بنود في هذا الملف."
@@ -6205,13 +6287,25 @@ msgstr "مطابقة بنود السطر"
 #: src/pages/requests/components/request/components/newrequest/poFlow/PoSetupFlowPage.tsx:1495
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItems.tsx:63
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:41
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4028
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4118
 msgid "Line Items"
 msgstr "بنود السطر"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4392
+msgid "Line Items Verified"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4403
+msgid "Line Score"
+msgstr ""
 
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:430
 msgid "Line Variance"
 msgstr "تباين السطر"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5029
+msgid "Lines Received"
+msgstr ""
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:22
 msgid "Link"
@@ -6272,7 +6366,7 @@ msgstr "جارٍ تحميل النشاط..."
 msgid "Loading attachments..."
 msgstr "جارٍ تحميل المرفقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5135
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5523
 msgid "Loading Attachments..."
 msgstr "جاري تحميل المرفقات..."
 
@@ -6281,12 +6375,12 @@ msgstr "جاري تحميل المرفقات..."
 msgid "Loading comments..."
 msgstr "جاري تحميل التعليقات..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5178
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5566
 msgid "Loading Comments..."
 msgstr "جاري تحميل التعليقات..."
 
 #: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:209
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:274
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:285
 msgid "Loading document..."
 msgstr "جاري تحميل المستند..."
 
@@ -6324,7 +6418,7 @@ msgstr "جارٍ تحميل المجموعات..."
 msgid "Loading history..."
 msgstr "جارٍ تحميل السجل..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5207
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5595
 msgid "Loading History..."
 msgstr "جاري تحميل السجل..."
 
@@ -6730,6 +6824,7 @@ msgid "Match ANY condition (OR logic)"
 msgstr "مطابقة أي شرط (أو المنطق)"
 
 #: src/pages/requests/components/request/components/sections/overview/components/line-items/LineItemsCards.tsx:94
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4227
 msgid "Match Score"
 msgstr "نتيجة المباراة"
 
@@ -6741,13 +6836,13 @@ msgstr "مباراة:"
 #: src/pages/requests/components/InboxList.tsx:1883
 #: src/pages/requests/components/QuickFilters.tsx:144
 #: src/pages/requests/components/request/components/sections/history/History.tsx:322
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3778
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3841
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4179
 #: src/pages/requests/utils/localizeRequestUi.ts:20
 msgid "Matched"
 msgstr "مطابق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4340
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4678
 msgid "Matched GL Account"
 msgstr "حساب دفتر الأستاذ المطابق"
 
@@ -6765,7 +6860,7 @@ msgstr "معايير البحث المتطابقة"
 msgid "Matched today: {0} of {1} documents"
 msgstr "تمت مطابقة اليوم: {0} من {1} مستند"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:481
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:492
 msgid "Matching PO details"
 msgstr "جاري مطابقة تفاصيل أمر الشراء"
 
@@ -6773,9 +6868,17 @@ msgstr "جاري مطابقة تفاصيل أمر الشراء"
 #~ msgid "Matching supplier records..."
 #~ msgstr "مطابقة سجلات الموردين..."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3998
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4849
+msgid "Matter Reference"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4088
 msgid "Matter Validation"
 msgstr "التحقق من المسألة"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4885
+msgid "Matter Validation Rules"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:1105
 msgid "Maximum file size is 5 MB."
@@ -6935,6 +7038,14 @@ msgstr "تم إلغاء تسجيل الدخول عبر Microsoft."
 #: src/layouts/auth/components/PasswordRequirements.tsx:11
 msgid "Minimum 8 characters"
 msgstr "8 أحرف كحد أدنى"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4634
+msgid "Mismatches"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4639
+msgid "Mismatches Found"
+msgstr ""
 
 #: src/pages/folders/components/DocumentDetailsView.tsx:1945
 #: src/pages/folders/components/ShareView.tsx:195
@@ -7163,6 +7274,10 @@ msgstr "تضييق نطاق الصفوف"
 msgid "Narrow down which rows this report includes. Leave empty to include every row."
 msgstr "قم بتضييق نطاق الصفوف التي يتضمنها هذا التقرير. اتركه فارغاً لتضمين كل الصفوف."
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4858
+msgid "Needs Manual Entry"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:80
 msgid "Net 30 Days"
 msgstr "صافي 30 يوماً"
@@ -7266,6 +7381,7 @@ msgstr "الخطوة التالية"
 #~ msgstr ""
 
 #: src/pages/reports/components/ReportsListView.tsx:188
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4864
 msgid "No"
 msgstr "لا"
 
@@ -7388,7 +7504,7 @@ msgstr "No Due التاريخ"
 msgid "No Duplicate"
 msgstr "لا تكرار"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3819
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
 #: src/pages/requests/utils/localizeRequestUi.ts:34
 msgid "No duplicates detected"
 msgstr "لم يتم اكتشاف تكرارات"
@@ -7559,7 +7675,7 @@ msgstr "لم يتم منح أي أذونات"
 msgid "No permissions to configure"
 msgstr "لا أذونات للتكوين"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3789
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3848
 #: src/pages/requests/utils/localizeRequestUi.ts:33
 msgid "No PO Found"
 msgstr "لم يتم العثور على أمر شراء"
@@ -7790,8 +7906,8 @@ msgstr "غير مرتبط"
 
 #: src/pages/requests/components/InboxList.tsx:1895
 #: src/pages/requests/components/request/components/sections/history/History.tsx:334
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3779
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4089
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3842
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4180
 #: src/pages/requests/utils/localizeRequestUi.ts:21
 msgid "Not Matched"
 msgstr "غير مطابق"
@@ -7810,7 +7926,7 @@ msgstr "غير مجدول"
 msgid "Not selected"
 msgstr "غير محدد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3831
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3908
 #: src/pages/requests/utils/localizeRequestUi.ts:29
 msgid "Not Verified"
 msgstr "غير مُتحقق"
@@ -8212,8 +8328,12 @@ msgid "Payment Channel"
 msgstr "قناة الدفع"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4389
-msgid "Payment Deadlines"
-msgstr "مواعيد الدفع"
+#~ msgid "Payment Deadlines"
+#~ msgstr "مواعيد الدفع"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4731
+msgid "Payment Deadlines & Terms"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:2170
 msgid "Payment Due"
@@ -8227,20 +8347,25 @@ msgstr "تاريخ استحقاق الدفع"
 msgid "Payment Method"
 msgstr "طريقة الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4047
 msgid "Payment Status"
 msgstr "حالة الدفع"
 
 #: src/pages/requests/components/request/components/newrequest/poFlow/components/EditFieldMappings.tsx:49
 #: src/pages/requests/components/request/components/sections/overview/components/properties/Properties.tsx:39
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3974
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4066
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4736
 #: src/pages/requests/utils/localizeRequestUi.ts:11
 msgid "Payment Terms"
 msgstr "شروط الدفع"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4383
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4725
 msgid "Payment Terms Analysis"
 msgstr "تحليل شروط الدفع"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4814
+msgid "Payment terms are verified by cross-referencing values extracted from invoice headers against agreed vendor contract parameters. Late fees may apply if settlement exceeds due date boundaries."
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:344
 #~ msgid "Payments due this week total $298.7K, below last week by 67%."
@@ -8273,6 +8398,10 @@ msgstr "في انتظار التصنيف"
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:386
 msgid "Pending delivery items."
 msgstr "بنود التسليم المعلقة."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5037
+msgid "Pending Items"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:128
 msgid "Pending Payments"
@@ -8412,7 +8541,7 @@ msgstr ""
 #~ msgid "Please attach a file to continue."
 #~ msgstr "يرجى إرفاق ملف للمتابعة."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3850
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3927
 msgid "Please click 'Verify' to check if this supplier is legitimate and prevent fraud."
 msgstr "يرجى النقر على «تحقق» للتحقق من شرعية هذا المورد ومنع الاحتيال."
 
@@ -8608,9 +8737,13 @@ msgstr "نجح استيراد PO!"
 msgid "PO issuer or procurement contact"
 msgstr "مصدر أمر الشراء أو جهة اتصال المشتريات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5040
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5428
 msgid "PO Line Items"
 msgstr "بنود أمر الشراء"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4920
+msgid "PO Line Items vs Invoices"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1309
 msgid "PO Master"
@@ -8634,24 +8767,29 @@ msgstr "تم استلام ملف PO الرئيسي"
 msgid "PO Master Update"
 msgstr "تحديث PO الرئيسي"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3771
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3837
 msgid "PO Matching"
 msgstr "مطابقة أمر الشراء"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4085
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4175
 msgid "PO Matching Analysis"
 msgstr "تحليل مطابقة أمر الشراء"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1633
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:216
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:260
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4256
 #: src/pages/requests/utils/localizeRequestUi.ts:10
 msgid "PO Number"
 msgstr "رقم أمر الشراء"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4106
-msgid "PO Number (Extracted)"
-msgstr "رقم أمر الشراء (مستخرج)"
+#~ msgid "PO Number (Extracted)"
+#~ msgstr "رقم أمر الشراء (مستخرج)"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5128
+msgid "PO Qty"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/Overview.tsx:255
 msgid "po ref"
@@ -8668,6 +8806,7 @@ msgstr "إعداد PO"
 
 #: src/pages/requests/components/request/components/Header.tsx:916
 #: src/pages/requests/components/request/components/newrequest/SummaryScreen.tsx:291
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4329
 msgid "PO Value"
 msgstr "قيمة أمر الشراء"
 
@@ -8688,7 +8827,7 @@ msgstr "السياسات"
 msgid "Policy"
 msgstr "السياسة"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:534
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:545
 msgid "Policy Compliance"
 msgstr "الامتثال للسياسات"
 
@@ -8873,6 +9012,10 @@ msgstr "طباعة المستندات"
 msgid "Print file"
 msgstr "طباعة الملف"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5081
+msgid "Prior Ticket {activeBackOrderTab} Details"
+msgstr ""
+
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1875
 msgid "Prioritized invoice items requiring attention today"
 msgstr "عناصر فواتير ذات أولوية تتطلب اهتمامًا اليوم"
@@ -8922,7 +9065,7 @@ msgstr "جاري معالجة «{0}»"
 msgid "Processing & Bottlenecks"
 msgstr "المعالجة والاختناقات"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:295
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:306
 msgid "Processing Timeline"
 msgstr "الجدول الزمني للمعالجة"
 
@@ -9028,6 +9171,10 @@ msgstr "الكمية"
 msgid "Quantity"
 msgstr "كمية"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4400
+msgid "Quantity (Inv / PO)"
+msgstr ""
+
 #: src/pages/requests/components/request/components/newrequest/FileUpload.tsx:426
 msgid "Quantity line discrepancy."
 msgstr "تناقض في سطر الكمية."
@@ -9054,7 +9201,7 @@ msgstr "تم تحديد Quick Drop. ستتمكن من رفع فواتيرك ال
 msgid "Quick Help"
 msgstr "مساعدة سريعة"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:624
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:635
 msgid "Quick Hint"
 msgstr "تلميح سريع"
 
@@ -9164,13 +9311,17 @@ msgstr "تم التوصية بـ {0} حقول لـ «{1}». عدّلها أدن�
 msgid "records"
 msgstr "سجلات"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:502
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:513
 msgid "Records matched successfully"
 msgstr "تمت مطابقة السجلات بنجاح"
 
 #: src/pages/report-builder/components/steps/ScheduleStep.tsx:49
 msgid "Recurrence"
 msgstr "التكرار"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5131
+msgid "Recv Qty"
+msgstr ""
 
 #: src/pages/folders/components/DocumentSigningPage.tsx:2847
 #: src/pages/folders/components/DocumentSigningPage.tsx:2962
@@ -9233,6 +9384,10 @@ msgstr "خيارات إقامة البيانات الإقليمية"
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1301
 #~ msgid "Regional volume and spend exposure analysis"
 #~ msgstr "تحليل الحجم والإنفاق الإقليمي"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4646
+msgid "Registry Verification Log"
+msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:1780
 msgid "Reject Transaction"
@@ -10085,6 +10240,7 @@ msgid "Schema Validation"
 msgstr "التحقق من المخطط"
 
 #: src/pages/requests/components/request/components/sections/overview/LineItemTable.tsx:399
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4330
 msgid "Score"
 msgstr "نتيجة"
 
@@ -10353,7 +10509,7 @@ msgstr "القسم {0}"
 msgid "Security"
 msgstr "الأمان"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4219
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4558
 msgid "Security & Auditing Policy"
 msgstr "سياسة الأمان والتدقيق"
 
@@ -11009,6 +11165,14 @@ msgstr "عرض أول 50 فاتورة من {0}."
 msgid "Showing records matching this metrics slice"
 msgstr "عرض السجلات المطابقة لهذه الشريحة من المقاييس"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4312
+msgid "Side-by-Side Field Matching"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4384
+msgid "Side-by-Side Line Item Matching"
+msgstr ""
+
 #: src/pages/folders/components/FolderSharePopover.tsx:155
 #: src/pages/folders/components/FolderSharePopover.tsx:856
 msgid "Sign"
@@ -11215,7 +11379,7 @@ msgstr "ملف المصدر:"
 #~ msgid "Source Form"
 #~ msgstr "نموذج المصدر"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4114
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4266
 msgid "Source System"
 msgstr ""
 
@@ -11293,6 +11457,7 @@ msgstr "الحالة"
 #: src/pages/forms/FormsPage.tsx:604
 #: src/pages/reports/components/ReportsListView.tsx:173
 #: src/pages/requests/components/request/components/newrequest/poFlow/steps/Step3PreviewConfirm.tsx:68
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4748
 #: src/pages/requests/components/Table.tsx:41
 #: src/pages/settings/components/Folders/DmsSettings.tsx:2158
 #: src/pages/settings/components/Folders/DmsSettings.tsx:3362
@@ -11363,6 +11528,10 @@ msgstr "الخطوة 5"
 #: src/pages/folders/components/CollaboraEditor.tsx:305
 msgid "Still opening... this is taking longer than expected. Check the browser console / the document editor below for details."
 msgstr "لا يزال مفتوحًا... وهذا يستغرق وقتًا أطول من المتوقع. تحقق من وحدة تحكم المتصفح / محرر المستندات أدناه للحصول على التفاصيل."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:5046
+msgid "Still Pending"
+msgstr ""
 
 #: src/pages/dashboard/workflows/accounts-payable/components/setup/components/steps/step-four/components/Integrations.tsx:132
 #: src/pages/settings/components/Folders/AiFolderBuilder.tsx:914
@@ -11479,7 +11648,7 @@ msgstr "تم التحميل بنجاح إلى"
 msgid "Suggested {schemaKpiCount} KPIs and {schemaChartCount} charts"
 msgstr "تم اقتراح {schemaKpiCount} من مؤشرات الأداء الرئيسية و{schemaChartCount} من الرسوم البيانية"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4335
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4673
 msgid "Suggested Allocation"
 msgstr "التوزيع المقترح"
 
@@ -11519,8 +11688,8 @@ msgid "Supplier Address"
 msgstr "عنوان المورد"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4264
-msgid "Supplier Code"
-msgstr "رمز المورد"
+#~ msgid "Supplier Code"
+#~ msgstr "رمز المورد"
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:1129
 #~ msgid "Supplier Concentration & Risk"
@@ -11530,7 +11699,7 @@ msgstr "رمز المورد"
 msgid "Supplier Conflict"
 msgstr "تعارض المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4259
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4596
 msgid "Supplier Details"
 msgstr "تفاصيل المورد"
 
@@ -11563,26 +11732,34 @@ msgstr "عنوان إرسال الفواتير الفعلي للمورد"
 msgid "Supplier Risk Radar"
 msgstr "رادار مخاطر الموردين"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4614
+msgid "Supplier Status"
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4565
+msgid "Supplier tax identity and banking details."
+msgstr ""
+
 #: src/pages/folders/components/AiSummaryView.tsx:414
 msgid "Supplier Trend Insight"
 msgstr "رؤية اتجاه المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3830
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3862
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3882
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3907
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3939
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3959
 msgid "Supplier Verification"
 msgstr "التحقق من المورد"
 
 #. placeholder {0}: result.value
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2343
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2383
 msgid "Supplier verification completed: {0}"
 msgstr "اكتمل التحقق من المورد: {0}"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4246
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4577
 msgid "Supplier Verification Registry"
 msgstr "سجل التحقق من المورد"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3894
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3978
 msgid "Supplier verified"
 msgstr "تم التحقق من المورد"
 
@@ -11695,8 +11872,8 @@ msgid "System menus cannot be deleted"
 msgstr "لا يمكن حذف قوائم النظام"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4208
-msgid "System Response"
-msgstr "استجابة النظام"
+#~ msgid "System Response"
+#~ msgstr "استجابة النظام"
 
 #: src/pages/settings/components/Folders/DmsColumnMapping.tsx:17
 msgid "Table"
@@ -11877,7 +12054,7 @@ msgstr "لا يحتوي هذا المجلد على أية مجلدات أو مل
 #~ msgid "This folder does not contain any folders or files yet. Upload documents or create a new folder to start organizing repository content."
 #~ msgstr "هذا المجلد لا يحتوي على أي مجلدات أو ملفات حتى الآن. قم برفع مستندات أو إنشاء مجلد جديد لبدء تنظيم محتوى المستودع."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:627
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:638
 msgid "This is taking a bit longer. You can safely navigate away; we'll notify you in the inbox once ready."
 msgstr "يستغرق الأمر وقتاً أطول قليلاً. يمكنك المغادرة بأمان؛ سنُعلمك في الوارد عند الجاهزية."
 
@@ -11974,8 +12151,8 @@ msgid "Time"
 msgstr "وقت"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4414
-msgid "Time Remaining"
-msgstr "الوقت المتبقي"
+#~ msgid "Time Remaining"
+#~ msgstr "الوقت المتبقي"
 
 #: src/pages/requests/components/columns/useDynamicColumns.tsx:1390
 msgid "Time Running"
@@ -12054,6 +12231,10 @@ msgstr "المجموع"
 #: src/pages/requests/components/request/components/sections/overview/components/properties/PropertiesCards.tsx:41
 msgid "Total Amount"
 msgstr "المبلغ الإجمالي"
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4402
+msgid "Total Amount (Inv / PO)"
+msgstr ""
 
 #: src/pages/dashboard/workflows/shared/components/Header.tsx:692
 msgid "Total AP"
@@ -12398,6 +12579,10 @@ msgstr "وحدة"
 msgid "Unit Price"
 msgstr "سعر الوحدة"
 
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4401
+msgid "Unit Price (Inv / PO)"
+msgstr ""
+
 #: src/pages/settings/components/Folders/DmsSettings.tsx:1532
 msgid "Unknown error"
 msgstr "خطأ غير معروف"
@@ -12568,7 +12753,7 @@ msgstr "تحميل المستندات للتصنيف بالذكاء الاصطن
 msgid "Upload documents securely, assign metadata, and organize files within your repository for efficient search and management."
 msgstr "ارفع المستندات بأمان، وعيّن البيانات الوصفية، ونظّم الملفات داخل مستودعك للبحث والإدارة بكفاءة."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:363
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:374
 msgid "Upload failed"
 msgstr "فشل الرفع"
 
@@ -12652,7 +12837,7 @@ msgstr ""
 #~ msgid "Uploading file {uploadIndex} of {filesCount}..."
 #~ msgstr "جارٍ تحميل الملف {uploadIndex} من {filesCount}..."
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:364
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:375
 msgid "Uploading file..."
 msgstr "جاري رفع الملف..."
 
@@ -12859,7 +13044,7 @@ msgstr "يتحقق من حقول النظام المطلوبة"
 msgid "Validating data consistency"
 msgstr "جاري التحقق من اتساق البيانات"
 
-#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:556
+#: src/pages/requests/components/request/components/newrequest/ProcessingScreen.tsx:567
 msgid "Validating guidelines"
 msgstr "جاري التحقق من الإرشادات"
 
@@ -12873,8 +13058,8 @@ msgid "VALIDATION"
 msgstr "التحقق"
 
 #: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4143
-msgid "Validation Log"
-msgstr "سجل التحقق"
+#~ msgid "Validation Log"
+#~ msgstr "سجل التحقق"
 
 #: src/pages/report-builder/components/steps/FiltersStep.tsx:140
 msgid "Value"
@@ -12906,7 +13091,9 @@ msgstr "فحص البائع"
 msgid "Vendor identity mismatch."
 msgstr "عدم تطابق هوية البائع."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4124
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4274
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4529
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4601
 #: src/pages/requests/utils/localizeRequestUi.ts:6
 msgid "Vendor Name"
 msgstr "اسم البائع"
@@ -12915,15 +13102,23 @@ msgstr "اسم البائع"
 msgid "Vendors needing prompt outreach or query resolution"
 msgstr "موردون يحتاجون تواصلًا سريعًا أو حل استفسارات"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2350
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4650
+msgid "Verification checks supplier address registry, bank details, and business license status against corporate supplier directories and compliance watchlists."
+msgstr ""
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:2390
 msgid "Verification failed. 1 credit has been refunded."
 msgstr "فشل التحقق. تم استرداد رصيد واحد."
+
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4623
+msgid "Verification Rationale"
+msgstr ""
 
 #: src/pages/requests/utils/localizeRequestUi.ts:30
 msgid "Verified"
 msgstr "مُتحقق"
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3845
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3922
 #: src/pages/sign-in/components/VerificationForm.tsx:66
 msgid "Verify"
 msgstr "تحقق"
@@ -12948,8 +13143,8 @@ msgstr "تحقق من السياسة التي تم تكوينها قبل تنش�
 msgid "Verify your security rules before applying settings."
 msgstr "تحقق من قواعد الأمان الخاصة بك قبل تطبيق الإعدادات."
 
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3860
-#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3872
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3937
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:3949
 msgid "Verifying..."
 msgstr "جاري التحقق..."
 
@@ -13243,6 +13438,7 @@ msgid "years"
 msgstr "سنين"
 
 #: src/pages/reports/components/ReportsListView.tsx:185
+#: src/pages/requests/components/request/components/sections/overview/Overview.tsx:4863
 msgid "Yes"
 msgstr "نعم"
 
