@@ -257,6 +257,17 @@ const ProcessingScreen = ({
                         defaultScale={SpecialZoomLevel.PageFit}
                         fileUrl={previewUrl}
                         plugins={[toolbarPluginInstance]}
+                        renderError={() => (
+                          <div className='flex h-full flex-col items-center justify-center p-6 text-center text-[var(--gray-8)]'>
+                            <Icon
+                              className='mb-2 size-10 text-[var(--gray-4)]'
+                              name='tabler:file-off'
+                            />
+                            <p className='text-sm font-medium text-[var(--gray-11)]'>
+                              No document preview available
+                            </p>
+                          </div>
+                        )}
                       />
                     </div>
                   </Worker>
