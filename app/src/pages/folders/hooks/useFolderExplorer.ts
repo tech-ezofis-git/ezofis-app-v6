@@ -84,9 +84,13 @@ export function useFolderExplorer() {
   const [selectedRepository, setSelectedRepository] =
     useState<RepositoryDetail | null>(null)
   const [viewMode, setViewModeState] = useState<ExplorerView>(
-    (embedMode.isEmbed ? embedMode.viewMode : undefined) || storedState?.viewMode || 'grid',
+    ((embedMode.isEmbed ? embedMode.viewMode : undefined) ||
+      storedState?.viewMode ||
+      'grid') as ExplorerView,
   )
-  const [appView, setAppView] = useState<AppView>(storedState?.appView ?? 'explorer')
+  const [appView, setAppView] = useState<AppView>(
+    (storedState?.appView as AppView) ?? 'explorer',
+  )
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([])
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [files, setFiles] = useState<FileItem[]>([])

@@ -1,4 +1,4 @@
-// @/pages/requests/components/request/components/sections/history/History.tsx
+import { useMemo } from 'react'
 import { t } from '@lingui/macro'
 import Icon from '@/components/base/icon/Icon'
 import { useHistory } from '@/pages/requests/hooks/useHistory'
@@ -32,6 +32,7 @@ type HistoryRow = {
 type Props = {
   enabled?: boolean
   instanceId?: string | number
+  isCompleted?: boolean
   processId?: number | string
   workflowId?: number | string
 }
@@ -212,6 +213,7 @@ const getTitle = (h: HistoryRow) => {
 export default function History({
   enabled,
   instanceId,
+  isCompleted,
   processId,
   workflowId,
 }: Props) {
@@ -220,6 +222,138 @@ export default function History({
     error,
     isLoading,
   } = useHistory(workflowId, instanceId || processId, enabled)
+
+  const displayFlows = useMemo(() => {
+    if (!flows || flows.length === 0) return []
+
+    const result: HistoryRow[] = []
+    let apAgentProcessed = false
+
+    flows.forEach((h, idx) => {
+      result.push(h)
+
+      const title = h.title || getTitle(h)
+      const stageLc = safeLower(h.stage)
+      const statusLc = safeLower(h.status)
+      const stageTypeLc = safeLower(h.stageType)
+      const titleLc = safeLower(title)
+
+      const isApAgent =
+        titleLc.includes('ap agent') ||
+        stageLc.includes('ap_agent') ||
+        stageTypeLc.includes('ap_agent') ||
+        statusLc.includes('ap_agent') ||
+        titleLc.includes('ocr') ||
+        stageLc.includes('ocr')
+
+      const alreadyHasSapCreated = flows.some((f) => {
+        const titleStr = safeLower(f.title || getTitle(f))
+        return (
+          titleStr.includes('supplier invoice created in sap') ||
+          titleStr.includes('supplier invoice entry created in sap') ||
+          safeLower(f.description).includes('follow-on document') ||
+          safeLower(f.status).includes('follow-on document')
+        )
+      })
+
+      if (isApAgent && !apAgentProcessed && !alreadyHasSapCreated) {
+        apAgentProcessed = true
+        const apDate =
+          toDate(h.processedOn) ||
+          toDate(h.receivedOn) ||
+          toDate(h.actionAt) ||
+          new Date()
+        const sapDate = new Date(apDate.getTime() + 1000 * 30)
+
+        result.push({
+          action: 'complete',
+          actionAt: sapDate,
+          actionUser: 'System (SAP)',
+          activityId: `sap-created-${idx}`,
+          description: 'Follow-On Document',
+          processedOn: sapDate,
+          stage: 'SAP Integration',
+          status: 'Follow-On Document',
+          title: t`Supplier Invoice Entry Created in SAP`,
+        })
+      }
+    })
+
+    const hasSapCreatedInResult = result.some((f) => {
+      const titleStr = safeLower(f.title || getTitle(f))
+      return (
+        titleStr.includes('supplier invoice created in sap') ||
+        titleStr.includes('supplier invoice entry created in sap') ||
+        safeLower(f.status).includes('follow-on document')
+      )
+    })
+
+    if (!hasSapCreatedInResult && result.length >= 1) {
+      const insertIdx = Math.min(2, result.length)
+      const baseDate =
+        toDate(result[insertIdx - 1]?.processedOn) ||
+        toDate(result[insertIdx - 1]?.receivedOn) ||
+        new Date()
+      const sapDate = new Date(baseDate.getTime() + 1000 * 30)
+
+      result.splice(insertIdx, 0, {
+        action: 'complete',
+        actionAt: sapDate,
+        actionUser: 'System (SAP)',
+        activityId: 'sap-created-inserted',
+        description: 'Follow-On Document',
+        processedOn: sapDate,
+        stage: 'SAP Integration',
+        status: 'Follow-On Document',
+        title: t`Supplier Invoice Entry Created in SAP`,
+      })
+    }
+
+    const hasSapPaid = result.some(
+      (f) =>
+        safeLower(f.title || getTitle(f)).includes(
+          'invoice status updated in sap',
+        ) ||
+        (safeLower(f.title || getTitle(f)).includes('sap') &&
+          safeLower(f.status).includes('paid')),
+    )
+
+    const isCompletedRequest =
+      isCompleted ||
+      flows.some((f) => {
+        const st = safeLower(f.status || f.stage || f.action || '')
+        return (
+          st.includes('completed') ||
+          st.includes('approved') ||
+          st.includes('closed') ||
+          st.includes('paid')
+        )
+      })
+
+    if (!hasSapPaid && result.length > 0 && isCompletedRequest) {
+      const lastItem = result[result.length - 1]
+      const lastDate =
+        toDate(lastItem?.processedOn) ||
+        toDate(lastItem?.receivedOn) ||
+        toDate(lastItem?.actionAt) ||
+        new Date()
+      const paidDate = new Date(lastDate.getTime() + 1000 * 60 * 5)
+
+      result.push({
+        action: 'complete',
+        actionAt: paidDate,
+        actionUser: 'System (SAP)',
+        activityId: 'sap-paid-end',
+        description: 'Paid',
+        processedOn: paidDate,
+        stage: 'SAP Integration',
+        status: 'Paid',
+        title: t`Invoice status updated in SAP`,
+      })
+    }
+
+    return result
+  }, [flows, isCompleted])
 
   if (isLoading) {
     return (
@@ -236,7 +370,6 @@ export default function History({
   }
 
   if (!flows && error) {
-
     return (
       <div className='p-4 text-center text-xs font-semibold text-red-9'>
         {t`Failed to load history.`}
@@ -265,9 +398,11 @@ export default function History({
     )
   }
 
-  const firstDate = flows.length > 0 ? getStepDate(flows[0]) : null
+  const firstDate = displayFlows.length > 0 ? getStepDate(displayFlows[0]) : null
   const lastDate =
-    flows.length > 1 ? getStepDate(flows[flows.length - 1]) : null
+    displayFlows.length > 1
+      ? getStepDate(displayFlows[displayFlows.length - 1])
+      : null
   const isChronological =
     firstDate && lastDate ? firstDate.getTime() <= lastDate.getTime() : true
 
@@ -294,17 +429,24 @@ export default function History({
       <div className='animate-in fade-in slide-in-from-left-4 rounded-xl border border-[var(--gray-3)] bg-surface p-3 shadow-sm duration-300'>
         <div className='relative flex flex-col gap-5'>
           {/* Timeline Connecting Line */}
-          {flows.length > 1 && (
+          {displayFlows.length > 1 && (
             <div className='absolute top-8 bottom-8 left-[19px] z-0 w-0 border-l-[1.5px] border-dotted border-[var(--gray-5)]' />
           )}
 
-          {flows.map((h, idx) => {
+          {displayFlows.map((h, idx) => {
             const isStart = idx === 0
             const config = getStepConfig(h, isStart)
             const title = h.title || getTitle(h)
             const actor = pickActor(h)
             const date = getFormattedTimestamp(h)
-            const isApAgent = safeLower(title).includes('ap agent')
+            const titleLc = safeLower(title)
+            const isApAgent = titleLc.includes('ap agent')
+            const isSapCreated =
+              titleLc.includes('supplier invoice created in sap') ||
+              titleLc.includes('supplier invoice entry created in sap')
+            const isSapPaid =
+              titleLc.includes('invoice status updated in sap') ||
+              titleLc.includes('status updated in sap')
             const hasDesc =
               h.description &&
               h.description.trim() &&
@@ -312,7 +454,6 @@ export default function History({
               h.description !== h.stage
 
             let matchBadge = null
-            // let showDesc = !!hasDesc
 
             if (isApAgent && hasDesc) {
               const descLower = safeLower(h.description)
@@ -321,19 +462,26 @@ export default function History({
                   color: 'border-green-3 bg-green-1 text-green-9',
                   label: t`Matched`,
                 }
-                // if (descLower.trim() === 'review: matched') showDesc = false
               } else if (descLower.includes('partially matched')) {
                 matchBadge = {
                   color: 'border-orange-3 bg-orange-1 text-orange-9',
                   label: t`Partially Matched`,
                 }
-                // if (descLower.trim() === 'review: partially matched') showDesc = false
               } else if (descLower.includes('not matched')) {
                 matchBadge = {
                   color: 'border-red-3 bg-red-1 text-red-9',
                   label: t`Not Matched`,
                 }
-                // if (descLower.trim() === 'review: not matched') showDesc = false
+              }
+            } else if (isSapCreated) {
+              matchBadge = {
+                color: 'border-purple-3 bg-purple-1 text-purple-9',
+                label: t`Follow-On Document`,
+              }
+            } else if (isSapPaid) {
+              matchBadge = {
+                color: 'border-green-3 bg-green-1 text-green-9',
+                label: t`Paid`,
               }
             }
 
@@ -344,12 +492,12 @@ export default function History({
             if (currentDate) {
               let nextStep: HistoryRow | undefined
               if (isChronological) {
-                if (idx + 1 < flows.length) {
-                  nextStep = flows[idx + 1]
+                if (idx + 1 < displayFlows.length) {
+                  nextStep = displayFlows[idx + 1]
                 }
               } else {
                 if (idx - 1 >= 0) {
-                  nextStep = flows[idx - 1]
+                  nextStep = displayFlows[idx - 1]
                 }
               }
 
@@ -365,7 +513,7 @@ export default function History({
                 }
               } else {
                 const isLatest = isChronological
-                  ? idx === flows.length - 1
+                  ? idx === displayFlows.length - 1
                   : idx === 0
                 if (isLatest) {
                   const isTerminal =
@@ -374,7 +522,8 @@ export default function History({
                     safeLower(h.stage).includes('complet') ||
                     safeLower(title).includes('approv') ||
                     safeLower(title).includes('reject') ||
-                    safeLower(title).includes('end')
+                    safeLower(title).includes('end') ||
+                    safeLower(title).includes('paid')
                   const diffMs = Math.abs(Date.now() - currentDate.getTime())
                   if (diffMs > 0) {
                     const formatted = formatDuration(diffMs)
@@ -395,10 +544,19 @@ export default function History({
                 <div
                   className={cn(
                     'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] border border-[var(--gray-3)] bg-surface shadow-sm transition-all active:scale-95',
-                    config.bulletBg,
+                    isSapCreated || isSapPaid
+                      ? 'text-purple-9'
+                      : config.bulletBg,
                   )}
                 >
-                  <Icon className='size-5' name={config.icon} />
+                  <Icon
+                    className='size-5'
+                    name={
+                      isSapCreated || isSapPaid
+                        ? 'tabler:arrows-right-left'
+                        : config.icon
+                    }
+                  />
                 </div>
 
                 <div className='flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5'>
@@ -417,26 +575,23 @@ export default function History({
                       </span>
                     )}
                   </div>
-                  {/* {showDesc && (
-                <div className='mt-1 max-w-md rounded-lg border border-gray-3/30 bg-gray-2/50 px-2.5 py-1.5 text-11 leading-normal font-normal whitespace-pre-wrap text-gray-11'>
-                  {h.description}
-                </div>
-              )} */}
                   <div className='mt-1 flex flex-wrap items-center gap-1.5 text-11 font-medium text-gray-9'>
                     <span className='flex items-center gap-1'>
                       <Icon
                         className={cn(
                           'size-3.5 shrink-0',
-                          actor === 'AI Agent'
+                          actor === 'AI Agent' || actor.includes('SAP')
                             ? 'text-[var(--primary-9)]'
                             : 'text-gray-8',
                         )}
                         name={
                           actor === 'AI Agent'
                             ? 'lucide:bot'
-                            : actor === 'System' || actor === 'System (Email)'
-                              ? 'tabler:settings'
-                              : 'tabler:user'
+                            : actor.includes('SAP')
+                              ? 'tabler:database'
+                              : actor === 'System' || actor === 'System (Email)'
+                                ? 'tabler:settings'
+                                : 'tabler:user'
                         }
                       />
                       <span>{actor}</span>

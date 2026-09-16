@@ -334,10 +334,42 @@ export const importWorkflow = (
         return { id, name: String(id) }
       }
 
+      const res = String(apAgent.resource || '').toUpperCase().trim()
+      let poMasterSourceType: 'internal' | 'quickbooks' | 'sap' = 'internal'
+
+      if (res === 'SAP' || String(apAgent.connectorId || '').startsWith('sap_')) {
+        poMasterSourceType = 'sap'
+      } else if (
+        res === 'QUICKBOOKS' ||
+        res === 'QB' ||
+        String(apAgent.connectorId || '').startsWith('qb_')
+      ) {
+        poMasterSourceType = 'quickbooks'
+      } else if (res === 'FORM' || apAgent.formId) {
+        poMasterSourceType = 'internal'
+      }
+
+      const connectorId =
+        poMasterSourceType === 'sap' || poMasterSourceType === 'quickbooks'
+          ? String(apAgent.connectorId || '')
+          : ''
+
+      const formId =
+        poMasterSourceType === 'internal' ? String(apAgent.formId || '') : ''
+
+      const resource =
+        poMasterSourceType === 'sap'
+          ? 'SAP'
+          : poMasterSourceType === 'quickbooks'
+            ? 'QUICKBOOKS'
+            : 'FORM'
+
       apAgentUi = {
         apAgent, // preserve nested payload for round-trip export
         backOrderDetection: features.includes('BACKORDER_DETECT'),
+        connectorId,
         duplicateDetection: features.includes('DUPLICATE_DETECT'),
+        formId,
         glSource: toMasterOption(apAgent.syncGLAccount),
         invoiceMaster:
           apAgent.invoiceType === 'NON_PO' ||
@@ -350,15 +382,23 @@ export const importWorkflow = (
           'PO Invoices',
         matterSource: toMasterOption(apAgent.syncMatterInfo),
         poMaster:
-          !apAgent.invoiceType ||
-          apAgent.invoiceType === 'PO_INVOICE' ||
-          apAgent.invoiceType === 'PO'
+          poMasterSourceType === 'internal' && apAgent.formId
             ? toMasterOption(apAgent.formId)
             : undefined,
+        poMasterQbAccount:
+          poMasterSourceType === 'quickbooks' && apAgent.connectorId
+            ? toMasterOption(apAgent.connectorId)
+            : undefined,
+        poMasterSapAccount:
+          poMasterSourceType === 'sap' && apAgent.connectorId
+            ? toMasterOption(apAgent.connectorId)
+            : undefined,
+        poMasterSourceType,
         poMatching:
           matchingTypeMap[apAgent.matchingType] ||
           apAgent.matchingType ||
           '2-Way Match',
+        resource,
         syncGL: !!apAgent.syncGLAccountRequired,
         syncMatter: !!apAgent.syncMatterInfoRequired,
         thresholds: {

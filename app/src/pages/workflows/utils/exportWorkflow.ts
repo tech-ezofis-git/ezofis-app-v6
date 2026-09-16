@@ -218,10 +218,87 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
       setFeature('TWO_WAY_MATCH', data.poMatching === '2-Way Match')
       setFeature('THREE_WAY_MATCH', data.poMatching === '3-Way Match')
 
-      const formId =
-        data.invoiceType === 'Non-PO'
-          ? (data.invoiceMaster?.id ?? data.invoiceMaster)
-          : (data.poMaster?.id ?? data.poMaster)
+      // Determine PO Source (SAP / QUICKBOOKS / FORM)
+      let resource = 'FORM'
+      let formId = ''
+      let connectorId = ''
+
+      const isNonPo = data.invoiceType === 'Non-PO'
+
+      if (isNonPo) {
+        resource = 'FORM'
+        formId = String(
+          data.invoiceMaster?.id ??
+            data.invoiceMaster ??
+            data.formId ??
+            existingApAgent.formId ??
+            '',
+        )
+        connectorId = ''
+      } else {
+        // Determine PO Master Source Type
+        let sourceType =
+          data.poMasterSourceType ||
+          data.poMasterType ||
+          data.poMaster?.sourceType ||
+          data.resource ||
+          existingApAgent.resource
+
+        if (!sourceType) {
+          if (
+            data.poMasterSapAccount?.id ||
+            data.sapAccount?.id ||
+            String(data.connectorId || '').startsWith('sap_')
+          ) {
+            sourceType = 'sap'
+          } else if (
+            data.poMasterQbAccount?.id ||
+            data.qbAccount?.id ||
+            String(data.connectorId || '').startsWith('qb_')
+          ) {
+            sourceType = 'quickbooks'
+          } else {
+            sourceType = 'internal'
+          }
+        }
+
+        const normSource = String(sourceType).toUpperCase().trim()
+
+        if (normSource === 'SAP') {
+          resource = 'SAP'
+          connectorId = String(
+            data.poMasterSapAccount?.id ??
+              data.sapAccount?.id ??
+              data.connectorId ??
+              existingApAgent.connectorId ??
+              '',
+          )
+          formId = ''
+        } else if (normSource === 'QUICKBOOKS' || normSource === 'QB') {
+          resource = 'QUICKBOOKS'
+          connectorId = String(
+            data.poMasterQbAccount?.id ??
+              data.qbAccount?.id ??
+              data.connectorId ??
+              existingApAgent.connectorId ??
+              '',
+          )
+          formId = ''
+        } else {
+          resource = 'FORM'
+          const rawForm =
+            data.poMaster?.id ??
+            data.poMaster ??
+            data.formId ??
+            existingApAgent.formId ??
+            ''
+          formId =
+            String(rawForm).startsWith('sap_') || String(rawForm).startsWith('qb_')
+              ? ''
+              : String(rawForm)
+          connectorId = ''
+        }
+      }
 
       const fieldScore = Array.isArray(data.weights)
         ? data.weights.map((w: any) => ({
@@ -233,19 +310,17 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
 
       settings.apAgent = {
         ...existingApAgent,
-        connectorId: data.connectorId ?? existingApAgent.connectorId ?? '',
+        connectorId,
         decisionApprove:
-          data.thresholds?.approved ?? existingApAgent.decisionApprove,
+          data.thresholds?.approved ?? existingApAgent.decisionApprove ?? 90,
         decisionPartial:
-          data.thresholds?.partial ?? existingApAgent.decisionPartial,
+          data.thresholds?.partial ?? existingApAgent.decisionPartial ?? 60,
         decisionReject:
           data.thresholds?.reject ?? existingApAgent.decisionReject ?? 0,
         features,
         fieldScore,
-        formId: formId ?? existingApAgent.formId ?? '',
-        resource:
-          existingApAgent.resource ||
-          (formId ? 'FORM' : existingApAgent.resource),
+        formId,
+        resource,
         vendorMasterId:
           data.vendorSource?.id ??
           data.vendorSource ??

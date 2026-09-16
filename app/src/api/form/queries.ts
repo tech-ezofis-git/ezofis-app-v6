@@ -93,9 +93,10 @@ export const getMasterFormsQueryOptions = () => {
 
       return forms.map((f: any) => ({
         // Prefer numeric/form id — this is what workflow apAgent.formId stores
-        id: f.id ?? f.uid ?? String(Math.random()),
-        name: f.name || f.label || 'Untitled Form',
-        uid: f.uid,
+        id: f.id ?? f.formId ?? f.uid ?? String(Math.random()),
+        name: f.name || f.label || f.title || 'Untitled Form',
+        uid: f.uid ?? f.formId ?? f.id,
+        formId: f.formId ?? f.id ?? f.uid,
       }))
     },
   })
@@ -167,8 +168,10 @@ export const getPublishedFormsByType = (
 
       const forms = extractData(data)
       return forms.map((f: any) => ({
-        id: f.id || f.uid || String(Math.random()),
-        name: f.name || f.label || 'Untitled Form',
+        id: f.id ?? f.formId ?? f.uid ?? String(Math.random()),
+        name: f.name || f.label || f.title || 'Untitled Form',
+        uid: f.uid ?? f.formId ?? f.id,
+        formId: f.formId ?? f.id ?? f.uid,
       }))
     },
   })

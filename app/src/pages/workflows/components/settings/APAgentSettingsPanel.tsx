@@ -164,28 +164,44 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   const [openValidation, setOpenValidation] = useState(false)
   const [openScoring, setOpenScoring] = useState(false)
 
+const isUuid = (str: any) =>
+  typeof str === 'string' &&
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+    str.trim(),
+  )
+
   // Resolve saved master ids/objects against loaded master form options (by name)
   const getMasterOption = (val: any) => {
     if (val === null || val === undefined || val === '' || val === 0) return null
 
-    const rawId = typeof val === 'object' ? val.id : val
+    const rawId =
+      typeof val === 'object'
+        ? (val.id ?? val.formId ?? val.uid)
+        : val
     if (rawId === null || rawId === undefined || rawId === '') return null
 
+    const strRawId = String(rawId).trim()
+
     const matched = masterForms.find(
-      (m) =>
-        String(m.id) === String(rawId) ||
-        String((m as any).uid ?? '') === String(rawId),
+      (m: any) =>
+        String(m.id ?? '').trim() === strRawId ||
+        String(m.uid ?? '').trim() === strRawId ||
+        String(m.formId ?? '').trim() === strRawId ||
+        (m.name && String(m.name).trim().toLowerCase() === strRawId.toLowerCase()),
     )
     if (matched) return matched
 
     // Keep a real display name if we already have one; otherwise fall back temporarily
     if (typeof val === 'object') {
+      const nameStr = String(val.name || '').trim()
       const hasRealName =
-        val.name && String(val.name).trim() !== '' && String(val.name) !== String(val.id)
-      return hasRealName ? val : { id: rawId, name: String(rawId) }
+        nameStr !== '' &&
+        nameStr !== strRawId &&
+        !isUuid(nameStr)
+      return hasRealName ? val : { id: rawId, name: strRawId }
     }
 
-    return { id: rawId, name: String(rawId) }
+    return { id: rawId, name: strRawId }
   }
 
   const [invoiceType, setInvoiceType] = useState(
@@ -281,6 +297,9 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           }
           setQbAccount(newAcc)
           updateNodeData('poMasterQbAccount', newAcc)
+          updateNodeData('connectorId', newAcc.id)
+          updateNodeData('formId', '')
+          updateNodeData('resource', 'QUICKBOOKS')
           updateNodeData('poMaster', {
             id: newAcc.id,
             name: `QuickBooks PO Master (${newAcc.name})`,
@@ -301,6 +320,9 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           }
           setSapAccount(newAcc)
           updateNodeData('poMasterSapAccount', newAcc)
+          updateNodeData('connectorId', newAcc.id)
+          updateNodeData('formId', '')
+          updateNodeData('resource', 'SAP')
           updateNodeData('poMaster', {
             id: newAcc.id,
             name: `SAP PO Master (${newAcc.name})`,
@@ -337,6 +359,9 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
       }
       setQbAccount(newAcc)
       updateNodeData('poMasterQbAccount', newAcc)
+      updateNodeData('connectorId', newAcc.id)
+      updateNodeData('formId', '')
+      updateNodeData('resource', 'QUICKBOOKS')
       updateNodeData('poMaster', {
         id: newAcc.id,
         name: `QuickBooks PO Master (${newAcc.name})`,
@@ -359,6 +384,9 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
       const newAcc = { id: 'sap_' + Date.now(), name }
       setSapAccount(newAcc)
       updateNodeData('poMasterSapAccount', newAcc)
+      updateNodeData('connectorId', newAcc.id)
+      updateNodeData('formId', '')
+      updateNodeData('resource', 'SAP')
       updateNodeData('poMaster', {
         id: newAcc.id,
         name: newAcc.name,
@@ -437,7 +465,7 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
       return null
     }
 
-    const candidate = poMaster || getMasterOption(nodeData.poMaster)
+    const candidate = poMaster || nodeData.poMaster
     if (!candidate) return null
 
     const isExternal =
@@ -453,16 +481,25 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
       return null
     }
 
-    return candidate
-  }, [poMaster, nodeData.poMaster, poMasterSourceType])
+    return getMasterOption(candidate)
+  }, [poMaster, nodeData.poMaster, poMasterSourceType, masterForms])
 
-  const invoiceMasterValue =
-    invoiceMaster || getMasterOption(nodeData.invoiceMaster) || null
-  const vendorSourceValue =
-    vendorSource || getMasterOption(nodeData.vendorSource) || null
-  const glSourceValue = glSource || getMasterOption(nodeData.glSource) || null
-  const matterSourceValue =
-    matterSource || getMasterOption(nodeData.matterSource) || null
+  const invoiceMasterValue = useMemo(
+    () => getMasterOption(invoiceMaster || nodeData.invoiceMaster),
+    [invoiceMaster, nodeData.invoiceMaster, masterForms],
+  )
+  const vendorSourceValue = useMemo(
+    () => getMasterOption(vendorSource || nodeData.vendorSource),
+    [vendorSource, nodeData.vendorSource, masterForms],
+  )
+  const glSourceValue = useMemo(
+    () => getMasterOption(glSource || nodeData.glSource),
+    [glSource, nodeData.glSource, masterForms],
+  )
+  const matterSourceValue = useMemo(
+    () => getMasterOption(matterSource || nodeData.matterSource),
+    [matterSource, nodeData.matterSource, masterForms],
+  )
 
   const scoreSourceFormId =
     (isPO ? poMasterValue?.id : invoiceMasterValue?.id) ??
@@ -526,8 +563,13 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
       const targetForm = isExternal ? null : poMaster
       setPoMaster(targetForm)
       updateNodeData('poMaster', targetForm)
+      updateNodeData('resource', 'FORM')
+      updateNodeData('formId', targetForm?.id ?? targetForm ?? '')
+      updateNodeData('connectorId', '')
     } else if (type === 'quickbooks') {
       setPoMaster(null)
+      updateNodeData('resource', 'QUICKBOOKS')
+      updateNodeData('formId', '')
       if (qbAccount) {
         const qbData = {
           id: qbAccount.id,
@@ -535,11 +577,15 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           sourceType: 'quickbooks',
         }
         updateNodeData('poMaster', qbData)
+        updateNodeData('connectorId', qbAccount.id)
       } else {
         updateNodeData('poMaster', null)
+        updateNodeData('connectorId', '')
       }
     } else if (type === 'sap') {
       setPoMaster(null)
+      updateNodeData('resource', 'SAP')
+      updateNodeData('formId', '')
       if (sapAccount) {
         const sapData = {
           id: sapAccount.id,
@@ -547,8 +593,10 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
           sourceType: 'sap',
         }
         updateNodeData('poMaster', sapData)
+        updateNodeData('connectorId', sapAccount.id)
       } else {
         updateNodeData('poMaster', null)
+        updateNodeData('connectorId', '')
       }
     }
   }
@@ -681,14 +729,35 @@ export default function APAgentSettingsPanel({ node: initialNode }: Props) {
   useEffect(() => {
     if (masterForms.length === 0) return
 
-    if (nodeData.poMaster) setPoMaster(getMasterOption(nodeData.poMaster))
-    if (nodeData.invoiceMaster)
-      setInvoiceMaster(getMasterOption(nodeData.invoiceMaster))
-    if (nodeData.vendorSource)
-      setVendorSource(getMasterOption(nodeData.vendorSource))
-    if (nodeData.glSource) setGlSource(getMasterOption(nodeData.glSource))
-    if (nodeData.matterSource)
-      setMatterSource(getMasterOption(nodeData.matterSource))
+    const poSource = nodeData.poMaster || poMaster
+    if (poSource) {
+      const resolved = getMasterOption(poSource)
+      if (resolved && resolved.name !== poMaster?.name) setPoMaster(resolved)
+    }
+
+    const invSource = nodeData.invoiceMaster || invoiceMaster
+    if (invSource) {
+      const resolved = getMasterOption(invSource)
+      if (resolved && resolved.name !== invoiceMaster?.name) setInvoiceMaster(resolved)
+    }
+
+    const vSource = nodeData.vendorSource || vendorSource
+    if (vSource) {
+      const resolved = getMasterOption(vSource)
+      if (resolved && resolved.name !== vendorSource?.name) setVendorSource(resolved)
+    }
+
+    const glSrc = nodeData.glSource || glSource
+    if (glSrc) {
+      const resolved = getMasterOption(glSrc)
+      if (resolved && resolved.name !== glSource?.name) setGlSource(resolved)
+    }
+
+    const matSrc = nodeData.matterSource || matterSource
+    if (matSrc) {
+      const resolved = getMasterOption(matSrc)
+      if (resolved && resolved.name !== matterSource?.name) setMatterSource(resolved)
+    }
   }, [
     masterForms,
     nodeData.poMaster,
