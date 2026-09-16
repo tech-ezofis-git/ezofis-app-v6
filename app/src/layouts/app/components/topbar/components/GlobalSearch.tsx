@@ -227,14 +227,7 @@ const GlobalSearch = () => {
     const searchText = query.trim()
     if (!searchText) return
 
-    setPending({
-      fileSearch: searchText,
-      filters: {},
-      repositoryId: pageContext?.specificId || undefined,
-      repositoryLabel: 'Repository',
-      target: 'Repository',
-    })
-    void navigate({ to: '/folders' })
+    void navigate({ to: '/search', search: { q: searchText } })
     closeSearch()
   }
 
@@ -385,7 +378,7 @@ const GlobalSearch = () => {
               if (e.key === 'Enter') {
                 e.preventDefault()
                 e.stopPropagation()
-                void runApiSearch()
+                openAllResults()
               }
             }}
           />
@@ -450,7 +443,7 @@ const GlobalSearch = () => {
                       {t`Start typing to search`}
                     </p>
                     <p className='max-w-[280px] text-xs leading-5 text-gray-10'>
-                      {t`Type to search local data. If nothing matches, the API runs automatically.`}
+                      {t`Type to search the data. To find the Request,Document,Workflows,Folders, `}
                     </p>
                   </motion.div>
                 )}
@@ -523,11 +516,11 @@ const GlobalSearch = () => {
                   >
                     <div className='flex shrink-0 items-center justify-between border-b border-gray-3 px-3.5 py-2'>
                       <span className='text-[11px] font-semibold tracking-wide text-gray-9 uppercase'>
-                        {resultsSource === 'api'
+                        {/* {resultsSource === 'api'
                           ? t`API results`
                           : resultsSource === 'dummy'
                             ? t`Dummy results`
-                            : t`Cached results`}
+                            : t`Cached results`} */}
                       </span>
                       <span className='text-[11px] text-gray-9'>
                         {results.length} {t`found`}
@@ -562,15 +555,15 @@ const GlobalSearch = () => {
                             : isDocumentHit
                               ? t`Updated from Document`
                               : [
-                                  hit.name
-                                    ? t`Updated from ${hit.name}`
-                                    : '',
-                                  getSearchHitDate(hit),
-                                ]
-                                  .filter(Boolean)
-                                  .join(', ') ||
-                                hit.type ||
-                                t`Result`
+                                hit.name
+                                  ? t`Updated from ${hit.name}`
+                                  : '',
+                                getSearchHitDate(hit),
+                              ]
+                                .filter(Boolean)
+                                .join(', ') ||
+                              hit.type ||
+                              t`Result`
 
                         return (
                           <motion.li
@@ -699,7 +692,7 @@ const GlobalSearch = () => {
                       />
                       <span className='min-w-0 flex-1 truncate text-[13px] text-gray-12'>
                         {resultsSource === 'cache'
-                          ? t`Press Enter to search API for “${searchLabel}”`
+                          ? t`All search results for  “${searchLabel}”`
                           : t`All search results for “${searchLabel}”`}
                       </span>
                       <span className='shrink-0 text-[12px] text-gray-9'>

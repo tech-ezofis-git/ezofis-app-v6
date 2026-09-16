@@ -33,6 +33,7 @@ import {
   Store,
   Table2,
   Trash2,
+  Workflow,
   X,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -283,6 +284,7 @@ const iconMap: Record<string, LucideIconType> = {
   table: Table2,
   trash: Trash2,
   user: FileText,
+  workflow: Workflow,
 }
 
 const legacyIconMap: Record<string, keyof typeof iconMap> = {
@@ -699,6 +701,8 @@ const AskAI = () => {
   }
 
   const applyAnswerAction = (msg: Message) => {
+    if (isMaximized) toggleMaximize(pathname)
+    
     const target = String(msg.actionTo || '').toLowerCase()
     if (target !== 'repository' && target !== 'workflow') return
 
@@ -740,6 +744,7 @@ const AskAI = () => {
 
   const openResultCard = (card: AskAiCard) => {
     if (!isCardNavigable(card)) return
+    if (isMaximized) toggleMaximize(pathname)
 
     const type = String(card.type || '')
       .trim()
@@ -764,7 +769,6 @@ const AskAI = () => {
         },
         to: '/forms/$formId/entries',
       })
-      closeAskAI()
       return
     }
 
@@ -781,7 +785,6 @@ const AskAI = () => {
       } else {
         void navigate({ to: '/requests' })
       }
-      closeAskAI()
       return
     }
 
@@ -802,7 +805,62 @@ const AskAI = () => {
       },
       to: '/folders',
     })
-    closeAskAI()
+  }
+
+  const openResultGroup = (groupType: string, groupId: string, groupName: string, msg: Message) => {
+    if (isMaximized) toggleMaximize(pathname)
+    
+    const type = groupType.toLowerCase()
+    const browse = msg.browseRequest
+    const { fileSearch, filters } = browseFilterByToUiFiltersAndSearch(
+      browse?.filterBy,
+      browse?.contentSearchValue,
+    )
+
+    if (type === 'form' || type.includes('master')) {
+      if (!groupId) return
+      void navigate({
+        params: { formId: groupId },
+        search: {
+          ...(fileSearch ? { search: fileSearch } : {}),
+        },
+        to: '/forms/$formId/entries',
+      })
+      return
+    }
+
+    if (type === 'ticket' || type === 'request') {
+      setPending({
+        ephemeral: true,
+        filters,
+        target: 'Workflow',
+        workflowId: groupId || undefined,
+      })
+      if (groupId) {
+        void navigate({
+          search: { workflowId: groupId },
+          to: '/requests',
+        })
+      } else {
+        void navigate({ to: '/requests' })
+      }
+      return
+    }
+
+    if (type === 'document' || type === 'file') {
+      setPending({
+        ephemeral: true,
+        fileSearch: fileSearch || undefined,
+        filters,
+        repositoryId: groupId || undefined,
+        repositoryLabel: groupName || 'Repository',
+        target: 'Repository',
+      })
+      void navigate({
+        search: { ...(groupId ? { repositoryId: groupId } : {}) },
+        to: '/folders',
+      })
+    }
   }
 
   const sendMessage = async (value?: string) => {
@@ -1068,6 +1126,7 @@ const AskAI = () => {
                         msg={msg}
                         onActionClick={() => applyAnswerAction(msg)}
                         onCardClick={openResultCard}
+                        onGroupClick={(type, id, name) => openResultGroup(type, id, name, msg)}
                         onTypingComplete={() => finishTyping(msg.id)}
                         onTypingProgress={() =>
                           bottomRef.current?.scrollIntoView({ behavior: 'auto' })
@@ -1241,12 +1300,14 @@ const ChatMessage = ({
   msg,
   onActionClick,
   onCardClick,
+  onGroupClick,
   onTypingComplete,
   onTypingProgress,
 }: {
   msg: Message
   onActionClick?: () => void
   onCardClick?: (card: AskAiCard) => void
+  onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
   onTypingComplete?: () => void
   onTypingProgress?: () => void
 }) => {
@@ -1275,6 +1336,7 @@ const ChatMessage = ({
   const paragraphs = msg.text.split('\n').filter(Boolean)
   const showExtras = Boolean(msg.revealExtras)
   const richBlocks = blocks.filter((b) => b.type !== 'paragraph')
+  const hasCards = blocks.some((b) => b.type === 'card' || (b.type === 'cards' && b.items?.length))
 
   return (
     <motion.div
@@ -1314,9 +1376,11 @@ const ChatMessage = ({
                   <AnswerBlock
                     block={block}
                     ctaMode={msg.ctaMode}
+                    hasCards={hasCards}
                     key={`${block.type}-${index}`}
                     onActionClick={onActionClick}
                     onCardClick={onCardClick}
+                    onGroupClick={onGroupClick}
                   />
                 ))}
                 onProgress={onTypingProgress}
@@ -1329,16 +1393,109 @@ const ChatMessage = ({
   )
 }
 
+const AnswerCardGroup = ({
+  actionLabel,
+  canApply,
+  group,
+  isApply,
+  onCardClick,
+  onGroupClick,
+}: {
+  actionLabel: string
+  canApply: boolean
+  group: { name: string; type: string; id: string; cards: AskAiCard[] }
+  isApply: boolean
+  onCardClick?: (card: AskAiCard) => void
+  onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true)
+
+  const iconName =
+    group.type === 'form' || group.type.includes('master')
+      ? 'fileText'
+      : group.type === 'ticket' || group.type === 'request'
+        ? 'workflow'
+        : 'folder'
+
+  return (
+    <div className='mb-2.5 overflow-hidden bg-[var(--bg)] rounded-[7px] border border-[var(--border)]'>
+      <div
+        className='group flex w-full cursor-pointer items-center justify-between border-b border-[var(--border)] bg-[var(--bg)] px-3 py-2.5 transition  focus-visible:outline-none'
+        role='button'
+        tabIndex={0}
+        onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setIsExpanded(!isExpanded)
+          }
+        }}
+      >
+        <div className='flex min-w-0 flex-1 items-center gap-2 pr-2'>
+          <UiIcon className='shrink-0 text-[var(--purple)]' name={iconName} size={15} />
+          <span className='truncate group-hover:whitespace-normal text-[11.5px] font-bold tracking-[.4px] text-[var(--text1)] uppercase'>
+            {group.name}
+          </span>
+        </div>
+
+        <div className='flex shrink-0 items-center gap-2'>
+          {canApply && (
+            <Tooltip content={actionLabel} position='top'>
+              <button
+                className='grid place-items-center text-[var(--secondary-7)] transition-colors hover:text-[var(--primary-9)] focus-visible:outline-none'
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onGroupClick?.(group.type, group.id, group.name)
+                }}
+              >
+                {isApply ? (
+                  <Filter className='size-4' strokeWidth={2} />
+                ) : (
+                  <ExternalLink className='size-4' strokeWidth={2} />
+                )}
+              </button>
+            </Tooltip>
+          )}
+          <ChevronDown
+            className={`size-4 text-[var(--text2)] transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+              }`}
+          />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className='flex flex-col divide-y divide-[var(--border)]'>
+          {group.cards.map((card, index) => (
+            <div className='bg-[var(--bg)] mr-2 ml-2 mt-2 mb-2 shadow-md rounded-lg border border-[var(--border)]'>
+              <AnswerCard
+                card={card}
+                key={`${card.title || 'card'}-${index}`}
+                nested
+                onCardClick={onCardClick}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const AnswerBlock = ({
   block,
   ctaMode,
+  hasCards,
   onActionClick,
   onCardClick,
+  onGroupClick,
 }: {
   block: TextBlock
   ctaMode?: AskAiCtaMode | null
+  hasCards?: boolean
   onActionClick?: () => void
   onCardClick?: (card: AskAiCard) => void
+  onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
 }) => {
   if (block.type === 'paragraph') {
     return <p className='mb-2.5'>{block.text}</p>
@@ -1348,7 +1505,7 @@ const AnswerBlock = ({
     const bulletItems = block.items ?? []
     if (!bulletItems.length) return null
 
-    const isClickable = Boolean(onActionClick && ctaMode)
+    const isClickable = Boolean(onActionClick && ctaMode && !hasCards)
     const isApply = ctaMode === 'apply'
     const actionLabel = isApply ? 'Apply filter' : 'Open the page'
 
@@ -1380,10 +1537,10 @@ const AnswerBlock = ({
               className='inline-flex max-w-full items-center gap-1 rounded-full border border-[var(--primary-4)] bg-[var(--primary-2)] px-2.5 py-1 text-[12px] text-[var(--text1)]'
               key={`${item.label}-${item.value}-${index}`}
             >
-              <span className='font-medium text-[var(--text2)]'>
+              <span className='shrink-0 whitespace-nowrap font-medium text-[var(--text2)]'>
                 {item.label}
               </span>
-              <span className='text-[var(--text3)]'>:</span>
+              <span className='shrink-0 text-[var(--text3)]'>:</span>
               <span className='min-w-0 truncate font-semibold text-[var(--spark1)]'>
                 {item.value}
               </span>
@@ -1436,20 +1593,64 @@ const AnswerBlock = ({
     const cards = block.items ?? []
     if (!cards.length) return null
 
+    const groups = new Map<string, { name: string; type: string; id: string; cards: AskAiCard[] }>()
+
+    cards.forEach((card) => {
+      const type = String(card.type || '').trim().toLowerCase()
+      const formId = pickCardIdValue(card.id, 'formId', 'masterFormId')
+      const workflowId = pickCardIdValue(card.id, 'workflowId')
+      const repoId = pickCardIdValue(card.id, 'repositoryId', 'repoId')
+
+      const formName = pickCardIdValue(card.id, 'formName', 'masterFormName')
+      const workflowName = pickCardIdValue(card.id, 'workflowName')
+      const repoName = pickCardIdValue(card.id, 'repositoryName', 'repoName')
+
+      let gId = ''
+      let gName = ''
+      if (type === 'form' || type.includes('master') || formId) {
+        gId = formId
+        gName = formName || 'Forms'
+      } else if (type === 'ticket' || type === 'request' || workflowId) {
+        gId = workflowId
+        gName = workflowName || 'Requests'
+      } else {
+        gId = repoId
+        gName = repoName || 'Documents'
+      }
+
+      const key = `${type}-${gId}`
+      if (!groups.has(key)) {
+        groups.set(key, { name: gName, type, id: gId, cards: [] })
+      }
+      groups.get(key)!.cards.push(card)
+    })
+
+    const isApply = ctaMode === 'apply'
+    const actionLabel = isApply ? 'Apply filter' : 'Open the page'
+
     return (
-      <div className='mb-2.5'>
+      <div className='mb-2.5 flex flex-col gap-4'>
         {block.title && (
-          <div className='mb-1.5 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
+          <div className='text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
             {block.title}
           </div>
         )}
-        {cards.map((card, index) => (
-          <AnswerCard
-            card={card}
-            key={`${card.title || 'card'}-${index}`}
-            onCardClick={onCardClick}
-          />
-        ))}
+        {Array.from(groups.values()).map((group) => {
+          const hasMultiple = group.cards.length > 1
+          const canApply = hasMultiple && Boolean(onGroupClick)
+
+          return (
+            <AnswerCardGroup
+              actionLabel={actionLabel}
+              canApply={canApply}
+              group={group}
+              isApply={isApply}
+              key={`${group.type}-${group.id}`}
+              onCardClick={onCardClick}
+              onGroupClick={onGroupClick}
+            />
+          )
+        })}
       </div>
     )
   }
@@ -1459,9 +1660,11 @@ const AnswerBlock = ({
 
 const AnswerCard = ({
   card,
+  nested,
   onCardClick,
 }: {
   card: AskAiCard
+  nested?: boolean
   onCardClick?: (card: AskAiCard) => void
 }) => {
   const fields = card.fields ?? []
@@ -1473,24 +1676,24 @@ const AnswerCard = ({
 
   const content = (
     <>
-      <div className='border-b border-[var(--border)] px-3 py-2.5'>
+      <div
+        className={`px-3 ${nested && (fields.length > 0 || truncatedDescription)
+          ? 'pt-3 pb-1'
+          : 'py-2.5'
+          } ${nested ? '' : 'border-b border-[var(--border)]'}`}
+      >
         <div className='flex items-start justify-between gap-2'>
-          <div className='min-w-0 flex-1'>
-            <div className='text-[13.5px] font-semibold text-[var(--text1)]'>
+          <div className='flex min-w-0 flex-1 flex-col'>
+            <div className='truncate group-hover:whitespace-normal text-[13.5px] font-semibold text-[var(--text1)]'>
               {card.title}
             </div>
             {card.subtitle && (
-              <div className='mt-0.5 text-[11.5px] leading-snug text-[var(--text3)]'>
+              <div className='mt-0.5 truncate group-hover:whitespace-normal text-[11.5px] leading-snug text-[var(--text3)]'>
                 {card.subtitle}
               </div>
             )}
           </div>
           <div className='flex shrink-0 items-center gap-1.5'>
-            {typeLabel ? (
-              <span className='rounded-md border border-[var(--border)] bg-[var(--bg2)] px-1.5 py-0.5 text-[10px] font-medium tracking-[.3px] text-[var(--text2)] uppercase'>
-                {typeLabel}
-              </span>
-            ) : null}
             {clickable ? (
               <ExternalLink
                 className='size-3.5 text-[var(--purple)] opacity-70 transition group-hover:translate-x-0.5 group-hover:opacity-100'
@@ -1522,7 +1725,10 @@ const AnswerCard = ({
           ))}
         </div>
       ) : truncatedDescription ? (
-        <div className='px-3 py-2.5 text-xs leading-relaxed text-[var(--text2)]'>
+        <div
+          className={`px-3 text-xs leading-relaxed text-[var(--text2)] ${nested ? 'pb-3' : 'py-2.5'
+            }`}
+        >
           {truncatedDescription}
         </div>
       ) : null}
@@ -1532,7 +1738,11 @@ const AnswerCard = ({
   if (clickable) {
     return (
       <button
-        className='group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-7)] active:scale-[0.995]'
+        className={
+          nested
+            ? 'group flex w-full flex-col text-left transition  focus-visible:outline-none'
+            : 'group mb-2.5 w-full overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)] text-left transition hover:border-[var(--primary-7)] hover:shadow-[0_6px_18px_rgba(124,58,237,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-7)] active:scale-[0.995]'
+        }
         type='button'
         onClick={() => onCardClick?.(card)}
       >
@@ -1542,7 +1752,13 @@ const AnswerCard = ({
   }
 
   return (
-    <div className='mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)]'>
+    <div
+      className={
+        nested
+          ? 'group flex flex-col'
+          : 'group mb-2.5 overflow-hidden rounded-[14px] border border-[var(--border)] bg-[var(--bg)]'
+      }
+    >
       {content}
     </div>
   )
