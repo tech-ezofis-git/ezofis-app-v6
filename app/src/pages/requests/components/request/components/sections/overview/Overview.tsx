@@ -721,7 +721,7 @@ const extractDueDate = (row: any, agentData: any, formModel?: any): string => {
           d.setDate(d.getDate() + days)
           val = d.toISOString().split('T')[0]
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -1215,7 +1215,7 @@ const getPoRowObj = (agentData: any, selectedItem: any, matchingProc: any) => {
             return parsed
           }
         }
-      } catch {}
+      } catch { }
     }
   }
   return null
@@ -1360,9 +1360,9 @@ const FormCard = ({
   const isPerfectMatch = isUsingPo
   const effectiveScore =
     score !== undefined &&
-    score !== null &&
-    Number(score) < 100 &&
-    isPerfectMatch
+      score !== null &&
+      Number(score) < 100 &&
+      isPerfectMatch
       ? 100
       : score
 
@@ -1509,9 +1509,9 @@ const FormCard = ({
     const selectedOption =
       typeof localValue === 'string' && localValue !== '-'
         ? options.find(
-            (opt: any) =>
-              String(opt.id).toLowerCase() === localValue.toLowerCase(),
-          ) || (localValue ? { id: localValue, name: localValue } : null)
+          (opt: any) =>
+            String(opt.id).toLowerCase() === localValue.toLowerCase(),
+        ) || (localValue ? { id: localValue, name: localValue } : null)
         : null
 
     inputElement = (
@@ -1698,7 +1698,7 @@ const FormCard = ({
                   value === null ||
                   value === undefined ||
                   value === '') &&
-                  'font-medium text-[var(--gray-9)]',
+                'font-medium text-[var(--gray-9)]',
               )}
             >
               {value === null || value === undefined || value === ''
@@ -2018,7 +2018,7 @@ const Overview = (props: any) => {
     if (typeof data === 'string') {
       try {
         data = JSON.parse(data)
-      } catch {}
+      } catch { }
     }
     if (data && typeof data === 'object') {
       let merged = { ...data }
@@ -2026,7 +2026,7 @@ const Overview = (props: any) => {
         if (typeof merged._agentResponse === 'string') {
           try {
             merged = { ...merged, ...JSON.parse(merged._agentResponse) }
-          } catch {}
+          } catch { }
         } else if (typeof merged._agentResponse === 'object') {
           merged = { ...merged, ...merged._agentResponse }
         }
@@ -2035,7 +2035,7 @@ const Overview = (props: any) => {
         if (typeof merged.agentResponse === 'string') {
           try {
             merged = { ...merged, ...JSON.parse(merged.agentResponse) }
-          } catch {}
+          } catch { }
         } else if (typeof merged.agentResponse === 'object') {
           merged = { ...merged, ...merged.agentResponse }
         }
@@ -2048,9 +2048,9 @@ const Overview = (props: any) => {
   const resolvedInstanceId = useMemo(() => {
     return String(
       selectedItem?.workflowInstanceId ||
-        selectedItem?.instanceId ||
-        processId ||
-        '',
+      selectedItem?.instanceId ||
+      processId ||
+      '',
     )
   }, [selectedItem, processId])
 
@@ -2093,7 +2093,7 @@ const Overview = (props: any) => {
           const parsed = JSON.parse(obj)
           if (parsed && typeof parsed === 'object')
             return parsed.source_type || parsed.sourceType || parsed.source || null
-        } catch {}
+        } catch { }
       }
       return null
     }
@@ -2141,20 +2141,20 @@ const Overview = (props: any) => {
   const isRequestCompleted = useMemo(() => {
     const rawStatus = String(
       selectedItem?.status ||
-        selectedItem?.workflowStatus ||
-        selectedItem?.stage ||
-        agentData?.status ||
-        '',
+      selectedItem?.workflowStatus ||
+      selectedItem?.stage ||
+      agentData?.status ||
+      '',
     )
       .toLowerCase()
       .trim()
 
     const hasCompletedAt = Boolean(
       selectedItem?.completedAtUtc ||
-        agentData?.completedAtUtc ||
-        matchingProc?.completedAtUtc ||
-        selectedItem?.completedAt ||
-        agentData?.completedAt,
+      agentData?.completedAtUtc ||
+      matchingProc?.completedAtUtc ||
+      selectedItem?.completedAt ||
+      agentData?.completedAt,
     )
 
     return (
@@ -2410,6 +2410,7 @@ const Overview = (props: any) => {
 
   const [activeTab, setActiveTab] = useState('summary')
   const [activeDetailView, setActiveDetailView] = useState<string | null>(null)
+  const [expandedLedgerKeys, setExpandedLedgerKeys] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!kanbanMissingFieldIds?.length) return
@@ -2714,7 +2715,7 @@ const Overview = (props: any) => {
         try {
           const parsed = JSON.parse(val)
           if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        } catch {}
+        } catch { }
       }
     }
 
@@ -2735,7 +2736,7 @@ const Overview = (props: any) => {
           try {
             const parsed = JSON.parse(cand)
             if (Array.isArray(parsed) && parsed.length > 0) return parsed
-          } catch {}
+          } catch { }
         }
       }
     }
@@ -2754,7 +2755,7 @@ const Overview = (props: any) => {
         try {
           const parsed = JSON.parse(cand)
           if (Array.isArray(parsed) && parsed.length > 0) return parsed
-        } catch {}
+        } catch { }
       }
     }
 
@@ -3716,9 +3717,9 @@ const Overview = (props: any) => {
 
       const repoId = String(
         selectedFile?.repositoryId ||
-          selectedItem?.repositoryId ||
-          repositoryId ||
-          '',
+        selectedItem?.repositoryId ||
+        repositoryId ||
+        '',
       ).trim()
       const itemId = String(
         selectedFile?.itemId || selectedFile?.id || selectedItem?.itemId || '',
@@ -3993,10 +3994,10 @@ const Overview = (props: any) => {
                 {eligibleFields.filter((key) =>
                   key.toLowerCase().includes(searchFilter.toLowerCase()),
                 ).length === 0 && (
-                  <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
-                    No matching fields
-                  </div>
-                )}
+                    <div className='px-3 py-2 text-center text-xs font-medium text-[var(--gray-9)]'>
+                      No matching fields
+                    </div>
+                  )}
               </div>
             </menu>
           )}
@@ -4016,9 +4017,9 @@ const Overview = (props: any) => {
                       analysisCardCount <= 3 && 'grid-cols-1 sm:grid-cols-3',
                       analysisCardCount === 4 && 'grid-cols-2 md:grid-cols-2 xl:grid-cols-4',
                       analysisCardCount === 5 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
                       analysisCardCount >= 6 &&
-                        'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+                      'grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
                     )}
                   >
                     {(() => {
@@ -4066,9 +4067,9 @@ const Overview = (props: any) => {
                           }
                           subtitle={
                             poVal &&
-                            poVal !== '-' &&
-                            poVal !== 'N/A' &&
-                            resolvedAgentData?.source_type
+                              poVal !== '-' &&
+                              poVal !== 'N/A' &&
+                              resolvedAgentData?.source_type
                               ? `via ${formatErpSystem(resolvedAgentData.source_type)}`
                               : undefined
                           }
@@ -4094,14 +4095,14 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.duplicate_check?.status ||
-                              agentData?.duplicate_check?.status ||
-                              (resolvedAgentData?.invoice_errors?.severity === 'NONE'
-                                ? 'No Duplicate'
-                                : 'No Duplicate'),
+                            agentData?.duplicate_check?.status ||
+                            (resolvedAgentData?.invoice_errors?.severity === 'NONE'
+                              ? 'No Duplicate'
+                              : 'No Duplicate'),
                           )}
                           statusType={
                             resolvedAgentData?.duplicate_check?.status === 'Duplicate' ||
-                            agentData?.duplicate_check?.status === 'Duplicate'
+                              agentData?.duplicate_check?.status === 'Duplicate'
                               ? 'warning'
                               : 'success'
                           }
@@ -4180,12 +4181,12 @@ const Overview = (props: any) => {
                         status={localizeRequestStatus(
                           i18n,
                           resolvedAgentData?.supplier_validation?.status ||
-                            supplierCheckState.data?.status ||
-                            'Verified',
+                          supplierCheckState.data?.status ||
+                          'Verified',
                         )}
                         statusType={
                           resolvedAgentData?.supplier_validation?.status === 'ACTIVE' ||
-                          supplierCheckState.data?.statusType === 'success'
+                            supplierCheckState.data?.statusType === 'success'
                             ? 'success'
                             : 'warning'
                         }
@@ -4225,7 +4226,7 @@ const Overview = (props: any) => {
                       />
                     )}
                     {showBackOrder &&
-                    backOrderDisplay?.status === 'Detected' ? (
+                      backOrderDisplay?.status === 'Detected' ? (
                       <AnalysisCard
                         align='right'
                         icon={PackageX}
@@ -4398,7 +4399,7 @@ const Overview = (props: any) => {
                           }
                           statusType={
                             resolvedAgentData?.decision === 'Matched' ||
-                            (poVal && poVal !== '-' && poVal !== 'N/A')
+                              (poVal && poVal !== '-' && poVal !== 'N/A')
                               ? 'success'
                               : 'warning'
                           }
@@ -4409,115 +4410,329 @@ const Overview = (props: any) => {
                             {(resolvedAgentData?.ai_insight ||
                               resolvedAgentData?.reason ||
                               resolvedAgentData?.score !== undefined) && (
-                              <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
-                                {resolvedAgentData?.ai_insight && (
-                                  <div className='md:col-span-2 flex items-start gap-3 rounded-xl border border-[var(--purple-3)] bg-[var(--purple-1)] p-3.5 text-xs text-[var(--purple-11)] shadow-xs'>
-                                    <AiBrandIcon
-                                      className='size-4.5 shrink-0 mt-0.5 text-[var(--purple-9)]'
-                                      variant='outline-purple'
-                                    />
-                                    <div className='space-y-1'>
-                                      <div className='font-semibold text-[var(--purple-12)] text-xs flex items-center gap-1.5'>
-                                        {t`AI Insight & Verification Summary`}
-                                      </div>
-                                      <p className='leading-relaxed font-medium text-[var(--purple-12)]'>
-                                        {resolvedAgentData.ai_insight}
-                                      </p>
-                                      {resolvedAgentData.reason && (
-                                        <p className='text-[11px] leading-relaxed text-[var(--purple-11)] opacity-90 pt-1 border-t border-[var(--purple-3)]/60'>
-                                          {resolvedAgentData.reason}
+                                <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+                                  {resolvedAgentData?.ai_insight && (
+                                    <div className='md:col-span-2 flex items-start gap-3 rounded-xl border border-[var(--purple-3)] bg-[var(--purple-1)] p-3.5 text-xs text-[var(--purple-11)] shadow-xs'>
+                                      <AiBrandIcon
+                                        className='size-4.5 shrink-0 mt-0.5 text-[var(--purple-9)]'
+                                        variant='outline-purple'
+                                      />
+                                      <div className='space-y-1'>
+                                        <div className='font-semibold text-[var(--purple-12)] text-xs flex items-center gap-1.5'>
+                                          {t`AI Insight & Verification Summary`}
+                                        </div>
+                                        <p className='leading-relaxed font-medium text-[var(--purple-12)]'>
+                                          {resolvedAgentData.ai_insight}
                                         </p>
-                                      )}
+                                        {resolvedAgentData.reason && (
+                                          <p className='text-[11px] leading-relaxed text-[var(--purple-11)] opacity-90 pt-1 border-t border-[var(--purple-3)]/60'>
+                                            {resolvedAgentData.reason}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
+                                  )}
 
-                                <div
-                                  className={cn(
-                                    'flex flex-col justify-center items-center rounded-xl border p-3.5 text-center shadow-xs',
-                                    (resolvedAgentData?.score ?? 100) >= 90
-                                      ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-11)]'
-                                      : 'border-[var(--amber-3)] bg-[var(--amber-1)] text-[var(--amber-11)]',
-                                  )}
-                                >
-                                  <span className='text-[11px] font-medium text-[var(--gray-11)] mb-0.5'>
-                                    {t`Match Score`}
-                                  </span>
-                                  <div className='flex items-baseline gap-1'>
-                                    <span className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
-                                      {resolvedAgentData?.score !== undefined
-                                        ? `${resolvedAgentData.score}%`
-                                        : '100%'}
+                                  <div
+                                    className={cn(
+                                      'flex flex-col justify-center items-center rounded-xl border p-3.5 text-center shadow-xs',
+                                      (resolvedAgentData?.score ?? 100) >= 90
+                                        ? 'border-[var(--green-3)] bg-[var(--green-1)] text-[var(--green-11)]'
+                                        : 'border-[var(--amber-3)] bg-[var(--amber-1)] text-[var(--amber-11)]',
+                                    )}
+                                  >
+                                    <span className='text-[11px] font-medium text-[var(--gray-11)] mb-0.5'>
+                                      {t`Match Score`}
                                     </span>
-                                    <span className='text-xs font-semibold text-[var(--green-9)]'>
-                                      {resolvedAgentData?.decision || 'Matched'}
-                                    </span>
+                                    <div className='flex items-baseline gap-1'>
+                                      <span className='text-2xl font-bold tracking-tight text-[var(--gray-13)]'>
+                                        {resolvedAgentData?.score !== undefined
+                                          ? `${resolvedAgentData.score}%`
+                                          : '100%'}
+                                      </span>
+                                      <span className='text-xs font-semibold text-[var(--green-9)]'>
+                                        {resolvedAgentData?.decision || 'Matched'}
+                                      </span>
+                                    </div>
+                                    {resolvedAgentData?.source_type && (
+                                      <span className='text-[10px] text-[var(--gray-10)] mt-0.5'>
+                                        {resolvedAgentData.source_type}
+                                      </span>
+                                    )}
                                   </div>
-                                  {resolvedAgentData?.source_type && (
-                                    <span className='text-[10px] text-[var(--gray-10)] mt-0.5'>
-                                      {resolvedAgentData.source_type}
-                                    </span>
-                                  )}
                                 </div>
-                              </div>
-                            )}
+                              )}
 
                             {/* Document & Procurement Ledger Mapping */}
-                            <div className='space-y-2.5'>
-                              <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
-                                {t`Document & Procurement Ledger Mapping`}
-                              </h4>
-                              <div className='grid grid-cols-2 md:grid-cols-4 gap-3 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3 text-xs'>
-                                <div className='space-y-0.5'>
-                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`PO Number`}
-                                  </span>
-                                  <div className='font-semibold text-[var(--gray-13)] text-xs'>
-                                    {poVal ||
-                                      resolvedAgentData?.po_row?.['PO Number'] ||
-                                      'N/A'}
+                            {(() => {
+                              const poRowObj =
+                                getPoRowObj(resolvedAgentData, selectedItem, matchingProc) ||
+                                resolvedAgentData?.po_row ||
+                                agentData?.po_row
+
+                              const poLineItemsMapped =
+                                poRowObj?.['PO Line Item Mapped'] ||
+                                poRowObj?.po_line_item_mapped ||
+                                poRowObj?.line_items ||
+                                []
+
+                              const supplierIdVal =
+                                poRowObj?.['Supplier Id'] ||
+                                poRowObj?.['Supplier ID'] ||
+                                poRowObj?.['Supplier_Id'] ||
+                                poRowObj?.supplier_id ||
+                                poRowObj?.['Vendor Id']
+
+                              const poDateVal =
+                                poRowObj?.['PO Date'] ||
+                                poRowObj?.['po_date'] ||
+                                poRowObj?.poDate
+
+                              const currencyVal =
+                                poRowObj?.['Currency'] ||
+                                poRowObj?.currency ||
+                                'USD'
+
+                              const poAmountVal =
+                                poRowObj?.['PO Amount'] !== undefined && poRowObj?.['PO Amount'] !== null
+                                  ? poRowObj['PO Amount']
+                                  : poRowObj?.total !== undefined && poRowObj?.total !== null
+                                    ? poRowObj.total
+                                    : poRowObj?.po_amount
+
+                              const sourceSystemVal =
+                                formatErpSystem(
+                                  poRowObj?.source ||
+                                  poRowObj?.source_type ||
+                                  resolvedAgentData?.source_type,
+                                ) || 'SAP'
+
+                              // Extract extra key-values from poRowObj that aren't part of standard display
+                              const standardKeys = new Set([
+                                'PO Number', 'po_number', 'PO No', 'po_no', 'Supplier', 'supplier', 'Supplier Name',
+                                'Supplier Id', 'Supplier ID', 'Supplier_Id', 'supplier_id', 'Vendor Id', 'Vendor',
+                                'PO Date', 'po_date', 'poDate', 'PO Amount', 'po_amount', 'Currency', 'currency',
+                                'source', 'source_type', 'sourceType', 'total', 'matches', 'PO Line Item Mapped',
+                                'po_line_item_mapped', 'line_items'
+                              ])
+
+                              const extraPoRowEntries = poRowObj && typeof poRowObj === 'object'
+                                ? Object.entries(poRowObj).filter(
+                                  ([k, v]) =>
+                                    !standardKeys.has(k) &&
+                                    v !== null &&
+                                    v !== undefined &&
+                                    v !== '' &&
+                                    typeof v !== 'object',
+                                )
+                                : []
+
+                              return (
+                                <>
+                                  {/* Document & Procurement Ledger Mapping */}
+                                  <div className='space-y-2.5'>
+                                    <h4 className='text-xs font-semibold text-[var(--gray-12)]'>
+                                      {t`Document & Procurement Ledger Mapping`}
+                                    </h4>
+                                    <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 rounded-xl border border-[var(--gray-2)] bg-[var(--gray-2)]/50 p-3 text-xs'>
+                                      {[
+                                        {
+                                          label: t`PO Number`,
+                                          value:
+                                            poVal ||
+                                            poRowObj?.['PO Number'] ||
+                                            poRowObj?.po_number ||
+                                            'N/A',
+                                        },
+                                        {
+                                          label: t`Source System`,
+                                          value: sourceSystemVal || 'N/A',
+                                        },
+                                        {
+                                          label: t`Vendor Name`,
+                                          value:
+                                            poRowObj?.['Supplier'] ||
+                                            poRowObj?.supplier ||
+                                            resolvedAgentData?.['Extracted Invoice JSON']
+                                              ?.invoice_header?.['Vendor Name'] ||
+                                            formModel?.['Supplier Name'] ||
+                                            formModel?.['Vendor Name'] ||
+                                            selectedItem?.vendorName ||
+                                            'N/A',
+                                        },
+                                        {
+                                          label: t`Supplier ID`,
+                                          value: supplierIdVal || 'N/A',
+                                        },
+                                        {
+                                          label: t`PO Date`,
+                                          value: poDateVal || 'N/A',
+                                        },
+                                        {
+                                          label: t`Authorized Amount`,
+                                          value: poAmountVal
+                                            ? `${currencyVal} ${poAmountVal}`
+                                            : agentData?.po_matching?.po_amount || 'N/A',
+                                        },
+                                        ...extraPoRowEntries.map(([k, v]) => ({
+                                          label: String(k),
+                                          value: String(v),
+                                        })),
+                                      ].map((item, idx) => {
+                                        const isExpanded = !!expandedLedgerKeys[item.label]
+                                        return (
+                                          <div
+                                            key={idx}
+                                            onClick={() =>
+                                              setExpandedLedgerKeys((prev) => ({
+                                                ...prev,
+                                                [item.label]: !prev[item.label],
+                                              }))
+                                            }
+                                            className={cn(
+                                              'group/card min-w-0 space-y-0.5 rounded-lg border border-[var(--gray-3)]/60 bg-surface/80 p-2.5 shadow-2xs transition-all cursor-pointer hover:border-[var(--primary-4)] hover:bg-surface hover:shadow-xs',
+                                              isExpanded &&
+                                              'col-span-2 sm:col-span-2 md:col-span-3 border-[var(--primary-4)] bg-surface shadow-xs',
+                                            )}
+                                          >
+                                            <span
+                                              className={cn(
+                                                'block w-full text-[11px] font-medium text-[var(--gray-10)] transition-all',
+                                                isExpanded
+                                                  ? 'whitespace-normal break-words'
+                                                  : 'truncate group-hover/card:whitespace-normal group-hover/card:break-words',
+                                              )}
+                                            >
+                                              {item.label}
+                                            </span>
+                                            <div
+                                              className={cn(
+                                                'block w-full text-xs font-semibold text-[var(--gray-13)] transition-all',
+                                                isExpanded
+                                                  ? 'whitespace-normal break-words'
+                                                  : 'truncate group-hover/card:whitespace-normal group-hover/card:break-words',
+                                              )}
+                                            >
+                                              {item.value}
+                                            </div>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
                                   </div>
-                                </div>
-                                <div className='space-y-0.5 border-l border-[var(--gray-2)] pl-3'>
-                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`Source System`}
-                                  </span>
-                                  <div className='font-semibold text-[var(--gray-13)] text-xs'>
-                                    {formatErpSystem(resolvedAgentData?.source_type) || 'N/A'}
-                                  </div>
-                                </div>
-                                <div className='space-y-0.5 border-l border-[var(--gray-2)] pl-3'>
-                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`Vendor Name`}
-                                  </span>
-                                  <div className='font-semibold text-[var(--gray-13)] text-xs truncate'>
-                                    {resolvedAgentData?.po_row?.['Supplier'] ||
-                                      resolvedAgentData?.['Extracted Invoice JSON']
-                                        ?.invoice_header?.['Vendor Name'] ||
-                                      formModel?.['Supplier Name'] ||
-                                      formModel?.['Vendor Name'] ||
-                                      selectedItem?.vendorName ||
-                                      'N/A'}
-                                  </div>
-                                </div>
-                                <div className='space-y-0.5 border-l border-[var(--gray-2)] pl-3'>
-                                  <span className='text-[11px] font-medium text-[var(--gray-10)]'>
-                                    {t`Authorized Amount`}
-                                  </span>
-                                  <div className='font-semibold text-[var(--gray-13)] text-xs'>
-                                    {resolvedAgentData?.po_row?.['PO Amount']
-                                      ? `${resolvedAgentData?.po_row?.['Currency'] || 'USD'} ${resolvedAgentData.po_row['PO Amount']}`
-                                      : agentData?.po_matching?.po_amount ||
-                                        'N/A'}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+
+                                  {/* Mapped PO Line Items from ERP / po_row */}
+                                  {Array.isArray(poLineItemsMapped) && poLineItemsMapped.length > 0 && (
+                                    <div className='space-y-2.5'>
+                                      <div className='flex items-center justify-between'>
+                                        <h4 className='text-xs font-semibold text-[var(--gray-12)] flex items-center gap-1.5'>
+                                          <span>{t`ERP PO Line Items Mapped`}</span>
+                                        </h4>
+                                        <span className='inline-flex items-center gap-1 rounded-md border border-[var(--primary-3)] bg-[var(--primary-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--primary-10)]'>
+                                          <Icon
+                                            className='h-3 w-3 text-[var(--primary-9)] shrink-0'
+                                            name='tabler:list-check'
+                                          />
+                                          <span>
+                                            {poLineItemsMapped.length} {t`Line Items Mapped`}
+                                          </span>
+                                        </span>
+                                      </div>
+                                      <div className='overflow-x-auto rounded-xl border border-[var(--gray-2)] bg-surface'>
+                                        <table className='w-full text-left text-xs border-collapse min-w-[700px]'>
+                                          <thead>
+                                            <tr className='border-b border-[var(--gray-2)] bg-[var(--gray-2)]/50 text-[11px] font-semibold text-[var(--gray-11)]'>
+                                              <th className='px-3 py-2 w-12 text-center'>#</th>
+                                              <th className='px-3 py-2'>{t`Material ID`}</th>
+                                              <th className='px-3 py-2'>{t`Description`}</th>
+                                              <th className='px-3 py-2'>{t`Material Group`}</th>
+                                              <th className='px-3 py-2 text-center'>{t`Plant`}</th>
+                                              <th className='px-3 py-2 text-center'>{t`Category`}</th>
+                                              <th className='px-3 py-2 text-center'>{t`Qty / UOM`}</th>
+                                              <th className='px-3 py-2 text-right'>{t`Unit Cost`}</th>
+                                              <th className='px-3 py-2 text-right'>{t`Net Value`}</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className='divide-y divide-[var(--gray-2)]'>
+                                            {poLineItemsMapped.map((item: any, idx: number) => {
+                                              const lineNo =
+                                                item.Line ?? item['Item Number'] ?? item.item_no ?? idx + 1
+                                              const matId =
+                                                item['Material Id'] || item['Material ID'] || item.material_id || '-'
+                                              const matDesc =
+                                                item['Material Description'] ||
+                                                item.Description ||
+                                                item.description ||
+                                                '-'
+                                              const matGroup =
+                                                item['Material Group'] || item.material_group || '-'
+                                              const plant = item.Plant || item.plant || '-'
+                                              const cat = item['Item Category'] || item.item_category || 'Standard'
+                                              const qty = item.Quantity ?? item['Order Quantity'] ?? '-'
+                                              const uom = item['Unit of Measure'] || item.uom || ''
+                                              const price = item['Unit Cost'] ?? item['Net Price'] ?? '-'
+                                              const priceUnit = item['Price Unit'] || '1'
+                                              const extended = item.Extended ?? item['Net Value'] ?? item.amount ?? '-'
+
+                                              return (
+                                                <tr
+                                                  key={idx}
+                                                  className='hover:bg-[var(--gray-1)] transition-colors'
+                                                >
+                                                  <td className='px-3 py-2 text-center font-mono text-[11px] text-[var(--gray-10)]'>
+                                                    {lineNo}
+                                                  </td>
+                                                  <td className='px-3 py-2 font-mono text-xs font-semibold text-[var(--primary-9)]'>
+                                                    <span className='block w-full truncate max-w-[140px] hover:whitespace-normal hover:break-words transition-all'>
+                                                      {matId}
+                                                    </span>
+                                                  </td>
+                                                  <td className='px-3 py-2 font-medium text-[var(--gray-13)]'>
+                                                    <span className='block w-full truncate max-w-[240px] hover:whitespace-normal hover:break-words transition-all'>
+                                                      {matDesc}
+                                                    </span>
+                                                  </td>
+                                                  <td className='px-3 py-2 text-[var(--gray-11)] text-[11px]'>
+                                                    <span className='block w-full truncate max-w-[180px] hover:whitespace-normal hover:break-words transition-all'>
+                                                      {matGroup}
+                                                    </span>
+                                                  </td>
+                                                  <td className='px-3 py-2 text-center text-[var(--gray-12)] font-mono text-[11px]'>
+                                                    {plant}
+                                                  </td>
+                                                  <td className='px-3 py-2 text-center text-[var(--gray-11)] text-[11px]'>
+                                                    {cat}
+                                                  </td>
+                                                  <td className='px-3 py-2 text-center font-medium text-[var(--gray-13)]'>
+                                                    {qty} {uom}
+                                                  </td>
+                                                  <td className='px-3 py-2 text-right font-medium text-[var(--gray-12)]'>
+                                                    {price !== '-' ? `${currencyVal} ${price}` : '-'}
+                                                    {priceUnit && priceUnit !== '1' && (
+                                                      <span className='text-[10px] text-[var(--gray-10)] block'>
+                                                        /{priceUnit}
+                                                      </span>
+                                                    )}
+                                                  </td>
+                                                  <td className='px-3 py-2 text-right font-bold text-[var(--gray-13)]'>
+                                                    {extended !== '-' ? `${currencyVal} ${extended}` : '-'}
+                                                  </td>
+                                                </tr>
+                                              )
+                                            })}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              )
+                            })()}
 
                             {/* Side-by-Side Field Matching Table */}
                             {Array.isArray(
                               resolvedAgentData?.debug?.[
-                                'Side-by-side Field Matching'
+                              'Side-by-side Field Matching'
                               ],
                             ) &&
                               resolvedAgentData.debug[
@@ -4595,7 +4810,7 @@ const Overview = (props: any) => {
                             {/* Side-by-Side Line Item Matching Table */}
                             {Array.isArray(
                               resolvedAgentData?.debug?.[
-                                'Side-by-side Line Item matching'
+                              'Side-by-side Line Item matching'
                               ],
                             ) &&
                               resolvedAgentData.debug[
@@ -4648,7 +4863,7 @@ const Overview = (props: any) => {
                                               </div>
                                               {line.Description?.['PO Value'] &&
                                                 line.Description?.['PO Value'] !==
-                                                  line.Description?.['Invoice Value'] && (
+                                                line.Description?.['Invoice Value'] && (
                                                   <div className='text-[10px] text-[var(--gray-10)]'>
                                                     PO: {line.Description['PO Value']}
                                                   </div>
@@ -4695,14 +4910,14 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.duplicate_check?.status ||
-                              (resolvedAgentData?.invoice_errors?.severity ===
+                            (resolvedAgentData?.invoice_errors?.severity ===
                               'NONE'
-                                ? 'No Duplicate'
-                                : 'No Duplicate'),
+                              ? 'No Duplicate'
+                              : 'No Duplicate'),
                           )}
                           statusType={
                             resolvedAgentData?.duplicate_check?.status ===
-                            'Duplicate'
+                              'Duplicate'
                               ? 'danger'
                               : 'success'
                           }
@@ -4807,13 +5022,13 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.supplier_validation?.status ||
-                              supplierCheckState.data?.status ||
-                              'Verified',
+                            supplierCheckState.data?.status ||
+                            'Verified',
                           )}
                           statusType={
                             resolvedAgentData?.supplier_validation?.status ===
                               'ACTIVE' ||
-                            supplierCheckState.data?.statusType === 'success'
+                              supplierCheckState.data?.statusType === 'success'
                               ? 'success'
                               : 'warning'
                           }
@@ -4913,16 +5128,16 @@ const Overview = (props: any) => {
                                 </div>
                                 {(resolvedAgentData?.gl_validation?.reason ||
                                   resolvedAgentData?.gl_matching?.reason) && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
-                                    <span className='font-medium text-[var(--gray-11)]'>
-                                      Matching Rationale
-                                    </span>
-                                    <span className='leading-normal font-medium text-[var(--gray-12)]'>
-                                      {resolvedAgentData?.gl_validation?.reason ||
-                                        resolvedAgentData?.gl_matching?.reason}
-                                    </span>
-                                  </div>
-                                )}
+                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
+                                      <span className='font-medium text-[var(--gray-11)]'>
+                                        Matching Rationale
+                                      </span>
+                                      <span className='leading-normal font-medium text-[var(--gray-12)]'>
+                                        {resolvedAgentData?.gl_validation?.reason ||
+                                          resolvedAgentData?.gl_matching?.reason}
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <div className='space-y-3'>
@@ -4978,13 +5193,13 @@ const Overview = (props: any) => {
                                   >
                                     {isRequestCompleted
                                       ? agentData?.sapInvoiceStatus ||
-                                        agentData?.sap_invoice_status ||
-                                        'Paid'
+                                      agentData?.sap_invoice_status ||
+                                      'Paid'
                                       : agentData?.sapInvoiceStatus ||
-                                        agentData?.sap_invoice_status ||
-                                        agentData?.po_row?.sap_invoice_status ||
-                                        agentData?.po_row?.['SAP Invoice Status'] ||
-                                        'Follow-On Documents'}
+                                      agentData?.sap_invoice_status ||
+                                      agentData?.po_row?.sap_invoice_status ||
+                                      agentData?.po_row?.['SAP Invoice Status'] ||
+                                      'Follow-On Documents'}
                                   </span>
                                 </div>
                                 {!isRequestCompleted && (
@@ -5012,9 +5227,9 @@ const Overview = (props: any) => {
                                     <span className='inline-flex items-center rounded-md border border-[var(--purple-3)] bg-[var(--purple-1)] px-2 py-0.5 text-[10px] font-semibold text-[var(--purple-9)]'>
                                       {formatErpSystem(
                                         agentData?.erpSystem ||
-                                          (agentData?.poMasterSourceType === 'quickbooks'
-                                            ? 'QuickBooks'
-                                            : resolvedAgentData?.source_type || 'SAP'),
+                                        (agentData?.poMasterSourceType === 'quickbooks'
+                                          ? 'QuickBooks'
+                                          : resolvedAgentData?.source_type || 'SAP'),
                                       )}
                                     </span>
                                   </div>
@@ -5094,13 +5309,13 @@ const Overview = (props: any) => {
                           status={localizeRequestStatus(
                             i18n,
                             resolvedAgentData?.matter_validation?.status ||
-                              matterValidationDisplay?.status ||
-                              'NOT_PRESENT',
+                            matterValidationDisplay?.status ||
+                            'NOT_PRESENT',
                           )}
                           statusType={
                             resolvedAgentData?.matter_validation?.status ===
                               'VALID' ||
-                            resolvedAgentData?.matter_validation?.status ===
+                              resolvedAgentData?.matter_validation?.status ===
                               'MATCHED'
                               ? 'success'
                               : 'warning'
@@ -5135,18 +5350,18 @@ const Overview = (props: any) => {
                                 </div>
                                 {resolvedAgentData?.matter_validation
                                   ?.validation_details?.reason && (
-                                  <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
-                                    <span className='font-medium text-[var(--gray-11)]'>
-                                      {t`Compliance Note`}
-                                    </span>
-                                    <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
-                                      {
-                                        resolvedAgentData.matter_validation
-                                          .validation_details.reason
-                                      }
-                                    </span>
-                                  </div>
-                                )}
+                                    <div className='mt-1 flex flex-col gap-1 border-t border-[var(--gray-2)] pt-2'>
+                                      <span className='font-medium text-[var(--gray-11)]'>
+                                        {t`Compliance Note`}
+                                      </span>
+                                      <span className='text-[11px] leading-normal font-medium text-[var(--gray-12)]'>
+                                        {
+                                          resolvedAgentData.matter_validation
+                                            .validation_details.reason
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
                               </div>
                             </div>
                             <div className='space-y-3'>
@@ -5197,8 +5412,8 @@ const Overview = (props: any) => {
                                   activeBackOrderTab === 'current'
                                     ? backOrder?.recommendation
                                     : MOCK_PREVIOUS_BACKORDERS[
-                                        activeBackOrderTab
-                                      ]?.recommendation
+                                      activeBackOrderTab
+                                    ]?.recommendation
                                 const recMeta =
                                   getRecommendationMeta(currentRec)
                                 return (
@@ -5258,8 +5473,8 @@ const Overview = (props: any) => {
                               activeBackOrderTab === 'current'
                                 ? backOrder
                                 : MOCK_PREVIOUS_BACKORDERS[
-                                    activeBackOrderTab
-                                  ] || {}
+                                activeBackOrderTab
+                                ] || {}
                             const items = currentData?.missing_qty_by_item || []
 
                             const currencySymbol =
@@ -5331,8 +5546,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
+                                  activeBackOrderTab
+                                  ] || {}
 
                               return (
                                 <div className='animate-in fade-in slide-in-from-top-2 rounded-xl border border-[var(--orange-3)] bg-[var(--orange-1)]/30 p-3.5 shadow-xs duration-300'>
@@ -5364,8 +5579,8 @@ const Overview = (props: any) => {
                                 activeBackOrderTab === 'current'
                                   ? backOrder
                                   : MOCK_PREVIOUS_BACKORDERS[
-                                      activeBackOrderTab
-                                    ] || {}
+                                  activeBackOrderTab
+                                  ] || {}
 
                               const items =
                                 currentData?.missing_qty_by_item || []
@@ -5533,164 +5748,164 @@ const Overview = (props: any) => {
                       {activeTab === 'summary' && (
                         <div className='grid flex-1 grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 overflow-y-auto p-4'>
                           {!formModel ||
-                          Object.keys(formModel).length === 0 ||
-                          !Object.values(formModel).some(
-                            hasMeaningfulScalarValue,
-                          )
+                            Object.keys(formModel).length === 0 ||
+                            !Object.values(formModel).some(
+                              hasMeaningfulScalarValue,
+                            )
                             ? [
-                                'Supplier Name',
-                                'Invoice Number',
-                                'Invoice Date',
-                                'Invoice Amount',
-                                'PO Number',
-                                'Payment Terms',
-                                'Currency',
-                                'Tax Amount',
-                              ].map((label) => (
-                                <FormCard
-                                  fieldKey={label}
-                                  icon={getFieldIcon(label)}
-                                  isLoading={isCurrentlyProcessing}
-                                  key={label}
-                                  label={localizeRequestFieldLabel(i18n, label)}
-                                  missing={isKanbanMissingMatch(
-                                    kanbanMissingFieldIds,
-                                    label,
-                                  )}
-                                  options={getOptions(label)}
-                                  poValue={getFieldPoValue(label)}
-                                  poSourceLabel={poSourceLabel}
-                                  type={getFieldType(label)}
-                                  value={'-'}
-                                  onChange={(newVal: string) =>
-                                    handleFieldChange(label, newVal)
-                                  }
-                                  onFocus={(val: any) =>
-                                    handleFieldFocus(val, label)
-                                  }
-                                />
-                              ))
+                              'Supplier Name',
+                              'Invoice Number',
+                              'Invoice Date',
+                              'Invoice Amount',
+                              'PO Number',
+                              'Payment Terms',
+                              'Currency',
+                              'Tax Amount',
+                            ].map((label) => (
+                              <FormCard
+                                fieldKey={label}
+                                icon={getFieldIcon(label)}
+                                isLoading={isCurrentlyProcessing}
+                                key={label}
+                                label={localizeRequestFieldLabel(i18n, label)}
+                                missing={isKanbanMissingMatch(
+                                  kanbanMissingFieldIds,
+                                  label,
+                                )}
+                                options={getOptions(label)}
+                                poValue={getFieldPoValue(label)}
+                                poSourceLabel={poSourceLabel}
+                                type={getFieldType(label)}
+                                value={'-'}
+                                onChange={(newVal: string) =>
+                                  handleFieldChange(label, newVal)
+                                }
+                                onFocus={(val: any) =>
+                                  handleFieldFocus(val, label)
+                                }
+                              />
+                            ))
                             : Object.entries(formModel || {})
-                                .filter(([key, val]) => {
-                                  if (typeof val === 'object' && val !== null) {
-                                    if ('Invoice Value' in val) {
-                                      return true
-                                    }
-                                    return false
+                              .filter(([key, val]) => {
+                                if (typeof val === 'object' && val !== null) {
+                                  if ('Invoice Value' in val) {
+                                    return true
                                   }
-                                  if (typeof val === 'string') {
-                                    const trimmed = val.trim()
-                                    if (
-                                      trimmed.startsWith('[') &&
-                                      trimmed.endsWith(']')
-                                    )
-                                      return false
-                                    if (
-                                      trimmed.startsWith('{') &&
-                                      trimmed.endsWith('}')
-                                    )
-                                      return false
-                                  }
-
+                                  return false
+                                }
+                                if (typeof val === 'string') {
+                                  const trimmed = val.trim()
                                   if (
-                                    !allowedLabels ||
-                                    allowedLabels.size === 0
-                                  ) {
-                                    return (
-                                      hasMeaningfulScalarValue(val) ||
-                                      isKanbanMissingMatch(
-                                        kanbanMissingFieldIds,
-                                        key,
-                                      )
-                                    )
-                                  }
+                                    trimmed.startsWith('[') &&
+                                    trimmed.endsWith(']')
+                                  )
+                                    return false
+                                  if (
+                                    trimmed.startsWith('{') &&
+                                    trimmed.endsWith('}')
+                                  )
+                                    return false
+                                }
 
+                                if (
+                                  !allowedLabels ||
+                                  allowedLabels.size === 0
+                                ) {
                                   return (
-                                    allowedLabels.has(key) ||
                                     hasMeaningfulScalarValue(val) ||
                                     isKanbanMissingMatch(
                                       kanbanMissingFieldIds,
                                       key,
                                     )
                                   )
-                                })
-                                .map(([key, val]) => {
-                                  const rawVal =
-                                    val &&
+                                }
+
+                                return (
+                                  allowedLabels.has(key) ||
+                                  hasMeaningfulScalarValue(val) ||
+                                  isKanbanMissingMatch(
+                                    kanbanMissingFieldIds,
+                                    key,
+                                  )
+                                )
+                              })
+                              .map(([key, val]) => {
+                                const rawVal =
+                                  val &&
                                     typeof val === 'object' &&
                                     'Invoice Value' in val
-                                      ? val['Invoice Value']
-                                      : val
+                                    ? val['Invoice Value']
+                                    : val
 
-                                  const fieldType = getFieldType(key)
-                                  let displayValue =
-                                    fieldType === 'date' &&
+                                const fieldType = getFieldType(key)
+                                let displayValue =
+                                  fieldType === 'date' &&
                                     (rawVal === null ||
                                       rawVal === undefined ||
                                       rawVal === '' ||
                                       rawVal === '-')
-                                      ? null
-                                      : rawVal || '-'
+                                    ? null
+                                    : rawVal || '-'
 
-                                  if (
-                                    typeof displayValue === 'string' &&
-                                    (key.toLowerCase().includes('invoice no') ||
-                                      key.toLowerCase().includes('invoice number'))
-                                  ) {
-                                    displayValue = displayValue
-                                      .replace(/\s*PO\s*(Number|No|num|#)?:?\s*\d+/gi, '')
-                                      .trim()
-                                  }
+                                if (
+                                  typeof displayValue === 'string' &&
+                                  (key.toLowerCase().includes('invoice no') ||
+                                    key.toLowerCase().includes('invoice number'))
+                                ) {
+                                  displayValue = displayValue
+                                    .replace(/\s*PO\s*(Number|No|num|#)?:?\s*\d+/gi, '')
+                                    .trim()
+                                }
 
-                                  return (
-                                    <FormCard
-                                      fieldKey={key}
-                                      icon={getFieldIcon(key)}
-                                      key={key}
-                                      missing={isKanbanMissingMatch(
-                                        kanbanMissingFieldIds,
-                                        key,
-                                      )}
-                                      options={getOptions(key)}
-                                      poValue={getFieldPoValue(key)}
-                                      poSourceLabel={poSourceLabel}
-                                      score={getFieldScore(key)}
-                                      type={fieldType}
-                                      value={displayValue}
-                                      highlight={(() => {
-                                        const normalized = key.toLowerCase()
-                                        if (normalized.includes('due date'))
-                                          return false
-                                        return (
-                                          normalized.includes('total') ||
-                                          normalized === 'due' ||
-                                          normalized.includes('total due')
-                                        )
-                                      })()}
-                                      invoiceValue={
-                                        getFieldInvoiceValue(key) ??
-                                        displayValue
-                                      }
-                                      isLoading={
-                                        isCurrentlyProcessing &&
-                                        (displayValue === null ||
-                                          displayValue === undefined ||
-                                          displayValue === '' ||
-                                          displayValue === '-')
-                                      }
-                                      label={localizeRequestFieldLabel(
-                                        i18n,
-                                        key,
-                                      )}
-                                      onChange={(newVal: string) =>
-                                        handleFieldChange(key, newVal)
-                                      }
-                                      onFocus={(val: any) =>
-                                        handleFieldFocus(val, key)
-                                      }
-                                    />
-                                  )
-                                })}
+                                return (
+                                  <FormCard
+                                    fieldKey={key}
+                                    icon={getFieldIcon(key)}
+                                    key={key}
+                                    missing={isKanbanMissingMatch(
+                                      kanbanMissingFieldIds,
+                                      key,
+                                    )}
+                                    options={getOptions(key)}
+                                    poValue={getFieldPoValue(key)}
+                                    poSourceLabel={poSourceLabel}
+                                    score={getFieldScore(key)}
+                                    type={fieldType}
+                                    value={displayValue}
+                                    highlight={(() => {
+                                      const normalized = key.toLowerCase()
+                                      if (normalized.includes('due date'))
+                                        return false
+                                      return (
+                                        normalized.includes('total') ||
+                                        normalized === 'due' ||
+                                        normalized.includes('total due')
+                                      )
+                                    })()}
+                                    invoiceValue={
+                                      getFieldInvoiceValue(key) ??
+                                      displayValue
+                                    }
+                                    isLoading={
+                                      isCurrentlyProcessing &&
+                                      (displayValue === null ||
+                                        displayValue === undefined ||
+                                        displayValue === '' ||
+                                        displayValue === '-')
+                                    }
+                                    label={localizeRequestFieldLabel(
+                                      i18n,
+                                      key,
+                                    )}
+                                    onChange={(newVal: string) =>
+                                      handleFieldChange(key, newVal)
+                                    }
+                                    onFocus={(val: any) =>
+                                      handleFieldFocus(val, key)
+                                    }
+                                  />
+                                )
+                              })}
                         </div>
                       )}
                       {activeTab === 'line_items' && (
@@ -5746,7 +5961,7 @@ const Overview = (props: any) => {
                             className={cn(
                               'space-y-2.5',
                               poLineItems.length > 0 &&
-                                'border-t border-[var(--gray-3)] pt-4',
+                              'border-t border-[var(--gray-3)] pt-4',
                             )}
                           >
                             <div className='flex items-center justify-between'>
