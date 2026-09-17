@@ -103,7 +103,7 @@ export default defineConfig({
       '/v5app': {
         changeOrigin: true,
         secure: false,
-        target: 'https://demo.ezofis.com',
+        target: 'https://trial.ezofis.com',
       },
     },
   },
