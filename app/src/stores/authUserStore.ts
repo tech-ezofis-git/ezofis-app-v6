@@ -2,8 +2,9 @@ import posthog from 'posthog-js'
 // src/stores/authUserStore.ts
 import { create } from 'zustand'
 import type { User } from '@/schemas/user'
-import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { resetUserSessionFetchGate } from '@/api/v6/auth'
+import { clearClassicRuntimeCookie, isV6Identity } from '@/lib/classic-gateway'
+import useSetupStore from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
 import { getFromLocalStorage, setToLocalStorage } from '@/utils/local-storage'
 
 export type DefaultView = Record<string, unknown>
@@ -26,8 +27,8 @@ export type Session = {
   lastName?: string
   name?: string
   permissionKeys?: SessionPermission[] | null
-  tenantId: string
   role?: string
+  tenantId: string
 }
 export type SessionPermission = {
   [key: string]: unknown
@@ -38,12 +39,12 @@ export type SessionPermission = {
   visible?: boolean
 }
 export type ShareContext = {
+  action?: number
+  permission?: string
   shareToken: string
   sourceItemId: string
   sourceRepositoryId: string
   sourceTenantId: string
-  action?: number
-  permission?: string
   workflowInstanceId?: string
 }
 export type SignUpUserData = {
@@ -93,15 +94,19 @@ const authUserStore = create<Store>()((set) => {
   let session: Session | null = null
 
   if (globalThis.window !== undefined) {
-    identity = (getFromLocalStorage('identity') as Identity) ?? null
-    session = (getFromLocalStorage('session') as Session) ?? null
+    const storedIdentity = (getFromLocalStorage('identity') as Identity) ?? null
+    // Classic (V5) identity shares the same key; do not treat it as a V6 session.
+    identity = isV6Identity(storedIdentity) ? storedIdentity : null
+    session = identity
+      ? ((getFromLocalStorage('session') as Session) ?? null)
+      : null
   }
 
   return {
     defaultView: {},
 
     identity,
-    isAuthenticated: !!identity,
+    isAuthenticated: isV6Identity(identity),
     preferenceId: 0,
     profileMenus: [],
     session,
@@ -156,6 +161,7 @@ const authUserStore = create<Store>()((set) => {
       resetUserSessionFetchGate()
 
       if (globalThis.window !== undefined) {
+        clearClassicRuntimeCookie()
         globalThis.localStorage.removeItem('identity')
         globalThis.localStorage.removeItem('session')
         globalThis.localStorage.removeItem('isApSetUpCompleted')
@@ -189,7 +195,7 @@ const authUserStore = create<Store>()((set) => {
     setIdentity: (identity) =>
       set(() => ({
         identity,
-        isAuthenticated: !!identity,
+        isAuthenticated: isV6Identity(identity),
       })),
     setPreferenceId: (id) => set(() => ({ preferenceId: id })),
     setProfileMenu: (menus) => set(() => ({ profileMenus: menus })),

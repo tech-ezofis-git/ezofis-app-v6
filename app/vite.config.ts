@@ -21,8 +21,13 @@ export default defineConfig({
       name: 'save-light-css-plugin',
       configureServer(server: any) {
         server.middlewares.use((req: any, res: any, next: any) => {
-          if (req.method === 'POST' && (req.url === '/api/save-light-css' || req.url === '/api/save-dark-css')) {
-            const fileName = req.url === '/api/save-dark-css' ? 'dark.css' : 'light.css'
+          if (
+            req.method === 'POST' &&
+            (req.url === '/api/save-light-css' ||
+              req.url === '/api/save-dark-css')
+          ) {
+            const fileName =
+              req.url === '/api/save-dark-css' ? 'dark.css' : 'light.css'
             let body = ''
             req.on('data', (chunk: any) => {
               body += chunk
@@ -30,7 +35,10 @@ export default defineConfig({
             req.on('end', () => {
               try {
                 const data = JSON.parse(body)
-                const targetPath = resolve(__dirname, `./src/styles/${fileName}`)
+                const targetPath = resolve(
+                  __dirname,
+                  `./src/styles/${fileName}`,
+                )
                 fs.writeFileSync(targetPath, data.cssContent, 'utf-8')
                 res.writeHead(200, { 'Content-Type': 'application/json' })
                 res.end(JSON.stringify({ success: true }))
@@ -43,8 +51,8 @@ export default defineConfig({
           }
           next()
         })
-      }
-    }
+      },
+    },
   ],
   resolve: {
     alias: {
@@ -53,23 +61,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/v5': {
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/v5/, ''),
-        secure: false,
-        target: 'https://app.ezofis.com',
-      },
       '/css': {
-        changeOrigin: true,
-        secure: false,
-        target: 'https://app.ezofis.com',
-      },
-      '/js': {
-        changeOrigin: true,
-        secure: false,
-        target: 'https://app.ezofis.com',
-      },
-      '/img': {
         changeOrigin: true,
         secure: false,
         target: 'https://app.ezofis.com',
@@ -79,12 +71,39 @@ export default defineConfig({
         secure: false,
         target: 'https://app.ezofis.com',
       },
+      '/img': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://app.ezofis.com',
+      },
+      '/js': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://app.ezofis.com',
+      },
       // Tailscale GPU OpenAI-compatible API (avoids browser CORS in dev)
       '/qwen-proxy': {
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/qwen-proxy/, ''),
         secure: true,
         target: 'https://gpu-box.tail115a9a.ts.net',
+        rewrite: (path) => path.replace(/^\/qwen-proxy/, ''),
+      },
+      '/v5': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://app.ezofis.com',
+        rewrite: (path) => path.replace(/^\/v5/, ''),
+      },
+      '/v5-api': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://api.ezofis.com',
+        rewrite: (path) => path.replace(/^\/v5-api/, ''),
+      },
+      '/v5app': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://demo.ezofis.com',
       },
     },
   },
