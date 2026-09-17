@@ -13,6 +13,8 @@ export const NODE_TOOL_TYPE = {
   ONEDRIVE: 'onedrive',
   OUTLOOK: 'outlook',
   PROCUREMENT_AGENT: 'procurement_agent',
+  QUALIFY_AGENT: 'qualify_agent',
+  QUOTE_AGENT: 'quote_agent',
   SLACK: 'slack',
   TEAMS: 'teams',
 } as const

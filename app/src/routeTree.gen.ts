@@ -81,6 +81,7 @@ import { Route as AppWorkflowChatRouteImport } from './routes/_app/workflow-chat
 import { Route as AppTrashRouteImport } from './routes/_app/trash'
 import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppSearchRouteImport } from './routes/_app/search'
 import { Route as AppRequestsRouteImport } from './routes/_app/requests'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPortalsRouteImport } from './routes/_app/portals'
@@ -462,6 +463,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRouteRoute,
 } as any)
+const AppSearchRoute = AppSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 const AppRequestsRoute = AppRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
@@ -567,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/portals': typeof AppPortalsRoute
   '/reports': typeof AppReportsRoute
   '/requests': typeof AppRequestsRoute
+  '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
@@ -656,6 +663,7 @@ export interface FileRoutesByTo {
   '/portals': typeof AppPortalsRoute
   '/reports': typeof AppReportsRoute
   '/requests': typeof AppRequestsRoute
+  '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRoute
   '/tasks': typeof AppTasksRoute
   '/trash': typeof AppTrashRoute
@@ -749,6 +757,7 @@ export interface FileRoutesById {
   '/_app/portals': typeof AppPortalsRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/requests': typeof AppRequestsRoute
+  '/_app/search': typeof AppSearchRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/trash': typeof AppTrashRoute
@@ -841,6 +850,7 @@ export interface FileRouteTypes {
     | '/portals'
     | '/reports'
     | '/requests'
+    | '/search'
     | '/settings'
     | '/tasks'
     | '/trash'
@@ -930,6 +940,7 @@ export interface FileRouteTypes {
     | '/portals'
     | '/reports'
     | '/requests'
+    | '/search'
     | '/settings'
     | '/tasks'
     | '/trash'
@@ -1022,6 +1033,7 @@ export interface FileRouteTypes {
     | '/_app/portals'
     | '/_app/reports'
     | '/_app/requests'
+    | '/_app/search'
     | '/_app/settings'
     | '/_app/tasks'
     | '/_app/trash'
@@ -1624,6 +1636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRouteRoute
     }
+    '/_app/search': {
+      id: '/_app/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AppSearchRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
     '/_app/requests': {
       id: '/_app/requests'
       path: '/requests'
@@ -1761,6 +1780,7 @@ interface AppRouteRouteChildren {
   AppPortalsRoute: typeof AppPortalsRoute
   AppReportsRoute: typeof AppReportsRoute
   AppRequestsRoute: typeof AppRequestsRoute
+  AppSearchRoute: typeof AppSearchRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppTrashRoute: typeof AppTrashRoute
@@ -1780,6 +1800,7 @@ const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppPortalsRoute: AppPortalsRoute,
   AppReportsRoute: AppReportsRoute,
   AppRequestsRoute: AppRequestsRoute,
+  AppSearchRoute: AppSearchRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTasksRoute: AppTasksRoute,
   AppTrashRoute: AppTrashRoute,

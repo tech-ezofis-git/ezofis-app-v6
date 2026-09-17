@@ -9,10 +9,38 @@ import useReportBuilderDraftStore from '../../stores/useReportBuilderDraftStore'
 import { createDefaultFieldSetting } from '../../types'
 
 const PROMPT_EXAMPLES = [
-  'Show me overdue invoices by vendor',
-  'Track active workflow requests and their stage',
-  'List documents uploaded this month by repository',
-  'Report on failed or expired user sessions',
+  {
+    title: 'Overdue invoices by vendor',
+    description: 'See which vendors have unpaid invoices past due date',
+    icon: 'lucide:file-text',
+    iconColor: 'text-orange-9',
+    iconBg: 'bg-orange-3',
+    query: 'Show me overdue invoices by vendor',
+  },
+  {
+    title: 'Active workflow requests',
+    description: "Track every open request and which stage it's sitting in",
+    icon: 'lucide:workflow',
+    iconColor: 'text-indigo-9',
+    iconBg: 'bg-indigo-3',
+    query: 'Track active workflow requests and their stage',
+  },
+  {
+    title: 'Documents uploaded this month',
+    description: "Break down this month's uploads by repository",
+    icon: 'lucide:folder',
+    iconColor: 'text-teal-9',
+    iconBg: 'bg-teal-3',
+    query: 'List documents uploaded this month by repository',
+  },
+  {
+    title: 'Failed or expired sessions',
+    description: 'Surface logins that failed or sessions that expired',
+    icon: 'lucide:user-x',
+    iconColor: 'text-pink-9',
+    iconBg: 'bg-pink-3',
+    query: 'Report on failed or expired user sessions',
+  },
 ]
 
 interface Suggestion {
@@ -115,16 +143,21 @@ const AskAiStep = () => {
         </div>
       </div>
 
-      <div className='flex flex-wrap gap-2'>
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
         {PROMPT_EXAMPLES.map((example) => (
           <button
-            className='inline-flex items-center gap-1.5 rounded-full border border-gray-3 bg-surface px-3 py-1.5 text-12 text-gray-11 transition-colors hover:border-primary-6 hover:text-primary-10'
-            key={example}
+            className='flex items-start gap-3 rounded-xl border border-gray-3 bg-surface p-4 text-left transition-colors hover:border-primary-6 hover:bg-gray-1/50'
+            key={example.title}
             type='button'
-            onClick={() => runPrompt(example)}
+            onClick={() => runPrompt(example.query)}
           >
-            <Icon className='size-3.5' name='lucide:arrow-up-right' />
-            {example}
+            <div className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${example.iconBg}`}>
+              <Icon className={`size-5 ${example.iconColor}`} name={example.icon} />
+            </div>
+            <div>
+              <h4 className='text-14 font-semibold text-gray-12'>{example.title}</h4>
+              <p className='mt-1 text-13 text-gray-10'>{example.description}</p>
+            </div>
           </button>
         ))}
       </div>

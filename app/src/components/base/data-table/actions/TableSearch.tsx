@@ -47,6 +47,9 @@ const TableSearch = <TData,>({ table }: Props<TData>) => {
 
   useEffect(() => {
     setInputValue(searchState?.value || '')
+    if (searchState?.value) {
+      setIsExpanded(true)
+    }
   }, [searchState?.value])
 
   const handleIdChange = useCallback(

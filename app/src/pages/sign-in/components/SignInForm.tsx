@@ -7,6 +7,8 @@ import { useSearch } from '@tanstack/react-router'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
+import { loginClassic } from '@/api/v5/classicAuth'
+import { lookupLoginDirectories } from '@/api/v5/loginDirectories'
 import authApiV6 from '@/api/v6/auth'
 import Alert from '@/components/base/Alert'
 import Button from '@/components/base/button/Button'
@@ -21,6 +23,11 @@ import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
 import { AnimateSlideLeft } from '@/components/common/animations'
+import {
+  enterClassic,
+  isClassicGatewayEnabled,
+  persistClassicIdentity,
+} from '@/lib/classic-gateway'
 import authUserStore from '@/stores/authUserStore'
 import cn from '@/utils/cn'
 import { setToLocalStorage } from '@/utils/local-storage'
@@ -77,6 +84,8 @@ type TenantOption = {
   email: string
   id: number | string
   label: string
+  product?: 'v5' | 'v6'
+  readyIdentity?: unknown
   value: number | string
 }
 
@@ -245,6 +254,42 @@ const SignInForm = ({
     await handleLoggedNavigation()
   }
 
+  const enterClassicFromIdentity = (identity: unknown) => {
+    if (!persistClassicIdentity(identity)) {
+      setError(t`Classic sign-in succeeded but the session could not be saved.`)
+      return false
+    }
+    showToast({ message: t`Successfully logged in`, variant: 'success' })
+    enterClassic()
+    return true
+  }
+
+  const completeClassicSignIn = async (account: TenantOption) => {
+    if (account.readyIdentity) {
+      enterClassicFromIdentity(account.readyIdentity)
+      return
+    }
+
+    const { data, error, mfa } = await loginClassic(
+      { email, password },
+      account.value === 'current' ? undefined : account.value,
+    )
+
+    if (mfa) {
+      setError(
+        t`This Classic account needs extra verification. Open Classic to finish signing in.`,
+      )
+      return
+    }
+
+    if (error || !data) {
+      setError(error || t`Unable to sign in`)
+      return
+    }
+
+    enterClassicFromIdentity(data)
+  }
+
   // === EMAIL + PASSWORD LOGIN (with tenant + social support) ===
   const signInSocial = async (
     tenantId?: number | string,
@@ -311,6 +356,64 @@ const SignInForm = ({
         password,
       }
 
+      if (
+        isClassicGatewayEnabled() &&
+        persistIdentity &&
+        !onSignedIn &&
+        tenantId == null &&
+        !shareTenantId &&
+        !brandingTenantId
+      ) {
+        const directory = await lookupLoginDirectories(payload)
+        if (directory.accounts.length === 1) {
+          const account = directory.accounts[0]
+          if (account.product === 'v5') {
+            await completeClassicSignIn(account)
+            return
+          }
+
+          const { data, error, status } = await apiRouter.login(
+            payload,
+            account.value,
+            { persistIdentity },
+          )
+          if (error) {
+            setError(error)
+            return
+          }
+          if (status === 300 && Array.isArray(data)) {
+            setTenantList(
+              data.map((tenant) => {
+                const row = tenant as {
+                  email?: string
+                  id?: number | string
+                  name?: string
+                }
+                const id = row.id ?? ''
+                return {
+                  email: String(row.email || email),
+                  id,
+                  label: String(row.name || id),
+                  product: 'v6' as const,
+                  value: id,
+                }
+              }),
+            )
+            setShowTenantListModal(true)
+            return
+          }
+          await completeSignIn(data, email, account.value)
+          return
+        }
+
+        if (directory.accounts.length > 1) {
+          setTenantList(directory.accounts)
+          setShowTenantListModal(true)
+          return
+        }
+        // No Classic/V6 mix found — keep the current V6 login path.
+      }
+
       const targetTenantId =
         tenantId || shareTenantId || brandingTenantId || undefined
       const { data, error, status } = await apiRouter.login(
@@ -338,6 +441,7 @@ const SignInForm = ({
           email: tenant.email,
           id: tenant.id,
           label: tenant.name,
+          product: 'v6',
           value: tenant.id,
         }))
         setTenantList(mapped)
@@ -493,11 +597,18 @@ const SignInForm = ({
 
   // === TENANT SELECTION (status 300) ===
   const handleTenantClick = async (tenantId: number | string) => {
+    const selected = tenantList.find((tenant) => tenant.id === tenantId)
     setSelectedTenantId(tenantId)
     setLoading(true)
-    // Don't close modal here, just sign in
-    await signIn(tenantId)
-    // After successful sign in, redirect will happen in handleLoggedNavigation
+    try {
+      if (selected?.product === 'v5') {
+        await completeClassicSignIn(selected)
+        return
+      }
+      await signIn(selected?.value ?? tenantId)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleBackToSignIn = () => {

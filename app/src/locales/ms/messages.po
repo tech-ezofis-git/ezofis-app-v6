@@ -12572,7 +12572,7 @@ msgid "Type custom option..."
 msgstr "Taip pilihan tersuai..."
 
 #: src/layouts/app/components/topbar/components/GlobalSearch.tsx:453
-msgid "Type to search local data. If nothing matches, the API runs automatically."
+msgid "Type to search the data. To find the Request,Document,Workflows,Folders, "
 msgstr ""
 
 #: src/pages/requests/components/request/components/sections/overview/RelatedDocumentsFinder.tsx:520

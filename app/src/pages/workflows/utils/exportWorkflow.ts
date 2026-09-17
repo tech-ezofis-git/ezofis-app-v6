@@ -9,31 +9,41 @@ const mapToolTypeToLegacyType = (
   nodeIndex: number,
   totalNodes: number,
 ): string => {
+  const t = normalizeNodeToolType(toolType)
   const explicitType = String(nodeData.type || '').toUpperCase()
 
-  if (explicitType === 'START') return 'START'
-  if (explicitType === 'END') return 'END'
-  if (explicitType === 'CONDITION') return 'CONDITION'
-  if (explicitType === 'OCR') return 'OCR'
-  if (explicitType === 'AP_AGENT') return 'AP_AGENT'
-
-  if (nodeIndex === 0) return 'START'
   if (
-    nodeIndex === totalNodes - 1 &&
-    (explicitType === 'ACTION' || explicitType === 'END')
+    t === NODE_TOOL_TYPE.END ||
+    explicitType === 'END' ||
+    nodeData.label === 'Workflow Success'
   )
     return 'END'
-
-  if (!toolType) {
-    if (explicitType && explicitType !== 'ACTION') return explicitType
-    return 'INTERNAL_ACTOR'
-  }
-  const t = normalizeNodeToolType(toolType)
+  if (
+    t === NODE_TOOL_TYPE.GMAIL ||
+    t === NODE_TOOL_TYPE.OUTLOOK ||
+    t === NODE_TOOL_TYPE.FORM_SUBMISSION ||
+    t === 'trigger' ||
+    t === 'initiator' ||
+    t === 'start' ||
+    explicitType === 'START'
+  )
+    return 'START'
   if (t === NODE_TOOL_TYPE.OCR_AGENT || t === 'ocr') return 'OCR'
   if (t === NODE_TOOL_TYPE.AP_AGENT) return 'AP_AGENT'
   if (t === NODE_TOOL_TYPE.KYC_AGENT) return 'KYC_AGENT'
   if (t === NODE_TOOL_TYPE.PROCUREMENT_AGENT) return 'PROCUREMENT_AGENT'
-  if (t === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT) return 'DOCUMENT_GENERATE_AGENT'
+  if (t === NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT)
+    return 'DOCUMENT_GENERATE_AGENT'
+  if (t === NODE_TOOL_TYPE.QUALIFY_AGENT || t.includes('qualify'))
+    return 'QUALIFY_AGENT'
+  if (t === NODE_TOOL_TYPE.QUOTE_AGENT || t.includes('quote'))
+    return 'QUOTE_AGENT'
+  if (t === NODE_TOOL_TYPE.FTP_AGENT || t.includes('ftp')) return 'FTP_AGENT'
+  if (t === NODE_TOOL_TYPE.GOOGLE_DRIVE || t.includes('drive'))
+    return 'GOOGLE_DRIVE'
+  if (t === NODE_TOOL_TYPE.ONEDRIVE) return 'ONEDRIVE'
+  if (t === NODE_TOOL_TYPE.SLACK) return 'SLACK'
+  if (t === NODE_TOOL_TYPE.TEAMS) return 'TEAMS'
   if (t === NODE_TOOL_TYPE.CONDITION) return 'CONDITION'
   if (
     t === NODE_TOOL_TYPE.MANUAL_USER ||
@@ -42,9 +52,9 @@ const mapToolTypeToLegacyType = (
     t === 'internal_actor'
   )
     return nodeIndex === 0 ? 'START' : 'INTERNAL_ACTOR'
-  if (t === 'trigger' || t === 'initiator' || t === 'start') return 'START'
-  if (t === NODE_TOOL_TYPE.GMAIL || t === NODE_TOOL_TYPE.OUTLOOK) return 'START'
-  if (t === NODE_TOOL_TYPE.END || t === 'action') return 'END'
+
+  if (nodeIndex === 0) return 'START'
+
   return (nodeData.type || 'INTERNAL_ACTOR').toUpperCase()
 }
 
@@ -371,7 +381,7 @@ export const exportWorkflow = (nodes: Node[], edges: Edge[]) => {
     }
 
     // Clean up internal UI fields
-    delete settings.toolType
+    settings.toolType = toolType || data.toolType
     delete settings.icon
     delete settings.iconColor
     delete settings.subLabel

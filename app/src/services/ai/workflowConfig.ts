@@ -593,14 +593,33 @@ export function ensureStartAndEndNodes(
   }
 
   // 0. Sanitize block types
+  const hasExplicitEndNode = blocks.some((b: any) => {
+    const bt = String(b.type || '').toUpperCase().trim()
+    const lbl = String(b.settings?.label || '').toLowerCase()
+    const tt = String(b.settings?.toolType || '').toLowerCase()
+    return (
+      bt === 'END' ||
+      tt === 'end' ||
+      /\b(workflow success|end process|automated process end)\b/i.test(lbl)
+    )
+  })
+
   blocks = blocks.map((b: any, idx: number) => {
     let blockType = String(b.type || '').toUpperCase().trim()
     const label = String(b.settings?.label || '').toLowerCase()
+    const toolType = String(b.settings?.toolType || '').toLowerCase()
 
     if (blockType === 'ACTION' || !blockType) {
       if (
-        idx === blocks.length - 1 ||
-        /\b(end|complete|completed|finish|approved|done|posted|released|archive|archived)\b/i.test(label)
+        /\b(workflow success|end process|automated process end)\b/i.test(
+          label,
+        ) ||
+        toolType === 'end' ||
+        (idx === blocks.length - 1 &&
+          !hasExplicitEndNode &&
+          /\b(end|complete|completed|finish|approved|done|posted|released|archive|archived)\b/i.test(
+            label,
+          ))
       ) {
         blockType = 'END'
       } else if (
