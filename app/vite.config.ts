@@ -102,6 +102,7 @@ export default defineConfig({
       },
       '/v5app': {
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/v5app/, '') || '/',
         secure: false,
         target: 'https://trial.ezofis.com',
       },

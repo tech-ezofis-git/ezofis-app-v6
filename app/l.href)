@@ -1,0 +1,41 @@
+url        https://cloud.ezofis.com/v5app/
+http       200
+load       32297ms
+title      "EZOFIS"
+bodyChars  0
+patchright C:\Users\Admin\.vscode\extensions\danielsanmedium.dscodegpt-3.24.70\standalone/
+eval       "EVAL ERROR: Error: page.evaluate: SyntaxError: Unexpected token ','"
+
+console errors/warnings (199):
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+  [error] Failed to load resource: the server responded with a status of 404 ()
+
+requests failed (396):
+  HTTP 404 https://cloud.ezofis.com/css/app.80f87543.css
+  net::ERR_ABORTED https://cloud.ezofis.com/css/app.80f87543.css
+  HTTP 404 https://cloud.ezofis.com/css/chunk-vendors.931fd2a3.css
+  net::ERR_ABORTED https://cloud.ezofis.com/css/chunk-vendors.931fd2a3.css
+  HTTP 404 https://cloud.ezofis.com/css/activity-reports.70896561.css
+  net::ERR_ABORTED https://cloud.ezofis.com/css/activity-reports.70896561.css
+  HTTP 404 https://cloud.ezofis.com/js/app.8c786f48.js
+  net::ERR_ABORTED https://cloud.ezofis.com/js/app.8c786f48.js
+  HTTP 404 https://cloud.ezofis.com/js/chunk-vendors.95015580.js
+  net::ERR_ABORTED https://cloud.ezofis.com/js/chunk-vendors.95015580.js
+  HTTP 404 https://cloud.ezofis.com/css/activity-reports~api-browse~charts~custom-form~dashboard~form-entries~forms~forms-trash~groups~group~9a1dd5ad.5
+  net::ERR_ABORTED https://cloud.ezofis.com/css/activity-reports~api-browse~charts~custom-form~dashboard~form-entries~forms~forms-trash~groups~group~9a1dd5ad.5
+  HTTP 404 https://cloud.ezofis.com/css/activity-reports~api-browse~charts~dashboard~external-request~form-builder~form-entries~form-view~fo~93256c5f.0
+  net::ERR_ABORTED https://cloud.ezofis.com/css/activity-reports~api-browse~charts~dashboard~external-request~form-builder~form-entries~form-view~fo~93256c5f.0
+  HTTP 404 https://cloud.ezofis.com/css/activity-reports~api-browse~charts~custom-form~dashboard~external-request~form-builder~form-entries~~35643dc7.e
