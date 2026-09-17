@@ -97,7 +97,7 @@ export default defineConfig({
       '/v5-api': {
         changeOrigin: true,
         secure: false,
-        target: 'https://api.ezofis.com',
+        target: 'https://eztapi.ezofis.com',
         rewrite: (path) => path.replace(/^\/v5-api/, ''),
       },
       '/v5app': {
