@@ -47,6 +47,18 @@ function getNodeDefaults(toolType: string) {
       iconColor: '#4f46e5',
       subLabel: 'Generate PDF & Word docs from templates',
     }
+  if (typeStr === NODE_TOOL_TYPE.QUALIFY_AGENT || typeStr.includes('qualify'))
+    return {
+      icon: 'lucide:user-check',
+      iconColor: '#0284c7',
+      subLabel: 'Qualify leads & prospect data',
+    }
+  if (typeStr === NODE_TOOL_TYPE.QUOTE_AGENT || typeStr.includes('quote'))
+    return {
+      icon: 'lucide:calculator',
+      iconColor: '#16a34a',
+      subLabel: 'Generate pricing & sales quotes',
+    }
   if (typeStr === NODE_TOOL_TYPE.GOOGLE_DRIVE)
     return {
       icon: 'logos:google-drive',
@@ -119,7 +131,29 @@ function getNodeDefaults(toolType: string) {
   return { icon: 'lucide:settings', iconColor: '#888', subLabel: 'Action Step' }
 }
 
-function mapLegacyTypeToToolType(legacyType: string, label: string): string {
+function mapLegacyTypeToToolType(
+  legacyType: string,
+  label: string,
+  settings?: any,
+): string {
+  if (settings?.toolType) {
+    const normalizedSettingsTool = normalizeNodeToolType(settings.toolType)
+    if (normalizedSettingsTool && normalizedSettingsTool !== 'action') {
+      return normalizedSettingsTool
+    }
+  }
+
+  const normalizedLabelTool = normalizeNodeToolType(label)
+  const knownToolTypes = Object.values(NODE_TOOL_TYPE) as string[]
+  if (
+    normalizedLabelTool &&
+    normalizedLabelTool !== 'action' &&
+    knownToolTypes.includes(normalizedLabelTool) &&
+    normalizedLabelTool !== NODE_TOOL_TYPE.END
+  ) {
+    return normalizedLabelTool
+  }
+
   switch (legacyType) {
     case 'OCR':
       return NODE_TOOL_TYPE.OCR_AGENT
@@ -131,19 +165,32 @@ function mapLegacyTypeToToolType(legacyType: string, label: string): string {
       return NODE_TOOL_TYPE.PROCUREMENT_AGENT
     case 'DOCUMENT_GENERATE_AGENT':
       return NODE_TOOL_TYPE.DOCUMENT_GENERATE_AGENT
+    case 'QUALIFY_AGENT':
+      return NODE_TOOL_TYPE.QUALIFY_AGENT
+    case 'QUOTE_AGENT':
+      return NODE_TOOL_TYPE.QUOTE_AGENT
+    case 'FTP_AGENT':
+      return NODE_TOOL_TYPE.FTP_AGENT
+    case 'GOOGLE_DRIVE':
+      return NODE_TOOL_TYPE.GOOGLE_DRIVE
+    case 'ONEDRIVE':
+      return NODE_TOOL_TYPE.ONEDRIVE
+    case 'SLACK':
+      return NODE_TOOL_TYPE.SLACK
+    case 'TEAMS':
+      return NODE_TOOL_TYPE.TEAMS
     case 'CONDITION':
       return NODE_TOOL_TYPE.CONDITION
     case 'INTERNAL_ACTOR':
       return NODE_TOOL_TYPE.MANUAL_USER
     case 'START': {
-      const fromLabel = normalizeNodeToolType(label)
       if (
-        fromLabel === NODE_TOOL_TYPE.GMAIL ||
-        fromLabel === NODE_TOOL_TYPE.OUTLOOK ||
-        fromLabel === NODE_TOOL_TYPE.MANUAL_USER ||
-        fromLabel === NODE_TOOL_TYPE.FORM_SUBMISSION
+        normalizedLabelTool === NODE_TOOL_TYPE.GMAIL ||
+        normalizedLabelTool === NODE_TOOL_TYPE.OUTLOOK ||
+        normalizedLabelTool === NODE_TOOL_TYPE.MANUAL_USER ||
+        normalizedLabelTool === NODE_TOOL_TYPE.FORM_SUBMISSION
       ) {
-        return fromLabel
+        return normalizedLabelTool
       }
       return NODE_TOOL_TYPE.FORM_SUBMISSION
     }
@@ -207,7 +254,11 @@ export const importWorkflow = (
     const relativeX = (blockLeft - minX) * scaleX
     const relativeY = (blockTop - minY) * scaleY
 
-    let toolType = mapLegacyTypeToToolType(block.type, block.settings?.label)
+    let toolType = mapLegacyTypeToToolType(
+      block.type,
+      block.settings?.label,
+      block.settings,
+    )
     let connectorId: number | undefined = undefined
 
     let hasAttachmentEnabled = false

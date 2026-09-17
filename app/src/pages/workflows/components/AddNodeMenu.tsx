@@ -333,6 +333,26 @@ const AddNodeMenu = () => {
       type: 'popular',
     },
     {
+      bgColor: 'bg-sky-50',
+      category: 'agents',
+      description: 'Qualify leads & prospect data',
+      icon: 'lucide:user-check',
+      iconColor: '#0284c7',
+      label: 'Qualify Agent',
+      toolType: NODE_TOOL_TYPE.QUALIFY_AGENT,
+      type: 'popular',
+    },
+    {
+      bgColor: 'bg-emerald-50',
+      category: 'agents',
+      description: 'Generate pricing & sales quotes',
+      icon: 'lucide:calculator',
+      iconColor: '#16a34a',
+      label: 'Quote Agent',
+      toolType: NODE_TOOL_TYPE.QUOTE_AGENT,
+      type: 'popular',
+    },
+    {
       bgColor: 'bg-transparent',
       category: 'apps',
       description: 'Store or collect files from Google Drive',
@@ -486,11 +506,6 @@ const AddNodeMenu = () => {
                 <button
                   className='group flex items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--primary-1)] active:scale-[0.98]'
                   key={i}
-                  title={
-                    item.description
-                      ? `${item.label} - ${item.description}`
-                      : item.label
-                  }
                   onClick={() => handleItemSelect(item)}
                 >
                   <div
@@ -506,10 +521,7 @@ const AddNodeMenu = () => {
                       }
                     />
                   </div>
-                  <span
-                    className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] truncate'
-                    title={item.label}
-                  >
+                  <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] whitespace-normal break-words'>
                     {item.label}
                   </span>
                 </button>
@@ -531,11 +543,6 @@ const AddNodeMenu = () => {
                 <button
                   className='group flex items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--primary-1)] active:scale-[0.98]'
                   key={i}
-                  title={
-                    item.description
-                      ? `${item.label} - ${item.description}`
-                      : item.label
-                  }
                   onClick={() => handleItemSelect(item)}
                 >
                   <div
@@ -547,10 +554,7 @@ const AddNodeMenu = () => {
                       style={{ color: item.iconColor }}
                     />
                   </div>
-                  <span
-                    className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] truncate'
-                    title={item.label}
-                  >
+                  <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] whitespace-normal break-words'>
                     {item.label}
                   </span>
                 </button>
@@ -564,11 +568,6 @@ const AddNodeMenu = () => {
               <button
                 className='group flex items-center gap-3 rounded-xl p-2.5 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--primary-1)] active:scale-[0.98]'
                 key={i}
-                title={
-                  item.description
-                    ? `${item.label} - ${item.description}`
-                    : item.label
-                }
                 onClick={() => handleItemSelect(item)}
               >
                 <div
@@ -582,10 +581,7 @@ const AddNodeMenu = () => {
                     }
                   />
                 </div>
-                <span
-                  className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] truncate'
-                  title={item.label}
-                >
+                <span className='text-gray-700 text-sm font-medium group-hover:text-[var(--primary-9)] whitespace-normal break-words'>
                   {item.label}
                 </span>
               </button>

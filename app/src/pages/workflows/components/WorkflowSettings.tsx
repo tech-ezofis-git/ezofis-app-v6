@@ -366,7 +366,6 @@ const WorkflowSettings = ({ nodes = [] }: WorkflowSettingsProps) => {
             label='Folder'
             options={folderOptions}
             placeholder='Select'
-            required
             value={
               folder
                 ? {

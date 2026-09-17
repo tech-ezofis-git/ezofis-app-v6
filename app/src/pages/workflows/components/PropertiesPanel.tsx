@@ -18,6 +18,12 @@ const ProcurementAgentNodeSettings = lazy<
 const DocumentGenerateAgentNodeSettings = lazy<
   React.ComponentType<{ node: Node }>
 >(() => import('./settings/DocumentGenerateAgentNodeSettings'))
+const QualifyAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/QualifyAgentNodeSettings'),
+)
+const QuoteAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
+  () => import('./settings/QuoteAgentNodeSettings'),
+)
 const OCRAgentNodeSettings = lazy<React.ComponentType<{ node: Node }>>(
   () => import('./settings/OCRAgentNodeSettings'),
 )
@@ -518,6 +524,44 @@ function PropertiesPanel({
             }
           >
             <DocumentGenerateAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Qualify Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.QUALIFY_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <QualifyAgentNodeSettings node={node} />
+          </Suspense>
+        </div>
+        {CommonFooter}
+      </div>
+    )
+  }
+
+  // Render Quote Agent node settings panel
+  if (toolType === NODE_TOOL_TYPE.QUOTE_AGENT) {
+    return (
+      <div className='animate-slide-in-right flex h-full w-[400px] flex-col border-l border-gray-3 bg-white shadow-xl transition-all'>
+        {NodeHeader}
+        <div className='flex-1 overflow-hidden'>
+          <Suspense
+            fallback={
+              <div className='p-6 text-gray-10'>Loading settings...</div>
+            }
+          >
+            <QuoteAgentNodeSettings node={node} />
           </Suspense>
         </div>
         {CommonFooter}

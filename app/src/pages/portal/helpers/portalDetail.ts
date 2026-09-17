@@ -280,6 +280,8 @@ const AGENT_TYPES = new Set([
   'OCR',
   'OCR_AGENT',
   'PROCUREMENT_AGENT',
+  'QUALIFY_AGENT',
+  'QUOTE_AGENT',
 ])
 const AGENT_TOOLS = new Set([
   'ap_agent',
@@ -289,6 +291,8 @@ const AGENT_TOOLS = new Set([
   'ocr',
   'ocr_agent',
   'procurement_agent',
+  'qualify_agent',
+  'quote_agent',
 ])
 const USER_TYPES = new Set(['APPROVAL', 'EXTERNAL_ACTOR', 'INTERNAL_ACTOR'])
 const USER_TOOLS = new Set([

@@ -592,36 +592,32 @@ const SignInForm = ({
                   <button
                     disabled={loading}
                     type='button'
-                    className={`group relative flex w-full cursor-pointer items-center justify-between rounded-lg border bg-white px-3 py-2.5 text-left transition-all duration-300 ${
-                      isLoading
+                    className={`group relative flex w-full cursor-pointer items-center justify-between rounded-lg border bg-white px-3 py-2.5 text-left transition-all duration-300 ${isLoading
                         ? 'border-primary-9 bg-primary-1 shadow-sm'
                         : 'border-gray-4 hover:border-primary-6 hover:bg-gray-1'
-                    }`}
+                      }`}
                     onClick={() => handleTenantClick(tenant.id)}
                   >
                     <div className='flex items-center gap-2.5'>
                       {/* Compact user icon/avatar */}
                       <div
-                        className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
-                          isLoading
+                        className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${isLoading
                             ? 'scale-105 bg-primary-9'
                             : 'bg-gradient-to-br from-primary-4 to-primary-6 group-hover:from-primary-5 group-hover:to-primary-7'
-                        }`}
+                          }`}
                       >
                         <Icon
                           name='tabler:user'
-                          className={`size-3.5 transition-colors duration-300 ${
-                            isLoading ? 'text-white' : 'text-primary-11'
-                          }`}
+                          className={`size-3.5 transition-colors duration-300 ${isLoading ? 'text-white' : 'text-primary-11'
+                            }`}
                         />
                       </div>
                       <div className='min-w-0 flex-1'>
                         <div
-                          className={`text-sm font-medium transition-colors duration-300 ${
-                            isLoading
+                          className={`text-sm font-medium transition-colors duration-300 ${isLoading
                               ? 'text-primary-11'
                               : 'text-gray-13 group-hover:text-primary-11'
-                          }`}
+                            }`}
                         >
                           {tenant.label}
                         </div>
