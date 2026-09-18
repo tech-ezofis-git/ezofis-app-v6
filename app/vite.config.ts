@@ -100,6 +100,36 @@ export default defineConfig({
         secure: false,
         target: 'https://trial.ezofis.com',
       },
+      '/PDFViewer': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
+      '/pdfviewer': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
+      '/docsviewer': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
+      '/DocsEditor': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
+      '/DocsMerge': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
+      '/v5viewer': {
+        changeOrigin: true,
+        secure: false,
+        target: 'https://trial.ezofis.com',
+      },
     },
   },
 })

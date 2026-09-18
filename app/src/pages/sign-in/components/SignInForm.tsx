@@ -4,13 +4,17 @@ import { useLingui } from '@lingui/react/macro'
 import { useGoogleLogin } from '@react-oauth/google'
 import { useNavigate } from '@tanstack/react-router'
 import { useSearch } from '@tanstack/react-router'
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
 import apiRouter from '@/api/apiRouter'
-import { loginClassic } from '@/api/v5/classicAuth'
-import { lookupLoginDirectories } from '@/api/v5/loginDirectories'
+import { loginClassic, socialLoginClassic } from '@/api/v5/classicAuth'
+import {
+  lookupLoginDirectories,
+  lookupSocialDirectories,
+} from '@/api/v5/loginDirectories'
 import authApiV6 from '@/api/v6/auth'
 import Alert from '@/components/base/Alert'
+import Badge from '@/components/base/Badge'
 import Button from '@/components/base/button/Button'
 import GoogleButton from '@/components/base/button/GoogleButton'
 import MicrosoftButton from '@/components/base/button/MicrosoftButton'
@@ -22,7 +26,7 @@ import InputText from '@/components/base/inputs/InputText'
 import InputPassword from '@/components/base/inputs/password/InputPassword'
 import Title from '@/components/base/Title'
 import showToast from '@/components/base/toast/showToast'
-import { AnimateSlideLeft } from '@/components/common/animations'
+import AiBrandIcon from '@/components/common/AiBrandIcon'
 import {
   enterClassic,
   isClassicGatewayEnabled,
@@ -264,16 +268,30 @@ const SignInForm = ({
     return true
   }
 
-  const completeClassicSignIn = async (account: TenantOption) => {
+  const completeClassicSignIn = async (
+    account: TenantOption,
+    social?: { email: string; loginType: string },
+  ) => {
     if (account.readyIdentity) {
       enterClassicFromIdentity(account.readyIdentity)
       return
     }
 
-    const { data, error, mfa } = await loginClassic(
-      { email, password },
-      account.value === 'current' ? undefined : account.value,
+    const tenantId = account.value === 'current' ? undefined : account.value
+    const isSocial = Boolean(social?.loginType || socialLogged)
+    const classicEmail = String(
+      account.email || social?.email || socialEmail || email,
     )
+
+    const { data, error, mfa } = isSocial
+      ? await socialLoginClassic(
+          {
+            email: classicEmail,
+            loginType: social?.loginType || loginType || 'Google',
+          },
+          tenantId,
+        )
+      : await loginClassic({ email: classicEmail, password }, tenantId)
 
     if (mfa) {
       setError(
@@ -302,8 +320,40 @@ const SignInForm = ({
       loginType: sType,
     }
 
+    let resolvedTenantId = tenantId
+
+    if (
+      isClassicGatewayEnabled() &&
+      persistIdentity &&
+      !onSignedIn &&
+      resolvedTenantId == null &&
+      !shareTenantId &&
+      !brandingTenantId
+    ) {
+      const directory = await lookupSocialDirectories({
+        email: sEmail,
+        loginType: sType || 'Google',
+      })
+
+      if (directory.accounts.length === 1) {
+        const account = directory.accounts[0]
+        if (account.product === 'v5') {
+          await completeClassicSignIn(account, {
+            email: sEmail,
+            loginType: sType || 'Google',
+          })
+          return
+        }
+        resolvedTenantId = account.value
+      } else if (directory.accounts.length > 1) {
+        setTenantList(directory.accounts)
+        setShowTenantListModal(true)
+        return
+      }
+    }
+
     const targetTenantId =
-      tenantId || shareTenantId || brandingTenantId || undefined
+      resolvedTenantId || shareTenantId || brandingTenantId || undefined
     const { data, error, status } = await apiRouter.socialLogin(
       payload,
       targetTenantId,
@@ -322,6 +372,7 @@ const SignInForm = ({
         email: tenant.email,
         id: tenant.id,
         label: tenant.name,
+        product: 'v6' as const,
         value: tenant.id,
       }))
       setTenantList(mapped)
@@ -602,7 +653,12 @@ const SignInForm = ({
     setLoading(true)
     try {
       if (selected?.product === 'v5') {
-        await completeClassicSignIn(selected)
+        await completeClassicSignIn(
+          selected,
+          loginType
+            ? { email: socialEmail || email, loginType }
+            : undefined,
+        )
         return
       }
       await signIn(selected?.value ?? tenantId)
@@ -646,139 +702,130 @@ const SignInForm = ({
     welcomeDescription = t`Hi, Welcome back to ${appName}`
   }
 
-  // Show tenant selection UI instead of sign-in form when tenant list is available
+  // Show tenant / app-version selection instead of the sign-in form
   if (showTenantListModal && tenantList.length > 0) {
+    const accountEmail = socialLogged ? socialEmail : email
+
     return (
-      <>
-        <AnimateSlideLeft delay={0.1} distance={30}>
-          {/* <IconIllustrated icon='tabler:user' /> */}
-        </AnimateSlideLeft>
-        <AnimateSlideLeft delay={0.15} distance={30}>
-          {/* <Title
-            description={welcomeDescription}
-            title='Select Account'
-            level={1}
-            className='text-center'
-          /> */}
-        </AnimateSlideLeft>
+      <div className='space-y-3'>
+        <button
+          className='group flex cursor-pointer items-center gap-1.5 text-13 font-medium text-gray-11 transition-colors duration-200 hover:text-primary-11'
+          type='button'
+          onClick={handleBackToSignIn}
+        >
+          <Icon
+            className='text-gray-9 group-hover:text-primary-11'
+            name='tabler:arrow-left'
+          />
+          <span>{t`Back to sign in`}</span>
+        </button>
 
-        {/* Back button */}
-        <AnimateSlideLeft delay={0.2} distance={30}>
-          <button
-            className='group mb-6 flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-11 transition-all duration-200 hover:text-primary-11'
-            type='button'
-            onClick={handleBackToSignIn}
-          >
-            <Icon
-              className='text-gray-9 transition-all duration-200 group-hover:-translate-x-1 group-hover:text-primary-11'
-              name='tabler:arrow-left'
-            />
-            <span>{t`Back to Sign In`}</span>
-          </button>
-        </AnimateSlideLeft>
+        <Title
+          description={t`Signing in as ${accountEmail}`}
+          level={2}
+          title={t`Choose an app`}
+        />
 
-        <AnimateSlideLeft delay={0.25} distance={30}>
-          <div className='mb-6 text-sm leading-relaxed text-gray-12'>
-            {t`It looks like`}{' '}
-            <strong className='text-gray-13'>
-              {socialLogged ? socialEmail : email}
-            </strong>{' '}
-            {t`is used with more than one account. Which account do you want to use?`}
-          </div>
-        </AnimateSlideLeft>
+        <div className='space-y-2'>
+          {tenantList.map((tenant) => {
+            const isSelected = selectedTenantId === tenant.id
+            const isLoadingThis = loading && isSelected
+            const isClassic = tenant.product === 'v5'
+            const label = tenant.label.trim()
+            const sameProductCount = tenantList.filter(
+              (item) => (item.product === 'v5') === isClassic,
+            ).length
+            const canShowWorkspace =
+              sameProductCount > 1 &&
+              label.length > 0 &&
+              !label.includes('@') &&
+              label.toLowerCase() !== accountEmail.trim().toLowerCase()
 
-        {/* Animated tenant list - Compact Design */}
-        <AnimatePresence mode='wait'>
-          <div className='space-y-2'>
-            {tenantList.map((tenant, index) => {
-              const isSelected = selectedTenantId === tenant.id
-              const isLoading = loading && isSelected
-
-              return (
-                <AnimateSlideLeft
-                  delay={0.3 + index * 0.1}
-                  distance={50}
-                  key={tenant.id}
+            return (
+              <button
+                disabled={loading}
+                key={tenant.id}
+                type='button'
+                className={cn(
+                  'group flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-surface-primary px-3 py-2.5 text-left transition-colors duration-200',
+                  'hover:border-primary-6 hover:bg-primary-1',
+                  isLoadingThis
+                    ? 'border-primary-8 bg-primary-1'
+                    : 'border-gray-4',
+                )}
+                onClick={() => handleTenantClick(tenant.id)}
+              >
+                <div
+                  className={cn(
+                    'flex size-9 shrink-0 items-center justify-center rounded-lg',
+                    isClassic ? 'bg-gray-3' : 'bg-primary-3',
+                  )}
                 >
-                  <button
-                    disabled={loading}
-                    type='button'
-                    className={`group relative flex w-full cursor-pointer items-center justify-between rounded-lg border bg-white px-3 py-2.5 text-left transition-all duration-300 ${
-                      isLoading
-                        ? 'border-primary-9 bg-primary-1 shadow-sm'
-                        : 'border-gray-4 hover:border-primary-6 hover:bg-gray-1'
-                    }`}
-                    onClick={() => handleTenantClick(tenant.id)}
+                  {isClassic ? (
+                    <Icon
+                      className='size-5 text-gray-11'
+                      name='tabler:stack-2'
+                    />
+                  ) : (
+                    <AiBrandIcon
+                      className='size-5'
+                      variant='outline-purple'
+                    />
+                  )}
+                </div>
+
+                <div className='min-w-0 flex-1'>
+                  <div className='flex items-center gap-2'>
+                    <span className='truncate text-14 font-medium text-gray-13'>
+                      {t`EZOFIS`}
+                    </span>
+                    <Badge
+                      color={isClassic ? 'gray' : 'purple'}
+                      label={isClassic ? t`Classic` : t`Current`}
+                    />
+                  </div>
+                  <p className='mt-0.5 truncate text-12 text-gray-11'>
+                    {canShowWorkspace
+                      ? label
+                      : isClassic
+                        ? t`Version 5`
+                        : t`AI-powered workspace`}
+                  </p>
+                </div>
+
+                {isLoadingThis ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      ease: 'linear',
+                      repeat: Infinity,
+                    }}
                   >
-                    <div className='flex items-center gap-2.5'>
-                      {/* Compact user icon/avatar */}
-                      <div
-                        className={`flex size-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
-                          isLoading
-                            ? 'scale-105 bg-primary-9'
-                            : 'bg-gradient-to-br from-primary-4 to-primary-6 group-hover:from-primary-5 group-hover:to-primary-7'
-                        }`}
-                      >
-                        <Icon
-                          name='tabler:user'
-                          className={`size-3.5 transition-colors duration-300 ${
-                            isLoading ? 'text-white' : 'text-primary-11'
-                          }`}
-                        />
-                      </div>
-                      <div className='min-w-0 flex-1'>
-                        <div
-                          className={`text-sm font-medium transition-colors duration-300 ${
-                            isLoading
-                              ? 'text-primary-11'
-                              : 'text-gray-13 group-hover:text-primary-11'
-                          }`}
-                        >
-                          {tenant.label}
-                        </div>
-                      </div>
-                    </div>
+                    <Icon
+                      className='size-4 shrink-0 text-primary-11'
+                      name='tabler:loader-2'
+                    />
+                  </motion.div>
+                ) : (
+                  <Icon
+                    className='size-4 shrink-0 text-gray-8 group-hover:text-primary-11'
+                    name='tabler:chevron-right'
+                  />
+                )}
+              </button>
+            )
+          })}
+        </div>
 
-                    {/* Right side icon */}
-                    <div className='flex items-center'>
-                      {isLoading ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            duration: 1,
-                            ease: 'linear',
-                            repeat: Infinity,
-                          }}
-                        >
-                          <Icon
-                            className='size-4 text-primary-11'
-                            name='tabler:loader-2'
-                          />
-                        </motion.div>
-                      ) : (
-                        <Icon
-                          className='size-4 text-gray-8 transition-all duration-300 group-hover:translate-x-0.5 group-hover:text-primary-11'
-                          name='tabler:chevron-right'
-                        />
-                      )}
-                    </div>
-                  </button>
-                </AnimateSlideLeft>
-              )
-            })}
-          </div>
-        </AnimatePresence>
-
-        <AnimateSlideLeft delay={0.4 + tenantList.length * 0.1} distance={30}>
-          <button
-            className='mt-6 cursor-pointer text-xs font-medium text-gray-11 underline transition-colors duration-200 hover:text-primary-11'
-            type='button'
-            onClick={handleBackToSignIn}
-          >
-            {t`Sign in with a different email address`}
-          </button>
-        </AnimateSlideLeft>
-      </>
+        <button
+          className='cursor-pointer text-12 font-medium text-gray-11 underline hover:text-primary-11'
+          type='button'
+          onClick={handleBackToSignIn}
+        >
+          {t`Use a different email`}
+        </button>
+      </div>
     )
   }
 
