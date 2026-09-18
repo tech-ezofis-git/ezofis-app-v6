@@ -358,8 +358,8 @@ function withMatchHints(
   return {
     ...hit,
     found: found.length ? found.slice(0, 3) : hit.found,
-    // Never surface "local-cache" as a match label.
-    matchSource: undefined,
+    // Preserve matchSource if it was in the local cache
+    matchSource: hit.matchSource,
     needles: needles.length ? needles : hit.needles,
   }
 }
@@ -1130,7 +1130,7 @@ export function searchAllLocalData(query: string): GlobalSearchHit[] {
       return {
         ...hit,
         found: normalizeFound(hit.found),
-        matchSource: undefined,
+        matchSource: hit.matchSource,
         needles: hit.needles?.length ? hit.needles : queryNeedles(needle),
       }
     }

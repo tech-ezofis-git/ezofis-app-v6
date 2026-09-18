@@ -73,6 +73,15 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
   const isApAgent = nodeToolType === NODE_TOOL_TYPE.AP_AGENT
   const isFtpAgent = nodeToolType === NODE_TOOL_TYPE.FTP_AGENT
 
+  const isManualUser =
+    nodeToolType === NODE_TOOL_TYPE.MANUAL_USER ||
+    nodeToolType === NODE_TOOL_TYPE.FORM_SUBMISSION ||
+    nodeToolType === 'manual_user' ||
+    nodeToolType === 'user_task' ||
+    nodeToolType === 'manual' ||
+    String((node.data as any)?.type || '').toUpperCase() === 'MANUAL_USER' ||
+    String((node.data as any)?.type || '').toUpperCase() === 'USER_TASK'
+
   const qualifyActionOptions = [
     { id: 1, name: 'QUALIFY' },
     { id: 2, name: 'DISQUALIFY' },
@@ -236,44 +245,46 @@ export default function ConnectionsRouting({ node }: ConnectionsRoutingProps) {
                 />
               </div>
 
-              <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1'>
-                <div className='flex items-center justify-between'>
-                  <span className='text-12 text-gray-11'>Remarks required</span>
-                  <InputSwitch
-                    checked={conn.remarks}
-                    onChange={(checked) =>
-                      onUpdateFlag(conn.edgeId, 'remarks', checked)
-                    }
-                  />
+              {isManualUser && (
+                <div className='grid grid-cols-2 gap-x-3 gap-y-2 pt-1'>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-12 text-gray-11'>Remarks required</span>
+                    <InputSwitch
+                      checked={conn.remarks}
+                      onChange={(checked) =>
+                        onUpdateFlag(conn.edgeId, 'remarks', checked)
+                      }
+                    />
+                  </div>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-12 text-gray-11'>Confirmation dialog</span>
+                    <InputSwitch
+                      checked={conn.confirm}
+                      onChange={(checked) =>
+                        onUpdateFlag(conn.edgeId, 'confirm', checked)
+                      }
+                    />
+                  </div>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-12 text-gray-11'>Password verification</span>
+                    <InputSwitch
+                      checked={conn.passwordAccess}
+                      onChange={(checked) =>
+                        onUpdateFlag(conn.edgeId, 'passwordAccess', checked)
+                      }
+                    />
+                  </div>
+                  <div className='flex items-center justify-between'>
+                    <span className='text-12 text-gray-11'>Signature required</span>
+                    <InputSwitch
+                      checked={conn.signature}
+                      onChange={(checked) =>
+                        onUpdateFlag(conn.edgeId, 'signature', checked)
+                      }
+                    />
+                  </div>
                 </div>
-                <div className='flex items-center justify-between'>
-                  <span className='text-12 text-gray-11'>Confirmation dialog</span>
-                  <InputSwitch
-                    checked={conn.confirm}
-                    onChange={(checked) =>
-                      onUpdateFlag(conn.edgeId, 'confirm', checked)
-                    }
-                  />
-                </div>
-                <div className='flex items-center justify-between'>
-                  <span className='text-12 text-gray-11'>Password verification</span>
-                  <InputSwitch
-                    checked={conn.passwordAccess}
-                    onChange={(checked) =>
-                      onUpdateFlag(conn.edgeId, 'passwordAccess', checked)
-                    }
-                  />
-                </div>
-                <div className='flex items-center justify-between'>
-                  <span className='text-12 text-gray-11'>Signature required</span>
-                  <InputSwitch
-                    checked={conn.signature}
-                    onChange={(checked) =>
-                      onUpdateFlag(conn.edgeId, 'signature', checked)
-                    }
-                  />
-                </div>
-              </div>
+              )}
             </div>
           ))
         ) : (

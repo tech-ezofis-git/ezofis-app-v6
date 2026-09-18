@@ -29,11 +29,18 @@ type HistoryRow = {
   title?: string
 }
 
+import requestStore from '@/pages/requests/stores/useRequestStore'
+import {
+  isAccountsPayableWorkflow,
+  isSapPoSourceConfigured,
+} from '@/pages/requests/utils/workflow.utils'
+
 type Props = {
   enabled?: boolean
   instanceId?: string | number
   isCompleted?: boolean
   processId?: number | string
+  workflow?: any
   workflowId?: number | string
 }
 
@@ -215,6 +222,7 @@ export default function History({
   instanceId,
   isCompleted,
   processId,
+  workflow,
   workflowId,
 }: Props) {
   const {
@@ -222,6 +230,14 @@ export default function History({
     error,
     isLoading,
   } = useHistory(workflowId, instanceId || processId, enabled)
+
+  const storeRawWorkflow = requestStore((state) => state.rawWorkflowData)
+  const storeSelectedWorkflow = requestStore((state) => state.selectedWorkflow)
+  const currentWorkflow = workflow || storeRawWorkflow || storeSelectedWorkflow
+
+  const isApWorkflow = isAccountsPayableWorkflow(currentWorkflow)
+  const isSapConfigured = isSapPoSourceConfigured(currentWorkflow)
+  const showSapTimeline = isApWorkflow && isSapConfigured
 
   const displayFlows = useMemo(() => {
     if (!flows || flows.length === 0) return []
@@ -231,6 +247,8 @@ export default function History({
 
     flows.forEach((h, idx) => {
       result.push(h)
+
+      if (!showSapTimeline) return
 
       const title = h.title || getTitle(h)
       const stageLc = safeLower(h.stage)
@@ -278,6 +296,22 @@ export default function History({
         })
       }
     })
+
+    if (!showSapTimeline) {
+      // Filter out any SAP timeline entries if showSapTimeline is false
+      return result.filter((f) => {
+        const titleStr = safeLower(f.title || getTitle(f))
+        const stageStr = safeLower(f.stage)
+        const userStr = safeLower(f.actionUser || f.performedByUserName)
+        const isSapItem =
+          stageStr.includes('sap') ||
+          userStr.includes('system (sap)') ||
+          titleStr.includes('created in sap') ||
+          titleStr.includes('updated in sap') ||
+          titleStr.includes('sap integration')
+        return !isSapItem
+      })
+    }
 
     const hasSapCreatedInResult = result.some((f) => {
       const titleStr = safeLower(f.title || getTitle(f))
@@ -353,7 +387,7 @@ export default function History({
     }
 
     return result
-  }, [flows, isCompleted])
+  }, [flows, isCompleted, showSapTimeline])
 
   if (isLoading) {
     return (
