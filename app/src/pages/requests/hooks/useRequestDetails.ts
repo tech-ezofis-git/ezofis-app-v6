@@ -20,50 +20,39 @@ export const useRequestDetail = (
         // Do not filter list calls by transactionId in detail view to ensure we always fetch the latest active transaction (e.g. Inbox transaction after AP Agent finishes)
         const txId = undefined
 
-        // Try Inbox
-        const inboxRes = await workflowsApiV6.getInboxList(
-          String(workflowId),
-          1,
-          5,
-          String(processId),
-          txId,
-        )
-        const inboxItems = inboxRes.data?.items || []
-        processData = inboxItems.find((i: any) => {
+        const [inboxRes, sentRes, completedRes] = await Promise.all([
+          workflowsApiV6.getInboxList(String(workflowId), 1, 5, String(processId), txId),
+          workflowsApiV6.getSentList(String(workflowId), 1, 5, String(processId), txId),
+          workflowsApiV6.getCompletedList(String(workflowId), 1, 5, String(processId), txId),
+        ])
+
+        const allItems = [
+          ...(inboxRes.data?.items || []),
+          ...(sentRes.data?.items || []),
+          ...(completedRes.data?.items || []),
+        ]
+
+        const processItems = allItems.filter((i: any) => {
           const id = i.workflowInstanceId || i.processId || i.id
           return String(id) === String(processId)
         })
 
-        // Try Sent if not found
-        if (!processData) {
-          const sentRes = await workflowsApiV6.getSentList(
-            String(workflowId),
-            1,
-            5,
-            String(processId),
-            txId,
-          )
-          const sentItems = sentRes.data?.items || []
-          processData = sentItems.find((i: any) => {
-            const id = i.workflowInstanceId || i.processId || i.id
-            return String(id) === String(processId)
+        if (processItems.length > 0) {
+          // Sort by transactionId descending to always get the latest transaction.
+          // This solves Elasticsearch indexing delays (where an old Inbox item is returned alongside the new Sent item)
+          // and supports AP Agent auto-advancing (where a new Inbox item replaces the old Completed item).
+          processItems.sort((a, b) => {
+            const txA = Number(a.transactionId)
+            const txB = Number(b.transactionId)
+            if (!Number.isNaN(txA) && !Number.isNaN(txB)) {
+              return txB - txA
+            }
+            const dateA = new Date(a.transactionCreatedAt || a.lastActionDate || a.updatedAt || a.createdAt || 0).getTime()
+            const dateB = new Date(b.transactionCreatedAt || b.lastActionDate || b.updatedAt || b.createdAt || 0).getTime()
+            return dateB - dateA
           })
-        }
 
-        // Try Completed if not found
-        if (!processData) {
-          const completedRes = await workflowsApiV6.getCompletedList(
-            String(workflowId),
-            1,
-            5,
-            String(processId),
-            txId,
-          )
-          const completedItems = completedRes.data?.items || []
-          processData = completedItems.find((i: any) => {
-            const id = i.workflowInstanceId || i.processId || i.id
-            return String(id) === String(processId)
-          })
+          processData = processItems[0]
         }
       } catch (err) {
         console.error('Error fetching process details from V6 lists:', err)

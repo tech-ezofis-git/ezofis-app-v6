@@ -908,6 +908,7 @@ const RequestsPage = () => {
           )}
           {selectedItem && (
             <Request
+              key={selectedItem.processId || selectedItem.id}
               isFourthItem={selectedIndex === 3}
               isThirdItem={selectedIndex === 2}
               item={selectedItem}

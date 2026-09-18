@@ -4,9 +4,9 @@ import { useNodes, useReactFlow } from '@xyflow/react'
 import { useEffect, useMemo, useState } from 'react'
 import { requestApi } from '@/api/requests/requests'
 import {
-  getGroupListQueryOptions,
-  getUserListQueryOptions,
-} from '@/api/userQueries'
+  getGroups,
+  getUsers,
+} from '@/api/v6/user'
 import type { Option } from '@/types/option'
 import IconButton from '@/components/base/button/IconButton'
 import Icon from '@/components/base/icon/Icon'
@@ -55,8 +55,17 @@ export default function ManualUserSettingsPanel({
   const liveNodes = useNodes()
   const formId = useWorkflowStore((state) => state.form)
 
-  const { data: userData } = useQuery(getUserListQueryOptions())
-  const { data: groupData } = useQuery(getGroupListQueryOptions())
+  const { data: userResponse } = useQuery({
+    queryKey: ['v6-users'],
+    queryFn: getUsers,
+  })
+  const userData = userResponse?.data
+
+  const { data: groupResponse } = useQuery({
+    queryKey: ['v6-groups'],
+    queryFn: getGroups,
+  })
+  const groupData = groupResponse?.data
 
   const userOptions: Option[] = useMemo(() => {
     const users = userData as any[]
