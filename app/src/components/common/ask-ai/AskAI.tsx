@@ -21,7 +21,8 @@ import {
   type LucideIcon as LucideIconType,
   Mail,
   MailOpen,
-  Maximize2,
+  Maximize,
+  Menu,
   Minimize2,
   MoreHorizontal,
   Paperclip,
@@ -272,7 +273,7 @@ const iconMap: Record<string, LucideIconType> = {
   lightning: Bolt,
   mail: Mail,
   mailOpen: MailOpen,
-  maximize: Maximize2,
+  maximize: Maximize,
   minimize: Minimize2,
   more: MoreHorizontal,
   pdf: FileText,
@@ -702,7 +703,7 @@ const AskAI = () => {
 
   const applyAnswerAction = (msg: Message) => {
     if (isMaximized) toggleMaximize(pathname)
-    
+
     const target = String(msg.actionTo || '').toLowerCase()
     if (target !== 'repository' && target !== 'workflow') return
 
@@ -809,7 +810,7 @@ const AskAI = () => {
 
   const openResultGroup = (groupType: string, groupId: string, groupName: string, msg: Message) => {
     if (isMaximized) toggleMaximize(pathname)
-    
+
     const type = groupType.toLowerCase()
     const browse = msg.browseRequest
     const { fileSearch, filters } = browseFilterByToUiFiltersAndSearch(
@@ -1409,6 +1410,7 @@ const AnswerCardGroup = ({
   onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
 }) => {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [limit, setLimit] = useState(3)
 
   const iconName =
     group.type === 'form' || group.type.includes('master')
@@ -1418,9 +1420,10 @@ const AnswerCardGroup = ({
         : 'folder'
 
   return (
-    <div className='mb-2.5 overflow-hidden bg-[var(--bg)] rounded-[7px] border border-[var(--border)]'>
+    <div className='overflow-hidden bg-[var(--bg)] rounded-xl border border-[var(--border)] transition-colors'>
       <div
-        className='group flex w-full cursor-pointer items-center justify-between border-b border-[var(--border)] bg-[var(--bg)] px-3 py-2.5 transition  focus-visible:outline-none'
+        className={`group flex w-full cursor-pointer items-center justify-between px-4 py-4 focus-visible:outline-none ${isExpanded ? 'border-b border-[var(--border)]' : ''
+          }`}
         role='button'
         tabIndex={0}
         onClick={() => setIsExpanded(!isExpanded)}
@@ -1452,7 +1455,7 @@ const AnswerCardGroup = ({
                 {isApply ? (
                   <Filter className='size-4' strokeWidth={2} />
                 ) : (
-                  <ExternalLink className='size-4' strokeWidth={2} />
+                  <Menu className='size-4' strokeWidth={2} />
                 )}
               </button>
             </Tooltip>
@@ -1466,7 +1469,7 @@ const AnswerCardGroup = ({
 
       {isExpanded && (
         <div className='flex flex-col divide-y divide-[var(--border)]'>
-          {group.cards.map((card, index) => (
+          {group.cards.slice(0, limit).map((card, index) => (
             <div className='bg-[var(--bg)] mr-2 ml-2 mt-2 mb-2 shadow-md rounded-lg border border-[var(--border)]'>
               <AnswerCard
                 card={card}
@@ -1476,6 +1479,35 @@ const AnswerCardGroup = ({
               />
             </div>
           ))}
+
+          {canApply && (
+            <div className='flex items-center justify-between border-t border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-[12px]'>
+              <div>
+                {limit < group.cards.length && (
+                  <button
+                    className='font-medium text-[var(--purple)] hover:underline focus-visible:outline-none'
+                    type='button'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setLimit(limit + 2)
+                    }}
+                  >
+                    View more
+                  </button>
+                )}
+              </div>
+              <button
+                className='font-medium text-[var(--purple)] hover:underline focus-visible:outline-none'
+                type='button'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onGroupClick?.(group.type, group.id, group.name)
+                }}
+              >
+                {actionLabel}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1497,17 +1529,20 @@ const AnswerBlock = ({
   onCardClick?: (card: AskAiCard) => void
   onGroupClick?: (groupType: string, groupId: string, groupName: string) => void
 }) => {
+  const isMaximized = useAskAIStore((state: any) => state.isMaximized)
+
   if (block.type === 'paragraph') {
     return <p className='mb-2.5'>{block.text}</p>
   }
 
   if (block.type === 'bullets') {
+    if (block.title === 'Filters Applied') return null
     const bulletItems = block.items ?? []
     if (!bulletItems.length) return null
 
     const isClickable = Boolean(onActionClick && ctaMode && !hasCards)
     const isApply = ctaMode === 'apply'
-    const actionLabel = isApply ? 'Apply filter' : 'Open the page'
+    const actionLabel = isApply ? 'Apply filter' : 'View all'
 
     const content = (
       <>
@@ -1626,31 +1661,33 @@ const AnswerBlock = ({
     })
 
     const isApply = ctaMode === 'apply'
-    const actionLabel = isApply ? 'Apply filter' : 'Open the page'
+    const actionLabel = isApply ? 'Apply filter' : 'View all'
 
     return (
-      <div className='mb-2.5 flex flex-col gap-4'>
+      <div className=' flex flex-col'>
         {block.title && (
-          <div className='text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
+          <div className='mb-2.5 text-[10.5px] font-medium tracking-[.4px] text-[var(--text2)] uppercase'>
             {block.title}
           </div>
         )}
-        {Array.from(groups.values()).map((group) => {
-          const hasMultiple = group.cards.length > 1
-          const canApply = hasMultiple && Boolean(onGroupClick)
+        <div className={isMaximized ? 'grid grid-cols-1 md:grid-cols-3 gap-2.5 items-start' : 'flex flex-col gap-2.5'}>
+          {Array.from(groups.values()).map((group) => {
+            const hasMultiple = group.cards.length > 1
+            const canApply = hasMultiple && Boolean(onGroupClick)
 
-          return (
-            <AnswerCardGroup
-              actionLabel={actionLabel}
-              canApply={canApply}
-              group={group}
-              isApply={isApply}
-              key={`${group.type}-${group.id}`}
-              onCardClick={onCardClick}
-              onGroupClick={onGroupClick}
-            />
-          )
-        })}
+            return (
+              <AnswerCardGroup
+                actionLabel={actionLabel}
+                canApply={canApply}
+                group={group}
+                isApply={isApply}
+                key={`${group.type}-${group.id}`}
+                onCardClick={onCardClick}
+                onGroupClick={onGroupClick}
+              />
+            )
+          })}
+        </div>
       </div>
     )
   }
@@ -1694,7 +1731,7 @@ const AnswerCard = ({
             )}
           </div>
           <div className='flex shrink-0 items-center gap-1.5'>
-            {clickable ? (
+            {clickable && !nested ? (
               <ExternalLink
                 className='size-3.5 text-[var(--purple)] opacity-70 transition group-hover:translate-x-0.5 group-hover:opacity-100'
                 strokeWidth={2}

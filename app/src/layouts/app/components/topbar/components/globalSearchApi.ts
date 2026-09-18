@@ -183,13 +183,18 @@ export function normalizeGlobalSearchHit(raw: unknown): GlobalSearchHit | null {
     hit.matchedValue,
     hit.matchValue,
   )
-  const matchSource = pickString(hit.matchSource, hit.match_source) || undefined
+  const matchSource = pickString(
+    hit.matchSource,
+    hit.match_source,
+    hit.MatchSource,
+    hit.matchsource,
+  ) || undefined
   const entityName = pickString(hit.entity_name, hit.entityName)
   const ifileName = pickString(hit.ifileName, hit.fileName, hit.filename)
   const name = pickString(hit.name, hit.id && typeof hit.id === 'object'
     ? (hit.id as Record<string, unknown>).repositoryName ||
-        (hit.id as Record<string, unknown>).workflowName ||
-        (hit.id as Record<string, unknown>).formName
+    (hit.id as Record<string, unknown>).workflowName ||
+    (hit.id as Record<string, unknown>).formName
     : '')
   const title = pickString(hit.title, entityName, ifileName, name, hit.requestNo)
   const description = pickString(hit.description)
@@ -207,13 +212,13 @@ export function normalizeGlobalSearchHit(raw: unknown): GlobalSearchHit | null {
       ? (hit.found as GlobalSearchHit['found'])
       : matchedField || matchedValue
         ? [
-            {
-              field: matchedField || undefined,
-              kind: type.toLowerCase().includes('form') ? 'form' : 'field',
-              snippet: matchedValue || undefined,
-              value: matchedValue || undefined,
-            },
-          ]
+          {
+            field: matchedField || undefined,
+            kind: type.toLowerCase().includes('form') ? 'form' : 'field',
+            snippet: matchedValue || undefined,
+            value: matchedValue || undefined,
+          },
+        ]
         : undefined
 
   const needles = [matchedValue, requestNo, title].filter(Boolean) as string[]
@@ -239,12 +244,32 @@ export function normalizeGlobalSearchHit(raw: unknown): GlobalSearchHit | null {
     }
   }
 
-  const folder = pickString(
+  const isRedundant = (label: string, mainText: string) => {
+    if (!label) return true
+    const l = label.toLowerCase()
+    const m = mainText.toLowerCase()
+    return m === l
+  }
+
+  const rawFolder = pickString(
     hit.folder,
     id.repositoryName,
     id.workflowName,
     name,
   )
+  const folder = isRedundant(rawFolder, title) ? undefined : rawFolder
+
+  const finalBadges: GlobalSearchHit['badges'] = []
+  const seenBadges = new Set<string>()
+  for (const b of badges) {
+    const lbl = String(b.label || '').trim()
+    const lblLower = lbl.toLowerCase()
+    if (isRedundant(lbl, title) || (folder && isRedundant(lbl, folder))) continue
+    if (!seenBadges.has(lblLower)) {
+      seenBadges.add(lblLower)
+      finalBadges.push(b)
+    }
+  }
 
   const metadata =
     hit.metadata && typeof hit.metadata === 'object' && !Array.isArray(hit.metadata)
@@ -253,7 +278,7 @@ export function normalizeGlobalSearchHit(raw: unknown): GlobalSearchHit | null {
 
   return {
     ...hit,
-    badges: badges.length ? badges : undefined,
+    badges: finalBadges.length ? finalBadges : undefined,
     dateandtime: pickString(hit.dateandtime, hit.dateAndTime) || undefined,
     description: description || undefined,
     entity_id: pickString(hit.entity_id, hit.entityId, id.itemId, id.formEntryId) || undefined,
@@ -345,10 +370,10 @@ export async function fetchGlobalSearch(
         'Content-Type': 'application/json',
         ...(accessToken
           ? {
-              Authorization: accessToken.startsWith('Bearer ')
-                ? accessToken
-                : `Bearer ${accessToken}`,
-            }
+            Authorization: accessToken.startsWith('Bearer ')
+              ? accessToken
+              : `Bearer ${accessToken}`,
+          }
           : {}),
         'X-Tenant-Id': tenantId,
       },

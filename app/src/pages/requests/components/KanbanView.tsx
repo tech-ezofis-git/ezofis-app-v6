@@ -11,6 +11,8 @@ import {
 } from 'react'
 import type { WorkflowOption } from '@/pages/requests/types'
 import workflowsApiV6 from '@/api/v6/workflows'
+import Avatar from '@/components/base/Avatar'
+import Tooltip from '@/components/base/Tooltip'
 import Icon from '@/components/base/icon/Icon'
 import showToast from '@/components/base/toast/showToast'
 import ListEmptyState from '@/components/common/ListEmptyState'
@@ -111,6 +113,35 @@ const roleIconWrapClass: Record<KanbanColumnRole, string> = {
   neutral: 'bg-gray-2 text-gray-11',
   review: 'bg-primary-3 text-primary-9',
   success: 'bg-green-2 text-green-9',
+}
+
+const getColumnThemeClasses = (color?: string, role?: KanbanColumnRole) => {
+  const base = color || (role === 'success' ? 'green' : role === 'review' ? 'primary' : 'gray')
+  switch (base) {
+    case 'green':
+      return { bg: 'bg-green-2', count: 'bg-green-9 text-white' }
+    case 'blue':
+      return { bg: 'bg-blue-2', count: 'bg-blue-9 text-white' }
+    case 'orange':
+      return { bg: 'bg-orange-2', count: 'bg-orange-9 text-white' }
+    case 'red':
+      return { bg: 'bg-red-2', count: 'bg-red-9 text-white' }
+    case 'primary':
+    case 'purple':
+      return { bg: 'bg-primary-2', count: 'bg-primary-9 text-white' }
+    case 'gray':
+    default:
+      return { bg: 'bg-gray-2', count: 'bg-gray-8 text-white' }
+  }
+}
+
+const getInitials = (nameOrEmail: string): string => {
+  if (!nameOrEmail) return ''
+  const parts = nameOrEmail.split(/[@.\s_-]/).filter(Boolean)
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase()
+  }
+  return nameOrEmail.substring(0, 2).toUpperCase()
 }
 
 type KanbanViewProps = {
@@ -497,6 +528,8 @@ export default function KanbanView({
                 </div>
               )
 
+            const theme = getColumnThemeClasses(column.color, column.role)
+
             return (
               <div className='relative h-full shrink-0 py-0.5' key={column.id}>
                 <motion.section
@@ -539,19 +572,11 @@ export default function KanbanView({
                   onHoverStart={() => setHoveredColumnId(column.id)}
                   {...bindDrop(columnDropId)}
                 >
-                <header className='flex shrink-0 items-center gap-2.5 border-b border-gray-3 px-3.5 py-3.5'>
-                  <span
-                    className={cn(
-                      'size-2 shrink-0 rounded-full',
-                      column.color
-                        ? kanbanColorDotClass(column.color)
-                        : roleDotClass[column.role],
-                    )}
-                  />
+                <header className={cn('flex shrink-0 items-center gap-2.5 border-b border-gray-3 px-3.5 py-3.5 rounded-t-[11px]', theme.bg)}>
                   <h3 className='min-w-0 flex-1 truncate text-[13.5px] font-semibold tracking-tight text-gray-13'>
                     {column.name}
                   </h3>
-                  <span className='shrink-0 rounded-full border border-gray-3 bg-gray-2 px-2 py-0.5 text-11 font-semibold text-gray-11'>
+                  <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-11 font-semibold', theme.count)}>
                     {column.items.length}
                   </span>
                 </header>
@@ -688,6 +713,7 @@ function KanbanCard({
   const canDrag = !locked && !isMoving && item._canMove === true
 
   const raisedBy =
+    item?.activityUserEmail ||
     item?.createdByEmail ||
     item?.transactionCreatedByEmail ||
     item?.raisedBy ||
@@ -800,17 +826,30 @@ function KanbanCard({
       }}
     >
       <div className='mb-2 flex items-center gap-2'>
-        <span
-          className={cn(
-            'flex size-6 shrink-0 items-center justify-center rounded-full',
-            roleIconWrapClass[cardRole],
-          )}
-        >
-          <Icon
-            className='size-3.5'
-            name={cardRole === 'success' ? 'tabler:check' : 'tabler:clock'}
-          />
-        </span>
+        {raisedBy ? (
+          <Tooltip content={raisedBy} position='top'>
+            <span
+              className={cn(
+                'flex size-6 shrink-0 items-center justify-center rounded-full',
+                roleIconWrapClass[cardRole],
+              )}
+            >
+              <Avatar className='shrink-0' initials={getInitials(raisedBy)} size={24} />
+            </span>
+          </Tooltip>
+        ) : (
+          <span
+            className={cn(
+              'flex size-6 shrink-0 items-center justify-center rounded-full',
+              roleIconWrapClass[cardRole],
+            )}
+          >
+            <Icon
+              className='size-3.5'
+              name={cardRole === 'success' ? 'tabler:check' : 'tabler:clock'}
+            />
+          </span>
+        )}
         <span
           className='flex min-w-0 flex-1 items-center !cursor-pointer'
           data-no-drag=''
@@ -885,37 +924,9 @@ function KanbanCard({
         </div>
       )}
 
-      {raisedBy ? (
-        <div className='mb-2 flex items-start gap-1.5 rounded-md px-0.5 py-0.5 text-gray-8 transition-colors duration-200 hover:bg-gray-2/80'>
-          <Icon className='mt-0.5 size-3.5 shrink-0' name='tabler:user' />
-          <HoverExpandableText
-            className='text-[11.5px] text-gray-11'
-            expandStyle='stack'
-            maxLines={1}
-            normalMaxWidthClass='min-w-0 max-w-full flex-1'
-            text={raisedBy}
-          />
-        </div>
-      ) : null}
 
-      <div className='flex items-center justify-between gap-2 border-t border-gray-3 pt-2'>
-        {startedAt ? (
-          <div className='flex min-w-0 items-center gap-1 text-[10.5px] text-gray-10'>
-            <Icon className='size-3 shrink-0' name='tabler:calendar' />
-            <span className='truncate'>
-              {dayjs(parseUtcDate(startedAt)).format('DD-MMM-YYYY hh:mm A')}
-            </span>
-          </div>
-        ) : (
-          <span />
-        )}
-        {lastActionAt ? (
-          <span className='inline-flex shrink-0 items-center gap-1 rounded-full bg-orange-2 px-2 py-0.5 text-[10.5px] font-semibold text-orange-11'>
-            <Icon className='size-3' name='tabler:clock' />
-            {formatRunningTime(lastActionAt)}
-          </span>
-        ) : null}
-      </div>
+
+
     </div>
   )
 }

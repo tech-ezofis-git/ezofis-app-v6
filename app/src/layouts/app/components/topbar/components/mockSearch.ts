@@ -215,7 +215,7 @@ export function foundLine(f: any, needles: any) {
     case 'inside':
       return `<span class="txt">${f.count} documents inside mention this</span>`
     case 'form':
-      return `<span class="txt">In the form — ${esc(f.field)}: ${hl(f.value, needles)}</span>`
+      return `<span class="txt">${esc(f.field)}: ${hl(f.value, needles)}</span>`
     default:
       return `<span class="txt">${esc(f.field)}: ${hl(f.value, needles)}</span>`
   }

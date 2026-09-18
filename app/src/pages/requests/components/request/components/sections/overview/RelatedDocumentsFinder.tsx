@@ -82,7 +82,7 @@ const getFileExtLabel = (title: string): string => {
 const resolveMatchSource = (hit: GlobalSearchHit): string => {
   const extra = hit as GlobalSearchHit & Record<string, unknown>
   return String(
-    hit.matchSource || extra.match_source || extra.MatchSource || '',
+    hit.matchSource || extra.match_source || extra.MatchSource || extra.matchsource || '',
   )
     .toLowerCase()
     .trim()
