@@ -88,21 +88,15 @@ export default defineConfig({
         target: 'https://gpu-box.tail115a9a.ts.net',
         rewrite: (path) => path.replace(/^\/qwen-proxy/, ''),
       },
-      '/v5': {
-        changeOrigin: true,
-        secure: false,
-        target: 'https://app.ezofis.com',
-        rewrite: (path) => path.replace(/^\/v5/, ''),
-      },
       '/v5-api': {
         changeOrigin: true,
         secure: false,
         target: 'https://eztapi.ezofis.com',
         rewrite: (path) => path.replace(/^\/v5-api/, ''),
       },
-      '/v5app': {
+      '/v5': {
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/v5app/, '') || '/',
+        rewrite: (path) => path.replace(/^\/v5/, '') || '/',
         secure: false,
         target: 'https://trial.ezofis.com',
       },
