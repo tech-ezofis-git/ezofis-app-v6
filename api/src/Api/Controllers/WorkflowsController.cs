@@ -69,6 +69,7 @@ public sealed class WorkflowsController : ControllerBase
     private readonly IShareGuestUserProvisioningService _guestProvisioning;
     private readonly IWorkflowInboxShareAssignmentService _inboxShareAssignment;
     private readonly IWorkflowTicketSearchService _ticketSearch;
+    private readonly IWorkflowSecurityService _workflowSecurity;
 
     public WorkflowsController(
         IMediator mediator,
@@ -87,7 +88,8 @@ public sealed class WorkflowsController : ControllerBase
         IRepositoryItemShareService itemShares,
         IShareGuestUserProvisioningService guestProvisioning,
         IWorkflowInboxShareAssignmentService inboxShareAssignment,
-        IWorkflowTicketSearchService ticketSearch)
+        IWorkflowTicketSearchService ticketSearch,
+        IWorkflowSecurityService workflowSecurity)
     {
         _mediator = mediator;
         _workflowSchemaService = workflowSchemaService;
@@ -106,6 +108,7 @@ public sealed class WorkflowsController : ControllerBase
         _guestProvisioning = guestProvisioning;
         _inboxShareAssignment = inboxShareAssignment;
         _ticketSearch = ticketSearch;
+        _workflowSecurity = workflowSecurity;
     }
 
     /// <summary>Apply workflow schema to current tenant database. Call this if workflow.Workflows is missing. Requires X-Tenant-Id. In Development, no auth required.</summary>
@@ -296,10 +299,7 @@ public sealed class WorkflowsController : ControllerBase
         var sortOrder = string.Equals(request.SortBy?.Order, "ASC", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
 
         var userId = GetCurrentUserId();
-        var isAdmin = User.Claims.Any(c =>
-            (c.Type == ClaimTypes.Role || c.Type == "role") &&
-            (string.Equals(c.Value, "Admin", StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(c.Value, "Administrator", StringComparison.OrdinalIgnoreCase)));
+        var seesAll = await CurrentUserSeesAllWorkflowsAsync(userId, cancellationToken);
 
         var whereParts = new List<string>
         {
@@ -307,8 +307,15 @@ public sealed class WorkflowsController : ControllerBase
         };
         var parameters = new List<NpgsqlParameter>();
 
-        if (request.HasSecurity && userId != null && !isAdmin)
+        if (!seesAll)
         {
+            if (userId == null)
+            {
+                return Ok(new WorkflowAllResponse(
+                    new List<WorkflowAllGroup> { new(string.Empty, new List<WorkflowAllItem>()) },
+                    new WorkflowAllMeta(page, pageSize, 0)));
+            }
+
             whereParts.Add("""
                 (
                     EXISTS (SELECT 1 FROM workflow."WorkflowSecurity" s WHERE s."WorkflowId" = w."Id" AND s."UserId" = @CurrentUserId AND s."IsDeleted" = false)
@@ -317,16 +324,6 @@ public sealed class WorkflowsController : ControllerBase
                 )
                 """);
             whereParts.Add("NOT (w.\"Status\" = 0 AND w.\"CreatedBy\" <> @CurrentUserId)");
-            parameters.Add(new NpgsqlParameter("@CurrentUserId", userId.Value));
-        }
-        else if (request.HasReport && userId != null)
-        {
-            whereParts.Add("""
-                (
-                    EXISTS (SELECT 1 FROM workflow."WorkflowUsers" u WHERE u."WorkflowId" = w."Id" AND u."UserId" = @CurrentUserId AND u."IsDeleted" = false)
-                    OR (w."CreatedBy" = @CurrentUserId)
-                )
-                """);
             parameters.Add(new NpgsqlParameter("@CurrentUserId", userId.Value));
         }
 
@@ -416,6 +413,8 @@ public sealed class WorkflowsController : ControllerBase
         if (currentUserId == null)
             return Unauthorized(new { error = "User context is required." });
 
+        var seesAll = await CurrentUserSeesAllWorkflowsAsync(currentUserId, cancellationToken);
+
         await using var connection = new NpgsqlConnection(conn);
         await connection.OpenAsync(cancellationToken);
 
@@ -433,15 +432,12 @@ public sealed class WorkflowsController : ControllerBase
             whereSql += " AND w.\"Id\" = @WorkflowId";
             parameters.Add(new NpgsqlParameter("@WorkflowId", workflowId));
         }
-        else
+
+        if (!seesAll)
         {
-            // Old API parity intent: public workflows + workflows explicitly assigned to user.
-            // In new schema: "public" is approximated as no rows in WorkflowUsers/WorkflowSecurity.
             whereSql += """
                 AND (
-                    NOT EXISTS (SELECT 1 FROM workflow."WorkflowUsers" wu WHERE wu."WorkflowId" = w."Id" AND wu."IsDeleted" = false)
-                    AND NOT EXISTS (SELECT 1 FROM workflow."WorkflowSecurity" ws WHERE ws."WorkflowId" = w."Id" AND ws."IsDeleted" = false)
-                    OR EXISTS (SELECT 1 FROM workflow."WorkflowUsers" wu WHERE wu."WorkflowId" = w."Id" AND wu."UserId" = @CurrentUserId AND wu."IsDeleted" = false)
+                    EXISTS (SELECT 1 FROM workflow."WorkflowUsers" wu WHERE wu."WorkflowId" = w."Id" AND wu."UserId" = @CurrentUserId AND wu."IsDeleted" = false)
                     OR EXISTS (SELECT 1 FROM workflow."WorkflowSecurity" ws WHERE ws."WorkflowId" = w."Id" AND ws."UserId" = @CurrentUserId AND ws."IsDeleted" = false)
                     OR w."CreatedBy" = @CurrentUserId
                 )
@@ -1240,8 +1236,15 @@ public sealed class WorkflowsController : ControllerBase
         StartWorkflowCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetInstance), new { workflowId, instanceId = result.InstanceId }, result);
+        try
+        {
+            var result = await _mediator.Send(command, cancellationToken);
+            return CreatedAtAction(nameof(GetInstance), new { workflowId, instanceId = result.InstanceId }, result);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("do not have access", StringComparison.OrdinalIgnoreCase))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+        }
     }
 
     /// <summary>List workflow instances for a workflow.</summary>
@@ -2339,6 +2342,20 @@ public sealed class WorkflowsController : ControllerBase
                   ?? User.FindFirstValue("oid");
         return Guid.TryParse(raw, out var id) ? id : null;
     }
+
+    private async Task<bool> CurrentUserSeesAllWorkflowsAsync(Guid? userId, CancellationToken cancellationToken)
+    {
+        if (User.Claims.Any(c =>
+            (c.Type == ClaimTypes.Role || c.Type == "role") &&
+            (string.Equals(c.Value, "Admin", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(c.Value, "Administrator", StringComparison.OrdinalIgnoreCase))))
+            return true;
+
+        if (userId is not Guid uid)
+            return false;
+
+        return await _workflowSecurity.UserSeesAllWorkflowsAsync(uid, cancellationToken);
+    }
 }
 
 /// <summary>Request to create a workflow. Supports both simple and full workflow creation.</summary>
@@ -2453,36 +2470,45 @@ public record MoveToNextStepRequest(
 
     private (string? FormId, Guid? FormEntryId) ResolveFormData()
     {
-        if (!string.IsNullOrWhiteSpace(FormId) || FormEntryId.HasValue)
-            return (FormId, FormEntryId);
+        string? formId = string.IsNullOrWhiteSpace(FormId) ? null : FormId.Trim();
+        Guid? formEntryId = FormEntryId is { } fe && fe != Guid.Empty ? fe : null;
 
-        if (!FormData.HasValue)
-            return (null, null);
-
-        var el = FormData.Value;
-        if (el.ValueKind == JsonValueKind.Object)
+        if (FormData.HasValue)
         {
-            string? fid = null;
-            Guid? entry = null;
-            if (el.TryGetProperty("formId", out var f) && f.ValueKind == JsonValueKind.String)
-                fid = f.GetString();
-            if (TryReadFormEntryGuid(el, "formentryId", out var n))
-                entry = n;
-            else if (TryReadFormEntryGuid(el, "formEntryId", out var n2))
-                entry = n2;
-            return (fid, entry);
+            var el = FormData.Value;
+            if (el.ValueKind == JsonValueKind.Object)
+            {
+                if (string.IsNullOrWhiteSpace(formId)
+                    && el.TryGetProperty("formId", out var f)
+                    && f.ValueKind == JsonValueKind.String)
+                    formId = f.GetString();
+                if (formEntryId is null)
+                {
+                    if (TryReadFormEntryGuid(el, "formentryId", out var n))
+                        formEntryId = n;
+                    else if (TryReadFormEntryGuid(el, "formEntryId", out var n2))
+                        formEntryId = n2;
+                }
+            }
+            else if (el.ValueKind == JsonValueKind.String
+                && (string.IsNullOrWhiteSpace(formId) || formEntryId is null))
+            {
+                var parts = el.GetString()?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                if (parts is { Length: >= 2 }
+                    && Guid.TryParse(parts[1], out var entryId)
+                    && entryId != Guid.Empty)
+                {
+                    formId ??= parts[0];
+                    formEntryId ??= entryId;
+                }
+            }
         }
 
-        if (el.ValueKind == JsonValueKind.String)
-        {
-            var parts = el.GetString()?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            if (parts is { Length: >= 2 }
-                && Guid.TryParse(parts[1], out var entryId)
-                && entryId != Guid.Empty)
-                return (parts[0], entryId);
-        }
+        // Item-table / repository-linked starts store ezfb row id as itemId when formEntryId is omitted.
+        if (formEntryId is null && ItemId is { } itemId && itemId != Guid.Empty)
+            formEntryId = itemId;
 
-        return (null, null);
+        return (formId, formEntryId);
     }
 
     private static bool TryReadFormEntryGuid(JsonElement el, string name, out Guid entryId)
