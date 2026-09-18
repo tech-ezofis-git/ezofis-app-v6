@@ -16,9 +16,9 @@ const asIdentity = (value: unknown): IdentityLike | null =>
     : null
 
 export const getClassicPath = () => {
-  const configured = String(import.meta.env.VITE_V5_CLASSIC_PATH || '/v5app')
-  if (!configured.startsWith('/')) return '/v5app'
-  return configured.replace(/\/+$/, '') || '/v5app'
+  const configured = String(import.meta.env.VITE_V5_CLASSIC_PATH || '/v5')
+  if (!configured.startsWith('/')) return '/v5'
+  return configured.replace(/\/+$/, '') || '/v5'
 }
 
 export const isV6Identity = (value: unknown) => {
