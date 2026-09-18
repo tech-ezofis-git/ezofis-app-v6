@@ -95,3 +95,55 @@ export const loginClassic = async (
 
   return response
 }
+
+export const socialLoginClassic = async (
+  payload: { email: string; loginType: string },
+  tenantId?: number | string,
+): Promise<ClassicLoginResult> => {
+  const response: ClassicLoginResult = {
+    data: null,
+    error: '',
+    mfa: false,
+    status: 0,
+  }
+
+  try {
+    const { data, status } = await getClient()({
+      data: JSON.stringify({
+        email: payload.email,
+        loggedFrom: 'WEB',
+        loginType: payload.loginType,
+      }),
+      headers: {
+        Token: tenantId ? `tenantId ${tenantId}` : `email ${payload.email}`,
+      },
+      method: 'POST',
+      url: '/authentication/socialLogin',
+    })
+
+    response.status = status
+
+    const identity = decodeBase64Json(data)
+    if (!identity) {
+      response.error = 'error logging in'
+      return response
+    }
+
+    response.data = identity
+  } catch (e) {
+    const status = axios.isAxiosError(e) ? e.response?.status : 0
+    response.status = status || 0
+
+    if (status === 300 && axios.isAxiosError(e)) {
+      response.data = e.response?.data
+      return response
+    }
+
+    response.error = asErrorMessage(
+      axios.isAxiosError(e) ? e.response?.data : undefined,
+      status === 404 ? 'user account not found' : 'error logging in',
+    )
+  }
+
+  return response
+}
