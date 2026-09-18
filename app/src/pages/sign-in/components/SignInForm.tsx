@@ -158,6 +158,10 @@ const SignInForm = ({
   const [selectedTenantId, setSelectedTenantId] = useState<
     number | string | null
   >(null)
+  const [chooserStep, setChooserStep] = useState<'account' | 'version'>(
+    'version',
+  )
+  const [versionFilter, setVersionFilter] = useState<'v5' | 'v6' | null>(null)
 
   // === environment-based flags (computed in Vue) ===
   const origin =
@@ -674,6 +678,8 @@ const SignInForm = ({
     setSocialEmail('')
     setLoginType('')
     setSelectedTenantId(null)
+    setChooserStep('version')
+    setVersionFilter(null)
     setError(null)
   }
 
@@ -702,130 +708,209 @@ const SignInForm = ({
     welcomeDescription = t`Hi, Welcome back to ${appName}`
   }
 
-  // Show tenant / app-version selection instead of the sign-in form
+  // Account picker (multiple V6 tenants) vs version picker (Current vs Classic)
   if (showTenantListModal && tenantList.length > 0) {
     const accountEmail = socialLogged ? socialEmail : email
+    const currentAccounts = tenantList.filter((item) => item.product !== 'v5')
+    const classicAccounts = tenantList.filter((item) => item.product === 'v5')
+    const needsVersionChoice =
+      currentAccounts.length > 0 && classicAccounts.length > 0
+    const showingVersion = needsVersionChoice && chooserStep === 'version'
+    const accountOptions = showingVersion
+      ? []
+      : versionFilter === 'v5'
+        ? classicAccounts
+        : versionFilter === 'v6'
+          ? currentAccounts
+          : tenantList
+
+    const handleChooserBack = () => {
+      if (needsVersionChoice && chooserStep === 'account') {
+        setChooserStep('version')
+        setVersionFilter(null)
+        setSelectedTenantId(null)
+        return
+      }
+      handleBackToSignIn()
+    }
+
+    const handleVersionSelect = async (product: 'v5' | 'v6') => {
+      setVersionFilter(product)
+      const accounts = product === 'v5' ? classicAccounts : currentAccounts
+      if (accounts.length === 1) {
+        await handleTenantClick(accounts[0].id)
+        return
+      }
+      setChooserStep('account')
+    }
+
+    const renderRowAction = (isLoadingThis: boolean) =>
+      isLoadingThis ? (
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, ease: 'linear', repeat: Infinity }}
+        >
+          <Icon
+            className='size-4 shrink-0 text-primary-11'
+            name='tabler:loader-2'
+          />
+        </motion.div>
+      ) : (
+        <Icon
+          className='size-4 shrink-0 text-gray-8 group-hover:text-primary-11'
+          name='tabler:chevron-right'
+        />
+      )
 
     return (
-      <div className='space-y-3'>
+      <motion.div
+        animate={{ opacity: 1, y: 0 }}
+        className='space-y-3'
+        initial={{ opacity: 0, y: 8 }}
+        transition={{ duration: 0.2 }}
+      >
         <button
-          className='group flex cursor-pointer items-center gap-1.5 text-13 font-medium text-gray-11 transition-colors duration-200 hover:text-primary-11'
+          className='group flex cursor-pointer items-center gap-1.5 text-13 font-medium text-gray-11 transition-colors duration-200 hover:text-primary-11 active:text-primary-12'
           type='button'
-          onClick={handleBackToSignIn}
+          onClick={handleChooserBack}
         >
           <Icon
             className='text-gray-9 group-hover:text-primary-11'
             name='tabler:arrow-left'
           />
-          <span>{t`Back to sign in`}</span>
+          <span>
+            {needsVersionChoice && chooserStep === 'account'
+              ? t`Back to versions`
+              : t`Back to sign in`}
+          </span>
         </button>
 
-        <Title
-          description={t`Signing in as ${accountEmail}`}
-          level={2}
-          title={t`Choose an app`}
-        />
+        {showingVersion ? (
+          <>
+            <Title
+              description={t`${accountEmail} can open Current or Classic. Choose the version you want.`}
+              level={2}
+              title={t`Choose a version`}
+            />
 
-        <div className='space-y-2'>
-          {tenantList.map((tenant) => {
-            const isSelected = selectedTenantId === tenant.id
-            const isLoadingThis = loading && isSelected
-            const isClassic = tenant.product === 'v5'
-            const label = tenant.label.trim()
-            const sameProductCount = tenantList.filter(
-              (item) => (item.product === 'v5') === isClassic,
-            ).length
-            const canShowWorkspace =
-              sameProductCount > 1 &&
-              label.length > 0 &&
-              !label.includes('@') &&
-              label.toLowerCase() !== accountEmail.trim().toLowerCase()
-
-            return (
+            <div className='space-y-2'>
               <button
                 disabled={loading}
-                key={tenant.id}
                 type='button'
                 className={cn(
                   'group flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-surface-primary px-3 py-2.5 text-left transition-colors duration-200',
-                  'hover:border-primary-6 hover:bg-primary-1',
-                  isLoadingThis
+                  'hover:border-primary-6 hover:bg-primary-1 active:bg-primary-2',
+                  loading && versionFilter === 'v6'
                     ? 'border-primary-8 bg-primary-1'
                     : 'border-gray-4',
                 )}
-                onClick={() => handleTenantClick(tenant.id)}
+                onClick={() => handleVersionSelect('v6')}
               >
-                <div
-                  className={cn(
-                    'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                    isClassic ? 'bg-gray-3' : 'bg-primary-3',
-                  )}
-                >
-                  {isClassic ? (
-                    <Icon
-                      className='size-5 text-gray-11'
-                      name='tabler:stack-2'
-                    />
-                  ) : (
-                    <AiBrandIcon
-                      className='size-5'
-                      variant='outline-purple'
-                    />
-                  )}
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-3'>
+                  <AiBrandIcon className='size-5' variant='outline-purple' />
                 </div>
-
                 <div className='min-w-0 flex-1'>
                   <div className='flex items-center gap-2'>
                     <span className='truncate text-14 font-medium text-gray-13'>
                       {t`EZOFIS`}
                     </span>
-                    <Badge
-                      color={isClassic ? 'gray' : 'purple'}
-                      label={isClassic ? t`Classic` : t`Current`}
-                    />
+                    <Badge color='purple' label={t`Current`} />
                   </div>
-                  <p className='mt-0.5 truncate text-12 text-gray-11'>
-                    {canShowWorkspace
-                      ? label
-                      : isClassic
-                        ? t`Version 5`
-                        : t`AI-powered workspace`}
+                  <p className='mt-0.5 text-12 text-gray-11'>
+                    {t`AI-powered workspace`}
                   </p>
                 </div>
-
-                {isLoadingThis ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 1,
-                      ease: 'linear',
-                      repeat: Infinity,
-                    }}
-                  >
-                    <Icon
-                      className='size-4 shrink-0 text-primary-11'
-                      name='tabler:loader-2'
-                    />
-                  </motion.div>
-                ) : (
-                  <Icon
-                    className='size-4 shrink-0 text-gray-8 group-hover:text-primary-11'
-                    name='tabler:chevron-right'
-                  />
-                )}
+                {renderRowAction(loading && versionFilter === 'v6')}
               </button>
-            )
-          })}
-        </div>
+
+              <button
+                disabled={loading}
+                type='button'
+                className={cn(
+                  'group flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-surface-primary px-3 py-2.5 text-left transition-colors duration-200',
+                  'hover:border-primary-6 hover:bg-primary-1 active:bg-primary-2',
+                  loading && versionFilter === 'v5'
+                    ? 'border-primary-8 bg-primary-1'
+                    : 'border-gray-4',
+                )}
+                onClick={() => handleVersionSelect('v5')}
+              >
+                <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-gray-3'>
+                  <Icon className='size-5 text-gray-11' name='tabler:stack-2' />
+                </div>
+                <div className='min-w-0 flex-1'>
+                  <div className='flex items-center gap-2'>
+                    <span className='truncate text-14 font-medium text-gray-13'>
+                      {t`EZOFIS`}
+                    </span>
+                    <Badge color='gray' label={t`Classic`} />
+                  </div>
+                  <p className='mt-0.5 text-12 text-gray-11'>{t`Version 5`}</p>
+                </div>
+                {renderRowAction(loading && versionFilter === 'v5')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <Title
+              level={2}
+              title={t`Select account`}
+              description={
+                versionFilter === 'v5'
+                  ? t`It looks like ${accountEmail} has more than one Classic account. Which one do you want to use?`
+                  : versionFilter === 'v6'
+                    ? t`It looks like ${accountEmail} has more than one Current account. Which one do you want to use?`
+                    : t`It looks like ${accountEmail} is used with more than one account. Which account do you want to use?`
+              }
+            />
+
+            <div className='space-y-2'>
+              {accountOptions.map((tenant) => {
+                const isSelected = selectedTenantId === tenant.id
+                const isLoadingThis = loading && isSelected
+                const optionName =
+                  tenant.label.trim() || tenant.email || accountEmail
+
+                return (
+                  <button
+                    disabled={loading}
+                    key={tenant.id}
+                    type='button'
+                    className={cn(
+                      'group flex w-full cursor-pointer items-center gap-3 rounded-xl border bg-surface-primary px-3 py-2.5 text-left transition-colors duration-200',
+                      'hover:border-primary-6 hover:bg-primary-1 active:bg-primary-2',
+                      isLoadingThis
+                        ? 'border-primary-8 bg-primary-1'
+                        : 'border-gray-4',
+                    )}
+                    onClick={() => handleTenantClick(tenant.id)}
+                  >
+                    <div className='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-3'>
+                      <Icon
+                        className='size-4 text-primary-11'
+                        name='tabler:user'
+                      />
+                    </div>
+                    <span className='min-w-0 flex-1 truncate text-14 font-medium text-gray-13'>
+                      {optionName}
+                    </span>
+                    {renderRowAction(isLoadingThis)}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
 
         <button
-          className='cursor-pointer text-12 font-medium text-gray-11 underline hover:text-primary-11'
+          className='cursor-pointer text-12 font-medium text-gray-11 underline hover:text-primary-11 active:text-primary-12'
           type='button'
           onClick={handleBackToSignIn}
         >
-          {t`Use a different email`}
+          {t`Sign in with a different email address`}
         </button>
-      </div>
+      </motion.div>
     )
   }
 

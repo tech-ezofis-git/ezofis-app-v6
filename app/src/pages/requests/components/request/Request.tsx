@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ApiPlaygroundContext } from '@/components/playground/ApiPlayground'
 import formApi from '@/api/form/form'
+
 import {
-  getGroupListQueryOptions,
-  getUserListQueryOptions,
-} from '@/api/userQueries'
+  getGroups,
+  getUsers,
+} from '@/api/v6/user'
 import workflowsApiV6 from '@/api/v6/workflows'
 import showToast from '@/components/base/toast/showToast'
 // Import your custom animation components
@@ -516,15 +517,15 @@ const updateProcessInStore = (apAgentJobId: string | number, jobData: any) => {
       )
       const updatedProcesses = hasJobProcess
         ? state.processingProcesses.map((p) =>
-            String(p.processId || p.id) === jobKey
-              ? {
-                  ...p,
-                  apAgentJobId: null,
-                  id: jobData.instanceId,
-                  processId: jobData.instanceId,
-                }
-              : p,
-          )
+          String(p.processId || p.id) === jobKey
+            ? {
+              ...p,
+              apAgentJobId: null,
+              id: jobData.instanceId,
+              processId: jobData.instanceId,
+            }
+            : p,
+        )
         : state.processingProcesses
 
       return {
@@ -1056,10 +1057,10 @@ const Request = ({
 
   const hasAgentDecision = request
     ? !!(
-        request.review ||
-        request._agentData?.[0]?.decision ||
-        request.completedAtUtc
-      )
+      request.review ||
+      request._agentData?.[0]?.decision ||
+      request.completedAtUtc
+    )
     : false
   const isCurrentlyProcessing =
     !hasAgentDecision && initialProcessing && !jobStatus?.isCompleted
@@ -1146,8 +1147,17 @@ const Request = ({
     [currentBlockSettings],
   )
 
-  const { data: allUsersForAssignee } = useQuery(getUserListQueryOptions())
-  const { data: allGroupsForAssignee } = useQuery(getGroupListQueryOptions())
+  const { data: usersResponse } = useQuery({
+    queryKey: ['v6-users'],
+    queryFn: getUsers,
+  })
+  const allUsersForAssignee = usersResponse?.data
+
+  const { data: groupsResponse } = useQuery({
+    queryKey: ['v6-groups'],
+    queryFn: getGroups,
+  })
+  const allGroupsForAssignee = groupsResponse?.data
 
   const assigneeLabel = useMemo(() => {
     if (!currentBlock) return undefined
@@ -1234,19 +1244,19 @@ const Request = ({
         formModel?.['invoice_number'] ||
         formModel?.['invoice_no'] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-          'Invoice No'
+        'Invoice No'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-          'invoice_no'
+        'invoice_no'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-          'Invoice Number'
+        'Invoice Number'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-          'invoice_number'
+        'invoice_number'
         ] ||
         currentAgentData?.['Extracted Invoice JSON']?.invoice_header?.[
-          'invoice_num'
+        'invoice_num'
         ] ||
         currentAgentData?.['kvcYuknkDumkTenjvrVLj'] ||
         selectedItem?.reqNo ||
@@ -1312,8 +1322,8 @@ const Request = ({
       getWorkflowRepositoryId(
         rawWorkflowData,
         rawWorkflowData?.repositoryId ||
-          selectedItem?.repositoryId ||
-          request?.repositoryId,
+        selectedItem?.repositoryId ||
+        request?.repositoryId,
       ),
     )
     if (!stored) return
@@ -1535,8 +1545,8 @@ const Request = ({
           typeof selectedItem?.agentResponse === 'string'
             ? selectedItem.agentResponse
             : JSON.stringify(
-                selectedItem?.agentResponse || request?.agentResponse || {},
-              ),
+              selectedItem?.agentResponse || request?.agentResponse || {},
+            ),
         comments: '',
         formData: formDataStr,
         formEntryId: Number(
@@ -1637,10 +1647,10 @@ const Request = ({
             ? genericFormModel
             : Object.keys(formModel).length > 0
               ? mapFormModelToPayloadFields(
-                  formModel,
-                  selectedWorkflow,
-                  request?._formDefinition,
-                )
+                formModel,
+                selectedWorkflow,
+                request?._formDefinition,
+              )
               : selectedItem?.formData?.fields || {},
           formEntryId: selectedItem?.formData?.formEntryId,
           formId: rawWorkflowData?.wFormId,
@@ -2046,7 +2056,6 @@ const Request = ({
         <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
           <AnimateFadeIn
             className='mt-0 flex min-h-0 flex-1 flex-col overflow-hidden px-0 pb-0'
-            delay={0.6}
           >
             {isGenericWorkflow ? (
               <GenericRequestOverview
