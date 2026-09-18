@@ -548,23 +548,6 @@ const GlobalSearch = () => {
                           (b) => b.label.toLowerCase() !== 'document',
                         )
 
-                        const subtitleLine = hit.line
-                          ? hit.line
-                          : isDummy
-                            ? lineFor(hit)
-                            : isDocumentHit
-                              ? t`Updated from Document`
-                              : [
-                                hit.name
-                                  ? t`Updated from ${hit.name}`
-                                  : '',
-                                getSearchHitDate(hit),
-                              ]
-                                .filter(Boolean)
-                                .join(', ') ||
-                              hit.type ||
-                              t`Result`
-
                         return (
                           <motion.li
                             animate={{ opacity: 1, y: 0 }}
@@ -638,10 +621,19 @@ const GlobalSearch = () => {
                                     )
                                   })}
                                 </div>
+                                {hit?.matchSource && (
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <div className="size-[5px] shrink-0 rounded-full bg-[#00bcd4]" />
 
-                                <div className='mb-2 line-clamp-1 text-[12.5px] text-slate-500 hover:line-clamp-none'>
-                                  {subtitleLine}
-                                </div>
+                                    <div className="line-clamp-1 text-[12.5px] text-slate-500 hover:line-clamp-none">
+                                      <span className="font-medium text-gray-11">{query}</span>
+                                      {" "}Matched in{" "}
+                                      <span className="font-semibold text-primary-9">
+                                        {hit.matchSource}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
 
                                 {hit.found && hit.found.length > 0 && (
                                   <div className='flex flex-col gap-1.5'>

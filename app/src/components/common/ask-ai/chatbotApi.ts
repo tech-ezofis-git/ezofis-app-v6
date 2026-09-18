@@ -331,8 +331,9 @@ function normalizeCardItem(raw: unknown): AskAiCard {
       item.id && typeof item.id === 'object' && !Array.isArray(item.id)
         ? (item.id as Record<string, unknown>)
         : undefined,
-    matchSource:
-      item.matchSource == null ? null : String(item.matchSource),
+    matchSource: (item.matchSource ?? item.match_source ?? item.MatchSource ?? item.matchsource) != null
+      ? String(item.matchSource ?? item.match_source ?? item.MatchSource ?? item.matchsource)
+      : null,
     subtitle,
     title,
     type: item.type != null ? String(item.type) : undefined,

@@ -81,6 +81,9 @@ export default function SearchPage() {
   useEffect(() => {
     if (searchParams.q) {
       setQuery(searchParams.q)
+      if (lastApiQueryRef.current.toLowerCase() !== searchParams.q.toLowerCase()) {
+        void runApiSearch(searchParams.q)
+      }
     } else {
       setQuery('')
       setResults([])
@@ -118,8 +121,8 @@ export default function SearchPage() {
       return
     }
 
-    const localHits = searchAllLocalData(trimmed)
-    if (localHits.length > 0) return
+    // Do not block API call on the dedicated search page if there are local hits
+    // The user expects full API search results here.
 
     const timer = window.setTimeout(() => {
       if (apiInFlightRef.current) return
@@ -350,19 +353,9 @@ export default function SearchPage() {
                 const title = getSearchHitTitle(hit)
                 const titleHtml = hit.needles && hit.needles.length > 0 ? hl(title, hit.needles) : title
                 const iconName = getSearchHitIcon(hit.type)
-                const hitType = String(hit.type || hit.entity_type || '').toLowerCase()
+                const hitType = (hit.type || '').toLowerCase()
                 const isDocumentHit = hitType.includes('document') || hitType.includes('file')
                 const badges = (hit.badges || []).filter((b) => b.label.toLowerCase() !== 'document')
-
-                const subtitleLine = hit.line
-                  ? hit.line
-                  : isDocumentHit
-                    ? 'Updated from Document'
-                    : [hit.name ? `Updated from ${hit.name}` : '', getSearchHitDate(hit)]
-                      .filter(Boolean)
-                      .join(', ') ||
-                    hit.type ||
-                    'Result'
 
                 return (
                   <div
@@ -409,9 +402,19 @@ export default function SearchPage() {
                         })}
                       </div>
 
-                      <div className='mb-1 line-clamp-1 text-[13px] text-gray-10 transition-all group-hover:line-clamp-none'>
-                        {subtitleLine}
-                      </div>
+                      {hit?.matchSource && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="size-[5px] shrink-0 rounded-full bg-[#00bcd4]" />
+
+                          <div className="line-clamp-1 text-[12.5px] text-slate-500 hover:line-clamp-none">
+                            <span className="font-medium text-gray-11">{query}</span>
+                            {" "}Matched in{" "}
+                            <span className="font-semibold text-primary-9">
+                              {hit.matchSource}
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
                       {hit.found && hit.found.length > 0 && (
                         <div className='mt-1 flex flex-col gap-1.5'>
