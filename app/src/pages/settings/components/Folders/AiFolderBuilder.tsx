@@ -38,6 +38,7 @@ import {
   BuilderTimelineStep,
   type TimelineConnectorState,
 } from './AiFolderBuilderTimeline'
+import FolderFieldSettingsPanel from './FolderFieldSettingsPanel'
 
 export type AiFolderBuilderApplyPayload = {
   description: string
@@ -95,6 +96,7 @@ type DraftAnswers = {
 type EditableField = FolderConfigField & {
   aiGenerated?: boolean
   id: string
+  settings?: Record<string, any>
 }
 
 const RECOMMEND_FIELDS_VALUE =
@@ -200,12 +202,14 @@ function stripEditableIds(fields: EditableField[]): FolderConfigField[] {
       iconKey,
       includeInFolderStructure,
       isMandatory,
+      settings,
     }) => ({
       dataType,
       fieldName,
       iconKey,
       includeInFolderStructure,
       isMandatory,
+      settings,
     }),
   )
 }
@@ -387,6 +391,7 @@ function FieldsEditor({
   const [newIsMandatory, setNewIsMandatory] = useState(false)
   const [newIsFolder, setNewIsFolder] = useState(false)
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null)
+  const [settingsFieldId, setSettingsFieldId] = useState<string | null>(null)
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -556,20 +561,33 @@ function FieldsEditor({
         {showTree ? (
           <FolderTreeLines depth={depth} isLast={options?.isLast ?? true} />
         ) : null}
-        <SortableItem
-          className='relative min-w-0 flex-1 items-center gap-1 rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-1)] py-1.5 pr-2 pl-1'
-          handlerClassName='size-8 text-[var(--gray-9)]'
+        <div className='flex min-w-0 flex-1 flex-col gap-1'>
+          <SortableItem
+            className='relative flex w-full items-center gap-1 rounded-[12px] border border-[var(--gray-3)] bg-[var(--gray-1)] py-1.5 pr-2 pl-1'
+            handlerClassName='size-8 text-[var(--gray-9)]'
           handlerPosition='before'
           id={field.id}
           trailing={
-            <button
-              aria-label={t`Remove ${field.fieldName}`}
-              className='flex size-8 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition hover:bg-[var(--red-3)] hover:text-[var(--red-11)]'
-              type='button'
-              onClick={() => removeField(field.id)}
-            >
-              <Icon className='size-3.5' name='lucide:trash-2' />
-            </button>
+            <div className='flex items-center gap-1'>
+              {['TABLE', 'SINGLE_SELECT', 'MULTI_SELECT', 'MULTIPLE_CHOICE', 'SINGLE_CHOICE', 'LINK', 'URL', 'OMR', 'BARCODE'].includes(field.dataType) && (
+                <button
+                  type='button'
+                  aria-label={t`Settings for ${field.fieldName}`}
+                  className='flex size-8 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition hover:bg-[var(--gray-3)] hover:text-[var(--gray-12)]'
+                  onClick={() => setSettingsFieldId(settingsFieldId === field.id ? null : field.id)}
+                >
+                  <Icon className='size-4' name='lucide:settings-2' />
+                </button>
+              )}
+              <button
+                aria-label={t`Remove ${field.fieldName}`}
+                className='flex size-8 shrink-0 items-center justify-center rounded text-[var(--gray-9)] transition hover:bg-[var(--red-3)] hover:text-[var(--red-11)]'
+                type='button'
+                onClick={() => removeField(field.id)}
+              >
+                <Icon className='size-3.5' name='lucide:trash-2' />
+              </button>
+            </div>
           }
         >
           {field.aiGenerated ? (
@@ -672,6 +690,16 @@ function FieldsEditor({
             onChange={(dataType) => updateField(field.id, { dataType })}
           />
         </SortableItem>
+        {settingsFieldId === field.id && (
+          <div className='w-full'>
+            <FolderFieldSettingsPanel
+              field={field}
+              onUpdate={(patch) => updateField(field.id, patch)}
+              onClose={() => setSettingsFieldId(null)}
+            />
+          </div>
+        )}
+        </div>
       </div>
     )
   }

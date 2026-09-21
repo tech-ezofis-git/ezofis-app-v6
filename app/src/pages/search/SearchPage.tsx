@@ -25,7 +25,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<GlobalSearchHit[]>([])
   const [resultsSource, setResultsSource] = useState<'cache' | 'api'>('cache')
-  const [activeTab, setActiveTab] = useState<'all' | 'documents' | 'forms' | 'workflows'>('all')
+  const [activeTab, setActiveTab] = useState<'all' | 'documents' | 'forms' | 'workflows' | 'folders' | 'requests'>('all')
 
   const inputRef = useRef<HTMLInputElement>(null)
   const requestIdRef = useRef(0)
@@ -159,7 +159,7 @@ export default function SearchPage() {
     const title = getSearchHitTitle(hit)
     const type = String(hit.type || hit.entity_type || '').toLowerCase()
 
-    if (type.includes('request') || (instanceId && workflowId && !type.includes('document'))) {
+    if (type.includes('request') || (instanceId && workflowId && !type.includes('document') && !type.includes('file'))) {
       if (workflowId && instanceId) {
         void navigate({ search: { processId: instanceId, workflowId }, to: '/requests' })
       } else {
@@ -204,18 +204,25 @@ export default function SearchPage() {
   }
 
   const tabs = useMemo(() => {
-    const counts = { all: results.length, documents: 0, forms: 0, workflows: 0 }
+    const counts = { all: results.length, documents: 0, forms: 0, workflows: 0, folders: 0, requests: 0 }
     results.forEach((hit) => {
       const type = String(hit.type || hit.entity_type || '').toLowerCase()
-      if (type.includes('document') || type.includes('file')) counts.documents++
+      const workflowId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.workflowId || '').trim() : ''
+      const instanceId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.instanceId || '').trim() : ''
+      
+      if (type.includes('request') || (instanceId && workflowId && !type.includes('document') && !type.includes('file'))) counts.requests++
+      else if (type.includes('document') || type.includes('file')) counts.documents++
       else if (type.includes('form') || type.includes('master')) counts.forms++
       else if (type.includes('workflow') || type.includes('process')) counts.workflows++
+      else if (type.includes('folder') || type.includes('repository')) counts.folders++
     })
 
     const availableTabs = [{ id: 'all', label: t`All`, count: counts.all }]
     if (counts.documents > 0) availableTabs.push({ id: 'documents', label: t`Documents`, count: counts.documents })
     if (counts.forms > 0) availableTabs.push({ id: 'forms', label: t`Forms`, count: counts.forms })
     if (counts.workflows > 0) availableTabs.push({ id: 'workflows', label: t`Workflows`, count: counts.workflows })
+    if (counts.folders > 0) availableTabs.push({ id: 'folders', label: t`Folders`, count: counts.folders })
+    if (counts.requests > 0) availableTabs.push({ id: 'requests', label: t`Requests`, count: counts.requests })
 
     return availableTabs
   }, [results, t])
@@ -224,9 +231,15 @@ export default function SearchPage() {
     if (activeTab === 'all') return results
     return results.filter((hit) => {
       const type = String(hit.type || hit.entity_type || '').toLowerCase()
+      const workflowId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.workflowId || '').trim() : ''
+      const instanceId = typeof hit.id === 'object' && hit.id !== null ? String(hit.id.instanceId || '').trim() : ''
+      
+      if (activeTab === 'requests') return type.includes('request') || (instanceId && workflowId && !type.includes('document') && !type.includes('file'))
       if (activeTab === 'documents') return type.includes('document') || type.includes('file')
       if (activeTab === 'forms') return type.includes('form') || type.includes('master')
       if (activeTab === 'workflows') return type.includes('workflow') || type.includes('process')
+      if (activeTab === 'folders') return type.includes('folder') || type.includes('repository')
+      
       return true
     })
   }, [results, activeTab])

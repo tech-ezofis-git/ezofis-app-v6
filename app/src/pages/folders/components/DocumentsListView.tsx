@@ -96,6 +96,7 @@ type DocumentsListViewProps = {
   onRepositoryChange?: (id: string) => void
   onSearchChange?: (value: string) => void
   onShare: (id: string) => void
+  onShareFilter?: (shares: any[], message: string) => Promise<boolean>
   onUpload?: () => void
   onUploadFile?: (file: File) => void
   onWorkflow: (id: string) => void
@@ -382,6 +383,7 @@ export function DocumentsListView({
   onRepositoryChange,
   onSearchChange,
   onShare,
+  onShareFilter,
   onUpload,
   onUploadFile,
   onWorkflow,
@@ -816,14 +818,6 @@ export function DocumentsListView({
     }
   }, [openMenuId])
 
-  if (error) {
-    return (
-      <div className='m-4 rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
-        {error}
-      </div>
-    )
-  }
-
   return (
     <div className='animate-in fade-in flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-surface text-sm text-gray-11 duration-300'>
       <div className='relative z-40 shrink-0 bg-surface px-6 py-2'>
@@ -870,13 +864,18 @@ export function DocumentsListView({
           onRefresh={handleRefresh}
           onResetFilters={resetFilters}
           onSearchChange={setSearchQuery}
+          onShare={onShareFilter}
           onUpload={onUpload}
         />
       </div>
 
       <div className='flex min-h-0 flex-1 flex-col overflow-hidden px-6 pt-1 pb-2'>
         <section className='flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden'>
-          {!activeRepositoryId || folders.length > 0 ? (
+          {error ? (
+            <div className='m-4 rounded-xl border border-red-4 bg-red-1 p-4 text-sm font-semibold text-red-10'>
+              {error}
+            </div>
+          ) : !activeRepositoryId || folders.length > 0 ? (
             <FolderDataTableSection
               effectiveFolderTotal={folders.length}
               folderFilters={{}}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { SettingsBreadcrumbItem } from '@/pages/settings/helpers/settingsBreadcrumbs'
 import showToast from '@/components/base/toast/showToast'
 import useAskAiActionStore from '@/components/common/ask-ai/stores/useAskAiActionStore'
-import { encodeRepositoryNodeId } from '../api/folderApi'
+import { encodeRepositoryNodeId, folderApi } from '../api/folderApi'
 import { useFolderExplorer } from '../hooks/useFolderExplorer'
 import useFolderSecurityPermissions from '../hooks/useFolderSecurityPermissions'
 import useFoldersTopbar from '../hooks/useFoldersTopbar'
@@ -386,6 +386,30 @@ export function FolderExplorer() {
 
   useFoldersTopbar(foldersTopbar)
 
+  const handleShareFilter = useCallback(
+    async (shares: any[], message: string) => {
+      if (!resolvedRepositoryId) return false
+      try {
+        let successCount = 0
+        for (const share of shares) {
+          const result = await folderApi.shareFilter({
+            action: share.action,
+            email: share.email,
+            filters: { ...fileFilters, ...folderContextFilters },
+            message,
+            repositoryId: resolvedRepositoryId,
+          })
+          if (!result.error) successCount++
+        }
+        return successCount === shares.length
+      } catch (err) {
+        console.error(err)
+        return false
+      }
+    },
+    [fileFilters, folderContextFilters, resolvedRepositoryId],
+  )
+
   const handleIntelligentUpload = () => {
     if (isDemoAppOrigin()) return
     if (!resolvedRepositoryId) {
@@ -632,6 +656,7 @@ export function FolderExplorer() {
             setFolderSearch(value, { manual: true })
           }}
           onShare={openShareForFile}
+          onShareFilter={handleShareFilter}
           onUpload={canUpload ? handleUpload : undefined}
           onUploadFile={canUpload ? handleUploadFile : undefined}
           onWorkflow={(id) => openFileAction(id, 'workflow')}
@@ -639,6 +664,7 @@ export function FolderExplorer() {
       </div>
     )
   }
+
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-surface-secondary text-sm text-gray-11'>
@@ -683,6 +709,7 @@ export function FolderExplorer() {
           canIntelligentUpload ? handleIntelligentUpload : undefined
         }
         onRefresh={handleRefresh}
+        onShare={handleShareFilter}
         onUpload={canUpload ? handleUpload : undefined}
       />
 
