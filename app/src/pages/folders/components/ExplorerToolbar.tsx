@@ -40,6 +40,7 @@ type ExplorerToolbarProps = {
   onFolderSearchChange?: (value: string) => void
   onIntelligentUpload?: () => void
   onRefresh?: () => void
+  onShare?: (shares: any[], message: string) => Promise<boolean>
   onUpload?: () => void
   setView: (view: ExplorerView) => void
 }
@@ -93,6 +94,7 @@ export function ExplorerToolbar({
   onFolderSearchChange,
   onIntelligentUpload,
   onRefresh,
+  onShare,
   onUpload,
 }: ExplorerToolbarProps) {
   const { t } = useLingui()
@@ -274,6 +276,7 @@ export function ExplorerToolbar({
         onRefresh={onRefresh}
         onResetFilters={handleResetFilters}
         onSearchChange={setSearchQuery}
+        onShare={onShare}
         onUpload={onUpload}
       />
     </div>

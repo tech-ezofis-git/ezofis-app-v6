@@ -87,7 +87,8 @@ export interface ActionButtonDef {
   label?: string
   tooltip?: string
   variant?: ButtonVariant
-  onClick: () => void
+  onClick?: () => void
+  node?: React.ReactNode
 }
 
 export interface CustomFilterProps {
@@ -1018,6 +1019,10 @@ export default function CustomFilter({
         {actionButtons && actionButtons.length > 0 && (
           <div className='flex shrink-0 items-center gap-1.5'>
             {actionButtons.map((btn) => {
+              if (btn.node) {
+                return <span key={btn.id}>{btn.node}</span>
+              }
+
               const btnEl = btn.isIconButton ? (
                 <IconButton
                   aria-label={btn.tooltip || btn.label || btn.id}

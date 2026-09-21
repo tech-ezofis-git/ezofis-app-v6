@@ -687,6 +687,45 @@ export const shareRepositoryItem = async (payload: {
   return response
 }
 
+export const shareFilter = async (payload: {
+  action: RepositoryShareAction
+  email: string
+  filters: Record<string, string>
+  message?: string
+  repositoryId: string
+  tenantId?: string
+}) => {
+  const response: { data: RepositoryShareResult | null; error: string } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: JSON.stringify({
+        action: payload.action,
+        email: payload.email,
+        filters: payload.filters,
+        message: payload.message || '',
+      }),
+      headers: getFolderTenantHeaders(payload.tenantId),
+      method: 'POST',
+      url: `/repositories/${payload.repositoryId}/share-filter`,
+    })
+
+    if (status !== 200 && status !== 201) throw 'invalid status code'
+    response.data = (unwrap(data) || data) as RepositoryShareResult
+  } catch (e: any) {
+    console.error(e)
+    response.error =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      'error sharing filtered folder'
+  }
+
+  return response
+}
+
 /** People this file was shared with (sharer-side list). */
 export const getRepositoryItemShares = async (payload: {
   itemId: string

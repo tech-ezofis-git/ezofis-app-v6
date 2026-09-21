@@ -211,6 +211,7 @@ function normalizeSuggestion(
       iconKey: field.iconKey ? String(field.iconKey) : 'document',
       includeInFolderStructure: Boolean(field.includeInFolderStructure),
       isMandatory: Boolean(field.isMandatory),
+      settings: field.settings,
     })),
     folderName,
     reply:

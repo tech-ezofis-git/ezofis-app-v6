@@ -1437,7 +1437,7 @@ const AnswerCardGroup = ({
         <div className='flex min-w-0 flex-1 items-center gap-2 pr-2'>
           <UiIcon className='shrink-0 text-[var(--purple)]' name={iconName} size={15} />
           <span className='truncate group-hover:whitespace-normal text-[11.5px] font-bold tracking-[.4px] text-[var(--text1)] uppercase'>
-            {group.name}
+            {group.name} ({group.cards?.length || 0})
           </span>
         </div>
 
