@@ -834,7 +834,7 @@ export function DocumentSigningPage({
   const handleUseTyped = async (options?: { keepPickerOpen?: boolean }) => {
     if (!typedName.trim()) {
       if (!options?.keepPickerOpen) {
-        notifySigningError(t`Enter your full name to create a typed signature.`)
+        notifySigningError(t`Please enter your full name to create your signature.`)
       }
       return
     }
@@ -859,7 +859,7 @@ export function DocumentSigningPage({
     const pad = signaturePadRef.current
     if (!pad || pad.isEmpty()) {
       if (!options?.keepPickerOpen) {
-        notifySigningError(t`Draw your signature before using it.`)
+        notifySigningError(t`Please draw your signature before continuing.`)
       }
       return
     }
@@ -879,7 +879,7 @@ export function DocumentSigningPage({
   const handleUseUploaded = async (options?: { keepPickerOpen?: boolean }) => {
     if (!uploadedDataUrl) {
       if (!options?.keepPickerOpen) {
-        notifySigningError(t`Upload a signature image first.`)
+        notifySigningError(t`Please upload your signature image before continuing.`)
       }
       return
     }
@@ -973,7 +973,7 @@ export function DocumentSigningPage({
     if (activeTab === 'draw') {
       const pad = signaturePadRef.current
       if (!pad || pad.isEmpty()) {
-        notifySigningError(t`Draw your signature before placing it.`)
+        notifySigningError(t`Please draw your signature before continuing.`)
         return
       }
       const imageDataUrl = pad.toDataURL('image/png')
@@ -983,7 +983,7 @@ export function DocumentSigningPage({
       typeToUse = 'drawn'
     } else if (activeTab === 'type') {
       if (!typedName.trim()) {
-        notifySigningError(t`Enter your full name to create a typed signature.`)
+        notifySigningError(t`Please enter your full name to create your signature.`)
         return
       }
       const imageDataUrl = createTypedSignatureDataUrl(
@@ -997,7 +997,7 @@ export function DocumentSigningPage({
       typeToUse = 'typed'
     } else if (activeTab === 'upload') {
       if (!uploadedDataUrl) {
-        notifySigningError(t`Upload a signature image first.`)
+        notifySigningError(t`Please upload your signature image before continuing.`)
         return
       }
       sigToUse = {
@@ -1098,11 +1098,13 @@ export function DocumentSigningPage({
   const processUploadFile = (file: File) => {
     setUploadError('')
     if (!ACCEPTED_UPLOAD_TYPES.includes(file.type)) {
-      setUploadError(t`Supported formats: PNG, JPG, JPEG.`)
+      setUploadError(t`Please upload a PNG or JPG image.`)
       return
     }
     if (file.size > MAX_UPLOAD_BYTES) {
-      setUploadError(t`Maximum file size is 5 MB.`)
+      setUploadError(
+        t`Your image is too large. Please upload an image smaller than 5 MB.`,
+      )
       return
     }
 
@@ -1110,13 +1112,18 @@ export function DocumentSigningPage({
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : ''
       if (!result) {
-        setUploadError(t`Unable to read the selected file.`)
+        setUploadError(
+          t`We couldn't open this file. Please choose another file and try again.`,
+        )
         return
       }
       setUploadedDataUrl(result)
       setUploadedFileName(file.name)
     }
-    reader.onerror = () => setUploadError(t`Unable to read the selected file.`)
+    reader.onerror = () =>
+      setUploadError(
+        t`We couldn't open this file. Please choose another file and try again.`,
+      )
     reader.readAsDataURL(file)
   }
 
@@ -2055,7 +2062,9 @@ export function DocumentSigningPage({
 
   const handlePrepareAssignmentMark = () => {
     if (!selectedAssignee) {
-      notifySigningError(t`Select a user before marking a place.`)
+      notifySigningError(
+        t`Please select the person who needs to sign before placing the signature.`,
+      )
       return
     }
     setReadyToMarkAssignment(true)

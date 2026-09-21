@@ -391,11 +391,7 @@ export const suggestDashboardPrompt = async (
       ),
       latency_ms: Number(record.latency_ms ?? record.latencyMs ?? 0),
       prompt,
-      repository_id: readStringField(
-        record,
-        'repository_id',
-        'repositoryId',
-      ),
+      repository_id: readStringField(record, 'repository_id', 'repositoryId'),
       repository_name: readStringField(
         record,
         'repository_name',
@@ -502,8 +498,8 @@ export const saveDashboardSchema = async (
       data: {
         dashboard_json: dashboardResult,
         dashboard_result: dashboardResult,
-        tenantId: payload.tenantId,
         tenant_id: payload.tenantId,
+        tenantId: payload.tenantId,
         ...buildDashboardSourceIds({
           repositoryId: payload.repositoryId,
           workflowId: payload.workflowId,
@@ -585,7 +581,9 @@ export const getDashboardHtml = async (payload: DashboardDataRequest) => {
   return response
 }
 
-export const getSavedDashboardSchema = async (payload: SavedDashboardLookup) => {
+export const getSavedDashboardSchema = async (
+  payload: SavedDashboardLookup,
+) => {
   const response: {
     data: SavedDashboardSnapshot | null
     error: string
@@ -647,11 +645,9 @@ export const getSavedDashboardSchema = async (payload: SavedDashboardLookup) => 
 
     response.data = {
       dashboardHtml: extractDashboardHtml(body),
-      repositoryId: readStringField(
-        record,
-        'repositoryId',
-        'repository_id',
-      ) || asId(payload.repositoryId),
+      repositoryId:
+        readStringField(record, 'repositoryId', 'repository_id') ||
+        asId(payload.repositoryId),
       schema,
       tenantId:
         readStringField(record, 'tenantId', 'tenant_id') || payload.tenantId,
@@ -766,9 +762,7 @@ export const loadSavedRepositoryDashboard = async (
   const workflowId = asId(payload.workflowId || schema.workflow_id)
   const repositoryId = workflowId
     ? ''
-    : asId(
-        payload.repositoryId || schema.repository_id || schema.repositoryId,
-      )
+    : asId(payload.repositoryId || schema.repository_id || schema.repositoryId)
 
   const dataRes = await getDashboardHtml({
     dashboard_json: schema,
@@ -784,15 +778,165 @@ export const loadSavedRepositoryDashboard = async (
   return response
 }
 
+export type DashboardShare = {
+  action: number
+  email: string
+  sharedAt?: string
+  shareId: string
+}
+
+export type ShareDashboardRequest = {
+  action: number
+  email: string
+  message?: string
+  repositoryId?: string
+  tenantId?: string
+  workflowId?: string
+}
+
+const readDashboardShare = (value: unknown): DashboardShare | null => {
+  const record = asRecord(value)
+  if (!record) return null
+  const shareId = readStringField(record, 'shareId', 'share_id', 'id')
+  const email = readStringField(record, 'email', 'Email')
+  if (!shareId || !email) return null
+  return {
+    action: Number(record.action ?? 0),
+    email,
+    sharedAt: readStringField(record, 'sharedAt', 'shared_at') || undefined,
+    shareId,
+  }
+}
+
+/** Share the currently saved dashboard for a repository/workflow with an email. */
+export const shareDashboard = async (payload: ShareDashboardRequest) => {
+  const response: { data: DashboardShare | null; error: string } = {
+    data: null,
+    error: '',
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      data: {
+        action: payload.action,
+        email: payload.email,
+        message: payload.message || '',
+        tenant_id: asId(payload.tenantId),
+        ...buildDashboardSourceIds({
+          repositoryId: payload.repositoryId,
+          workflowId: payload.workflowId,
+        }),
+      },
+      headers: buildTenantHeaders(payload.tenantId),
+      method: 'POST',
+      url: `/dashboard/share`,
+    })
+
+    if (status !== 200 && status !== 201) {
+      throw new Error('invalid status code')
+    }
+
+    response.data = readDashboardShare(asRecord(data)?.value ?? data)
+  } catch (error) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      getAxiosErrorData(error),
+      'Error Sharing Dashboard',
+    )
+  }
+
+  return response
+}
+
+/** People a dashboard was shared with (sharer-side list). */
+export const getDashboardShares = async (payload: SavedDashboardLookup) => {
+  const response: { data: DashboardShare[]; error: string } = {
+    data: [],
+    error: '',
+  }
+
+  try {
+    const { data, status } = await axiosV6({
+      headers: buildTenantHeaders(payload.tenantId),
+      method: 'GET',
+      params: {
+        tenantId: asId(payload.tenantId),
+        ...(asId(payload.workflowId)
+          ? { workflowId: asId(payload.workflowId) }
+          : asId(payload.repositoryId)
+            ? { repositoryId: asId(payload.repositoryId) }
+            : {}),
+      },
+      url: `/dashboard/shares`,
+    })
+
+    if (status !== 200) throw new Error('invalid status code')
+
+    const record = asRecord(data)
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(record?.items)
+        ? record?.items
+        : Array.isArray(record?.value)
+          ? record?.value
+          : []
+    response.data = (list || [])
+      .map(readDashboardShare)
+      .filter((item): item is DashboardShare => Boolean(item))
+  } catch (error) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      getAxiosErrorData(error),
+      'Error Loading Dashboard Shares',
+    )
+  }
+
+  return response
+}
+
+export const revokeDashboardShare = async (payload: {
+  shareId: string
+  tenantId?: string
+}) => {
+  const response: { data: boolean; error: string } = {
+    data: false,
+    error: '',
+  }
+
+  try {
+    const { status } = await axiosV6({
+      headers: buildTenantHeaders(payload.tenantId),
+      method: 'DELETE',
+      url: `/dashboard/share/${payload.shareId}`,
+    })
+
+    if (status !== 200 && status !== 204) {
+      throw new Error('invalid status code')
+    }
+    response.data = true
+  } catch (error) {
+    console.error(error)
+    response.error = getV6ApiErrorMessage(
+      getAxiosErrorData(error),
+      'Error Revoking Dashboard Share',
+    )
+  }
+
+  return response
+}
+
 export const dashboardApiV6 = {
+  loadSavedRepositoryDashboard,
+  revokeDashboardShare,
+  saveDashboardSchema,
+  shareDashboard,
+  suggestDashboardPrompt,
   getDashboardData,
   getDashboardHtml,
   getDashboardSchema,
+  getDashboardShares,
   getSavedDashboardHtml,
   getSavedDashboardSchema,
-  loadSavedRepositoryDashboard,
-  saveDashboardSchema,
-  suggestDashboardPrompt,
 }
 
 export default dashboardApiV6

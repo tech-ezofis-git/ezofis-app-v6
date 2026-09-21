@@ -34,7 +34,9 @@ const VerifyEmailForm = ({ onBack }: Props) => {
     try {
       setError(null)
       if (!email) {
-        setError('Email missing. Please restart signup.')
+        setError(
+          "We couldn't find your email address. Please start the sign-up process again.",
+        )
         return
       }
 
@@ -59,13 +61,15 @@ const VerifyEmailForm = ({ onBack }: Props) => {
     try {
       setError(null)
       if (!email) {
-        setError('Email missing. Please restart signup.')
+        setError(
+          "We couldn't find your email address. Please start the sign-up process again.",
+        )
         return
       }
 
       const otp = String(otpValue ?? '').trim()
       if (otp.length !== 6) {
-        setError('Please enter a valid 6-digit OTP')
+        setError('Please enter the 6-digit verification code sent to your email.')
         return
       }
 

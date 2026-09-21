@@ -1688,7 +1688,7 @@ function Authentication({
       : (user.mfaMethods ?? [])[0] || ''
   const methodError =
     showErrors && user.mfaEnabled && !selectedMethod
-      ? t`Please fill the required field: MFA Method`
+      ? t`Please enter MFA Method.`
       : undefined
 
   return (
@@ -2007,7 +2007,9 @@ function getPasswordRequirementError(
   t: (strings: TemplateStringsArray, ...values: any[]) => string,
 ) {
   const unmet = requirementsConfig.find((req) => !req.regex.test(password))
-  return unmet ? t`Password must meet: ${i18n._(unmet.label)}` : undefined
+  return unmet
+    ? t`Your password doesn't meet the requirements. Please check the requirements and try again.`
+    : undefined
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -2019,7 +2021,7 @@ function getEmailValidationError(
   const trimmed = String(email || '').trim()
   if (!trimmed) return undefined
   if (!EMAIL_PATTERN.test(trimmed)) {
-    return t`Please enter a valid email address`
+    return t`Please enter a valid email address.`
   }
   return undefined
 }

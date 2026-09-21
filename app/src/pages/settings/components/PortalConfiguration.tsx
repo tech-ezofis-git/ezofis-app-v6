@@ -993,7 +993,7 @@ function PortalSetup({
       if (missingLabels.length) {
         setShowErrors(true)
         showToast({
-          message: getRequiredFieldErrorMessage(missingLabels),
+          message: t`Please complete all required portal details before continuing.`,
           variant: 'error',
         })
         return
@@ -1015,7 +1015,7 @@ function PortalSetup({
         onStepChange(1)
       } else onStepChange(2)
       showToast({
-        message: getRequiredFieldErrorMessage(missingLabels),
+        message: t`Please complete all required portal details before continuing.`,
         variant: 'error',
       })
       return
@@ -1032,7 +1032,7 @@ function PortalSetup({
           setShowErrors(true)
           onStepChange(index)
           showToast({
-            message: getRequiredFieldErrorMessage(missingLabels),
+            message: t`Please complete all required portal details before continuing.`,
             variant: 'error',
           })
           return
@@ -1165,7 +1165,7 @@ function PortalSetup({
                   value={loginTypeToRadioId(draftPortal.loginType)}
                   error={
                     showErrors && !draftPortal.loginType
-                      ? t`Please fill the required field: Login type`
+                      ? t`Please enter Login type.`
                       : undefined
                   }
                   onChange={(value) => setLoginType(radioIdToLoginType(value))}
@@ -1382,7 +1382,7 @@ function PortalSetup({
                     searchable
                     error={
                       showErrors && !draftPortal.workflows.length
-                        ? t`Please fill the required field: Workflow`
+                        ? t`Please enter Workflow.`
                         : undefined
                     }
                     onChange={(value) => {

@@ -3,6 +3,7 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import AppLayout from '@/layouts/app/AppLayout'
 import { resolveSignInPath } from '@/lib/branding/session'
 import { shouldLockAppNavigation } from '@/pages/dashboard/workflows/accounts-payable/stores/useSetupStore'
+import { shouldLockToShareResource } from '@/pages/sign-in/utils/shareGuestLock'
 import authUserStore from '@/stores/authUserStore'
 import { isPermissionVisible } from '@/utils/sessionPermissions'
 
@@ -33,6 +34,18 @@ export const Route = createFileRoute('/_app')({
       throw redirect({
         replace: true,
         to: '/',
+      })
+    }
+
+    const shareLock = shouldLockToShareResource()
+    if (
+      shareLock.locked &&
+      shareLock.allowedPath &&
+      location.pathname !== shareLock.allowedPath
+    ) {
+      throw redirect({
+        replace: true,
+        to: shareLock.allowedPath,
       })
     }
 

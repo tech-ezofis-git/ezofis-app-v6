@@ -53,24 +53,24 @@ const ResetPasswordPage = () => {
 
   const validateForm = (): string | null => {
     if (!signUpUserData.email) {
-      return 'Email missing. Please restart signup.'
+      return "We couldn't find your email address. Please start the sign-up process again."
     }
-    if (!firstName.trim()) return 'First name is required'
-    if (!lastName.trim()) return 'Last name is required'
-    if (!organisation.trim()) return 'Organisation is required'
+    if (!firstName.trim()) return 'Please enter your first name.'
+    if (!lastName.trim()) return 'Please enter your last name.'
+    if (!organisation.trim()) return 'Please enter your organisation name.'
 
     if (!isSocial) {
-      if (!password) return 'Password is required'
+      if (!password) return 'Please enter a password.'
 
       const unmetRequirement = requirementsConfig.find(
         (req) => !req.regex.test(password),
       )
       if (unmetRequirement) {
-        return `Password must meet all requirements: ${unmetRequirement.label}`
+        return "Your password doesn't meet the requirements. Please check the password requirements and try again."
       }
 
       if (password !== confirmPassword) {
-        return 'Passwords do not match'
+        return "The passwords don't match. Please try again."
       }
     }
     return null

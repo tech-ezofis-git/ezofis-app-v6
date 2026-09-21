@@ -183,11 +183,11 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
     setLoginType('')
 
     if (!email) {
-      setError('Email is required')
+      setError('Please enter your email address.')
       return
     }
     if (!password) {
-      setError('Password is required')
+      setError('Please enter your password.')
       return
     }
 
@@ -197,7 +197,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
     onError: () => {
-      setError('Google sign-in was cancelled or failed')
+      setError("We couldn't sign you in with Google. Please try again.")
     },
     onSuccess: async (tokenResponse) => {
       try {
@@ -257,7 +257,7 @@ export function LoginScreen({ onSignIn }: LoginScreenProps) {
         errorMsg.includes('user_cancelled') ||
         errorMsg.includes('User cancelled the flow')
       ) {
-        setError('Microsoft sign-in was cancelled.')
+        setError("We couldn't sign you in with Microsoft. Please try again.")
       } else {
         setError(errorMsg || 'Microsoft sign-in failed')
       }

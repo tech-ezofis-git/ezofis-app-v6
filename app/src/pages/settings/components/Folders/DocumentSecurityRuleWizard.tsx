@@ -329,7 +329,10 @@ export default function DocumentSecurityRuleWizard({
 
   const deleteRule = (ruleId: string) => {
     if (rules.length === 1) {
-      showToast({ message: t`At least one rule is required.`, variant: 'error' })
+      showToast({
+        message: t`You must keep at least one security rule.`,
+        variant: 'error',
+      })
       return
     }
     setRules((prev) => prev.filter((r) => r.id !== ruleId))
@@ -396,7 +399,10 @@ export default function DocumentSecurityRuleWizard({
 
   const saveRule = async () => {
     if (selectedPrincipals.length === 0) {
-      showToast({ message: t`Select at least one user or group for target assignment.`, variant: 'error' })
+      showToast({
+        message: t`Please select at least one person or group to whom this rule should apply.`,
+        variant: 'error',
+      })
       setStep(1)
       return
     }
@@ -404,13 +410,19 @@ export default function DocumentSecurityRuleWizard({
     for (let i = 0; i < rules.length; i++) {
       const r = rules[i]
       if (!r.conditions || r.conditions.length === 0) {
-        showToast({ message: t`Rule ${i + 1} must have at least one condition.`, variant: 'error' })
+        showToast({
+          message: t`Please add at least one condition to this rule.`,
+          variant: 'error',
+        })
         setStep(0)
         return
       }
       const emptyCond = r.conditions.find((c) => !c.field || !c.field.trim())
       if (emptyCond) {
-        showToast({ message: t`Rule ${i + 1} contains an empty field selection. Select a field name.`, variant: 'error' })
+        showToast({
+          message: t`Please select a field for this condition.`,
+          variant: 'error',
+        })
         setStep(0)
         return
       }
@@ -478,7 +490,7 @@ export default function DocumentSecurityRuleWizard({
     if (!isDemoAppOrigin() && nextStep > 0 && nextStep > step) {
       if (nextStep === 2 && selectedPrincipals.length === 0) {
         showToast({
-          message: t`Select at least one user or group for target assignment.`,
+          message: t`Please select at least one person or group to whom this rule should apply.`,
           variant: 'error',
         })
         setStep(1)
